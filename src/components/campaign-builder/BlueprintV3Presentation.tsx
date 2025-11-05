@@ -349,6 +349,51 @@ export function BlueprintV3Presentation({
             </div>
           )}
 
+          {/* GEO Intelligence Summary (for GEO-VECTOR campaigns) */}
+          {blueprint.geoIntelligence && (
+            <div className="p-4 bg-purple-900/20 border border-purple-500/30 rounded">
+              <h3 className="text-lg font-bold text-purple-300 mb-3 flex items-center gap-2">
+                <span>🤖</span>
+                <span>AI Query Ownership Strategy</span>
+              </h3>
+
+              {blueprint.geoIntelligence.synthesis?.gapAnalysis && (
+                <p className="text-sm text-gray-300 mb-3">
+                  {blueprint.geoIntelligence.synthesis.gapAnalysis}
+                </p>
+              )}
+
+              <div className="grid grid-cols-2 gap-4 mb-3">
+                <div className="p-2 bg-zinc-900/50 rounded">
+                  <p className="text-xs text-gray-400">Target Queries</p>
+                  <p className="text-xl font-bold text-white">
+                    {blueprint.geoIntelligence.targetQueries?.length || 0}
+                  </p>
+                </div>
+                <div className="p-2 bg-zinc-900/50 rounded">
+                  <p className="text-xs text-gray-400">Schema Opportunities</p>
+                  <p className="text-xl font-bold text-emerald-400">
+                    {blueprint.geoIntelligence.synthesis?.schemaOpportunities?.length || 0}
+                  </p>
+                </div>
+              </div>
+
+              {blueprint.geoIntelligence.synthesis?.priorityActions && blueprint.geoIntelligence.synthesis.priorityActions.length > 0 && (
+                <div>
+                  <p className="text-xs text-gray-400 mb-2">Top Priority Actions:</p>
+                  <ul className="space-y-1">
+                    {blueprint.geoIntelligence.synthesis.priorityActions.slice(0, 3).map((action: string, i: number) => (
+                      <li key={i} className="text-xs text-gray-300 flex items-start gap-2">
+                        <span className="text-purple-400">{i + 1}.</span>
+                        <span>{action}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* NEW: Goal Framework */}
           {blueprint.part1_goalFramework && (
             <div>

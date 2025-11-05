@@ -296,66 +296,9 @@ export default function StrategicPlanningModuleV3Complete({
     }
     const items: ContentItem[] = []
 
-    // Check if this is a GEO-VECTOR campaign (has threeTierTacticalPlan)
-    if ((blueprint as any).threeTierTacticalPlan) {
-      console.log('✓ Parsing GEO-VECTOR campaign blueprint')
-      const tacticalPlan = (blueprint as any).threeTierTacticalPlan
-
-      // Process automated actions
-      tacticalPlan.automated?.forEach((action: any, index: number) => {
-        items.push({
-          id: crypto.randomUUID(),
-          type: 'user_action', // GEO content is typically user_action for now
-          stakeholder: 'AI Platforms (ChatGPT, Claude, Perplexity, Gemini)',
-          stakeholderPriority: action.priority || 1,
-          leverName: `Automated: ${action.content_type}`,
-          leverPriority: action.priority || 1,
-          topic: action.content_type.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
-          target: `AI Citation Rate: ${action.citation_rate}%`,
-          details: {
-            content_type: action.content_type,
-            what_signaldesk_does: action.what_signaldesk_does,
-            user_action: action.user_action,
-            citation_rate: action.citation_rate,
-            timeline: action.timeline,
-            priority: action.priority,
-            success_metric: action.success_metric,
-            execution_method: action.execution_method,
-            tier: 'automated'
-          },
-          status: 'pending'
-        })
-      })
-
-      // Process user-assisted actions
-      tacticalPlan.userAssisted?.forEach((action: any, index: number) => {
-        items.push({
-          id: crypto.randomUUID(),
-          type: 'user_action',
-          stakeholder: 'AI Platforms (ChatGPT, Claude, Perplexity, Gemini)',
-          stakeholderPriority: action.priority || 2,
-          leverName: `User-Assisted: ${action.content_type}`,
-          leverPriority: action.priority || 2,
-          topic: action.content_type.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
-          target: `AI Citation Rate: ${action.citation_rate}% • Time: ${action.time_estimate}`,
-          details: {
-            content_type: action.content_type,
-            what_signaldesk_does: action.what_signaldesk_does,
-            user_action: action.user_action,
-            citation_rate: action.citation_rate,
-            timeline: action.timeline,
-            priority: action.priority,
-            success_metric: action.success_metric,
-            time_estimate: action.time_estimate,
-            tier: 'user_assisted'
-          },
-          status: 'pending'
-        })
-      })
-
-      console.log(`✓ Parsed ${items.length} GEO-VECTOR content items`)
-      return items
-    }
+    // NOTE: Old GEO-VECTOR structure (threeTierTacticalPlan) is deprecated
+    // GEO-VECTOR now uses VECTOR structure (part3_stakeholderOrchestration) with GEO augmentation
+    // The VECTOR parsing logic below handles both VECTOR and GEO-VECTOR campaigns
 
     // Check if this is a PR campaign (has contentRequirements)
     if (blueprint.contentRequirements && Array.isArray(blueprint.contentRequirements)) {

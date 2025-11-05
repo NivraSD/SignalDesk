@@ -1293,38 +1293,62 @@ async function generateMediaList(args: any) {
   const tier2FromFramework = media_targets.tier_2_targets || [];
   const tier3FromFramework = media_targets.tier_3_targets || [];
 
-  console.log('📰 Fetching real journalists from registry...');
+  console.log('📰 Generating targeted media list...');
+  console.log(`   Industry: ${industry}, Topic: ${topic}`);
+  console.log(`   Company: ${company}`);
 
-  // Call journalist-registry to get REAL journalist data
-  let realJournalists: any[] = [];
+  // IMPORTANT: journalist_registry database is not populated yet
+  // So we use mcp-media for web-based journalist research instead
+  // This finds REAL, RELEVANT journalists based on the actual campaign topic
+
+  console.log('🌐 Using mcp-media for targeted journalist research...');
+
+  let mediaListContent: string = '';
+
   try {
-    const registryResponse = await fetch(
-      `${Deno.env.get('SUPABASE_URL')}/functions/v1/journalist-registry`,
+    const mcpMediaResponse = await fetch(
+      `${Deno.env.get('SUPABASE_URL')}/functions/v1/mcp-media`,
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`
+          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
         },
         body: JSON.stringify({
-          industry: industry,
-          tier: 'tier1',
-          count: count,
-          mode: 'query'
+          tool: 'media-list',
+          parameters: {
+            company: company,
+            industry: industry,
+            topic: topic,
+            tiers: ['tier1', 'tier2'],
+            count: count
+          }
         })
       }
     );
 
-    if (registryResponse.ok) {
-      const registryData = await registryResponse.json();
-      realJournalists = registryData.journalists || [];
-      console.log(`✅ Found ${realJournalists.length} real journalists from registry`);
+    if (mcpMediaResponse.ok) {
+      const mcpData = await mcpMediaResponse.json();
+      mediaListContent = mcpData.content || mcpData.result || '';
+      console.log(`✅ MCP Media generated ${mediaListContent.length} character media list`);
     } else {
-      console.log('⚠️ Journalist registry returned no results, will use Claude fallback');
+      console.error('❌ MCP Media failed:', await mcpMediaResponse.text());
+      // Fall back to Claude generation
     }
   } catch (error) {
-    console.error('❌ Error calling journalist-registry:', error);
+    console.error('❌ Error calling mcp-media:', error);
+    // Fall back to Claude generation
   }
+
+  // If we got content from mcp-media, return it directly
+  if (mediaListContent && mediaListContent.length > 100) {
+    console.log('✅ Returning media list from mcp-media');
+    return { content: mediaListContent };
+  }
+
+  // Fallback: generate with Claude directly
+  console.log('⚠️ Falling back to Claude-generated media list');
+  let realJournalists: any[] = [];
 
   // Determine which tiers to include based on framework or defaults
   let tiers = args.tiers || [];
@@ -1347,6 +1371,7 @@ async function generateMediaList(args: any) {
 COMPANY & ANNOUNCEMENT:
 Company: ${company} ${companyDescription ? `- ${companyDescription}` : ''}
 Industry: ${industry}
+Topic: ${topic}
 Primary Message: ${primaryMessage}
 ${narrative ? `Narrative: ${narrative}` : ''}
 
@@ -1364,12 +1389,14 @@ ${idx + 1}. ${j.name}
    - Bio: ${j.bio || 'No bio available'}
 `).join('\n')}
 
-For EACH journalist above, create a formatted entry that includes:
-1. Their actual name, outlet, and contact info (DO NOT change or make up emails)
-2. **Why Contact:** Explain why they'd be interested in this story based on their beat
-3. **Pitch Angle:** Best approach for pitching this specific story to them
+For EACH journalist above, evaluate their relevance to this campaign:
 
-Format as:
+**IMPORTANT EVALUATION CRITERIA:**
+- If a journalist's beat is clearly IRRELEVANT to this campaign topic (e.g., consumer tech reporter for a B2B industrial story, gaming reporter for critical minerals), mark them as "Not recommended" and explain why their beat doesn't align
+- If a journalist's beat has SOME relevance (e.g., business reporter for a trade story, general tech reporter for infrastructure tech), include them with a strategic pitch angle that bridges their beat to the story
+- If a journalist's beat is HIGHLY relevant, emphasize why they're a priority contact
+
+Format EACH journalist as:
 
 ## [Name from database]
 **Outlet:** [Outlet from database]
@@ -1378,12 +1405,16 @@ Format as:
 **Twitter:** [Twitter from database]
 **LinkedIn:** [LinkedIn from database]
 
-**Why Contact:** [Explain relevance to their beat and this story]
-**Pitch Angle:** [Specific approach for this journalist]
+**Why Contact:** [If relevant: Explain clear connection between their beat and this story. If NOT relevant: State "Not recommended for this campaign. [Journalist's] beat focuses on [their coverage area], which does not align with [campaign topic/angle]."]
+
+**Pitch Angle:** [If relevant: Specific strategic approach for this journalist. If NOT relevant: "N/A - Consider removing from outreach list."]
 
 ---
 
-CRITICAL: Use the EXACT contact information provided above. Do NOT make up or modify email addresses, names, or outlets.`;
+CRITICAL:
+- Use the EXACT contact information provided above. Do NOT make up or modify email addresses, names, or outlets.
+- Be honest about relevance - if a journalist doesn't match, clearly state why
+- If most/all journalists are not relevant, add a RECOMMENDATION section at the end suggesting the types of beats/outlets that would be better targets`;
   } else {
     // Fallback: Claude generates journalists (with disclaimer)
     prompt = `⚠️ NOTE: Journalist registry is empty. Generate a sample media list with realistic examples for this PR campaign.

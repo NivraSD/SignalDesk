@@ -249,7 +249,7 @@ Return as valid JSON array with this EXACT structure:
       },
       "where": {
         "channels": ["Press", "Social", "Direct outreach"],
-        "platforms": ["LinkedIn", "Twitter", "Industry publications"]
+        "platforms": ["LinkedIn", "Twitter", "Instagram", "TikTok", "Industry publications"]
       }
     }
   }
@@ -266,6 +266,14 @@ IMPORTANT REQUIREMENTS:
 5. Prioritize opportunities where ${organizationName}'s strengths align with competitor weaknesses
 6. Include defensive opportunities to protect against emerging threats
 7. Score based on: impact potential (40%), time sensitivity (30%), feasibility (30%)
+
+PLATFORM SELECTION STRATEGY:
+- LinkedIn: B2B thought leadership, executive positioning, professional announcements, partnerships
+- Twitter: Real-time commentary, breaking news, quick responses, industry conversations
+- Instagram: Visual storytelling, brand personality, behind-the-scenes, customer stories (if consumer-facing)
+- TikTok: Educational content through entertainment, trend participation, authentic connection (if targeting younger demographics or consumer brand awareness)
+- Industry publications: Credibility, expert positioning, long-form thought leadership
+ALWAYS consider Instagram/TikTok for consumer-facing opportunities, brand awareness, or visual content
 
 CRITICAL JSON FORMATTING RULES:
 1. Return ONLY a valid JSON array starting with [ and ending with ]

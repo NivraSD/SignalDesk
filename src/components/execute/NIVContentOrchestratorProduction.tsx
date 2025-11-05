@@ -1137,6 +1137,41 @@ export default function NIVContentOrchestratorProduction({
           error: !imageUrl
         }])
       }
+      else if (response.mode === 'instagram_post_complete') {
+        console.log('📸 INSTAGRAM POST COMPLETE with caption + image')
+
+        // Extract image URL
+        let imageUrl = null
+        if (typeof response.imageUrl === 'string') {
+          imageUrl = response.imageUrl
+        } else if (response.imageUrl && typeof response.imageUrl === 'object') {
+          imageUrl = response.imageUrl.url || response.imageUrl.imageUrl || response.imageUrl.src
+        }
+
+        // Display caption and image together
+        const displayContent = `**INSTAGRAM POST**\n\n**Caption:**\n${response.caption}\n\n${imageUrl ? `**Image:**\n![Instagram Post](${imageUrl})` : '⚠️ Image generation failed'}`
+
+        setMessages(prev => [...prev, {
+          id: `msg-${Date.now()}`,
+          role: 'assistant',
+          content: displayContent,
+          timestamp: new Date(),
+          contentItem: {
+            type: 'instagram-post',
+            content: {
+              caption: response.caption,
+              imageUrl: imageUrl,
+              imagePrompt: response.imagePrompt
+            },
+            metadata: {}
+          },
+          metadata: {
+            hasImage: !!imageUrl,
+            imageUrl: imageUrl
+          },
+          showActions: true
+        }])
+      }
       else if (response.mode === 'content_generated') {
         console.log('📝 CONTENT GENERATED:', response.contentType)
 

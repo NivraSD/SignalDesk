@@ -86,16 +86,30 @@ const TOOLS = [
     }
   },
   {
+    name: "recommend_platforms",
+    description: "Get strategic platform recommendations based on campaign goals, audience, and content type. Returns which platforms to use and why.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        goal: { type: "string", description: "Campaign goal (e.g., 'brand awareness', 'thought leadership', 'product launch')" },
+        audience: { type: "string", description: "Target audience (e.g., 'B2B executives', 'consumers', 'developers')" },
+        contentType: { type: "string", description: "Type of content (e.g., 'announcement', 'tutorial', 'showcase')" },
+        industry: { type: "string", description: "Industry or vertical (optional)" }
+      },
+      required: ["goal", "audience", "contentType"]
+    }
+  },
+  {
     name: "generate_social_content",
-    description: "Generate platform-optimized social media content",
+    description: "Generate platform-optimized social media content with strategic hooks and format optimization",
     inputSchema: {
       type: "object",
       properties: {
         message: { type: "string", description: "Core message or announcement" },
-        platforms: { 
-          type: "array", 
+        platforms: {
+          type: "array",
           items: { type: "string" },
-          description: "Target platforms"
+          description: "Target platforms (linkedin, twitter, instagram, tiktok, youtube)"
         },
         tone: {
           type: "string",
@@ -104,7 +118,11 @@ const TOOLS = [
           default: "professional"
         },
         includeHashtags: { type: "boolean", description: "Generate hashtags", default: true },
-        includeEmojis: { type: "boolean", description: "Include emojis", default: false }
+        includeEmojis: { type: "boolean", description: "Include emojis", default: false },
+        goal: { type: "string", description: "Campaign goal (optional, improves quality)" },
+        audience: { type: "string", description: "Target audience (optional, improves quality)" },
+        keyMessages: { type: "array", items: { type: "string" }, description: "Key points to include" },
+        narrative: { type: "string", description: "Campaign narrative or positioning" }
       },
       required: ["message", "platforms"]
     }
@@ -305,34 +323,259 @@ async function identifyInfluencers(args: any) {
   };
 }
 
+// Platform strategy intelligence
+const PLATFORM_STRATEGIES = {
+  linkedin: {
+    purpose: "B2B thought leadership, professional credibility, industry expertise",
+    bestFor: ["executive positioning", "B2B announcements", "industry insights", "company news", "partnerships", "hiring"],
+    format: "Thought leadership post (1200-1500 chars ideal), use line breaks for readability",
+    hooks: ["Start with a contrarian take", "Lead with a statistic", "Open with a question", "Share a lesson learned"],
+    tone: "Professional but human. Avoid corporate speak. Be direct.",
+    length: "300-1300 characters (sweet spot: 800-1200)",
+    hashtags: "1-3 relevant hashtags max",
+    engagement: "Ask questions, invite discussion, tag relevant people/companies"
+  },
+  twitter: {
+    purpose: "Real-time engagement, news commentary, quick takes, viral reach",
+    bestFor: ["breaking news", "hot takes", "live event commentary", "quick updates", "engaging conversations"],
+    format: "Single tweet (280 chars) or thread (3-7 tweets). First tweet MUST hook.",
+    hooks: ["Bold statement", "Surprising stat", "Controversial question", "Pattern interrupt"],
+    tone: "Sharp, punchy, confident. No fluff. Every word counts.",
+    length: "Single: 240-280 chars (leave room for engagement). Thread: 200-250 per tweet.",
+    hashtags: "1-2 max, must be relevant to conversation",
+    engagement: "Threads perform better. End with CTA or question."
+  },
+  instagram: {
+    purpose: "Visual storytelling, brand personality, behind-the-scenes, lifestyle content",
+    bestFor: ["product showcases", "team culture", "visual narratives", "customer stories", "event coverage"],
+    format: "Carousel (5-10 slides) or Reel (15-60s). Caption: 125-150 chars above fold, longer detail below.",
+    hooks: ["First slide/frame must stop scroll", "Use curiosity gap", "Bold text overlay", "Pattern interrupt"],
+    tone: "Authentic, visual-first, conversational. Emojis encouraged.",
+    length: "Caption: 1000-2200 chars. First line CRITICAL. Break into scannable sections.",
+    hashtags: "10-15 relevant hashtags (mix of popular + niche)",
+    engagement: "Carousel = high saves/shares. Reels = reach. Stories = connection."
+  },
+  tiktok: {
+    purpose: "Entertainment, education through entertainment, viral trends, authentic connection",
+    bestFor: ["educational content", "trend participation", "behind-the-scenes", "explainers", "storytelling"],
+    format: "15-60 second video. Hook in first 2 seconds or scroll. Text overlay essential.",
+    hooks: ["POV format", "Trend participation", "Surprising reveal", "Relatable problem", "Before/after"],
+    tone: "Raw, authentic, unpolished. Corporate polish KILLS engagement. Be human.",
+    length: "Video: 21-34 seconds ideal. Caption: Short, punchy, 1-2 lines max.",
+    hashtags: "3-5 hashtags (trending + niche). Check trending sounds.",
+    engagement: "Use trending sounds. Reply to comments with videos. Duet/stitch."
+  },
+  youtube: {
+    purpose: "Long-form education, deep dives, tutorials, storytelling",
+    bestFor: ["product demos", "thought leadership", "case studies", "interviews", "educational series"],
+    format: "Short (60s) or Long (8-15 min). Title + Thumbnail critical. First 30s = retention.",
+    hooks: ["Tease the payoff", "Address pain point", "Show transformation", "Pattern interrupt"],
+    tone: "Authoritative but conversational. Pace matters. Edit tight.",
+    length: "Shorts: 30-60s. Long: 8-15 min ideal (completion rate matters)",
+    hashtags: "Tags in description, not hashtags in title",
+    engagement: "CTA to subscribe. Pinned comment with question. End screen."
+  }
+};
+
+// Intelligent platform selection based on goals
+function recommendPlatforms(args: {
+  goal: string;
+  audience: string;
+  contentType: string;
+  industry?: string;
+}): { platform: string; rationale: string; priority: 'primary' | 'secondary' }[] {
+  const { goal, audience, contentType } = args;
+  const recommendations: { platform: string; rationale: string; priority: 'primary' | 'secondary' }[] = [];
+
+  const goalLower = goal.toLowerCase();
+  const audienceLower = audience.toLowerCase();
+  const contentLower = contentType.toLowerCase();
+
+  // B2B / Professional audience
+  if (audienceLower.includes('b2b') || audienceLower.includes('enterprise') ||
+      audienceLower.includes('executive') || audienceLower.includes('professional')) {
+    recommendations.push({
+      platform: 'linkedin',
+      rationale: 'LinkedIn is primary for B2B professional audiences and thought leadership',
+      priority: 'primary'
+    });
+    recommendations.push({
+      platform: 'twitter',
+      rationale: 'Twitter for real-time engagement and industry conversations',
+      priority: 'secondary'
+    });
+  }
+
+  // Consumer / Brand awareness
+  if (audienceLower.includes('consumer') || audienceLower.includes('customer') ||
+      goalLower.includes('brand awareness') || goalLower.includes('reach')) {
+    recommendations.push({
+      platform: 'instagram',
+      rationale: 'Instagram for visual brand storytelling and consumer engagement',
+      priority: 'primary'
+    });
+    recommendations.push({
+      platform: 'tiktok',
+      rationale: 'TikTok for viral reach and authentic connection with younger demographics',
+      priority: 'secondary'
+    });
+  }
+
+  // Educational / Tutorial content
+  if (contentLower.includes('tutorial') || contentLower.includes('how-to') ||
+      contentLower.includes('educational') || goalLower.includes('education')) {
+    recommendations.push({
+      platform: 'youtube',
+      rationale: 'YouTube for long-form educational content and tutorials',
+      priority: 'primary'
+    });
+    recommendations.push({
+      platform: 'tiktok',
+      rationale: 'TikTok for bite-sized educational content',
+      priority: 'secondary'
+    });
+  }
+
+  // News / Breaking announcements
+  if (goalLower.includes('announce') || goalLower.includes('news') ||
+      goalLower.includes('breaking') || contentLower.includes('announcement')) {
+    recommendations.push({
+      platform: 'twitter',
+      rationale: 'Twitter for real-time news and announcements',
+      priority: 'primary'
+    });
+    recommendations.push({
+      platform: 'linkedin',
+      rationale: 'LinkedIn for professional announcements',
+      priority: 'secondary'
+    });
+  }
+
+  // Visual / Product showcase
+  if (contentLower.includes('visual') || contentLower.includes('product') ||
+      contentLower.includes('showcase') || goalLower.includes('visual')) {
+    recommendations.push({
+      platform: 'instagram',
+      rationale: 'Instagram for visual product showcases and lifestyle content',
+      priority: 'primary'
+    });
+    recommendations.push({
+      platform: 'youtube',
+      rationale: 'YouTube for in-depth product demonstrations',
+      priority: 'secondary'
+    });
+  }
+
+  // Default: If no specific match, recommend based on general best practices
+  if (recommendations.length === 0) {
+    recommendations.push({
+      platform: 'linkedin',
+      rationale: 'LinkedIn for professional visibility',
+      priority: 'primary'
+    });
+    recommendations.push({
+      platform: 'twitter',
+      rationale: 'Twitter for broader reach',
+      priority: 'secondary'
+    });
+  }
+
+  return recommendations;
+}
+
 async function generateSocialContent(args: any) {
-  const { message, platforms, tone = 'professional', includeHashtags = true, includeEmojis = false } = args;
-  
+  const {
+    message,
+    platforms,
+    tone = 'professional',
+    includeHashtags = true,
+    includeEmojis = false,
+    goal = '',
+    audience = '',
+    keyMessages = [],
+    narrative = ''
+  } = args;
+
   const content: any = {};
-  
+
   for (const platform of platforms) {
-    const prompt = `Create ${platform} content for: ${message}
-    Tone: ${tone}
-    Include hashtags: ${includeHashtags}
-    Include emojis: ${includeEmojis}
-    
-    Optimize for ${platform} best practices (character limits, format, etc.)`;
-    
+    const strategy = PLATFORM_STRATEGIES[platform as keyof typeof PLATFORM_STRATEGIES];
+
+    if (!strategy) {
+      // Fallback for unknown platforms
+      content[platform] = message;
+      continue;
+    }
+
+    const prompt = `You are a world-class social media strategist creating ${platform} content.
+
+STRATEGIC CONTEXT:
+Platform: ${platform}
+Platform Purpose: ${strategy.purpose}
+Goal: ${goal || 'engagement and visibility'}
+Audience: ${audience || 'professional audience'}
+${narrative ? `Campaign Narrative: ${narrative}` : ''}
+
+CORE MESSAGE:
+${message}
+
+${keyMessages.length > 0 ? `KEY POINTS TO INCLUDE:\n${keyMessages.map((m: string) => `- ${m}`).join('\n')}` : ''}
+
+PLATFORM STRATEGY:
+${strategy.format}
+
+HOOKS THAT WORK:
+${strategy.hooks.join(' | ')}
+
+TONE GUIDE:
+${strategy.tone}
+
+LENGTH TARGET:
+${strategy.length}
+
+${includeHashtags ? `HASHTAG STRATEGY: ${strategy.hashtags}` : 'NO HASHTAGS'}
+
+${includeEmojis ? 'Use emojis strategically to add personality and break up text.' : 'Avoid emojis unless absolutely necessary for clarity.'}
+
+ENGAGEMENT STRATEGY:
+${strategy.engagement}
+
+CRITICAL INSTRUCTIONS:
+1. DO NOT be formulaic or corporate
+2. Lead with the HOOK - first line must grab attention
+3. Be specific and concrete - avoid generic statements
+4. Write like a human, not a brand
+5. Follow platform best practices for ${platform}
+6. Optimize for ${strategy.length}
+7. Include a clear CTA or engagement trigger
+
+${platform === 'linkedin' ? 'LINKEDIN SPECIFIC: Use line breaks for readability. Avoid walls of text. Be professional but human - no corporate jargon.' : ''}
+${platform === 'twitter' ? 'TWITTER SPECIFIC: Be punchy. Every word counts. Create curiosity or controversy. Make it shareable.' : ''}
+${platform === 'instagram' ? 'INSTAGRAM SPECIFIC: First line critical (125 chars). Use line breaks. Create visual description. End with question or CTA.' : ''}
+${platform === 'tiktok' ? 'TIKTOK SPECIFIC: Write the SCRIPT/CONCEPT for video. Include hook, main content, payoff. 15-30 seconds. Be authentic, not polished.' : ''}
+${platform === 'youtube' ? 'YOUTUBE SPECIFIC: Write video concept with title, hook, structure, and CTA. Include thumbnail idea.' : ''}
+
+Generate the content now. Be creative, strategic, and platform-native.`;
+
     const completion = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 300,
-      temperature: 0.7,
+      max_tokens: platform === 'linkedin' ? 800 : platform === 'instagram' ? 1000 : 500,
+      temperature: 0.8, // Higher temp for more creative, less formulaic content
       messages: [{ role: 'user', content: prompt }]
     });
-    
+
     content[platform] = completion.content[0].type === 'text' ? completion.content[0].text : message;
   }
-  
+
   return {
     content,
     message,
     tone,
-    platforms
+    platforms,
+    strategy_notes: platforms.map((p: string) => ({
+      platform: p,
+      strategy: PLATFORM_STRATEGIES[p as keyof typeof PLATFORM_STRATEGIES]?.purpose || 'General social content'
+    }))
   };
 }
 
@@ -460,6 +703,9 @@ serve(async (req) => {
         break;
       case 'identify_influencers':
         result = await identifyInfluencers(args);
+        break;
+      case 'recommend_platforms':
+        result = { recommendations: recommendPlatforms(args) };
         break;
       case 'generate_social_content':
         result = await generateSocialContent(args);
