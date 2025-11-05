@@ -91,6 +91,7 @@ export default function InfiniteCanvas({ children }: { children?: React.ReactNod
   const [activeComponentId, setActiveComponentId] = useState<string | null>(null)
   const [nivBlueprint, setNivBlueprint] = useState<any | null>(null)
   const [planData, setPlanData] = useState<{ blueprint: any; sessionId: string; orgId: string } | null>(null)
+  const [loadingPlanData, setLoadingPlanData] = useState(false)
 
   // Find next available grid position - 2 column layout
   const findNextPosition = useCallback((width: number, height: number) => {
@@ -433,12 +434,12 @@ export default function InfiniteCanvas({ children }: { children?: React.ReactNod
           localStorage.removeItem(storageKey)
           setPlanData(null)
         }
-      } else {
-        // No saved data for this org, clear planData
+      } else if (!loadingPlanData) {
+        // No saved data for this org, clear planData (but only if not loading from sessionStorage)
         setPlanData(null)
       }
     }
-  }, [organization?.id])
+  }, [organization?.id, loadingPlanData])
 
   // Save planData to localStorage whenever it changes (organization-aware)
   useEffect(() => {
@@ -456,6 +457,7 @@ export default function InfiniteCanvas({ children }: { children?: React.ReactNod
       const pendingData = sessionStorage.getItem('pendingPlanData')
       if (pendingData) {
         try {
+          setLoadingPlanData(true) // Prevent localStorage effect from clearing data
           const data = JSON.parse(pendingData)
           console.log('📋 Loading pending plan data from Campaign Builder:', data)
 
@@ -480,10 +482,12 @@ export default function InfiniteCanvas({ children }: { children?: React.ReactNod
               hasBlueprint: !!newPlanData.blueprint,
               sessionId: newPlanData.sessionId
             })
+            setLoadingPlanData(false)
             addComponent('plan')
           })
         } catch (err) {
           console.error('Failed to parse pending plan data:', err)
+          setLoadingPlanData(false)
         }
       }
     }
