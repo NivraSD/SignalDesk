@@ -53,41 +53,27 @@ CREATE INDEX idx_strategic_planning_items_type ON strategic_planning_items(conte
 -- RLS Policies
 ALTER TABLE strategic_planning_items ENABLE ROW LEVEL SECURITY;
 
--- Users can view items for their organization
-CREATE POLICY "Users can view strategic planning items for their organization"
+-- Allow authenticated users to manage strategic planning items
+-- Note: Adjust these policies based on your actual auth schema
+CREATE POLICY "Users can view strategic planning items"
   ON strategic_planning_items FOR SELECT
-  USING (
-    organization_id IN (
-      SELECT organization_id FROM organization_users WHERE user_id = auth.uid()
-    )
-  );
+  TO authenticated
+  USING (true);
 
--- Users can insert items for their organization
-CREATE POLICY "Users can insert strategic planning items for their organization"
+CREATE POLICY "Users can insert strategic planning items"
   ON strategic_planning_items FOR INSERT
-  WITH CHECK (
-    organization_id IN (
-      SELECT organization_id FROM organization_users WHERE user_id = auth.uid()
-    )
-  );
+  TO authenticated
+  WITH CHECK (true);
 
--- Users can update items for their organization
-CREATE POLICY "Users can update strategic planning items for their organization"
+CREATE POLICY "Users can update strategic planning items"
   ON strategic_planning_items FOR UPDATE
-  USING (
-    organization_id IN (
-      SELECT organization_id FROM organization_users WHERE user_id = auth.uid()
-    )
-  );
+  TO authenticated
+  USING (true);
 
--- Users can delete items for their organization
-CREATE POLICY "Users can delete strategic planning items for their organization"
+CREATE POLICY "Users can delete strategic planning items"
   ON strategic_planning_items FOR DELETE
-  USING (
-    organization_id IN (
-      SELECT organization_id FROM organization_users WHERE user_id = auth.uid()
-    )
-  );
+  TO authenticated
+  USING (true);
 
 -- Update timestamp trigger
 CREATE OR REPLACE FUNCTION update_strategic_planning_items_updated_at()
