@@ -1707,10 +1707,19 @@ async function getMcpDiscovery(organizationInput: string = '7a2835cb-11ee-4512-a
         console.log(`✅ Found profile by organization_id: ${profileById.organization_name}`)
 
         // If profile has default "Technology" industry, update it with AI detection
+        // But only for well-known companies to avoid hallucination
         if (profileById.industry === 'Technology' && profileById.organization_name !== 'Technology') {
           console.log(`🔄 Profile has default industry, detecting actual industry for: ${profileById.organization_name}`)
-          try {
-            const industryPrompt = `What is the primary industry for the company "${profileById.organization_name}"?
+
+          const shouldAttemptDetection = profileById.organization_name.length > 4 &&
+                                          !profileById.organization_name.match(/^[A-Z0-9-]{4,8}$/) &&
+                                          !profileById.organization_name.includes('-')
+
+          if (shouldAttemptDetection) {
+            try {
+              const industryPrompt = `What is the primary industry for the company "${profileById.organization_name}"?
+
+CRITICAL: If you do not recognize this company or cannot determine its industry with high confidence, respond with ONLY the word "Unknown".
 
 Respond with ONLY the industry name (1-3 words max). Examples:
 - "Technology"
@@ -1720,34 +1729,44 @@ Respond with ONLY the industry name (1-3 words max). Examples:
 - "Healthcare"
 - "Energy"
 - "Retail"
+- "Unknown" (if not recognized or uncertain)
 
 Company: ${profileById.organization_name}
 Industry:`
 
-            const industryResponse = await anthropic.messages.create({
-              model: 'claude-sonnet-4-20250514',
-              max_tokens: 50,
-              temperature: 0.3,
-              messages: [{ role: 'user', content: industryPrompt }]
-            })
+              const industryResponse = await anthropic.messages.create({
+                model: 'claude-sonnet-4-20250514',
+                max_tokens: 50,
+                temperature: 0.3,
+                messages: [{ role: 'user', content: industryPrompt }]
+              })
 
-            const detectedIndustry = industryResponse.content[0].text.trim()
-            console.log(`🏭 AI-detected industry: ${detectedIndustry}`)
+              const detectedIndustry = industryResponse.content[0].text.trim()
 
-            // Update the profile in database
-            const { data: updatedProfile, error: updateError } = await supabase
-              .from('mcp_discovery')
-              .update({ industry: detectedIndustry })
-              .eq('organization_id', profileById.organization_id)
-              .select()
-              .single()
+              // Only update if AI returned a real industry (not "Unknown")
+              if (detectedIndustry && detectedIndustry !== 'Unknown') {
+                console.log(`🏭 AI-detected industry: ${detectedIndustry}`)
 
-            if (updatedProfile && !updateError) {
-              console.log(`✅ Updated profile industry to: ${detectedIndustry}`)
-              return updatedProfile
+                // Update the profile in database
+                const { data: updatedProfile, error: updateError } = await supabase
+                  .from('mcp_discovery')
+                  .update({ industry: detectedIndustry })
+                  .eq('organization_id', profileById.organization_id)
+                  .select()
+                  .single()
+
+                if (updatedProfile && !updateError) {
+                  console.log(`✅ Updated profile industry to: ${detectedIndustry}`)
+                  return updatedProfile
+                }
+              } else {
+                console.log(`⚠️ Claude could not determine industry for "${profileById.organization_name}", keeping existing`)
+              }
+            } catch (error) {
+              console.error('⚠️ Failed to update industry, using existing profile:', error)
             }
-          } catch (error) {
-            console.error('⚠️ Failed to update industry, using existing profile:', error)
+          } else {
+            console.log(`⚠️ Skipping AI detection for unclear org name "${profileById.organization_name}"`)
           }
         }
 
@@ -1769,10 +1788,19 @@ Industry:`
       console.log(`✅ Found profile by organization_name: ${profile.organization_name}`)
 
       // If profile has default "Technology" industry, update it with AI detection
+      // But only for well-known companies to avoid hallucination
       if (profile.industry === 'Technology' && profile.organization_name !== 'Technology') {
         console.log(`🔄 Profile has default industry, detecting actual industry for: ${profile.organization_name}`)
-        try {
-          const industryPrompt = `What is the primary industry for the company "${profile.organization_name}"?
+
+        const shouldAttemptDetection = profile.organization_name.length > 4 &&
+                                        !profile.organization_name.match(/^[A-Z0-9-]{4,8}$/) &&
+                                        !profile.organization_name.includes('-')
+
+        if (shouldAttemptDetection) {
+          try {
+            const industryPrompt = `What is the primary industry for the company "${profile.organization_name}"?
+
+CRITICAL: If you do not recognize this company or cannot determine its industry with high confidence, respond with ONLY the word "Unknown".
 
 Respond with ONLY the industry name (1-3 words max). Examples:
 - "Technology"
@@ -1782,34 +1810,44 @@ Respond with ONLY the industry name (1-3 words max). Examples:
 - "Healthcare"
 - "Energy"
 - "Retail"
+- "Unknown" (if not recognized or uncertain)
 
 Company: ${profile.organization_name}
 Industry:`
 
-          const industryResponse = await anthropic.messages.create({
-            model: 'claude-sonnet-4-20250514',
-            max_tokens: 50,
-            temperature: 0.3,
-            messages: [{ role: 'user', content: industryPrompt }]
-          })
+            const industryResponse = await anthropic.messages.create({
+              model: 'claude-sonnet-4-20250514',
+              max_tokens: 50,
+              temperature: 0.3,
+              messages: [{ role: 'user', content: industryPrompt }]
+            })
 
-          const detectedIndustry = industryResponse.content[0].text.trim()
-          console.log(`🏭 AI-detected industry: ${detectedIndustry}`)
+            const detectedIndustry = industryResponse.content[0].text.trim()
 
-          // Update the profile in database
-          const { data: updatedProfile, error: updateError } = await supabase
-            .from('mcp_discovery')
-            .update({ industry: detectedIndustry })
-            .eq('organization_name', profile.organization_name)
-            .select()
-            .single()
+            // Only update if AI returned a real industry (not "Unknown")
+            if (detectedIndustry && detectedIndustry !== 'Unknown') {
+              console.log(`🏭 AI-detected industry: ${detectedIndustry}`)
 
-          if (updatedProfile && !updateError) {
-            console.log(`✅ Updated profile industry to: ${detectedIndustry}`)
-            return updatedProfile
+              // Update the profile in database
+              const { data: updatedProfile, error: updateError } = await supabase
+                .from('mcp_discovery')
+                .update({ industry: detectedIndustry })
+                .eq('organization_name', profile.organization_name)
+                .select()
+                .single()
+
+              if (updatedProfile && !updateError) {
+                console.log(`✅ Updated profile industry to: ${detectedIndustry}`)
+                return updatedProfile
+              }
+            } else {
+              console.log(`⚠️ Claude could not determine industry for "${profile.organization_name}", keeping existing`)
+            }
+          } catch (error) {
+            console.error('⚠️ Failed to update industry, using existing profile:', error)
           }
-        } catch (error) {
-          console.error('⚠️ Failed to update industry, using existing profile:', error)
+        } else {
+          console.log(`⚠️ Skipping AI detection for unclear org name "${profile.organization_name}"`)
         }
       }
 
@@ -1831,10 +1869,19 @@ Industry:`
         console.log(`✅ Found profile by organization_id: ${profileById.organization_name}`)
 
         // If profile has default "Technology" industry, update it with AI detection
+        // But only for well-known companies to avoid hallucination
         if (profileById.industry === 'Technology' && profileById.organization_name !== 'Technology') {
           console.log(`🔄 Profile has default industry, detecting actual industry for: ${profileById.organization_name}`)
-          try {
-            const industryPrompt = `What is the primary industry for the company "${profileById.organization_name}"?
+
+          const shouldAttemptDetection = profileById.organization_name.length > 4 &&
+                                          !profileById.organization_name.match(/^[A-Z0-9-]{4,8}$/) &&
+                                          !profileById.organization_name.includes('-')
+
+          if (shouldAttemptDetection) {
+            try {
+              const industryPrompt = `What is the primary industry for the company "${profileById.organization_name}"?
+
+CRITICAL: If you do not recognize this company or cannot determine its industry with high confidence, respond with ONLY the word "Unknown".
 
 Respond with ONLY the industry name (1-3 words max). Examples:
 - "Technology"
@@ -1844,34 +1891,44 @@ Respond with ONLY the industry name (1-3 words max). Examples:
 - "Healthcare"
 - "Energy"
 - "Retail"
+- "Unknown" (if not recognized or uncertain)
 
 Company: ${profileById.organization_name}
 Industry:`
 
-            const industryResponse = await anthropic.messages.create({
-              model: 'claude-sonnet-4-20250514',
-              max_tokens: 50,
-              temperature: 0.3,
-              messages: [{ role: 'user', content: industryPrompt }]
-            })
+              const industryResponse = await anthropic.messages.create({
+                model: 'claude-sonnet-4-20250514',
+                max_tokens: 50,
+                temperature: 0.3,
+                messages: [{ role: 'user', content: industryPrompt }]
+              })
 
-            const detectedIndustry = industryResponse.content[0].text.trim()
-            console.log(`🏭 AI-detected industry: ${detectedIndustry}`)
+              const detectedIndustry = industryResponse.content[0].text.trim()
 
-            // Update the profile in database
-            const { data: updatedProfile, error: updateError } = await supabase
-              .from('mcp_discovery')
-              .update({ industry: detectedIndustry })
-              .eq('organization_id', profileById.organization_id)
-              .select()
-              .single()
+              // Only update if AI returned a real industry (not "Unknown")
+              if (detectedIndustry && detectedIndustry !== 'Unknown') {
+                console.log(`🏭 AI-detected industry: ${detectedIndustry}`)
 
-            if (updatedProfile && !updateError) {
-              console.log(`✅ Updated profile industry to: ${detectedIndustry}`)
-              return updatedProfile
+                // Update the profile in database
+                const { data: updatedProfile, error: updateError } = await supabase
+                  .from('mcp_discovery')
+                  .update({ industry: detectedIndustry })
+                  .eq('organization_id', profileById.organization_id)
+                  .select()
+                  .single()
+
+                if (updatedProfile && !updateError) {
+                  console.log(`✅ Updated profile industry to: ${detectedIndustry}`)
+                  return updatedProfile
+                }
+              } else {
+                console.log(`⚠️ Claude could not determine industry for "${profileById.organization_name}", keeping existing`)
+              }
+            } catch (error) {
+              console.error('⚠️ Failed to update industry, using existing profile:', error)
             }
-          } catch (error) {
-            console.error('⚠️ Failed to update industry, using existing profile:', error)
+          } else {
+            console.log(`⚠️ Skipping AI detection for unclear org name "${profileById.organization_name}"`)
           }
         }
 
@@ -1902,9 +1959,20 @@ Industry:`
     }
 
     // Use Claude to intelligently detect the industry
-    let detectedIndustry = 'Technology' // Default fallback
-    try {
-      const industryPrompt = `What is the primary industry for the company "${organizationName}"?
+    // IMPORTANT: Only attempt AI detection if organization name is well-known
+    // For obscure/unknown names, don't hallucinate - use "Unknown" instead
+    let detectedIndustry = 'Unknown' // Default to Unknown for safety
+
+    // Only attempt AI detection for well-known company names (>4 chars, has clear business context)
+    const shouldAttemptDetection = organizationName.length > 4 &&
+                                    !organizationName.match(/^[A-Z0-9-]{4,8}$/) && // Skip short acronyms
+                                    !organizationName.includes('-') // Skip UUIDs
+
+    if (shouldAttemptDetection) {
+      try {
+        const industryPrompt = `What is the primary industry for the company "${organizationName}"?
+
+CRITICAL: If you do not recognize this company or cannot determine its industry with high confidence, respond with ONLY the word "Unknown".
 
 Respond with ONLY the industry name (1-3 words max). Examples:
 - "Technology"
@@ -1914,21 +1982,33 @@ Respond with ONLY the industry name (1-3 words max). Examples:
 - "Healthcare"
 - "Energy"
 - "Retail"
+- "Unknown" (if not recognized or uncertain)
 
 Company: ${organizationName}
 Industry:`
 
-      const industryResponse = await anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 50,
-        temperature: 0.3,
-        messages: [{ role: 'user', content: industryPrompt }]
-      })
+        const industryResponse = await anthropic.messages.create({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 50,
+          temperature: 0.3,
+          messages: [{ role: 'user', content: industryPrompt }]
+        })
 
-      detectedIndustry = industryResponse.content[0].text.trim()
-      console.log(`🏭 AI-detected industry: ${detectedIndustry}`)
-    } catch (error) {
-      console.error('⚠️ Failed to detect industry, using default:', error)
+        const aiDetectedIndustry = industryResponse.content[0].text.trim()
+
+        // Only use AI detection if it's not "Unknown" - otherwise keep default
+        if (aiDetectedIndustry && aiDetectedIndustry !== 'Unknown') {
+          detectedIndustry = aiDetectedIndustry
+          console.log(`🏭 AI-detected industry: ${detectedIndustry}`)
+        } else {
+          console.log(`⚠️ Claude could not determine industry for "${organizationName}", using Unknown`)
+        }
+      } catch (error) {
+        console.error(`❌ Failed to detect industry for "${organizationName}":`, error)
+        console.log(`   Using fallback: Unknown`)
+      }
+    } else {
+      console.log(`⚠️ Skipping AI detection for unclear org name "${organizationName}", using Unknown`)
     }
 
     try {

@@ -226,6 +226,9 @@ export default function OrganizationOnboarding({
         ...customStakeholders
       ]
 
+      console.log(`   📊 Competitors: ${allCompetitors.length}`, allCompetitors)
+      console.log(`   📊 Stakeholders: ${allStakeholders.length}`, allStakeholders)
+
       // Helper to find monitoring context from discovery data
       const findTargetContext = (name: string, type: 'competitor' | 'stakeholder') => {
         if (type === 'competitor') {
@@ -297,7 +300,10 @@ export default function OrganizationOnboarding({
       const targetsData = await targetsResponse.json()
 
       if (!targetsData.success) {
-        console.warn('Failed to save targets:', targetsData.error)
+        console.error('❌ Failed to save targets:', targetsData.error)
+        console.error('   Response:', targetsData)
+      } else {
+        console.log(`✅ Successfully saved ${targetsData.count || 0} targets`)
       }
 
       // 3. Update strategic context in organization profile

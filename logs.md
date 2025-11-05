@@ -1,122 +1,53 @@
-[
-{
-"event_message": "shutdown",
-"event_type": "Shutdown",
-"function_id": "1a0b4b3b-2843-447d-85a1-002b59be64b3",
-"id": "fb6be681-9ca9-419f-adf9-b63db0eaeda1",
-"level": "log",
-"timestamp": 1762359179988000
-},
-{
-"event_message": "📊 Blueprint stats: { stakeholders: 3, levers: 12, tactics: 84, pattern: \"CASCADE\" }\n",
-"event_type": "Log",
-"function_id": "1a0b4b3b-2843-447d-85a1-002b59be64b3",
-"id": "871b3c4e-96e6-4628-acdb-7d841c1773d7",
-"level": "info",
-"timestamp": 1762359056137000
-},
-{
-"event_message": "✅ Complete blueprint generated!\n",
-"event_type": "Log",
-"function_id": "1a0b4b3b-2843-447d-85a1-002b59be64b3",
-"id": "82e92738-735f-4454-a7b1-6e58cd85e949",
-"level": "info",
-"timestamp": 1762359056137000
-},
-{
-"event_message": "✅ Execution requirements generated\n",
-"event_type": "Log",
-"function_id": "1a0b4b3b-2843-447d-85a1-002b59be64b3",
-"id": "67b4d97e-faa5-422e-abb4-8bcbe1f38dd5",
-"level": "info",
-"timestamp": 1762359056085000
-},
-{
-"event_message": "📦 Merging all parts into complete blueprint...\n",
-"event_type": "Log",
-"function_id": "1a0b4b3b-2843-447d-85a1-002b59be64b3",
-"id": "365db562-062e-4f3c-8f77-41b0f56399f7",
-"level": "info",
-"timestamp": 1762359056085000
-},
-{
-"event_message": "⚙️ Generating execution requirements...\n",
-"event_type": "Log",
-"function_id": "1a0b4b3b-2843-447d-85a1-002b59be64b3",
-"id": "fd7bea3b-827e-4a3f-a389-d99fa9ee817e",
-"level": "info",
-"timestamp": 1762358980165000
-},
-{
-"event_message": "✅ Orchestration found: { stakeholders: 3, levers: 12, tactics: 84 }\n",
-"event_type": "Log",
-"function_id": "1a0b4b3b-2843-447d-85a1-002b59be64b3",
-"id": "76ab354f-d703-4c9f-a9f6-092e77246a09",
-"level": "info",
-"timestamp": 1762358980097000
-},
-{
-"event_message": "🎯 Blueprint Finalizer starting: { sessionId: \"9a58c789-b183-4b0c-b326-8888e27634af\", org: \"KARV\" }\n",
-"event_type": "Log",
-"function_id": "1a0b4b3b-2843-447d-85a1-002b59be64b3",
-"id": "c1862801-fe50-47db-bb8a-dd059c01f552",
-"level": "info",
-"timestamp": 1762358979981000
-},
-{
-"event_message": "Listening on http://localhost:9999/\n",
-"event_type": "Log",
-"function_id": "1a0b4b3b-2843-447d-85a1-002b59be64b3",
-"id": "aa629c1d-ddab-4eb8-86bb-3be289c7d08d",
-"level": "info",
-"timestamp": 1762358979977000
-},
-{
-"event_message": "booted (time: 23ms)",
-"event_type": "Boot",
-"function_id": "1a0b4b3b-2843-447d-85a1-002b59be64b3",
-"id": "c367e047-1d05-4c76-914e-04eb8aa0216e",
-"level": "log",
-"timestamp": 1762358979976000
-},
-{
-"event_message": "⚙️ Generating execution requirements...\n",
-"event_type": "Log",
-"function_id": "1a0b4b3b-2843-447d-85a1-002b59be64b3",
-"id": "cd4f612e-95c9-417c-8e81-96f5b391f4b6",
-"level": "info",
-"timestamp": 1762357340498000
-},
-{
-"event_message": "✅ Orchestration found: { stakeholders: 4, levers: 16, tactics: 112 }\n",
-"event_type": "Log",
-"function_id": "1a0b4b3b-2843-447d-85a1-002b59be64b3",
-"id": "50fd0e35-8fbe-40cb-9322-9f0948828dae",
-"level": "info",
-"timestamp": 1762357340435000
-},
-{
-"event_message": "🎯 Blueprint Finalizer starting: { sessionId: \"bd2d604a-467b-481c-a995-904f783c8982\", org: \"KARV\" }\n",
-"event_type": "Log",
-"function_id": "1a0b4b3b-2843-447d-85a1-002b59be64b3",
-"id": "51d53719-f7bf-4e6a-a3e5-e0615dc1b566",
-"level": "info",
-"timestamp": 1762357340343000
-},
-{
-"event_message": "Listening on http://localhost:9999/\n",
-"event_type": "Log",
-"function_id": "1a0b4b3b-2843-447d-85a1-002b59be64b3",
-"id": "ab3107e8-1670-4571-9889-f22a3ff7d15c",
-"level": "info",
-"timestamp": 1762357340339000
-},
-{
-"event_message": "booted (time: 22ms)",
-"event_type": "Boot",
-"function_id": "1a0b4b3b-2843-447d-85a1-002b59be64b3",
-"id": "46cd34ae-b5c8-465a-aedc-3c4f4619e193",
-"level": "log",
-"timestamp": 1762357340338000
-}
-]
+hook.js:608 Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
+overrideMethod @ hook.js:608
+page-5bc7532967b9fbb7.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 📋 Loading saved plan data for organization: KARV
+page-5bc7532967b9fbb7.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 💾 Saved plan data for organization: KARV
+858-f7466c22473eacf8.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 🔄 Switching from KARV to Amplify
+858-f7466c22473eacf8.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 ✅ Organization switched to Amplify
+page-5bc7532967b9fbb7.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 💾 Saved plan data for organization: Amplify
+page-5bc7532967b9fbb7.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 ✅ Deleted organization: Amplify
+858-f7466c22473eacf8.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 🔄 Switching from Amplify to KARV
+858-f7466c22473eacf8.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 ✅ Organization switched to KARV
+page-5bc7532967b9fbb7.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 📋 Loading saved plan data for organization: KARV
+page-5bc7532967b9fbb7.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 💾 Saved plan data for organization: KARV
+page-5bc7532967b9fbb7.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 ✅ Deleted organization: Amplify
+page-5bc7532967b9fbb7.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 ✅ Deleted organization: KARV
+858-f7466c22473eacf8.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 🔄 Switching from KARV to Mitsui & Co.
+858-f7466c22473eacf8.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 ✅ Organization switched to Mitsui & Co.
+page-5bc7532967b9fbb7.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 📋 Loading saved plan data for organization: Mitsui & Co.
+page-5bc7532967b9fbb7.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 💾 Saved plan data for organization: Mitsui & Co.
+page-5bc7532967b9fbb7.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 💾 Saved plan data for organization: Mitsui & Co.
+page-5bc7532967b9fbb7.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 🔍 Running MCP discovery...
+page-5bc7532967b9fbb7.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 ✅ Pre-populated GEO service lines from MCP: Array(5)
+page-5bc7532967b9fbb7.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 ✅ Discovery complete
+page-5bc7532967b9fbb7.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 🚀 handleCreateOrganization CALLED - START OF FUNCTION
+page-5bc7532967b9fbb7.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 Organization details: Object
+page-5bc7532967b9fbb7.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 📝 Creating organization...
+page-5bc7532967b9fbb7.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 🎯 Saving targets...
+page-5bc7532967b9fbb7.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 💾 Updating strategic context in profile...
+page-5bc7532967b9fbb7.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 ✅ Strategic context saved to profile
+page-5bc7532967b9fbb7.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 🎯 Saving GEO targets...
+page-5bc7532967b9fbb7.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 ✅ GEO targets saved
+page-5bc7532967b9fbb7.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 ✅ Organization created successfully! Objectcompetitors: nullcreated_at: "2025-11-05T16:26:26.658235"description: "KARV operates in the competitive public relations industry, providing strategic communications, crisis management, and public affairs services. As a mid-tier PR firm, KARV competes against both global network agencies and boutique specialists for corporate clients, government contracts, and crisis response engagements."differentiators: nullid: "57f535df-6541-41b0-af65-f60b527abe79"industry: "Public Relations and Communications"market_position: nullname: "KARV"settings: {url: 'https://www.karv.global/', name: 'KARV', industry: 'Public Relations and Communications', description: 'KARV operates in the competitive public relations …nment contracts, and crisis response engagements.'}updated_at: "2025-11-05T16:26:26.658235"url: "https://www.karv.global/"[[Prototype]]: Object
+page-5bc7532967b9fbb7.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 📝 Stored organization in state: 57f535df-6541-41b0-af65-f60b527abe79
+page-5bc7532967b9fbb7.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 ➡️ Moved to step 6 (GEO Discovery)
+page-5bc7532967b9fbb7.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 🎯 Running GEO Discovery with frontend orchestration...
+page-5bc7532967b9fbb7.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 📋 Step 1/3: Generating GEO queries...
+page-5bc7532967b9fbb7.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 ✅ Generated 30 queries
+page-5bc7532967b9fbb7.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 🚀 Step 2/3: Testing all 4 platforms in 2 batches (10 queries total per platform)...
+page-5bc7532967b9fbb7.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 Batch 1/2: Testing queries 1-5 on all platforms...
+page-5bc7532967b9fbb7.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 ✓ Batch 1/2 complete
+page-5bc7532967b9fbb7.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 Batch 2/2: Testing queries 6-10 on all platforms...
+page-5bc7532967b9fbb7.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 ✓ Batch 2/2 complete
+page-5bc7532967b9fbb7.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 ✅ Collected 40 signals from 4 platforms (2 batches each)
+page-5bc7532967b9fbb7.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 📊 Step 3/3: Generating executive synthesis...
+page-5bc7532967b9fbb7.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 ✅ GEO Discovery Complete: Object
+page-5bc7532967b9fbb7.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 🚀 Starting schema onboarding pipeline
+page-5bc7532967b9fbb7.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 🚀 Starting Schema Onboarding Pipeline...
+page-5bc7532967b9fbb7.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 ✅ Schema Onboarding Pipeline Complete: Object
+858-f7466c22473eacf8.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 🔄 Switching from Mitsui & Co. to KARV
+858-f7466c22473eacf8.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 ✅ Organization switched to KARV
+page-5bc7532967b9fbb7.js?dpl=dpl_3rrnPR75NUtmpnXKQGaxBRRriPbE:1 💾 Saved plan data for organization: KARV
+zskaxjtyuaqazydouifp.supabase.co/rest/v1/organizations?select=company_profile&id=eq.57f535df-6541-41b0-af65-f60b527abe79:1 Failed to load resource: the server responded with a status of 400 ()
+hook.js:608 Failed to load profile: Objectcode: "42703"details: nullhint: nullmessage: "column organizations.company_profile does not exist"[[Prototype]]: Object
+overrideMethod @ hook.js:608

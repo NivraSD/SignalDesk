@@ -68,30 +68,34 @@ export default function CompanyProfileTab({
       setLoading(true)
       setError(null)
 
-      const { supabase } = await import('@/lib/supabase/client')
-      const { data, error } = await supabase
-        .from('organizations')
-        .select('company_profile')
-        .eq('id', organizationId)
-        .single()
+      // Use API route instead of client-side Supabase to avoid schema cache issues
+      const response = await fetch(`/api/organizations/${organizationId}/profile`)
+      const data = await response.json()
 
-      if (error) throw error
+      if (!response.ok || !data.success) {
+        // If profile doesn't exist yet or error, use empty profile
+        console.warn('Company profile not loaded, using empty profile')
+        setLoading(false)
+        return
+      }
 
-      if (data?.company_profile) {
+      if (data.organization?.company_profile) {
+        const cp = data.organization.company_profile
         setProfile({
-          leadership: data.company_profile.leadership || [],
-          headquarters: data.company_profile.headquarters || {},
-          company_size: data.company_profile.company_size || {},
-          founded: data.company_profile.founded || '',
-          parent_company: data.company_profile.parent_company || '',
-          product_lines: data.company_profile.product_lines || [],
-          key_markets: data.company_profile.key_markets || [],
-          business_model: data.company_profile.business_model || ''
+          leadership: cp.leadership || [],
+          headquarters: cp.headquarters || {},
+          company_size: cp.company_size || {},
+          founded: cp.founded || '',
+          parent_company: cp.parent_company || '',
+          product_lines: cp.product_lines || [],
+          key_markets: cp.key_markets || [],
+          business_model: cp.business_model || ''
         })
       }
     } catch (err: any) {
       console.error('Failed to load profile:', err)
-      setError(err.message)
+      // Don't set error - just use empty profile
+      setLoading(false)
     } finally {
       setLoading(false)
     }
@@ -103,13 +107,18 @@ export default function CompanyProfileTab({
       setError(null)
       setSuccess(false)
 
-      const { supabase } = await import('@/lib/supabase/client')
-      const { error } = await supabase
-        .from('organizations')
-        .update({ company_profile: profile })
-        .eq('id', organizationId)
+      // Use API route instead of client-side Supabase to avoid schema cache issues
+      const response = await fetch(`/api/organizations/${organizationId}/profile`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ company_profile: profile })
+      })
 
-      if (error) throw error
+      const data = await response.json()
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to save profile')
+      }
 
       setSuccess(true)
       setTimeout(() => setSuccess(false), 3000)
