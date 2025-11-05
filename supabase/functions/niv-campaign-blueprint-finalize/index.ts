@@ -12,6 +12,7 @@ interface FinalizeRequest {
     name: string
     industry: string
   }
+  geoIntelligence?: any  // Optional: GEO-VECTOR augmentation
 }
 
 serve(async (req) => {
@@ -155,6 +156,9 @@ serve(async (req) => {
         generateEndpoint: 'niv-campaign-pattern-generator'
       },
 
+      // GEO Intelligence (optional - only for GEO-VECTOR campaigns)
+      ...(payload.geoIntelligence ? { geoIntelligence: payload.geoIntelligence } : {}),
+
       // Metadata
       metadata: {
         generatedAt: new Date().toISOString(),
@@ -163,14 +167,16 @@ serve(async (req) => {
         generatorsUsed: [
           'niv-campaign-blueprint-base',
           'niv-blueprint-stakeholder-orchestration',
-          'niv-campaign-execution-generator'
+          'niv-campaign-execution-generator',
+          ...(payload.geoIntelligence ? ['geo-query-discovery', 'geo-synthesis'] : [])
         ],
         generatorsAvailable: [
           'niv-campaign-counter-narrative-generator',
           'niv-campaign-pattern-generator'
         ],
         totalTokensEstimate: 6000 + 14000 + 6000, // ~26k tokens
-        organizationName: payload.organizationContext?.name
+        organizationName: payload.organizationContext?.name,
+        campaignType: payload.geoIntelligence ? 'GEO-VECTOR' : 'VECTOR'
       }
     }
 

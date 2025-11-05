@@ -947,7 +947,8 @@ export function CampaignBuilderWizard() {
             organizationContext: {
               name: organization.name,
               industry: organization.industry || 'Technology'
-            }
+            },
+            geoIntelligence: geoIntelligence  // Pass GEO intelligence to finalizer
           })
         })
 

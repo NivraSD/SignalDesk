@@ -1,10 +1,11 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { X, Building2, Target, Globe, Loader, Save, AlertCircle, RefreshCw, CheckCircle, FileText, Copy } from 'lucide-react'
+import { X, Building2, Target, Globe, Loader, Save, AlertCircle, RefreshCw, CheckCircle, FileText, Copy, Users } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import TargetManagementTab from './TargetManagementTab'
 import GeoTargetsTab from './GeoTargetsTab'
+import CompanyProfileTab from './CompanyProfileTab'
 
 interface OrganizationSettingsProps {
   isOpen: boolean
@@ -14,7 +15,7 @@ interface OrganizationSettingsProps {
   onUpdate?: () => void
 }
 
-type TabId = 'about' | 'intelligence' | 'geo'
+type TabId = 'about' | 'profile' | 'intelligence' | 'geo'
 
 export default function OrganizationSettings({
   isOpen,
@@ -348,6 +349,7 @@ export default function OrganizationSettings({
 
   const tabs = [
     { id: 'about' as TabId, name: 'About', icon: Building2 },
+    { id: 'profile' as TabId, name: 'Company Profile', icon: Users },
     { id: 'intelligence' as TabId, name: 'Intelligence Targets', icon: Target },
     { id: 'geo' as TabId, name: 'GEO Targets', icon: Globe }
   ]
@@ -653,6 +655,13 @@ export default function OrganizationSettings({
                 </div>
               )}
             </div>
+          )}
+
+          {activeTab === 'profile' && (
+            <CompanyProfileTab
+              organizationId={organizationId}
+              organizationName={organizationName}
+            />
           )}
 
           {activeTab === 'intelligence' && (

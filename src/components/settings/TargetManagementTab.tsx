@@ -621,6 +621,123 @@ export default function TargetManagementTab({
                     </div>
                   </div>
                 )}
+
+                {discoveredItems.topics && discoveredItems.topics.length > 0 && (
+                  <div className="mt-4">
+                    <h4 className="text-sm font-semibold text-white mb-2">Topics ({discoveredItems.topics.length})</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      {discoveredItems.topics.map((topic: string) => {
+                        const exists = targets.some(t => t.name.toLowerCase() === topic.toLowerCase() && t.type === 'topic')
+                        const isSelected = selectedDiscoveryItems.has(topic)
+                        return (
+                          <button
+                            key={topic}
+                            onClick={() => !exists && toggleDiscoveryItem(topic)}
+                            disabled={exists}
+                            className={`p-2 rounded border text-sm ${
+                              exists ? 'bg-gray-800 border-gray-700 text-gray-500' :
+                              isSelected ? 'bg-blue-500/20 border-blue-500 text-blue-300' :
+                              'bg-blue-500/10 border-blue-500/30 text-blue-300 hover:bg-blue-500/20'
+                            }`}
+                          >
+                            {topic}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {discoveredItems.stakeholders && (
+                  <>
+                    {discoveredItems.stakeholders.regulators && discoveredItems.stakeholders.regulators.length > 0 && (
+                      <div className="mt-4">
+                        <h4 className="text-sm font-semibold text-white mb-2">Regulators ({discoveredItems.stakeholders.regulators.length})</h4>
+                        <div className="grid grid-cols-2 gap-2">
+                          {discoveredItems.stakeholders.regulators.map((stakeholder: string) => {
+                            const exists = targets.some(t =>
+                              t.name.toLowerCase() === stakeholder.toLowerCase() &&
+                              (t.type === 'stakeholder' || t.type === 'influencer')
+                            )
+                            const isSelected = selectedDiscoveryItems.has(stakeholder)
+                            return (
+                              <button
+                                key={stakeholder}
+                                onClick={() => !exists && toggleDiscoveryItem(stakeholder)}
+                                disabled={exists}
+                                className={`p-2 rounded border text-sm ${
+                                  exists ? 'bg-gray-800 border-gray-700 text-gray-500' :
+                                  isSelected ? 'bg-purple-500/20 border-purple-500 text-purple-300' :
+                                  'bg-purple-500/10 border-purple-500/30 text-purple-300 hover:bg-purple-500/20'
+                                }`}
+                              >
+                                {stakeholder}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {discoveredItems.stakeholders.influencers && discoveredItems.stakeholders.influencers.length > 0 && (
+                      <div className="mt-4">
+                        <h4 className="text-sm font-semibold text-white mb-2">Influencers ({discoveredItems.stakeholders.influencers.length})</h4>
+                        <div className="grid grid-cols-2 gap-2">
+                          {discoveredItems.stakeholders.influencers.map((stakeholder: string) => {
+                            const exists = targets.some(t =>
+                              t.name.toLowerCase() === stakeholder.toLowerCase() &&
+                              (t.type === 'stakeholder' || t.type === 'influencer')
+                            )
+                            const isSelected = selectedDiscoveryItems.has(stakeholder)
+                            return (
+                              <button
+                                key={stakeholder}
+                                onClick={() => !exists && toggleDiscoveryItem(stakeholder)}
+                                disabled={exists}
+                                className={`p-2 rounded border text-sm ${
+                                  exists ? 'bg-gray-800 border-gray-700 text-gray-500' :
+                                  isSelected ? 'bg-purple-500/20 border-purple-500 text-purple-300' :
+                                  'bg-purple-500/10 border-purple-500/30 text-purple-300 hover:bg-purple-500/20'
+                                }`}
+                              >
+                                {stakeholder}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {discoveredItems.stakeholders.major_customers && discoveredItems.stakeholders.major_customers.length > 0 && (
+                      <div className="mt-4">
+                        <h4 className="text-sm font-semibold text-white mb-2">Major Customers ({discoveredItems.stakeholders.major_customers.length})</h4>
+                        <div className="grid grid-cols-2 gap-2">
+                          {discoveredItems.stakeholders.major_customers.map((stakeholder: string) => {
+                            const exists = targets.some(t =>
+                              t.name.toLowerCase() === stakeholder.toLowerCase() &&
+                              (t.type === 'stakeholder' || t.type === 'influencer')
+                            )
+                            const isSelected = selectedDiscoveryItems.has(stakeholder)
+                            return (
+                              <button
+                                key={stakeholder}
+                                onClick={() => !exists && toggleDiscoveryItem(stakeholder)}
+                                disabled={exists}
+                                className={`p-2 rounded border text-sm ${
+                                  exists ? 'bg-gray-800 border-gray-700 text-gray-500' :
+                                  isSelected ? 'bg-purple-500/20 border-purple-500 text-purple-300' :
+                                  'bg-purple-500/10 border-purple-500/30 text-purple-300 hover:bg-purple-500/20'
+                                }`}
+                              >
+                                {stakeholder}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
 
               <div className="p-6 border-t border-gray-700 flex gap-3">
