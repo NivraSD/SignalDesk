@@ -292,8 +292,17 @@ export default function StrategicPlanningModuleV3Complete({
 
   const parseBlueprint = (blueprint: BlueprintData | null): ContentItem[] => {
     if (!blueprint) {
+      console.log('⚠️ parseBlueprint: blueprint is null')
       return []
     }
+
+    console.log('📊 parseBlueprint: blueprint structure:', {
+      hasPart3: !!blueprint.part3_stakeholderOrchestration,
+      hasContentRequirements: !!blueprint.contentRequirements,
+      hasGeoIntelligence: !!(blueprint as any).geoIntelligence,
+      keys: Object.keys(blueprint)
+    })
+
     const items: ContentItem[] = []
 
     // NOTE: Old GEO-VECTOR structure (threeTierTacticalPlan) is deprecated
@@ -336,6 +345,11 @@ export default function StrategicPlanningModuleV3Complete({
 
     // VECTOR campaign parsing (original logic)
     const plans = blueprint.part3_stakeholderOrchestration?.stakeholderOrchestrationPlans || []
+
+    console.log('✓ Parsing VECTOR/GEO-VECTOR campaign:', {
+      planCount: plans.length,
+      hasGeoIntelligence: !!(blueprint as any).geoIntelligence
+    })
 
     plans.forEach(plan => {
       const stakeholderName = plan.stakeholder?.name || 'Unknown Stakeholder'

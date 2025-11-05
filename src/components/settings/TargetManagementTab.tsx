@@ -8,7 +8,7 @@ interface IntelligenceTarget {
   id: string
   organization_id: string
   name: string
-  type: 'competitor' | 'topic' | 'keyword' | 'influencer'
+  type: 'competitor' | 'topic' | 'keyword' | 'influencer' | 'stakeholder'
   priority: 'low' | 'medium' | 'high' | 'critical'
   threat_level?: number
   keywords?: string[]
@@ -241,7 +241,10 @@ export default function TargetManagementTab({
         ...(discoveredItems.stakeholders.major_customers || [])
       ]
       allStakeholders.forEach((stakeholder: string) => {
-        const exists = targets.some(t => t.name.toLowerCase() === stakeholder.toLowerCase() && t.type === 'influencer')
+        const exists = targets.some(t =>
+          t.name.toLowerCase() === stakeholder.toLowerCase() &&
+          (t.type === 'influencer' || t.type === 'stakeholder')
+        )
         if (!exists) allItems.add(stakeholder)
       })
     }
@@ -288,9 +291,12 @@ export default function TargetManagementTab({
         ]
         allStakeholders.forEach((stakeholder: string) => {
           if (selectedDiscoveryItems.has(stakeholder)) {
-            const exists = targets.some(t => t.name.toLowerCase() === stakeholder.toLowerCase() && t.type === 'influencer')
+            const exists = targets.some(t =>
+              t.name.toLowerCase() === stakeholder.toLowerCase() &&
+              (t.type === 'influencer' || t.type === 'stakeholder')
+            )
             if (!exists) {
-              targetsToAdd.push({ name: stakeholder, type: 'influencer', priority: 'medium' })
+              targetsToAdd.push({ name: stakeholder, type: 'stakeholder', priority: 'medium' })
             }
           }
         })
@@ -331,6 +337,7 @@ export default function TargetManagementTab({
       case 'topic': return 'bg-blue-500/20 text-blue-400 border-blue-500/30'
       case 'keyword': return 'bg-green-500/20 text-green-400 border-green-500/30'
       case 'influencer': return 'bg-purple-500/20 text-purple-400 border-purple-500/30'
+      case 'stakeholder': return 'bg-purple-500/20 text-purple-400 border-purple-500/30'
       default: return 'bg-gray-500/20 text-gray-400 border-gray-500/30'
     }
   }
@@ -357,7 +364,7 @@ export default function TargetManagementTab({
         <div>
           <h3 className="text-lg font-semibold text-white">Intelligence Targets</h3>
           <p className="text-sm text-gray-400">
-            Monitor competitors, topics, keywords, and influencers
+            Monitor competitors, topics, keywords, influencers, and stakeholders
           </p>
         </div>
         <button
