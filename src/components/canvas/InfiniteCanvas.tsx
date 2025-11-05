@@ -373,6 +373,12 @@ export default function InfiniteCanvas({ children }: { children?: React.ReactNod
         return <OpportunitiesModule />
       case 'plan':
         // Use V3Complete if we have blueprint data from Campaign Builder
+        console.log('🎯 Rendering plan component, planData:', !!planData, planData ? {
+          hasBlueprint: !!planData.blueprint,
+          sessionId: planData.sessionId,
+          orgId: planData.orgId
+        } : 'null')
+
         if (planData) {
           return (
             <StrategicPlanningModuleV3Complete
@@ -383,6 +389,7 @@ export default function InfiniteCanvas({ children }: { children?: React.ReactNod
           )
         }
         // Fallback to old module for legacy support
+        console.warn('⚠️ No planData available, showing empty state')
         return <StrategicPlanningModule />
       case 'execute':
         return <ExecuteTabProduction framework={framework} />
