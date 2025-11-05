@@ -509,6 +509,7 @@ Through my 25+ years of experience, I've built an extensive network and informat
 • Deep media relationships and understanding of which sources truly matter
 • Strategic intelligence gathering that mirrors how I've always worked with Fortune 500 clients
 • Access to knowledge library with proven frameworks, case studies, and academic research
+• **Memory Vault** - Access to your organization's past successful content, proven messaging patterns, and what has worked before (when available, I'll tell you what I found)
 
 **TACTICAL KNOWLEDGE LIBRARY ACCESS:**
 
@@ -3675,6 +3676,22 @@ function detectStrategicIntent(message: string, conversationHistory?: any[]): bo
 function detectCommandIntent(message: string): { isCommand: boolean; commandType?: string } {
   const queryLower = message.toLowerCase()
 
+  // Detect simple informational/meta questions about capabilities
+  // These should be answered directly without research
+  const metaQuestions = [
+    /are you aware of|do you have access to|can you (access|use|see)/i,
+    /what (is|are) (your|the) (capabilities|tools|sources)/i,
+    /tell me about (your|the) (memory vault|knowledge|capabilities)/i,
+    /how (do|does) (your|the) (memory vault|system) work/i,
+    /what can you (do|access|retrieve)/i
+  ]
+
+  for (const regex of metaQuestions) {
+    if (regex.test(message)) {
+      return { isCommand: true, commandType: 'meta' }
+    }
+  }
+
   // Detect routing/execution commands - SIMPLIFIED and more flexible
   const routingCommands = [
     /(create|make|generate|build).*(presentation|deck|slides?)/i,  // "create a presentation", "make deck", "generate slides"
@@ -4092,6 +4109,34 @@ serve(async (req) => {
 
     // CRITICAL: Detect if this is a command (not a research query)
     const commandDetection = detectCommandIntent(userMessage)
+
+    // Handle meta questions about capabilities (no research needed)
+    if (commandDetection.isCommand && commandDetection.commandType === 'meta') {
+      console.log(`ℹ️ Meta question detected: ${userMessage.substring(0, 100)}`)
+
+      // Simple direct response without research
+      const metaResponse = `Yes, I have access to your **Memory Vault** - your organization's institutional knowledge base that captures:
+
+• **Past Successful Content** - What messaging and content has performed well
+• **Proven Patterns** - Hooks, voice, structure, and approaches that work for your organization
+• **Strategic Insights** - Lessons learned from previous campaigns and initiatives
+
+When relevant to our conversation, I automatically check the Memory Vault and will reference what I find. For example, if you ask about energy policy messaging, I'll pull proven patterns from your past successful energy content.
+
+The Memory Vault helps me provide more strategic, organization-specific advice rather than generic recommendations.
+
+What would you like to explore or work on today?`
+
+      return new Response(JSON.stringify({
+        success: true,
+        mode: 'simple',
+        message: metaResponse,
+        conversationId
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
     if (commandDetection.isCommand && commandDetection.commandType === 'routing') {
       console.log(`🎯 Execution command detected: ${userMessage.substring(0, 100)}`)
 
@@ -4923,28 +4968,31 @@ Respond with JSON only:
     } // Close the else block for non-orchestrated path
 
     // Organization profile already loaded earlier (at the start of the function)
-    console.log(`🎯 Using organization profile: ${organizationName}`)
+    // Use orgProfile name if available, fallback to organizationName
+    const effectiveOrgName = orgProfile?.organization_name || organizationName || organizationId || 'Unknown Organization'
+
+    console.log(`🎯 Using organization profile: ${effectiveOrgName}`)
     console.log(`  Industry: ${orgProfile?.industry}`)
     console.log(`  Keywords: ${orgProfile?.keywords?.slice(0, 5).join(', ')}`)
     console.log(`  Competitors: ${orgProfile?.competition?.direct_competitors?.slice(0, 3).join(', ')}`)
 
     if (orgProfile) {
       toolResults.discoveryData = {
-        organizationName: organizationName,
+        organizationName: effectiveOrgName,
         competitors: orgProfile.competition?.direct_competitors?.slice(0, 5) || [],
         keywords: orgProfile.keywords?.slice(0, 10) || [],
         industry: orgProfile.industry
       }
-      console.log(`🎯 Loaded profile for ${organizationName}: ${toolResults.discoveryData.competitors.length} competitors, ${toolResults.discoveryData.keywords.length} keywords`)
+      console.log(`🎯 Loaded profile for ${effectiveOrgName}: ${toolResults.discoveryData.competitors.length} competitors, ${toolResults.discoveryData.keywords.length} keywords`)
     } else {
       // Provide default discovery data if profile loading failed
       toolResults.discoveryData = {
-        organizationName: organizationName,
+        organizationName: effectiveOrgName,
         competitors: [],
-        keywords: [organizationName],
+        keywords: [effectiveOrgName],
         industry: 'Technology'
       }
-      console.log(`🎯 Using default profile for ${organizationName}`)
+      console.log(`🎯 Using default profile for ${effectiveOrgName}`)
     }
 
     // Query Memory Vault for relevant past content and playbooks

@@ -4,9 +4,50 @@ import { corsHeaders } from '../_shared/cors.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const VOYAGE_API_KEY = Deno.env.get('VOYAGE_API_KEY');
 
 // Try both API key names like NIV does
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY') || Deno.env.get('CLAUDE_API_KEY');
+
+/**
+ * Generate embedding using Voyage AI voyage-3-large
+ */
+async function generateEmbedding(text: string): Promise<number[] | null> {
+  if (!VOYAGE_API_KEY) {
+    console.warn('⚠️ VOYAGE_API_KEY not set, skipping embedding generation');
+    return null;
+  }
+
+  try {
+    const maxChars = 8000;
+    const truncatedText = text.length > maxChars ? text.substring(0, maxChars) : text;
+
+    const response = await fetch('https://api.voyageai.com/v1/embeddings', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${VOYAGE_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'voyage-3-large',
+        input: truncatedText,
+        input_type: 'document'
+      })
+    });
+
+    if (!response.ok) {
+      console.error('❌ Voyage API error:', await response.text());
+      return null;
+    }
+
+    const data = await response.json();
+    console.log(`✅ Generated embedding (${data.data[0].embedding.length}D)`);
+    return data.data[0].embedding;
+  } catch (error) {
+    console.error('❌ Error generating embedding:', error);
+    return null;
+  }
+}
 
 if (!ANTHROPIC_API_KEY) {
   console.error('❌ No API key found - checked ANTHROPIC_API_KEY and CLAUDE_API_KEY');
@@ -1033,6 +1074,47 @@ Remember: You're not gathering intelligence - you're SYNTHESIZING already-gather
           // Don't throw - we still want to return the synthesis even if save fails
         } else {
           console.log('✅ Synthesis saved to database with ID:', insertData?.id);
+
+          // ALSO save to content_library for Memory Vault searchability
+          try {
+            const title = `Executive Synthesis - ${new Date().toLocaleDateString()}`;
+            const contentForLibrary = `${result.synthesis.executive_summary}\n\nKey Insights:\n${result.synthesis.top_insights.join('\n')}\n\nImmediate Actions:\n${result.synthesis.immediate_actions.join('\n')}`;
+
+            // Generate embedding for semantic search
+            const textForEmbedding = `${title}\n\n${contentForLibrary}`.substring(0, 8000);
+            const embedding = await generateEmbedding(textForEmbedding);
+
+            console.log('💾 Also saving to content_library for Memory Vault...');
+            const { error: libraryError } = await supabase
+              .from('content_library')
+              .insert({
+                organization_id: organization_id,
+                title: title,
+                content: contentForLibrary,
+                content_type: 'executive-summary',
+                metadata: {
+                  synthesis_id: insertData?.id,
+                  competitor_moves: result.synthesis.competitor_moves,
+                  opportunities: result.synthesis.opportunities,
+                  threats: result.synthesis.threats
+                },
+                folder: 'Executive Summaries',
+                status: 'active',
+                embedding: embedding,
+                embedding_model: 'voyage-3-large',
+                embedding_updated_at: embedding ? new Date().toISOString() : null,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              });
+
+            if (libraryError) {
+              console.error('⚠️ Failed to save to content_library (non-blocking):', libraryError);
+            } else {
+              console.log('✅ Executive synthesis also saved to content_library for Memory Vault access');
+            }
+          } catch (libraryErr) {
+            console.error('⚠️ Error saving to content_library (non-blocking):', libraryErr);
+          }
         }
       } catch (dbError) {
         console.error('❌ Database save error:', dbError);

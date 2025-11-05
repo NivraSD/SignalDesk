@@ -1667,21 +1667,9 @@ export function CampaignBuilderWizard() {
 
       case 'blueprint':
         if (session.blueprint) {
-          // Use GeoVectorBlueprintPresentation for GEO-VECTOR campaigns
-          if (session.selectedApproach === 'GEO_VECTOR_CAMPAIGN') {
-            return (
-              <GeoVectorBlueprintPresentation
-                blueprint={session.blueprint}
-                onRefine={handleBlueprintRefine}
-                onExport={handleBlueprintExport}
-                onExecute={handleExecutionStart}
-                isRefining={isLoading}
-              />
-            )
-          }
-
-          // Use BlueprintV3Presentation for VECTOR campaigns
-          if (session.selectedApproach === 'VECTOR_CAMPAIGN') {
+          // Use BlueprintV3Presentation for both VECTOR and GEO-VECTOR campaigns
+          // (GEO-VECTOR uses VECTOR structure with GEO augmentation)
+          if (session.selectedApproach === 'VECTOR_CAMPAIGN' || session.selectedApproach === 'GEO_VECTOR_CAMPAIGN') {
             return (
               <BlueprintV3Presentation
                 blueprint={session.blueprint}
