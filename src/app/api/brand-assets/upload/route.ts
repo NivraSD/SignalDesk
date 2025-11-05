@@ -6,10 +6,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { invalidateBrandContextCache } from '@/lib/memory-vault/brand-context-cache'
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://zskaxjtyuaqazydouifp.supabase.co'
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+// Create Supabase client helper (runtime only)
+function getSupabaseClient() {
+  const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://zskaxjtyuaqazydouifp.supabase.co'
+  const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
+  return createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+}
 
 // Max file sizes (in bytes)
 const MAX_FILE_SIZES = {
@@ -20,6 +22,7 @@ const MAX_FILE_SIZES = {
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = getSupabaseClient()
     const formData = await request.formData()
 
     const file = formData.get('file') as File
@@ -156,6 +159,7 @@ async function queueAnalysisJob(
   fileName: string,
   assetType: string
 ): Promise<void> {
+  const supabase = getSupabaseClient()
   await supabase
     .from('job_queue')
     .insert({
@@ -206,6 +210,7 @@ function isValidFileType(fileName: string, assetType: string): boolean {
 // GET: List brand assets for organization
 export async function GET(request: NextRequest) {
   try {
+    const supabase = getSupabaseClient()
     const { searchParams } = new URL(request.url)
     const organizationId = searchParams.get('organizationId')
     const assetType = searchParams.get('assetType')
