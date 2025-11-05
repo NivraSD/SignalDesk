@@ -424,6 +424,79 @@ export default function StrategicPlanningModuleV3Complete({
       })
     })
 
+    // GEO-VECTOR AUGMENTATION: Parse schema opportunities and content recommendations
+    const geoIntelligence = (blueprint as any).geoIntelligence
+    if (geoIntelligence?.synthesis) {
+      console.log('✅ Parsing GEO intelligence:', {
+        schemaOpportunities: geoIntelligence.synthesis.schemaOpportunities?.length || 0,
+        contentRecommendations: geoIntelligence.synthesis.contentRecommendations?.length || 0
+      })
+
+      // Add Schema Opportunities as executable tactics
+      geoIntelligence.synthesis.schemaOpportunities?.forEach((schema: any) => {
+        items.push({
+          id: crypto.randomUUID(),
+          type: 'geo_schema_update',
+          stakeholder: 'AI Platforms',
+          stakeholderPriority: 1, // Schemas are high priority for AI visibility
+          leverName: 'GEO: AI Query Ownership',
+          leverPriority: schema.priority || 1,
+          topic: schema.title || `${schema.schemaType} Schema`,
+          target: schema.query || 'Target AI queries',
+          details: {
+            schemaType: schema.schemaType,
+            implementation: schema.implementation,
+            expectedImpact: schema.expectedImpact,
+            query: schema.query,
+            autoExecutable: schema.autoExecutable !== false,
+            description: schema.description,
+            priority: schema.priority || 1,
+            schemaData: schema
+          },
+          status: 'pending'
+        })
+      })
+
+      // Add Content Recommendations as content creation tactics
+      geoIntelligence.synthesis.contentRecommendations?.forEach((content: any) => {
+        // Map content type to tactical type
+        let tacticalType: ContentItem['type'] = 'thought_leadership'
+        if (content.contentType === 'blog_post') tacticalType = 'thought_leadership'
+        else if (content.contentType === 'case_study') tacticalType = 'thought_leadership'
+        else if (content.contentType === 'whitepaper') tacticalType = 'thought_leadership'
+        else if (content.contentType === 'press_release') tacticalType = 'press_release'
+        else if (content.tacticalMapping?.toLowerCase().includes('media')) tacticalType = 'media_pitch'
+        else if (content.tacticalMapping?.toLowerCase().includes('social')) tacticalType = 'social_post'
+
+        items.push({
+          id: crypto.randomUUID(),
+          type: tacticalType,
+          stakeholder: 'AI Platforms',
+          stakeholderPriority: 1,
+          leverName: 'GEO: AI Query Ownership',
+          leverPriority: content.priority || 2,
+          topic: content.title || content.description,
+          target: content.targetQueries?.join(', ') || 'AI visibility',
+          details: {
+            contentType: content.contentType,
+            keyPoints: content.keyPoints,
+            targetQueries: content.targetQueries,
+            expectedImpact: content.expectedImpact,
+            tacticalMapping: content.tacticalMapping,
+            description: content.description,
+            priority: content.priority || 2
+          },
+          status: 'pending'
+        })
+      })
+
+      console.log('✅ GEO tactics added:', {
+        totalItems: items.length,
+        schemaItems: items.filter(i => i.type === 'geo_schema_update').length,
+        geoContentItems: items.filter(i => i.stakeholder === 'AI Platforms' && i.type !== 'geo_schema_update').length
+      })
+    }
+
     return items
   }
 
