@@ -937,6 +937,12 @@ export function CampaignBuilderWizard() {
 
         // STEP 5: Finalize blueprint
         console.log('⚙️ Step 5: Finalizing GEO-VECTOR blueprint...')
+        console.log('📦 GEO intelligence being sent to finalizer:', {
+          hasGeoIntelligence: !!geoIntelligence,
+          targetQueries: geoIntelligence?.targetQueries?.length || 0,
+          schemaOpportunities: geoIntelligence?.synthesis?.schemaOpportunities?.length || 0,
+          contentRecommendations: geoIntelligence?.synthesis?.contentRecommendations?.length || 0
+        })
 
         const finalizeResponse = await fetch('/api/finalize-blueprint', {
           method: 'POST',
