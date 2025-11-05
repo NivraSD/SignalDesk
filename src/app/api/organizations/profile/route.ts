@@ -22,23 +22,32 @@ export async function GET(req: NextRequest) {
       )
     }
 
-    const { data, error } = await supabase
-      .from('organizations')
-      .select('id, name, company_profile')
-      .eq('id', id)
-      .single()
+    // Use RPC to bypass any schema cache issues
+    const { data, error } = await supabase.rpc('get_company_profile', {
+      org_id: id
+    })
 
     if (error) {
-      console.error('Failed to get company profile:', error)
+      console.error('Failed to get company profile via RPC:', error)
       return NextResponse.json(
         { success: false, error: error.message },
         { status: 500 }
       )
     }
 
+    // RPC returns array of rows
+    const organization = data && data.length > 0 ? data[0] : null
+
+    if (!organization) {
+      return NextResponse.json(
+        { success: false, error: 'Organization not found' },
+        { status: 404 }
+      )
+    }
+
     return NextResponse.json({
       success: true,
-      organization: data
+      organization
     })
   } catch (error: any) {
     console.error('Get company profile error:', error)
