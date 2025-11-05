@@ -5,9 +5,14 @@
 import { createClient } from '@supabase/supabase-js'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://zskaxjtyuaqazydouifp.supabase.co'
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+function getSupabaseClient() {
+  const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!SUPABASE_SERVICE_KEY) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY is not configured')
+  }
+  return createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+}
 
 interface BrandContext {
   guidelines?: {
@@ -98,6 +103,7 @@ async function queryBrandContext(
   organizationId: string,
   contentType: string
 ): Promise<BrandContext | null> {
+  const supabase = getSupabaseClient()
   try {
     // Race against timeout
     const result = await Promise.race([
@@ -280,6 +286,7 @@ export function getBrandContextSync(
  * Fire-and-forget, never blocks
  */
 async function boostBrandAssetSalience(assetIds: string[]): Promise<void> {
+  const supabase = getSupabaseClient()
   try {
     // Boost salience by 0.05 (5%) and increment access_count
     await supabase

@@ -2,18 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-function getSupabaseClient() {
-  const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
-  const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://zskaxjtyuaqazydouifp.supabase.co'
-  if (!SUPABASE_SERVICE_KEY) {
-    throw new Error('SUPABASE_SERVICE_ROLE_KEY is not configured')
-  }
-  return createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
-}
-
 export async function POST(req: NextRequest) {
   try {
-    const supabase = getSupabaseClient()
     const body = await req.json()
     const { objective, industry, constraints, current_presence } = body
 
@@ -22,6 +12,11 @@ export async function POST(req: NextRequest) {
       industry,
       time_available: constraints?.time_per_week
     })
+
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
 
     const { data, error } = await supabase.functions.invoke('niv-geo-content-selector', {
       body: {

@@ -1,18 +1,11 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-function getSupabaseClient() {
-  const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
-  const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://zskaxjtyuaqazydouifp.supabase.co'
-  if (!SUPABASE_SERVICE_KEY) {
-    throw new Error('SUPABASE_SERVICE_ROLE_KEY is not configured')
-  }
-  return createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
-}
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 export async function PUT(request: Request) {
   try {
-    const supabase = getSupabaseClient()
     const body = await request.json()
     const { id, name, domain, industry, size } = body
 
@@ -38,6 +31,9 @@ export async function PUT(request: Request) {
         { status: 400 }
       )
     }
+
+    console.log('🔑 Creating Supabase client...')
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
     // First, get current organization to preserve existing settings
     console.log('📖 Fetching current organization...')

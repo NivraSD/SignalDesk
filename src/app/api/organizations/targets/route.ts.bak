@@ -1,14 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-function getSupabaseClient() {
-  const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
-  const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://zskaxjtyuaqazydouifp.supabase.co'
-  if (!SUPABASE_SERVICE_KEY) {
-    throw new Error('SUPABASE_SERVICE_ROLE_KEY is not configured')
-  }
-  return createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
+
+// Debug: Check if service key is loaded
+if (!SUPABASE_SERVICE_KEY) {
+  console.error('❌ SUPABASE_SERVICE_ROLE_KEY is not set!')
+} else {
+  console.log('✅ Service key loaded:', SUPABASE_SERVICE_KEY.substring(0, 20) + '...')
 }
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
+  auth: {
+    persistSession: false,
+    autoRefreshToken: false
+  }
+})
 
 /**
  * GET /api/organizations/targets?organization_id={uuid}
@@ -16,7 +24,6 @@ function getSupabaseClient() {
  */
 export async function GET(req: NextRequest) {
   try {
-    const supabase = getSupabaseClient()
     const searchParams = req.nextUrl.searchParams
     const organization_id = searchParams.get('organization_id')
 
@@ -67,7 +74,6 @@ export async function GET(req: NextRequest) {
  */
 export async function POST(req: NextRequest) {
   try {
-    const supabase = getSupabaseClient()
     const body = await req.json()
     const { organization_id, targets, append = true } = body // FIXED: Default to true to prevent data loss
 
@@ -141,7 +147,6 @@ export async function POST(req: NextRequest) {
  */
 export async function PUT(req: NextRequest) {
   try {
-    const supabase = getSupabaseClient()
     const body = await req.json()
     const { id, ...updates } = body
 
@@ -186,7 +191,6 @@ export async function PUT(req: NextRequest) {
  */
 export async function DELETE(req: NextRequest) {
   try {
-    const supabase = getSupabaseClient()
     const searchParams = req.nextUrl.searchParams
     const id = searchParams.get('id')
 

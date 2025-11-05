@@ -3,12 +3,17 @@ import { createClient } from '@supabase/supabase-js'
 import Docxtemplater from 'docxtemplater'
 import PizZip from 'pizzip'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+function getSupabaseClient() {
+  const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+    throw new Error('Supabase environment variables are not configured')
+  }
+  return createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+}
 
 export async function POST(req: NextRequest) {
+  const supabase = getSupabaseClient()
   try {
     const { contentId, templateId } = await req.json()
 
