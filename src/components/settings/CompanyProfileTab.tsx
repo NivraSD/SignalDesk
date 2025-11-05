@@ -107,6 +107,8 @@ export default function CompanyProfileTab({
       setError(null)
       setSuccess(false)
 
+      console.log('Saving profile:', profile)
+
       // Use API route instead of client-side Supabase to avoid schema cache issues
       const response = await fetch(`/api/organizations/${organizationId}/profile`, {
         method: 'PUT',
@@ -114,7 +116,16 @@ export default function CompanyProfileTab({
         body: JSON.stringify({ company_profile: profile })
       })
 
+      console.log('Response status:', response.status)
+
+      if (!response.ok) {
+        const text = await response.text()
+        console.error('Response text:', text)
+        throw new Error(`Failed to save profile: ${response.status} - ${text}`)
+      }
+
       const data = await response.json()
+      console.log('Response data:', data)
 
       if (!data.success) {
         throw new Error(data.error || 'Failed to save profile')

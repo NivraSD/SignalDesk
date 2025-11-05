@@ -12,9 +12,10 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const params = await context.params
     const { id } = params
 
     const { data, error } = await supabase
@@ -50,9 +51,10 @@ export async function GET(
  */
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const params = await context.params
     const { id } = params
     const body = await req.json()
     const { company_profile } = body
