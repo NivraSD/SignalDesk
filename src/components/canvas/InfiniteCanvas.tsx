@@ -466,12 +466,15 @@ export default function InfiniteCanvas({ children }: { children?: React.ReactNod
             campaignType: data.campaignType || 'VECTOR_CAMPAIGN' // Preserve campaign type
           })
 
-          // Open the Plan module
-          addComponent('plan')
-
           // Clear the pending data and URL param
           sessionStorage.removeItem('pendingPlanData')
           window.history.replaceState({}, '', '/')
+
+          // Use setTimeout to ensure state is set before opening component
+          setTimeout(() => {
+            console.log('✅ Opening Plan module after state update')
+            addComponent('plan')
+          }, 100)
         } catch (err) {
           console.error('Failed to parse pending plan data:', err)
         }
