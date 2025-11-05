@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useRef, useCallback, useEffect } from 'react'
+import { flushSync } from 'react-dom'
 import {
   Plus, Minus, Home, Grid3x3, Lock, Unlock,
   Brain, Target, Zap, Database, Shield, AlertTriangle,
@@ -459,22 +460,28 @@ export default function InfiniteCanvas({ children }: { children?: React.ReactNod
           console.log('📋 Loading pending plan data from Campaign Builder:', data)
 
           // Store in planData state (will auto-save to localStorage via effect above)
-          setPlanData({
+          const newPlanData = {
             blueprint: data.blueprint,
             sessionId: data.sessionId,
             orgId: data.orgId,
             campaignType: data.campaignType || 'VECTOR_CAMPAIGN' // Preserve campaign type
+          }
+
+          // Use flushSync to ensure state update completes before adding component
+          flushSync(() => {
+            setPlanData(newPlanData)
           })
 
           // Clear the pending data and URL param
           sessionStorage.removeItem('pendingPlanData')
           window.history.replaceState({}, '', '/')
 
-          // Use setTimeout to ensure state is set before opening component
-          setTimeout(() => {
-            console.log('✅ Opening Plan module after state update')
-            addComponent('plan')
-          }, 100)
+          // Open the plan component - state is now guaranteed to be updated
+          console.log('✅ Opening Plan module with data:', {
+            hasBlueprint: !!newPlanData.blueprint,
+            sessionId: newPlanData.sessionId
+          })
+          addComponent('plan')
         } catch (err) {
           console.error('Failed to parse pending plan data:', err)
         }
