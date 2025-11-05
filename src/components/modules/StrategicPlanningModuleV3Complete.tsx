@@ -187,9 +187,9 @@ export default function StrategicPlanningModuleV3Complete({
   }, [sessionId])
 
   const loadOrInitializeItems = async () => {
-    // Try to load existing items from content_library
+    // Try to load existing items from strategic_planning_items table
     const { data: existingItems, error: loadError } = await supabase
-      .from('content_library')
+      .from('strategic_planning_items')
       .select('*')
       .eq('session_id', sessionId)
       .eq('organization_id', orgId)
@@ -202,24 +202,25 @@ export default function StrategicPlanningModuleV3Complete({
     }
 
     if (existingItems && existingItems.length > 0) {
+      console.log(`📋 Loaded ${existingItems.length} existing items from database`)
       // Convert database items to ContentItem format
       const items = existingItems.map(dbItem => ({
         id: dbItem.id,
         type: dbItem.content_type as ContentItem['type'],
-        stakeholder: dbItem.metadata?.stakeholder || '',
-        stakeholderPriority: dbItem.metadata?.stakeholder_priority || 1,
-        leverName: dbItem.metadata?.lever_name || '',
-        leverPriority: dbItem.metadata?.lever_priority || 1,
+        stakeholder: dbItem.stakeholder,
+        stakeholderPriority: dbItem.stakeholder_priority,
+        leverName: dbItem.lever_name,
+        leverPriority: dbItem.lever_priority,
         topic: dbItem.title,
-        target: dbItem.metadata?.target,
-        details: dbItem.metadata,
-        status: dbItem.status === 'draft' ? 'generated' : (dbItem.status as ContentItem['status']),
-        generatedContent: dbItem.content,
-        generationError: undefined,
-        generatedAt: dbItem.created_at ? new Date(dbItem.created_at) : undefined,
+        target: dbItem.target_audience,
+        details: dbItem.details,
+        status: dbItem.status as ContentItem['status'],
+        generatedContent: dbItem.generated_content,
+        generationError: dbItem.generation_error,
+        generatedAt: dbItem.generated_at ? new Date(dbItem.generated_at) : undefined,
         executed: dbItem.executed || false,
         executedAt: dbItem.executed_at ? new Date(dbItem.executed_at) : undefined,
-        result: dbItem.result
+        result: dbItem.execution_result
       }))
       setContentItems(items)
       setLoading(false)
@@ -239,55 +240,54 @@ export default function StrategicPlanningModuleV3Complete({
 
     const items = parseBlueprint(blueprint)
 
-    // Double-check that items don't already exist before inserting
-    const { data: existingCheck } = await supabase
-      .from('content_library')
-      .select('id')
-      .eq('session_id', sessionId)
-      .eq('organization_id', orgId)
-      .limit(1)
+    // Save all items to strategic_planning_items table immediately
+    // This ensures persistence across page reloads/crashes
+    console.log(`💾 Saving ${items.length} items to strategic_planning_items table...`)
 
-    if (existingCheck && existingCheck.length > 0) {
-      console.log('⚠️ Items already exist, skipping initialization')
-      // Items were created by another request, reload them
-      const { data: existing } = await supabase
-        .from('content_library')
-        .select('*')
-        .eq('session_id', sessionId)
-        .eq('organization_id', orgId)
+    const dbItems = items.map(item => ({
+      session_id: sessionId,
+      organization_id: orgId,
+      campaign_type: campaignType,
+      content_type: item.type,
+      title: item.topic,
+      description: item.details?.what || item.details?.description || '',
+      stakeholder: item.stakeholder,
+      stakeholder_priority: item.stakeholderPriority,
+      lever_name: item.leverName,
+      lever_priority: item.leverPriority,
+      target_audience: item.target,
+      status: 'pending',
+      details: item.details,
+      metadata: {}
+    }))
 
-      if (existing) {
-        const items = existing.map(dbItem => ({
-          id: dbItem.id,
-          type: dbItem.content_type as ContentItem['type'],
-          stakeholder: dbItem.metadata?.stakeholder || '',
-          stakeholderPriority: dbItem.metadata?.stakeholder_priority || 1,
-          leverName: dbItem.metadata?.lever_name || '',
-          leverPriority: dbItem.metadata?.lever_priority || 1,
-          topic: dbItem.title,
-          target: dbItem.metadata?.target,
-          details: dbItem.metadata,
-          status: dbItem.status === 'draft' ? 'generated' : (dbItem.status as ContentItem['status']),
-          generatedContent: dbItem.content,
-          generationError: undefined,
-          generatedAt: dbItem.created_at ? new Date(dbItem.created_at) : undefined,
-          executed: dbItem.executed || false,
-          executedAt: dbItem.executed_at ? new Date(dbItem.executed_at) : undefined,
-          result: dbItem.result
-        }))
-        setContentItems(items)
-      }
+    const { error: insertError } = await supabase
+      .from('strategic_planning_items')
+      .insert(dbItems)
+
+    if (insertError) {
+      console.error('❌ Failed to save items:', insertError)
+      setError('Failed to save execution items')
       setLoading(false)
       return
     }
 
-    // IMPORTANT: Do NOT save empty items to database yet!
-    // Items will be saved to content_library only when they are GENERATED
-    // This prevents empty tactical content from polluting Memory Vault
-    console.log(`✅ Initialized ${items.length} content items in local state (NOT saved to database yet)`)
+    console.log(`✅ Saved ${items.length} items to strategic_planning_items table`)
 
     setContentItems(items)
     setLoading(false)
+  }
+
+  // Helper function to update item in database
+  const updateItemInDatabase = async (itemId: string, updates: any) => {
+    const { error } = await supabase
+      .from('strategic_planning_items')
+      .update(updates)
+      .eq('id', itemId)
+
+    if (error) {
+      console.error('Failed to update item in database:', error)
+    }
   }
 
   const parseBlueprint = (blueprint: BlueprintData | null): ContentItem[] => {
@@ -758,50 +758,29 @@ export default function StrategicPlanningModuleV3Complete({
         i.id === item.id ? updatedItem : i
       ))
 
-      // Get campaign name for folder structure
-      const campaignName = blueprint?.overview?.campaignName || 'Untitled Campaign'
+      // Update in strategic_planning_items table
+      await updateItemInDatabase(item.id, {
+        status: 'generated',
+        generated_content: generatedContent,
+        generated_at: new Date().toISOString()
+      })
 
-      // Upsert into content_library (handles both insert and update)
-      const { error: upsertError } = await supabase
-        .from('content_library')
-        .upsert({
-          id: item.id,
-          session_id: sessionId,
-          organization_id: orgId,
-          content_type: item.type,
-          title: item.topic,
-          content: generatedContent,
-          status: 'draft',
-          folder: `Campaigns/${campaignName}/Priority ${item.stakeholderPriority}/${item.stakeholder}`,
-          metadata: {
-            stakeholder: item.stakeholder,
-            stakeholder_priority: item.stakeholderPriority,
-            lever_name: item.leverName,
-            lever_priority: item.leverPriority,
-            target: item.target,
-            details: item.details
-          },
-          tags: ['campaign', `priority-${item.stakeholderPriority}`, item.stakeholder],
-          intelligence_status: 'draft',
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'id'
-        })
-
-      if (upsertError) {
-        console.error('Error saving generated content:', upsertError)
-      }
+      console.log('✅ Content generated and saved to strategic_planning_items')
 
     } catch (error: any) {
       console.error('Generation error:', error)
+
+      // Update database with failure
+      await updateItemInDatabase(item.id, {
+        status: 'failed',
+        generation_error: error.message
+      })
 
       setContentItems(prev => prev.map(i =>
         i.id === item.id
           ? { ...i, status: 'failed' as const, generationError: error.message }
           : i
       ))
-
-      // Don't save failed items to database - they only exist in local state
     } finally {
       setGenerating(prev => {
         const newSet = new Set(prev)
@@ -1056,6 +1035,16 @@ export default function StrategicPlanningModuleV3Complete({
 
       console.log('✅ Schema update executed successfully:', data)
 
+      // Update database
+      await updateItemInDatabase(item.id, {
+        status: 'generated',
+        generated_content: `Schema updated successfully: ${data.message || 'Schema markup added'}`,
+        generated_at: new Date().toISOString(),
+        executed: true,
+        executed_at: new Date().toISOString(),
+        execution_result: data
+      })
+
       // Mark as generated (schema executed)
       setContentItems(prev => prev.map(i =>
         i.id === item.id
@@ -1072,6 +1061,12 @@ export default function StrategicPlanningModuleV3Complete({
 
     } catch (error: any) {
       console.error('❌ Schema execution failed:', error)
+
+      // Update database
+      await updateItemInDatabase(item.id, {
+        status: 'failed',
+        generation_error: error.message || 'Schema execution failed'
+      })
 
       // Mark as failed
       setContentItems(prev => prev.map(i =>
