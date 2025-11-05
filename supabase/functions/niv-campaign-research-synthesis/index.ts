@@ -302,6 +302,10 @@ IMPORTANT SYNTHESIS GUIDELINES:
 6. Infer publications list from the journalist outlets (both tier1 AND tier2 - include trade/industry publications)
 7. Extract actionable patterns (use historicalResearch)
 8. Create 5-10 key insights that synthesize findings across all categories
+   - **GROUND INSIGHTS IN THE CAMPAIGN GOAL** - insights must relate to the specific campaign objective, not generic industry trends
+   - **USE ONLY RESEARCH DATA** - do not make assumptions about "AI transformation", "technology trends", or "industry disruption" unless explicitly found in the research
+   - **BE SPECIFIC** - avoid generic statements like "leverage technology angle" or "position as innovative leader" unless the research explicitly supports this
+   - **FOCUS ON DISCOVERY** - what did we actually learn? What gaps exist? What opportunities are present in THIS campaign context?
 9. Rate synthesis quality honestly (completeness, confidence, gaps)
    - NOTE: Stakeholder profiles being inferred (not researched) is NORMAL and does not constitute a data gap
 
