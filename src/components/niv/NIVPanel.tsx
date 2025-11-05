@@ -503,7 +503,7 @@ ${blueprint.strategy?.keyMessages?.map((msg: string, i: number) => `${i + 1}. ${
             <div className="bg-gray-800 text-gray-200 p-3 rounded-lg">
               <div className="flex items-center gap-3">
                 <Loader className="w-4 h-4 animate-spin text-purple-400" />
-                <span className="text-sm">Processing with NIV orchestrator...</span>
+                <span className="text-sm">NIV thinking...</span>
               </div>
             </div>
           </div>
