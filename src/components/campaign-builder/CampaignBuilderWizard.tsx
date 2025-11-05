@@ -683,10 +683,18 @@ export function CampaignBuilderWizard() {
           throw new Error('Failed to discover queries: ' + queryDiscoveryResponse.error.message)
         }
 
-        const { queries } = queryDiscoveryResponse.data
-        console.log('✅ Discovered', queries?.length || 0, 'target queries')
+        const { queries: categorizedQueries } = queryDiscoveryResponse.data
 
-        if (!queries || queries.length === 0) {
+        // Flatten categorized queries into a single array
+        const allQueries = [
+          ...(categorizedQueries?.critical || []),
+          ...(categorizedQueries?.high || []),
+          ...(categorizedQueries?.medium || [])
+        ]
+
+        console.log('✅ Discovered', allQueries.length, 'target queries')
+
+        if (!allQueries || allQueries.length === 0) {
           throw new Error('No queries discovered')
         }
 
@@ -701,8 +709,8 @@ export function CampaignBuilderWizard() {
           }
         ])
 
-        // Use first 5 queries (like IntelligenceModule does)
-        const testQueries = queries.slice(0, 5)
+        // Use first 5 queries (prioritizing critical/high)
+        const testQueries = allQueries.slice(0, 5).map(q => q.query || q)
 
         const [claudeResults, geminiResults, perplexityResults, chatgptResults] = await Promise.all([
           supabase.functions.invoke('geo-test-claude', {
