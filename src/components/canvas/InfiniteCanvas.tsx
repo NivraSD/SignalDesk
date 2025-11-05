@@ -467,27 +467,27 @@ export default function InfiniteCanvas({ children }: { children?: React.ReactNod
             campaignType: data.campaignType || 'VECTOR_CAMPAIGN' // Preserve campaign type
           }
 
-          // Use flushSync to ensure state update completes before adding component
-          flushSync(() => {
-            setPlanData(newPlanData)
-          })
+          // Set state immediately
+          setPlanData(newPlanData)
 
           // Clear the pending data and URL param
           sessionStorage.removeItem('pendingPlanData')
           window.history.replaceState({}, '', '/')
 
-          // Open the plan component - state is now guaranteed to be updated
-          console.log('✅ Opening Plan module with data:', {
-            hasBlueprint: !!newPlanData.blueprint,
-            sessionId: newPlanData.sessionId
+          // Wait for next render cycle to ensure state is flushed
+          requestAnimationFrame(() => {
+            console.log('✅ Opening Plan module with data:', {
+              hasBlueprint: !!newPlanData.blueprint,
+              sessionId: newPlanData.sessionId
+            })
+            addComponent('plan')
           })
-          addComponent('plan')
         } catch (err) {
           console.error('Failed to parse pending plan data:', err)
         }
       }
     }
-  }, [addComponent])
+  }, [addComponent, setPlanData])
 
   // Broadcast open components to parent for tab highlighting
   useEffect(() => {
