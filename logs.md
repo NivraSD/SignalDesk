@@ -1,159 +1,122 @@
-# MITSUI & CO. CRITICAL MINERALS PARTNERSHIP MEDIA LIST
-
-## PR Campaign: U.S. Strategic Positioning
-
----
-
-## Kashmir Hill
-
-**Outlet:** New York Times
-**Beat:** Privacy & Surveillance Tech
-**Email:** kashmir.hill@nytimes.com
-**Twitter:** Not available
-**LinkedIn:** Not available
-
-**Why Contact:** Not recommended for this campaign. Kashmir Hill's beat focuses on privacy and surveillance technology, which does not align with critical minerals supply chain strategy or international trade partnerships.
-
-**Pitch Angle:** N/A - Consider removing from outreach list.
-
----
-
-## Kalley Huang
-
-**Outlet:** New York Times
-**Beat:** Tech & Social Media
-**Email:** kalley.huang@nytimes.com
-**Twitter:** Not available
-**LinkedIn:** Not available
-
-**Why Contact:** Not recommended for this campaign. Kalley Huang covers tech and social media trends, which fall outside the scope of critical minerals infrastructure, supply chain resilience, and U.S.-Japan strategic partnerships.
-
-**Pitch Angle:** N/A - Consider removing from outreach list.
-
----
-
-## Nico Grant
-
-**Outlet:** New York Times
-**Beat:** Google & Tech Giants
-**Email:** nico.grant@nytimes.com
-**Twitter:** Not available
-**LinkedIn:** Not available
-
-**Why Contact:** Not recommended for this campaign. Nico Grant's focus on Google and major tech companies does not align with critical minerals sourcing, supply chain infrastructure, or international trade partnerships.
-
-**Pitch Angle:** N/A - Consider removing from outreach list.
-
----
-
-## Tripp Mickle
-
-**Outlet:** New York Times
-**Beat:** Apple & Consumer Tech
-**Email:** tripp.mickle@nytimes.com
-**Twitter:** Not available
-**LinkedIn:** Not available
-
-**Why Contact:** Not recommended for this campaign. Tripp Mickle covers Apple and consumer technology products, which does not overlap with critical minerals supply chain strategy or geopolitical trade partnerships.
-
-**Pitch Angle:** N/A - Consider removing from outreach list.
-
----
-
-## Brian X. Chen
-
-**Outlet:** New York Times
-**Beat:** Consumer Tech
-**Email:** brian.chen@nytimes.com
-**Twitter:** Not available
-**LinkedIn:** Not available
-
-**Why Contact:** Not recommended for this campaign. Brian Chen's beat focuses on consumer technology products and reviews, which does not align with critical minerals infrastructure or B2B supply chain strategy.
-
-**Pitch Angle:** N/A - Consider removing from outreach list.
-
----
-
-## Kellen Browning
-
-**Outlet:** New York Times
-**Beat:** Gaming & Virtual Worlds
-**Email:** kellen.browning@nytimes.com
-**Twitter:** Not available
-**LinkedIn:** Not available
-
-**Why Contact:** Not recommended for this campaign. Kellen Browning covers gaming and virtual worlds, which does not relate to critical minerals sourcing or supply chain resilience.
-
-**Pitch Angle:** N/A - Consider removing from outreach list.
-
----
-
-## Taylor Lorenz
-
-**Outlet:** New York Times
-**Beat:** Internet Culture
-**Email:** taylor.lorenz@nytimes.com
-**Twitter:** Not available
-**LinkedIn:** Not available
-
-**Why Contact:** Not recommended for this campaign. Taylor Lorenz focuses on internet culture and social trends, which does not align with critical minerals strategy or international trade partnerships.
-
-**Pitch Angle:** N/A - Consider removing from outreach list.
-
----
-
-## Sheryl Gay Stolberg
-
-**Outlet:** New York Times
-**Beat:** Health Policy
-**Email:** sheryl.stolberg@nytimes.com
-**Twitter:** Not available
-**LinkedIn:** Not available
-
-**Why Contact:** Not recommended for this campaign. Sheryl Gay Stolberg covers health policy, which does not relate to critical minerals supply chains or geopolitical trade strategy.
-
-**Pitch Angle:** N/A - Consider removing from outreach list.
-
----
-
-## Gina Kolata
-
-**Outlet:** New York Times
-**Beat:** Science & Health
-**Email:** gina.kolata@nytimes.com
-**Twitter:** Not available
-**LinkedIn:** Not available
-
-**Why Contact:** Not recommended for this campaign. Gina Kolata's beat focuses on science and health topics, which does not align with critical minerals infrastructure or supply chain resilience.
-
-**Pitch Angle:** N/A - Consider removing from outreach list.
-
----
-
-## Christina Jewett
-
-**Outlet:** New York Times
-**Beat:** Healthcare
-**Email:** christina.jewett@nytimes.com
-**Twitter:** Not available
-**LinkedIn:** Not available
-
-**Why Contact:** Not recommended for this campaign. Christina Jewett covers healthcare topics, which does not relate to critical minerals sourcing or U.S.-Japan strategic partnerships.
-
-**Pitch Angle:** N/A - Consider removing from outreach list.
-
----
-
-## RECOMMENDATION
-
-**This journalist list is not aligned with the Mitsui & Co. critical minerals campaign.** The provided contacts cover consumer tech, health, entertainment, and internet culture—none of which relate to supply chain strategy, critical minerals, geopolitical trade, or international partnerships.
-
-**Suggested journalist beats to target instead:**
-
-- Trade & International Business
-- Supply Chain & Logistics
-- Energy & Resources
-- Geopolitics & Foreign Policy
-- Industrial Technology
-- U.S.-Japan Relations
-- Strategic Infrastructure
+[
+{
+"event_message": "shutdown",
+"event_type": "Shutdown",
+"function_id": "1a0b4b3b-2843-447d-85a1-002b59be64b3",
+"id": "fb6be681-9ca9-419f-adf9-b63db0eaeda1",
+"level": "log",
+"timestamp": 1762359179988000
+},
+{
+"event_message": "📊 Blueprint stats: { stakeholders: 3, levers: 12, tactics: 84, pattern: \"CASCADE\" }\n",
+"event_type": "Log",
+"function_id": "1a0b4b3b-2843-447d-85a1-002b59be64b3",
+"id": "871b3c4e-96e6-4628-acdb-7d841c1773d7",
+"level": "info",
+"timestamp": 1762359056137000
+},
+{
+"event_message": "✅ Complete blueprint generated!\n",
+"event_type": "Log",
+"function_id": "1a0b4b3b-2843-447d-85a1-002b59be64b3",
+"id": "82e92738-735f-4454-a7b1-6e58cd85e949",
+"level": "info",
+"timestamp": 1762359056137000
+},
+{
+"event_message": "✅ Execution requirements generated\n",
+"event_type": "Log",
+"function_id": "1a0b4b3b-2843-447d-85a1-002b59be64b3",
+"id": "67b4d97e-faa5-422e-abb4-8bcbe1f38dd5",
+"level": "info",
+"timestamp": 1762359056085000
+},
+{
+"event_message": "📦 Merging all parts into complete blueprint...\n",
+"event_type": "Log",
+"function_id": "1a0b4b3b-2843-447d-85a1-002b59be64b3",
+"id": "365db562-062e-4f3c-8f77-41b0f56399f7",
+"level": "info",
+"timestamp": 1762359056085000
+},
+{
+"event_message": "⚙️ Generating execution requirements...\n",
+"event_type": "Log",
+"function_id": "1a0b4b3b-2843-447d-85a1-002b59be64b3",
+"id": "fd7bea3b-827e-4a3f-a389-d99fa9ee817e",
+"level": "info",
+"timestamp": 1762358980165000
+},
+{
+"event_message": "✅ Orchestration found: { stakeholders: 3, levers: 12, tactics: 84 }\n",
+"event_type": "Log",
+"function_id": "1a0b4b3b-2843-447d-85a1-002b59be64b3",
+"id": "76ab354f-d703-4c9f-a9f6-092e77246a09",
+"level": "info",
+"timestamp": 1762358980097000
+},
+{
+"event_message": "🎯 Blueprint Finalizer starting: { sessionId: \"9a58c789-b183-4b0c-b326-8888e27634af\", org: \"KARV\" }\n",
+"event_type": "Log",
+"function_id": "1a0b4b3b-2843-447d-85a1-002b59be64b3",
+"id": "c1862801-fe50-47db-bb8a-dd059c01f552",
+"level": "info",
+"timestamp": 1762358979981000
+},
+{
+"event_message": "Listening on http://localhost:9999/\n",
+"event_type": "Log",
+"function_id": "1a0b4b3b-2843-447d-85a1-002b59be64b3",
+"id": "aa629c1d-ddab-4eb8-86bb-3be289c7d08d",
+"level": "info",
+"timestamp": 1762358979977000
+},
+{
+"event_message": "booted (time: 23ms)",
+"event_type": "Boot",
+"function_id": "1a0b4b3b-2843-447d-85a1-002b59be64b3",
+"id": "c367e047-1d05-4c76-914e-04eb8aa0216e",
+"level": "log",
+"timestamp": 1762358979976000
+},
+{
+"event_message": "⚙️ Generating execution requirements...\n",
+"event_type": "Log",
+"function_id": "1a0b4b3b-2843-447d-85a1-002b59be64b3",
+"id": "cd4f612e-95c9-417c-8e81-96f5b391f4b6",
+"level": "info",
+"timestamp": 1762357340498000
+},
+{
+"event_message": "✅ Orchestration found: { stakeholders: 4, levers: 16, tactics: 112 }\n",
+"event_type": "Log",
+"function_id": "1a0b4b3b-2843-447d-85a1-002b59be64b3",
+"id": "50fd0e35-8fbe-40cb-9322-9f0948828dae",
+"level": "info",
+"timestamp": 1762357340435000
+},
+{
+"event_message": "🎯 Blueprint Finalizer starting: { sessionId: \"bd2d604a-467b-481c-a995-904f783c8982\", org: \"KARV\" }\n",
+"event_type": "Log",
+"function_id": "1a0b4b3b-2843-447d-85a1-002b59be64b3",
+"id": "51d53719-f7bf-4e6a-a3e5-e0615dc1b566",
+"level": "info",
+"timestamp": 1762357340343000
+},
+{
+"event_message": "Listening on http://localhost:9999/\n",
+"event_type": "Log",
+"function_id": "1a0b4b3b-2843-447d-85a1-002b59be64b3",
+"id": "ab3107e8-1670-4571-9889-f22a3ff7d15c",
+"level": "info",
+"timestamp": 1762357340339000
+},
+{
+"event_message": "booted (time: 22ms)",
+"event_type": "Boot",
+"function_id": "1a0b4b3b-2843-447d-85a1-002b59be64b3",
+"id": "46cd34ae-b5c8-465a-aedc-3c4f4619e193",
+"level": "log",
+"timestamp": 1762357340338000
+}
+]

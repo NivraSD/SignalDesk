@@ -25,7 +25,10 @@ serve(async (req) => {
 
     console.log('🎯 Blueprint Finalizer starting:', {
       sessionId: payload.sessionId,
-      org: payload.organizationContext?.name
+      org: payload.organizationContext?.name,
+      hasGeoIntelligence: !!payload.geoIntelligence,
+      geoSchemas: payload.geoIntelligence?.synthesis?.schemaOpportunities?.length || 0,
+      geoContent: payload.geoIntelligence?.synthesis?.contentRecommendations?.length || 0
     })
 
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || ''
@@ -122,6 +125,14 @@ serve(async (req) => {
 
     // MERGE: Combine all parts into complete blueprint
     console.log('📦 Merging all parts into complete blueprint...')
+
+    if (payload.geoIntelligence) {
+      console.log('✅ Including GEO intelligence in final blueprint:', {
+        targetQueries: payload.geoIntelligence.targetQueries?.length || 0,
+        schemaOpportunities: payload.geoIntelligence.synthesis?.schemaOpportunities?.length || 0,
+        contentRecommendations: payload.geoIntelligence.synthesis?.contentRecommendations?.length || 0
+      })
+    }
 
     const completeBlueprint = {
       // Overview from base

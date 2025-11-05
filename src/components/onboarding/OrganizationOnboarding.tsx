@@ -610,11 +610,23 @@ export default function OrganizationOnboarding({
         platforms_tested: 4
       })
 
-      // Count mentions by platform
-      const claudeSignals = claudeResults.data?.signals || []
-      const geminiSignals = geminiResults.data?.signals || []
-      const perplexitySignals = perplexityResults.data?.signals || []
-      const chatgptSignals = chatgptResults.data?.signals || []
+      // Count mentions by platform (combine both batches)
+      const claudeSignals = [
+        ...(claudeBatch1.data?.signals || []),
+        ...(claudeBatch2.data?.signals || [])
+      ]
+      const geminiSignals = [
+        ...(geminiBatch1.data?.signals || []),
+        ...(geminiBatch2.data?.signals || [])
+      ]
+      const perplexitySignals = [
+        ...(perplexityBatch1.data?.signals || []),
+        ...(perplexityBatch2.data?.signals || [])
+      ]
+      const chatgptSignals = [
+        ...(chatgptBatch1.data?.signals || []),
+        ...(chatgptBatch2.data?.signals || [])
+      ]
 
       // Format results for display
       const geoData = {
