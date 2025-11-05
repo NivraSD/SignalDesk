@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS strategic_planning_items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
   -- Campaign Context
-  session_id UUID NOT NULL REFERENCES campaign_sessions(id) ON DELETE CASCADE,
+  session_id UUID NOT NULL,
   organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   campaign_type TEXT NOT NULL, -- 'VECTOR_CAMPAIGN', 'GEO_VECTOR', etc.
 
