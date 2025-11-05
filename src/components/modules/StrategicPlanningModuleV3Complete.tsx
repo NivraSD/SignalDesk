@@ -1400,7 +1400,7 @@ export default function StrategicPlanningModuleV3Complete({
                                   <div className="flex items-start justify-between gap-3">
                                     <div className="flex-1">
                                       <div className="flex items-center gap-2 mb-1">
-                                        <span className="text-lg">{typeInfo.icon}</span>
+                                        <span className="text-lg">{typeInfo?.icon}</span>
                                         <span className={`text-xs font-medium text-${tierColor}-300`}>
                                           {item.topic}
                                         </span>
@@ -1581,14 +1581,14 @@ export default function StrategicPlanningModuleV3Complete({
                                     return (
                                       <div
                                         key={item.id}
-                                        className={`p-3 bg-${typeInfo.color}-900/10 border border-${typeInfo.color}-500/20 rounded`}
+                                        className={`p-3 bg-${typeInfo?.color || 'gray'}-900/10 border border-${typeInfo?.color || 'gray'}-500/20 rounded`}
                                       >
                                         <div className="flex items-start justify-between gap-3">
                                           <div className="flex-1">
                                             <div className="flex items-center gap-2 mb-1">
-                                              <span className="text-lg">{typeInfo.icon}</span>
-                                              <span className={`text-xs font-medium text-${typeInfo.color}-300`}>
-                                                {typeInfo.label}
+                                              <span className="text-lg">{typeInfo?.icon}</span>
+                                              <span className={`text-xs font-medium text-${typeInfo?.color || 'gray'}-300`}>
+                                                {typeInfo?.label}
                                               </span>
                                               {getStatusIcon(isGenerating ? 'generating' : item.status)}
                                             </div>

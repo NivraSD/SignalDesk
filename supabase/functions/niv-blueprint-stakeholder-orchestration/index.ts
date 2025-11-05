@@ -426,7 +426,9 @@ For EACH stakeholder's psychological influence levers (from Part 2), create a MU
    - Real publication targets
    - Specific people from the org (CEO, CMO, etc.)
 
-5. **Timing Matters**: Sequence tactics logically (can't amplify what doesn't exist, can't pitch media without foundational content)
+5. **AVOID DUPLICATION**: Each journalist/outlet should only be targeted ONCE across the entire plan. If multiple stakeholders/levers could use the same journalist, pick the BEST FIT and use different journalists for the others. Mix it up - use the full breadth of available media contacts.
+
+6. **Timing Matters**: Sequence tactics logically (can't amplify what doesn't exist, can't pitch media without foundational content)
 
 ## OUTPUT FORMAT
 

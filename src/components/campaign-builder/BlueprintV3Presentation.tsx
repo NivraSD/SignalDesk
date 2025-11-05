@@ -1056,7 +1056,7 @@ export function BlueprintV3Presentation({
             1: { label: 'Priority 1: Launch Critical', color: 'red', description: 'Must-have content for launch success' },
             2: { label: 'Priority 2: High-Impact', color: 'amber', description: 'Amplification and depth' },
             3: { label: 'Priority 3: Supporting', color: 'blue', description: 'Ongoing engagement content' },
-            4: { label: 'Priority 4: Long-tail', color: 'gray', description: 'Sustained presence' }
+            4: { label: 'Priority 4', color: 'gray', description: 'Additional stakeholders' }
           }
 
           return (
