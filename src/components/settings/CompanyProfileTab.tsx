@@ -69,7 +69,15 @@ export default function CompanyProfileTab({
       setError(null)
 
       // Use API route instead of client-side Supabase to avoid schema cache issues
-      const response = await fetch(`/api/organizations/${organizationId}/profile`)
+      const response = await fetch(`/api/organizations/profile?id=${organizationId}`)
+
+      if (!response.ok) {
+        const text = await response.text()
+        console.error('Failed to load profile:', response.status, text)
+        setLoading(false)
+        return
+      }
+
       const data = await response.json()
 
       if (!response.ok || !data.success) {
@@ -110,7 +118,7 @@ export default function CompanyProfileTab({
       console.log('Saving profile:', profile)
 
       // Use API route instead of client-side Supabase to avoid schema cache issues
-      const response = await fetch(`/api/organizations/${organizationId}/profile`, {
+      const response = await fetch(`/api/organizations/profile?id=${organizationId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ company_profile: profile })
