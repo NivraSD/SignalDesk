@@ -4952,7 +4952,7 @@ Respond with JSON only:
     try {
       const memoryVaultGuidance = await getMemoryVaultGuidance({
         organizationId: organizationId,
-        query: searchQuery || userMessage,
+        query: queryStrategy?.searchQuery || userMessage,
         contentType: 'general'
       })
 

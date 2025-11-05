@@ -683,14 +683,32 @@ export function CampaignBuilderWizard() {
           throw new Error('Failed to discover queries: ' + queryDiscoveryResponse.error.message)
         }
 
-        const { queries: categorizedQueries } = queryDiscoveryResponse.data
+        console.log('📊 Raw query discovery response:', queryDiscoveryResponse.data)
+
+        const responseData = queryDiscoveryResponse.data
+        if (!responseData) {
+          throw new Error('No data returned from query discovery')
+        }
+
+        const categorizedQueries = responseData.queries
+        console.log('📊 Categorized queries structure:', categorizedQueries)
 
         // Flatten categorized queries into a single array
-        const allQueries = [
-          ...(categorizedQueries?.critical || []),
-          ...(categorizedQueries?.high || []),
-          ...(categorizedQueries?.medium || [])
-        ]
+        let allQueries: any[] = []
+
+        if (Array.isArray(categorizedQueries)) {
+          // If it's already an array, use it directly
+          allQueries = categorizedQueries
+        } else if (categorizedQueries && typeof categorizedQueries === 'object') {
+          // If it's an object with categories, flatten it
+          allQueries = [
+            ...(categorizedQueries.critical || []),
+            ...(categorizedQueries.high || []),
+            ...(categorizedQueries.medium || [])
+          ]
+        } else {
+          throw new Error('Unexpected query structure: ' + JSON.stringify(categorizedQueries))
+        }
 
         console.log('✅ Discovered', allQueries.length, 'target queries')
 
@@ -709,8 +727,13 @@ export function CampaignBuilderWizard() {
           }
         ])
 
-        // Use first 5 queries (prioritizing critical/high)
-        const testQueries = allQueries.slice(0, 5).map(q => q.query || q)
+        // Use first 5 queries (prioritizing critical/high) and extract query strings
+        const testQueries = allQueries.slice(0, 5).map(q => {
+          // Handle both string and object formats
+          if (typeof q === 'string') return q
+          if (q && typeof q === 'object' && q.query) return q.query
+          return String(q)
+        })
 
         const [claudeResults, geminiResults, perplexityResults, chatgptResults] = await Promise.all([
           supabase.functions.invoke('geo-test-claude', {
