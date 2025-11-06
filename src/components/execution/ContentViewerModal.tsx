@@ -5,7 +5,7 @@ import { X, Copy, Download, Share2, CheckCircle, Edit2, Save } from 'lucide-reac
 
 interface ContentItem {
   id: string
-  type: 'media_pitch' | 'social_post' | 'thought_leadership' | 'user_action'
+  type: 'media_pitch' | 'social_post' | 'thought_leadership' | 'user_action' | 'geo_schema_update' | 'geo_content_recommendation'
   stakeholder: string
   topic: string
   target?: string
@@ -64,6 +64,12 @@ export function ContentViewerModal({
         return { label: 'Thought Leadership', icon: '✍️', color: 'purple' }
       case 'user_action':
         return { label: 'User Action', icon: '👤', color: 'amber' }
+      case 'geo_schema_update':
+        return { label: 'Schema Update', icon: '🔍', color: 'cyan' }
+      case 'geo_content_recommendation':
+        return { label: 'Content Recommendation', icon: '💡', color: 'indigo' }
+      default:
+        return { label: 'Content', icon: '📄', color: 'gray' }
     }
   }
 
@@ -149,6 +155,50 @@ export function ContentViewerModal({
                           <li key={i}>{point}</li>
                         ))}
                       </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+              {item.type === 'geo_schema_update' && (
+                <div className="space-y-2 text-sm">
+                  {item.details.schema_type && (
+                    <p><span className="text-gray-400">Schema Type:</span> <span className="text-white">{item.details.schema_type}</span></p>
+                  )}
+                  {item.details.priority && (
+                    <p><span className="text-gray-400">Priority:</span> <span className="text-white capitalize">{item.details.priority}</span></p>
+                  )}
+                  {item.details.platform && (
+                    <p><span className="text-gray-400">Platform:</span> <span className="text-white capitalize">{item.details.platform}</span></p>
+                  )}
+                  {item.details.reasoning && (
+                    <div className="mt-3">
+                      <p className="text-gray-400 mb-1">Reasoning:</p>
+                      <p className="text-gray-300">{item.details.reasoning}</p>
+                    </div>
+                  )}
+                  {item.details.expected_impact && (
+                    <div className="mt-3">
+                      <p className="text-gray-400 mb-1">Expected Impact:</p>
+                      <p className="text-gray-300">{item.details.expected_impact}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+              {item.type === 'geo_content_recommendation' && (
+                <div className="space-y-2 text-sm">
+                  {item.details.content_type && (
+                    <p><span className="text-gray-400">Content Type:</span> <span className="text-white capitalize">{item.details.content_type}</span></p>
+                  )}
+                  {item.details.priority && (
+                    <p><span className="text-gray-400">Priority:</span> <span className="text-white capitalize">{item.details.priority}</span></p>
+                  )}
+                  {item.details.target_query && (
+                    <p><span className="text-gray-400">Target Query:</span> <span className="text-white">{item.details.target_query}</span></p>
+                  )}
+                  {item.details.reasoning && (
+                    <div className="mt-3">
+                      <p className="text-gray-400 mb-1">Reasoning:</p>
+                      <p className="text-gray-300">{item.details.reasoning}</p>
                     </div>
                   )}
                 </div>
