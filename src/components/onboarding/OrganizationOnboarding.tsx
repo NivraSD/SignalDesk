@@ -215,6 +215,39 @@ export default function OrganizationOnboarding({
         throw new Error('No organization data returned from API')
       }
 
+      // 1.5. Populate company profile from discovery data
+      console.log('📋 Populating company profile from discovery...')
+      const companyProfile = {
+        // Product lines from GEO service lines
+        product_lines: serviceLines || [],
+        // Key markets from GEO geographic focus
+        key_markets: geographicFocus || [],
+        // Business context from discovery
+        business_model: discovered?.description ?
+          (discovered.description.includes('B2B') ? 'B2B' :
+           discovered.description.includes('B2C') ? 'B2C' :
+           discovered.description.includes('SaaS') ? 'B2B SaaS' : '') : '',
+        // Industry from discovery
+        // Leadership, headquarters, size can be filled later in settings
+        leadership: [],
+        headquarters: {},
+        company_size: {},
+        founded: '',
+        parent_company: ''
+      }
+
+      try {
+        await fetch(`/api/organizations/profile?id=${organization.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ company_profile: companyProfile })
+        })
+        console.log('✅ Company profile initialized')
+      } catch (err) {
+        console.warn('⚠️ Failed to initialize company profile:', err)
+        // Don't fail onboarding if this fails
+      }
+
       // 2. Save targets (topics removed - not effective)
       console.log('🎯 Saving targets...')
       const allCompetitors = [
