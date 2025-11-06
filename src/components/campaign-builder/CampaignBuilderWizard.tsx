@@ -964,6 +964,12 @@ export function CampaignBuilderWizard() {
 
         const result = await finalizeResponse.json()
         console.log('✅ GEO-VECTOR blueprint completed:', result)
+        console.log('📊 GEO-VECTOR result structure:', {
+          hasPart3: !!result.part3_stakeholderOrchestration,
+          planCount: result.part3_stakeholderOrchestration?.stakeholderOrchestrationPlans?.length || 0,
+          keys: Object.keys(result),
+          part3Keys: result.part3_stakeholderOrchestration ? Object.keys(result.part3_stakeholderOrchestration) : []
+        })
 
         // Save blueprint to database
         try {
@@ -991,6 +997,7 @@ export function CampaignBuilderWizard() {
 
         console.log('✅ GEO-VECTOR blueprint completed in', Date.now() - startTime, 'ms')
 
+        console.log('💾 Setting session.blueprint for GEO-VECTOR')
         setSession(prev => ({
           ...prev!,
           blueprint: result
@@ -1097,13 +1104,15 @@ export function CampaignBuilderWizard() {
 
       const result = await finalizeResponse.json()
       console.log('✅ Complete blueprint generated:', result)
-      console.log('📊 Blueprint structure:', {
+      console.log('📊 VECTOR Blueprint structure:', {
         hasOverview: !!result.overview,
         hasPart1: !!result.part1_goalFramework,
         hasPart2: !!result.part2_stakeholderMapping,
         hasPart3: !!result.part3_stakeholderOrchestration,
         hasPart5: !!result.part5_executionRequirements,
-        part3Plans: result.part3_stakeholderOrchestration?.stakeholderOrchestrationPlans?.length || 0
+        part3Plans: result.part3_stakeholderOrchestration?.stakeholderOrchestrationPlans?.length || 0,
+        keys: Object.keys(result),
+        part3Keys: result.part3_stakeholderOrchestration ? Object.keys(result.part3_stakeholderOrchestration) : []
       })
 
       // Save blueprint to database
@@ -1133,6 +1142,7 @@ export function CampaignBuilderWizard() {
 
       console.log('✅ Complete blueprint generated in', Date.now() - startTime, 'ms')
 
+      console.log('💾 Setting session.blueprint for VECTOR')
       setSession(prev => ({
         ...prev!,
         blueprint: result
@@ -1231,6 +1241,12 @@ export function CampaignBuilderWizard() {
     }))
 
     console.log('✅ Blueprint stored for Strategic Planning module')
+    console.log('📊 Blueprint structure:', {
+      hasPart3: !!session.blueprint?.part3_stakeholderOrchestration,
+      planCount: session.blueprint?.part3_stakeholderOrchestration?.stakeholderOrchestrationPlans?.length || 0,
+      hasGeoIntelligence: !!(session.blueprint as any)?.geoIntelligence,
+      blueprintKeys: Object.keys(session.blueprint || {})
+    })
     console.log('🔄 Navigating to canvas...')
 
     // Navigate to home page where canvas will pick up the pending plan data
