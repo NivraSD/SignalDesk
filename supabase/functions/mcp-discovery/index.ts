@@ -933,7 +933,74 @@ REMEMBER:
     
     return queries;
   };
-  
+
+  // Generate context-driven queries for industry monitoring (NOT target-specific)
+  // These queries cast a wide net to find ALL industry activity, then relevance filter scores by targets
+  const generateContextQueries = () => {
+    const queries = {
+      industry_context: [] as string[],
+      service_line_context: [] as string[],
+      market_context: [] as string[],
+      strategic_context: [] as string[]
+    };
+
+    // INDUSTRY-LEVEL QUERIES (broad industry monitoring)
+    if (enhancedData.industry) {
+      queries.industry_context.push(
+        `${enhancedData.industry} news`,
+        `${enhancedData.industry} trends`,
+        `${enhancedData.industry} partnerships`,
+        `${enhancedData.industry} regulatory changes`,
+        `${enhancedData.industry} market dynamics`,
+        `${enhancedData.industry} M&A`
+      );
+    }
+
+    // Add sub-industry if more specific
+    if (enhancedData.sub_industry) {
+      queries.industry_context.push(
+        `${enhancedData.sub_industry} news`,
+        `${enhancedData.sub_industry} innovations`
+      );
+    }
+
+    // SERVICE LINE QUERIES (what the company actually does)
+    (enhancedData.service_lines || []).slice(0, 3).forEach((service: string) => {
+      queries.service_line_context.push(
+        `${service} market trends`,
+        `${service} innovation`,
+        `${service} competitive landscape`
+      );
+    });
+
+    // GEOGRAPHIC/MARKET QUERIES (where they operate)
+    (enhancedData.market?.geographic_focus || []).slice(0, 3).forEach((market: string) => {
+      queries.market_context.push(
+        `${market} ${enhancedData.industry}`,
+        `${market} business news`
+      );
+    });
+
+    // STRATEGIC PRIORITY QUERIES (what company cares about right now)
+    (enhancedData.strategic_context?.strategic_priorities || []).slice(0, 3).forEach((priority: string) => {
+      queries.strategic_context.push(priority);
+    });
+
+    // Combine all queries and deduplicate
+    const allQueries = [
+      ...queries.industry_context,
+      ...queries.service_line_context,
+      ...queries.market_context,
+      ...queries.strategic_context
+    ];
+
+    return {
+      by_category: queries,
+      all: [...new Set(allQueries)], // Deduplicated list
+      total: allQueries.length
+    };
+  };
+
   // Generate content patterns for the industry
   const generateContentPatterns = () => ({
     high_value_patterns: [
@@ -1082,6 +1149,11 @@ REMEMBER:
       keywords: expandedKeywords.all,  // NEW: Use expanded keywords
       keywords_by_source: expandedKeywords.bySourceType,  // NEW
       keywords_by_priority: expandedKeywords.byPriority,  // NEW
+
+      // NEW: Context-driven queries for monitors (industry/service/market, NOT target-specific)
+      context_queries: generateContextQueries(),
+
+      // LEGACY: Target-specific queries (for backward compatibility)
       search_queries: generateSearchQueries(enhancedData.competition.direct_competitors || []),
       content_patterns: generateContentPatterns(),
       competitor_priorities: generateCompetitorPriorities(),

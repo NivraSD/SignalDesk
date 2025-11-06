@@ -557,6 +557,200 @@ function generateRealtimeQueries(
  * Fetch articles using DIRECT Firecrawl API (bypasses niv-fireplexity for speed + time filtering)
  */
 async function fetchRealtimeArticles(
+      const context = targetsWithContext?.stakeholders.get(stakeholder)
+
+      // Use industry_context for disambiguation if available
+      const disambiguated = context?.industry_context
+        ? `${stakeholder} ${context.industry_context}`
+        : stakeholder
+
+      // If relevance_filter exists, use include_patterns for smarter queries
+      if (context?.relevance_filter?.include_patterns?.length > 0) {
+        // Generate targeted queries based on what matters for this stakeholder
+        context.relevance_filter.include_patterns.slice(0, 2).forEach((pattern: string) => {
+          queries.push(`${stakeholder} ${pattern}`)
+        })
+      } else {
+        // Fallback to generic queries
+        queries.push(`${stakeholder} ${orgName}`)
+        if (industry) {
+          queries.push(`${stakeholder} ${industry}`)
+        }
+      }
+
+      queries.push(`${disambiguated} news`)
+    })
+
+    // MEDIUM PRIORITY STAKEHOLDERS: 1-2 queries with context
+    targetsByPriority.stakeholders.medium.forEach((stakeholder: string) => {
+      const context = targetsWithContext?.stakeholders.get(stakeholder)
+
+      const disambiguated = context?.industry_context
+        ? `${stakeholder} ${context.industry_context}`
+        : stakeholder
+
+      if (context?.relevance_filter?.include_patterns?.length > 0) {
+        // Use first include pattern for medium priority
+        queries.push(`${stakeholder} ${context.relevance_filter.include_patterns[0]}`)
+      } else {
+        queries.push(`${stakeholder} ${orgName}`)
+      }
+
+      queries.push(`${disambiguated} news`)
+    })
+
+    // LOW PRIORITY STAKEHOLDERS: Basic query only
+    targetsByPriority.stakeholders.low.forEach((stakeholder: string) => {
+      const context = targetsWithContext?.stakeholders.get(stakeholder)
+      const disambiguated = context?.industry_context
+        ? `${stakeholder} ${context.industry_context}`
+        : stakeholder
+      queries.push(`${disambiguated} news`)
+    })
+
+    // HIGH PRIORITY COMPETITORS: Contextualized queries with disambiguation
+    targetsByPriority.competitors.high.forEach((comp: string) => {
+      const context = targetsWithContext?.competitors.get(comp)
+      const disambiguated = context?.industry_context
+        ? `${comp} ${context.industry_context}`
+        : comp
+
+      queries.push(`${comp} ${orgName}`)
+      queries.push(`${disambiguated} news`)
+    })
+
+    // MEDIUM + LOW PRIORITY COMPETITORS: Basic queries with disambiguation
+    ;[...targetsByPriority.competitors.medium, ...targetsByPriority.competitors.low].forEach((comp: string) => {
+      const context = targetsWithContext?.competitors.get(comp)
+      const disambiguated = context?.industry_context
+        ? `${comp} ${context.industry_context}`
+        : comp
+
+      queries.push(`${disambiguated} news`)
+    })
+
+    // ALL TOPICS (topics are usually intentional, keep all)
+    const allTopics = Array.from(discoveryTargets.topics)
+    allTopics.forEach((topic: string) => {
+      queries.push(`${topic}`)
+    })
+
+    // Crisis detection with industry disambiguation
+    if (industry) {
+      queries.push(`${orgName} ${industry} investigation OR lawsuit OR scandal`)
+      queries.push(`${orgName} ${industry} recall OR breach OR security`)
+    } else {
+      queries.push(`${orgName} investigation OR lawsuit OR scandal`)
+      queries.push(`${orgName} recall OR breach OR security`)
+    }
+
+    // Opportunity detection with industry disambiguation
+    if (industry) {
+      queries.push(`${orgName} ${industry} partnership OR acquisition OR merger`)
+      queries.push(`${orgName} ${industry} funding OR investment OR expansion`)
+    } else {
+      queries.push(`${orgName} partnership OR acquisition OR merger`)
+      queries.push(`${orgName} funding OR investment OR expansion`)
+    }
+
+    // Industry news
+    if (industry) {
+      queries.push(`${industry} news`)
+    }
+
+  } else if (recencyWindow === '6hours') {
+    // 6-HOUR MODE: High + medium priority targets
+
+    // HIGH PRIORITY STAKEHOLDERS: Contextualized queries
+    targetsByPriority.stakeholders.high.forEach((stakeholder: string) => {
+      queries.push(`${stakeholder} ${orgName}`)
+      if (industry) {
+        queries.push(`${stakeholder} ${industry}`)
+      }
+      queries.push(`${stakeholder} news`)
+    })
+
+    // MEDIUM PRIORITY STAKEHOLDERS: Basic query
+    targetsByPriority.stakeholders.medium.slice(0, 3).forEach((stakeholder: string) => {
+      queries.push(`${stakeholder} news`)
+    })
+
+    // HIGH PRIORITY COMPETITORS: Contextualized
+    targetsByPriority.competitors.high.forEach((comp: string) => {
+      queries.push(`${comp} ${orgName}`)
+      queries.push(`${comp} news`)
+    })
+
+    // Top 5 medium priority competitors
+    targetsByPriority.competitors.medium.slice(0, 5).forEach((comp: string) => {
+      queries.push(`${comp} news`)
+    })
+
+    // High priority topics only
+    const highTopics = targetsByPriority.topics.high
+    highTopics.forEach((topic: string) => {
+      queries.push(`${topic}`)
+    })
+
+    // Crisis detection with industry disambiguation
+    if (industry) {
+      queries.push(`${orgName} ${industry} investigation OR lawsuit OR scandal`)
+      queries.push(`${orgName} ${industry} recall OR breach`)
+    } else {
+      queries.push(`${orgName} investigation OR lawsuit OR scandal`)
+      queries.push(`${orgName} recall OR breach`)
+    }
+
+    // Opportunity detection with industry disambiguation
+    if (industry) {
+      queries.push(`${orgName} ${industry} partnership OR acquisition`)
+      queries.push(`${orgName} ${industry} funding OR investment`)
+    } else {
+      queries.push(`${orgName} partnership OR acquisition`)
+      queries.push(`${orgName} funding OR investment`)
+    }
+
+    // Industry breaking news
+    if (industry) {
+      queries.push(`${industry} breaking news`)
+    }
+
+  } else {
+    // 1-HOUR MODE: Ultra-focused - HIGH PRIORITY ONLY + breaking news
+
+    // HIGH PRIORITY STAKEHOLDERS: Contextualized for breaking news
+    targetsByPriority.stakeholders.high.forEach((stakeholder: string) => {
+      queries.push(`${stakeholder} ${orgName}`)
+      queries.push(`${stakeholder} breaking`)
+    })
+
+    // HIGH PRIORITY COMPETITORS: Basic queries
+    targetsByPriority.competitors.high.slice(0, 3).forEach((comp: string) => {
+      queries.push(`${comp} breaking`)
+    })
+
+    // Most critical crisis detection with industry disambiguation
+    if (industry) {
+      queries.push(`${orgName} ${industry} investigation OR lawsuit`)
+      queries.push(`${orgName} ${industry} recall OR breach`)
+    } else {
+      queries.push(`${orgName} investigation OR lawsuit`)
+      queries.push(`${orgName} recall OR breach`)
+    }
+
+    // Breaking industry news
+    if (industry) {
+      queries.push(`${industry} breaking`)
+    }
+  }
+
+  return queries
+}
+
+/**
+ * Fetch articles using DIRECT Firecrawl API (bypasses niv-fireplexity for speed + time filtering)
+ */
+async function fetchRealtimeArticles(
   queries: string[],
   profile: any,
   recencyWindow: string,
@@ -580,13 +774,13 @@ async function fetchRealtimeArticles(
 
   console.log(`   Executing ${queries.length} real-time Firecrawl searches with time filter: ${tbs}`)
 
-  // INCREASED LIMITS: With fewer context queries (~12 instead of 50+), we fetch MORE per query
+  // Dynamic limit based on recency window (fewer results = faster searches)
   const limitMap: Record<string, number> = {
-    '1hour': 10,   // Production: 10 results per query (cast wider net with context queries)
-    '6hours': 12,  // Testing: 12 results per query
-    '24hours': 15  // Executive synthesis: 15 results per query (comprehensive coverage)
+    '1hour': 3,   // Production: 3 results per query (fast, breaking news focus)
+    '6hours': 4,  // Testing: 4 results per query
+    '24hours': 5  // Executive synthesis: 5 results per query (comprehensive)
   }
-  const searchLimit = limitMap[recencyWindow] || 10
+  const searchLimit = limitMap[recencyWindow] || 3
 
   console.log(`   Using dynamic limit: ${searchLimit} results per query (recency: ${recencyWindow})`)
   console.log(`   Cache strategy: ${recencyWindow === '1hour' ? 'No cache (fresh data)' : '1hr cache (500% faster)'}`)
