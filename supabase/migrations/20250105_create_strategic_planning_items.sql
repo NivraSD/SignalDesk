@@ -45,10 +45,10 @@ CREATE TABLE IF NOT EXISTS strategic_planning_items (
 );
 
 -- Indexes
-CREATE INDEX idx_strategic_planning_items_session ON strategic_planning_items(session_id);
-CREATE INDEX idx_strategic_planning_items_org ON strategic_planning_items(organization_id);
-CREATE INDEX idx_strategic_planning_items_status ON strategic_planning_items(status);
-CREATE INDEX idx_strategic_planning_items_type ON strategic_planning_items(content_type);
+CREATE INDEX IF NOT EXISTS idx_strategic_planning_items_session ON strategic_planning_items(session_id);
+CREATE INDEX IF NOT EXISTS idx_strategic_planning_items_org ON strategic_planning_items(organization_id);
+CREATE INDEX IF NOT EXISTS idx_strategic_planning_items_status ON strategic_planning_items(status);
+CREATE INDEX IF NOT EXISTS idx_strategic_planning_items_type ON strategic_planning_items(content_type);
 
 -- RLS Policies - Disabled for now to avoid auth issues
 -- Can be enabled later with proper organization-based policies
