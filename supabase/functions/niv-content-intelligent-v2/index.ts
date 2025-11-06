@@ -86,6 +86,12 @@ async function getOrCreatePlaybook(params: {
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
+  // Fetch company profile for context
+  const { data: companyProfileData } = await supabase.rpc('get_company_profile', {
+    org_id: params.organizationId
+  })
+  const companyProfile = companyProfileData && companyProfileData.length > 0 ? companyProfileData[0].company_profile : null
+
   // Try to get cached playbook
   const { data: cached, error: playbookError } = await supabase
     .from('playbooks')
@@ -108,7 +114,7 @@ async function getOrCreatePlaybook(params: {
       console.log(`📚 Using cached playbook (${daysOld.toFixed(1)} days old)`)
       return {
         type: 'playbook',
-        content: formatPlaybookForClaude(cached.playbook, params.contentType, params.topic)
+        content: formatPlaybookForClaude(cached.playbook, params.contentType, params.topic, companyProfile)
       }
     }
 
@@ -119,7 +125,7 @@ async function getOrCreatePlaybook(params: {
 
     return {
       type: 'playbook',
-      content: formatPlaybookForClaude(cached.playbook, params.contentType, params.topic)
+      content: formatPlaybookForClaude(cached.playbook, params.contentType, params.topic, companyProfile)
     }
   }
 
@@ -156,10 +162,41 @@ async function getOrCreatePlaybook(params: {
 /**
  * Format playbook for Claude's consumption
  */
-function formatPlaybookForClaude(playbook: any, contentType: string, topic: string): string {
+function formatPlaybookForClaude(playbook: any, contentType: string, topic: string, companyProfile?: any): string {
   const guidance = playbook.guidance || {}
 
   let formatted = `📚 **Content Playbook: ${contentType} about ${topic}**\n\n`
+
+  // Add company profile context at the top
+  if (companyProfile) {
+    formatted += `**Company Profile:**\n`
+
+    if (companyProfile.leadership && companyProfile.leadership.length > 0) {
+      formatted += `Leadership: ${companyProfile.leadership.map((l: any) => `${l.name} (${l.title})`).join(', ')}\n`
+    }
+
+    if (companyProfile.product_lines && companyProfile.product_lines.length > 0) {
+      formatted += `Products/Services: ${companyProfile.product_lines.join(', ')}\n`
+    }
+
+    if (companyProfile.key_markets && companyProfile.key_markets.length > 0) {
+      formatted += `Key Markets: ${companyProfile.key_markets.join(', ')}\n`
+    }
+
+    if (companyProfile.headquarters && companyProfile.headquarters.city) {
+      formatted += `Headquarters: ${companyProfile.headquarters.city}${companyProfile.headquarters.state ? `, ${companyProfile.headquarters.state}` : ''}\n`
+    }
+
+    if (companyProfile.company_size && companyProfile.company_size.employees) {
+      formatted += `Company Size: ${companyProfile.company_size.employees}${companyProfile.company_size.revenue_tier ? `, ${companyProfile.company_size.revenue_tier}` : ''}\n`
+    }
+
+    if (companyProfile.business_model) {
+      formatted += `Business Model: ${companyProfile.business_model}\n`
+    }
+
+    formatted += `\n**IMPORTANT:** Use the above company facts in all generated content. Do not invent job titles, locations, or company details not listed above.\n\n`
+  }
 
   // Proven hooks
   if (guidance.proven_hooks && guidance.proven_hooks.length > 0) {
