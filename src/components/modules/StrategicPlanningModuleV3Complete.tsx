@@ -240,6 +240,13 @@ export default function StrategicPlanningModuleV3Complete({
 
     const items = parseBlueprint(blueprint)
 
+    // Determine campaign type from blueprint
+    const campaignType = (blueprint as any).geoIntelligence
+      ? 'GEO_VECTOR'
+      : blueprint.contentRequirements
+        ? 'PR_CAMPAIGN'
+        : 'VECTOR_CAMPAIGN'
+
     // Save all items to strategic_planning_items table immediately
     // This ensures persistence across page reloads/crashes
     console.log(`💾 Saving ${items.length} items to strategic_planning_items table...`)
