@@ -307,7 +307,8 @@ export default function StrategicPlanningModuleV3Complete({
       hasPart3: !!blueprint.part3_stakeholderOrchestration,
       hasContentRequirements: !!blueprint.contentRequirements,
       hasGeoIntelligence: !!(blueprint as any).geoIntelligence,
-      keys: Object.keys(blueprint)
+      keys: Object.keys(blueprint),
+      fullBlueprint: blueprint
     })
 
     const items: ContentItem[] = []
@@ -596,6 +597,12 @@ export default function StrategicPlanningModuleV3Complete({
   }
 
   const handleGenerate = async (item: ContentItem) => {
+    // Schema updates should use handleExecuteSchema instead
+    if (item.type === 'geo_schema_update') {
+      console.warn('⚠️ Schema updates should use Execute, not Generate')
+      return handleExecuteSchema(item)
+    }
+
     setGenerating(prev => new Set(prev).add(item.id))
     setContentItems(prev => prev.map(i =>
       i.id === item.id ? { ...i, status: 'generating' as const } : i
