@@ -53,6 +53,15 @@ export default function Dashboard() {
       if (data.success && data.organizations) {
         setOrganizations(data.organizations)
 
+        // Clear cached org if it's not in the user's org list
+        if (organization) {
+          const orgExists = data.organizations.some((org: any) => org.id === organization.id)
+          if (!orgExists) {
+            console.log('⚠️ Cached organization no longer accessible, clearing...')
+            setOrganization(null)
+          }
+        }
+
         // If no org selected, select the first one
         if (!organization && data.organizations.length > 0) {
           const firstOrg = data.organizations[0]
