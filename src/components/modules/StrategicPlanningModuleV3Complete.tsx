@@ -1016,18 +1016,32 @@ export default function StrategicPlanningModuleV3Complete({
 
     try {
       // Call geo-schema-updater with the schema opportunity data
+      const schemaData = item.details.schemaData || {}
+
+      console.log('📋 Schema data being sent to geo-schema-updater:', {
+        hasChanges: !!schemaData.changes,
+        changes: schemaData.changes,
+        fullSchemaData: schemaData
+      })
+
       const { data, error } = await supabase.functions.invoke('geo-schema-updater', {
         body: {
           organization_id: organization.id,
-          recommendation: item.details.schemaData || {
+          recommendation: {
             title: item.topic,
-            description: item.details.what,
-            schemaType: item.details.schemaData?.schemaType || 'Organization',
-            implementation: item.details.schemaData?.implementation || '{}',
-            query: item.details.schemaData?.query || '',
-            expectedImpact: item.details.schemaData?.expectedImpact || 'Improved AI visibility',
-            priority: item.details.schemaData?.priority || 1,
-            autoExecutable: true
+            description: schemaData.description || item.details.description || item.details.what,
+            schema_type: schemaData.schema_type || schemaData.schemaType || 'Organization',
+            type: schemaData.type || 'update_field',
+            priority: schemaData.priority || 1,
+            platform: schemaData.platform || 'all',
+            reasoning: schemaData.reasoning || schemaData.expectedImpact || 'Improved AI visibility',
+            expected_impact: schemaData.expected_impact || schemaData.expectedImpact || 'Improved AI visibility',
+            changes: schemaData.changes || {
+              field: 'description',
+              action: 'update',
+              value: schemaData.implementation || schemaData.description || 'Updated schema field'
+            },
+            auto_executable: schemaData.auto_executable !== false
           }
         }
       })

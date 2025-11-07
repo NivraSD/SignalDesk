@@ -847,6 +847,15 @@ export function CampaignBuilderWizard() {
 
         const synthesis = synthesisResponse.data?.synthesis || {}
 
+        // geo-executive-synthesis returns "recommendations" which should be schema opportunities
+        const schemaRecommendations = synthesis.recommendations || synthesis.schemaOpportunities || []
+
+        console.log('📊 GEO synthesis received:', {
+          hasRecommendations: !!synthesis.recommendations,
+          recommendationsCount: schemaRecommendations.length,
+          sampleRecommendation: schemaRecommendations[0]
+        })
+
         const geoIntelligence = {
           targetQueries: testQueries,
           citationSources,
@@ -854,10 +863,10 @@ export function CampaignBuilderWizard() {
           ownedQueries,
           unownedQueries,
           synthesis: {
-            gapAnalysis: synthesis.gapAnalysis || `${unownedQueries.length} of ${testQueries.length} queries need ownership`,
-            schemaOpportunities: synthesis.schemaOpportunities || [],
+            gapAnalysis: synthesis.gapAnalysis || synthesis.executive_summary || `${unownedQueries.length} of ${testQueries.length} queries need ownership`,
+            schemaOpportunities: schemaRecommendations,
             contentRecommendations: synthesis.contentRecommendations || [],
-            priorityActions: synthesis.priorityActions || []
+            priorityActions: synthesis.critical_actions || synthesis.priorityActions || []
           }
         }
 
