@@ -118,30 +118,16 @@ export default function StrategicPlanningModuleV3Complete({
   const orgId = currentOrgId
 
   // Update orgId when organization changes in global store
-  // BUT: Don't auto-switch if we just loaded from Campaign Builder with a specific orgId
+  // BUT: Don't auto-switch if we have a campaign loaded with a specific orgId
+  // This module is campaign-specific, not org-specific, so we should stick with the campaign's org
   useEffect(() => {
     if (organization?.id && organization.id !== currentOrgId) {
-      // Only auto-switch if this looks like a user-initiated org change (not initial load)
-      // Check if we have existing content - if so, this is a real switch
+      // Only clear if user explicitly initiated an org change AND we have content
+      // Don't auto-switch just because global org doesn't match campaign org
       if (contentItems.length > 0) {
-        console.log(`🔄 Strategic Planning: Organization changed from ${currentOrgId} to ${organization.id}, clearing and reloading`)
-        setCurrentOrgId(organization.id)
-
-        // Clear all campaign-specific state
-        setCurrentBlueprint(null as any)
-        setCurrentSessionId('')
-        setContentItems([])
-        setAvailableCampaigns([])
-        setError(null)
-        setLoading(false)
-        setViewMode('execution')
-        setExpandedPriorities(new Set([1]))
-        setExpandedStakeholders(new Set())
-        setGenerating(new Set())
-        setViewingItem(null)
-        setEditingResultFor(null)
-
-        // Will trigger campaign reload via the existing useEffect on currentOrgId
+        console.log(`ℹ️ Strategic Planning: Global org (${organization.id}) differs from campaign org (${currentOrgId})`)
+        console.log(`   Keeping campaign org - Strategic Planning is campaign-specific, not auto-switching`)
+        // Do NOT clear or switch - this campaign belongs to currentOrgId
       } else {
         console.log(`ℹ️ Strategic Planning: Organization in store (${organization.id}) differs from campaign org (${currentOrgId}), but no content loaded yet - using campaign org`)
       }
