@@ -114,19 +114,44 @@ serve(async (req) => {
     const historicalTrends = extractTrends(historicalArticles)
 
     const currentDate = new Date().toISOString().split('T')[0]
+    const currentDateTime = new Date()
+    const currentYear = currentDateTime.getFullYear()
+    const currentMonth = currentDateTime.getMonth() + 1
+    const futureMonths = {
+      '1-week': new Date(currentDateTime.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      '1-month': new Date(currentDateTime.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      '3-months': new Date(currentDateTime.getTime() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      '6-months': new Date(currentDateTime.getTime() + 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      '1-year': new Date(currentDateTime.getTime() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    }
 
     const prompt = `You are a PATTERN-RECOGNITION STRATEGIST who sees second-order effects and non-obvious connections that others miss.
 
-# IMPORTANT CONTEXT - READ CAREFULLY
-TODAY'S DATE: ${currentDate}
-YOU ARE ANALYZING DATA AS OF: ${currentDate}
-ALL PREDICTIONS MUST BE DATED FROM: ${currentDate} FORWARD
+# ⚠️ CRITICAL: TEMPORAL CONTEXT - READ THIS FIRST ⚠️
 
-Additional Context:
+**CURRENT DATE AND TIME:**
+- TODAY IS: ${currentDate}
+- CURRENT YEAR: ${currentYear}
+- CURRENT MONTH: ${currentMonth}/${currentYear}
+
+**FUTURE DATE REFERENCE POINTS:**
+- 1-week from now: ${futureMonths['1-week']}
+- 1-month from now: ${futureMonths['1-month']}
+- 3-months from now: ${futureMonths['3-months']}
+- 6-months from now: ${futureMonths['6-months']}
+- 1-year from now: ${futureMonths['1-year']}
+
+**ABSOLUTE RULES:**
+1. ALL predictions must be about FUTURE events (after ${currentDate})
+2. NEVER predict events that already occurred before ${currentDate}
+3. When you see historical articles, recognize they are PAST EVENTS - use them as context, not prediction targets
+4. Your time horizons should look FORWARD from ${currentDate}, not backward
+
+**Additional Context:**
 - Your Knowledge Cutoff: January 2025
 - Critical: DO NOT assume current office holders, executives, or leadership positions without evidence in the provided articles
 - If you reference a person, use ONLY information from the current articles, not your training data
-- When specifying time horizons, calculate dates from ${currentDate}
+- When specifying time horizons, calculate dates FORWARD from ${currentDate}
 
 # YOUR MISSION
 Generate 3-5 SPECULATIVE, PATTERN-BASED predictions about future developments starting from ${currentDate}. Think like a strategic futurist, not a conservative analyst.
@@ -205,17 +230,19 @@ ${JSON.stringify({
 Return ONLY a JSON array of predictions. Each prediction MUST:
 {
   "stakeholder": "Specific entity - ONLY use names/titles explicitly mentioned in the provided articles. Use organizational names (e.g. 'FTC', 'Microsoft Gaming Division') rather than assuming specific people in roles unless they are named in the articles.",
-  "title": "Bold, specific prediction - start with stakeholder's action - e.g. 'Microsoft will divest Xbox to focus capital on AI infrastructure'",
-  "description": "2-3 sentences on: (1) WHAT will happen, (2) WHY (the pattern/logic), (3) WHEN approximately (calculated from ${currentDate})",
+  "title": "Bold, specific FUTURE prediction using future tense - e.g. 'Microsoft WILL divest Xbox by ${futureMonths['3-months']}' NOT 'Microsoft divested Xbox'",
+  "description": "2-3 sentences on: (1) WHAT will happen IN THE FUTURE, (2) WHY (the pattern/logic), (3) WHEN approximately (use future dates like ${futureMonths['1-month']}, ${futureMonths['3-months']}, etc.)",
   "category": "competitive|regulatory|market|technology|partnership|crisis",
   "confidence": 75, // 70-85% is GOOD for speculative predictions - this is pattern-matching, not certainty
-  "time_horizon": "1-week|1-month|3-months|6-months|1-year", // Time from ${currentDate} forward
+  "time_horizon": "1-week|1-month|3-months|6-months|1-year", // MUST align with future dates: 1-week = by ${futureMonths['1-week']}, 1-month = by ${futureMonths['1-month']}, etc.
 
   "impact": "high|medium|low", // Impact on ${organization_name}
-  "evidence": ["Specific articles/trends that reveal the pattern - cite what you saw"],
-  "implications": ["What this means for ${organization_name} - opportunities or threats that emerge"],
-  "recommended_actions": ["Specific tactical responses - what should ${organization_name} DO about this?"]
+  "evidence": ["Specific articles/trends that reveal the pattern - cite what you saw (these are PAST/CURRENT events that inform FUTURE predictions)"],
+  "implications": ["What this WILL mean for ${organization_name} in the future - opportunities or threats that WILL emerge"],
+  "recommended_actions": ["Specific tactical responses - what should ${organization_name} DO NOW to prepare for this FUTURE event?"]
 }
+
+⚠️ REMINDER: All predictions must use FUTURE TENSE ("will happen", "expected to", "likely to") and reference dates AFTER ${currentDate}
 
 # QUALITY CHECKLIST
 ✅ Prediction is about EXTERNAL entity (competitor/regulator/market), not ${organization_name}

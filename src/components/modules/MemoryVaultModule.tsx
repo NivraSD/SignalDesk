@@ -899,56 +899,106 @@ export default function MemoryVaultModule() {
     }, 300)
   }
 
-  // Export content
-  const handleExport = (item: ContentItem, format: 'txt' | 'md' | 'json') => {
+  // Export content - NEW: Word, PowerPoint, Google Docs/Slides
+  const handleExport = async (item: ContentItem, format: 'word' | 'powerpoint' | 'google-docs' | 'google-slides') => {
     try {
-      let content = ''
-      let mimeType = 'text/plain'
-      let extension = 'txt'
+      setMergingTemplate(true)
 
-      const textContent = typeof item.content === 'string'
-        ? item.content
-        : JSON.stringify(item.content, null, 2)
+      const textContent = typeof item.content === 'string' ? item.content : JSON.stringify(item.content, null, 2)
 
-      if (format === 'txt') {
-        content = `${item.title}\n${'='.repeat(item.title.length)}\n\n${textContent}`
-        mimeType = 'text/plain'
-        extension = 'txt'
-      } else if (format === 'md') {
-        content = `# ${item.title}\n\n${textContent}`
-        mimeType = 'text/markdown'
-        extension = 'md'
-      } else if (format === 'json') {
-        content = JSON.stringify({
-          id: item.id,
-          title: item.title,
-          content_type: item.content_type,
-          content: item.content,
-          folder: item.folder,
-          themes: item.themes,
-          topics: item.topics,
-          entities: item.entities,
-          created_at: item.created_at
-        }, null, 2)
-        mimeType = 'application/json'
-        extension = 'json'
+      if (format === 'word') {
+        // Generate Word document via API
+        console.log('Generating Word document...')
+        const response = await fetch('/api/content-library/export-to-word', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contentId: item.id,
+            title: item.title,
+            content: textContent
+          })
+        })
+
+        if (!response.ok) throw new Error('Failed to generate Word document')
+
+        const blob = await response.blob()
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `${item.title.replace(/[^a-z0-9]/gi, '_')}.docx`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+
+        console.log('✅ Word document exported')
+      } else if (format === 'powerpoint') {
+        // Use Gamma to generate PowerPoint
+        console.log('Generating PowerPoint via Gamma...')
+        const response = await fetch('/api/gamma/generate-presentation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: item.title,
+            content: textContent,
+            organizationId: selectedOrganization
+          })
+        })
+
+        if (!response.ok) throw new Error('Failed to generate presentation')
+
+        const result = await response.json()
+
+        // Trigger PPTX download if available
+        if (result.pptx_url) {
+          const a = document.createElement('a')
+          a.href = result.pptx_url
+          a.download = `${item.title.replace(/[^a-z0-9]/gi, '_')}.pptx`
+          a.target = '_blank'
+          document.body.appendChild(a)
+          a.click()
+          document.body.removeChild(a)
+        }
+
+        // Also open Gamma editor
+        if (result.gamma_url) {
+          window.open(result.gamma_url, '_blank')
+        }
+
+        console.log('✅ PowerPoint generated via Gamma')
+      } else if (format === 'google-docs') {
+        // Export to Google Docs
+        console.log('Exporting to Google Docs...')
+
+        // Copy content to clipboard
+        await navigator.clipboard.writeText(textContent)
+
+        // Open Google Docs
+        const googleDocsUrl = `https://docs.google.com/document/create?title=${encodeURIComponent(item.title)}`
+        window.open(googleDocsUrl, '_blank')
+
+        alert('✅ Content copied to clipboard! Paste it into your new Google Doc.')
+        console.log('✅ Opened Google Docs with content in clipboard')
+      } else if (format === 'google-slides') {
+        // Export to Google Slides
+        console.log('Exporting to Google Slides...')
+
+        // Copy content to clipboard
+        await navigator.clipboard.writeText(textContent)
+
+        // Open Google Slides
+        const googleSlidesUrl = `https://docs.google.com/presentation/create?title=${encodeURIComponent(item.title)}`
+        window.open(googleSlidesUrl, '_blank')
+
+        alert('✅ Content copied to clipboard! Paste it into your new Google Slides presentation.')
+        console.log('✅ Opened Google Slides with content in clipboard')
       }
 
-      // Create blob and download
-      const blob = new Blob([content], { type: mimeType })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `${item.title.replace(/[^a-z0-9]/gi, '_')}.${extension}`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
-
-      console.log(`✅ Exported: ${item.title}.${extension}`)
+      setMergingTemplate(false)
     } catch (error) {
       console.error('Export error:', error)
-      alert('Failed to export content')
+      alert(`Failed to export: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      setMergingTemplate(false)
     }
   }
 
@@ -1507,44 +1557,60 @@ export default function MemoryVaultModule() {
               </button>
             </div>
 
-            {/* Basic Export Options */}
+            {/* Basic Export Options - NEW: Word, PowerPoint, Google Docs/Slides */}
             {exportMode === 'basic' && (
               <div className="space-y-2 mb-6">
                 <button
-                  onClick={() => {
-                    handleExport(itemToExport, 'txt')
+                  onClick={async () => {
+                    await handleExport(itemToExport, 'word')
                     setShowExportDialog(false)
                     setItemToExport(null)
                     setExportMode('basic')
                   }}
-                  className="w-full px-4 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors text-left"
+                  disabled={mergingTemplate}
+                  className="w-full px-4 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <div className="font-medium text-white">Plain Text (.txt)</div>
-                  <div className="text-xs text-gray-400">Simple text format</div>
+                  <div className="font-medium text-white">📄 Microsoft Word (.docx)</div>
+                  <div className="text-xs text-gray-400">Download as formatted Word document</div>
                 </button>
                 <button
-                  onClick={() => {
-                    handleExport(itemToExport, 'md')
+                  onClick={async () => {
+                    await handleExport(itemToExport, 'powerpoint')
                     setShowExportDialog(false)
                     setItemToExport(null)
                     setExportMode('basic')
                   }}
-                  className="w-full px-4 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors text-left"
+                  disabled={mergingTemplate}
+                  className="w-full px-4 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <div className="font-medium text-white">Markdown (.md)</div>
-                  <div className="text-xs text-gray-400">Formatted markdown</div>
+                  <div className="font-medium text-white">📊 PowerPoint (.pptx)</div>
+                  <div className="text-xs text-gray-400">Generate presentation via Gamma</div>
                 </button>
                 <button
-                  onClick={() => {
-                    handleExport(itemToExport, 'json')
+                  onClick={async () => {
+                    await handleExport(itemToExport, 'google-docs')
                     setShowExportDialog(false)
                     setItemToExport(null)
                     setExportMode('basic')
                   }}
-                  className="w-full px-4 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors text-left"
+                  disabled={mergingTemplate}
+                  className="w-full px-4 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <div className="font-medium text-white">JSON (.json)</div>
-                  <div className="text-xs text-gray-400">Structured data with metadata</div>
+                  <div className="font-medium text-white">📝 Google Docs</div>
+                  <div className="text-xs text-gray-400">Open in Google Docs (content copied to clipboard)</div>
+                </button>
+                <button
+                  onClick={async () => {
+                    await handleExport(itemToExport, 'google-slides')
+                    setShowExportDialog(false)
+                    setItemToExport(null)
+                    setExportMode('basic')
+                  }}
+                  disabled={mergingTemplate}
+                  className="w-full px-4 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <div className="font-medium text-white">🎤 Google Slides</div>
+                  <div className="text-xs text-gray-400">Open in Google Slides (content copied to clipboard)</div>
                 </button>
               </div>
             )}

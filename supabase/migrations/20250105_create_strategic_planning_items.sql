@@ -1,79 +1,99 @@
--- Strategic Planning Items Table
--- Stores execution tasks from campaign blueprints
--- Separate from content_library to avoid mixing pending tasks with executed content
-
-CREATE TABLE IF NOT EXISTS strategic_planning_items (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-
-  -- Campaign Context
-  session_id UUID NOT NULL,
-  organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
-  campaign_type TEXT NOT NULL, -- 'VECTOR_CAMPAIGN', 'GEO_VECTOR', etc.
-
-  -- Item Details
-  content_type TEXT NOT NULL, -- 'media_pitch', 'social_post', 'thought_leadership', 'geo_schema_update', etc.
-  title TEXT NOT NULL,
-  description TEXT,
-
-  -- Blueprint Context
-  stakeholder TEXT NOT NULL,
-  stakeholder_priority INTEGER NOT NULL DEFAULT 1,
-  lever_name TEXT NOT NULL,
-  lever_priority INTEGER NOT NULL DEFAULT 1,
-  target_audience TEXT,
-
-  -- Status Tracking
-  status TEXT NOT NULL DEFAULT 'pending', -- 'pending', 'executing', 'generated', 'failed', 'published'
-
-  -- Generation/Execution Results
-  generated_content TEXT, -- Actual generated content (for content types)
-  generated_at TIMESTAMPTZ,
-  generation_error TEXT,
-
-  -- Schema Execution Results (for geo_schema_update type)
-  executed BOOLEAN DEFAULT FALSE,
-  executed_at TIMESTAMPTZ,
-  execution_result JSONB, -- Schema update results
-
-  -- Metadata
-  details JSONB NOT NULL DEFAULT '{}', -- Full details from blueprint (pitch.what, post.platform, schema data, etc.)
-  metadata JSONB DEFAULT '{}',
-
-  -- Timestamps
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
--- Indexes
-CREATE INDEX IF NOT EXISTS idx_strategic_planning_items_session ON strategic_planning_items(session_id);
-CREATE INDEX IF NOT EXISTS idx_strategic_planning_items_org ON strategic_planning_items(organization_id);
-CREATE INDEX IF NOT EXISTS idx_strategic_planning_items_status ON strategic_planning_items(status);
-CREATE INDEX IF NOT EXISTS idx_strategic_planning_items_type ON strategic_planning_items(content_type);
-
--- RLS Policies - Disabled for now to avoid auth issues
--- Can be enabled later with proper organization-based policies
--- ALTER TABLE strategic_planning_items ENABLE ROW LEVEL SECURITY;
-
--- Update timestamp trigger
-CREATE OR REPLACE FUNCTION update_strategic_planning_items_updated_at()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER update_strategic_planning_items_updated_at
-  BEFORE UPDATE ON strategic_planning_items
-  FOR EACH ROW
-  EXECUTE FUNCTION update_strategic_planning_items_updated_at();
-
--- Comments
-COMMENT ON TABLE strategic_planning_items IS 'Strategic Planning execution tasks from campaign blueprints - separate from Memory Vault to avoid mixing pending tasks with executed content';
-COMMENT ON COLUMN strategic_planning_items.session_id IS 'Links to campaign_sessions for blueprint context';
-COMMENT ON COLUMN strategic_planning_items.content_type IS 'Type of tactical item: media_pitch, social_post, thought_leadership, geo_schema_update, etc.';
-COMMENT ON COLUMN strategic_planning_items.status IS 'Execution status: pending (not started), executing (in progress), generated (completed), failed (error), published (pushed to Memory Vault)';
-COMMENT ON COLUMN strategic_planning_items.generated_content IS 'The actual generated content for content types (media pitches, social posts, etc.)';
-COMMENT ON COLUMN strategic_planning_items.executed IS 'True if schema update has been executed (only for geo_schema_update type)';
-COMMENT ON COLUMN strategic_planning_items.execution_result IS 'Schema update results including schema_id, changes applied, before/after values';
-COMMENT ON COLUMN strategic_planning_items.details IS 'Full blueprint details: pitch.what/who/where/why, post.platform/hook, schema.schemaType/implementation, etc.';
+7447-e260aff54c25dd1e.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:21 Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
+tk @ 7447-e260aff54c25dd1e.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:21
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 📋 Loading pending plan data from Campaign Builder: Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 📋 Loading saved plan data for organization: Mitsui & Co.
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 💾 Saved plan data for organization: Mitsui & Co.
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 💾 Saved plan data for organization: Mitsui & Co.
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 ✅ Opening Plan module with data: Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 Adding component: plan
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 New component: Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 📋 Loading execution items for session: 05c50d89-50e0-4d41-b702-1d94bfb16c73
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 📋 Loading saved plan data for organization: Mitsui & Co.
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 💾 Saved plan data for organization: Mitsui & Co.
+858-364da746b2729191.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🔄 Switching from Mitsui & Co. to KARV
+858-364da746b2729191.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 ✅ Organization switched to KARV
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 ℹ️ Strategic Planning: Organization in store (b2d62441-cf97-413d-a074-a10217848fb3) differs from campaign org (fa8718f1-7cb7-42d4-8acb-798967ab220c), but no content loaded yet - using campaign org
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 📋 Loading saved plan data for organization: KARV
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 💾 Saved plan data for organization: KARV
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 💾 Saved plan data for organization: KARV
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 📊 parseBlueprint: blueprint structure: Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 ✓ Parsing VECTOR/GEO-VECTOR campaign: Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 💾 Saving 0 items to strategic_planning_items table...
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 ✅ Saved 0 items to strategic_planning_items table
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true Object
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true {hasBlueprint: true, sessionId: '1219e46e-29a9-4ab9-a93d-205c2220859a', orgId: 'b2d62441-cf97-413d-a074-a10217848fb3'}
+page-aeb64afd5cf55c8f.js?dpl=dpl_6ZhfLHJdM26LEgdoQfVsKm3wAJnQ:1 🎯 Rendering plan component, planData: true {hasBlueprint: true, sessionId: '1219e46e-29a9-4ab9-a93d-205c2220859a', orgId: 'b2d62441-cf97-413d-a074-a10217848fb3'}
+ 🎯 Rendering plan component, planData: true {hasBlueprint: true, sessionId: '1219e46e-29a9-4ab9-a93d-205c2220859a', orgId: 'b2d62441-cf97-413d-a074-a10217848fb3'}
+ 🎯 Rendering plan component, planData: true {hasBlueprint: true, sessionId: '1219e46e-29a9-4ab9-a93d-205c2220859a', orgId: 'b2d62441-cf97-413d-a074-a10217848fb3'}
+ 🎯 Rendering plan component, planData: true {hasBlueprint: true, sessionId: '1219e46e-29a9-4ab9-a93d-205c2220859a', orgId: 'b2d62441-cf97-413d-a074-a10217848fb3'}
+ 🎯 Rendering plan component, planData: true {hasBlueprint: true, sessionId: '1219e46e-29a9-4ab9-a93d-205c2220859a', orgId: 'b2d62441-cf97-413d-a074-a10217848fb3'}
+ 🎯 Rendering plan component, planData: true {hasBlueprint: true, sessionId: '1219e46e-29a9-4ab9-a93d-205c2220859a', orgId: 'b2d62441-cf97-413d-a074-a10217848fb3'}
