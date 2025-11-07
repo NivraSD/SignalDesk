@@ -661,7 +661,7 @@ export function CampaignBuilderWizard() {
           ...prev,
           {
             role: 'assistant',
-            content: 'Step 1/3: Discovering target queries for AI ownership...',
+            content: '🔍 GEO Step 1/6: Discovering target queries for AI ownership...',
             stage: 'geo_intelligence'
           }
         ])
@@ -722,7 +722,7 @@ export function CampaignBuilderWizard() {
           ...prev,
           {
             role: 'assistant',
-            content: 'Step 2/3: Testing queries against ChatGPT, Claude, Perplexity, and Gemini...',
+            content: '🤖 GEO Step 2/6: Testing queries against ChatGPT, Claude, Perplexity, and Gemini (5 queries × 4 platforms = 20 tests)...',
             stage: 'geo_intelligence'
           }
         ])
@@ -779,7 +779,7 @@ export function CampaignBuilderWizard() {
           ...prev,
           {
             role: 'assistant',
-            content: 'Step 3/3: Analyzing citation patterns and generating actionable recommendations...',
+            content: '📊 GEO Step 3/6: Analyzing citation patterns and generating schema + content recommendations...',
             stage: 'geo_intelligence'
           }
         ])
@@ -884,7 +884,7 @@ export function CampaignBuilderWizard() {
           ...prev,
           {
             role: 'assistant',
-            content: 'Creating campaign blueprint with tactical actions and AI query ownership mapping...',
+            content: '📋 GEO Step 4/6: Creating VECTOR blueprint base (stakeholder mapping + goal framework)...',
             stage: 'blueprint'
           }
         ])
@@ -916,6 +916,14 @@ export function CampaignBuilderWizard() {
 
         // STEP 4: Poll for stakeholder orchestration completion (same as VECTOR)
         console.log('📊 Step 4: Waiting for stakeholder orchestration to complete...')
+        setConversationHistory(prev => [
+          ...prev,
+          {
+            role: 'assistant',
+            content: '🎯 GEO Step 5/6: Orchestrating multi-stakeholder tactical actions (this takes 60-90 seconds)...',
+            stage: 'blueprint'
+          }
+        ])
 
         let orchestrationComplete = false
         let attempts = 0
@@ -946,6 +954,15 @@ export function CampaignBuilderWizard() {
 
         // STEP 5: Finalize blueprint
         console.log('⚙️ Step 5: Finalizing GEO-VECTOR blueprint...')
+        setConversationHistory(prev => [
+          ...prev,
+          {
+            role: 'assistant',
+            content: '✨ GEO Step 6/6: Finalizing blueprint with GEO augmentation (schema recommendations + content tactics)...',
+            stage: 'blueprint'
+          }
+        ])
+
         console.log('📦 GEO intelligence being sent to finalizer:', {
           hasGeoIntelligence: !!geoIntelligence,
           targetQueries: geoIntelligence?.targetQueries?.length || 0,
