@@ -346,11 +346,23 @@ Research:
 - Pattern recommendations: What principles should guide this campaign?
 - Risk factors: What approaches failed? What should be avoided?
 
-Use MCP tools:
-- knowledge_library_registry: Search case studies and historical campaigns
-- niv_fireplexity: Find recent successful campaign examples
+IMPORTANT: You MUST use MCP tools to gather historical data. DO NOT rely solely on your training data.
 
-Return JSON with successfulCampaigns, successFactors, patternRecommendations, and riskFactors.`;
+Use MCP tools strategically:
+1. ALWAYS START with knowledge_library_registry: Search for case studies, historical campaigns, and PR/marketing patterns
+   - Query for: "{industry} successful campaigns", "campaign case studies {campaignType}", "PR patterns {industry}"
+   - This tool contains curated historical campaign data and case studies
+2. niv_fireplexity: Find recent successful campaign examples (use 7d time window for current examples)
+   - Search for: "successful {campaignType} campaigns {industry}", "campaign results {year}"
+
+You MUST call at least 2-3 tools to gather comprehensive historical patterns. Return JSON with:
+{
+  "successfulCampaigns": [{"campaign": "name", "organization": "org", "approach": "what they did", "results": "outcome", "keyLessons": ["lesson 1", "lesson 2"]}],
+  "successFactors": ["factor 1", "factor 2"],
+  "patternRecommendations": [{"pattern": "recommendation", "implementation": "how to apply it", "expectedImpact": "why it works"}],
+  "riskFactors": ["risk 1", "risk 2"]
+}`;
+
 
   const userPrompt = `Campaign Goal: ${campaignGoal}
 Industry: ${industry}
