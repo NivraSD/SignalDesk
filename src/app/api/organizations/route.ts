@@ -1,23 +1,48 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 
 /**
  * GET /api/organizations
  * List all organizations or get a single organization by ID
+ * FILTERED BY USER - only returns orgs the authenticated user belongs to
  */
 export async function GET(req: NextRequest) {
   try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
     const searchParams = req.nextUrl.searchParams
     const id = searchParams.get('id')
 
-    // If ID provided, get single organization
+    // Use service client for queries (still need it for some operations)
+    const serviceClient = createServiceClient()
+
+    // If ID provided, get single organization (check user has access)
     if (id) {
-      const { data: org, error } = await supabase
+      // Check if user belongs to this org
+      const { data: orgUser } = await serviceClient
+        .from('org_users')
+        .select('*')
+        .eq('organization_id', id)
+        .eq('user_id', user.id)
+        .single()
+
+      if (!orgUser) {
+        return NextResponse.json(
+          { error: 'Organization not found or access denied' },
+          { status: 403 }
+        )
+      }
+
+      const { data: org, error } = await serviceClient
         .from('organizations')
         .select('*')
         .eq('id', id)
@@ -45,10 +70,34 @@ export async function GET(req: NextRequest) {
       })
     }
 
-    // Otherwise, list all organizations
-    const { data: organizations, error } = await supabase
+    // Otherwise, list organizations the user has access to
+    const { data: userOrgs, error: userOrgsError } = await serviceClient
+      .from('org_users')
+      .select('organization_id')
+      .eq('user_id', user.id)
+
+    if (userOrgsError) {
+      console.error('Failed to fetch user organizations:', userOrgsError)
+      return NextResponse.json(
+        { error: 'Failed to fetch organizations' },
+        { status: 500 }
+      )
+    }
+
+    const orgIds = userOrgs?.map(uo => uo.organization_id) || []
+
+    if (orgIds.length === 0) {
+      // User has no organizations yet
+      return NextResponse.json({
+        success: true,
+        organizations: []
+      })
+    }
+
+    const { data: organizations, error } = await serviceClient
       .from('organizations')
       .select('*')
+      .in('id', orgIds)
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -82,10 +131,20 @@ export async function GET(req: NextRequest) {
 
 /**
  * POST /api/organizations
- * Create a new organization
+ * Create a new organization and auto-assign creator as owner
  */
 export async function POST(req: NextRequest) {
   try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
     const body = await req.json()
     const { name, url, industry, description } = body
 
@@ -96,8 +155,10 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    const serviceClient = createServiceClient()
+
     // Create organization
-    const { data: org, error: orgError } = await supabase
+    const { data: org, error: orgError } = await serviceClient
       .from('organizations')
       .insert({
         name,
@@ -134,7 +195,21 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    console.log(`✅ Created organization: ${org.name} (${org.id})`)
+    // Auto-assign creator as owner
+    const { error: orgUserError } = await serviceClient
+      .from('org_users')
+      .insert({
+        organization_id: org.id,
+        user_id: user.id,
+        role: 'owner'
+      })
+
+    if (orgUserError) {
+      console.error('Failed to assign user to organization:', orgUserError)
+      // Don't fail the request, but log the error
+    }
+
+    console.log(`✅ Created organization: ${org.name} (${org.id}) for user ${user.email}`)
 
     // Flatten settings for easier access
     const flatOrg = {
@@ -163,10 +238,20 @@ export async function POST(req: NextRequest) {
 
 /**
  * DELETE /api/organizations?id={uuid}
- * Delete an organization
+ * Delete an organization (only owners can delete)
  */
 export async function DELETE(req: NextRequest) {
   try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
     const searchParams = req.nextUrl.searchParams
     const id = searchParams.get('id')
 
@@ -177,15 +262,32 @@ export async function DELETE(req: NextRequest) {
       )
     }
 
+    const serviceClient = createServiceClient()
+
+    // Check if user is owner of this org
+    const { data: orgUser } = await serviceClient
+      .from('org_users')
+      .select('role')
+      .eq('organization_id', id)
+      .eq('user_id', user.id)
+      .single()
+
+    if (!orgUser || orgUser.role !== 'owner') {
+      return NextResponse.json(
+        { error: 'Only organization owners can delete organizations' },
+        { status: 403 }
+      )
+    }
+
     // Get org name for logging
-    const { data: org } = await supabase
+    const { data: org } = await serviceClient
       .from('organizations')
       .select('name')
       .eq('id', id)
       .single()
 
     // Delete organization (cascade will handle related data)
-    const { error } = await supabase
+    const { error } = await serviceClient
       .from('organizations')
       .delete()
       .eq('id', id)
@@ -198,7 +300,7 @@ export async function DELETE(req: NextRequest) {
       )
     }
 
-    console.log(`🗑️ Deleted organization: ${org?.name} (${id})`)
+    console.log(`🗑️ Deleted organization: ${org?.name} (${id}) by user ${user.email}`)
 
     return NextResponse.json({
       success: true,
