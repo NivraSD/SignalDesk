@@ -1825,85 +1825,120 @@ export function CampaignBuilderWizard() {
                 </p>
 
                 {/* Blueprint Generation Progress */}
-                <div className="space-y-4">
-                  {/* Base */}
-                  <div className="flex items-center gap-4">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                      blueprintProgress.stages.base === 'completed' ? 'bg-emerald-600' :
-                      blueprintProgress.stages.base === 'running' ? 'bg-blue-600 animate-pulse' :
-                      blueprintProgress.stages.base === 'failed' ? 'bg-red-600' :
-                      'bg-zinc-700'
-                    }`}>
-                      {blueprintProgress.stages.base === 'completed' ? '✓' :
-                       blueprintProgress.stages.base === 'running' ? '⋯' :
-                       blueprintProgress.stages.base === 'failed' ? '✗' : '○'}
-                    </div>
-                    <div className="flex-1">
-                      <div className="font-medium text-white">Blueprint Foundation</div>
-                      <div className="text-sm text-gray-400">Overview • Goal Framework • Stakeholder Mapping • Message Architecture</div>
-                    </div>
+                {session.selectedApproach === 'GEO_VECTOR_CAMPAIGN' ? (
+                  /* GEO-VECTOR Progress - 6 stages */
+                  <div className="space-y-3">
+                    {[
+                      { key: 'geo_query', title: '🔍 Query Discovery', desc: 'Identifying target AI queries for brand ownership' },
+                      { key: 'geo_platform', title: '🤖 Platform Testing', desc: 'Testing across ChatGPT, Claude, Perplexity, Gemini (20 tests)' },
+                      { key: 'geo_synthesis', title: '📊 GEO Synthesis', desc: 'Analyzing citation patterns and generating recommendations' },
+                      { key: 'blueprint_base', title: '📋 Blueprint Base', desc: 'Creating VECTOR framework (stakeholders + goals)' },
+                      { key: 'orchestration', title: '🎯 Orchestration', desc: 'Multi-stakeholder tactical planning (60-90s)' },
+                      { key: 'finalization', title: '✨ Finalization', desc: 'Merging GEO insights with VECTOR blueprint' }
+                    ].map((stage, idx) => {
+                      const isCompleted = idx < (conversationHistory.filter(m => m.role === 'assistant' && m.content.includes('GEO Step')).length)
+                      const isRunning = idx === (conversationHistory.filter(m => m.role === 'assistant' && m.content.includes('GEO Step')).length)
+                      return (
+                        <div key={stage.key} className="flex items-center gap-4">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                            isCompleted ? 'bg-emerald-600' :
+                            isRunning ? 'bg-blue-600 animate-pulse' :
+                            'bg-zinc-700'
+                          }`}>
+                            {isCompleted ? '✓' : isRunning ? '⋯' : '○'}
+                          </div>
+                          <div className="flex-1">
+                            <div className="font-medium text-white text-sm">{stage.title}</div>
+                            <div className="text-xs text-gray-400">{stage.desc}</div>
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
+                ) : (
+                  /* Regular VECTOR Progress - 4 stages */
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                        blueprintProgress.stages.base === 'completed' ? 'bg-emerald-600' :
+                        blueprintProgress.stages.base === 'running' ? 'bg-blue-600 animate-pulse' :
+                        blueprintProgress.stages.base === 'failed' ? 'bg-red-600' :
+                        'bg-zinc-700'
+                      }`}>
+                        {blueprintProgress.stages.base === 'completed' ? '✓' :
+                         blueprintProgress.stages.base === 'running' ? '⋯' :
+                         blueprintProgress.stages.base === 'failed' ? '✗' : '○'}
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-medium text-white">Blueprint Foundation</div>
+                        <div className="text-sm text-gray-400">Overview • Goal Framework • Stakeholder Mapping</div>
+                      </div>
+                    </div>
 
-                  {/* Orchestration (includes patterns) */}
-                  <div className="flex items-center gap-4">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                      blueprintProgress.stages.orchestration === 'completed' ? 'bg-emerald-600' :
-                      blueprintProgress.stages.orchestration === 'running' ? 'bg-blue-600 animate-pulse' :
-                      blueprintProgress.stages.orchestration === 'failed' ? 'bg-red-600' :
-                      'bg-zinc-700'
-                    }`}>
-                      {blueprintProgress.stages.orchestration === 'completed' ? '✓' :
-                       blueprintProgress.stages.orchestration === 'running' ? '⋯' :
-                       blueprintProgress.stages.orchestration === 'failed' ? '✗' : '○'}
+                    <div className="flex items-center gap-4">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                        blueprintProgress.stages.orchestration === 'completed' ? 'bg-emerald-600' :
+                        blueprintProgress.stages.orchestration === 'running' ? 'bg-blue-600 animate-pulse' :
+                        blueprintProgress.stages.orchestration === 'failed' ? 'bg-red-600' :
+                        'bg-zinc-700'
+                      }`}>
+                        {blueprintProgress.stages.orchestration === 'completed' ? '✓' :
+                         blueprintProgress.stages.orchestration === 'running' ? '⋯' :
+                         blueprintProgress.stages.orchestration === 'failed' ? '✗' : '○'}
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-medium text-white">Stakeholder Orchestration</div>
+                        <div className="text-sm text-gray-400">Four-Pillar Strategy • Influence Levers</div>
+                      </div>
                     </div>
-                    <div className="flex-1">
-                      <div className="font-medium text-white">Stakeholder Orchestration Strategy</div>
-                      <div className="text-sm text-gray-400">Four-Pillar Orchestration • Pattern Analysis • Influence Levers</div>
-                    </div>
-                  </div>
 
-                  {/* Execution */}
-                  <div className="flex items-center gap-4">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                      blueprintProgress.stages.execution === 'completed' ? 'bg-emerald-600' :
-                      blueprintProgress.stages.execution === 'running' ? 'bg-blue-600 animate-pulse' :
-                      blueprintProgress.stages.execution === 'failed' ? 'bg-red-600' :
-                      'bg-zinc-700'
-                    }`}>
-                      {blueprintProgress.stages.execution === 'completed' ? '✓' :
-                       blueprintProgress.stages.execution === 'running' ? '⋯' :
-                       blueprintProgress.stages.execution === 'failed' ? '✗' : '○'}
+                    <div className="flex items-center gap-4">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                        blueprintProgress.stages.execution === 'completed' ? 'bg-emerald-600' :
+                        blueprintProgress.stages.execution === 'running' ? 'bg-blue-600 animate-pulse' :
+                        blueprintProgress.stages.execution === 'failed' ? 'bg-red-600' :
+                        'bg-zinc-700'
+                      }`}>
+                        {blueprintProgress.stages.execution === 'completed' ? '✓' :
+                         blueprintProgress.stages.execution === 'running' ? '⋯' :
+                         blueprintProgress.stages.execution === 'failed' ? '✗' : '○'}
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-medium text-white">Execution Requirements</div>
+                        <div className="text-sm text-gray-400">Timeline • Resources • Dependencies</div>
+                      </div>
                     </div>
-                    <div className="flex-1">
-                      <div className="font-medium text-white">Execution Requirements</div>
-                      <div className="text-sm text-gray-400">Timeline • Resources • Dependencies • Metrics</div>
-                    </div>
-                  </div>
 
-                  {/* Merging */}
-                  <div className="flex items-center gap-4">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                      blueprintProgress.stages.merging === 'completed' ? 'bg-emerald-600' :
-                      blueprintProgress.stages.merging === 'running' ? 'bg-blue-600 animate-pulse' :
-                      blueprintProgress.stages.merging === 'failed' ? 'bg-red-600' :
-                      'bg-zinc-700'
-                    }`}>
-                      {blueprintProgress.stages.merging === 'completed' ? '✓' :
-                       blueprintProgress.stages.merging === 'running' ? '⋯' :
-                       blueprintProgress.stages.merging === 'failed' ? '✗' : '○'}
-                    </div>
-                    <div className="flex-1">
-                      <div className="font-medium text-white">Finalizing Blueprint</div>
-                      <div className="text-sm text-gray-400">Merging all components into complete strategy</div>
+                    <div className="flex items-center gap-4">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                        blueprintProgress.stages.merging === 'completed' ? 'bg-emerald-600' :
+                        blueprintProgress.stages.merging === 'running' ? 'bg-blue-600 animate-pulse' :
+                        blueprintProgress.stages.merging === 'failed' ? 'bg-red-600' :
+                        'bg-zinc-700'
+                      }`}>
+                        {blueprintProgress.stages.merging === 'completed' ? '✓' :
+                         blueprintProgress.stages.merging === 'running' ? '⋯' :
+                         blueprintProgress.stages.merging === 'failed' ? '✗' : '○'}
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-medium text-white">Finalizing Blueprint</div>
+                        <div className="text-sm text-gray-400">Merging all components</div>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
                 <div className="mt-6 text-center text-sm text-gray-500">
-                  {blueprintProgress.currentStage && (
-                    <p>Currently running: <span className="text-blue-400">{blueprintProgress.currentStage}</span></p>
+                  {session.selectedApproach === 'GEO_VECTOR_CAMPAIGN' ? (
+                    <p className="mt-2">Expected time: ~2-4 minutes (GEO testing takes longer)</p>
+                  ) : (
+                    <>
+                      {blueprintProgress.currentStage && (
+                        <p>Currently running: <span className="text-blue-400">{blueprintProgress.currentStage}</span></p>
+                      )}
+                      <p className="mt-2">Expected time: ~60-90 seconds</p>
+                    </>
                   )}
-                  <p className="mt-2">Expected time: ~60-90 seconds</p>
                 </div>
               </div>
             </div>
