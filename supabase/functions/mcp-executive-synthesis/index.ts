@@ -410,8 +410,10 @@ async function synthesizeExecutiveIntelligence(args: any) {
     // Get ALL events but PRIORITIZE non-org events
     const allEvents = context.strategicInsights.events || [];
 
-    // CRITICAL: Separate org vs market events
+    // CATEGORIZE events by type for balanced coverage
     const orgName = organization?.name?.toLowerCase() || '';
+
+    // Separate events into meaningful categories
     const eventsAboutOrg = allEvents.filter(e => {
       const entityLower = e.entity?.toLowerCase() || '';
       return entityLower.includes(orgName) ||
@@ -419,43 +421,74 @@ async function synthesizeExecutiveIntelligence(args: any) {
              (orgName === 'openai' && entityLower.includes('openai')) ||
              (orgName === 'tesla' && entityLower.includes('tesla'));
     });
-    const eventsAboutOthers = allEvents.filter(e => {
+
+    // Get intelligence targets to properly categorize non-org events
+    const competitorNames = discoveryTargets.competitors?.map(c => c.name.toLowerCase()) || [];
+    const stakeholderNames = [
+      ...(discoveryTargets.regulators?.map(r => r.name.toLowerCase()) || []),
+      ...(discoveryTargets.investors?.map(i => i.name.toLowerCase()) || []),
+      ...(discoveryTargets.analysts?.map(a => a.name.toLowerCase()) || []),
+      ...(discoveryTargets.activists?.map(a => a.name.toLowerCase()) || [])
+    ];
+
+    const eventsAboutCompetitors = allEvents.filter(e => {
       const entityLower = e.entity?.toLowerCase() || '';
-      return !entityLower.includes(orgName) &&
-             !(orgName === 'openai' && entityLower.includes('openai')) &&
-             !(orgName === 'tesla' && entityLower.includes('tesla'));
+      return competitorNames.some(comp => entityLower.includes(comp));
     });
 
-    console.log('🚨🚨🚨 CRITICAL EVENT ANALYSIS:');
+    const eventsAboutStakeholders = allEvents.filter(e => {
+      const entityLower = e.entity?.toLowerCase() || '';
+      return stakeholderNames.some(stake => entityLower.includes(stake));
+    });
+
+    // Industry/regulatory/other events (not org, not direct competitors, not stakeholders)
+    const eventsOther = allEvents.filter(e => {
+      const entityLower = e.entity?.toLowerCase() || '';
+      const isOrg = entityLower.includes(orgName);
+      const isCompetitor = competitorNames.some(comp => entityLower.includes(comp));
+      const isStakeholder = stakeholderNames.some(stake => entityLower.includes(stake));
+      return !isOrg && !isCompetitor && !isStakeholder;
+    });
+
+    console.log('🚨🚨🚨 BALANCED EVENT ANALYSIS:');
     console.log(`Total events from enrichment: ${allEvents.length}`);
     console.log(`Events about ${organization?.name}: ${eventsAboutOrg.length}`);
-    console.log(`Events about competitors/market: ${eventsAboutOthers.length}`);
+    console.log(`Events about direct competitors: ${eventsAboutCompetitors.length}`);
+    console.log(`Events about stakeholders (regulators/investors/analysts): ${eventsAboutStakeholders.length}`);
+    console.log(`Industry/regulatory/other events: ${eventsOther.length}`);
 
-    // Show distribution of competitor events
+    // Show distribution across categories
     const competitorEventCounts = {};
-    eventsAboutOthers.forEach(e => {
+    eventsAboutCompetitors.forEach(e => {
       const entity = e.entity || 'Unknown';
       competitorEventCounts[entity] = (competitorEventCounts[entity] || 0) + 1;
     });
-    console.log('Competitor event distribution:', Object.entries(competitorEventCounts)
+    console.log('Top competitor events:', Object.entries(competitorEventCounts)
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 10)
+      .slice(0, 5)
       .map(([entity, count]) => `${entity}:${count}`)
       .join(', '));
 
-    // PRIORITIZE competitor/market events HEAVILY - 80/20 rule
-    const maxEvents = 50; // Increase to get more context
-    const competitorEventCount = Math.min(40, eventsAboutOthers.length); // Up to 40 competitor events
-    const orgEventCount = Math.min(10, eventsAboutOrg.length); // Max 10 org events
+    // BALANCED SELECTION - ensure diverse coverage across all categories
+    const maxEvents = 50;
+    // Allocate slots proportionally but ensure minimum coverage of each category
+    const orgSlots = Math.min(Math.max(5, Math.floor(eventsAboutOrg.length * 0.3)), 15);
+    const competitorSlots = Math.min(Math.max(10, Math.floor(eventsAboutCompetitors.length * 0.6)), 20);
+    const stakeholderSlots = Math.min(Math.max(5, Math.floor(eventsAboutStakeholders.length * 0.5)), 10);
+    const otherSlots = Math.min(Math.max(5, Math.floor(eventsOther.length * 0.5)), 10);
 
     const topEvents = [
-      ...eventsAboutOthers.slice(0, competitorEventCount),
-      ...eventsAboutOrg.slice(0, orgEventCount)
-    ];
+      ...eventsAboutOrg.slice(0, orgSlots),
+      ...eventsAboutCompetitors.slice(0, competitorSlots),
+      ...eventsAboutStakeholders.slice(0, stakeholderSlots),
+      ...eventsOther.slice(0, otherSlots)
+    ].slice(0, maxEvents);
 
-    console.log(`🎯 Selected ${topEvents.length} events for synthesis:`);
-    console.log(`  - ${competitorEventCount} competitor/market events`);
-    console.log(`  - ${orgEventCount} org context events`);
+    console.log(`🎯 Selected ${topEvents.length} events for synthesis (BALANCED APPROACH):`);
+    console.log(`  - ${orgSlots} org events (${eventsAboutOrg.length} available)`);
+    console.log(`  - ${competitorSlots} competitor events (${eventsAboutCompetitors.length} available)`);
+    console.log(`  - ${stakeholderSlots} stakeholder events (${eventsAboutStakeholders.length} available)`);
+    console.log(`  - ${otherSlots} industry/regulatory/other events (${eventsOther.length} available)`);
 
     // Log first few events to verify
     topEvents.slice(0, 5).forEach((event, i) => {
@@ -562,7 +595,7 @@ ${i+1}. ${article.headline}
    Entities: ${article.entities_mentioned.join(', ') || 'None identified'}
 `).join('') || 'No enriched articles available'}
 
-PRE-EXTRACTED EVENTS (These ${topEvents.length} events are what our AI found - **SORTED BY RECENCY**):
+PRE-EXTRACTED EVENTS (These ${topEvents.length} events include ${orgSlots} org, ${competitorSlots} competitor, ${stakeholderSlots} stakeholder, ${otherSlots} industry/regulatory - **SORTED BY RECENCY**):
 ${topEvents.map((e, i) =>
   `${i+1}. [${e.type?.toUpperCase()}] ${e.entity}: ${e.description} (${formatEventDate(e.date)})`
 ).join('\n')}
@@ -584,11 +617,17 @@ ${metrics.length > 0 ? `METRICS:\n${metrics.map(m =>
 ).join('\n')}` : ''}
 
 SYNTHESIS REQUIREMENTS:
-1. Your executive_summary MUST mention at least 10 different companies/entities from the events above
-2. Reference events by describing them, not by number
-3. Every claim must come from the events above - no external knowledge
-4. Focus on the VARIETY of developments across different competitors
-5. If major competitors are missing from the events, note this as an intelligence gap
+1. Your executive_summary MUST provide BALANCED coverage of ALL event categories:
+   - Organization news (${orgSlots} events provided)
+   - Competitor developments (${competitorSlots} events provided)
+   - Stakeholder actions/regulatory news (${stakeholderSlots} events provided)
+   - Industry trends/other relevant news (${otherSlots} events provided)
+2. DO NOT over-emphasize any single category - ensure the summary reflects the diversity of today's developments
+3. If there are significant developments in any category, they MUST be mentioned in the executive_summary
+4. Reference events by describing them, not by number
+5. Every claim must come from the events above - no external knowledge
+6. If major competitors or stakeholders are missing from the events, note this as an intelligence gap
+7. The tone should convey the VOLUME and VARIETY of news - don't make it sound quiet if there were many developments
 
 ⚠️ CRITICAL SYNTHESIS RULES:
 - "competitive_moves" = Actions by ${organization?.name}'s INDUSTRY COMPETITORS (other ${organization?.industry} companies)
@@ -601,7 +640,7 @@ Generate comprehensive PR intelligence synthesis as valid JSON:
 
 {
   "synthesis": {
-    "executive_summary": "A single string containing 2-3 paragraphs summarizing ONLY what we found in today's monitoring. Focus on ${organization?.industry} industry dynamics and what matters for ${organization?.name}'s strategic positioning. Use \\n\\n to separate paragraphs.",
+    "executive_summary": "A single string containing 2-3 paragraphs providing BALANCED coverage of today's monitoring across ALL categories: competitor moves, stakeholder/regulatory developments, industry trends, and ${organization?.name} news. Accurately convey the VOLUME and VARIETY of developments - if there were many events, the summary should reflect that activity level. Each category with significant developments MUST be represented. Use \\n\\n to separate paragraphs.",
 
     "competitive_moves": {
       "immediate_threats": ["Actions by OTHER ${organization?.industry} COMPANIES that threaten ${organization?.name}'s position - NOT regulatory news"],

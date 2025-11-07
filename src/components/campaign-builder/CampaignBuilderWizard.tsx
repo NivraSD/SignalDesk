@@ -1029,6 +1029,34 @@ export function CampaignBuilderWizard() {
           blueprint: result
         }))
 
+        // Save blueprint to Memory Vault with clean campaign name
+        const campaignName = session.campaignGoal
+          .split(' ')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ')
+          .replace(/[^a-zA-Z0-9 ]/g, '')
+          .slice(0, 50) // Max 50 chars
+
+        try {
+          await supabase.from('content_library').insert({
+            organization_id: organization.id,
+            content_type: 'campaign',
+            title: campaignName,
+            content: JSON.stringify(result),
+            folder: `Campaigns/${campaignName}`,
+            status: 'published',
+            metadata: {
+              campaign_type: 'GEO_VECTOR',
+              session_id: session.sessionId,
+              created_via: 'campaign_builder',
+              has_geo_intelligence: true
+            }
+          })
+          console.log('✅ Blueprint saved to Memory Vault:', campaignName)
+        } catch (err) {
+          console.warn('Failed to save to Memory Vault:', err)
+        }
+
         setConversationHistory(prev => [
           ...prev,
           {

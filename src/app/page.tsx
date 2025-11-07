@@ -1,824 +1,293 @@
 'use client'
 
-import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { createAuthClient } from '@/lib/supabase/auth-client'
+import { Brain, Target, Shield, Database, Sparkles, TrendingUp, Zap, Globe, AlertTriangle } from 'lucide-react'
 
-import { useState, useEffect, useRef } from 'react'
-import { Brain, Target, FileText, Rocket, Database, Sparkles, User, ChevronDown, Plus, Shield, Bot, FileEdit, TrendingUp, MessageCircle, AlertTriangle, Trash2, X, Building2 } from 'lucide-react'
-import { useAppStore } from '@/stores/useAppStore'
-import InfiniteCanvas from '@/components/canvas/InfiniteCanvas'
-import IntelligenceModule from '@/components/modules/IntelligenceModule'
-import OrganizationOnboarding from '@/components/onboarding/OrganizationOnboarding'
-import OrganizationSettings from '@/components/settings/OrganizationSettings'
-import OrgManagementDashboard from '@/components/admin/OrgManagementDashboard'
-import { motion, AnimatePresence } from 'framer-motion'
-
-const tabs = [
-  { id: 'niv-command', name: 'NIV', icon: Brain, color: '#bb44ff' },
-  { id: 'intelligence', name: 'Intelligence', icon: Brain, color: '#00ffcc' },
-  { id: 'opportunities', name: 'Opportunities', icon: Target, color: '#ff00ff' },
-  { id: 'campaign-planner', name: 'Campaigns', icon: TrendingUp, color: '#00ddff' },
-  { id: 'execute', name: 'Execute', icon: Rocket, color: '#00ff88' },
-  { id: 'crisis', name: 'Crisis', icon: Shield, color: '#ff0000' },
-  { id: 'memoryvault', name: 'MemoryVault', icon: Database, color: '#ffaa00' },
-]
-
-export default function Dashboard() {
+export default function HomePage() {
   const router = useRouter()
-  const { activeModule, switchModule, organization, setOrganization } = useAppStore()
-  const [showModuleMenu, setShowModuleMenu] = useState<string | null>(null)
-  const [showProjectMenu, setShowProjectMenu] = useState(false)
-  const [showProfileMenu, setShowProfileMenu] = useState(false)
-  const [showOnboarding, setShowOnboarding] = useState(false)
-  const [showOrgSettings, setShowOrgSettings] = useState(false)
-  const [showOrgDashboard, setShowOrgDashboard] = useState(false)
-  const [currentTime, setCurrentTime] = useState<string>('')
-  const [openComponents, setOpenComponents] = useState<string[]>([])
-  const [hasCrisisAlerts, setHasCrisisAlerts] = useState(false)
-  const [organizations, setOrganizations] = useState<any[]>([])
-  const [loadingOrgs, setLoadingOrgs] = useState(true)
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
-  const [orgToDelete, setOrgToDelete] = useState<any>(null)
-  const menuRef = useRef<HTMLDivElement>(null)
+  const [loading, setLoading] = useState(true)
 
-  // Load organizations from database
-  const loadOrganizations = async () => {
-    setLoadingOrgs(true)
-    try {
-      const response = await fetch('/api/organizations')
-      const data = await response.json()
-
-      if (data.success && data.organizations) {
-        setOrganizations(data.organizations)
-
-        // If no org selected, select the first one
-        if (!organization && data.organizations.length > 0) {
-          const firstOrg = data.organizations[0]
-          setOrganization({
-            id: firstOrg.id,
-            name: firstOrg.name,
-            url: firstOrg.url,
-            domain: firstOrg.url,  // Set both for compatibility
-            industry: firstOrg.industry,
-            size: firstOrg.size,
-            config: {}
-          })
-        }
-      }
-    } catch (error) {
-      console.error('Failed to load organizations:', error)
-    } finally {
-      setLoadingOrgs(false)
-    }
-  }
-
-  // Delete organization
-  const deleteOrganization = async (org: any) => {
-    try {
-      const response = await fetch(`/api/organizations?id=${org.id}`, {
-        method: 'DELETE'
-      })
-
-      const data = await response.json()
-
-      if (!response.ok || !data.success) {
-        alert(`Failed to delete organization: ${data.error || 'Unknown error'}`)
-        return
-      }
-
-      console.log(`✅ Deleted organization: ${org.name}`)
-
-      // If deleted org was selected, switch to first available org
-      if (organization?.id === org.id) {
-        const remainingOrgs = organizations.filter(o => o.id !== org.id)
-        if (remainingOrgs.length > 0) {
-          setOrganization({
-            id: remainingOrgs[0].id,
-            name: remainingOrgs[0].name,
-            url: remainingOrgs[0].url,
-            domain: remainingOrgs[0].url,  // Set both for compatibility
-            industry: remainingOrgs[0].industry,
-            size: remainingOrgs[0].size,
-            config: {}
-          })
-        } else {
-          setOrganization(null)
-        }
-      }
-
-      // Reload organizations list
-      await loadOrganizations()
-    } catch (error) {
-      console.error('Failed to delete organization:', error)
-      alert('Failed to delete organization. Please try again.')
-    }
-  }
-
-  // Handle delete confirmation
-  const handleDeleteClick = (org: any, e: React.MouseEvent) => {
-    e.stopPropagation()
-    setOrgToDelete(org)
-    setShowDeleteConfirm(true)
-    setShowProjectMenu(false)
-  }
-
-  const confirmDelete = async () => {
-    if (orgToDelete) {
-      await deleteOrganization(orgToDelete)
-      setShowDeleteConfirm(false)
-      setOrgToDelete(null)
-    }
-  }
-
-  const cancelDelete = () => {
-    setShowDeleteConfirm(false)
-    setOrgToDelete(null)
-  }
-
-  // Load organizations on mount
   useEffect(() => {
-    loadOrganizations()
-  }, [])
+    // Check if user is already authenticated
+    const checkAuth = async () => {
+      const supabase = createAuthClient()
+      const { data: { session } } = await supabase.auth.getSession()
 
-  // Close menus when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setShowModuleMenu(null)
-        setShowProjectMenu(false)
-        setShowProfileMenu(false)
+      if (session) {
+        router.push('/dashboard')
+      } else {
+        setLoading(false)
       }
     }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
 
-  // Update time on client side only
-  useEffect(() => {
-    setCurrentTime(new Date().toLocaleTimeString())
-    const interval = setInterval(() => {
-      setCurrentTime(new Date().toLocaleTimeString())
-    }, 1000)
-    return () => clearInterval(interval)
-  }, [])
+    checkAuth()
+  }, [router])
 
-  // Listen for canvas component changes to highlight tabs
-  useEffect(() => {
-    const handleComponentsChanged = (event: CustomEvent) => {
-      setOpenComponents(event.detail.components)
-    }
-    window.addEventListener('canvasComponentsChanged' as any, handleComponentsChanged as any)
-    return () => {
-      window.removeEventListener('canvasComponentsChanged' as any, handleComponentsChanged as any)
-    }
-  }, [])
-
-  // Listen for crisis alerts
-  useEffect(() => {
-    const handleCrisisAlerts = (event: CustomEvent) => {
-      setHasCrisisAlerts(event.detail.alertCount > 0)
-    }
-    window.addEventListener('crisisAlertsDetected' as any, handleCrisisAlerts as any)
-    return () => {
-      window.removeEventListener('crisisAlertsDetected' as any, handleCrisisAlerts as any)
-    }
-  }, [])
-
-  const handleModuleClick = (moduleId: string) => {
-    if (showModuleMenu === moduleId) {
-      setShowModuleMenu(null)
-    } else {
-      setShowModuleMenu(moduleId)
-    }
-  }
-
-  const handleModuleAction = (moduleId: string, action: 'window' | 'view') => {
-    if (action === 'view' && openComponents.includes(moduleId)) {
-      // Focus existing component
-      const event = new CustomEvent('focusComponent', {
-        detail: { moduleId }
-      })
-      window.dispatchEvent(event)
-    } else {
-      // Add new component to canvas
-      const event = new CustomEvent('addComponentToCanvas', {
-        detail: { moduleId, action: 'window' }
-      })
-      window.dispatchEvent(event)
-    }
-    setShowModuleMenu(null)
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-white">Loading...</div>
+      </div>
+    )
   }
 
   return (
-    <div className="h-screen overflow-hidden bg-gray-950 text-gray-100">
-      {/* Header with Neon Styling */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur-xl" 
-        style={{ 
-          borderBottom: '1px solid rgba(0, 255, 204, 0.2)',
-          boxShadow: '0 2px 20px rgba(0, 255, 204, 0.1)' 
-        }}>
-        <div className="flex items-center justify-between px-6 py-3">
-          {/* Logo */}
-          <div className="flex items-center gap-3">
-            <div>
-              <h1 className="text-xl font-bold" style={{ color: '#00ffcc', textShadow: '0 0 10px rgba(0, 255, 204, 0.5)' }}>
-                SIGNALDESK
-              </h1>
-              <p className="text-xs text-gray-500">Intelligence Command Center</p>
+    <div className="min-h-screen bg-gray-900 text-white">
+      {/* Navigation */}
+      <nav className="fixed top-0 w-full bg-gray-900/80 backdrop-blur-sm border-b border-gray-800 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center space-x-2">
+              <Brain className="w-8 h-8 text-blue-500" />
+              <span className="text-2xl font-bold">SignalDesk</span>
             </div>
-          </div>
-          
-          {/* Main Navigation Tabs */}
-          <nav className="flex gap-1 md:gap-2 flex-wrap" ref={menuRef}>
-            {tabs.map((tab) => {
-              const Icon = tab.icon
-              const isActive = openComponents.includes(tab.id) ||
-                             (tab.id === 'intelligence' && (openComponents.includes('intelligence') || openComponents.includes('niv'))) ||
-                             (tab.id === 'crisis' && (openComponents.includes('crisis') || openComponents.includes('niv-crisis')))
-              
-              return (
-                <div key={tab.id} className="relative">
-                  <button
-                    onClick={() => handleModuleClick(tab.id)}
-                    className={`
-                      relative px-2 py-1.5 md:px-4 md:py-2 rounded-lg flex items-center gap-1 md:gap-2 transition-all text-xs md:text-sm
-                      ${isActive
-                        ? 'text-black font-semibold'
-                        : 'hover:bg-gray-800 text-gray-400 hover:text-gray-200'
-                      }
-                      ${tab.id === 'crisis' && hasCrisisAlerts && !isActive ? 'ring-2 ring-red-500 animate-pulse' : ''}
-                    `}
-                    style={isActive ? {
-                      background: tab.color,
-                      boxShadow: `0 0 20px ${tab.color}50`,
-                    } : tab.id === 'crisis' && hasCrisisAlerts ? {
-                      boxShadow: '0 0 15px rgba(239, 68, 68, 0.5)',
-                    } : {}}
-                  >
-                    <Icon className="w-3 h-3 md:w-4 md:h-4" />
-                    <span className="hidden sm:inline">{tab.name}</span>
-                    {tab.id === 'crisis' && hasCrisisAlerts && (
-                      <span className="ml-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                    )}
-                    <ChevronDown className="w-3 h-3 ml-1" />
-                  </button>
-                  
-                  {/* Module Action Menu */}
-                  <AnimatePresence>
-                    {showModuleMenu === tab.id && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="absolute top-full mt-2 left-0 bg-gray-900 border border-gray-700 rounded-lg shadow-xl overflow-hidden z-50"
-                        style={{ minWidth: '200px' }}
-                      >
-                        {tab.id === 'niv-command' ? (
-                          <>
-                            <div className="px-4 py-2 text-xs text-gray-500 font-semibold uppercase border-b border-gray-800">
-                              NIV Strategic Advisor
-                            </div>
-                            {openComponents.includes('niv-command') ? (
-                              <button
-                                onClick={() => handleModuleAction('niv-command', 'view')}
-                                className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm flex items-center gap-2"
-                              >
-                                <Brain className="w-4 h-4 text-purple-400" />
-                                View NIV
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => handleModuleAction('niv-command', 'window')}
-                                className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm flex items-center gap-2"
-                              >
-                                <Plus className="w-4 h-4" />
-                                Open NIV
-                              </button>
-                            )}
-                            <button
-                              onClick={() => handleModuleAction('niv-command', 'window')}
-                              className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm text-gray-400 flex items-center gap-2"
-                            >
-                              <Plus className="w-4 h-4" />
-                              Open New Window
-                            </button>
-                            <div className="px-4 py-2 text-xs text-gray-500 font-semibold uppercase border-b border-t border-gray-800">
-                              Resources
-                            </div>
-                            {openComponents.includes('niv-capabilities') ? (
-                              <button
-                                onClick={() => handleModuleAction('niv-capabilities', 'view')}
-                                className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm flex items-center gap-2"
-                              >
-                                <Sparkles className="w-4 h-4 text-purple-400" />
-                                View NIV Capabilities
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => handleModuleAction('niv-capabilities', 'window')}
-                                className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm flex items-center gap-2"
-                              >
-                                <Plus className="w-4 h-4" />
-                                NIV Capabilities
-                              </button>
-                            )}
-                            {openComponents.includes('niv-prompts') ? (
-                              <button
-                                onClick={() => handleModuleAction('niv-prompts', 'view')}
-                                className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm flex items-center gap-2"
-                              >
-                                <FileText className="w-4 h-4 text-purple-400" />
-                                View Prompt Library
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => handleModuleAction('niv-prompts', 'window')}
-                                className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm flex items-center gap-2"
-                              >
-                                <Plus className="w-4 h-4" />
-                                Prompt Library
-                              </button>
-                            )}
-                          </>
-                        ) : tab.id === 'intelligence' ? (
-                          <>
-                            <div className="px-4 py-2 text-xs text-gray-500 font-semibold uppercase border-b border-gray-800">
-                              Intelligence Hub
-                            </div>
-                            {openComponents.includes('intelligence') ? (
-                              <button
-                                onClick={() => handleModuleAction('intelligence', 'view')}
-                                className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm flex items-center gap-2"
-                              >
-                                <Brain className="w-4 h-4 text-cyan-400" />
-                                View Intelligence
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => handleModuleAction('intelligence', 'window')}
-                                className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm flex items-center gap-2"
-                              >
-                                <Plus className="w-4 h-4" />
-                                Open Intelligence
-                              </button>
-                            )}
-                            <button
-                              onClick={() => handleModuleAction('intelligence', 'window')}
-                              className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm text-gray-400 flex items-center gap-2"
-                            >
-                              <Plus className="w-4 h-4" />
-                              Open New Window
-                            </button>
-                          </>
-                        ) : tab.id === 'campaign-planner' ? (
-                          <>
-                            <div className="px-4 py-2 text-xs text-gray-500 font-semibold uppercase border-b border-gray-800">
-                              Strategic Campaigns
-                            </div>
-                            <button
-                              onClick={() => {
-                                window.open('/campaign-builder', '_blank')
-                                setShowModuleMenu(null)
-                              }}
-                              className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm flex items-center gap-2"
-                            >
-                              <TrendingUp className="w-4 h-4 text-cyan-400" />
-                              Campaign Builder
-                            </button>
-                            <div className="px-4 py-2 text-xs text-gray-500 font-semibold uppercase border-b border-t border-gray-800">
-                              Planning
-                            </div>
-                            {openComponents.includes('plan') ? (
-                              <button
-                                onClick={() => handleModuleAction('plan', 'view')}
-                                className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm flex items-center gap-2"
-                              >
-                                <FileText className="w-4 h-4 text-cyan-400" />
-                                View Planning
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => handleModuleAction('plan', 'window')}
-                                className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm flex items-center gap-2"
-                              >
-                                <Plus className="w-4 h-4" />
-                                Open Planning
-                              </button>
-                            )}
-                          </>
-                        ) : tab.id === 'crisis' ? (
-                          <>
-                            <div className="px-4 py-2 text-xs text-gray-500 font-semibold uppercase border-b border-gray-800">
-                              Crisis Command Center
-                            </div>
-                            {openComponents.includes('crisis') ? (
-                              <button
-                                onClick={() => handleModuleAction('crisis', 'view')}
-                                className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm flex items-center gap-2"
-                              >
-                                <Shield className="w-4 h-4 text-cyan-400" />
-                                View Command Center
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => handleModuleAction('crisis', 'window')}
-                                className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm flex items-center gap-2"
-                              >
-                                <Plus className="w-4 h-4" />
-                                Open Command Center
-                              </button>
-                            )}
-                            <button
-                              onClick={() => handleModuleAction('crisis', 'window')}
-                              className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm text-gray-400 flex items-center gap-2"
-                            >
-                              <Plus className="w-4 h-4" />
-                              Open New Window
-                            </button>
-                            <div className="px-4 py-2 text-xs text-gray-500 font-semibold uppercase border-b border-t border-gray-800">
-                              NIV Crisis Consultant
-                            </div>
-                            {openComponents.includes('niv-crisis') ? (
-                              <button
-                                onClick={() => handleModuleAction('niv-crisis', 'view')}
-                                className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm flex items-center gap-2"
-                              >
-                                <Bot className="w-4 h-4 text-cyan-400" />
-                                View NIV Consultant
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => handleModuleAction('niv-crisis', 'window')}
-                                className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm flex items-center gap-2"
-                              >
-                                <Plus className="w-4 h-4" />
-                                Open NIV Consultant
-                              </button>
-                            )}
-                            <button
-                              onClick={() => handleModuleAction('niv-crisis', 'window')}
-                              className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm text-gray-400 flex items-center gap-2"
-                            >
-                              <Plus className="w-4 h-4" />
-                              Open New Window
-                            </button>
-                          </>
-                        ) : tab.id === 'execute' ? (
-                          <>
-                            <div className="px-4 py-2 text-xs text-gray-500 font-semibold uppercase border-b border-gray-800">
-                              Content Execution
-                            </div>
-                            {openComponents.includes('execute') ? (
-                              <button
-                                onClick={() => handleModuleAction('execute', 'view')}
-                                className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm flex items-center gap-2"
-                              >
-                                <Rocket className="w-4 h-4 text-cyan-400" />
-                                View Execute
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => handleModuleAction('execute', 'window')}
-                                className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm flex items-center gap-2"
-                              >
-                                <Plus className="w-4 h-4" />
-                                Open Execute
-                              </button>
-                            )}
-                            <button
-                              onClick={() => handleModuleAction('execute', 'window')}
-                              className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm text-gray-400 flex items-center gap-2"
-                            >
-                              <Plus className="w-4 h-4" />
-                              Open New Window
-                            </button>
-                            <div className="px-4 py-2 text-xs text-gray-500 font-semibold uppercase border-b border-t border-gray-800">
-                              Workspace
-                            </div>
-                            {openComponents.includes('workspace') ? (
-                              <button
-                                onClick={() => handleModuleAction('workspace', 'view')}
-                                className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm flex items-center gap-2"
-                              >
-                                <FileEdit className="w-4 h-4 text-cyan-400" />
-                                View Workspace
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => handleModuleAction('workspace', 'window')}
-                                className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm flex items-center gap-2"
-                              >
-                                <Plus className="w-4 h-4" />
-                                Open Workspace
-                              </button>
-                            )}
-                            <button
-                              onClick={() => handleModuleAction('workspace', 'window')}
-                              className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm text-gray-400 flex items-center gap-2"
-                            >
-                              <Plus className="w-4 h-4" />
-                              Open New Window
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            {openComponents.includes(tab.id) ? (
-                              <button
-                                onClick={() => handleModuleAction(tab.id, 'view')}
-                                className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm flex items-center gap-2"
-                              >
-                                <Icon className="w-4 h-4 text-cyan-400" />
-                                View {tab.name}
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => handleModuleAction(tab.id, 'window')}
-                                className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm flex items-center gap-2"
-                              >
-                                <Plus className="w-4 h-4" />
-                                Open {tab.name}
-                              </button>
-                            )}
-                            <button
-                              onClick={() => handleModuleAction(tab.id, 'window')}
-                              className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm text-gray-400 flex items-center gap-2"
-                            >
-                              <Plus className="w-4 h-4" />
-                              Open New Window
-                            </button>
-                          </>
-                        )}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              )
-            })}
-          </nav>
-
-          {/* Right Side: Project Selector and User Profile */}
-          <div className="flex items-center gap-4">
-            {/* Project Selector */}
-            <div className="relative">
+            <div className="flex space-x-4">
               <button
-                onClick={() => setShowProjectMenu(!showProjectMenu)}
-                className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors"
+                onClick={() => router.push('/auth/login')}
+                className="px-4 py-2 text-gray-300 hover:text-white transition-colors"
               >
-                <span className="text-sm">{organization?.name || 'Select Organization'}</span>
-                <ChevronDown className="w-4 h-4" />
+                Sign In
               </button>
-              
-              <AnimatePresence>
-                {showProjectMenu && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="absolute top-full mt-2 right-0 bg-gray-900 border border-gray-700 rounded-lg shadow-xl overflow-hidden"
-                    style={{ minWidth: '200px' }}
-                  >
-                    {loadingOrgs ? (
-                      <div className="px-4 py-2 text-sm text-gray-500">Loading...</div>
-                    ) : organizations.length === 0 ? (
-                      <div className="px-4 py-2 text-sm text-gray-500">No organizations</div>
-                    ) : (
-                      organizations.map(org => (
-                        <div
-                          key={org.id}
-                          className={`flex items-center justify-between gap-2 px-4 py-2 hover:bg-gray-800 text-sm group ${
-                            organization?.id === org.id ? 'bg-gray-800 text-cyan-400' : ''
-                          }`}
-                        >
-                          <button
-                            onClick={() => {
-                              setOrganization({
-                                id: org.id,
-                                name: org.name,
-                                industry: org.industry,
-                                config: {}
-                              })
-                              setShowProjectMenu(false)
-                            }}
-                            className="flex-1 text-left"
-                          >
-                            <div className="font-medium">{org.name}</div>
-                            {org.industry && (
-                              <div className="text-xs text-gray-500">{org.industry}</div>
-                            )}
-                          </button>
-                          <button
-                            onClick={(e) => handleDeleteClick(org, e)}
-                            className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-500/20 rounded transition-all"
-                            title="Delete organization"
-                          >
-                            <Trash2 className="w-4 h-4 text-red-400" />
-                          </button>
-                        </div>
-                      ))
-                    )}
-                    <div className="border-t border-gray-700">
-                      {organization && (
-                        <button
-                          onClick={() => {
-                            setShowProjectMenu(false)
-                            setShowOrgSettings(true)
-                          }}
-                          className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm text-white flex items-center gap-2"
-                        >
-                          <Building2 className="w-4 h-4" />
-                          Organization Settings
-                        </button>
-                      )}
-                      <button
-                        onClick={() => {
-                          setShowProjectMenu(false)
-                          setShowOnboarding(true)
-                        }}
-                        className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm text-cyan-400 flex items-center gap-2"
-                      >
-                        <Plus className="w-4 h-4" />
-                        New Organization
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            {/* User Profile */}
-            <div className="relative">
               <button
-                onClick={() => setShowProfileMenu(!showProfileMenu)}
-                className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-800 rounded-lg transition-colors"
+                onClick={() => router.push('/auth/signup')}
+                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors"
               >
-                <div className="w-8 h-8 bg-gradient-to-br from-violet-500 to-indigo-600 rounded-full flex items-center justify-center">
-                  <User className="w-4 h-4 text-white" />
-                </div>
-                <ChevronDown className="w-4 h-4" />
+                Get Started
               </button>
-              
-              <AnimatePresence>
-                {showProfileMenu && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="absolute top-full mt-2 right-0 bg-gray-900 border border-gray-700 rounded-lg shadow-xl overflow-hidden"
-                    style={{ minWidth: '200px' }}
-                  >
-                    <div className="px-4 py-3 border-b border-gray-700">
-                      <p className="text-sm font-semibold">John Doe</p>
-                      <p className="text-xs text-gray-500">john@signaldesk.ai</p>
-                    </div>
-                    <button
-                      onClick={() => {
-                        setShowProfileMenu(false)
-                        setShowOrgDashboard(true)
-                      }}
-                      className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm flex items-center gap-2"
-                    >
-                      <Building2 className="w-4 h-4" />
-                      Manage Organizations
-                    </button>
-                    <button className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm">
-                      Profile Settings
-                    </button>
-                    <button className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm">
-                      Preferences
-                    </button>
-                    <div className="border-t border-gray-700">
-                      <button className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm text-red-400">
-                        Sign Out
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
             </div>
           </div>
         </div>
-      </header>
+      </nav>
 
-      {/* Main Content Area with Infinite Canvas */}
-      <main className="pt-16 h-screen overflow-hidden">
-        <InfiniteCanvas>
-          {/* Components will be added here dynamically */}
-          {/* NIV is now integrated into the canvas as a draggable, resizable component */}
-        </InfiniteCanvas>
-      </main>
-
-      {/* Organization Onboarding Modal */}
-      <OrganizationOnboarding
-        isOpen={showOnboarding}
-        onClose={() => setShowOnboarding(false)}
-        onComplete={(newOrg) => {
-          // Reload organizations list
-          loadOrganizations()
-          // Set the new org as active
-          setOrganization(newOrg)
-        }}
-      />
-
-      {/* Delete Confirmation Dialog */}
-      <AnimatePresence>
-        {showDeleteConfirm && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm"
-            onClick={cancelDelete}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-gray-900 border border-red-500/30 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl"
+      {/* Hero Section */}
+      <section className="pt-32 pb-20 px-4">
+        <div className="max-w-7xl mx-auto text-center">
+          <div className="inline-block mb-6 px-4 py-2 bg-blue-900/30 border border-blue-700 rounded-full text-blue-300 text-sm">
+            Intelligence-Driven Communications Platform
+          </div>
+          <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+            Transform Information Into Strategic Action
+          </h1>
+          <p className="text-xl md:text-2xl text-gray-400 mb-10 max-w-3xl mx-auto">
+            SignalDesk empowers PR and communications teams with real-time intelligence monitoring,
+            crisis detection, and AI-powered strategic planning.
+          </p>
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <button
+              onClick={() => router.push('/auth/signup')}
+              className="px-8 py-4 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium text-lg transition-colors flex items-center justify-center"
             >
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center flex-shrink-0">
-                  <AlertTriangle className="w-6 h-6 text-red-400" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-xl font-bold text-white mb-2">Delete Organization?</h3>
-                  <p className="text-gray-400 mb-4">
-                    Are you sure you want to delete <span className="font-semibold text-white">{orgToDelete?.name}</span>?
-                  </p>
-                  <p className="text-sm text-red-400 mb-6">
-                    ⚠️ This will permanently delete all data, including intelligence targets, campaigns, content, and predictions for this organization. This action cannot be undone.
-                  </p>
-                  <div className="flex gap-3">
-                    <button
-                      onClick={confirmDelete}
-                      className="flex-1 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors"
-                    >
-                      Delete Organization
-                    </button>
-                    <button
-                      onClick={cancelDelete}
-                      className="flex-1 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
+              Start Free Trial
+              <Sparkles className="ml-2 w-5 h-5" />
+            </button>
+            <button
+              onClick={() => router.push('/auth/login')}
+              className="px-8 py-4 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg font-medium text-lg transition-colors"
+            >
+              View Demo
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Grid */}
+      <section className="py-20 px-4 bg-gray-800/30">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold mb-4">Comprehensive Intelligence Suite</h2>
+            <p className="text-xl text-gray-400">Everything you need to stay ahead of the story</p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {/* Feature 1 */}
+            <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 hover:border-blue-600 transition-colors">
+              <div className="w-12 h-12 bg-blue-900/30 border border-blue-700 rounded-lg flex items-center justify-center mb-4">
+                <Brain className="w-6 h-6 text-blue-400" />
               </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              <h3 className="text-xl font-bold mb-2">Intelligence Monitoring</h3>
+              <p className="text-gray-400">
+                Track news, social media, and regulatory changes in real-time. Get instant alerts
+                on topics that matter to your organization.
+              </p>
+            </div>
 
-      {/* Organization Settings Modal */}
-      {organization && (
-        <OrganizationSettings
-          isOpen={showOrgSettings}
-          onClose={() => setShowOrgSettings(false)}
-          organizationId={organization.id}
-          organizationName={organization.name}
-          onUpdate={() => {
-            // Reload organization data after update
-            loadOrganizations()
-          }}
-        />
-      )}
+            {/* Feature 2 */}
+            <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 hover:border-purple-600 transition-colors">
+              <div className="w-12 h-12 bg-purple-900/30 border border-purple-700 rounded-lg flex items-center justify-center mb-4">
+                <Globe className="w-6 h-6 text-purple-400" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">GEO Intelligence</h3>
+              <p className="text-gray-400">
+                Monitor geographic-specific trends and events. Track regional sentiment and
+                emerging patterns across different markets.
+              </p>
+            </div>
 
-      {/* Org Management Dashboard */}
-      <OrgManagementDashboard
-        isOpen={showOrgDashboard}
-        onClose={() => setShowOrgDashboard(false)}
-        onNewOrg={() => {
-          setShowOrgDashboard(false)
-          setShowOnboarding(true)
-        }}
-        onSelectOrg={(org) => {
-          setOrganization({
-            id: org.id,
-            name: org.name,
-            url: org.url,
-            domain: org.url,  // Set both for compatibility
-            industry: org.industry,
-            size: org.size,
-            config: {}
-          })
-        }}
-        onManageTargets={(org) => {
-          setOrganization({
-            id: org.id,
-            name: org.name,
-            url: org.url,
-            domain: org.url,  // Set both for compatibility
-            industry: org.industry,
-            size: org.size,
-            config: {}
-          })
-          setShowOrgSettings(true)
-        }}
-        onDeleteOrg={(org) => {
-          setOrgToDelete(org)
-          setShowDeleteConfirm(true)
-        }}
-      />
+            {/* Feature 3 */}
+            <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 hover:border-red-600 transition-colors">
+              <div className="w-12 h-12 bg-red-900/30 border border-red-700 rounded-lg flex items-center justify-center mb-4">
+                <Shield className="w-6 h-6 text-red-400" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">Crisis Management</h3>
+              <p className="text-gray-400">
+                Detect potential crises before they escalate. Automated alerts and response
+                workflows to protect your reputation.
+              </p>
+            </div>
+
+            {/* Feature 4 */}
+            <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 hover:border-green-600 transition-colors">
+              <div className="w-12 h-12 bg-green-900/30 border border-green-700 rounded-lg flex items-center justify-center mb-4">
+                <Target className="w-6 h-6 text-green-400" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">Opportunity Discovery</h3>
+              <p className="text-gray-400">
+                Find speaking opportunities, awards, and partnership possibilities. Never miss
+                a chance to elevate your brand.
+              </p>
+            </div>
+
+            {/* Feature 5 */}
+            <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 hover:border-yellow-600 transition-colors">
+              <div className="w-12 h-12 bg-yellow-900/30 border border-yellow-700 rounded-lg flex items-center justify-center mb-4">
+                <Database className="w-6 h-6 text-yellow-400" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">Memory Vault</h3>
+              <p className="text-gray-400">
+                Centralized knowledge repository with semantic search. Access institutional
+                memory and insights instantly.
+              </p>
+            </div>
+
+            {/* Feature 6 */}
+            <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 hover:border-pink-600 transition-colors">
+              <div className="w-12 h-12 bg-pink-900/30 border border-pink-700 rounded-lg flex items-center justify-center mb-4">
+                <TrendingUp className="w-6 h-6 text-pink-400" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">Strategic Planning</h3>
+              <p className="text-gray-400">
+                AI-powered strategic frameworks and campaign planning. Turn intelligence
+                into actionable communication strategies.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Use Cases */}
+      <section className="py-20 px-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold mb-4">Built for Communications Professionals</h2>
+            <p className="text-xl text-gray-400">Trusted by PR teams, communications directors, and crisis managers</p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-blue-900/30 border border-blue-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Zap className="w-8 h-8 text-blue-400" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">PR Teams</h3>
+              <p className="text-gray-400">
+                Monitor media coverage, track journalist interests, and identify
+                story opportunities in real-time.
+              </p>
+            </div>
+
+            <div className="text-center">
+              <div className="w-16 h-16 bg-purple-900/30 border border-purple-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertTriangle className="w-8 h-8 text-purple-400" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">Crisis Managers</h3>
+              <p className="text-gray-400">
+                Early warning system for potential issues. Rapid response protocols
+                and stakeholder communication tools.
+              </p>
+            </div>
+
+            <div className="text-center">
+              <div className="w-16 h-16 bg-pink-900/30 border border-pink-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Brain className="w-8 h-8 text-pink-400" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">Strategic Advisors</h3>
+              <p className="text-gray-400">
+                Data-driven insights for executive communications. Competitive
+                intelligence and market positioning analysis.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 px-4 bg-gradient-to-r from-blue-900/30 to-purple-900/30 border-y border-gray-800">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-4xl font-bold mb-6">Ready to Transform Your Communications Strategy?</h2>
+          <p className="text-xl text-gray-400 mb-8">
+            Join forward-thinking organizations using SignalDesk to stay ahead of the story.
+          </p>
+          <button
+            onClick={() => router.push('/auth/signup')}
+            className="px-8 py-4 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium text-lg transition-colors inline-flex items-center"
+          >
+            Start Your Free Trial
+            <Sparkles className="ml-2 w-5 h-5" />
+          </button>
+          <p className="text-sm text-gray-500 mt-4">No credit card required</p>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="py-12 px-4 border-t border-gray-800">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid md:grid-cols-4 gap-8">
+            <div>
+              <div className="flex items-center space-x-2 mb-4">
+                <Brain className="w-6 h-6 text-blue-500" />
+                <span className="text-xl font-bold">SignalDesk</span>
+              </div>
+              <p className="text-gray-400 text-sm">
+                Intelligence-driven communications platform for modern PR teams.
+              </p>
+            </div>
+
+            <div>
+              <h4 className="font-bold mb-4">Product</h4>
+              <ul className="space-y-2 text-gray-400 text-sm">
+                <li><a href="#" className="hover:text-white">Features</a></li>
+                <li><a href="#" className="hover:text-white">Pricing</a></li>
+                <li><a href="#" className="hover:text-white">Use Cases</a></li>
+                <li><a href="#" className="hover:text-white">Documentation</a></li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="font-bold mb-4">Company</h4>
+              <ul className="space-y-2 text-gray-400 text-sm">
+                <li><a href="#" className="hover:text-white">About</a></li>
+                <li><a href="#" className="hover:text-white">Blog</a></li>
+                <li><a href="#" className="hover:text-white">Careers</a></li>
+                <li><a href="#" className="hover:text-white">Contact</a></li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="font-bold mb-4">Legal</h4>
+              <ul className="space-y-2 text-gray-400 text-sm">
+                <li><a href="#" className="hover:text-white">Privacy</a></li>
+                <li><a href="#" className="hover:text-white">Terms</a></li>
+                <li><a href="#" className="hover:text-white">Security</a></li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400 text-sm">
+            <p>&copy; 2025 SignalDesk. All rights reserved.</p>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }
