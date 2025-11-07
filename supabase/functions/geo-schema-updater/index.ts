@@ -32,12 +32,22 @@ serve(async (req) => {
     console.log('⚡ Applying schema recommendation:', {
       title: recommendation.title,
       schema_type: recommendation.schema_type,
+      type: recommendation.type,
       changes: recommendation.changes
     })
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
+
+    // Determine target schema type
+    // If type is "update_field" or "add_field", always target the Organization schema
+    // If type is "create_new", create the specified schema_type
+    const targetSchemaType = (recommendation.type === 'update_field' || recommendation.type === 'add_field')
+      ? 'Organization'
+      : (recommendation.schema_type || 'Organization')
+
+    console.log('🎯 Target schema type:', targetSchemaType, '(recommendation type:', recommendation.type, ')')
 
     // STEP 1: Try to fetch current schema from content_library
     const { data: schemaData, error: fetchError } = await supabase
@@ -46,7 +56,7 @@ serve(async (req) => {
       .eq('organization_id', organization_id)
       .eq('content_type', 'schema')
       .eq('folder', 'Schemas/Active/')
-      .eq('metadata->>schema_type', recommendation.schema_type || 'Organization')
+      .eq('metadata->>schema_type', targetSchemaType)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle()
@@ -58,7 +68,7 @@ serve(async (req) => {
 
     if (!schemaData || fetchError) {
       // Schema doesn't exist - CREATE NEW
-      console.log(`📝 Schema not found for type "${recommendation.schema_type}", creating new schema...`)
+      console.log(`📝 Schema not found for type "${targetSchemaType}", creating new schema...`)
       isNewSchema = true
 
       // Get organization details for schema
@@ -68,22 +78,48 @@ serve(async (req) => {
         .eq('id', organization_id)
         .single()
 
-      const schemaType = recommendation.schema_type || 'Organization'
+      // Create base schema structure based on type
+      let baseSchema: any
 
-      // Create base schema structure
-      const baseSchema = {
-        '@context': 'https://schema.org',
-        '@type': schemaType,
-        'name': orgData?.name || 'Organization',
+      if (targetSchemaType === 'FAQPage') {
+        // For FAQPage, the changes.value should contain the full FAQ structure
+        const changes = recommendation.changes || {}
+        if (typeof changes.value === 'string') {
+          try {
+            // If value is a JSON string, parse it
+            baseSchema = JSON.parse(changes.value)
+          } catch {
+            // If parsing fails, create a minimal FAQPage
+            baseSchema = {
+              '@context': 'https://schema.org',
+              '@type': 'FAQPage',
+              'mainEntity': []
+            }
+          }
+        } else {
+          // If value is already an object, use it
+          baseSchema = changes.value || {
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            'mainEntity': []
+          }
+        }
+        updatedSchema = baseSchema // Don't apply changes again, the value IS the schema
+      } else {
+        // For Organization and other types, create base and apply field changes
+        baseSchema = {
+          '@context': 'https://schema.org',
+          '@type': targetSchemaType,
+          'name': orgData?.name || 'Organization',
+        }
+
+        const changes = recommendation.changes || {}
+        // Apply changes to base schema
+        updatedSchema = applySchemaChange(baseSchema, changes)
       }
 
       beforeSchema = null
-      const changes = recommendation.changes || {}
-
-      // Apply changes to base schema
-      updatedSchema = applySchemaChange(baseSchema, changes)
-
-      console.log('🔧 Applied changes to new schema:', changes)
+      console.log('🔧 Created new schema:', { type: targetSchemaType, isFullSchema: targetSchemaType === 'FAQPage' })
     } else {
       // Schema exists - UPDATE EXISTING
       console.log('📄 Current schema loaded:', schemaData.id)
@@ -118,16 +154,17 @@ serve(async (req) => {
         .insert({
           organization_id,
           content_type: 'schema',
-          title: `${recommendation.schema_type} Schema`,
+          title: `${targetSchemaType} Schema`,
           content: JSON.stringify(updatedSchema),
           folder: 'Schemas/Active/',
           status: 'published',
           metadata: {
             version: 1,
-            schema_type: recommendation.schema_type || 'Organization',
+            schema_type: targetSchemaType,
             last_updated: new Date().toISOString(),
             last_recommendation: recommendation.title,
-            platform_optimized: 'all'
+            platform_optimized: 'all',
+            original_recommendation_type: recommendation.type
           }
         })
         .select('id')
