@@ -16,7 +16,7 @@ export default function LoginPage() {
 
         <AuthForm
           mode="signin"
-          onSuccess={() => router.push('/dashboard')}
+          onSuccess={() => router.push('/onboarding')}
         />
       </div>
     </div>
