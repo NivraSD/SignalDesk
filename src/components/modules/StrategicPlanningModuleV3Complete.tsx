@@ -180,6 +180,13 @@ export default function StrategicPlanningModuleV3Complete({
   // Reload whenever sessionId changes or component mounts
   // NOTE: We don't include blueprint in dependencies to prevent duplicate initialization
   useEffect(() => {
+    // Don't attempt to load if sessionId is empty (happens during org switching)
+    if (!sessionId) {
+      console.log('⚠️ Skipping load - sessionId is empty')
+      setLoading(false)
+      return
+    }
+
     console.log('📋 Loading execution items for session:', sessionId)
     setLoading(true)
     setError(null)
