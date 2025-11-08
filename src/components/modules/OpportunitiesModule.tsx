@@ -236,28 +236,34 @@ ${opp.execution_plan?.success_metrics?.map((m: any) => `- ${JSON.stringify(m)}`)
 *Opportunity Score: ${opp.score} | Urgency: ${opp.urgency} | Category: ${opp.category}*`
 
       try {
-        const { error: overviewError } = await supabase.from('content_library').insert({
-          id: crypto.randomUUID(),
-          organization_id: organization?.id || '7a2835cb-11ee-4512-acc3-b6caf8eb03ff',
-          title: `${folderName} - Overview`,
-          content: overviewContent,
-          content_type: 'strategy',
-          folder: `Opportunities/${folderName}`,
-          tags: [opp.category, ...(opp.strategic_context?.trigger_events || [])],
-          metadata: {
-            opportunity_id: opp.id,
-            urgency: opp.urgency,
-            score: opp.score,
-            is_overview: true,
-            themes: [opp.category],
-            topics: opp.strategic_context?.trigger_events || []
-          }
+        // Use API endpoint instead of direct Supabase client to bypass PostgREST cache issues
+        const response = await fetch('/api/content-library/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            content: {
+              type: 'strategy',
+              title: `${folderName} - Overview`,
+              content: overviewContent,
+              organization_id: organization?.id,
+              metadata: {
+                opportunity_id: opp.id,
+                urgency: opp.urgency,
+                score: opp.score,
+                is_overview: true,
+                themes: [opp.category],
+                topics: opp.strategic_context?.trigger_events || []
+              }
+            },
+            folder: `Opportunities/${folderName}`
+          })
         })
 
-        if (overviewError) {
-          console.error('❌ Failed to save overview:', overviewError)
-        } else {
+        if (response.ok) {
           console.log('✅ Saved opportunity overview to Memory Vault:', `Opportunities/${folderName}`)
+        } else {
+          const error = await response.json()
+          console.error('❌ Failed to save overview:', error)
         }
       } catch (error) {
         console.error('❌ Failed to save overview:', error)
