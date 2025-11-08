@@ -654,19 +654,6 @@ const CONTENT_GENERATION_TOOLS = [
     }
   },
   {
-    name: "generate_instagram_post_with_image",
-    description: "Generate a complete Instagram post package with both caption AND image. Use this when user requests an Instagram post (they typically need both text and visual). This tool creates the caption and automatically generates a matching image.",
-    input_schema: {
-      type: "object",
-      properties: {
-        topic: { type: "string", description: "Post topic or announcement" },
-        style: { type: "string", description: "Caption style", default: "engaging" },
-        imageStyle: { type: "string", description: "Image style/aesthetic", default: "professional" }
-      },
-      required: ["topic"]
-    }
-  },
-  {
     name: "generate_facebook_post",
     description: "Generate Facebook post.",
     input_schema: {
@@ -2826,118 +2813,6 @@ ${campaignContext.timeline || 'Not specified'}
         }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
       }
 
-      if (toolUse && toolUse.name === 'generate_instagram_post_with_image') {
-        console.log('📸 Generating complete Instagram post with caption + image as SEPARATE messages')
-
-        // Step 1: Generate the caption
-        const caption = await callMCPService('social-post', {
-          organization: orgProfile.organizationName,
-          message: toolUse.input.topic,
-          platforms: ['instagram'],
-          tone: toolUse.input.style || 'engaging'
-        })
-
-        console.log('✅ Caption generated, now generating image')
-
-        // Step 2: Create image prompt based on the topic
-        const imagePrompt = `Professional ${toolUse.input.imageStyle || 'modern'} social media graphic for ${orgProfile.organizationName} about: ${toolUse.input.topic}. Clean, brand-appropriate design suitable for Instagram. High quality, corporate aesthetic.`
-
-        // Step 3: Generate the image
-        let imageUrl = null
-        let imageGenerationSuccess = false
-
-        try {
-          const imageResponse = await fetch(
-            `${SUPABASE_URL}/functions/v1/vertex-ai-visual`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
-              },
-              body: JSON.stringify({
-                type: 'image',
-                prompt: imagePrompt,
-                aspectRatio: '1:1',
-                numberOfImages: 1
-              })
-            }
-          )
-
-          if (imageResponse.ok) {
-            const imageData = await imageResponse.json()
-
-            console.log('📸 Image generation response:', JSON.stringify(imageData, null, 2))
-
-            // Extract imageUrl - vertex-ai-visual returns: { success: true, images: [...], imageUrl: '...', prompt: '...' }
-            // First check the direct imageUrl field (added for compatibility)
-            if (imageData.imageUrl) {
-              imageUrl = imageData.imageUrl
-              console.log('✅ Found imageUrl in imageData.imageUrl:', imageUrl)
-            }
-            // Then check images array
-            else if (imageData.images && imageData.images.length > 0) {
-              const firstImage = imageData.images[0]
-              imageUrl = firstImage.url || firstImage.uri || firstImage.gcsUri || null
-              console.log('✅ Found imageUrl in images array:', imageUrl)
-            }
-            // Fallback to top-level url
-            else if (imageData.url) {
-              imageUrl = imageData.url
-              console.log('✅ Found imageUrl in imageData.url:', imageUrl)
-            }
-
-            console.log('📸 Final imageUrl:', imageUrl)
-            console.log('📸 Image generation success:', imageData.success)
-
-            // Check if image generation was actually successful
-            if (imageData.success && imageUrl) {
-              imageGenerationSuccess = true
-            } else {
-              console.error('⚠️ Image generation reported success but no imageUrl found')
-              console.error('Full imageData:', JSON.stringify(imageData))
-            }
-          } else {
-            const errorText = await imageResponse.text()
-            console.error('Image generation failed:', imageResponse.status, errorText)
-          }
-        } catch (error) {
-          console.error('Error generating image:', error)
-        }
-
-        // Return multi-content response with caption and image as separate items
-        const contentItems = [
-          {
-            type: 'instagram-caption',
-            content: caption,
-            message: '📝 Instagram Caption'
-          }
-        ]
-
-        if (imageGenerationSuccess && imageUrl) {
-          contentItems.push({
-            type: 'instagram-image',
-            imageUrl: imageUrl,
-            imagePrompt: imagePrompt,
-            message: '🖼️ Instagram Image'
-          })
-        } else {
-          contentItems.push({
-            type: 'error',
-            content: '⚠️ Image generation failed or returned no URL. You can try requesting an image separately.',
-            message: '⚠️ Image Generation Issue'
-          })
-        }
-
-        return new Response(JSON.stringify({
-          success: true,
-          mode: 'multi_content_instagram',
-          message: `✅ Instagram post generated${imageGenerationSuccess ? ' (caption + image)' : ' (caption only - image failed)'}`,
-          contentItems: contentItems,
-          conversationId
-        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-      }
-
       if (toolUse && toolUse.name === 'generate_facebook_post') {
         const content = await callMCPService('social-post', {
           organization: orgProfile.organizationName,
@@ -3323,31 +3198,58 @@ ${toolUse.input.tactical_recommendations.map((r: string) => `- ${r}`).join('\n')
 
               case 'image':
                 const imagePrompt = details.imagePrompt || `Professional ${details.imageStyle || 'modern'} social media graphic for ${orgProfile.organizationName} about: ${context.topic}. Clean, brand-appropriate design.`
-                const imageResponse = await fetch(
-                  `${SUPABASE_URL}/functions/v1/vertex-ai-visual`,
-                  {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
-                    },
-                    body: JSON.stringify({
-                      type: 'image',
-                      prompt: imagePrompt,
-                      aspectRatio: '1:1',
-                      numberOfImages: 1
-                    })
+                console.log('🎨 Generating image with prompt:', imagePrompt)
+
+                try {
+                  const imageResponse = await fetch(
+                    `${SUPABASE_URL}/functions/v1/vertex-ai-visual`,
+                    {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
+                      },
+                      body: JSON.stringify({
+                        type: 'image',
+                        prompt: imagePrompt,
+                        aspectRatio: '1:1',
+                        numberOfImages: 1
+                      })
+                    }
+                  )
+
+                  if (!imageResponse.ok) {
+                    console.error('❌ Image generation HTTP error:', imageResponse.status, imageResponse.statusText)
+                    throw new Error(`Image generation failed: ${imageResponse.status}`)
                   }
-                )
-                const imageData = await imageResponse.json()
-                const imageUrl = imageData.imageUrl || imageData.images?.[0]?.url
-                result = {
-                  type: 'image',
-                  imageUrl: imageUrl,
-                  imagePrompt: imagePrompt,
-                  message: '🖼️ Instagram Image'
+
+                  const imageData = await imageResponse.json()
+                  console.log('📸 Image response:', JSON.stringify(imageData))
+
+                  const imageUrl = imageData.imageUrl || imageData.images?.[0]?.url
+                  console.log('📸 Extracted imageUrl:', imageUrl)
+
+                  if (!imageUrl) {
+                    console.error('❌ No imageUrl found in response')
+                    throw new Error('No imageUrl in response')
+                  }
+
+                  result = {
+                    type: 'image',
+                    imageUrl: imageUrl,
+                    imagePrompt: imagePrompt,
+                    message: '🖼️ Instagram Image'
+                  }
+                  generationResults.push(result)
+                } catch (error) {
+                  console.error('❌ Image generation error:', error)
+                  result = {
+                    type: 'error',
+                    message: '⚠️ Image Generation Failed',
+                    content: `Image generation error: ${error.message}`
+                  }
+                  generationResults.push(result)
                 }
-                generationResults.push(result)
                 break
 
               case 'event-brief':

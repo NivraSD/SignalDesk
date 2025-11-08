@@ -292,9 +292,11 @@ export default function OrganizationSettings({
         })
       })
 
+      let finalSchema = schemaData.schema_graph // Default to base schema
+
       if (!enhancerResponse.ok) {
         console.warn('Schema enhancement failed (non-critical):', await enhancerResponse.text())
-        // Continue without enhancement
+        // Continue with base schema
       } else {
         const enhancerData = await enhancerResponse.json()
         console.log('✅ Schema enhanced:', {
@@ -303,45 +305,60 @@ export default function OrganizationSettings({
           keywords: enhancerData.enhancements_applied?.keywords_count || 0
         })
 
-        // IMPORTANT: Save the enhanced schema to Memory Vault
+        // Use enhanced schema if available
         if (enhancerData.enhanced_schema) {
-          console.log('💾 Saving enhanced schema to Memory Vault...')
-
-          const saveResponse = await fetch('/api/content-library/save', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              content: {
-                type: 'schema',
-                title: `${orgData.name} - Complete Schema`,
-                content: enhancerData.enhanced_schema,
-                organization_id: organizationId,
-                metadata: {
-                  organizationId,
-                  organizationName: orgData.name,
-                  url: orgData.domain,
-                  industry: orgData.industry,
-                  generatedAt: new Date().toISOString(),
-                  source: 'org_profile_extraction'
-                }
-              },
-              metadata: {
-                organizationId,
-                title: `${orgData.name} - Complete Schema`
-              },
-              folder: 'Schemas'
-            })
-          })
-
-          if (saveResponse.ok) {
-            const saveData = await saveResponse.json()
-            console.log('✅ Enhanced schema saved to Memory Vault:', saveData)
-          } else {
-            console.error('Failed to save enhanced schema:', await saveResponse.text())
-          }
+          finalSchema = enhancerData.enhanced_schema
         }
+      }
+
+      // ALWAYS save the schema to Memory Vault (enhanced or base)
+      console.log('💾 SCHEMA SAVE: Starting save to Memory Vault...')
+      console.log('💾 SCHEMA SAVE: Organization ID:', organizationId)
+      console.log('💾 SCHEMA SAVE: Schema size:', JSON.stringify(finalSchema).length, 'bytes')
+
+      const savePayload = {
+        content: {
+          type: 'schema',
+          title: `${orgData.name} - Complete Schema`,
+          content: finalSchema,
+          organization_id: organizationId,
+          metadata: {
+            organizationId,
+            organizationName: orgData.name,
+            url: orgData.domain,
+            industry: orgData.industry,
+            generatedAt: new Date().toISOString(),
+            source: 'org_profile_extraction'
+          }
+        },
+        metadata: {
+          organizationId,
+          title: `${orgData.name} - Complete Schema`
+        },
+        folder: 'Schemas'
+      }
+
+      console.log('💾 SCHEMA SAVE: Payload prepared, making API call...')
+
+      const saveResponse = await fetch('/api/content-library/save', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(savePayload)
+      })
+
+      console.log('💾 SCHEMA SAVE: Response status:', saveResponse.status, saveResponse.statusText)
+
+      if (saveResponse.ok) {
+        const saveData = await saveResponse.json()
+        console.log('✅ SCHEMA SAVE SUCCESS:', saveData)
+        alert(`✅ Schema saved to Memory Vault! ID: ${saveData.id}`)
+      } else {
+        const errorText = await saveResponse.text()
+        console.error('❌ SCHEMA SAVE FAILED:', errorText)
+        alert(`❌ Failed to save schema: ${errorText}`)
+        throw new Error(`Failed to save schema: ${errorText}`)
       }
 
       const result = schemaData
