@@ -1,199 +1,162 @@
+Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
+tT @ 5040-bdcef0cfa0f2b98…EFQwgHmDbEwD2ph9:21
+🔄 Switching from Homeaglow to none
+✅ Organization switched to undefined
+⚠️ Same organization selected, skipping reload
+⚠️ Same organization selected, skipping reload
+⚠️ Same organization selected, skipping reload
+⚠️ Same organization selected, skipping reload
+⚠️ Same organization selected, skipping reload
+⚠️ Same organization selected, skipping reload
+🔍 Running MCP discovery...
+⚠️ Same organization selected, skipping reload
+✅ Pre-populated GEO service lines from MCP: Array(5)
+✅ Discovery complete
+🚀 handleCreateOrganization CALLED - START OF FUNCTION
+Organization details: Object
+7497-609d080dabf7300f.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 📝 Creating organization...
+7497-609d080dabf7300f.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 📋 Populating company profile from discovery...
+7497-609d080dabf7300f.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 ✅ Company profile initialized
+7497-609d080dabf7300f.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 🎯 Saving targets...
+7497-609d080dabf7300f.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 📊 Competitors: 10 Array(10)
+7497-609d080dabf7300f.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 📊 Stakeholders: 2 Array(2)
+7497-609d080dabf7300f.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 ✅ Successfully saved 12 targets
+7497-609d080dabf7300f.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 💾 Updating strategic context in profile...
+7497-609d080dabf7300f.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 ✅ Strategic context saved to profile
+7497-609d080dabf7300f.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 🎯 Saving GEO targets...
+7497-609d080dabf7300f.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 ✅ GEO targets saved
+7497-609d080dabf7300f.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 ✅ Organization created successfully! Object
+7497-609d080dabf7300f.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 📝 Stored organization in state: 7eae4fc0-32e0-46d9-bfd6-cd44946d9b76
+7497-609d080dabf7300f.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 ➡️ Moved to step 6 (GEO Discovery)
+7497-609d080dabf7300f.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 🎯 Running GEO Discovery with frontend orchestration...
+7497-609d080dabf7300f.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 📋 Step 1/3: Generating GEO queries...
+7497-609d080dabf7300f.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 ✅ Generated 29 queries
+7497-609d080dabf7300f.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 🚀 Step 2/3: Testing all 4 platforms in 2 batches (10 queries total per platform)...
+7497-609d080dabf7300f.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 Batch 1/2: Testing queries 1-5 on all platforms...
+7497-609d080dabf7300f.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 ✓ Batch 1/2 complete
+7497-609d080dabf7300f.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 Batch 2/2: Testing queries 6-10 on all platforms...
+7497-609d080dabf7300f.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 ✓ Batch 2/2 complete
+7497-609d080dabf7300f.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 ✅ Collected 40 signals from 4 platforms (2 batches each)
+7497-609d080dabf7300f.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 📊 Step 3/3: Generating executive synthesis...
+7497-609d080dabf7300f.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 ✅ GEO Discovery Complete: Object
+7497-609d080dabf7300f.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 🚀 Starting schema onboarding pipeline
+7497-609d080dabf7300f.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 🚀 Starting Schema Onboarding Pipeline...
+7497-609d080dabf7300f.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 ✅ Schema Onboarding Pipeline Complete: Object
+page-3faeba608167f912.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 Onboarding complete, organization created: Object
+6474-25086e61af3b0e29.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 🔄 Switching from none to Amplify
+6474-25086e61af3b0e29.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 ✅ Organization switched to Amplify
 hook.js:608 Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
 overrideMethod @ hook.js:608
-page-12f1ce3c36954b24.js?dpl=dpl*26BYHQgebrhzg1fTbmRpGEnnEonq:1 📋 Loading pending plan data from Campaign Builder: Object
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 📋 Loading saved plan data for organization: Mitsui & Co.
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 💾 Saved plan data for organization: Mitsui & Co.
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 💾 Saved plan data for organization: Mitsui & Co.
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 ✅ Opening Plan module with data: Object
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 Adding component: plan
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 New component: Object
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 🎯 Rendering plan component, planData: true Object
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 📋 Loading execution items for session: 05c50d89-50e0-4d41-b702-1d94bfb16c73
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 📋 Loading saved plan data for organization: Mitsui & Co.
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 🎯 Rendering plan component, planData: true Object
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 💾 Saved plan data for organization: Mitsui & Co.
-858-364da746b2729191.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 🔄 Switching from Mitsui & Co. to KARV
-858-364da746b2729191.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 ✅ Organization switched to KARV
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 🎯 Rendering plan component, planData: true Object
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 ℹ️ Strategic Planning: Organization in store (b2d62441-cf97-413d-a074-a10217848fb3) differs from campaign org (fa8718f1-7cb7-42d4-8acb-798967ab220c), but no content loaded yet - using campaign org
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 📋 Loading saved plan data for organization: KARV
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 💾 Saved plan data for organization: KARV
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 🎯 Rendering plan component, planData: true Object
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 💾 Saved plan data for organization: KARV
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 📊 parseBlueprint: blueprint structure: Object
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 ✓ Parsing VECTOR/GEO-VECTOR campaign: Object
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 💾 Saving 0 items to strategic_planning_items table...
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 ✅ Saved 0 items to strategic_planning_items table
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 🎯 Rendering plan component, planData: true Object
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 🎯 Rendering plan component, planData: true Object
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 🎯 Rendering plan component, planData: true Object
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 🎯 Rendering plan component, planData: true Object
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 🎯 Rendering plan component, planData: true Object
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 🎯 Rendering plan component, planData: true Object
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 🎯 Rendering plan component, planData: true Object
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 🎯 Rendering plan component, planData: true Object
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 🎯 Rendering plan component, planData: true Object
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 🎯 Rendering plan component, planData: true Object
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 🎯 Rendering plan component, planData: true Object
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 🎯 Rendering plan component, planData: true Object
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 🎯 Rendering plan component, planData: true Object
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 🎯 Rendering plan component, planData: true {hasBlueprint: true, sessionId: 'c1fa4f23-7043-4382-a610-617420dc18df', orgId: 'b2d62441-cf97-413d-a074-a10217848fb3'}
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 🎯 Rendering plan component, planData: true {hasBlueprint: true, sessionId: 'c1fa4f23-7043-4382-a610-617420dc18df', orgId: 'b2d62441-cf97-413d-a074-a10217848fb3'}
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 🎯 Rendering plan component, planData: true {hasBlueprint: true, sessionId: 'c1fa4f23-7043-4382-a610-617420dc18df', orgId: 'b2d62441-cf97-413d-a074-a10217848fb3'}
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 🎯 Rendering plan component, planData: true {hasBlueprint: true, sessionId: 'c1fa4f23-7043-4382-a610-617420dc18df', orgId: 'b2d62441-cf97-413d-a074-a10217848fb3'}
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 🎯 Rendering plan component, planData: true {hasBlueprint: true, sessionId: 'c1fa4f23-7043-4382-a610-617420dc18df', orgId: 'b2d62441-cf97-413d-a074-a10217848fb3'}
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 🎯 Rendering plan component, planData: true {hasBlueprint: true, sessionId: 'c1fa4f23-7043-4382-a610-617420dc18df', orgId: 'b2d62441-cf97-413d-a074-a10217848fb3'}
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 🎯 Rendering plan component, planData: true {hasBlueprint: true, sessionId: 'c1fa4f23-7043-4382-a610-617420dc18df', orgId: 'b2d62441-cf97-413d-a074-a10217848fb3'}
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 🎯 Rendering plan component, planData: true {hasBlueprint: true, sessionId: 'c1fa4f23-7043-4382-a610-617420dc18df', orgId: 'b2d62441-cf97-413d-a074-a10217848fb3'}
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 📋 Loading execution items for session: 52d52092-fa83-49d9-b37b-91b010f03fe1
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 📊 parseBlueprint: blueprint structure: {hasPart3: true, hasContentRequirements: false, hasGeoIntelligence: true, keys: Array(10), fullBlueprint: {…}}
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 ✓ Parsing VECTOR/GEO-VECTOR campaign: {planCount: 3, hasGeoIntelligence: true}
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 ✅ Parsing GEO intelligence: {schemaOpportunities: 3, contentRecommendations: 4}
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 ✅ GEO tactics added: {totalItems: 91, schemaItems: 3, geoContentItems: 4}
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 💾 Saving 91 items to strategic_planning_items table...
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 ✅ Saved 91 items to strategic_planning_items table
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 🔄 Strategic Planning: Organization changed from fa8718f1-7cb7-42d4-8acb-798967ab220c to b2d62441-cf97-413d-a074-a10217848fb3, clearing and reloading
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 📋 Loading execution items for session:
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 🎯 Rendering plan component, planData: true {hasBlueprint: true, sessionId: 'c1fa4f23-7043-4382-a610-617420dc18df', orgId: 'b2d62441-cf97-413d-a074-a10217848fb3'}
-7447-e260aff54c25dd1e.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:21 GET https://zskaxjtyuaqazydouifp.supabase.co/rest/v1/strategic_planning_items?select=*&session_id=eq.&organization_id=eq.b2d62441-cf97-413d-a074-a10217848fb3 400 (Bad Request)
-(anonymous) @ 7447-e260aff54c25dd1e.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:21
-(anonymous) @ 7447-e260aff54c25dd1e.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:21
-o @ 7447-e260aff54c25dd1e.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:21
-Promise.then
-l @ 7447-e260aff54c25dd1e.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:21
-o @ 7447-e260aff54c25dd1e.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:21
-(anonymous) @ 7447-e260aff54c25dd1e.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:21
-(anonymous) @ 7447-e260aff54c25dd1e.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:21
-then @ 7447-e260aff54c25dd1e.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:21
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 Error loading items: {code: '22P02', details: null, hint: null, message: 'invalid input syntax for type uuid: ""'}
+page-9c23a23f1d771336.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 Received addComponentToCanvas event: Object
+page-9c23a23f1d771336.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 Adding component: intelligence
+page-9c23a23f1d771336.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 New component: Object
+page-9c23a23f1d771336.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 🔄 Organization changed to Amplify, loading latest synthesis
+page-9c23a23f1d771336.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 No previous synthesis found
+page-9c23a23f1d771336.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 Received addComponentToCanvas event: Object
+page-9c23a23f1d771336.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 Adding component: memoryvault
+page-9c23a23f1d771336.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 New component: Object
+5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:3 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
+createWebSocket @ 5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:3
+page-9c23a23f1d771336.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 ✅ Fetched brand assets: 0
+page-9c23a23f1d771336.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 📊 Fetching campaign attribution data for org: 7eae4fc0-32e0-46d9-bfd6-cd44946d9b76
+dashboard:1 Access to fetch at 'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/campaign-performance-get' from origin 'https://signaldesk-v3.vercel.app' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+zskaxjtyuaqazydouifp.supabase.co/functions/v1/campaign-performance-get:1 Failed to load resource: net::ERR_FAILED
+page-9c23a23f1d771336.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 📊 Attribution response: null
+page-9c23a23f1d771336.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 📊 Attribution error: FunctionsFetchError: Failed to send a request to the Edge Function
+at 5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1:7340
+page-9c23a23f1d771336.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 📊 Initialized empty attribution data
+5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:3 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
+createWebSocket @ 5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:3
+5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:3 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
+createWebSocket @ 5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:3
+5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:3 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
+createWebSocket @ 5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:3
+5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:3 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
+createWebSocket @ 5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:3
+page-9c23a23f1d771336.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 Received addComponentToCanvas event: Object
+page-9c23a23f1d771336.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 Adding component: workspace
+page-9c23a23f1d771336.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 New component: Object
+page-9c23a23f1d771336.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 📝 Workspace received content: Object
+5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:3 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
+createWebSocket @ 5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:3
+5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:3 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
+createWebSocket @ 5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:3
+5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:3 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
+createWebSocket @ 5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:3
+5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:3 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
+createWebSocket @ 5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:3
+5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:3 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
+createWebSocket @ 5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:3
+5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:3 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
+createWebSocket @ 5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:3
+5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:3 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
+createWebSocket @ 5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:3
+5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:3 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
+createWebSocket @ 5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:3
+5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:3 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
+createWebSocket @ 5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:3
+5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:3 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
+createWebSocket @ 5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:3
+5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:3 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
+createWebSocket @ 5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:3
+5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:3 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
+createWebSocket @ 5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:3
+5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:3 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
+createWebSocket @ 5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:3
+5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:3 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
+createWebSocket @ 5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:3
+5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:3 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
+createWebSocket @ 5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:3
+page-9c23a23f1d771336.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 🔍 Original AI response: {
+"@type": "Award",
+"@id": "https://www.weareamplify.com/#award-campaign-brand-experience-2024",
+"name": "Brand Experience Agency of the Year 2024",
+"dateAwarded": "2024",
+"awarder": {
+"@type": "Organization",
+"name": "Campaign Live"
+},
+"url": "https://www.campaignlive.co.uk/ar
+page-9c23a23f1d771336.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 🔍 After markdown removal: {
+"@type": "Award",
+"@id": "https://www.weareamplify.com/#award-campaign-brand-experience-2024",
+"name": "Brand Experience Agency of the Year 2024",
+"dateAwarded": "2024",
+"awarder": {
+"@type": "Organization",
+"name": "Campaign Live"
+},
+"url": "https://www.campaignlive.co.uk/ar
+page-9c23a23f1d771336.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 🔍 After JSON extraction: {
+"@type": "Award",
+"@id": "https://www.weareamplify.com/#award-campaign-brand-experience-2024",
+"name": "Brand Experience Agency of the Year 2024",
+"dateAwarded": "2024",
+"awarder": {
+"@type": "Organization",
+"name": "Campaign Live"
+},
+"url": "https://www.campaignlive.co.uk/ar
+page-9c23a23f1d771336.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 🔍 Attempting to parse as JSON...
+page-9c23a23f1d771336.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1 ✅ Schema merge successful, setting editor content
+5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:3 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
+createWebSocket @ 5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:3
+5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:3 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
+createWebSocket @ 5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:3
+api/content-library/save:1 Failed to load resource: the server responded with a status of 400 ()
+hook.js:608 ❌ Save failed with status: 400
 overrideMethod @ hook.js:608
-L @ page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-await in L
-(anonymous) @ page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-o1 @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-ux @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-uE @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-i* @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-(anonymous) @ 4bd1b696-f785427dddbba9fb.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-w @ 1255-46eb299ec3c39174.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 🎯 Rendering plan component, planData: true {hasBlueprint: true, sessionId: 'c1fa4f23-7043-4382-a610-617420dc18df', orgId: 'b2d62441-cf97-413d-a074-a10217848fb3'}
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 🎯 Rendering plan component, planData: true {hasBlueprint: true, sessionId: 'c1fa4f23-7043-4382-a610-617420dc18df', orgId: 'b2d62441-cf97-413d-a074-a10217848fb3'}
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 🎯 Rendering plan component, planData: true {hasBlueprint: true, sessionId: 'c1fa4f23-7043-4382-a610-617420dc18df', orgId: 'b2d62441-cf97-413d-a074-a10217848fb3'}
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 🎯 Rendering plan component, planData: true {hasBlueprint: true, sessionId: 'c1fa4f23-7043-4382-a610-617420dc18df', orgId: 'b2d62441-cf97-413d-a074-a10217848fb3'}
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 🎯 Rendering plan component, planData: true {hasBlueprint: true, sessionId: 'c1fa4f23-7043-4382-a610-617420dc18df', orgId: 'b2d62441-cf97-413d-a074-a10217848fb3'}
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 🎯 Rendering plan component, planData: true {hasBlueprint: true, sessionId: 'c1fa4f23-7043-4382-a610-617420dc18df', orgId: 'b2d62441-cf97-413d-a074-a10217848fb3'}
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 🎯 Rendering plan component, planData: true {hasBlueprint: true, sessionId: 'c1fa4f23-7043-4382-a610-617420dc18df', orgId: 'b2d62441-cf97-413d-a074-a10217848fb3'}
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 🎯 Rendering plan component, planData: true {hasBlueprint: true, sessionId: 'c1fa4f23-7043-4382-a610-617420dc18df', orgId: 'b2d62441-cf97-413d-a074-a10217848fb3'}
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 🎯 Rendering plan component, planData: true {hasBlueprint: true, sessionId: 'c1fa4f23-7043-4382-a610-617420dc18df', orgId: 'b2d62441-cf97-413d-a074-a10217848fb3'}
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 🎯 Rendering plan component, planData: true {hasBlueprint: true, sessionId: 'c1fa4f23-7043-4382-a610-617420dc18df', orgId: 'b2d62441-cf97-413d-a074-a10217848fb3'}
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 🎯 Rendering plan component, planData: true {hasBlueprint: true, sessionId: 'c1fa4f23-7043-4382-a610-617420dc18df', orgId: 'b2d62441-cf97-413d-a074-a10217848fb3'}
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 🎯 Rendering plan component, planData: true {hasBlueprint: true, sessionId: 'c1fa4f23-7043-4382-a610-617420dc18df', orgId: 'b2d62441-cf97-413d-a074-a10217848fb3'}
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 🎯 Rendering plan component, planData: true {hasBlueprint: true, sessionId: 'c1fa4f23-7043-4382-a610-617420dc18df', orgId: 'b2d62441-cf97-413d-a074-a10217848fb3'}
-page-12f1ce3c36954b24.js?dpl=dpl_26BYHQgebrhzg1fTbmRpGEnnEonq:1 🎯 Rendering plan component, planData: true {hasBlueprint: true, sessionId: 'c1fa4f23-7043-4382-a610-617420dc18df', orgId: 'b2d62441-cf97-413d-a074-a10217848fb3'}
+hook.js:608 ❌ Error response: {"success":false,"error":"Content library table does not exist. Please create it in Supabase SQL editor.","createTableSQL":"\n CREATE TABLE IF NOT EXISTS content_library (\n id UUID DEFAULT gen_random_uuid() PRIMARY KEY,\n organization_id UUID,\n content_type VARCHAR(100),\n title VARCHAR(500),\n content TEXT,\n metadata JSONB,\n tags TEXT[],\n status VARCHAR(50) DEFAULT 'draft',\n created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),\n updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),\n created_by VARCHAR(100) DEFAULT 'niv'\n );\n\n ALTER TABLE content_library ENABLE ROW LEVEL SECURITY;\n\n CREATE POLICY \"Enable all operations\" ON content_library\n FOR ALL USING (true);\n\n GRANT ALL ON content_library TO anon, authenticated, service_role;\n "}
+overrideMethod @ hook.js:608
+hook.js:608 Error saving to Memory Vault: Error: Failed to save content:
+at o (page-9c23a23f1d771336.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1:498254)
+at async J (page-9c23a23f1d771336.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1:500696)
+overrideMethod @ hook.js:608
+hook.js:608 Error saving to Memory Vault: Error: Failed to save content:
+at o (page-9c23a23f1d771336.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1:498254)
+at async J (page-9c23a23f1d771336.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:1:500696)
+overrideMethod @ hook.js:608
+5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:3 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
+createWebSocket @ 5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:3
+connect @ 5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:8
+(anonymous) @ 5040-bdcef0cfa0f2b98b.js?dpl=dpl_HzRrro99f23xEFQwgHmDbEwD2ph9:21
