@@ -122,21 +122,26 @@ export default function OpportunitiesModule() {
   const fetchGeneratedContent = async (opportunityId: string) => {
     try {
       console.log('📚 Fetching content for opportunity:', opportunityId)
-      const { data, error } = await supabase
-        .from('content_library')
-        .select('*')
-        .eq('organization_id', organization?.id || '7a2835cb-11ee-4512-acc3-b6caf8eb03ff')
-        .eq('metadata->>blueprint_id', opportunityId)
-        .neq('content_type', 'phase_strategy') // Exclude strategy documents
-        .order('created_at', { ascending: false })
 
-      if (error) {
-        console.error('Error fetching content:', error)
+      // Use API endpoint instead of direct Supabase client to bypass PostgREST cache
+      const orgId = organization?.id || '7a2835cb-11ee-4512-acc3-b6caf8eb03ff'
+      const response = await fetch(
+        `/api/content-library/save?organization_id=${orgId}&blueprint_id=${opportunityId}&limit=100`
+      )
+
+      if (!response.ok) {
+        console.error('Error fetching content:', response.status, response.statusText)
         return
       }
 
-      console.log(`📦 Loaded ${data?.length || 0} content items`)
-      setGeneratedContent(data || [])
+      const result = await response.json()
+      const data = result.data || []
+
+      // Filter out phase_strategy documents
+      const filteredData = data.filter((item: any) => item.content_type !== 'phase_strategy')
+
+      console.log(`📦 Loaded ${filteredData.length} content items`)
+      setGeneratedContent(filteredData)
     } catch (error) {
       console.error('Error fetching generated content:', error)
     }
@@ -320,16 +325,21 @@ ${opp.execution_plan?.success_metrics?.map((m: any) => `- ${JSON.stringify(m)}`)
       let lastContentCount = 0
 
       progressInterval = setInterval(async () => {
-        // Poll for actual content from database
+        // Poll for actual content from database using API endpoint
         try {
-          const { data: polledContent } = await supabase
-            .from('content_library')
-            .select('id')
-            .eq('organization_id', organization?.id || '7a2835cb-11ee-4512-acc3-b6caf8eb03ff')
-            .eq('metadata->>blueprint_id', opp.id)
-            .neq('content_type', 'phase_strategy')
+          const orgId = organization?.id || '7a2835cb-11ee-4512-acc3-b6caf8eb03ff'
+          const pollResponse = await fetch(
+            `/api/content-library/save?organization_id=${orgId}&blueprint_id=${opp.id}&limit=100`
+          )
 
-          const currentCount = polledContent?.length || 0
+          let currentCount = 0
+          if (pollResponse.ok) {
+            const pollResult = await pollResponse.json()
+            const polledContent = (pollResult.data || []).filter(
+              (item: any) => item.content_type !== 'phase_strategy'
+            )
+            currentCount = polledContent.length
+          }
 
           // If we have actual content, use real count
           if (currentCount > lastContentCount) {

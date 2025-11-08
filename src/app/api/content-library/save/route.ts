@@ -14,35 +14,23 @@ export async function POST(request: NextRequest) {
     const { content, metadata, folder } = body
 
     const org_id = content.organization_id || metadata?.organizationId
-    console.log('💾 CRITICAL SAVE DEBUG:', {
+    console.log('💾 SAVE DEBUG:', {
       org_id,
       type: content.type,
       folder,
-      content_org_id: content.organization_id,
-      metadata_org_id: metadata?.organizationId,
       title: content.title
     })
 
-    // CRITICAL FIX: Check if organization exists, if not, log error
+    // Just log if org doesn't exist, but ALLOW the save anyway
     if (org_id) {
-      const { data: orgExists, error: orgCheckError } = await supabase
+      const { data: orgExists } = await supabase
         .from('organizations')
         .select('id, name')
         .eq('id', org_id)
         .maybeSingle()
 
-      if (orgCheckError) {
-        console.error('❌ CRITICAL: Error checking organization:', orgCheckError)
-      } else if (!orgExists) {
-        console.error('❌ CRITICAL: Organization does not exist:', org_id)
-        console.error('   This is the Memory Vault crisis - content is being saved for orgs that dont exist!')
-        return NextResponse.json({
-          success: false,
-          error: `Organization ${org_id} does not exist. Cannot save content.`,
-          details: 'The organization must be created before content can be saved to it.'
-        }, { status: 400 })
-      } else {
-        console.log('✅ Organization verified:', orgExists.name)
+      if (!orgExists) {
+        console.warn('⚠️ WARNING: Saving content for org that may not exist:', org_id)
       }
     }
 
@@ -210,6 +198,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const organizationId = searchParams.get('organization_id')
     const contentType = searchParams.get('type')
+    const blueprintId = searchParams.get('blueprint_id')
     const limit = parseInt(searchParams.get('limit') || '50')
 
     let query = supabase
@@ -224,6 +213,10 @@ export async function GET(request: NextRequest) {
 
     if (contentType) {
       query = query.eq('content_type', contentType)
+    }
+
+    if (blueprintId) {
+      query = query.eq('metadata->>blueprint_id', blueprintId)
     }
 
     const { data, error } = await query

@@ -303,29 +303,32 @@ export default function MemoryVaultModule() {
 
     setLoadingContent(true)
     try {
-      const { data, error } = await supabase
-        .from('content_library')
-        .select('*')
-        .eq('organization_id', organization.id)
-        .order('created_at', { ascending: false })
-        .limit(500)
+      // CRITICAL FIX: Use API endpoint instead of direct Supabase client to bypass PostgREST cache
+      const response = await fetch(`/api/content-library/save?organization_id=${organization.id}&limit=500`)
 
-      if (error) {
-        console.error('❌ MEMORY VAULT FETCH ERROR:', error)
-        throw error
+      if (!response.ok) {
+        console.error('❌ MEMORY VAULT FETCH ERROR:', response.status, response.statusText)
+        setContentItems([])
+        setFolderTree(buildFolderTree([]))
+        return
       }
 
-      console.log('📦 MEMORY VAULT FETCHED:', data?.length, 'items')
-      console.log('📦 SCHEMAS FOUND:', data?.filter(d => d.content_type === 'schema').length)
-      console.log('📦 FOLDER BREAKDOWN:', data?.reduce((acc, d) => {
+      const result = await response.json()
+      const data = result.data || []
+
+      console.log('📦 MEMORY VAULT FETCHED:', data.length, 'items')
+      console.log('📦 SCHEMAS FOUND:', data.filter((d: any) => d.content_type === 'schema').length)
+      console.log('📦 FOLDER BREAKDOWN:', data.reduce((acc: Record<string, number>, d: any) => {
         acc[d.folder || 'NO_FOLDER'] = (acc[d.folder || 'NO_FOLDER'] || 0) + 1
         return acc
       }, {} as Record<string, number>))
 
-      setContentItems(data || [])
-      setFolderTree(buildFolderTree(data || []))
+      setContentItems(data)
+      setFolderTree(buildFolderTree(data))
     } catch (error) {
       console.error('Error fetching content:', error)
+      setContentItems([])
+      setFolderTree(buildFolderTree([]))
     } finally {
       setLoadingContent(false)
     }
