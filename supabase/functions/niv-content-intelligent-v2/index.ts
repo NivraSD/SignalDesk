@@ -3310,6 +3310,46 @@ ${toolUse.input.tactical_recommendations.map((r: string) => `- ${r}`).join('\n')
                 generationResults.push(result)
                 break
 
+              case 'instagram-caption':
+                const caption = await callMCPService('social-post', {
+                  organization: orgProfile.organizationName,
+                  message: context.topic,
+                  platforms: ['instagram'],
+                  tone: details.style || 'engaging'
+                })
+                result = { type: 'instagram-caption', content: caption, message: '📝 Instagram Caption' }
+                generationResults.push(result)
+                break
+
+              case 'image':
+                const imagePrompt = details.imagePrompt || `Professional ${details.imageStyle || 'modern'} social media graphic for ${orgProfile.organizationName} about: ${context.topic}. Clean, brand-appropriate design.`
+                const imageResponse = await fetch(
+                  `${SUPABASE_URL}/functions/v1/vertex-ai-visual`,
+                  {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
+                    },
+                    body: JSON.stringify({
+                      type: 'image',
+                      prompt: imagePrompt,
+                      aspectRatio: '1:1',
+                      numberOfImages: 1
+                    })
+                  }
+                )
+                const imageData = await imageResponse.json()
+                const imageUrl = imageData.imageUrl || imageData.images?.[0]?.url
+                result = {
+                  type: 'image',
+                  imageUrl: imageUrl,
+                  imagePrompt: imagePrompt,
+                  message: '🖼️ Instagram Image'
+                }
+                generationResults.push(result)
+                break
+
               case 'event-brief':
               case 'one-pager':
               case 'executive-summary':

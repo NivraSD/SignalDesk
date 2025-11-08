@@ -1230,6 +1230,63 @@ export default function NIVContentOrchestratorProduction({
           showActions: true
         }])
       }
+      else if (response.mode === 'content_package_generated') {
+        console.log('📦 CONTENT PACKAGE GENERATED')
+
+        // Add each piece of content as a separate message
+        response.generatedContent?.forEach((item: any, index: number) => {
+          setTimeout(() => {
+            if (item.type === 'instagram-caption') {
+              setMessages(prev => [...prev, {
+                id: `msg-${Date.now()}-caption`,
+                role: 'assistant',
+                content: `**${item.message}**\n\n${item.content}`,
+                timestamp: new Date(),
+                contentItem: {
+                  type: 'instagram-caption',
+                  content: item.content,
+                  metadata: {}
+                },
+                showActions: true
+              }])
+            } else if (item.type === 'image') {
+              setMessages(prev => [...prev, {
+                id: `msg-${Date.now()}-image`,
+                role: 'assistant',
+                content: `**${item.message}**\n\n![Generated Image](${item.imageUrl})`,
+                timestamp: new Date(),
+                contentItem: {
+                  type: 'image',
+                  content: {
+                    imageUrl: item.imageUrl,
+                    imagePrompt: item.imagePrompt
+                  },
+                  metadata: {}
+                },
+                metadata: {
+                  hasImage: true,
+                  imageUrl: item.imageUrl
+                },
+                showActions: true
+              }])
+            } else {
+              // Other content types
+              setMessages(prev => [...prev, {
+                id: `msg-${Date.now()}-${index}`,
+                role: 'assistant',
+                content: `**${item.message}**\n\n${item.content}`,
+                timestamp: new Date(),
+                contentItem: {
+                  type: item.type,
+                  content: item.content,
+                  metadata: {}
+                },
+                showActions: true
+              }])
+            }
+          }, index * 150)
+        })
+      }
       else if (response.mode === 'content_generated') {
         console.log('📝 CONTENT GENERATED:', response.contentType)
 
