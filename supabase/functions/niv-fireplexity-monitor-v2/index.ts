@@ -209,10 +209,98 @@ serve(async (req) => {
     const queries = generateRealtimeQueries(profile, orgName, recency_window, discoveryTargets, targetsByPriority, targetsWithContext)
     console.log(`   ✓ Generated ${queries.length} queries for real-time monitoring`)
 
+    // STEP 2.5: Fetch articles from master-source-registry RSS feeds
+    console.log('\n📡 Step 2.5: Fetching from curated RSS sources...')
+
+    let rssArticles: any[] = []
+    try {
+      const industry = profile.industry || 'general'
+      console.log(`   Fetching sources for industry: ${industry}`)
+
+      const sourceResponse = await fetch(`${supabaseUrl}/functions/v1/master-source-registry`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseKey}`
+        },
+        body: JSON.stringify({ industry })
+      })
+
+      if (sourceResponse.ok) {
+        const sourceData = await sourceResponse.json()
+
+        // Collect all RSS sources from different categories
+        const allRssSources = [
+          ...(sourceData.competitive || []),
+          ...(sourceData.market || []),
+          ...(sourceData.regulatory || []),
+          ...(sourceData.media || []),
+          ...(sourceData.forward || []),
+          ...(sourceData.specialized || [])
+        ].filter((s: any) => s.type === 'rss' || !s.type)
+
+        console.log(`   ✓ Found ${allRssSources.length} RSS sources`)
+
+        // Prioritize: fetch critical first, then high, then medium (limit to 30 total)
+        const criticalSources = allRssSources.filter((s: any) => s.priority === 'critical')
+        const highSources = allRssSources.filter((s: any) => s.priority === 'high')
+        const mediumSources = allRssSources.filter((s: any) => s.priority === 'medium')
+
+        const sourcesToFetch = [
+          ...criticalSources,
+          ...highSources.slice(0, 15),
+          ...mediumSources.slice(0, 10)
+        ].slice(0, 30)
+
+        console.log(`   📰 Fetching from ${sourcesToFetch.length} prioritized sources (${criticalSources.length} critical, ${Math.min(15, highSources.length)} high, ${Math.min(10, mediumSources.length)} medium)`)
+
+        // Fetch RSS feeds in parallel
+        const rssPromises = sourcesToFetch.map(async (source: any) => {
+          try {
+            const rssResponse = await fetch(`${supabaseUrl}/functions/v1/rss-proxy`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${supabaseKey}`
+              },
+              body: JSON.stringify({ url: source.url })
+            })
+
+            if (!rssResponse.ok) return []
+
+            const rssData = await rssResponse.json()
+            const items = rssData.articles || rssData.items || []
+
+            return items.map((item: any) => ({
+              title: item.title,
+              url: item.url || item.link,
+              description: item.description || item.content || '',
+              publishDate: item.publishedAt || item.pubDate || new Date().toISOString(),
+              source: source.name,
+              source_priority: source.priority,
+              from_rss: true
+            }))
+          } catch (err) {
+            console.log(`   ⚠️ Failed to fetch ${source.name}: ${err.message}`)
+            return []
+          }
+        })
+
+        const rssResults = await Promise.all(rssPromises)
+        rssArticles = rssResults.flat()
+
+        console.log(`   ✓ Collected ${rssArticles.length} articles from RSS feeds`)
+      } else {
+        console.log(`   ⚠️ Source registry unavailable, skipping RSS fetch`)
+      }
+    } catch (err) {
+      console.error(`   ❌ RSS fetch error: ${err.message}`)
+    }
+
     // STEP 3: Execute Firecrawl searches
     console.log('\n🌐 Step 3: Executing Firecrawl searches...')
 
-    const articles = await fetchRealtimeArticles(
+    const firecrawlArticles = await fetchRealtimeArticles(
       queries,
       profile,
       recency_window,
@@ -221,10 +309,28 @@ serve(async (req) => {
       supabaseKey
     )
 
-    console.log(`   ✓ Found ${articles.length} articles`)
+    console.log(`   ✓ Found ${firecrawlArticles.length} articles from Firecrawl`)
 
-    // STEP 3.5: CRITICAL DATE FILTERING - Remove old articles that Firecrawl cache returned
-    console.log('\n🕒 Step 3.5: Filtering articles by recency...')
+    // STEP 3.5: Combine RSS and Firecrawl results
+    console.log('\n🔗 Step 3.5: Combining RSS and Firecrawl results...')
+
+    // Combine all articles
+    const allArticles = [...rssArticles, ...firecrawlArticles]
+    console.log(`   Combined: ${rssArticles.length} RSS + ${firecrawlArticles.length} Firecrawl = ${allArticles.length} total`)
+
+    // Deduplicate by URL (prefer RSS articles since they're from curated sources)
+    const seenUrls = new Set<string>()
+    const deduplicatedArticles = allArticles.filter(article => {
+      const url = article.url
+      if (!url || seenUrls.has(url)) return false
+      seenUrls.add(url)
+      return true
+    })
+
+    console.log(`   ✓ After deduplication: ${deduplicatedArticles.length} unique articles`)
+
+    // STEP 3.6: CRITICAL DATE FILTERING - Remove old articles
+    console.log('\n🕒 Step 3.6: Filtering articles by recency...')
 
     const recencyLimits: Record<string, number> = {
       '1hour': 1,
@@ -234,7 +340,7 @@ serve(async (req) => {
     const maxHoursOld = recencyLimits[recency_window] || 6
     const cutoffTime = new Date(Date.now() - maxHoursOld * 60 * 60 * 1000)
 
-    const filteredArticles = articles.filter(article => {
+    const filteredArticles = deduplicatedArticles.filter(article => {
       const publishedDate = new Date(article.publishDate || article.published_at || 0)
       const isRecent = publishedDate >= cutoffTime
 
@@ -246,9 +352,9 @@ serve(async (req) => {
       return isRecent
     })
 
-    console.log(`   ✓ Date filtering: ${articles.length} articles → ${filteredArticles.length} recent articles (last ${maxHoursOld} hours)`)
-    if (filteredArticles.length < articles.length) {
-      console.log(`   🗑️ Removed ${articles.length - filteredArticles.length} old articles from Firecrawl cache`)
+    console.log(`   ✓ Date filtering: ${deduplicatedArticles.length} articles → ${filteredArticles.length} recent articles (last ${maxHoursOld} hours)`)
+    if (filteredArticles.length < deduplicatedArticles.length) {
+      console.log(`   🗑️ Removed ${deduplicatedArticles.length - filteredArticles.length} old articles`)
     }
 
     // STEP 4: Filter and score by relevance

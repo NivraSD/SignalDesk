@@ -2827,7 +2827,7 @@ ${campaignContext.timeline || 'Not specified'}
       }
 
       if (toolUse && toolUse.name === 'generate_instagram_post_with_image') {
-        console.log('📸 Generating complete Instagram post with caption + image')
+        console.log('📸 Generating complete Instagram post with caption + image as SEPARATE messages')
 
         // Step 1: Generate the caption
         const caption = await callMCPService('social-post', {
@@ -2843,6 +2843,9 @@ ${campaignContext.timeline || 'Not specified'}
         const imagePrompt = `Professional ${toolUse.input.imageStyle || 'modern'} social media graphic for ${orgProfile.organizationName} about: ${toolUse.input.topic}. Clean, brand-appropriate design suitable for Instagram. High quality, corporate aesthetic.`
 
         // Step 3: Generate the image
+        let imageUrl = null
+        let imageGenerationSuccess = false
+
         try {
           const imageResponse = await fetch(
             `${SUPABASE_URL}/functions/v1/vertex-ai-visual`,
@@ -2861,54 +2864,78 @@ ${campaignContext.timeline || 'Not specified'}
             }
           )
 
-          if (!imageResponse.ok) {
+          if (imageResponse.ok) {
+            const imageData = await imageResponse.json()
+
+            console.log('📸 Image generation response:', JSON.stringify(imageData, null, 2))
+
+            // Extract imageUrl - vertex-ai-visual returns: { success: true, images: [...], imageUrl: '...', prompt: '...' }
+            // First check the direct imageUrl field (added for compatibility)
+            if (imageData.imageUrl) {
+              imageUrl = imageData.imageUrl
+              console.log('✅ Found imageUrl in imageData.imageUrl:', imageUrl)
+            }
+            // Then check images array
+            else if (imageData.images && imageData.images.length > 0) {
+              const firstImage = imageData.images[0]
+              imageUrl = firstImage.url || firstImage.uri || firstImage.gcsUri || null
+              console.log('✅ Found imageUrl in images array:', imageUrl)
+            }
+            // Fallback to top-level url
+            else if (imageData.url) {
+              imageUrl = imageData.url
+              console.log('✅ Found imageUrl in imageData.url:', imageUrl)
+            }
+
+            console.log('📸 Final imageUrl:', imageUrl)
+            console.log('📸 Image generation success:', imageData.success)
+
+            // Check if image generation was actually successful
+            if (imageData.success && imageUrl) {
+              imageGenerationSuccess = true
+            } else {
+              console.error('⚠️ Image generation reported success but no imageUrl found')
+              console.error('Full imageData:', JSON.stringify(imageData))
+            }
+          } else {
             const errorText = await imageResponse.text()
-            console.error('Image generation failed:', errorText)
-            // Return just the caption if image fails
-            return new Response(JSON.stringify({
-              success: true,
-              mode: 'content_generated',
-              contentType: 'instagram-post',
-              message: `✅ Instagram caption generated (image generation failed)`,
-              content: caption,
-              error: 'Image generation unavailable',
-              conversationId
-            }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+            console.error('Image generation failed:', imageResponse.status, errorText)
           }
-
-          const imageData = await imageResponse.json()
-          const imageUrl = imageData.images?.[0]?.url ||
-                          imageData.images?.[0]?.uri ||
-                          imageData.images?.[0]?.gcsUri ||
-                          imageData.imageUrl ||
-                          imageData.url ||
-                          null
-
-          console.log('✅ Complete Instagram post package ready')
-
-          // Return both caption and image
-          return new Response(JSON.stringify({
-            success: true,
-            mode: 'instagram_post_complete',
-            contentType: 'instagram-post',
-            message: `✅ Instagram post generated with caption and image`,
-            caption: caption,
-            imageUrl: imageUrl,
-            imagePrompt: imagePrompt,
-            conversationId
-          }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
         } catch (error) {
           console.error('Error generating image:', error)
-          // Return caption even if image fails
-          return new Response(JSON.stringify({
-            success: true,
-            mode: 'content_generated',
-            contentType: 'instagram-caption',
-            message: `✅ Instagram caption generated (image error: ${error.message})`,
-            content: caption,
-            conversationId
-          }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
         }
+
+        // Return multi-content response with caption and image as separate items
+        const contentItems = [
+          {
+            type: 'instagram-caption',
+            content: caption,
+            message: '📝 Instagram Caption'
+          }
+        ]
+
+        if (imageGenerationSuccess && imageUrl) {
+          contentItems.push({
+            type: 'instagram-image',
+            imageUrl: imageUrl,
+            imagePrompt: imagePrompt,
+            message: '🖼️ Instagram Image'
+          })
+        } else {
+          contentItems.push({
+            type: 'error',
+            content: '⚠️ Image generation failed or returned no URL. You can try requesting an image separately.',
+            message: '⚠️ Image Generation Issue'
+          })
+        }
+
+        return new Response(JSON.stringify({
+          success: true,
+          mode: 'multi_content_instagram',
+          message: `✅ Instagram post generated${imageGenerationSuccess ? ' (caption + image)' : ' (caption only - image failed)'}`,
+          contentItems: contentItems,
+          conversationId
+        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
       }
 
       if (toolUse && toolUse.name === 'generate_facebook_post') {

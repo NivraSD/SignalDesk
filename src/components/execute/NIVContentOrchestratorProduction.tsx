@@ -1137,6 +1137,60 @@ export default function NIVContentOrchestratorProduction({
           error: !imageUrl
         }])
       }
+      else if (response.mode === 'multi_content_instagram') {
+        console.log('📸 MULTI-CONTENT INSTAGRAM - Creating separate messages for caption and image')
+
+        // Add each content item as a separate message
+        const newMessages: any[] = []
+
+        response.contentItems.forEach((item: any, index: number) => {
+          if (item.type === 'instagram-caption') {
+            newMessages.push({
+              id: `msg-${Date.now()}-${index}`,
+              role: 'assistant',
+              content: `**${item.message}**\n\n${item.content}`,
+              timestamp: new Date(),
+              contentItem: {
+                type: 'instagram-caption',
+                content: item.content,
+                metadata: {}
+              },
+              showActions: true
+            })
+          } else if (item.type === 'instagram-image') {
+            newMessages.push({
+              id: `msg-${Date.now()}-${index}`,
+              role: 'assistant',
+              content: `**${item.message}**\n\n![Instagram Image](${item.imageUrl})\n\n*Prompt: ${item.imagePrompt}*`,
+              timestamp: new Date(),
+              contentItem: {
+                type: 'instagram-image',
+                content: {
+                  imageUrl: item.imageUrl,
+                  imagePrompt: item.imagePrompt
+                },
+                metadata: {}
+              },
+              metadata: {
+                hasImage: true,
+                imageUrl: item.imageUrl,
+                prompt: item.imagePrompt
+              },
+              showActions: true
+            })
+          } else if (item.type === 'error') {
+            newMessages.push({
+              id: `msg-${Date.now()}-${index}`,
+              role: 'assistant',
+              content: `**${item.message}**\n\n${item.content}`,
+              timestamp: new Date(),
+              showActions: false
+            })
+          }
+        })
+
+        setMessages(prev => [...prev, ...newMessages])
+      }
       else if (response.mode === 'instagram_post_complete') {
         console.log('📸 INSTAGRAM POST COMPLETE with caption + image')
 
