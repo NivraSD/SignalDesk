@@ -13,6 +13,15 @@ const nextConfig: NextConfig = {
     // your project has type errors.
     ignoreBuildErrors: true,
   },
+  transpilePackages: ['lucide-react'],
+  webpack: (config) => {
+    config.optimization = {
+      ...config.optimization,
+      providedExports: false,
+      usedExports: false,
+    }
+    return config
+  },
 };
 
 export default nextConfig;
