@@ -310,7 +310,18 @@ export default function MemoryVaultModule() {
         .order('created_at', { ascending: false })
         .limit(500)
 
-      if (error) throw error
+      if (error) {
+        console.error('❌ MEMORY VAULT FETCH ERROR:', error)
+        throw error
+      }
+
+      console.log('📦 MEMORY VAULT FETCHED:', data?.length, 'items')
+      console.log('📦 SCHEMAS FOUND:', data?.filter(d => d.content_type === 'schema').length)
+      console.log('📦 FOLDER BREAKDOWN:', data?.reduce((acc, d) => {
+        acc[d.folder || 'NO_FOLDER'] = (acc[d.folder || 'NO_FOLDER'] || 0) + 1
+        return acc
+      }, {} as Record<string, number>))
+
       setContentItems(data || [])
       setFolderTree(buildFolderTree(data || []))
     } catch (error) {
