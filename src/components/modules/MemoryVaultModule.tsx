@@ -152,7 +152,8 @@ const FOLDER_TEMPLATES = [
   { name: 'Press Releases', icon: '📝', color: 'text-orange-400' },
   { name: 'Social Content', icon: '💬', color: 'text-pink-400' },
   { name: 'Research', icon: '🔬', color: 'text-yellow-400' },
-  { name: 'Proposals', icon: '📋', color: 'text-emerald-400' }
+  { name: 'Proposals', icon: '📋', color: 'text-emerald-400' },
+  { name: 'Schemas', icon: '🏗️', color: 'text-indigo-400' }
 ]
 
 export default function MemoryVaultModule() {
