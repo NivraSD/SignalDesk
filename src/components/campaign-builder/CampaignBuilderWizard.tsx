@@ -12,6 +12,7 @@ import { ExecutionManager } from './ExecutionManager'
 import { useAppStore } from '@/stores/useAppStore'
 import { CampaignBuilderService } from '@/lib/services/campaignBuilderService'
 import { supabase } from '@/lib/supabase/client'
+import { saveToMemoryVault } from '@/lib/memoryVaultAPI'
 
 type CampaignStage = 'intent' | 'research' | 'positioning' | 'approach' | 'blueprint' | 'execution'
 
@@ -1038,13 +1039,12 @@ export function CampaignBuilderWizard() {
           .slice(0, 50) // Max 50 chars
 
         try {
-          await supabase.from('content_library').insert({
+          await saveToMemoryVault({
             organization_id: organization.id,
-            content_type: 'campaign',
+            type: 'campaign',
             title: campaignName,
             content: JSON.stringify(result),
             folder: `Campaigns/${campaignName}`,
-            status: 'published',
             metadata: {
               campaign_type: 'GEO_VECTOR',
               session_id: session.sessionId,
@@ -1205,13 +1205,12 @@ export function CampaignBuilderWizard() {
         .slice(0, 50) // Max 50 chars
 
       try {
-        await supabase.from('content_library').insert({
+        await saveToMemoryVault({
           organization_id: organization.id,
-          content_type: 'campaign',
+          type: 'campaign',
           title: campaignName,
           content: JSON.stringify(result),
           folder: `Campaigns/${campaignName}`,
-          status: 'published',
           metadata: {
             campaign_type: 'VECTOR',
             session_id: session.sessionId,

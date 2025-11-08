@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import { X as CloseIcon, Plus, Minus, Sparkles, Loader2, FileText } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { useAppStore } from '@/stores/useAppStore'
+import { saveToMemoryVault } from '@/lib/memoryVaultAPI'
 
 interface TeamMember {
   role: string
@@ -198,28 +199,25 @@ export default function CrisisPlanGenerator({ onClose, onPlanGenerated }: Crisis
 
       console.log('✅ Plan generated successfully:', data.plan)
 
-      // Save to content_library
-      const { error: saveError } = await supabase
-        .from('content_library')
-        .insert({
-          organization_id: organization.name,
-          content_type: 'crisis-plan',
-          title: `Crisis Management Plan - ${planForm.industry}`,
-          content: JSON.stringify(data.plan, null, 2),
-          tags: ['crisis-plan', planForm.industry, 'comprehensive'],
-          status: 'draft',
-          metadata: {
-            generated_at: new Date().toISOString(),
-            industry: planForm.industry,
-            company_size: planForm.companySize,
-            team_members_count: planForm.teamMembers.filter(m => m.name).length,
-            scenarios_count: data.plan.scenarios?.length || 0,
-            source: 'crisis-plan-generator'
-          }
-        })
+      // Save to content_library via API
+      const savedPlan = await saveToMemoryVault({
+        organization_id: organization.id,
+        type: 'crisis-plan',
+        title: `Crisis Management Plan - ${planForm.industry}`,
+        content: JSON.stringify(data.plan, null, 2),
+        tags: ['crisis-plan', planForm.industry, 'comprehensive'],
+        metadata: {
+          generated_at: new Date().toISOString(),
+          industry: planForm.industry,
+          company_size: planForm.companySize,
+          team_members_count: planForm.teamMembers.filter(m => m.name).length,
+          scenarios_count: data.plan.scenarios?.length || 0,
+          source: 'crisis-plan-generator'
+        }
+      })
 
-      if (saveError) {
-        console.error('⚠️ Failed to save to content_library:', saveError)
+      if (!savedPlan) {
+        console.error('⚠️ Failed to save to content_library')
       } else {
         console.log('✅ Plan saved to content_library')
       }

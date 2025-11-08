@@ -11,6 +11,7 @@ import {
 import { supabase } from '@/lib/supabase/client'
 import { ContentViewerModal } from '@/components/execution/ContentViewerModal'
 import { buildGenerationContext } from '@/lib/memoryVaultIntegration'
+import { upsertMemoryVaultContent, updateMemoryVaultContent } from '@/lib/memoryVaultAPI'
 import { BlueprintV3Presentation } from '@/components/campaign-builder/BlueprintV3Presentation'
 import { PRBriefPresentation } from '@/components/campaign-builder/PRBriefPresentation'
 import { GeoVectorBlueprintPresentation } from '@/components/campaign-builder/GeoVectorBlueprintPresentation'
@@ -925,32 +926,26 @@ export default function StrategicPlanningModuleV3Complete({
           // Get campaign name for folder structure
           const campaignName = blueprint?.overview?.campaignName || 'Untitled Campaign'
 
-          // Upsert into content_library (handles both insert and update)
-          await supabase
-            .from('content_library')
-            .upsert({
-              id: item.id,
-              session_id: sessionId,
-              organization_id: orgId,
-              content_type: item.type,
-              title: item.topic,
-              content: generatedContent,
-              status: 'draft',
-              folder: `Campaigns/${campaignName}/Priority ${item.stakeholderPriority}/${item.stakeholder}`,
-              metadata: {
-                stakeholder: item.stakeholder,
-                stakeholder_priority: item.stakeholderPriority,
-                lever_name: item.leverName,
-                lever_priority: item.leverPriority,
-                target: item.target,
-                details: item.details
-              },
-              tags: ['campaign', `priority-${item.stakeholderPriority}`, item.stakeholder],
-              intelligence_status: 'draft',
-              updated_at: new Date().toISOString()
-            }, {
-              onConflict: 'id'
-            })
+          // Upsert into content_library via API (bypasses RLS cache)
+          await upsertMemoryVaultContent({
+            id: item.id,
+            session_id: sessionId,
+            organization_id: orgId,
+            type: item.type,
+            title: item.topic,
+            content: generatedContent,
+            status: 'draft',
+            folder: `Campaigns/${campaignName}/Priority ${item.stakeholderPriority}/${item.stakeholder}`,
+            metadata: {
+              stakeholder: item.stakeholder,
+              stakeholder_priority: item.stakeholderPriority,
+              lever_name: item.leverName,
+              lever_priority: item.leverPriority,
+              target: item.target,
+              details: item.details
+            },
+            tags: ['campaign', `priority-${item.stakeholderPriority}`, item.stakeholder]
+          })
 
           return { item, success: true }
         } catch (error: any) {
@@ -982,10 +977,7 @@ export default function StrategicPlanningModuleV3Complete({
       i.id === itemId ? { ...i, generatedContent: content } : i
     ))
 
-    await supabase
-      .from('content_library')
-      .update({ content })
-      .eq('id', itemId)
+    await updateMemoryVaultContent(itemId, { content })
   }
 
   const handlePublish = async (itemId: string) => {
@@ -993,12 +985,7 @@ export default function StrategicPlanningModuleV3Complete({
       i.id === itemId ? { ...i, status: 'published' as const } : i
     ))
 
-    await supabase
-      .from('content_library')
-      .update({
-        status: 'published'
-      })
-      .eq('id', itemId)
+    await updateMemoryVaultContent(itemId, { status: 'published' })
 
     setViewingItem(null)
   }
@@ -1128,11 +1115,8 @@ export default function StrategicPlanningModuleV3Complete({
       executed_at: executed ? new Date().toISOString() : null
     }
 
-    // Update content_library
-    await supabase
-      .from('content_library')
-      .update(updateData)
-      .eq('id', itemId)
+    // Update content_library via API
+    await updateMemoryVaultContent(itemId, updateData)
   }
 
   const handleUpdateResult = async (itemId: string, resultValue: string, resultNotes: string) => {
@@ -1149,11 +1133,8 @@ export default function StrategicPlanningModuleV3Complete({
       result: { type: resultField.resultType, value: resultValue, notes: resultNotes }
     }
 
-    // Update content_library
-    await supabase
-      .from('content_library')
-      .update(resultData)
-      .eq('id', itemId)
+    // Update content_library via API
+    await updateMemoryVaultContent(itemId, resultData)
   }
 
   const getStatusIcon = (status: ContentItem['status']) => {

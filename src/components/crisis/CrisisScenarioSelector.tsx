@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react'
 import { X as CloseIcon, Shield, AlertTriangle, DollarSign, Flame, Scale, Users, Activity, Target, Loader } from 'lucide-react'
 import { useAppStore } from '@/stores/useAppStore'
 import { supabase } from '@/lib/supabase/client'
+import { fetchMemoryVaultContent } from '@/lib/memoryVaultAPI'
 
 interface CrisisScenarioSelectorProps {
   onClose: () => void
@@ -54,20 +55,17 @@ export default function CrisisScenarioSelector({ onClose, onScenarioSelected }: 
       console.log('🚨 Loading crisis scenarios from plan for', organization.name)
 
       // Load scenarios from the crisis plan instead of generating dynamically
-      const { data: planData, error: planError } = await supabase
-        .from('content_library')
-        .select('*')
-        .eq('organization_id', organization.name)
-        .eq('content_type', 'crisis-plan')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single()
+      const planData = await fetchMemoryVaultContent({
+        organization_id: organization.id,
+        content_type: 'crisis-plan',
+        limit: 1
+      })
 
-      if (planError || !planData) {
-        console.error('Failed to load crisis plan:', planError)
+      if (!planData || planData.length === 0) {
+        console.error('Failed to load crisis plan')
         setScenarios([])
       } else {
-        const plan = JSON.parse(planData.content)
+        const plan = JSON.parse(planData[0].content)
         console.log('✅ Loaded crisis plan with scenarios:', plan.scenarios?.length || 0)
 
         // Convert crisis plan scenarios to selector format

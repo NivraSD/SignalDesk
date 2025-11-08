@@ -142,3 +142,91 @@ export async function getOrganizationContent(
     limit
   })
 }
+
+/**
+ * Update content in Memory Vault
+ */
+export async function updateMemoryVaultContent(
+  contentId: string,
+  updates: Partial<MemoryVaultItem>
+): Promise<MemoryVaultItem | null> {
+  try {
+    const response = await fetch(`/api/content-library/save?id=${contentId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ updates })
+    })
+
+    if (!response.ok) {
+      console.error('❌ Memory Vault update error:', response.status)
+      return null
+    }
+
+    const result = await response.json()
+    return result.data || null
+  } catch (error) {
+    console.error('❌ Memory Vault update error:', error)
+    return null
+  }
+}
+
+/**
+ * Delete content from Memory Vault
+ */
+export async function deleteMemoryVaultContent(
+  contentId: string
+): Promise<boolean> {
+  try {
+    const response = await fetch(`/api/content-library/save?id=${contentId}`, {
+      method: 'DELETE'
+    })
+
+    if (!response.ok) {
+      console.error('❌ Memory Vault delete error:', response.status)
+      return false
+    }
+
+    return true
+  } catch (error) {
+    console.error('❌ Memory Vault delete error:', error)
+    return false
+  }
+}
+
+/**
+ * Upsert (insert or update) content in Memory Vault
+ * Uses POST for both insert and update based on presence of id
+ */
+export async function upsertMemoryVaultContent(contentData: {
+  id?: string
+  organization_id?: string
+  session_id?: string
+  type: string
+  title: string
+  content: any
+  metadata?: any
+  folder?: string
+  tags?: string[]
+  status?: string
+}): Promise<MemoryVaultItem | null> {
+  try {
+    if (contentData.id) {
+      // Update existing
+      return updateMemoryVaultContent(contentData.id, {
+        content_type: contentData.type,
+        title: contentData.title,
+        content: contentData.content,
+        metadata: contentData.metadata,
+        folder: contentData.folder,
+        tags: contentData.tags,
+        status: contentData.status
+      })
+    } else {
+      // Create new
+      return saveToMemoryVault(contentData)
+    }
+  } catch (error) {
+    console.error('❌ Memory Vault upsert error:', error)
+    return null
+  }
+}

@@ -30,6 +30,7 @@ import {
 } from 'lucide-react'
 import { useAppStore } from '@/stores/useAppStore'
 import { supabase } from '@/lib/supabase/client'
+import { fetchMemoryVaultContent } from '@/lib/memoryVaultAPI'
 import CrisisHeader from '@/components/crisis/CrisisHeader'
 import CrisisAIAssistant from '@/components/crisis/CrisisAIAssistant'
 import CrisisTimeline from '@/components/crisis/CrisisTimeline'
@@ -153,15 +154,13 @@ export default function CrisisCommandCenter() {
     if (!organization) return
 
     try {
-      const { data, error } = await supabase
-        .from('content_library')
-        .select('id')
-        .eq('organization_id', organization.name)
-        .eq('content_type', 'crisis-plan')
-        .limit(1)
-        .single()
+      const data = await fetchMemoryVaultContent({
+        organization_id: organization.id,
+        content_type: 'crisis-plan',
+        limit: 1
+      })
 
-      setHasCrisisPlan(!!data && !error)
+      setHasCrisisPlan(data.length > 0)
     } catch (err) {
       setHasCrisisPlan(false)
     }

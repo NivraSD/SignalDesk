@@ -605,12 +605,7 @@ export default function MemoryVaultModule() {
   const handleUpdateFeedback = async (item: ContentItem, feedback: string) => {
     setExecutingAction(true)
     try {
-      const { error } = await supabase
-        .from('content_library')
-        .update({ feedback })
-        .eq('id', item.id)
-
-      if (error) throw error
+      await updateMemoryVaultContent(item.id, { feedback } as any)
 
       // Update local state
       setContentItems(prev => {
@@ -852,12 +847,7 @@ export default function MemoryVaultModule() {
     if (!confirm('Delete this content?')) return
 
     try {
-      const { error } = await supabase
-        .from('content_library')
-        .delete()
-        .eq('id', id)
-
-      if (error) throw error
+      await deleteMemoryVaultContent(id)
       const updated = contentItems.filter(item => item.id !== id)
       setContentItems(updated)
       setFolderTree(buildFolderTree(updated))
@@ -871,12 +861,7 @@ export default function MemoryVaultModule() {
   // Move content to folder
   const handleMoveToFolder = async (item: ContentItem, newFolder: string) => {
     try {
-      const { error } = await supabase
-        .from('content_library')
-        .update({ folder: newFolder })
-        .eq('id', item.id)
-
-      if (error) throw error
+      await updateMemoryVaultContent(item.id, { folder: newFolder } as any)
 
       const updated = contentItems.map(i => i.id === item.id ? { ...i, folder: newFolder } : i)
       setContentItems(updated)
@@ -1158,18 +1143,14 @@ export default function MemoryVaultModule() {
 
     // Create a placeholder item to initialize the folder
     try {
-      const { error } = await supabase
-        .from('content_library')
-        .insert({
-          title: `.folder_${newFolderName.trim()}`,
-          content_type: 'folder-marker',
-          content: '',
-          folder: folderPath,
-          organization_id: organization?.id,
-          intelligence_status: 'complete'
-        })
-
-      if (error) throw error
+      await saveToMemoryVault({
+        title: `.folder_${newFolderName.trim()}`,
+        type: 'folder-marker',
+        content: '',
+        folder: folderPath,
+        organization_id: organization?.id,
+        metadata: { intelligence_status: 'complete' }
+      })
 
       await fetchContent()
       setShowNewFolderDialog(false)

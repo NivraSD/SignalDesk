@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { FileText, X as CloseIcon, Users, Shield, MessageSquare, AlertTriangle, CheckCircle } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { useAppStore } from '@/stores/useAppStore'
+import { fetchMemoryVaultContent } from '@/lib/memoryVaultAPI'
 
 interface CrisisPlanViewerProps {
   onClose: () => void
@@ -26,19 +27,14 @@ export default function CrisisPlanViewer({ onClose, plan: providedPlan }: Crisis
     setLoading(true)
     try {
       // Get the most recent crisis plan for this organization
-      const { data, error } = await supabase
-        .from('content_library')
-        .select('*')
-        .eq('organization_id', organization?.name)
-        .eq('content_type', 'crisis-plan')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single()
+      const data = await fetchMemoryVaultContent({
+        organization_id: organization?.id || '',
+        content_type: 'crisis-plan',
+        limit: 1
+      })
 
-      if (error) {
-        console.error('Failed to load plan:', error)
-      } else if (data) {
-        const parsedPlan = JSON.parse(data.content)
+      if (data.length > 0) {
+        const parsedPlan = JSON.parse(data[0].content)
         console.log('📋 Crisis Plan loaded:', {
           hasPurpose: !!parsedPlan.purpose,
           hasGuidingPrinciples: !!parsedPlan.guidingPrinciples,
