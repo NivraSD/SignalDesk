@@ -600,7 +600,93 @@ serve(async (req) => {
     }
     
     console.log(`\n✅ Phase 1 Complete: ${articlesMap.size} articles from RSS feeds`);
-    
+
+    // ==================== PHASE 1.5: FIRECRAWL CONTEXT SEARCHES ====================
+    console.log('\n🔍 PHASE 1.5: FIRECRAWL CONTEXT SEARCHES');
+    console.log('='.repeat(50));
+
+    // Generate context queries if available from profile
+    const contextQueries = profile?.monitoring_config?.context_queries
+    if (contextQueries && contextQueries.all && contextQueries.all.length > 0) {
+      console.log(`   Using ${contextQueries.all.length} context queries from profile`);
+
+      // Limit to 10 queries for real-time monitoring
+      const queriesToUse = contextQueries.all.slice(0, 10);
+      const FIRECRAWL_API_KEY = Deno.env.get('FIRECRAWL_API_KEY') || 'fc-3048810124b640eb99293880a4ab25d0';
+      const FIRECRAWL_BASE_URL = 'https://api.firecrawl.dev/v2';
+
+      console.log(`   Executing ${queriesToUse.length} Firecrawl searches...`);
+
+      const firecrawlPromises = queriesToUse.map(async (query: string) => {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+          const response = await fetch(`${FIRECRAWL_BASE_URL}/search`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${FIRECRAWL_API_KEY}`
+            },
+            body: JSON.stringify({
+              query,
+              limit: 10,
+              tbs: 'qdr:d', // Last 48 hours
+              timeout: 25000
+            }),
+            signal: controller.signal
+          });
+
+          clearTimeout(timeoutId);
+
+          if (!response.ok) return [];
+
+          const data = await response.json();
+          const results = data.data || [];
+
+          return results.map((result: any) => ({
+            title: result.title,
+            url: result.url,
+            description: result.description || '',
+            published_at: result.publishedDate || new Date().toISOString(),
+            source: result.source || 'Web',
+            from_firecrawl: true,
+            search_query: query
+          }));
+        } catch (err) {
+          console.log(`   ⚠️ Firecrawl search failed for "${query}": ${err.message}`);
+          return [];
+        }
+      });
+
+      const firecrawlResults = await Promise.all(firecrawlPromises);
+      const firecrawlArticles = firecrawlResults.flat();
+
+      console.log(`   ✅ Collected ${firecrawlArticles.length} articles from Firecrawl`);
+
+      // Add Firecrawl articles to map (deduplicate by URL)
+      let addedFromFirecrawl = 0;
+      firecrawlArticles.forEach((article: any) => {
+        if (article.url && !articlesMap.has(article.url)) {
+          const normalizedTitle = normalizeTitle(article.title);
+          if (!titleMap.has(normalizedTitle)) {
+            articlesMap.set(article.url, {
+              ...article,
+              from_api: 'firecrawl'
+            });
+            titleMap.set(normalizedTitle, article.url);
+            addedFromFirecrawl++;
+          }
+        }
+      });
+
+      console.log(`   ✅ Added ${addedFromFirecrawl} unique articles from Firecrawl`);
+    } else {
+      console.log(`   ⚠️ No context queries available, skipping Firecrawl searches`);
+    }
+
+    console.log(`\n✅ Phase 1 + 1.5 Complete: ${articlesMap.size} total articles (RSS + Firecrawl)`);
+
     // ==================== PHASE 2: GAP FILLING WITH TARGETED SEARCHES ====================
     console.log('\n🔍 PHASE 2: TARGETED GAP FILLING');
     console.log('='.repeat(50));
