@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Building2, MapPin, Users, DollarSign, Calendar, Plus, Trash2, Save, Loader, CheckCircle, AlertCircle } from 'lucide-react'
+import { Building2, MapPin, Users, DollarSign, Calendar, Plus, Trash2, Save, Loader, CheckCircle, AlertCircle, X as CloseIcon } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface LeadershipMember {
@@ -470,7 +470,7 @@ export default function CompanyProfileTab({
             <span key={idx} className="px-3 py-1 bg-gray-800 border border-gray-700 rounded-full text-sm text-white flex items-center gap-2">
               {product}
               <button onClick={() => removeProduct(idx)} className="text-gray-400 hover:text-red-400">
-                <X className="w-3 h-3" />
+                <CloseIcon className="w-3 h-3" />
               </button>
             </span>
           ))}
@@ -504,7 +504,7 @@ export default function CompanyProfileTab({
             <span key={idx} className="px-3 py-1 bg-gray-800 border border-gray-700 rounded-full text-sm text-white flex items-center gap-2">
               {market}
               <button onClick={() => removeMarket(idx)} className="text-gray-400 hover:text-red-400">
-                <X className="w-3 h-3" />
+                <CloseIcon className="w-3 h-3" />
               </button>
             </span>
           ))}
