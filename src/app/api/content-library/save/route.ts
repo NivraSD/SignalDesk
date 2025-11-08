@@ -13,7 +13,38 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { content, metadata, folder } = body
 
-    console.log('💾 Saving content:', { type: content.type, hasContent: !!content.content, folder })
+    const org_id = content.organization_id || metadata?.organizationId
+    console.log('💾 CRITICAL SAVE DEBUG:', {
+      org_id,
+      type: content.type,
+      folder,
+      content_org_id: content.organization_id,
+      metadata_org_id: metadata?.organizationId,
+      title: content.title
+    })
+
+    // CRITICAL FIX: Check if organization exists, if not, log error
+    if (org_id) {
+      const { data: orgExists, error: orgCheckError } = await supabase
+        .from('organizations')
+        .select('id, name')
+        .eq('id', org_id)
+        .maybeSingle()
+
+      if (orgCheckError) {
+        console.error('❌ CRITICAL: Error checking organization:', orgCheckError)
+      } else if (!orgExists) {
+        console.error('❌ CRITICAL: Organization does not exist:', org_id)
+        console.error('   This is the Memory Vault crisis - content is being saved for orgs that dont exist!')
+        return NextResponse.json({
+          success: false,
+          error: `Organization ${org_id} does not exist. Cannot save content.`,
+          details: 'The organization must be created before content can be saved to it.'
+        }, { status: 400 })
+      } else {
+        console.log('✅ Organization verified:', orgExists.name)
+      }
+    }
 
     // CRITICAL: Save immediately (target < 100ms)
     const { data: savedContent, error: saveError } = await supabase
