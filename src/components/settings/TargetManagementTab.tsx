@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Target, Plus, X, Save, Trash2, AlertCircle, CheckCircle, Loader, Sparkles } from 'lucide-react'
+import { Target, Plus, X as CloseIcon, Save, Trash2, AlertCircle, CheckCircle, Loader, Sparkles } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface IntelligenceTarget {
@@ -574,7 +574,7 @@ export default function TargetManagementTab({
                     onClick={() => setShowDiscoveryResults(false)}
                     className="p-2 hover:bg-gray-800 rounded-lg"
                   >
-                    <X className="w-5 h-5 text-gray-400" />
+                    <CloseIcon className="w-5 h-5 text-gray-400" />
                   </button>
                 </div>
                 <div className="flex gap-2">

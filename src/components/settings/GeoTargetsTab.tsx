@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Globe, Plus, X, Save, Loader, AlertCircle } from 'lucide-react'
+import { Globe, Plus, X as CloseIcon, Save, Loader, AlertCircle } from 'lucide-react'
 
 interface GeoTargets {
   id?: string
@@ -267,7 +267,7 @@ export default function GeoTargetsTab({
                   onClick={() => removeArrayItem('service_lines', idx)}
                   className="hover:text-blue-300"
                 >
-                  <X className="w-3 h-3" />
+                  <CloseIcon className="w-3 h-3" />
                 </button>
               </span>
             ))}
@@ -311,7 +311,7 @@ export default function GeoTargetsTab({
                   onClick={() => removeArrayItem('geographic_focus', idx)}
                   className="hover:text-green-300"
                 >
-                  <X className="w-3 h-3" />
+                  <CloseIcon className="w-3 h-3" />
                 </button>
               </span>
             ))}
@@ -355,7 +355,7 @@ export default function GeoTargetsTab({
                   onClick={() => removeArrayItem('industry_verticals', idx)}
                   className="hover:text-purple-300"
                 >
-                  <X className="w-3 h-3" />
+                  <CloseIcon className="w-3 h-3" />
                 </button>
               </span>
             ))}
@@ -399,7 +399,7 @@ export default function GeoTargetsTab({
                   onClick={() => removeArrayItem('priority_queries', idx)}
                   className="hover:text-yellow-300"
                 >
-                  <X className="w-3 h-3" />
+                  <CloseIcon className="w-3 h-3" />
                 </button>
               </span>
             ))}
@@ -446,7 +446,7 @@ export default function GeoTargetsTab({
                   onClick={() => removeArrayItem('target_article_links', idx)}
                   className="hover:text-blue-300 flex-shrink-0"
                 >
-                  <X className="w-4 h-4" />
+                  <CloseIcon className="w-4 h-4" />
                 </button>
               </div>
             ))}
@@ -490,7 +490,7 @@ export default function GeoTargetsTab({
                   onClick={() => removeArrayItem('geo_competitors', idx)}
                   className="hover:text-red-300"
                 >
-                  <X className="w-3 h-3" />
+                  <CloseIcon className="w-3 h-3" />
                 </button>
               </span>
             ))}
@@ -589,7 +589,7 @@ export default function GeoTargetsTab({
                   onClick={() => removePositioningGoal(key)}
                   className="text-gray-400 hover:text-red-400"
                 >
-                  <X className="w-4 h-4" />
+                  <CloseIcon className="w-4 h-4" />
                 </button>
               </div>
             ))}
@@ -633,7 +633,7 @@ export default function GeoTargetsTab({
                   onClick={() => removeArrayItem('negative_keywords', idx)}
                   className="hover:text-gray-300"
                 >
-                  <X className="w-3 h-3" />
+                  <CloseIcon className="w-3 h-3" />
                 </button>
               </span>
             ))}

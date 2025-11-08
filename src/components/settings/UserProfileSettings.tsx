@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { User, Mail, Camera, Loader, Check, X } from 'lucide-react'
+import { User, Mail, Camera, Loader, Check, X as CloseIcon } from 'lucide-react'
 import { createAuthClient } from '@/lib/supabase/auth-client'
 import { useAuth } from '@/components/auth/AuthProvider'
 
@@ -174,7 +174,7 @@ export default function UserProfileSettings() {
             {message.type === 'success' ? (
               <Check className="w-4 h-4 text-green-400 mr-2" />
             ) : (
-              <X className="w-4 h-4 text-red-400 mr-2" />
+              <CloseIcon className="w-4 h-4 text-red-400 mr-2" />
             )}
             <span className={message.type === 'error' ? 'text-red-300' : 'text-green-300'}>
               {message.text}
