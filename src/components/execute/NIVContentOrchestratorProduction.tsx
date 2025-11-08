@@ -1160,10 +1160,12 @@ export default function NIVContentOrchestratorProduction({
                 showActions: true
               }])
             } else if (item.type === 'instagram-image') {
+              // Don't include the base64 in markdown - it breaks rendering
+              // Store in metadata and render separately
               setMessages(prev => [...prev, {
                 id: `msg-${baseTimestamp}-image-${index}`,
                 role: 'assistant',
-                content: `**${item.message}**\n\n![Instagram Image](${item.imageUrl})`,
+                content: `**${item.message}**\n\n✅ Image generated successfully`,
                 timestamp: new Date(),
                 contentItem: {
                   type: 'instagram-image',
@@ -1176,7 +1178,8 @@ export default function NIVContentOrchestratorProduction({
                 metadata: {
                   hasImage: true,
                   imageUrl: item.imageUrl,
-                  prompt: item.imagePrompt
+                  imagePrompt: item.imagePrompt,
+                  renderAsImage: true
                 },
                 showActions: true
               }])
