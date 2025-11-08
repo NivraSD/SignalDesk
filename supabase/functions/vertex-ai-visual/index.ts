@@ -379,6 +379,11 @@ async function generateWithImagen(request: ImageGenerationRequest) {
 
     // Process predictions (Vertex AI returns different structure)
     if (data.predictions && data.predictions.length > 0) {
+      console.log('📸 Vertex AI predictions received:', data.predictions.length)
+      console.log('📸 First prediction keys:', Object.keys(data.predictions[0]))
+      console.log('📸 Has bytesBase64Encoded:', !!data.predictions[0].bytesBase64Encoded)
+      console.log('📸 Has gcsUri:', !!data.predictions[0].gcsUri)
+
       const images = data.predictions.map((pred: any) => ({
         url: pred.bytesBase64Encoded ? `data:image/png;base64,${pred.bytesBase64Encoded}` : pred.gcsUri,
         metadata: {
@@ -389,6 +394,10 @@ async function generateWithImagen(request: ImageGenerationRequest) {
           safetyRatings: pred.safetyRatings
         }
       }))
+
+      console.log('📸 Mapped images[0].url exists:', !!images[0]?.url)
+      console.log('📸 Mapped images[0].url length:', images[0]?.url?.length)
+      console.log('📸 Mapped images[0].url preview:', images[0]?.url?.substring(0, 50))
 
       return {
         success: true,
