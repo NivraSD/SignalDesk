@@ -730,8 +730,12 @@ export default function OrganizationOnboarding({
         }, delay)
       })
 
-      // Call the orchestrator
-      const orchestratorResponse = await fetch(`${SUPABASE_URL}/functions/v1/schema-onboarding-orchestrator`, {
+      // Frontend-orchestrated pipeline (individual Edge Function calls)
+      // This avoids Edge Function timeout issues by running each stage from the frontend
+
+      // Step 1: Scrape website
+      setSchemaProgress(prev => ({ ...prev, websiteScraping: 'processing', message: 'Scraping website content...' }))
+      const scrapeResponse = await fetch(`${SUPABASE_URL}/functions/v1/website-entity-scraper`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
@@ -740,67 +744,191 @@ export default function OrganizationOnboarding({
         body: JSON.stringify({
           organization_id: orgId,
           organization_name: orgNameToUse,
-          website_url: website,
-          industry: discovered?.industry || industry,
-          skip_geo_discovery: !!geoResults // Skip if we already ran it
+          website_url: website
         })
       })
 
-      if (orchestratorResponse.ok) {
-        const orchestratorData = await orchestratorResponse.json()
-        console.log('✅ Schema Onboarding Pipeline Complete:', orchestratorData.summary)
+      if (!scrapeResponse.ok) {
+        throw new Error(`Website scraping failed: ${await scrapeResponse.text()}`)
+      }
 
-        // Store existing schema info
-        if (orchestratorData.results?.stages?.schema_discovery) {
-          setExistingSchemaData(orchestratorData.results.stages.schema_discovery)
-        }
+      const scrapeData = await scrapeResponse.json()
+      console.log(`✅ Scraped ${scrapeData.summary?.total_pages || 0} pages`)
+      setSchemaProgress(prev => ({ ...prev, websiteScraping: 'completed' }))
 
-        // Fetch the generated schema to show the user
-        const { data: generatedSchema } = await supabase
-          .from('content_library')
-          .select('*')
-          .eq('organization_id', orgId)
-          .eq('content_type', 'schema')
-          .eq('folder', 'Schemas/Active/')
-          .order('updated_at', { ascending: false })
-          .limit(1)
-          .single()
-
-        if (generatedSchema) {
-          setGeneratedSchemaData(generatedSchema)
-        }
-
-        // Check if we actually got entity data
-        const entitiesExtracted = orchestratorData.summary?.entities_extracted || 0
-        const hasData = entitiesExtracted > 0
-
-        // Mark all stages as completed
-        setSchemaProgress({
-          schemaDiscovery: 'completed',
-          geoDiscovery: geoResults ? 'completed' : 'skipped',
-          websiteScraping: 'completed',
-          entityExtraction: 'completed',
-          entityEnrichment: 'completed',
-          schemaSynthesis: 'completed',
-          schemaEnhancement: orchestratorData.summary?.schema_enhanced ? 'completed' : 'failed',
-          message: hasData
-            ? `Schema generated with ${entitiesExtracted} entities, ${orchestratorData.summary?.faq_questions_added || 0} FAQs, ${orchestratorData.summary?.awards_added || 0} awards!`
-            : 'Schema generated but no entities extracted - website may need manual review'
+      // Step 2: Extract entities
+      setSchemaProgress(prev => ({ ...prev, entityExtraction: 'processing', message: 'Extracting entities with AI...' }))
+      const extractResponse = await fetch(`${SUPABASE_URL}/functions/v1/entity-extractor`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          organization_id: orgId,
+          organization_name: orgNameToUse,
+          scraped_pages: scrapeData.pages || []
         })
+      })
 
-        // Don't auto-close - let user review and manually finish
-        if (!hasData) {
-          console.warn('⚠️ Schema generated but no entities extracted')
-        }
+      if (!extractResponse.ok) {
+        throw new Error(`Entity extraction failed: ${await extractResponse.text()}`)
+      }
+
+      const extractData = await extractResponse.json()
+      console.log(`✅ Extracted ${extractData.summary?.total_entities || 0} entities`)
+      setSchemaProgress(prev => ({ ...prev, entityExtraction: 'completed' }))
+
+      // Step 3: Enrich entities
+      setSchemaProgress(prev => ({ ...prev, entityEnrichment: 'processing', message: 'Enriching and validating entities...' }))
+      const enrichResponse = await fetch(`${SUPABASE_URL}/functions/v1/entity-enricher`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          organization_id: orgId,
+          organization_name: orgNameToUse,
+          entities: extractData.entities || {}
+        })
+      })
+
+      if (!enrichResponse.ok) {
+        throw new Error(`Entity enrichment failed: ${await enrichResponse.text()}`)
+      }
+
+      const enrichData = await enrichResponse.json()
+      console.log(`✅ Enriched ${enrichData.summary?.total_entities || 0} entities`)
+      setSchemaProgress(prev => ({ ...prev, entityEnrichment: 'completed' }))
+
+      // Step 4: Generate base schema
+      setSchemaProgress(prev => ({ ...prev, schemaSynthesis: 'processing', message: 'Synthesizing schema.org graph...' }))
+      const schemaResponse = await fetch(`${SUPABASE_URL}/functions/v1/schema-graph-generator`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          organization_id: orgId,
+          organization_name: orgNameToUse,
+          industry: discovered?.industry || industry,
+          url: website,
+          entities: enrichData.enriched_entities || {},
+          coverage: []
+        })
+      })
+
+      if (!schemaResponse.ok) {
+        throw new Error(`Schema generation failed: ${await schemaResponse.text()}`)
+      }
+
+      const schemaData = await schemaResponse.json()
+      console.log('✅ Base schema generated')
+      setSchemaProgress(prev => ({ ...prev, schemaSynthesis: 'completed' }))
+
+      // Step 5: Enhance schema with FAQs, awards, keywords
+      setSchemaProgress(prev => ({ ...prev, schemaEnhancement: 'processing', message: 'Adding FAQs, awards, and optimizations...' }))
+      const enhancerResponse = await fetch(`${SUPABASE_URL}/functions/v1/geo-schema-enhancer`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          organization_id: orgId,
+          organization_name: orgNameToUse,
+          industry: discovered?.industry || industry,
+          base_schema: schemaData.schema_graph,
+          coverage_articles: [],
+          entities: enrichData.enriched_entities || {}
+        })
+      })
+
+      let finalSchema = schemaData.schema_graph // Default to base schema
+      let faqCount = 0
+      let awardCount = 0
+
+      if (!enhancerResponse.ok) {
+        console.warn('Schema enhancement failed (non-critical):', await enhancerResponse.text())
+        setSchemaProgress(prev => ({ ...prev, schemaEnhancement: 'failed' }))
       } else {
-        const errorText = await orchestratorResponse.text()
-        console.error('Schema onboarding failed:', errorText)
-
-        setSchemaProgress({
-          ...schemaProgress,
-          schemaSynthesis: 'failed',
-          message: 'Schema generation failed. You can continue anyway.'
+        const enhancerData = await enhancerResponse.json()
+        console.log('✅ Schema enhanced:', {
+          faqs: enhancerData.summary?.faq_questions_added || 0,
+          awards: enhancerData.enhancements_applied?.awards_count || 0,
+          keywords: enhancerData.enhancements_applied?.keywords_count || 0
         })
+
+        faqCount = enhancerData.summary?.faq_questions_added || 0
+        awardCount = enhancerData.enhancements_applied?.awards_count || 0
+
+        // Use enhanced schema if available
+        if (enhancerData.enhanced_schema) {
+          finalSchema = enhancerData.enhanced_schema
+        }
+        setSchemaProgress(prev => ({ ...prev, schemaEnhancement: 'completed' }))
+      }
+
+      // Step 6: Save schema to Memory Vault
+      console.log('💾 Saving schema to Memory Vault...')
+      const saveResponse = await fetch('/api/content-library/save', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          content: {
+            type: 'schema',
+            title: `${orgNameToUse} - Complete Schema`,
+            content: finalSchema,
+            organization_id: orgId,
+            metadata: {
+              organizationId: orgId,
+              organizationName: orgNameToUse,
+              url: website,
+              industry: discovered?.industry || industry,
+              generatedAt: new Date().toISOString(),
+              source: 'onboarding_pipeline'
+            }
+          },
+          metadata: {
+            organizationId: orgId,
+            title: `${orgNameToUse} - Complete Schema`
+          },
+          folder: 'Schemas'
+        })
+      })
+
+      if (saveResponse.ok) {
+        const saveData = await saveResponse.json()
+        console.log('✅ Schema saved to Memory Vault:', saveData)
+        setGeneratedSchemaData(saveData.data)
+      } else {
+        const errorText = await saveResponse.text()
+        console.error('Failed to save schema:', errorText)
+      }
+
+      // Mark completion
+      const entitiesExtracted = enrichData.summary?.total_entities || 0
+      const hasData = entitiesExtracted > 0
+
+      setSchemaProgress({
+        schemaDiscovery: 'completed',
+        geoDiscovery: geoResults ? 'completed' : 'skipped',
+        websiteScraping: 'completed',
+        entityExtraction: 'completed',
+        entityEnrichment: 'completed',
+        schemaSynthesis: 'completed',
+        schemaEnhancement: enhancerResponse.ok ? 'completed' : 'failed',
+        message: hasData
+          ? `Schema generated with ${entitiesExtracted} entities, ${faqCount} FAQs, ${awardCount} awards!`
+          : 'Schema generated but no entities extracted - website may need manual review'
+      })
+
+      if (!hasData) {
+        console.warn('⚠️ Schema generated but no entities extracted')
       }
     } catch (error) {
       console.error('Schema generation error:', error)
