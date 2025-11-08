@@ -53,12 +53,15 @@ export default function Dashboard() {
       if (data.success && data.organizations) {
         setOrganizations(data.organizations)
 
-        // Clear cached org if it's not in the user's org list
+        // CRITICAL FIX: Clear cached org if it's not in the user's org list (ghost org fix)
         if (organization) {
           const orgExists = data.organizations.some((org: any) => org.id === organization.id)
           if (!orgExists) {
-            console.log('⚠️ Cached organization no longer accessible, clearing...')
+            console.error('🚨 GHOST ORG DETECTED:', organization.id, organization.name)
+            console.error('   This org is in localStorage but does NOT exist in database')
+            console.error('   Clearing it now to prevent Memory Vault save failures...')
             setOrganization(null)
+            alert(`⚠️ Organization "${organization.name}" was not found in the database and has been cleared. Please onboard it again.`)
           }
         }
 

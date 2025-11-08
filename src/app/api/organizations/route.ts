@@ -157,10 +157,14 @@ export async function POST(req: NextRequest) {
 
     const serviceClient = createServiceClient()
 
+    // CRITICAL FIX: Generate UUID for id field (table has no default)
+    const orgId = crypto.randomUUID()
+
     // Create organization
     const { data: org, error: orgError } = await serviceClient
       .from('organizations')
       .insert({
+        id: orgId,
         name,
         industry,
         settings: {
