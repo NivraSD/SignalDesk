@@ -36,6 +36,7 @@ import {
 import { IntelligenceService } from '@/lib/services/intelligenceService'
 import { supabase } from '@/lib/supabase/client'
 import { useAppStore } from '@/stores/useAppStore'
+import { updateMemoryVaultContent } from '@/lib/memoryVaultAPI'
 import IntelligenceSynthesisDisplay from '@/components/IntelligenceSynthesisDisplay'
 import StakeholderPredictionDashboard from '@/components/predictions/StakeholderPredictionDashboard'
 import SchemaViewer from '@/components/schema/SchemaViewer'
@@ -805,21 +806,16 @@ export default function IntelligenceModule() {
     try {
       console.log('💾 Updating schema...', updatedSchema)
 
-      // Update schema in Memory Vault via Supabase
-      const { error } = await supabase
-        .from('content_library')
-        .update({
-          content: updatedSchema.content,
-          metadata: {
-            ...updatedSchema.metadata,
-            version: (updatedSchema.metadata?.version || 1) + 1,
-            last_updated: new Date().toISOString()
-          },
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', updatedSchema.id)
-
-      if (error) throw error
+      // Update schema in Memory Vault via API
+      await updateMemoryVaultContent(updatedSchema.id, {
+        content: updatedSchema.content,
+        metadata: {
+          ...updatedSchema.metadata,
+          version: (updatedSchema.metadata?.version || 1) + 1,
+          last_updated: new Date().toISOString()
+        },
+        updated_at: new Date().toISOString()
+      } as any)
 
       console.log('✅ Schema updated successfully')
 
