@@ -1934,6 +1934,28 @@ export default function NIVContentOrchestratorProduction({
   // Save content to both storage systems
   const handleSave = async (content: any) => {
     try {
+      // Determine folder based on content type
+      let folder = 'Unsorted'
+      if (content.type === 'instagram-caption' || content.type === 'image') {
+        folder = 'Social Content'
+      } else if (content.type === 'press-release') {
+        folder = 'Press & Media'
+      } else if (content.type?.includes('social')) {
+        folder = 'Social Content'
+      }
+
+      // Generate clean title
+      let title = content.title
+      if (!title) {
+        if (content.type === 'instagram-caption') {
+          title = `Instagram Caption - ${new Date().toLocaleDateString()}`
+        } else if (content.type === 'image') {
+          title = `Instagram Image - ${new Date().toLocaleDateString()}`
+        } else {
+          title = `${content.type} - ${new Date().toLocaleDateString()}`
+        }
+      }
+
       // Save to Content Library (which also handles Memory Vault)
       const saveResponse = await fetch('/api/content-library/save', {
         method: 'POST',
@@ -1941,7 +1963,7 @@ export default function NIVContentOrchestratorProduction({
         body: JSON.stringify({
           content: {
             type: content.type,
-            title: content.title || `${content.type} - ${new Date().toLocaleDateString()}`,
+            title: title,
             content: content.content,
             organization_id: organization?.id,
             framework_data: conceptState.orchestrationContext?.framework,
@@ -1949,9 +1971,11 @@ export default function NIVContentOrchestratorProduction({
               enabled: true,
               tasks: ['saved'],
               priority: conceptState.orchestrationContext?.priorityLevel
-            }
+            },
+            metadata: content.metadata
           },
-          metadata: content.metadata
+          metadata: content.metadata,
+          folder: folder
         })
       })
 

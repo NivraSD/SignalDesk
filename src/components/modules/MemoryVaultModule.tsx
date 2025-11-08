@@ -10,6 +10,12 @@ import {
 } from 'lucide-react'
 import { useAppStore } from '@/stores/useAppStore'
 import { createClient } from '@supabase/supabase-js'
+import {
+  fetchMemoryVaultContent,
+  updateMemoryVaultContent,
+  deleteMemoryVaultContent,
+  saveToMemoryVault
+} from '@/lib/memoryVaultAPI'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -371,11 +377,11 @@ export default function MemoryVaultModule() {
       const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
       const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
 
-      // Fetch all content
-      const { data: contentData } = await supabase
-        .from('content_library')
-        .select('id, title, content_type, executed, executed_at, result, folder')
-        .eq('organization_id', organization.id)
+      // Fetch all content via API
+      const contentData = await fetchMemoryVaultContent({
+        organization_id: organization.id,
+        limit: 1000
+      })
 
       let executedCount = 0
       let activityToday = 0
@@ -426,14 +432,15 @@ export default function MemoryVaultModule() {
         results: data.results
       }))
 
-      // Get recent executions with folder info
-      const { data: recentExecutions } = await supabase
-        .from('content_library')
-        .select('id, title, content_type, executed_at, result, folder')
-        .eq('organization_id', organization.id)
-        .eq('executed', true)
-        .order('executed_at', { ascending: false })
-        .limit(10)
+      // Get recent executions with folder info (filter client-side from contentData)
+      const recentExecutions = contentData
+        .filter((item: any) => item.executed)
+        .sort((a: any, b: any) => {
+          const dateA = a.executed_at ? new Date(a.executed_at).getTime() : 0
+          const dateB = b.executed_at ? new Date(b.executed_at).getTime() : 0
+          return dateB - dateA
+        })
+        .slice(0, 10)
 
       const executionRate = contentData?.length
         ? (executedCount / contentData.length) * 100
@@ -534,15 +541,10 @@ export default function MemoryVaultModule() {
   const handleToggleExecuted = async (item: ContentItem, executed: boolean) => {
     setExecutingAction(true)
     try {
-      const { error } = await supabase
-        .from('content_library')
-        .update({
-          executed,
-          executed_at: executed ? new Date().toISOString() : null
-        })
-        .eq('id', item.id)
-
-      if (error) throw error
+      await updateMemoryVaultContent(item.id, {
+        executed,
+        executed_at: executed ? new Date().toISOString() : null
+      } as any)
 
       // Update local state
       setContentItems(prev => {
@@ -575,12 +577,7 @@ export default function MemoryVaultModule() {
         notes: resultNotes
       }
 
-      const { error } = await supabase
-        .from('content_library')
-        .update({ result: resultData })
-        .eq('id', item.id)
-
-      if (error) throw error
+      await updateMemoryVaultContent(item.id, { result: resultData } as any)
 
       // Update local state
       setContentItems(prev => {
@@ -2201,9 +2198,24 @@ function ContentLibraryTab({
                 Content
               </h3>
               <div className="text-gray-300 whitespace-pre-wrap text-sm leading-relaxed">
-                {typeof selectedContent.content === 'string'
-                  ? selectedContent.content
-                  : JSON.stringify(selectedContent.content, null, 2)}
+                {selectedContent.content_type === 'image' && selectedContent.metadata?.imageUrl ? (
+                  <div className="space-y-3">
+                    <img
+                      src={selectedContent.metadata.imageUrl}
+                      alt={selectedContent.metadata.prompt || selectedContent.title}
+                      className="max-w-full h-auto rounded-lg border border-gray-700"
+                    />
+                    {selectedContent.metadata.prompt && (
+                      <div className="text-xs text-gray-500 italic">
+                        Prompt: {selectedContent.metadata.prompt}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  typeof selectedContent.content === 'string'
+                    ? selectedContent.content
+                    : JSON.stringify(selectedContent.content, null, 2)
+                )}
               </div>
             </div>
           </div>
