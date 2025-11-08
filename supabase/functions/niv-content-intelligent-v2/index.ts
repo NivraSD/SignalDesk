@@ -3224,41 +3224,23 @@ ${toolUse.input.tactical_recommendations.map((r: string) => `- ${r}`).join('\n')
                   }
 
                   const imageData = await imageResponse.json()
-                  console.log('📸 Image response success:', imageData.success)
-                  console.log('📸 Image response has images array:', !!imageData.images)
-                  console.log('📸 Images array length:', imageData.images?.length)
+                  console.log('📸 Image generation response received')
 
-                  if (imageData.images && imageData.images.length > 0) {
-                    console.log('📸 First image structure:', JSON.stringify(imageData.images[0]))
-                  }
+                  // Extract image URL - use EXACT same logic as standalone generate_image tool
+                  const imageUrl = imageData.images?.[0]?.url ||
+                                  imageData.images?.[0]?.uri ||
+                                  imageData.images?.[0]?.gcsUri ||
+                                  imageData.imageUrl ||
+                                  imageData.url ||
+                                  null
 
-                  // Try multiple extraction patterns
-                  let imageUrl = null
-
-                  // Pattern 1: Direct imageUrl field
-                  if (imageData.imageUrl && imageData.imageUrl !== 'undefined' && imageData.imageUrl !== null) {
-                    imageUrl = imageData.imageUrl
-                    console.log('✅ Got imageUrl from imageData.imageUrl')
-                  }
-                  // Pattern 2: images[0].url
-                  else if (imageData.images?.[0]?.url) {
-                    imageUrl = imageData.images[0].url
-                    console.log('✅ Got imageUrl from images[0].url')
-                  }
-                  // Pattern 3: images[0] is a string (base64)
-                  else if (imageData.images?.[0] && typeof imageData.images[0] === 'string') {
-                    imageUrl = imageData.images[0]
-                    console.log('✅ Got imageUrl from images[0] (string)')
-                  }
-
-                  console.log('📸 Final extracted imageUrl length:', imageUrl?.length)
-                  console.log('📸 Final imageUrl preview:', imageUrl?.substring(0, 100))
-
-                  if (!imageUrl) {
-                    console.error('❌ No imageUrl found in response')
-                    console.error('Full response:', JSON.stringify(imageData, null, 2))
+                  if (!imageUrl || typeof imageUrl !== 'string') {
+                    console.error('❌ No valid imageUrl found in response')
+                    console.error('Response structure:', JSON.stringify(imageData, null, 2))
                     throw new Error('No imageUrl in response')
                   }
+
+                  console.log('✅ Image URL extracted successfully, length:', imageUrl.length)
 
                   result = {
                     type: 'image',

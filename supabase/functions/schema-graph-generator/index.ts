@@ -385,7 +385,7 @@ serve(async (req) => {
       .select('*')
       .eq('organization_id', organization_id)
       .eq('content_type', 'schema')
-      .eq('folder', 'Schemas/Active/')
+      .eq('folder', 'Schemas')
       .maybeSingle()
 
     const { error: saveError } = await supabase
@@ -396,7 +396,7 @@ serve(async (req) => {
         content_type: 'schema',
         title: `${organization_name} - Schema Graph`,
         content: JSON.stringify(schemaPackage),
-        folder: 'Schemas/Active/',
+        folder: 'Schemas',
         status: 'published',
         metadata: {
           version: (existingSchema?.metadata?.version || 0) + 1,
