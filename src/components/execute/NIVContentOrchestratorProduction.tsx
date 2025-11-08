@@ -1250,10 +1250,12 @@ export default function NIVContentOrchestratorProduction({
                 showActions: true
               }])
             } else if (item.type === 'image') {
+              // Don't include base64 in markdown - it breaks rendering
+              // Store imageUrl in metadata instead, let UI component render it
               setMessages(prev => [...prev, {
                 id: `msg-${Date.now()}-image`,
                 role: 'assistant',
-                content: `**${item.message}**\n\n![Generated Image](${item.imageUrl})`,
+                content: item.message || '🖼️ Generated Image',
                 timestamp: new Date(),
                 contentItem: {
                   type: 'image',
@@ -1264,8 +1266,9 @@ export default function NIVContentOrchestratorProduction({
                   metadata: {}
                 },
                 metadata: {
-                  hasImage: true,
-                  imageUrl: item.imageUrl
+                  type: 'image',
+                  imageUrl: item.imageUrl,
+                  prompt: item.imagePrompt
                 },
                 showActions: true
               }])

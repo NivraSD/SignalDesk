@@ -3225,6 +3225,7 @@ ${toolUse.input.tactical_recommendations.map((r: string) => `- ${r}`).join('\n')
 
                   const imageData = await imageResponse.json()
                   console.log('📸 Image generation response received')
+                  console.log('📸 Full response:', JSON.stringify(imageData, null, 2))
 
                   // Extract image URL - use EXACT same logic as standalone generate_image tool
                   const imageUrl = imageData.images?.[0]?.url ||
@@ -3234,13 +3235,17 @@ ${toolUse.input.tactical_recommendations.map((r: string) => `- ${r}`).join('\n')
                                   imageData.url ||
                                   null
 
+                  console.log('📸 imageData.images?.[0]?.url:', imageData.images?.[0]?.url ? 'EXISTS' : 'NULL')
+                  console.log('📸 imageData.imageUrl:', imageData.imageUrl ? 'EXISTS' : 'NULL')
+                  console.log('📸 Final imageUrl:', imageUrl ? `${imageUrl.substring(0, 50)}... (length: ${imageUrl.length})` : 'NULL')
+
                   if (!imageUrl || typeof imageUrl !== 'string') {
                     console.error('❌ No valid imageUrl found in response')
                     console.error('Response structure:', JSON.stringify(imageData, null, 2))
                     throw new Error('No imageUrl in response')
                   }
 
-                  console.log('✅ Image URL extracted successfully, length:', imageUrl.length)
+                  console.log('✅ Image URL extracted successfully')
 
                   result = {
                     type: 'image',
