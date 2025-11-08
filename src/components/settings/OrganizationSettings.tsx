@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { X, Building2, Target, Globe, Loader, Save, AlertCircle, RefreshCw, CheckCircle, FileText, Copy, Users } from 'lucide-react'
+import { X as CloseIcon, Building2, Target, Globe, Loader, Save, AlertCircle, RefreshCw, CheckCircle, FileText, Copy, Users } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import TargetManagementTab from './TargetManagementTab'
 import GeoTargetsTab from './GeoTargetsTab'
@@ -386,7 +386,7 @@ export default function OrganizationSettings({
             onClick={onClose}
             className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
           >
-            <X className="w-5 h-5 text-gray-400" />
+            <CloseIcon className="w-5 h-5 text-gray-400" />
           </button>
         </div>
 
