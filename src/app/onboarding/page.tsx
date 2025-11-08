@@ -19,6 +19,9 @@ export default function OnboardingPage() {
       return
     }
 
+    // Clear any cached organization first
+    setOrganization(null)
+
     // Check if user already has organizations
     checkExistingOrganizations()
   }, [user])

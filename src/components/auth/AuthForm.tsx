@@ -44,7 +44,19 @@ export function AuthForm({ mode, onSuccess }: AuthFormProps) {
             type: 'error',
             text: 'An account with this email already exists.',
           })
+        } else if (data?.session) {
+          // Email confirmation is disabled, user is immediately logged in
+          setMessage({
+            type: 'success',
+            text: 'Account created successfully!',
+          })
+
+          // Redirect to onboarding
+          setTimeout(() => {
+            window.location.href = '/onboarding'
+          }, 500)
         } else {
+          // Email confirmation is enabled, waiting for verification
           setMessage({
             type: 'success',
             text: 'Check your email to confirm your account!',

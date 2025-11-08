@@ -46,10 +46,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl)
   }
 
-  // If user is signed in and trying to access auth pages, redirect to dashboard
+  // If user is signed in and trying to access auth pages, redirect to onboarding
   if (user && isPublicPath && path !== '/auth/callback') {
     const redirectUrl = request.nextUrl.clone()
-    redirectUrl.pathname = '/dashboard'
+    redirectUrl.pathname = '/onboarding'
     return NextResponse.redirect(redirectUrl)
   }
 
