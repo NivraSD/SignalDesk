@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { X, Shield, AlertTriangle, DollarSign, Flame, Scale, Users, Activity, Target, Loader } from 'lucide-react'
+import { X as CloseIcon, Shield, AlertTriangle, DollarSign, Flame, Scale, Users, Activity, Target, Loader } from 'lucide-react'
 import { useAppStore } from '@/stores/useAppStore'
 import { supabase } from '@/lib/supabase/client'
 
@@ -129,7 +129,7 @@ export default function CrisisScenarioSelector({ onClose, onScenarioSelected }: 
             onClick={onClose}
             className="text-gray-400 hover:text-white transition-colors"
           >
-            <X className="w-6 h-6" />
+            <CloseIcon className="w-6 h-6" />
           </button>
         </div>
 

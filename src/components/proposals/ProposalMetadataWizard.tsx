@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronRight, ChevronLeft, Check, Trophy, X, Users, Tag, Calendar } from 'lucide-react'
+import { ChevronRight, ChevronLeft, Check, Trophy, X as CloseIcon, Users, Tag, Calendar } from 'lucide-react'
 import type { ProposalMetadata, ProposalType, ProposalOutcome, DealValueRange } from '@/types/content'
 
 interface ProposalMetadataWizardProps {
@@ -271,7 +271,7 @@ export default function ProposalMetadataWizard({
                       onClick={() => removeService(service)}
                       className="ml-2 text-blue-600 hover:text-blue-800"
                     >
-                      <X className="h-3 w-3" />
+                      <CloseIcon className="h-3 w-3" />
                     </button>
                   </span>
                 ))}
@@ -378,7 +378,7 @@ export default function ProposalMetadataWizard({
                       onClick={() => removeCompetitor(competitor)}
                       className="ml-2 text-red-600 hover:text-red-800"
                     >
-                      <X className="h-3 w-3" />
+                      <CloseIcon className="h-3 w-3" />
                     </button>
                   </span>
                 ))}
@@ -443,7 +443,7 @@ export default function ProposalMetadataWizard({
                       onClick={() => removeDifferentiator(diff)}
                       className="ml-2 text-purple-600 hover:text-purple-800"
                     >
-                      <X className="h-3 w-3" />
+                      <CloseIcon className="h-3 w-3" />
                     </button>
                   </span>
                 ))}

@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Target, Plus, X, Edit2, Save, Trash2, AlertCircle, CheckCircle, Loader, Sparkles } from 'lucide-react'
+import { Target, Plus, X as CloseIcon, Edit2, Save, Trash2, AlertCircle, CheckCircle, Loader, Sparkles } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface IntelligenceTarget {
@@ -469,7 +469,7 @@ export default function TargetManagement({
               onClick={onClose}
               className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
             >
-              <X className="w-5 h-5 text-gray-400" />
+              <CloseIcon className="w-5 h-5 text-gray-400" />
             </button>
           </div>
         </div>
@@ -690,7 +690,7 @@ export default function TargetManagement({
                     onClick={() => setShowDiscoveryResults(false)}
                     className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
                   >
-                    <X className="w-5 h-5 text-gray-400" />
+                    <CloseIcon className="w-5 h-5 text-gray-400" />
                   </button>
                 </div>
 

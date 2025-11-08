@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useRef, useEffect } from 'react'
-import { Brain, Send, X, Minimize2, Maximize2, Sparkles, Move, Save, FileText, ArrowRight } from 'lucide-react'
+import { Brain, Send, X as CloseIcon, Minimize2, Maximize2, Sparkles, Move, Save, FileText, ArrowRight } from 'lucide-react'
 import { motion, AnimatePresence, useDragControls } from 'framer-motion'
 import { useAppStore } from '@/stores/useAppStore'
 import { NivIntelligenceDisplay } from './NivIntelligenceDisplay'
@@ -395,7 +395,7 @@ export default function NivChatbot() {
               onClick={() => setIsOpen(false)}
               className="p-1 hover:bg-white/20 rounded transition-colors"
             >
-              <X className="w-4 h-4 text-white" />
+              <CloseIcon className="w-4 h-4 text-white" />
             </button>
           </div>
         </div>

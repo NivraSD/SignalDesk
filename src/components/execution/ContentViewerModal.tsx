@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { X, Copy, Download, Share2, CheckCircle, Edit2, Save } from 'lucide-react'
+import { X as CloseIcon, Copy, Download, Share2, CheckCircle, Edit2, Save } from 'lucide-react'
 
 interface ContentItem {
   id: string
@@ -106,7 +106,7 @@ export function ContentViewerModal({
               onClick={onClose}
               className="text-gray-400 hover:text-white transition-colors"
             >
-              <X className="w-6 h-6" />
+              <CloseIcon className="w-6 h-6" />
             </button>
           </div>
         </div>

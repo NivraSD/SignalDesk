@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react'
 import { motion, useDragControls } from 'framer-motion'
-import { X, Maximize2 } from 'lucide-react'
+import { X as CloseIcon, Maximize2 } from 'lucide-react'
 
 interface CanvasComponentProps {
   id: string
@@ -139,7 +139,7 @@ export default function CanvasComponent({
             className="p-1 hover:bg-gray-800 rounded transition-colors"
             onPointerDown={(e) => e.stopPropagation()}
           >
-            <X className="w-4 h-4 text-gray-400 hover:text-white" />
+            <CloseIcon className="w-4 h-4 text-gray-400 hover:text-white" />
           </button>
         )}
       </div>

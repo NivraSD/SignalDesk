@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { X, Plus, Minus, Sparkles, Loader2, FileText } from 'lucide-react'
+import { X as CloseIcon, Plus, Minus, Sparkles, Loader2, FileText } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { useAppStore } from '@/stores/useAppStore'
 
@@ -290,7 +290,7 @@ export default function CrisisPlanGenerator({ onClose, onPlanGenerated }: Crisis
                       <div key={idx} className="flex items-center gap-2 bg-gray-800 px-3 py-1 rounded-full">
                         <span className="text-sm text-gray-300">{concern}</span>
                         <button onClick={() => removeConcern(idx)} className="text-gray-500 hover:text-red-400">
-                          <X className="w-4 h-4" />
+                          <CloseIcon className="w-4 h-4" />
                         </button>
                       </div>
                     ))}
@@ -469,7 +469,7 @@ export default function CrisisPlanGenerator({ onClose, onPlanGenerated }: Crisis
               onClick={onClose}
               className="text-gray-400 hover:text-white transition-colors"
             >
-              <X className="w-6 h-6" />
+              <CloseIcon className="w-6 h-6" />
             </button>
           </div>
         </div>

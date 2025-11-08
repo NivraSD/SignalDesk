@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
 
 import { useState, useEffect, useRef } from 'react'
-import { Brain, Target, FileText, Rocket, Database, Sparkles, User, ChevronDown, Plus, Shield, Bot, FileEdit, TrendingUp, MessageCircle, AlertTriangle, Trash2, X, Building2, Settings, LogOut } from 'lucide-react'
+import { Brain, Target, FileText, Rocket, Database, Sparkles, User, ChevronDown, Plus, Shield, Bot, FileEdit, TrendingUp, MessageCircle, AlertTriangle, Trash2, X as CloseIcon, Building2, Settings, LogOut } from 'lucide-react'
 import { useAppStore } from '@/stores/useAppStore'
 import { useAuth } from '@/components/auth/AuthProvider'
 import InfiniteCanvas from '@/components/canvas/InfiniteCanvas'

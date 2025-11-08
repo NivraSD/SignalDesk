@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { MessageSquare, Send, Check, X, Edit2, Sparkles, Loader2, Copy, Eye } from 'lucide-react'
+import { MessageSquare, Send, Check, X as CloseIcon, Edit2, Sparkles, Loader2, Copy, Eye } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 
 interface CrisisCommunicationsProps {
@@ -254,7 +254,7 @@ export default function CrisisCommunications({ crisis, onUpdate }: CrisisCommuni
                         onClick={() => deleteComm(comm.id)}
                         className="text-gray-500 hover:text-red-400 transition-colors"
                       >
-                        <X className="w-4 h-4" />
+                        <CloseIcon className="w-4 h-4" />
                       </button>
                     </div>
                   </div>

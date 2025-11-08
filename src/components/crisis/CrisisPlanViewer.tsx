@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { FileText, X, Users, Shield, MessageSquare, AlertTriangle, CheckCircle } from 'lucide-react'
+import { FileText, X as CloseIcon, Users, Shield, MessageSquare, AlertTriangle, CheckCircle } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { useAppStore } from '@/stores/useAppStore'
 
@@ -134,7 +134,7 @@ export default function CrisisPlanViewer({ onClose, plan: providedPlan }: Crisis
               onClick={onClose}
               className="text-gray-400 hover:text-white transition-colors"
             >
-              <X className="w-6 h-6" />
+              <CloseIcon className="w-6 h-6" />
             </button>
           </div>
         </div>

@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react'
 import { motion, useDragControls } from 'framer-motion'
-import { X, Maximize2, Minimize2, Move } from 'lucide-react'
+import { X as CloseIcon, Maximize2, Minimize2, Move } from 'lucide-react'
 import NIVPanel from './NIVPanel'
 
 interface NivCanvasComponentV4Props {
@@ -163,7 +163,7 @@ export default function NivCanvasComponentV4({
                 onClick={onClose}
                 className="p-1 hover:bg-white/20 rounded transition-colors"
               >
-                <X className="w-4 h-4 text-white" />
+                <CloseIcon className="w-4 h-4 text-white" />
               </button>
             )}
           </div>

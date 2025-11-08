@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Building2, Target, Users, Lightbulb, Megaphone, Plus, Settings, Trash2, X, Loader, RefreshCw } from 'lucide-react'
+import { Building2, Target, Users, Lightbulb, Megaphone, Plus, Settings, Trash2, X as CloseIcon, Loader, RefreshCw } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { supabase } from '@/lib/supabase/client'
 
@@ -149,7 +149,7 @@ export default function OrgManagementDashboard({
               onClick={onClose}
               className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
             >
-              <X className="w-5 h-5 text-gray-400" />
+              <CloseIcon className="w-5 h-5 text-gray-400" />
             </button>
           </div>
         </div>

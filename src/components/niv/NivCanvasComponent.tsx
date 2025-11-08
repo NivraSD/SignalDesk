@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react'
 import { motion, useDragControls } from 'framer-motion'
-import { Brain, Send, X, Maximize2, Minimize2, Sparkles, Move } from 'lucide-react'
+import { Brain, Send, X as CloseIcon, Maximize2, Minimize2, Sparkles, Move } from 'lucide-react'
 import { useAppStore } from '@/stores/useAppStore'
 import NIVPanel from './NIVPanel'
 
@@ -606,7 +606,7 @@ export default function NivCanvasComponent({
                 onClick={onClose}
                 className="p-1 hover:bg-white/20 rounded transition-colors"
               >
-                <X className="w-4 h-4 text-white" />
+                <CloseIcon className="w-4 h-4 text-white" />
               </button>
             )}
           </div>
