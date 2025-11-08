@@ -32,6 +32,14 @@ CREATE TABLE content_library (
   salience_score DECIMAL(3,2) DEFAULT 1.0 CHECK (salience_score >= 0 AND salience_score <= 1),
   last_accessed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   access_count INTEGER DEFAULT 0,
+  executed BOOLEAN DEFAULT false,
+  executed_at TIMESTAMP WITH TIME ZONE,
+  result JSONB,
+  feedback TEXT,
+  themes TEXT[],
+  topics TEXT[],
+  entities JSONB,
+  content_signature TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   created_by VARCHAR(100) DEFAULT 'niv'
@@ -41,6 +49,8 @@ CREATE TABLE content_library (
 CREATE INDEX idx_content_library_org_id ON content_library(organization_id);
 CREATE INDEX idx_content_library_type ON content_library(content_type);
 CREATE INDEX idx_content_library_status ON content_library(status);
+CREATE INDEX idx_content_library_executed ON content_library(executed);
+CREATE INDEX idx_content_library_folder ON content_library(folder);
 
 -- Enable RLS
 ALTER TABLE content_library ENABLE ROW LEVEL SECURITY;
