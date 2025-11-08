@@ -59,6 +59,18 @@ serve(async (req) => {
       }
     }
 
+    // Fetch organization profile for context
+    console.log(`🏢 Fetching organization profile...`)
+    const { data: org, error: orgError } = await supabase
+      .from('organizations')
+      .select('name, industry, url, company_profile')
+      .eq('id', organizationId)
+      .single()
+
+    if (orgError) {
+      console.warn('Failed to fetch org profile:', orgError.message)
+    }
+
     // Gather relevant content for analysis
     console.log(`🔍 Gathering content for playbook synthesis...`)
 
@@ -94,7 +106,25 @@ serve(async (req) => {
     // Use Claude to synthesize playbook
     console.log(`🤖 Using Claude to synthesize playbook...`)
 
+    const orgProfileContext = org ? `
+ORGANIZATION PROFILE:
+Company: ${org.name}
+Industry: ${org.industry || 'Not specified'}
+Website: ${org.url || 'Not specified'}
+${org.company_profile ? `
+Leadership: ${org.company_profile.leadership?.map((l: any) => `${l.name} (${l.title})`).join(', ') || 'Not specified'}
+Headquarters: ${org.company_profile.headquarters?.city ? `${org.company_profile.headquarters.city}, ${org.company_profile.headquarters.state || org.company_profile.headquarters.country}` : 'Not specified'}
+Size: ${org.company_profile.company_size?.employees || 'Not specified'} employees
+Founded: ${org.company_profile.founded || 'Not specified'}
+Products: ${org.company_profile.product_lines?.join(', ') || 'Not specified'}
+Markets: ${org.company_profile.key_markets?.join(', ') || 'Not specified'}
+Business Model: ${org.company_profile.business_model || 'Not specified'}
+` : ''}
+` : ''
+
     const synthesisPrompt = `You are a strategic communications analyst. Analyze these ${content.length} pieces of ${contentType} content about ${topic} and create a compact playbook for future content creation.
+
+${orgProfileContext}
 
 CONTENT TO ANALYZE:
 ${content.map((c, i) => `
