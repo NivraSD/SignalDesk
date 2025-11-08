@@ -303,36 +303,108 @@ export default function OrganizationSettings({
           keywords: enhancerData.enhancements_applied?.keywords_count || 0
         })
 
-        // IMPORTANT: Update the schema in database with enhanced version
+        // IMPORTANT: Save the enhanced schema to Memory Vault
         if (enhancerData.enhanced_schema) {
-          console.log('💾 Saving enhanced schema to database...')
+          console.log('💾 Saving enhanced schema to Memory Vault...')
 
-          const updateResponse = await fetch(`${SUPABASE_URL}/rest/v1/content_library?organization_id=eq.${organizationId}&content_type=eq.schema&folder=eq.Schemas/Active/`, {
-            method: 'PATCH',
+          const saveResponse = await fetch('/api/content-library/save', {
+            method: 'POST',
             headers: {
-              'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-              'Content-Type': 'application/json',
-              'apikey': SUPABASE_ANON_KEY,
-              'Prefer': 'return=minimal'
+              'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-              content: enhancerData.enhanced_schema,
-              updated_at: new Date().toISOString()
+              content: {
+                type: 'schema',
+                title: `${orgData.name} - Complete Schema`,
+                content: enhancerData.enhanced_schema,
+                organization_id: organizationId,
+                metadata: {
+                  organizationId,
+                  organizationName: orgData.name,
+                  url: orgData.domain,
+                  industry: orgData.industry,
+                  generatedAt: new Date().toISOString(),
+                  source: 'org_profile_extraction'
+                }
+              },
+              metadata: {
+                organizationId,
+                title: `${orgData.name} - Complete Schema`
+              },
+              folder: 'Schemas'
             })
           })
 
-          if (updateResponse.ok) {
-            console.log('✅ Enhanced schema saved to database')
+          if (saveResponse.ok) {
+            const saveData = await saveResponse.json()
+            console.log('✅ Enhanced schema saved to Memory Vault:', saveData)
           } else {
-            console.error('Failed to save enhanced schema:', await updateResponse.text())
+            console.error('Failed to save enhanced schema:', await saveResponse.text())
           }
         }
       }
 
-      const result = schemaData
-      console.log('✅ Complete schema generation finished')
+      // Step 6: Generate playbook and save to Memory Vault
+      console.log('📚 Step 6: Generating playbook...')
+      try {
+        const playbookResponse = await fetch(`${SUPABASE_URL}/functions/v1/generate-playbook`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            organization_id: organizationId,
+            organization_name: orgData.name,
+            schema: enhancerData?.enhanced_schema || schemaData.schema_graph
+          })
+        })
 
-      setSuccess(`Schema package generated successfully!`)
+        if (playbookResponse.ok) {
+          const playbookData = await playbookResponse.json()
+          console.log('✅ Playbook generated')
+
+          // Save playbook to Memory Vault
+          const savePlaybookResponse = await fetch('/api/content-library/save', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              content: {
+                type: 'playbook',
+                title: `${orgData.name} - Organization Playbook`,
+                content: playbookData.playbook,
+                organization_id: organizationId,
+                metadata: {
+                  organizationId,
+                  organizationName: orgData.name,
+                  generatedAt: new Date().toISOString(),
+                  source: 'org_profile_extraction'
+                }
+              },
+              metadata: {
+                organizationId,
+                title: `${orgData.name} - Organization Playbook`
+              },
+              folder: 'Strategies'
+            })
+          })
+
+          if (savePlaybookResponse.ok) {
+            console.log('✅ Playbook saved to Memory Vault')
+          }
+        } else {
+          console.warn('Playbook generation failed (non-critical):', await playbookResponse.text())
+        }
+      } catch (err) {
+        console.warn('Playbook generation failed (non-critical):', err)
+      }
+
+      const result = schemaData
+      console.log('✅ Complete schema generation and playbook finished')
+
+      setSuccess(`Schema and playbook generated successfully!`)
 
       // Reload schema data
       await loadSchema()
