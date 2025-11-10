@@ -1380,10 +1380,18 @@ export function CampaignBuilderWizard() {
     planUrl.searchParams.set('orgId', organization.id)
     planUrl.searchParams.set('campaignType', session.selectedApproach || 'VECTOR_CAMPAIGN')
 
-    console.log('🔄 Navigating to Strategic Planning with URL params:', planUrl.toString())
+    const fullUrl = planUrl.toString()
+    console.log('🔄 Navigating to Strategic Planning with URL params:', fullUrl)
+    console.log('📋 URL breakdown:', {
+      origin: window.location.origin,
+      pathname: planUrl.pathname,
+      search: planUrl.search,
+      fullUrl: fullUrl
+    })
 
     // Navigate to home page with URL parameters (works across tabs)
-    window.location.href = planUrl.toString()
+    // Using window.location.href for full page reload to ensure params are preserved
+    window.location.href = fullUrl
   }
 
   // Estimate content pieces from blueprint structure
