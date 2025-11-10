@@ -33,6 +33,10 @@ async function generateEmbedding(text: string): Promise<number[] | null> {
     const maxChars = 8000
     const truncatedText = text.length > maxChars ? text.substring(0, maxChars) : text
 
+    // Add 10 second timeout to prevent blocking
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10000)
+
     const response = await fetch('https://api.voyageai.com/v1/embeddings', {
       method: 'POST',
       headers: {
@@ -43,8 +47,11 @@ async function generateEmbedding(text: string): Promise<number[] | null> {
         model: 'voyage-3-large',
         input: truncatedText,
         input_type: 'document'
-      })
+      }),
+      signal: controller.signal
     })
+
+    clearTimeout(timeoutId)
 
     if (!response.ok) {
       console.error('❌ Voyage API error:', await response.text())
@@ -55,7 +62,11 @@ async function generateEmbedding(text: string): Promise<number[] | null> {
     console.log(`✅ Generated embedding (${data.data[0].embedding.length}D)`)
     return data.data[0].embedding
   } catch (error) {
-    console.error('❌ Error generating embedding:', error)
+    if (error.name === 'AbortError') {
+      console.warn('⚠️ Embedding generation timed out after 10s - continuing without embedding')
+    } else {
+      console.error('❌ Error generating embedding:', error)
+    }
     return null
   }
 }
