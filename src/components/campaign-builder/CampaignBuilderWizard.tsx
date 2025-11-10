@@ -83,9 +83,15 @@ export function CampaignBuilderWizard() {
     currentPiece: ''
   })
 
-  // Load saved session from localStorage on mount
+  // Load saved session from localStorage AFTER organization loads
   useEffect(() => {
     const loadSavedSession = async () => {
+      // CRITICAL: Wait for organization to load before loading session
+      if (!organization) {
+        console.log('⏳ Waiting for organization to load before loading saved session...')
+        return
+      }
+
       const savedSessionId = localStorage.getItem('campaignBuilderSessionId')
       if (savedSessionId && !session) {
         console.log('📂 Found saved sessionId in localStorage:', savedSessionId)
@@ -96,13 +102,15 @@ export function CampaignBuilderWizard() {
               sessionId: data.id,
               stage: data.current_stage,
               hasBlueprint: !!data.blueprint,
-              approach: data.selected_approach
+              approach: data.selected_approach,
+              organization: organization.name
             })
 
             // Reconstruct session state from database
             setSession({
               sessionId: data.id,
               stage: data.current_stage || 'blueprint',
+              campaignGoal: data.campaign_goal,
               conversationHistory: data.conversation_history || [],
               researchFindings: data.research_findings,
               selectedPositioning: data.selected_positioning,
@@ -121,7 +129,7 @@ export function CampaignBuilderWizard() {
     }
 
     loadSavedSession()
-  }, []) // Only run on mount
+  }, [organization]) // Re-run when organization changes
 
   // Debug organization
   useEffect(() => {
@@ -1357,25 +1365,25 @@ export function CampaignBuilderWizard() {
     localStorage.setItem('campaignBuilderSessionId', session.sessionId)
     console.log('💾 Saved sessionId to localStorage:', session.sessionId)
 
-    // Store blueprint data in sessionStorage for canvas to pick up
-    sessionStorage.setItem('pendingPlanData', JSON.stringify({
-      blueprint: session.blueprint,
-      sessionId: session.sessionId,
-      orgId: organization.id,
-      campaignType: session.selectedApproach || 'VECTOR_CAMPAIGN' // Include campaign type!
-    }))
-
-    console.log('✅ Blueprint stored for Strategic Planning module')
     console.log('📊 Blueprint structure:', {
       hasPart3: !!session.blueprint?.part3_stakeholderOrchestration,
       planCount: session.blueprint?.part3_stakeholderOrchestration?.stakeholderOrchestrationPlans?.length || 0,
       hasGeoIntelligence: !!(session.blueprint as any)?.geoIntelligence,
       blueprintKeys: Object.keys(session.blueprint || {})
     })
-    console.log('🔄 Navigating to canvas...')
 
-    // Navigate to home page where canvas will pick up the pending plan data
-    window.location.href = '/?openPlan=true'
+    // CRITICAL: Pass sessionId and orgId via URL parameters instead of sessionStorage
+    // because sessionStorage is NOT shared between tabs
+    const planUrl = new URL('/', window.location.origin)
+    planUrl.searchParams.set('openPlan', 'true')
+    planUrl.searchParams.set('sessionId', session.sessionId)
+    planUrl.searchParams.set('orgId', organization.id)
+    planUrl.searchParams.set('campaignType', session.selectedApproach || 'VECTOR_CAMPAIGN')
+
+    console.log('🔄 Navigating to Strategic Planning with URL params:', planUrl.toString())
+
+    // Navigate to home page with URL parameters (works across tabs)
+    window.location.href = planUrl.toString()
   }
 
   // Estimate content pieces from blueprint structure

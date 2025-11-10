@@ -456,54 +456,84 @@ export default function InfiniteCanvas({ children }: { children?: React.ReactNod
     console.log('🔍 InfiniteCanvas mount - checking for openPlan param:', urlParams.get('openPlan'))
 
     if (urlParams.get('openPlan') === 'true') {
-      const pendingData = sessionStorage.getItem('pendingPlanData')
-      console.log('📦 SessionStorage pendingPlanData:', pendingData ? 'EXISTS' : 'NULL')
+      // PRIORITY 1: Check URL parameters (works across tabs)
+      const sessionId = urlParams.get('sessionId')
+      const orgId = urlParams.get('orgId')
+      const campaignType = urlParams.get('campaignType')
 
-      if (pendingData) {
-        try {
-          setLoadingPlanData(true) // Prevent localStorage effect from clearing data
-          const data = JSON.parse(pendingData)
-          console.log('📋 Loading pending plan data from Campaign Builder:', {
-            hasBlueprint: !!data.blueprint,
-            sessionId: data.sessionId,
-            orgId: data.orgId,
-            blueprintKeys: data.blueprint ? Object.keys(data.blueprint) : []
-          })
+      if (sessionId && orgId) {
+        console.log('📦 Found sessionId in URL params:', sessionId)
+        setLoadingPlanData(true)
 
-          // Store in planData state (will auto-save to localStorage via effect above)
-          const newPlanData = {
-            blueprint: data.blueprint,
-            sessionId: data.sessionId,
-            orgId: data.orgId,
-            campaignType: data.campaignType || 'VECTOR_CAMPAIGN' // Preserve campaign type
-          }
+        // Fetch blueprint from database using sessionId
+        import('@/lib/services/campaignBuilderService').then(({ CampaignBuilderService }) => {
+          CampaignBuilderService.getSession(sessionId).then(sessionData => {
+            if (sessionData && sessionData.blueprint) {
+              console.log('✅ Loaded blueprint from database:', {
+                sessionId,
+                hasBlueprint: !!sessionData.blueprint,
+                approach: sessionData.selected_approach
+              })
 
-          // Set state immediately
-          setPlanData(newPlanData)
-          console.log('✅ planData state set:', {
-            hasBlueprint: !!newPlanData.blueprint,
-            sessionId: newPlanData.sessionId
-          })
+              const newPlanData = {
+                blueprint: sessionData.blueprint,
+                sessionId: sessionData.id,
+                orgId: orgId,
+                campaignType: campaignType || sessionData.selected_approach || 'VECTOR_CAMPAIGN'
+              }
 
-          // Clear the pending data and URL param
-          sessionStorage.removeItem('pendingPlanData')
-          window.history.replaceState({}, '', '/')
+              setPlanData(newPlanData)
+              window.history.replaceState({}, '', '/')
 
-          // Wait for next render cycle to ensure state is flushed
-          requestAnimationFrame(() => {
-            console.log('🎯 Opening Plan module with data:', {
-              hasBlueprint: !!newPlanData.blueprint,
-              sessionId: newPlanData.sessionId
-            })
+              requestAnimationFrame(() => {
+                setLoadingPlanData(false)
+                addComponent('plan')
+              })
+            } else {
+              console.error('❌ Session not found in database:', sessionId)
+              setLoadingPlanData(false)
+            }
+          }).catch(err => {
+            console.error('❌ Failed to load session from database:', err)
             setLoadingPlanData(false)
-            addComponent('plan')
           })
-        } catch (err) {
-          console.error('❌ Failed to parse pending plan data:', err)
-          setLoadingPlanData(false)
-        }
+        })
       } else {
-        console.warn('⚠️ openPlan=true but no pendingPlanData in sessionStorage')
+        // FALLBACK: Try sessionStorage (legacy, same-tab only)
+        const pendingData = sessionStorage.getItem('pendingPlanData')
+        console.log('📦 SessionStorage pendingPlanData:', pendingData ? 'EXISTS' : 'NULL')
+
+        if (pendingData) {
+          try {
+            setLoadingPlanData(true)
+            const data = JSON.parse(pendingData)
+            console.log('📋 Loading pending plan data from sessionStorage (legacy):', {
+              hasBlueprint: !!data.blueprint,
+              sessionId: data.sessionId
+            })
+
+            const newPlanData = {
+              blueprint: data.blueprint,
+              sessionId: data.sessionId,
+              orgId: data.orgId,
+              campaignType: data.campaignType || 'VECTOR_CAMPAIGN'
+            }
+
+            setPlanData(newPlanData)
+            sessionStorage.removeItem('pendingPlanData')
+            window.history.replaceState({}, '', '/')
+
+            requestAnimationFrame(() => {
+              setLoadingPlanData(false)
+              addComponent('plan')
+            })
+          } catch (err) {
+            console.error('❌ Failed to parse pending plan data:', err)
+            setLoadingPlanData(false)
+          }
+        } else {
+          console.warn('⚠️ openPlan=true but no sessionId in URL or sessionStorage')
+        }
       }
     }
   }, [addComponent, setPlanData])
