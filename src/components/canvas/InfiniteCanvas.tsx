@@ -456,84 +456,41 @@ export default function InfiniteCanvas({ children }: { children?: React.ReactNod
     console.log('🔍 InfiniteCanvas mount - checking for openPlan param:', urlParams.get('openPlan'))
 
     if (urlParams.get('openPlan') === 'true') {
-      // PRIORITY 1: Check URL parameters (works across tabs)
-      const sessionId = urlParams.get('sessionId')
-      const orgId = urlParams.get('orgId')
-      const campaignType = urlParams.get('campaignType')
+      const pendingData = sessionStorage.getItem('pendingPlanData')
+      console.log('📦 SessionStorage pendingPlanData:', pendingData ? 'EXISTS' : 'NULL')
 
-      if (sessionId && orgId) {
-        console.log('📦 Found sessionId in URL params:', sessionId)
-        setLoadingPlanData(true)
-
-        // Fetch blueprint from database using sessionId
-        import('@/lib/services/campaignBuilderService').then(({ CampaignBuilderService }) => {
-          CampaignBuilderService.getSession(sessionId).then(sessionData => {
-            if (sessionData && sessionData.blueprint) {
-              console.log('✅ Loaded blueprint from database:', {
-                sessionId,
-                hasBlueprint: !!sessionData.blueprint,
-                approach: sessionData.selected_approach
-              })
-
-              const newPlanData = {
-                blueprint: sessionData.blueprint,
-                sessionId: sessionData.id,
-                orgId: orgId,
-                campaignType: campaignType || sessionData.selected_approach || 'VECTOR_CAMPAIGN'
-              }
-
-              setPlanData(newPlanData)
-              window.history.replaceState({}, '', '/')
-
-              requestAnimationFrame(() => {
-                setLoadingPlanData(false)
-                addComponent('plan')
-              })
-            } else {
-              console.error('❌ Session not found in database:', sessionId)
-              setLoadingPlanData(false)
-            }
-          }).catch(err => {
-            console.error('❌ Failed to load session from database:', err)
-            setLoadingPlanData(false)
+      if (pendingData) {
+        try {
+          setLoadingPlanData(true)
+          const data = JSON.parse(pendingData)
+          console.log('📋 Loading pending plan data:', {
+            hasBlueprint: !!data.blueprint,
+            sessionId: data.sessionId,
+            orgId: data.orgId,
+            campaignType: data.campaignType
           })
-        })
-      } else {
-        // FALLBACK: Try sessionStorage (legacy, same-tab only)
-        const pendingData = sessionStorage.getItem('pendingPlanData')
-        console.log('📦 SessionStorage pendingPlanData:', pendingData ? 'EXISTS' : 'NULL')
 
-        if (pendingData) {
-          try {
-            setLoadingPlanData(true)
-            const data = JSON.parse(pendingData)
-            console.log('📋 Loading pending plan data from sessionStorage (legacy):', {
-              hasBlueprint: !!data.blueprint,
-              sessionId: data.sessionId
-            })
-
-            const newPlanData = {
-              blueprint: data.blueprint,
-              sessionId: data.sessionId,
-              orgId: data.orgId,
-              campaignType: data.campaignType || 'VECTOR_CAMPAIGN'
-            }
-
-            setPlanData(newPlanData)
-            sessionStorage.removeItem('pendingPlanData')
-            window.history.replaceState({}, '', '/')
-
-            requestAnimationFrame(() => {
-              setLoadingPlanData(false)
-              addComponent('plan')
-            })
-          } catch (err) {
-            console.error('❌ Failed to parse pending plan data:', err)
-            setLoadingPlanData(false)
+          const newPlanData = {
+            blueprint: data.blueprint,
+            sessionId: data.sessionId,
+            orgId: data.orgId,
+            campaignType: data.campaignType || 'VECTOR_CAMPAIGN'
           }
-        } else {
-          console.warn('⚠️ openPlan=true but no sessionId in URL or sessionStorage')
+
+          setPlanData(newPlanData)
+          sessionStorage.removeItem('pendingPlanData')
+          window.history.replaceState({}, '', '/')
+
+          requestAnimationFrame(() => {
+            setLoadingPlanData(false)
+            addComponent('plan')
+          })
+        } catch (err) {
+          console.error('❌ Failed to parse pending plan data:', err)
+          setLoadingPlanData(false)
         }
+      } else {
+        console.warn('⚠️ openPlan=true but no pendingPlanData in sessionStorage')
       }
     }
   }, [addComponent, setPlanData])

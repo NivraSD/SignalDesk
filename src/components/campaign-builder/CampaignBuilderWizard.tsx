@@ -1372,26 +1372,19 @@ export function CampaignBuilderWizard() {
       blueprintKeys: Object.keys(session.blueprint || {})
     })
 
-    // CRITICAL: Pass sessionId and orgId via URL parameters instead of sessionStorage
-    // because sessionStorage is NOT shared between tabs
-    const planUrl = new URL('/', window.location.origin)
-    planUrl.searchParams.set('openPlan', 'true')
-    planUrl.searchParams.set('sessionId', session.sessionId)
-    planUrl.searchParams.set('orgId', organization.id)
-    planUrl.searchParams.set('campaignType', session.selectedApproach || 'VECTOR_CAMPAIGN')
+    // Store blueprint data in sessionStorage for canvas to pick up
+    sessionStorage.setItem('pendingPlanData', JSON.stringify({
+      blueprint: session.blueprint,
+      sessionId: session.sessionId,
+      orgId: organization.id,
+      campaignType: session.selectedApproach || 'VECTOR_CAMPAIGN'
+    }))
 
-    const fullUrl = planUrl.toString()
-    console.log('🔄 Navigating to Strategic Planning with URL params:', fullUrl)
-    console.log('📋 URL breakdown:', {
-      origin: window.location.origin,
-      pathname: planUrl.pathname,
-      search: planUrl.search,
-      fullUrl: fullUrl
-    })
+    console.log('✅ Blueprint stored for Strategic Planning module')
+    console.log('🔄 Navigating to canvas...')
 
-    // Navigate to home page with URL parameters (works across tabs)
-    // Using window.location.href for full page reload to ensure params are preserved
-    window.location.href = fullUrl
+    // Navigate to home page where canvas will pick up the pending plan data
+    window.location.href = '/?openPlan=true'
   }
 
   // Estimate content pieces from blueprint structure
