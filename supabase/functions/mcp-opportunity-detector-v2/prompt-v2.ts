@@ -18,7 +18,39 @@ export function buildOpportunityDetectionPromptV2(params: {
   const brandPersonality = strategicContext.brand_personality || ''
   const strategicPriorities = strategicContext.strategic_priorities || []
 
-  return `MONITORING DATE: ${new Date().toISOString().split('T')[0]}
+  // Enhanced temporal context
+  const currentDate = new Date().toISOString().split('T')[0]
+  const currentDateTime = new Date()
+  const currentYear = currentDateTime.getFullYear()
+  const currentMonth = currentDateTime.getMonth() + 1
+  const futureRefs = {
+    tomorrow: new Date(currentDateTime.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    'next-week': new Date(currentDateTime.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    'next-month': new Date(currentDateTime.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    '3-months': new Date(currentDateTime.getTime() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+  }
+
+  return `# ⚠️ CRITICAL: TEMPORAL CONTEXT ⚠️
+
+**TODAY'S DATE:** ${currentDate}
+**CURRENT YEAR:** ${currentYear}
+**CURRENT MONTH:** ${currentMonth}/${currentYear}
+
+**FUTURE REFERENCE DATES:**
+- Tomorrow: ${futureRefs.tomorrow}
+- Next week: ${futureRefs['next-week']}
+- Next month: ${futureRefs['next-month']}
+- 3 months out: ${futureRefs['3-months']}
+
+**CRITICAL RULES:**
+1. ALL opportunities must be about FUTURE actions and FUTURE time windows (after ${currentDate})
+2. When you see articles from 2024 or earlier dates, those are HISTORICAL CONTEXT - do NOT create opportunities for past events
+3. Opportunities should capitalize on recent/current events to create FUTURE PR moments
+4. Time windows like "24-48 hours" mean starting from ${futureRefs.tomorrow} onwards, NOT dates in the past
+5. Use present/future tense for actions to take, not past tense for completed events
+6. Example: "Capitalize on Company X's recent announcement" (good) vs "Company X announced in 2024" (historical context only)
+
+MONITORING DATE: ${currentDate}
 
 ORGANIZATION: ${organizationName}
 INDUSTRY: ${organizationProfile.industry}

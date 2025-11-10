@@ -1,108 +1,178 @@
-hook.js:608 Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
+4682-27c2322f708d664f.js?dpl=dpl*HxUXBMd3HjzShvf2JGSta5NRgTSx:19 Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
 overrideMethod @ hook.js:608
-hook.js:608 Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
+y @ 4682-27c2322f708d664f.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:19
+i @ 4682-27c2322f708d664f.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:19
+\_initSupabaseAuthClient @ 4682-27c2322f708d664f.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:21
+c @ 4682-27c2322f708d664f.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:21
+h @ 4682-27c2322f708d664f.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:21
+l @ 4412-512fdeb2c374adce.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:5
+s @ layout-eb0d601967ea8b4b.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+u @ layout-eb0d601967ea8b4b.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+l9 @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+o* @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl*HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+oq @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ik @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+(anonymous) @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+iu @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+iX @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+w @ 1255-293a635c12bf3696.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+page-e93da6676f956e60.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1 🏢 Campaign Builder Organization: null
+page-e93da6676f956e60.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1 ⚠️ No organization selected - button clicks will be blocked
 overrideMethod @ hook.js:608
-6474-dda3b7de6fe9af76.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:1 🔄 Switching from Teneo to Amplify
-6474-dda3b7de6fe9af76.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:1 ✅ Organization switched to Amplify
-page-ccc554e190c17bfb.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:1 Received addComponentToCanvas event: Object
-page-ccc554e190c17bfb.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:1 Adding component: opportunities
-page-ccc554e190c17bfb.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:1 New component: Object
-page-ccc554e190c17bfb.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:1 Loaded 3 opportunities from database
-page-ccc554e190c17bfb.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:1 📚 Fetching content for opportunity: 4597f843-3f15-4e4d-ba26-39ae24c023ac
-page-ccc554e190c17bfb.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:1 📦 Loaded 0 content items
-page-ccc554e190c17bfb.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:1 Received addComponentToCanvas event: Object
-page-ccc554e190c17bfb.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:1 Adding component: memoryvault
-page-ccc554e190c17bfb.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:1 New component: Object
-4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
-createWebSocket @ 4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21
-page-ccc554e190c17bfb.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:1 ✅ Fetched brand assets: 0
-page-ccc554e190c17bfb.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:1 📦 MEMORY VAULT FETCHED: 0 items
-page-ccc554e190c17bfb.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:1 📦 SCHEMAS FOUND: 0
-page-ccc554e190c17bfb.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:1 📦 FOLDER BREAKDOWN: Object
-page-ccc554e190c17bfb.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:1 📊 Fetching campaign attribution data for org: 7eae4fc0-32e0-46d9-bfd6-cd44946d9b76
-dashboard:1 Access to fetch at 'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/campaign-performance-get' from origin 'https://signaldesk-v3.vercel.app' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.
-zskaxjtyuaqazydouifp.supabase.co/functions/v1/campaign-performance-get:1 Failed to load resource: net::ERR_FAILED
-page-ccc554e190c17bfb.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:1 📊 Attribution response: null
-page-ccc554e190c17bfb.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:1 📊 Attribution error: FunctionsFetchError: Failed to send a request to the Edge Function
-at 4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21:23828
-page-ccc554e190c17bfb.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:1 📊 Initialized empty attribution data
-4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
-createWebSocket @ 4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21
-4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
-createWebSocket @ 4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21
-page-ccc554e190c17bfb.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:1 🚀 Execute opportunity called: Object
-page-ccc554e190c17bfb.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:1 📁 Using folder name: Strategic Partnership Narrative: Capitalize on Partnership Trend
-page-ccc554e190c17bfb.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:1 ✅ V2 opportunity detected - executing full plan: Object
-zskaxjtyuaqazydouifp.supabase.co/rest/v1/content_library:1 Failed to load resource: the server responded with a status of 401 ()
-hook.js:608 ❌ Failed to save overview: Object
-overrideMethod @ hook.js:608
-page-ccc554e190c17bfb.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:1 📦 Campaign orchestration: Object
-4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
-createWebSocket @ 4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21
-4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
-createWebSocket @ 4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21
-4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
-createWebSocket @ 4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21
-4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
-createWebSocket @ 4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21
-4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
-createWebSocket @ 4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21
-4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
-createWebSocket @ 4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21
-4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
-createWebSocket @ 4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21
-page-ccc554e190c17bfb.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:1 ✅ Campaign orchestration complete: Object
-page-ccc554e190c17bfb.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:1 ✅ 6 pieces generated
-page-ccc554e190c17bfb.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:1 📚 Fetching content for opportunity: fdab43cd-13db-4029-8bbd-a44f8ab4074c
-page-ccc554e190c17bfb.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:1 📦 Loaded 0 content items
-page-ccc554e190c17bfb.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:1 📊 Gamma started, polling... mYFhd1pcTR0LADvmUzcFu
-4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
-createWebSocket @ 4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21
-4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
-createWebSocket @ 4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21
-4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
-createWebSocket @ 4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21
-4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
-createWebSocket @ 4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21
-4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
-createWebSocket @ 4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21
-4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
-createWebSocket @ 4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21
-4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
-createWebSocket @ 4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21
-4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
-createWebSocket @ 4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21
-4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
-createWebSocket @ 4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21
-4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
-createWebSocket @ 4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21
-4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
-createWebSocket @ 4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21
-4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
-createWebSocket @ 4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21
-page-ccc554e190c17bfb.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:1 ✅ Gamma completed: https://gamma.app/docs/rxhmnf80g8j78my
-page-ccc554e190c17bfb.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:1 📦 Final content fetch...
-page-ccc554e190c17bfb.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:1 📚 Fetching content for opportunity: fdab43cd-13db-4029-8bbd-a44f8ab4074c
-page-ccc554e190c17bfb.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:1 📦 Loaded 0 content items
-page-ccc554e190c17bfb.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:1 📚 Fetching content for opportunity: fdab43cd-13db-4029-8bbd-a44f8ab4074c
-page-ccc554e190c17bfb.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:1 📦 Loaded 0 content items
-4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
-createWebSocket @ 4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21
-4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
-createWebSocket @ 4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21
-4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
-createWebSocket @ 4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21
-4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
-createWebSocket @ 4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21
-4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
-createWebSocket @ 4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21
-4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
-createWebSocket @ 4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21
-4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
-createWebSocket @ 4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21
-4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
-createWebSocket @ 4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21
-4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
-createWebSocket @ 4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21
-4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21 WebSocket connection to 'wss://zskaxjtyuaqazydouifp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8%0A&vsn=1.0.0' failed:
-createWebSocket @ 4682-27c2322f708d664f.js?dpl=dpl_J18DytU9Exg7NUwiWbTMCQL4bHsA:21
+(anonymous) @ page-e93da6676f956e60.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+o1 @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+ux @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+uE @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+i* @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+(anonymous) @ 4bd1b696-100b9d70ed4e49c1.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+w @ 1255-293a635c12bf3696.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1
+page-e93da6676f956e60.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1 🏢 Campaign Builder Organization: Object
+page-e93da6676f956e60.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1 🎯 IntentCapture handleSubmit called Object
+page-e93da6676f956e60.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1 ✅ Goal is valid, calling onSubmit
+page-e93da6676f956e60.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1 🎯 handleGoalSubmit called with: Position KARV as leading western advisory firm in saudi arabia
+page-e93da6676f956e60.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1 ✅ Session created: 5ebd0a60-41a6-4a05-a823-b58e8546c697
+page-e93da6676f956e60.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1 🚀 Starting research pipeline...
+page-e93da6676f956e60.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1 🚀 Campaign Builder: Starting research pipeline
+page-e93da6676f956e60.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1 Session: 5ebd0a60-41a6-4a05-a823-b58e8546c697 Goal: Position KARV as leading western advisory firm in saudi arabia
+page-e93da6676f956e60.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1 📋 Step 1: Organization discovery...
+page-e93da6676f956e60.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1 📊 Pipeline stage discovery: running
+page-e93da6676f956e60.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1 ✅ Organization profile created
+page-e93da6676f956e60.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1 📊 Pipeline stage discovery: completed (with data)
+page-e93da6676f956e60.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1 🔍 Step 2: Gathering intelligence across dimensions...
+page-e93da6676f956e60.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1 📊 Pipeline stage intelligence-gathering: running
+page-e93da6676f956e60.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1 ✅ Intelligence gathered
+page-e93da6676f956e60.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1 Gathered data keys: Array(5)
+page-e93da6676f956e60.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1 Discovery data? true
+page-e93da6676f956e60.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1 Stakeholder data? false
+page-e93da6676f956e60.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1 Narrative data? true
+page-e93da6676f956e60.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1 Channel data? true
+page-e93da6676f956e60.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1 Historical data? true
+page-e93da6676f956e60.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1 📊 Pipeline stage intelligence-gathering: completed (with data)
+page-e93da6676f956e60.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1 🧪 Step 3: Synthesizing intelligence brief...
+page-e93da6676f956e60.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1 📊 Pipeline stage synthesis: running
+page-e93da6676f956e60.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1 Synthesis body size: 78418 bytes
+page-e93da6676f956e60.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1 Original body size would have been: 139360 bytes
+page-e93da6676f956e60.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1 ✅ Synthesis complete
+page-e93da6676f956e60.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1 📊 Pipeline stage synthesis: completed (with data)
+page-e93da6676f956e60.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1 💾 Saving research to database...
+page-e93da6676f956e60.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1 📊 Pipeline stage saving: running
+page-e93da6676f956e60.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1 ✅ Research saved to database
+page-e93da6676f956e60.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1 📊 Pipeline stage saving: completed
+page-e93da6676f956e60.js?dpl=dpl_HxUXBMd3HjzShvf2JGSta5NRgTSx:1 ✅ Research pipeline complete! Object

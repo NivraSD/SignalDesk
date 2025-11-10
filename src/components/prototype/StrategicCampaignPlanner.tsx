@@ -793,6 +793,21 @@ Think PR campaigns. Think narrative ownership. NOT marketing funnels.`,
 
       alert(message)
 
+      // Automatically open Strategic Planning module with blueprint data
+      console.log('📋 Opening Strategic Planning with execution inventory')
+      const planEvent = new CustomEvent('addComponentToCanvas', {
+        detail: {
+          moduleId: 'plan',
+          action: 'open',
+          data: {
+            blueprint: v4BlueprintData,
+            sessionId: result.execution?.session_id || `session-${Date.now()}`,
+            orgId: currentOrgId
+          }
+        }
+      })
+      window.dispatchEvent(planEvent)
+
     } catch (error) {
       console.error('V4 Campaign execution error:', error)
       alert('Failed to execute V4 campaign. Please try again.')

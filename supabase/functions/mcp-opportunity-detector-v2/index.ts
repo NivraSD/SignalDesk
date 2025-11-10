@@ -173,7 +173,38 @@ async function detectOpportunitiesWithClaude(
   console.log('API Key length:', ANTHROPIC_API_KEY?.length || 0);
   console.log('API Key prefix:', ANTHROPIC_API_KEY?.substring(0, 10) || 'N/A');
 
-  const prompt = `MONITORING DATE: ${new Date().toISOString().split('T')[0]}
+  // Enhanced temporal context
+  const currentDate = new Date().toISOString().split('T')[0]
+  const currentDateTime = new Date()
+  const currentYear = currentDateTime.getFullYear()
+  const currentMonth = currentDateTime.getMonth() + 1
+  const futureRefs = {
+    tomorrow: new Date(currentDateTime.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    'next-week': new Date(currentDateTime.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    'next-month': new Date(currentDateTime.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    '3-months': new Date(currentDateTime.getTime() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+  }
+
+  const prompt = `# ⚠️ CRITICAL: TEMPORAL CONTEXT ⚠️
+
+**TODAY'S DATE:** ${currentDate}
+**CURRENT YEAR:** ${currentYear}
+**CURRENT MONTH:** ${currentMonth}/${currentYear}
+
+**FUTURE REFERENCE DATES:**
+- Tomorrow: ${futureRefs.tomorrow}
+- Next week: ${futureRefs['next-week']}
+- Next month: ${futureRefs['next-month']}
+- 3 months out: ${futureRefs['3-months']}
+
+**CRITICAL RULES:**
+1. ALL opportunities must be about FUTURE actions and FUTURE time windows (after ${currentDate})
+2. When you see articles from 2024 or earlier dates, those are HISTORICAL CONTEXT - do NOT create opportunities for past events
+3. Opportunities should capitalize on recent/current events to create FUTURE PR moments
+4. Time windows like "24-48 hours" mean "${futureRefs.tomorrow}" onwards, NOT dates in the past
+5. Use present/future tense: "Company X announces..." (if today) or "capitalize on Company X's announcement..." (opportunity for future action)
+
+MONITORING DATE: ${currentDate}
 
 INTELLIGENCE DATA FROM TODAY'S MONITORING:
 

@@ -33,10 +33,6 @@ async function generateEmbedding(text: string): Promise<number[] | null> {
     const maxChars = 8000
     const truncatedText = text.length > maxChars ? text.substring(0, maxChars) : text
 
-    // Add 10 second timeout to prevent blocking
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 10000)
-
     const response = await fetch('https://api.voyageai.com/v1/embeddings', {
       method: 'POST',
       headers: {
@@ -47,11 +43,8 @@ async function generateEmbedding(text: string): Promise<number[] | null> {
         model: 'voyage-3-large',
         input: truncatedText,
         input_type: 'document'
-      }),
-      signal: controller.signal
+      })
     })
-
-    clearTimeout(timeoutId)
 
     if (!response.ok) {
       console.error('❌ Voyage API error:', await response.text())
@@ -62,12 +55,42 @@ async function generateEmbedding(text: string): Promise<number[] | null> {
     console.log(`✅ Generated embedding (${data.data[0].embedding.length}D)`)
     return data.data[0].embedding
   } catch (error) {
-    if (error.name === 'AbortError') {
-      console.warn('⚠️ Embedding generation timed out after 10s - continuing without embedding')
-    } else {
-      console.error('❌ Error generating embedding:', error)
-    }
+    console.error('❌ Error generating embedding:', error)
     return null
+  }
+}
+
+/**
+ * Generate embedding asynchronously and update content_library record
+ * This runs in the background without blocking content saves
+ */
+async function generateEmbeddingAsync(contentId: string, text: string, organizationId: string): Promise<void> {
+  try {
+    console.log(`🔄 Starting async embedding generation for ${contentId}`)
+    const embedding = await generateEmbedding(text)
+
+    if (!embedding) {
+      console.warn(`⚠️ No embedding generated for ${contentId}`)
+      return
+    }
+
+    const { error } = await supabase
+      .from('content_library')
+      .update({
+        embedding,
+        embedding_model: 'voyage-3-large',
+        embedding_updated_at: new Date().toISOString()
+      })
+      .eq('id', contentId)
+      .eq('organization_id', organizationId)
+
+    if (error) {
+      console.error(`❌ Failed to update embedding for ${contentId}:`, error)
+    } else {
+      console.log(`✅ Async embedding saved for ${contentId}`)
+    }
+  } catch (error) {
+    console.error(`❌ Async embedding generation failed for ${contentId}:`, error)
   }
 }
 
@@ -1228,13 +1251,12 @@ serve(async (req) => {
 
         // Save to folder if specified
         if (saveFolder && content) {
-          // Generate embedding for semantic search
           const title = `${preloadedStrategy.subject} - ${requestedContentType}`
-          const textForEmbedding = `${title}\n\n${content}`.substring(0, 8000)
-          const embedding = await generateEmbedding(textForEmbedding)
+          const contentId = crypto.randomUUID()
 
+          // Save content immediately without waiting for embedding
           await supabase.from('content_library').insert({
-            id: crypto.randomUUID(),
+            id: contentId,
             organization_id: organizationId,
             content_type: requestedContentType,
             title,
@@ -1246,12 +1268,18 @@ serve(async (req) => {
               strategy: preloadedStrategy.subject
             },
             status: 'approved',
-            embedding,
-            embedding_model: 'voyage-3-large',
-            embedding_updated_at: embedding ? new Date().toISOString() : null
+            embedding: null,
+            embedding_model: null,
+            embedding_updated_at: null
           })
 
           console.log(`💾 Auto-generated ${requestedContentType} saved to ${saveFolder}`)
+
+          // Generate embedding asynchronously in background
+          const textForEmbedding = `${title}\n\n${content}`.substring(0, 8000)
+          generateEmbeddingAsync(contentId, textForEmbedding, organizationId).catch(err => {
+            console.error(`Background embedding failed for ${contentId}:`, err)
+          })
         }
 
         return new Response(JSON.stringify({
@@ -1675,15 +1703,14 @@ ${campaignContext.timeline || 'Not specified'}
 - **Media Engagement**: ${allGeneratedContent.filter(c => c.channel === 'media' && c.content).length} pieces
 `
 
-        // Generate embedding for phase strategy
+        // Save phase strategy immediately
         const strategyTitle = `Phase ${phaseNumber}: ${phase} - Strategy`
-        const strategyTextForEmbedding = `${strategyTitle}\n\n${strategyContent}`.substring(0, 8000)
-        const strategyEmbedding = await generateEmbedding(strategyTextForEmbedding)
+        const strategyId = crypto.randomUUID()
 
         const { error: strategyError } = await supabase
           .from('content_library')
           .insert({
-            id: crypto.randomUUID(),
+            id: strategyId,
             organization_id: organizationId,
             content_type: 'phase_strategy',
             title: strategyTitle,
@@ -1706,15 +1733,21 @@ ${campaignContext.timeline || 'Not specified'}
             },
             tags: ['phase_strategy', phase, campaignContext.campaignType || 'VECTOR_CAMPAIGN'],
             status: 'saved',
-            embedding: strategyEmbedding,
-            embedding_model: 'voyage-3-large',
-            embedding_updated_at: strategyEmbedding ? new Date().toISOString() : null
+            embedding: null,
+            embedding_model: null,
+            embedding_updated_at: null
           })
 
         if (strategyError) {
           console.error('❌ Failed to save phase strategy:', strategyError)
         } else {
           console.log('  ✅ Phase strategy saved')
+
+          // Generate embedding asynchronously in background
+          const strategyTextForEmbedding = `${strategyTitle}\n\n${strategyContent}`.substring(0, 8000)
+          generateEmbeddingAsync(strategyId, strategyTextForEmbedding, organizationId).catch(err => {
+            console.error(`Background embedding failed for strategy ${strategyId}:`, err)
+          })
         }
 
         // Save each content piece
@@ -1727,15 +1760,13 @@ ${campaignContext.timeline || 'Not specified'}
           // Normalize content type before saving
           const normalizedContentType = normalizeContentTypeForMCP(contentPiece.type)
           const contentTitle = `${phase} - ${normalizedContentType} - ${contentPiece.stakeholder || contentPiece.journalists?.[0] || 'general'}`
+          const pieceId = crypto.randomUUID()
 
-          // Generate embedding for content piece
-          const contentTextForEmbedding = `${contentTitle}\n\n${contentPiece.content}`.substring(0, 8000)
-          const contentEmbedding = await generateEmbedding(contentTextForEmbedding)
-
+          // Save content immediately without waiting for embedding
           const { error: contentError } = await supabase
             .from('content_library')
             .insert({
-              id: crypto.randomUUID(),
+              id: pieceId,
               organization_id: organizationId,
               content_type: normalizedContentType,  // Use normalized type
               title: contentTitle,
@@ -1753,15 +1784,21 @@ ${campaignContext.timeline || 'Not specified'}
               },
               tags: [normalizedContentType, phase, contentPiece.stakeholder || 'media', contentPiece.channel],
               status: 'saved',
-              embedding: contentEmbedding,
-              embedding_model: 'voyage-3-large',
-              embedding_updated_at: contentEmbedding ? new Date().toISOString() : null
+              embedding: null,
+              embedding_model: null,
+              embedding_updated_at: null
             })
 
           if (contentError) {
             console.error(`  ❌ Failed to save ${contentPiece.type}:`, contentError)
           } else {
             console.log(`  ✅ Saved ${contentPiece.type}`)
+
+            // Generate embedding asynchronously in background
+            const contentTextForEmbedding = `${contentTitle}\n\n${contentPiece.content}`.substring(0, 8000)
+            generateEmbeddingAsync(pieceId, contentTextForEmbedding, organizationId).catch(err => {
+              console.error(`Background embedding failed for ${contentPiece.type}:`, err)
+            })
           }
         }
 
@@ -2587,13 +2624,12 @@ ${campaignContext.timeline || 'Not specified'}
             generated_at: new Date().toISOString()
           }
 
-          // Generate embedding for semantic search
+          // Save media list immediately
           const mediaListTitle = `Media List - ${focusArea} (${tier})`
-          const mediaListText = `${mediaListTitle}\n\n${mediaListContent}`.substring(0, 8000)
-          const mediaListEmbedding = await generateEmbedding(mediaListText)
+          const mediaListId = crypto.randomUUID()
 
           await supabase.from('content_library').insert({
-            id: crypto.randomUUID(),
+            id: mediaListId,
             organization_id: organizationId,
             content_type: 'media-list',
             title: mediaListTitle,
@@ -2606,12 +2642,18 @@ ${campaignContext.timeline || 'Not specified'}
               source: content.source,
               generated_by: 'niv-content'
             },
-            embedding: mediaListEmbedding,
-            embedding_model: 'voyage-3-large',
-            embedding_updated_at: mediaListEmbedding ? new Date().toISOString() : null
+            embedding: null,
+            embedding_model: null,
+            embedding_updated_at: null
           })
 
           console.log(`✅ Auto-saved media list to ${mediaListFolder}`)
+
+          // Generate embedding asynchronously in background
+          const mediaListText = `${mediaListTitle}\n\n${mediaListContent}`.substring(0, 8000)
+          generateEmbeddingAsync(mediaListId, mediaListText, organizationId).catch(err => {
+            console.error(`Background embedding failed for media list ${mediaListId}:`, err)
+          })
         } catch (saveError) {
           console.error('❌ Error auto-saving media list:', saveError)
           // Don't fail the request if save fails
@@ -3506,12 +3548,11 @@ ${section.talking_points.map((point: string) => `- ${point}`).join('\n')}
           try {
             console.log('💾 Saving presentation outline to Memory Vault')
 
-            // Generate embedding for semantic search
-            const presentationText = `${outline.topic}\n\n${markdownContent}`.substring(0, 8000)
-            const presentationEmbedding = await generateEmbedding(presentationText)
+            const presentationId = crypto.randomUUID()
 
+            // Save presentation immediately without waiting for embedding
             await supabase.from('content_library').insert({
-              id: crypto.randomUUID(),
+              id: presentationId,
               organization_id: organizationId,
               content_type: 'presentation_outline',
               title: outline.topic,
@@ -3526,11 +3567,17 @@ ${section.talking_points.map((point: string) => `- ${point}`).join('\n')}
                 status: 'generating'
               },
               folder: `presentations/${outline.topic.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
-              embedding: presentationEmbedding,
-              embedding_model: 'voyage-3-large',
-              embedding_updated_at: presentationEmbedding ? new Date().toISOString() : null
+              embedding: null,
+              embedding_model: null,
+              embedding_updated_at: null
             })
             console.log('✅ Saved presentation outline to Memory Vault')
+
+            // Generate embedding asynchronously in background
+            const presentationText = `${outline.topic}\n\n${markdownContent}`.substring(0, 8000)
+            generateEmbeddingAsync(presentationId, presentationText, organizationId).catch(err => {
+              console.error(`Background embedding failed for presentation ${presentationId}:`, err)
+            })
           } catch (saveError) {
             console.error('❌ Error saving to Memory Vault:', saveError)
             // Don't fail the request if vault save fails
@@ -3669,11 +3716,11 @@ ${section.talking_points.map((point: string) => `- ${point}`).join('\n')}
           // Save strategy document first
           const strategyTitle = `${strategy.subject} - Strategy`
           const strategyContent = `# Media Strategy: ${strategy.subject}\n\n## Core Narrative\n${strategy.narrative}\n\n## Target Audiences\n${strategy.target_audiences?.join(', ')}\n\n## Key Messages\n${strategy.key_messages?.map((m: string, i: number) => `${i + 1}. ${m}`).join('\n')}`
-          const strategyText = `${strategyTitle}\n\n${strategyContent}`.substring(0, 8000)
-          const strategyEmbedding = await generateEmbedding(strategyText)
+          const strategyId = crypto.randomUUID()
 
+          // Save strategy immediately without waiting for embedding
           await supabase.from('content_library').insert({
-            id: crypto.randomUUID(),
+            id: strategyId,
             organization_id: organizationId,
             content_type: 'strategy-document',
             title: strategyTitle,
@@ -3684,19 +3731,25 @@ ${section.talking_points.map((point: string) => `- ${point}`).join('\n')}
               strategyChosen: conversationState.strategyChosen,
               mediaPlan: true
             },
-            embedding: strategyEmbedding,
-            embedding_model: 'voyage-3-large',
-            embedding_updated_at: strategyEmbedding ? new Date().toISOString() : null
+            embedding: null,
+            embedding_model: null,
+            embedding_updated_at: null
+          })
+
+          // Generate embedding asynchronously in background
+          const strategyText = `${strategyTitle}\n\n${strategyContent}`.substring(0, 8000)
+          generateEmbeddingAsync(strategyId, strategyText, organizationId).catch(err => {
+            console.error(`Background embedding failed for strategy ${strategyId}:`, err)
           })
 
           // Save each content piece
           for (const piece of generatedContent) {
             const pieceTitle = `${strategy.subject} - ${piece.type.replace('-', ' ').toUpperCase()}`
-            const pieceText = `${pieceTitle}\n\n${piece.content}`.substring(0, 8000)
-            const pieceEmbedding = await generateEmbedding(pieceText)
+            const pieceId = crypto.randomUUID()
 
+            // Save piece immediately without waiting for embedding
             await supabase.from('content_library').insert({
-              id: crypto.randomUUID(),
+              id: pieceId,
               organization_id: organizationId,
               content_type: piece.type,
               title: pieceTitle,
@@ -3707,9 +3760,15 @@ ${section.talking_points.map((point: string) => `- ${point}`).join('\n')}
                 mediaPlan: true,
                 folder
               },
-              embedding: pieceEmbedding,
-              embedding_model: 'voyage-3-large',
-              embedding_updated_at: pieceEmbedding ? new Date().toISOString() : null
+              embedding: null,
+              embedding_model: null,
+              embedding_updated_at: null
+            })
+
+            // Generate embedding asynchronously in background
+            const pieceText = `${pieceTitle}\n\n${piece.content}`.substring(0, 8000)
+            generateEmbeddingAsync(pieceId, pieceText, organizationId).catch(err => {
+              console.error(`Background embedding failed for ${piece.type}:`, err)
             })
           }
 

@@ -453,13 +453,22 @@ export default function InfiniteCanvas({ children }: { children?: React.ReactNod
   // Check for pending plan data from Campaign Builder on mount
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search)
+    console.log('🔍 InfiniteCanvas mount - checking for openPlan param:', urlParams.get('openPlan'))
+
     if (urlParams.get('openPlan') === 'true') {
       const pendingData = sessionStorage.getItem('pendingPlanData')
+      console.log('📦 SessionStorage pendingPlanData:', pendingData ? 'EXISTS' : 'NULL')
+
       if (pendingData) {
         try {
           setLoadingPlanData(true) // Prevent localStorage effect from clearing data
           const data = JSON.parse(pendingData)
-          console.log('📋 Loading pending plan data from Campaign Builder:', data)
+          console.log('📋 Loading pending plan data from Campaign Builder:', {
+            hasBlueprint: !!data.blueprint,
+            sessionId: data.sessionId,
+            orgId: data.orgId,
+            blueprintKeys: data.blueprint ? Object.keys(data.blueprint) : []
+          })
 
           // Store in planData state (will auto-save to localStorage via effect above)
           const newPlanData = {
@@ -471,6 +480,10 @@ export default function InfiniteCanvas({ children }: { children?: React.ReactNod
 
           // Set state immediately
           setPlanData(newPlanData)
+          console.log('✅ planData state set:', {
+            hasBlueprint: !!newPlanData.blueprint,
+            sessionId: newPlanData.sessionId
+          })
 
           // Clear the pending data and URL param
           sessionStorage.removeItem('pendingPlanData')
@@ -478,7 +491,7 @@ export default function InfiniteCanvas({ children }: { children?: React.ReactNod
 
           // Wait for next render cycle to ensure state is flushed
           requestAnimationFrame(() => {
-            console.log('✅ Opening Plan module with data:', {
+            console.log('🎯 Opening Plan module with data:', {
               hasBlueprint: !!newPlanData.blueprint,
               sessionId: newPlanData.sessionId
             })
@@ -486,9 +499,11 @@ export default function InfiniteCanvas({ children }: { children?: React.ReactNod
             addComponent('plan')
           })
         } catch (err) {
-          console.error('Failed to parse pending plan data:', err)
+          console.error('❌ Failed to parse pending plan data:', err)
           setLoadingPlanData(false)
         }
+      } else {
+        console.warn('⚠️ openPlan=true but no pendingPlanData in sessionStorage')
       }
     }
   }, [addComponent, setPlanData])

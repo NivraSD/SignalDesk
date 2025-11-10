@@ -83,6 +83,46 @@ export function CampaignBuilderWizard() {
     currentPiece: ''
   })
 
+  // Load saved session from localStorage on mount
+  useEffect(() => {
+    const loadSavedSession = async () => {
+      const savedSessionId = localStorage.getItem('campaignBuilderSessionId')
+      if (savedSessionId && !session) {
+        console.log('📂 Found saved sessionId in localStorage:', savedSessionId)
+        try {
+          const data = await CampaignBuilderService.getSession(savedSessionId)
+          if (data && data.blueprint) {
+            console.log('✅ Loaded session from database:', {
+              sessionId: data.id,
+              stage: data.current_stage,
+              hasBlueprint: !!data.blueprint,
+              approach: data.selected_approach
+            })
+
+            // Reconstruct session state from database
+            setSession({
+              sessionId: data.id,
+              stage: data.current_stage || 'blueprint',
+              conversationHistory: data.conversation_history || [],
+              researchFindings: data.research_findings,
+              selectedPositioning: data.selected_positioning,
+              selectedApproach: data.selected_approach || 'VECTOR_CAMPAIGN',
+              blueprint: data.blueprint
+            })
+          } else {
+            console.warn('⚠️ Session not found or incomplete, clearing localStorage')
+            localStorage.removeItem('campaignBuilderSessionId')
+          }
+        } catch (err) {
+          console.error('❌ Failed to load saved session:', err)
+          localStorage.removeItem('campaignBuilderSessionId')
+        }
+      }
+    }
+
+    loadSavedSession()
+  }, []) // Only run on mount
+
   // Debug organization
   useEffect(() => {
     console.log('🏢 Campaign Builder Organization:', organization)
@@ -1312,6 +1352,10 @@ export function CampaignBuilderWizard() {
       setError('No organization selected')
       return
     }
+
+    // Store sessionId in localStorage so we can return to this exact campaign
+    localStorage.setItem('campaignBuilderSessionId', session.sessionId)
+    console.log('💾 Saved sessionId to localStorage:', session.sessionId)
 
     // Store blueprint data in sessionStorage for canvas to pick up
     sessionStorage.setItem('pendingPlanData', JSON.stringify({

@@ -2,8 +2,8 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 
-// Gamma API configuration
-const GAMMA_API_URL = 'https://public-api.gamma.app/v0.2'
+// Gamma API configuration - Updated to v1.0 (v0.2 deprecated after Jan 16, 2025)
+const GAMMA_API_URL = 'https://public-api.gamma.app/v1.0'
 const GAMMA_API_KEY = Deno.env.get('GAMMA_API_KEY') || 'sk-gamma-zFOvUwGMpXZaDiB5sWkl3a5lakNfP19E90ZUZUdZM'
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -375,7 +375,6 @@ async function capturePresentation(
       const contentLibraryData = {
         id: crypto.randomUUID(),
         organization_id: request.organization_id,
-        session_id: request.campaign_id,  // Links to opportunity if available
         content_type: 'presentation',
         title: presentationTitle,
         content: contentToSave,
@@ -383,7 +382,8 @@ async function capturePresentation(
           gamma_id: generationId,
           gamma_url: gammaUrl,
           gamma_edit_url: `${gammaUrl}/edit`,
-          pptx_url: pptxStorageUrl,
+          pptx_url: pptxStorageUrl,  // Store PPTX URL in metadata instead of file_url column
+          file_url: pptxStorageUrl,  // Also in metadata for compatibility
           slide_count: slides.length || request.slideCount || 10,
           format: 'pptx',
           slides: slides,
@@ -396,7 +396,9 @@ async function capturePresentation(
         tags: ['gamma', 'presentation', 'auto-generated', request.campaign_id ? 'opportunity' : 'standalone'],
         status: 'final',
         folder: folderPath,
-        file_url: pptxStorageUrl
+        embedding: null,  // Gamma presentations don't need semantic search
+        embedding_model: null,
+        embedding_updated_at: null
       }
 
       console.log('💾 Attempting to insert to content_library:', {
@@ -414,10 +416,20 @@ async function capturePresentation(
         .single()
 
       if (mvInsertError) {
-        console.error('❌ Memory Vault insert failed:', mvInsertError)
-        // Log the error but don't throw - presentation is already saved to campaign_presentations
-        console.error('Continuing without Memory Vault save - presentation exists in campaign_presentations')
-        return data  // Return the campaign_presentations record
+        console.error('❌ Memory Vault insert failed:', JSON.stringify(mvInsertError, null, 2))
+        console.error('❌ Full error details:', {
+          code: mvInsertError.code,
+          message: mvInsertError.message,
+          details: mvInsertError.details,
+          hint: mvInsertError.hint
+        })
+        console.error('❌ Data attempted to insert:', JSON.stringify(contentLibraryData, null, 2))
+        // Still save to campaign_presentations but mark capture as failed
+        return {
+          ...data,
+          memory_vault_error: mvInsertError.message,
+          memory_vault_code: mvInsertError.code
+        }
       }
 
       console.log(`✅ Saved to Memory Vault at: ${folderPath}`)
@@ -653,8 +665,17 @@ async function checkGenerationStatus(generationId: string, captureRequest?: Pres
 
       if (isCompleted && captureRequest?.capture) {
         console.log('🎯 Presentation completed - triggering capture...')
+        console.log('📦 Full Gamma API response:', JSON.stringify(data, null, 2))
         captureDebug.attempted = true
         const pptxDownloadUrl = data.exportUrl || data.pptxDownloadUrl
+        console.log('📥 PPTX Download URL:', pptxDownloadUrl || 'NOT PROVIDED BY GAMMA API')
+
+        if (!pptxDownloadUrl) {
+          console.warn('⚠️ Gamma API did not return exportUrl or pptxDownloadUrl')
+          console.warn('⚠️ Available fields in response:', Object.keys(data))
+          console.warn('⚠️ Proceeding with capture anyway - will save metadata only')
+        }
+
         capturedData = await capturePresentation(
           generationId,
           data.gammaUrl,
@@ -664,6 +685,8 @@ async function checkGenerationStatus(generationId: string, captureRequest?: Pres
         if (!capturedData || !capturedData.id) {
           captureDebug.reason = 'capturePresentation returned null or error'
           captureDebug.captureResult = capturedData
+        } else {
+          console.log('✅ Capture successful - ID:', capturedData.id)
         }
       } else {
         captureDebug.reason = `isCompleted=${isCompleted}, captureRequest=${!!captureRequest}, captureRequest.capture=${captureRequest?.capture}`
@@ -894,8 +917,8 @@ serve(async (req) => {
  * API Key: sk-gamma-zFOvUwGMpXZaDiB5sWkl3a5lakNfP19E90ZUZUdZM
  *
  * Endpoints:
- * - POST /v0.2/generations - Create new presentation
- * - GET /v0.2/generations/{id} - Check generation status
+ * - POST /v1.0/generations - Create new presentation
+ * - GET /v1.0/generations/{id} - Check generation status and receive file URLs
  *
  * Features:
  * - AI-powered presentation generation
