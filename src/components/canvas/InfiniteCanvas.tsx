@@ -454,10 +454,23 @@ export default function InfiniteCanvas({ children }: { children?: React.ReactNod
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search)
     console.log('🔍 InfiniteCanvas mount - checking for openPlan param:', urlParams.get('openPlan'))
+    console.log('🔍 Full URL:', window.location.href)
+    console.log('🔍 Tab context:', {
+      hasOpener: !!window.opener,
+      openerClosed: window.opener ? window.opener.closed : 'N/A'
+    })
 
     if (urlParams.get('openPlan') === 'true') {
       const pendingData = sessionStorage.getItem('pendingPlanData')
       console.log('📦 SessionStorage pendingPlanData:', pendingData ? 'EXISTS' : 'NULL')
+
+      if (pendingData) {
+        console.log('📦 SessionStorage data size:', pendingData.length, 'bytes')
+      } else {
+        // If no data, check ALL sessionStorage keys
+        console.log('📦 All sessionStorage keys:', Object.keys(sessionStorage))
+        console.log('📦 SessionStorage length:', sessionStorage.length)
+      }
 
       if (pendingData) {
         try {

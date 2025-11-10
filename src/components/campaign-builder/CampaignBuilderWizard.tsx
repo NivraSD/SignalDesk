@@ -1373,15 +1373,27 @@ export function CampaignBuilderWizard() {
     })
 
     // Store blueprint data in sessionStorage for canvas to pick up
-    sessionStorage.setItem('pendingPlanData', JSON.stringify({
+    const planDataToStore = {
       blueprint: session.blueprint,
       sessionId: session.sessionId,
       orgId: organization.id,
       campaignType: session.selectedApproach || 'VECTOR_CAMPAIGN'
-    }))
+    }
 
+    sessionStorage.setItem('pendingPlanData', JSON.stringify(planDataToStore))
+
+    // VERIFY it was saved
+    const verification = sessionStorage.getItem('pendingPlanData')
     console.log('✅ Blueprint stored for Strategic Planning module')
-    console.log('🔄 Navigating to canvas...')
+    console.log('📋 Stored data verification:', {
+      wasStored: !!verification,
+      dataSize: verification ? verification.length : 0,
+      sessionId: planDataToStore.sessionId,
+      orgId: planDataToStore.orgId,
+      campaignType: planDataToStore.campaignType,
+      hasBlueprint: !!planDataToStore.blueprint
+    })
+    console.log('🔄 Navigating to canvas with window.location.href...')
 
     // Navigate to home page where canvas will pick up the pending plan data
     window.location.href = '/?openPlan=true'
