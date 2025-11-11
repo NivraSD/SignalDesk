@@ -120,6 +120,20 @@ const TOOLS = [
           type: "string",
           description: "URL to the organization's About, Capabilities, or Services page for strategic context inference"
         },
+        product_lines: {
+          type: "array",
+          description: "List of key products/services offered by the organization",
+          items: { type: "string" }
+        },
+        key_markets: {
+          type: "array",
+          description: "List of key markets/geographies the organization operates in",
+          items: { type: "string" }
+        },
+        business_model: {
+          type: "string",
+          description: "Business model description (e.g., B2B SaaS, B2C retail, etc.)"
+        },
         save_to_persistence: {
           type: "boolean",
           description: "Whether to save the profile to persistence (default: true)",
@@ -147,12 +161,24 @@ const TOOLS = [
 
 // Enhanced profile creation with intelligent gap filling
 async function createOrganizationProfile(args: any) {
-  const { organization_name, industry_hint, website, about_page, save_to_persistence = true } = args;
+  const {
+    organization_name,
+    industry_hint,
+    website,
+    about_page,
+    product_lines = [],
+    key_markets = [],
+    business_model,
+    save_to_persistence = true
+  } = args;
 
   console.log(`🔍 Creating SMART organization profile for: ${organization_name}`);
   console.log(`   Industry hint: ${industry_hint || 'Auto-detect'}`);
   console.log(`   About page: ${about_page || 'Not provided'}`);
   console.log(`   Website: ${website || 'Not provided'}`);
+  console.log(`   Product lines: ${product_lines.length > 0 ? product_lines.join(', ') : 'Not provided'}`);
+  console.log(`   Key markets: ${key_markets.length > 0 ? key_markets.join(', ') : 'Not provided'}`);
+  console.log(`   Business model: ${business_model || 'Not provided'}`);
 
   // Debug: Check if API key is available
   const apiKeyCheck = ANTHROPIC_API_KEY || Deno.env.get('ANTHROPIC_API_KEY') || Deno.env.get('CLAUDE_API_KEY');
@@ -188,7 +214,10 @@ async function createOrganizationProfile(args: any) {
       organization_name,
       industryData,
       sourcesData,
-      industry_hint
+      industry_hint,
+      product_lines,
+      key_markets,
+      business_model
     );
     
     // STEP 3: Fill remaining gaps with web search if needed
@@ -548,7 +577,10 @@ async function analyzeAndEnhanceProfile(
   organization_name: string,
   industryData: any,
   sourcesData: any,
-  industry_hint?: string
+  industry_hint?: string,
+  product_lines: string[] = [],
+  key_markets: string[] = [],
+  business_model?: string
 ) {
   const analysisPrompt = `
 You are creating a strategic intelligence profile for ${organization_name}.
@@ -564,10 +596,17 @@ Your goal is to create a profile of:
 This is NOT about generic news monitoring. Every target you identify must answer:
 "Why does ${organization_name} specifically need to know about this?"
 
-CONTEXT:
+COMPANY PROFILE:
 - Organization: ${organization_name}
 - Industry: ${industryData.industry} ${industryData.subCategory ? `(${industryData.subCategory})` : ''}
+${product_lines.length > 0 ? `- Key Product Lines: ${product_lines.join(', ')}` : ''}
+${key_markets.length > 0 ? `- Key Markets: ${key_markets.join(', ')}` : ''}
+${business_model ? `- Business Model: ${business_model}` : ''}
 - Known Competitors: ${industryData.competitors.slice(0, 10).join(', ')}
+
+🎯 CRITICAL: Use the product lines and markets above to generate SPECIFIC search queries.
+   For example, if product lines include "CRM Software" and "Sales Automation",
+   your search queries should include "CRM Software competitors", "Sales Automation trends", etc.
 
 ⚠️ CRITICAL RULES FOR STAKEHOLDERS:
 - Only include stakeholders whose activity DIRECTLY impacts ${organization_name}'s industry or operations

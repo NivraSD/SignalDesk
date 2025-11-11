@@ -14,24 +14,45 @@ export class IntelligenceService {
    * 7. opportunity-orchestrator
    */
   static async startPipeline(
-    organizationId: string, 
-    organizationName?: string, 
+    organizationId: string,
+    organizationName?: string,
     industryHint?: string,
     onProgress?: (stage: string, status: 'running' | 'completed' | 'failed', data?: any) => void
   ) {
     try {
       const orgName = organizationName || 'Tesla'
       const industry = industryHint || 'Electric Vehicles'
-      
+
       console.log('🚨🚨🚨 CRITICAL TEST - THIS CODE IS RUNNING - VERSION 2 🚨🚨🚨')
       console.log('Starting pipeline for organization:', orgName, 'Industry:', industry)
-      
-      // Start with mcp-discovery - using the correct parameters from the function
-      const payload = { 
+
+      // Fetch company profile from database to get product_lines and other key info
+      const { data: orgData } = await supabase
+        .from('organizations')
+        .select('company_profile, website')
+        .eq('id', organizationId)
+        .single()
+
+      const companyProfile = orgData?.company_profile || {}
+      const website = orgData?.website
+
+      console.log('📋 Company profile loaded:', {
+        hasProfile: !!companyProfile,
+        productLines: companyProfile.product_lines?.length || 0,
+        keyMarkets: companyProfile.key_markets?.length || 0,
+        website
+      })
+
+      // Start with mcp-discovery - passing company profile data
+      const payload = {
         tool: 'create_organization_profile',
         arguments: {
           organization_name: orgName,
           industry_hint: industry,
+          website: website,
+          product_lines: companyProfile.product_lines || [],
+          key_markets: companyProfile.key_markets || [],
+          business_model: companyProfile.business_model,
           save_to_persistence: true
         }
       }
