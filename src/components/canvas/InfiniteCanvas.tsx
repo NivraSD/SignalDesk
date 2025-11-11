@@ -135,23 +135,39 @@ export default function InfiniteCanvas({ children }: { children?: React.ReactNod
     const componentType = COMPONENT_TYPES.find(t => t.id === type)
     const width = componentType?.defaultWidth || 800
     const height = componentType?.defaultHeight || 600
-    const position = findNextPosition(width, height)
+
+    // NEW LOGIC: Stack from top, push existing modules down
+    // New module always appears at the top with margin
+    const newY = COMPONENT_MARGIN
+    const newX = COMPONENT_MARGIN
 
     const newComponent: CanvasComponentData = {
       id: `${type}-${Date.now()}`,
       type,
       title: componentType?.label || type.charAt(0).toUpperCase() + type.slice(1),
-      x: position.x,
-      y: position.y,
+      x: newX,
+      y: newY,
       width,
       height,
       zIndex: nextZIndex
     }
 
-    console.log('New component:', newComponent)
-    setComponents(prev => [...prev, newComponent])
+    // Push all existing components down by this module's height + margin
+    const shiftAmount = height + COMPONENT_MARGIN
+    const updatedComponents = components.map(comp => ({
+      ...comp,
+      y: comp.y + shiftAmount
+    }))
+
+    console.log('New component at top, pushing', components.length, 'modules down by', shiftAmount)
+    setComponents([...updatedComponents, newComponent])
     setNextZIndex(prev => prev + 1)
-  }, [components, nextZIndex, findNextPosition])
+
+    // Auto-scroll to top to show the new module
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }, 100)
+  }, [components, nextZIndex])
 
   // Listen for component add events from the header
   useEffect(() => {
