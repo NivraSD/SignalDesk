@@ -1087,17 +1087,45 @@ export function CampaignBuilderWizard() {
           .slice(0, 50) // Max 50 chars
 
         try {
+          // Create clean campaign overview for Memory Vault
+          const campaignOverview = {
+            title: campaignName,
+            type: 'GEO-VECTOR Campaign',
+            goal: session.campaignGoal,
+            positioning: session.selectedPositioning,
+
+            geoIntelligence: {
+              targetQueries: result.geoIntelligence?.targetQueries?.slice(0, 5) || [],
+              platformAnalysis: result.geoIntelligence?.platformAnalysis || {},
+              recommendations: result.geoIntelligence?.recommendations?.slice(0, 3) || []
+            },
+
+            stakeholders: result.part1_stakeholderIdentification?.stakeholderProfiles?.map((s: any) => ({
+              name: s.name,
+              priority: s.priority,
+              role: s.role
+            })) || [],
+
+            executionItems: result.part3_stakeholderOrchestration?.stakeholderOrchestrationPlans?.length || 0,
+
+            timeline: {
+              created: new Date().toISOString(),
+              sessionId: session.sessionId
+            }
+          }
+
           await saveToMemoryVault({
             organization_id: organization.id,
             type: 'campaign',
             title: campaignName,
-            content: JSON.stringify(result),
-            folder: `Campaigns/${campaignName}`,
+            content: campaignOverview,
+            folder: `Campaigns`,
             metadata: {
               campaign_type: 'GEO_VECTOR',
               session_id: session.sessionId,
               created_via: 'campaign_builder',
-              has_geo_intelligence: true
+              has_geo_intelligence: true,
+              execution_items_count: campaignOverview.executionItems
             }
           })
           console.log('✅ Blueprint saved to Memory Vault:', campaignName)
@@ -1253,17 +1281,42 @@ export function CampaignBuilderWizard() {
         .slice(0, 50) // Max 50 chars
 
       try {
+        // Create clean campaign overview for Memory Vault
+        const campaignOverview = {
+          title: campaignName,
+          type: 'VECTOR Campaign',
+          goal: session.campaignGoal,
+          positioning: session.selectedPositioning,
+
+          stakeholders: result.part1_stakeholderIdentification?.stakeholderProfiles?.map((s: any) => ({
+            name: s.name,
+            priority: s.priority,
+            role: s.role,
+            goals: s.goals
+          })) || [],
+
+          executionItems: result.part3_stakeholderOrchestration?.stakeholderOrchestrationPlans?.length || 0,
+
+          keyMessages: result.part2_strategicGoals?.keyMessages?.slice(0, 5) || [],
+
+          timeline: {
+            created: new Date().toISOString(),
+            sessionId: session.sessionId
+          }
+        }
+
         await saveToMemoryVault({
           organization_id: organization.id,
           type: 'campaign',
           title: campaignName,
-          content: JSON.stringify(result),
-          folder: `Campaigns/${campaignName}`,
+          content: campaignOverview,
+          folder: `Campaigns`,
           metadata: {
             campaign_type: 'VECTOR',
             session_id: session.sessionId,
             created_via: 'campaign_builder',
-            has_geo_intelligence: false
+            has_geo_intelligence: false,
+            execution_items_count: campaignOverview.executionItems
           }
         })
         console.log('✅ VECTOR Blueprint saved to Memory Vault:', campaignName)
