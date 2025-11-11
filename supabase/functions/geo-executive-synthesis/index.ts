@@ -23,6 +23,8 @@ interface GEOTestResult {
   rank?: number
   context_quality?: 'strong' | 'medium' | 'weak'
   competitors_mentioned?: string[]
+  sources?: any[] // Sources cited by AI platforms (from Gemini/Perplexity)
+  source_domains?: string[] // Domain names of cited sources
 }
 
 serve(async (req) => {
@@ -201,6 +203,16 @@ serve(async (req) => {
       critical_signals: analysis.critical_gaps.length
     }
 
+    // Extract top cited sources for easy access
+    const topCitedSources = Object.entries(analysis.top_domains)
+      .sort((a, b) => (b[1] as number) - (a[1] as number))
+      .slice(0, 10)
+      .map(([domain, count]) => ({
+        domain,
+        citation_count: count,
+        recommendation: `Target ${domain} for PR coverage to improve AI visibility`
+      }))
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -209,7 +221,8 @@ serve(async (req) => {
           raw_analysis: analysis,
           organization_name,
           industry,
-          generated_at: new Date().toISOString()
+          generated_at: new Date().toISOString(),
+          cited_sources: topCitedSources // Add top sources for UI display
         },
         summary  // Add summary for UI display
       }),
@@ -247,7 +260,9 @@ function analyzeGEOResults(results: GEOTestResult[], organizationName: string) {
     avg_rank: 0,
     critical_gaps: [] as any[],
     opportunities: [] as any[],
-    competitor_analysis: {} as Record<string, number>
+    competitor_analysis: {} as Record<string, number>,
+    cited_sources: [] as any[], // Track all sources cited by AI platforms
+    top_domains: {} as Record<string, number> // Domain frequency
   }
 
   // Initialize platform counters
@@ -300,6 +315,25 @@ function analyzeGEOResults(results: GEOTestResult[], organizationName: string) {
         platform: result.platform,
         intent: result.intent,
         why: 'Strong context but no brand mention - opportunity to optimize'
+      })
+    }
+
+    // Collect cited sources (from Gemini and Perplexity)
+    if (result.sources && result.sources.length > 0) {
+      result.sources.forEach(source => {
+        analysis.cited_sources.push({
+          ...source,
+          platform: result.platform,
+          query: result.query,
+          brand_mentioned: result.brand_mentioned
+        })
+      })
+    }
+
+    // Track domain frequency
+    if (result.source_domains && result.source_domains.length > 0) {
+      result.source_domains.forEach(domain => {
+        analysis.top_domains[domain] = (analysis.top_domains[domain] || 0) + 1
       })
     }
   })
@@ -364,6 +398,25 @@ COMPETITOR VISIBILITY:
 ${Object.entries(context.analysis.competitor_analysis).slice(0, 5).map(([comp, count]) =>
   `- ${comp}: ${count} mentions`
 ).join('\n')}
+
+SOURCES CITED BY AI PLATFORMS:
+${Object.entries(context.analysis.top_domains)
+  .sort((a, b) => (b[1] as number) - (a[1] as number))
+  .slice(0, 15)
+  .map(([domain, count]) => `- ${domain}: cited ${count} times`)
+  .join('\n')}
+
+${context.analysis.cited_sources.length > 0 ? `
+INSIGHT: AI platforms are citing these publications when answering queries in your space.
+Getting coverage in these publications will directly improve AI visibility.
+
+Top ${Math.min(5, Object.keys(context.analysis.top_domains).length)} publications to target for PR/content:
+${Object.entries(context.analysis.top_domains)
+  .sort((a, b) => (b[1] as number) - (a[1] as number))
+  .slice(0, 5)
+  .map(([domain, count], idx) => `${idx + 1}. ${domain} (cited ${count} times across Gemini/Perplexity)`)
+  .join('\n')}
+` : ''}
 
 ${context.geoTargets ? `
 ORGANIZATION'S GEO TARGETS:
