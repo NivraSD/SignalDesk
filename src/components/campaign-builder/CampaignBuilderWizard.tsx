@@ -1393,10 +1393,10 @@ export function CampaignBuilderWizard() {
       campaignType: planDataToStore.campaignType,
       hasBlueprint: !!planDataToStore.blueprint
     })
-    console.log('🔄 Navigating to canvas with window.location.href...')
+    console.log('🔄 Navigating to dashboard with window.location.href...')
 
-    // Navigate to home page where canvas will pick up the pending plan data
-    window.location.href = '/?openPlan=true'
+    // Navigate to dashboard where InfiniteCanvas will pick up the pending plan data
+    window.location.href = '/dashboard?openPlan=true'
   }
 
   // Estimate content pieces from blueprint structure
