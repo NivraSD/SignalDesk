@@ -121,10 +121,16 @@ async function getOrCreatePlaybook(params: {
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
   // Fetch company profile for context
-  const { data: companyProfileData } = await supabase.rpc('get_company_profile', {
-    org_id: params.organizationId
-  })
-  const companyProfile = companyProfileData && companyProfileData.length > 0 ? companyProfileData[0].company_profile : null
+  const { data: orgData } = await supabase
+    .from('organizations')
+    .select('company_profile, industry')
+    .eq('id', params.organizationId)
+    .single()
+
+  const companyProfile = orgData?.company_profile ? {
+    ...orgData.company_profile,
+    industry: orgData.industry  // Add industry to profile
+  } : null
 
   // Try to get cached playbook
   const { data: cached, error: playbookError } = await supabase
@@ -205,6 +211,10 @@ function formatPlaybookForClaude(playbook: any, contentType: string, topic: stri
   if (companyProfile) {
     formatted += `**Company Profile:**\n`
 
+    if (companyProfile.industry) {
+      formatted += `Industry: ${companyProfile.industry}\n`
+    }
+
     if (companyProfile.leadership && companyProfile.leadership.length > 0) {
       formatted += `Leadership: ${companyProfile.leadership.map((l: any) => `${l.name} (${l.title})`).join(', ')}\n`
     }
@@ -229,7 +239,7 @@ function formatPlaybookForClaude(playbook: any, contentType: string, topic: stri
       formatted += `Business Model: ${companyProfile.business_model}\n`
     }
 
-    formatted += `\n**IMPORTANT:** Use the above company facts in all generated content. Do not invent job titles, locations, or company details not listed above.\n\n`
+    formatted += `\n**IMPORTANT:** Use the above company facts (especially industry and product lines) in all generated content. Do not invent job titles, locations, or company details not listed above.\n\n`
   }
 
   // Proven hooks
