@@ -2541,51 +2541,17 @@ ${campaignContext.timeline || 'Not specified'}
 
         console.log(`✅ Registry returned ${allJournalists.length} total journalists`);
 
-        // STEP 2: Gap detection (like mcp-discovery)
-        const hasGaps = allJournalists.length < requestedCount;
-        const missingCount = Math.max(0, requestedCount - allJournalists.length);
-
-        let content;
-        if (hasGaps) {
-          console.log(`⚠️ Gap detected: ${missingCount} journalists needed`);
-          console.log('🌐 Step 2: Filling gaps with web search via mcp-media...');
-
-          // Use mcp-media to fill gaps
-          const mcpContent = await callMCPService('media-list', {
-            company: orgProfile.organizationName,
-            industry: focusArea,
-            topic: focusArea,
-            tiers: [tier],
-            count: missingCount
-          });
-
-          // Combine registry journalists + mcp-generated ones
-          content = {
-            source: 'hybrid',
-            verified_journalists: allJournalists,
-            additional_journalists: mcpContent,
-            gap_analysis: {
-              hasGaps: true,
-              currentCount: allJournalists.length,
-              requestedCount,
-              missingCount,
-              suggestions: [
-                `Found ${allJournalists.length} verified journalists from database`,
-                `Filling ${missingCount} gaps with web search`
-              ]
-            },
-            total_count: allJournalists.length,
-            note: `✅ Found ${allJournalists.length} verified journalists from database. Filled ${missingCount} gaps with web search.`
-          };
-        } else {
-          console.log('✅ No gaps - returning registry journalists only');
-          content = {
-            source: 'registry',
-            journalists: allJournalists,
-            total_count: allJournalists.length,
-            note: `✅ All ${allJournalists.length} journalists from verified database`
-          };
-        }
+        // Return all journalists from registry (no gap filling for now)
+        // The registry has 149+ verified journalists which is sufficient for most use cases
+        const content = {
+          source: 'registry',
+          journalists: allJournalists,
+          total_count: allJournalists.length,
+          requested_count: requestedCount,
+          note: allJournalists.length >= requestedCount
+            ? `✅ Found ${allJournalists.length} verified journalists from database`
+            : `✅ Found ${allJournalists.length} verified journalists (requested ${requestedCount})`
+        };
 
         // Format journalists for display with full contact info
         const formattedList = allJournalists.map((j, i) => {
