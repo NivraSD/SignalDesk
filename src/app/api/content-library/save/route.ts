@@ -11,14 +11,15 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { content, metadata, folder } = body
+    const { content, metadata, folder, id: contentId } = body
 
     const org_id = content.organization_id || metadata?.organizationId
     console.log('💾 SAVE DEBUG:', {
       org_id,
       type: content.type,
       folder,
-      title: content.title
+      title: content.title,
+      updating: !!contentId
     })
 
     // Just log if org doesn't exist, but ALLOW the save anyway
@@ -34,7 +35,50 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // CRITICAL: Save immediately (target < 100ms)
+    // If ID provided, UPDATE existing content
+    if (contentId) {
+      const { data: updatedContent, error: updateError } = await supabase
+        .from('content_library')
+        .update({
+          title: content.title || metadata?.title || `Content - ${new Date().toLocaleDateString()}`,
+          content: typeof content.content === 'string' ? content.content : JSON.stringify(content.content),
+          metadata: {
+            ...metadata,
+            ...content.metadata,
+            framework_data: content.framework_data,
+            opportunity_data: content.opportunity_data,
+            generatedAt: content.timestamp || new Date().toISOString()
+          },
+          folder: folder || 'Unsorted',
+          updated_at: new Date().toISOString(),
+          last_accessed_at: new Date().toISOString()
+        })
+        .eq('id', contentId)
+        .select()
+        .single()
+
+      if (updateError) {
+        console.error('❌ Content update error:', updateError)
+        return NextResponse.json({
+          success: false,
+          error: updateError.message || 'Failed to update content'
+        }, { status: 500 })
+      }
+
+      const updateTime = Date.now() - startTime
+      console.log(`✅ Content updated in ${updateTime}ms: ${updatedContent.id}`)
+
+      return NextResponse.json({
+        success: true,
+        id: updatedContent.id,
+        message: 'Content updated in Content Library',
+        location: 'content_library',
+        saveTime: `${updateTime}ms`,
+        data: updatedContent
+      })
+    }
+
+    // Otherwise INSERT new content
     const { data: savedContent, error: saveError } = await supabase
       .from('content_library')
       .insert({

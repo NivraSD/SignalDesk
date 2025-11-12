@@ -50,6 +50,7 @@ export function useMemoryVault() {
 
   // Save content to Memory Vault
   const saveContent = async (newContent: {
+    id?: string; // NEW: Optional ID for updating existing content
     title: string;
     content: any;
     content_type: string;
@@ -65,6 +66,7 @@ export function useMemoryVault() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          id: newContent.id, // NEW: Pass ID if updating
           content: {
             type: newContent.content_type,
             title: newContent.title,

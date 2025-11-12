@@ -129,11 +129,14 @@ export default function WorkspaceCanvasComponent({
     try {
       const contentType = currentContent?.content_type || 'general';
 
+      // If we have an existing content ID, update it; otherwise create new
       await saveContent({
+        id: currentContent?.id, // NEW: Pass existing ID to update instead of creating new
         title: contentTitle,
         content: editorContent,
         content_type: contentType,
-        tags: currentContent?.tags || []
+        tags: currentContent?.tags || [],
+        folder: currentContent?.folder // Preserve original folder
       });
 
       setSaveStatus('success');
@@ -409,12 +412,33 @@ ${contextText}`;
             setEditorContent(editorContent + '\n\n/* AI Suggestion (failed to parse):\n' + aiResponse + '\n*/');
           }
         } else {
-          // For non-schema content: Append AI response
-          setEditorContent(editorContent + '\n\n' + aiResponse);
+          // For non-schema content: Intelligently determine if we should replace or append
+
+          // Keywords that indicate the user wants to REPLACE/REWRITE the content
+          const replaceKeywords = ['rewrite', 'replace', 'change', 'edit', 'improve', 'refine', 'better', 'fix', 'update', 'revise'];
+
+          // Keywords that indicate the user wants to ADD content
+          const appendKeywords = ['add', 'include', 'insert', 'append'];
+
+          const promptLower = aiPrompt.toLowerCase();
+          const shouldReplace = replaceKeywords.some(keyword => promptLower.includes(keyword));
+          const shouldAppend = appendKeywords.some(keyword => promptLower.includes(keyword));
+
+          if (shouldAppend && !shouldReplace) {
+            // User explicitly wants to add something - append
+            setEditorContent(editorContent + '\n\n' + aiResponse);
+          } else if (shouldReplace || (!shouldAppend && aiResponse.length > 100)) {
+            // User wants to replace OR AI returned substantial content (likely a full rewrite)
+            setEditorContent(aiResponse);
+          } else {
+            // Default: Append for shorter responses or unclear intent
+            setEditorContent(editorContent + '\n\n' + aiResponse);
+          }
         }
       }
       setAiResponse('');
       setSelectedText('');
+      setAiPrompt(''); // Clear the prompt after applying
     }
   };
 
