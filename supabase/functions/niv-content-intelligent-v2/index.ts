@@ -4019,13 +4019,34 @@ function getDefaultUnderstanding(message: string) {
 
 // Helper: Get org profile
 async function getOrgProfile(organizationId: string, organizationName?: string) {
-  // TODO: Fetch from Supabase in the future
-  // For now, use the name passed from frontend
-  return {
-    organizationName: organizationName || organizationId,
-    industry: 'Technology',
-    competitors: [],
-    keywords: [organizationName || organizationId]
+  try {
+    // Fetch actual organization profile from database
+    const { data: orgData } = await supabase
+      .from('organizations')
+      .select('industry, company_profile')
+      .eq('id', organizationId)
+      .single()
+
+    const companyProfile = orgData?.company_profile || {}
+
+    return {
+      organizationName: organizationName || organizationId,
+      industry: orgData?.industry || 'Not specified',
+      product_lines: companyProfile.product_lines || [],
+      key_markets: companyProfile.key_markets || [],
+      business_model: companyProfile.business_model,
+      competitors: [],
+      keywords: [organizationName || organizationId]
+    }
+  } catch (error) {
+    console.error('Error fetching org profile:', error)
+    // Fallback if database fetch fails
+    return {
+      organizationName: organizationName || organizationId,
+      industry: 'Not specified',
+      competitors: [],
+      keywords: [organizationName || organizationId]
+    }
   }
 }
 
