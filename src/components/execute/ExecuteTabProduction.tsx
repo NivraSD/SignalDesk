@@ -75,6 +75,7 @@ const CONTENT_TYPES = [
 
   // Media & PR
   { id: 'media-pitch', label: 'Media Pitch', icon: Megaphone, category: 'Media' },
+  { id: 'media-list', label: 'Media List', icon: Users, category: 'Media' },
   { id: 'media-kit', label: 'Media Kit', icon: Briefcase, category: 'Media' },
   { id: 'podcast-pitch', label: 'Podcast Pitch', icon: Mic, category: 'Media' },
   { id: 'tv-interview-prep', label: 'TV Interview Prep', icon: Tv, category: 'Media' },
