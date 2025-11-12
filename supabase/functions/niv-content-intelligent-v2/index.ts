@@ -545,8 +545,8 @@ const CONTENT_GENERATION_TOOLS = [
         },
         count: {
           type: "number",
-          description: "Number of journalists to include (default 50, can request more)",
-          default: 50
+          description: "Number of journalists to include (default 15, user can request more or less)",
+          default: 15
         }
       },
       required: ["focus_area"]
@@ -2390,7 +2390,7 @@ ${campaignContext.timeline || 'Not specified'}
       if (toolUse && toolUse.name === 'generate_media_list') {
         console.log('📋 Generating media list with journalist registry')
 
-        const requestedCount = toolUse.input.count || 50;  // Default to 50 to leverage full registry (500+)
+        const requestedCount = toolUse.input.count || 15;  // Default to 15 (manageable size, can request more)
         const focusArea = toolUse.input.focus_area || '';
         const tier = toolUse.input.tier?.toLowerCase().replace(' ', '') || 'tier1';
 
