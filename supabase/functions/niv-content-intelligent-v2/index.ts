@@ -530,7 +530,7 @@ const CONTENT_GENERATION_TOOLS = [
   },
   {
     name: "generate_media_list",
-    description: "Generate a media/journalist contact list with names, outlets, and contact information. ALWAYS use this tool when user asks for: 'media list', 'journalist list', 'reporter list', 'media contacts', 'journalists', 'reporters', 'PR contacts'. This queries a verified database of 149+ real journalists across 18 industries and fills gaps automatically if needed.",
+    description: "Generate a media/journalist contact list with names, outlets, and contact information. ALWAYS use this tool when user asks for: 'media list', 'journalist list', 'reporter list', 'media contacts', 'journalists', 'reporters', 'PR contacts'. This queries a verified database of 500+ real journalists across 18 industries with full contact information (email, Twitter, LinkedIn).",
     input_schema: {
       type: "object",
       properties: {
@@ -545,8 +545,8 @@ const CONTENT_GENERATION_TOOLS = [
         },
         count: {
           type: "number",
-          description: "Number of journalists to include",
-          default: 10
+          description: "Number of journalists to include (default 50, can request more)",
+          default: 50
         }
       },
       required: ["focus_area"]
@@ -2390,7 +2390,7 @@ ${campaignContext.timeline || 'Not specified'}
       if (toolUse && toolUse.name === 'generate_media_list') {
         console.log('📋 Generating media list with journalist registry')
 
-        const requestedCount = toolUse.input.count || 10;
+        const requestedCount = toolUse.input.count || 50;  // Default to 50 to leverage full registry (500+)
         const focusArea = toolUse.input.focus_area || '';
         const tier = toolUse.input.tier?.toLowerCase().replace(' ', '') || 'tier1';
 
@@ -2542,7 +2542,7 @@ ${campaignContext.timeline || 'Not specified'}
         console.log(`✅ Registry returned ${allJournalists.length} total journalists`);
 
         // Return all journalists from registry (no gap filling for now)
-        // The registry has 149+ verified journalists which is sufficient for most use cases
+        // The registry has 500+ verified journalists with full contact information
         const content = {
           source: 'registry',
           journalists: allJournalists,
