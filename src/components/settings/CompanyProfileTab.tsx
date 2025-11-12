@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Building2, MapPin, Users, DollarSign, Calendar, Plus, Trash2, Save, Loader, CheckCircle, AlertCircle, X as CloseIcon } from 'lucide-react'
+import { Building2, MapPin, Users, DollarSign, Calendar, Plus, Trash2, Save, Loader, CheckCircle, AlertCircle, X as CloseIcon, RefreshCw } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface LeadershipMember {
@@ -49,6 +49,7 @@ export default function CompanyProfileTab({
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [generating, setGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
 
@@ -197,6 +198,49 @@ export default function CompanyProfileTab({
     }))
   }
 
+  const generateFromSchema = async () => {
+    try {
+      setGenerating(true)
+      setError(null)
+      setSuccess(false)
+
+      const response = await fetch(`/api/organizations/generate-profile?id=${organizationId}`, {
+        method: 'POST'
+      })
+
+      if (!response.ok) {
+        const text = await response.text()
+        throw new Error(`Failed to generate profile: ${text}`)
+      }
+
+      const data = await response.json()
+
+      if (!data.success || !data.profile) {
+        throw new Error(data.error || 'Failed to generate profile')
+      }
+
+      // Merge generated profile with existing data
+      setProfile(prev => ({
+        leadership: data.profile.leadership || prev.leadership,
+        headquarters: data.profile.headquarters || prev.headquarters,
+        company_size: data.profile.company_size || prev.company_size,
+        founded: data.profile.founded || prev.founded,
+        parent_company: data.profile.parent_company || prev.parent_company,
+        product_lines: data.profile.product_lines?.length ? data.profile.product_lines : prev.product_lines,
+        key_markets: data.profile.key_markets?.length ? data.profile.key_markets : prev.key_markets,
+        business_model: data.profile.business_model || prev.business_model
+      }))
+
+      setSuccess(true)
+      setTimeout(() => setSuccess(false), 3000)
+    } catch (err: any) {
+      console.error('Failed to generate profile:', err)
+      setError(err.message)
+    } finally {
+      setGenerating(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -214,14 +258,24 @@ export default function CompanyProfileTab({
             Essential company facts used in opportunities, content, and campaigns
           </p>
         </div>
-        <button
-          onClick={saveProfile}
-          disabled={saving}
-          className="px-4 py-2 bg-cyan-500 hover:bg-cyan-600 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg font-medium flex items-center gap-2"
-        >
-          {saving ? <Loader className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          Save Profile
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={generateFromSchema}
+            disabled={generating}
+            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg font-medium flex items-center gap-2"
+          >
+            {generating ? <Loader className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+            Generate from Schema
+          </button>
+          <button
+            onClick={saveProfile}
+            disabled={saving}
+            className="px-4 py-2 bg-cyan-500 hover:bg-cyan-600 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg font-medium flex items-center gap-2"
+          >
+            {saving ? <Loader className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            Save Profile
+          </button>
+        </div>
       </div>
 
       <AnimatePresence>
