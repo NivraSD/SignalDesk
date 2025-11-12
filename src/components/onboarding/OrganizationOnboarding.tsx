@@ -716,7 +716,7 @@ export default function OrganizationOnboarding({
         { stage: 'entityExtraction', delay: 8000, message: 'Extracting entities with AI...' },
         { stage: 'entityEnrichment', delay: 10000, message: 'Enriching and validating entities...' },
         { stage: 'schemaSynthesis', delay: 12000, message: 'Synthesizing schema.org graph...' },
-        { stage: 'schemaEnhancement', delay: 15000, message: 'Adding FAQs, awards, and optimizations...' }
+        { stage: 'schemaEnhancement', delay: 15000, message: 'Generating FAQs and optimizations...' }
       ]
 
       // Start progress animation
@@ -828,8 +828,8 @@ export default function OrganizationOnboarding({
       console.log('✅ Base schema generated')
       setSchemaProgress(prev => ({ ...prev, schemaSynthesis: 'completed' }))
 
-      // Step 5: Enhance schema with FAQs, awards, keywords
-      setSchemaProgress(prev => ({ ...prev, schemaEnhancement: 'processing', message: 'Adding FAQs, awards, and optimizations...' }))
+      // Step 5: Enhance schema with FAQs and optimizations
+      setSchemaProgress(prev => ({ ...prev, schemaEnhancement: 'processing', message: 'Generating FAQs and optimizations...' }))
       const enhancerResponse = await fetch(`${SUPABASE_URL}/functions/v1/geo-schema-enhancer`, {
         method: 'POST',
         headers: {
