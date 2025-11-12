@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Building2, Globe, Sparkles, Check, X, Plus, Trash2,
-  ChevronRight, ChevronLeft, Upload, Loader, AlertCircle
+  ChevronRight, ChevronLeft, ChevronDown, Upload, Loader, AlertCircle
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 
