@@ -1046,7 +1046,11 @@ export default function OrganizationOnboarding({
       setGeneratedSchemaData(data.enhanced_schema)
 
       // Save enhanced schema to Memory Vault
-      const { error: saveError } = await supabase
+      console.log('💾 Saving enhanced schema to Memory Vault...')
+      console.log('Organization ID:', createdOrganization.id)
+      console.log('Enhanced schema preview:', JSON.stringify(data.enhanced_schema).substring(0, 200))
+
+      const { data: updateResult, error: saveError } = await supabase
         .from('content_library')
         .update({
           content: data.enhanced_schema,
@@ -1055,13 +1059,29 @@ export default function OrganizationOnboarding({
         .eq('organization_id', createdOrganization.id)
         .eq('content_type', 'schema')
         .eq('folder', 'Schemas/Active/')
+        .select()
 
       if (saveError) {
         console.error('❌ Failed to save enhanced schema:', saveError)
-        throw new Error('Failed to save enhanced schema')
+        throw new Error(`Failed to save enhanced schema: ${saveError.message}`)
+      }
+
+      if (!updateResult || updateResult.length === 0) {
+        console.error('⚠️ No rows were updated. The schema might not exist in content_library.')
+        console.log('Attempting to find existing schema...')
+
+        const { data: existingSchema } = await supabase
+          .from('content_library')
+          .select('id, title, folder')
+          .eq('organization_id', createdOrganization.id)
+          .eq('content_type', 'schema')
+
+        console.log('Existing schemas:', existingSchema)
+        throw new Error('Schema not found in Memory Vault. Please regenerate the base schema first.')
       }
 
       console.log('✅ Enhanced schema saved to Memory Vault')
+      console.log('Update result:', updateResult)
 
       // Regenerate company profile if products/pricing were added
       if (data.enhancements_applied.products_with_pricing > 0) {
