@@ -4000,6 +4000,9 @@ function getDefaultUnderstanding(message: string) {
 // Helper: Get org profile
 async function getOrgProfile(organizationId: string, organizationName?: string) {
   try {
+    // Create supabase client for this function
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+
     // Fetch actual organization profile from database
     const { data: orgData } = await supabase
       .from('organizations')
