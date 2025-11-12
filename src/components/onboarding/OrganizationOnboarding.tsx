@@ -1050,34 +1050,41 @@ export default function OrganizationOnboarding({
       console.log('Organization ID:', createdOrganization.id)
       console.log('Enhanced schema preview:', JSON.stringify(data.enhanced_schema).substring(0, 200))
 
+      // First, find the most recent schema for this organization
+      const { data: existingSchemas, error: findError } = await supabase
+        .from('content_library')
+        .select('id, title, created_at')
+        .eq('organization_id', createdOrganization.id)
+        .eq('content_type', 'schema')
+        .order('created_at', { ascending: false })
+        .limit(1)
+
+      if (findError) {
+        console.error('❌ Failed to find existing schema:', findError)
+        throw new Error(`Failed to find existing schema: ${findError.message}`)
+      }
+
+      if (!existingSchemas || existingSchemas.length === 0) {
+        console.error('⚠️ No schema found in content_library for this organization')
+        throw new Error('Schema not found in Memory Vault. Please regenerate the base schema first.')
+      }
+
+      const schemaId = existingSchemas[0].id
+      console.log('Found schema with ID:', schemaId)
+
+      // Update the schema by ID
       const { data: updateResult, error: saveError } = await supabase
         .from('content_library')
         .update({
           content: data.enhanced_schema,
           updated_at: new Date().toISOString()
         })
-        .eq('organization_id', createdOrganization.id)
-        .eq('content_type', 'schema')
-        .eq('folder', 'Schemas/Active/')
+        .eq('id', schemaId)
         .select()
 
       if (saveError) {
         console.error('❌ Failed to save enhanced schema:', saveError)
         throw new Error(`Failed to save enhanced schema: ${saveError.message}`)
-      }
-
-      if (!updateResult || updateResult.length === 0) {
-        console.error('⚠️ No rows were updated. The schema might not exist in content_library.')
-        console.log('Attempting to find existing schema...')
-
-        const { data: existingSchema } = await supabase
-          .from('content_library')
-          .select('id, title, folder')
-          .eq('organization_id', createdOrganization.id)
-          .eq('content_type', 'schema')
-
-        console.log('Existing schemas:', existingSchema)
-        throw new Error('Schema not found in Memory Vault. Please regenerate the base schema first.')
       }
 
       console.log('✅ Enhanced schema saved to Memory Vault')
