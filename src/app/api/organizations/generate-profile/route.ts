@@ -23,12 +23,33 @@ export async function POST(request: NextRequest) {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // Fetch organization data
-    const { data: org } = await supabase
+    console.log('🔍 Fetching organization:', organizationId)
+
+    // Fetch organization data - select all fields to see what's available
+    const { data: org, error: orgError } = await supabase
       .from('organizations')
-      .select('name, url, industry')
+      .select('*')
       .eq('id', organizationId)
       .single()
+
+    console.log('📊 Organization query result:', {
+      hasData: !!org,
+      error: orgError,
+      orgFields: org ? Object.keys(org) : [],
+      name: org?.name,
+      url: org?.url,
+      website: org?.website,
+      settingsUrl: org?.settings?.url,
+      industry: org?.industry
+    })
+
+    if (orgError) {
+      console.error('❌ Organization query error:', orgError)
+      return NextResponse.json(
+        { error: `Organization query failed: ${orgError.message}` },
+        { status: 500 }
+      )
+    }
 
     if (!org) {
       return NextResponse.json(
@@ -37,8 +58,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Handle url being in different locations (url column, website column, or settings.url)
+    const organizationUrl = org.url || org.website || org.settings?.url
+
     // Fetch schema from Memory Vault
-    const { data: schemaData } = await supabase
+    console.log('🔍 Fetching schema for organization:', organizationId)
+
+    const { data: schemaData, error: schemaError } = await supabase
       .from('content_library')
       .select('content')
       .eq('organization_id', organizationId)
@@ -47,6 +73,20 @@ export async function POST(request: NextRequest) {
       .order('updated_at', { ascending: false })
       .limit(1)
       .single()
+
+    console.log('📊 Schema query result:', {
+      hasData: !!schemaData,
+      error: schemaError,
+      contentPreview: schemaData?.content ? JSON.stringify(schemaData.content).substring(0, 100) : null
+    })
+
+    if (schemaError && schemaError.code !== 'PGRST116') {
+      console.error('❌ Schema query error:', schemaError)
+      return NextResponse.json(
+        { error: `Schema query failed: ${schemaError.message}` },
+        { status: 500 }
+      )
+    }
 
     if (!schemaData || !schemaData.content) {
       return NextResponse.json(
@@ -60,7 +100,7 @@ export async function POST(request: NextRequest) {
     // Extract relevant data from schema
     const extractedData = {
       organization_name: org.name,
-      url: org.url,
+      url: organizationUrl,
       industry: org.industry,
       schema_data: {
         // Organization data
