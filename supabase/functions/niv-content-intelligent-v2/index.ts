@@ -2426,6 +2426,10 @@ ${campaignContext.timeline || 'Not specified'}
           'entertainment': 'media',
           'advertising': 'advertising',
           'marketing': 'advertising',
+          'pr': 'advertising',  // PR/Communications map to advertising industry
+          'public relations': 'advertising',
+          'communications': 'advertising',
+          'martech': 'advertising',
           'real estate': 'real_estate',
           'property': 'real_estate',
           'vc': 'venture_capital',
