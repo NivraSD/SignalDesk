@@ -2465,11 +2465,18 @@ ${campaignContext.timeline || 'Not specified'}
           if (industryMapping[keyword]) {
             industries.push(industryMapping[keyword]);
           } else {
-            // Try keyword match
-            for (const [key, value] of Object.entries(industryMapping)) {
-              if (keyword.includes(key)) {
-                industries.push(value);
-                break;
+            // Check for PR/communications FIRST before other matches
+            // This prevents "PR technology" from matching "technology" instead of "PR"
+            if (keyword.includes('pr ') || keyword.includes(' pr') || keyword.startsWith('pr') ||
+                keyword.includes('public relations') || keyword.includes('communications')) {
+              industries.push('advertising');
+            } else {
+              // Try keyword match for other industries
+              for (const [key, value] of Object.entries(industryMapping)) {
+                if (keyword.includes(key)) {
+                  industries.push(value);
+                  break;
+                }
               }
             }
           }
