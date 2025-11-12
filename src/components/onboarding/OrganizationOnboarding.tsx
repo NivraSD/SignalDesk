@@ -886,70 +886,9 @@ export default function OrganizationOnboarding({
         setSchemaProgress(prev => ({ ...prev, schemaEnhancement: 'completed' }))
       }
 
-      // Step 6: Save schema to Memory Vault
-      console.log('💾 Saving schema to Memory Vault...')
-      const saveResponse = await fetch('/api/content-library/save', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          content: {
-            type: 'schema',
-            title: `${orgNameToUse} - Complete Schema`,
-            content: finalSchema,
-            organization_id: orgId,
-            metadata: {
-              organizationId: orgId,
-              organizationName: orgNameToUse,
-              url: website,
-              industry: discovered?.industry || industry,
-              generatedAt: new Date().toISOString(),
-              source: 'onboarding_pipeline'
-            }
-          },
-          metadata: {
-            organizationId: orgId,
-            title: `${orgNameToUse} - Complete Schema`
-          },
-          folder: 'Schemas/Active/'
-        })
-      })
-
-      if (saveResponse.ok) {
-        const saveData = await saveResponse.json()
-        console.log('✅ Schema saved to Memory Vault:', saveData)
-        setGeneratedSchemaData(saveData.data)
-
-        // Step 7: Auto-generate company profile from schema
-        console.log('📋 Auto-generating company profile from schema...')
-        try {
-          const profileResponse = await fetch(`/api/organizations/generate-profile?id=${orgId}`, {
-            method: 'POST'
-          })
-
-          if (profileResponse.ok) {
-            const profileData = await profileResponse.json()
-            console.log('✅ Company profile auto-generated:', profileData.profile)
-
-            // Save the generated profile
-            await fetch(`/api/organizations/profile?id=${orgId}`, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ company_profile: profileData.profile })
-            })
-            console.log('✅ Company profile saved to organization')
-          } else {
-            console.warn('⚠️ Failed to auto-generate profile:', await profileResponse.text())
-          }
-        } catch (err) {
-          console.error('❌ Profile auto-generation error:', err)
-          // Don't fail onboarding if profile generation fails
-        }
-      } else {
-        const errorText = await saveResponse.text()
-        console.error('Failed to save schema:', errorText)
-      }
+      // Step 6: Keep schema in local state (don't save yet - let user add enhancements)
+      console.log('✅ Schema generated successfully - ready for optional enhancements')
+      setGeneratedSchemaData(finalSchema)
 
       // Mark completion
       const entitiesExtracted = enrichData.summary?.total_entities || 0
@@ -980,6 +919,80 @@ export default function OrganizationOnboarding({
         message: 'Schema generation failed. You can continue anyway.'
       })
     }
+  }
+
+  const saveSchemaToMemoryVault = async (schemaToSave: any) => {
+    if (!createdOrganization?.id) {
+      throw new Error('No organization ID available')
+    }
+
+    const orgId = createdOrganization.id
+    const orgNameToUse = createdOrganization.name || orgName
+
+    console.log('💾 Saving schema to Memory Vault...')
+    const saveResponse = await fetch('/api/content-library/save', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        content: {
+          type: 'schema',
+          title: `${orgNameToUse} - Complete Schema`,
+          content: schemaToSave,
+          organization_id: orgId,
+          metadata: {
+            organizationId: orgId,
+            organizationName: orgNameToUse,
+            url: website,
+            industry: industry,
+            generatedAt: new Date().toISOString(),
+            source: 'onboarding_pipeline'
+          }
+        },
+        metadata: {
+          organizationId: orgId,
+          title: `${orgNameToUse} - Complete Schema`
+        },
+        folder: 'Schemas/Active/'
+      })
+    })
+
+    if (!saveResponse.ok) {
+      const errorText = await saveResponse.text()
+      throw new Error(`Failed to save schema: ${errorText}`)
+    }
+
+    const saveData = await saveResponse.json()
+    console.log('✅ Schema saved to Memory Vault:', saveData)
+
+    // Auto-generate company profile from schema
+    console.log('📋 Auto-generating company profile from schema...')
+    try {
+      const profileResponse = await fetch(`/api/organizations/generate-profile?id=${orgId}`, {
+        method: 'POST'
+      })
+
+      if (profileResponse.ok) {
+        const profileData = await profileResponse.json()
+        console.log('✅ Company profile auto-generated:', profileData.profile)
+
+        // Save the generated profile
+        await fetch(`/api/organizations/profile?id=${orgId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ company_profile: profileData.profile })
+        })
+        console.log('✅ Company profile saved to organization')
+      } else {
+        console.warn('⚠️ Failed to auto-generate profile:', await profileResponse.text())
+      }
+    } catch (err) {
+      console.error('❌ Profile auto-generation error:', err)
+      // Don't fail if profile generation fails
+    }
+
+    return saveData
   }
 
   const handleSchemaEnhancement = async () => {
@@ -1045,72 +1058,8 @@ export default function OrganizationOnboarding({
       // Update the displayed schema
       setGeneratedSchemaData(data.enhanced_schema)
 
-      // Save enhanced schema to Memory Vault
-      console.log('💾 Saving enhanced schema to Memory Vault...')
-      console.log('Organization ID:', createdOrganization.id)
-      console.log('Enhanced schema preview:', JSON.stringify(data.enhanced_schema).substring(0, 200))
-
-      // First, find the most recent schema for this organization
-      const { data: existingSchemas, error: findError } = await supabase
-        .from('content_library')
-        .select('id, title, created_at')
-        .eq('organization_id', createdOrganization.id)
-        .eq('content_type', 'schema')
-        .order('created_at', { ascending: false })
-        .limit(1)
-
-      if (findError) {
-        console.error('❌ Failed to find existing schema:', findError)
-        throw new Error(`Failed to find existing schema: ${findError.message}`)
-      }
-
-      if (!existingSchemas || existingSchemas.length === 0) {
-        console.error('⚠️ No schema found in content_library for this organization')
-        throw new Error('Schema not found in Memory Vault. Please regenerate the base schema first.')
-      }
-
-      const schemaId = existingSchemas[0].id
-      console.log('Found schema with ID:', schemaId)
-
-      // Update the schema by ID
-      const { data: updateResult, error: saveError } = await supabase
-        .from('content_library')
-        .update({
-          content: data.enhanced_schema,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', schemaId)
-        .select()
-
-      if (saveError) {
-        console.error('❌ Failed to save enhanced schema:', saveError)
-        throw new Error(`Failed to save enhanced schema: ${saveError.message}`)
-      }
-
-      console.log('✅ Enhanced schema saved to Memory Vault')
-      console.log('Update result:', updateResult)
-
-      // Regenerate company profile if products/pricing were added
-      if (data.enhancements_applied.products_with_pricing > 0) {
-        console.log('📋 Regenerating company profile with new product data...')
-        try {
-          const profileResponse = await fetch(`/api/organizations/generate-profile?id=${createdOrganization.id}`, {
-            method: 'POST'
-          })
-
-          if (profileResponse.ok) {
-            const profileData = await profileResponse.json()
-            await fetch(`/api/organizations/profile?id=${createdOrganization.id}`, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ company_profile: profileData.profile })
-            })
-            console.log('✅ Company profile updated with product data')
-          }
-        } catch (err) {
-          console.warn('⚠️ Failed to update company profile:', err)
-        }
-      }
+      // Save the enhanced schema to Memory Vault
+      await saveSchemaToMemoryVault(data.enhanced_schema)
 
       // Show success message
       const stats = data.enhancements_applied
@@ -2568,8 +2517,20 @@ export default function OrganizationOnboarding({
                     {/* Show completion button when schema generation completes successfully */}
                     {schemaProgress.schemaSynthesis === 'completed' && (
                       <button
-                        onClick={() => {
+                        onClick={async () => {
                           if (createdOrganization) {
+                            // Save schema if it exists and hasn't been saved yet
+                            if (generatedSchemaData) {
+                              try {
+                                console.log('💾 Saving schema before completing onboarding...')
+                                await saveSchemaToMemoryVault(generatedSchemaData)
+                              } catch (error) {
+                                console.error('Failed to save schema:', error)
+                                alert('Failed to save schema. Please try again or contact support.')
+                                return
+                              }
+                            }
+
                             onComplete({
                               id: createdOrganization.id,
                               name: createdOrganization.name,
