@@ -1605,6 +1605,33 @@ export default function MemoryVaultModule() {
                   <div className="font-medium text-white">🎤 Google Slides</div>
                   <div className="text-xs text-gray-400">Open in Google Slides (content copied to clipboard)</div>
                 </button>
+                <button
+                  onClick={() => {
+                    // Export as formatted JSON (useful for schemas)
+                    const content = typeof itemToExport.content === 'string'
+                      ? itemToExport.content
+                      : JSON.stringify(itemToExport.content, null, 2)
+
+                    const blob = new Blob([content], { type: 'application/json' })
+                    const url = URL.createObjectURL(blob)
+                    const a = document.createElement('a')
+                    a.href = url
+                    a.download = `${itemToExport.title.replace(/[^a-z0-9]/gi, '_')}.json`
+                    document.body.appendChild(a)
+                    a.click()
+                    document.body.removeChild(a)
+                    URL.revokeObjectURL(url)
+
+                    setShowExportDialog(false)
+                    setItemToExport(null)
+                    setExportMode('basic')
+                  }}
+                  disabled={mergingTemplate}
+                  className="w-full px-4 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <div className="font-medium text-white">📋 JSON (.json)</div>
+                  <div className="text-xs text-gray-400">Download formatted JSON (recommended for schemas)</div>
+                </button>
               </div>
             )}
 
