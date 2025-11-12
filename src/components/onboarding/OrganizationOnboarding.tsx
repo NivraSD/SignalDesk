@@ -100,7 +100,9 @@ export default function OrganizationOnboarding({
 
   // Step 8: Optional Schema Enhancements
   const [showEnhancements, setShowEnhancements] = useState(false)
-  const [awardsMedia, setAwardsMedia] = useState('')
+  const [awardsMedia, setAwardsMedia] = useState<Array<{ url: string; description: string }>>([])
+  const [currentAwardUrl, setCurrentAwardUrl] = useState('')
+  const [currentAwardDescription, setCurrentAwardDescription] = useState('')
   const [socialProfiles, setSocialProfiles] = useState({
     linkedin: '',
     twitter: '',
@@ -988,7 +990,7 @@ export default function OrganizationOnboarding({
 
     // Check if any enhancements were provided
     const hasEnhancements =
-      awardsMedia.trim() ||
+      awardsMedia.length > 0 ||
       socialProfiles.linkedin ||
       socialProfiles.twitter ||
       socialProfiles.facebook ||
@@ -1019,7 +1021,7 @@ export default function OrganizationOnboarding({
           organization_id: createdOrganization.id,
           current_schema: generatedSchemaData,
           enhancements: {
-            awards_media: awardsMedia.trim() || undefined,
+            awards_media: awardsMedia.length > 0 ? awardsMedia : undefined,
             social_profiles: {
               linkedin: socialProfiles.linkedin || undefined,
               twitter: socialProfiles.twitter || undefined,
@@ -1044,8 +1046,6 @@ export default function OrganizationOnboarding({
       setGeneratedSchemaData(data.enhanced_schema)
 
       // Save enhanced schema to Memory Vault
-      const supabase = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!)
-
       const { error: saveError } = await supabase
         .from('content_library')
         .update({
@@ -2357,14 +2357,63 @@ export default function OrganizationOnboarding({
                               <label className="block text-sm font-medium text-gray-300 mb-2">
                                 📰 Awards/Media Highlights
                               </label>
-                              <textarea
-                                value={awardsMedia}
-                                onChange={(e) => setAwardsMedia(e.target.value)}
-                                placeholder="e.g., 'Best SaaS Product 2024 - TechCrunch', 'Featured in Forbes Top 50 Startups'"
-                                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 text-sm"
-                                rows={3}
-                              />
-                              <p className="text-xs text-gray-500 mt-1">One per line</p>
+
+                              {/* Display added awards */}
+                              {awardsMedia.length > 0 && (
+                                <div className="space-y-2 mb-3">
+                                  {awardsMedia.map((award, index) => (
+                                    <div key={index} className="flex items-start gap-2 p-2 bg-gray-800/50 rounded border border-gray-700">
+                                      <div className="flex-1 min-w-0">
+                                        <div className="text-sm text-white truncate">{award.description}</div>
+                                        <a href={award.url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-400 hover:text-blue-300 truncate block">
+                                          {award.url}
+                                        </a>
+                                      </div>
+                                      <button
+                                        onClick={() => setAwardsMedia(awardsMedia.filter((_, i) => i !== index))}
+                                        className="text-red-400 hover:text-red-300 flex-shrink-0"
+                                      >
+                                        <X className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
+                              {/* Add new award form */}
+                              <div className="space-y-2">
+                                <input
+                                  type="url"
+                                  value={currentAwardUrl}
+                                  onChange={(e) => setCurrentAwardUrl(e.target.value)}
+                                  placeholder="Award/Media URL (e.g., link to article or award page)"
+                                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 text-sm"
+                                />
+                                <input
+                                  type="text"
+                                  value={currentAwardDescription}
+                                  onChange={(e) => setCurrentAwardDescription(e.target.value)}
+                                  placeholder="Headline/Description (e.g., 'Best SaaS Product 2024 - TechCrunch')"
+                                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 text-sm"
+                                />
+                                <button
+                                  onClick={() => {
+                                    if (currentAwardUrl.trim() && currentAwardDescription.trim()) {
+                                      setAwardsMedia([...awardsMedia, {
+                                        url: currentAwardUrl.trim(),
+                                        description: currentAwardDescription.trim()
+                                      }])
+                                      setCurrentAwardUrl('')
+                                      setCurrentAwardDescription('')
+                                    }
+                                  }}
+                                  disabled={!currentAwardUrl.trim() || !currentAwardDescription.trim()}
+                                  className="w-full px-3 py-2 bg-blue-600/20 hover:bg-blue-600/30 disabled:bg-gray-800 disabled:text-gray-600 text-blue-400 rounded-lg transition-colors text-sm font-medium flex items-center justify-center gap-2"
+                                >
+                                  <Plus className="w-4 h-4" />
+                                  Add Award/Media Mention
+                                </button>
+                              </div>
                             </div>
 
                             {/* Social Media */}

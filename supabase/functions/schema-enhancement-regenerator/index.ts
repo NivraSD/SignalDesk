@@ -1,6 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import Anthropic from 'https://esm.sh/@anthropic-ai/sdk@0.27.3'
-import { corsHeaders } from '../_shared/cors.ts'
+import { corsHeaders, jsonResponse, errorResponse } from '../_shared/cors.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 
 /**
@@ -10,11 +10,16 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
  * and regenerates the schema with this additional rich data.
  */
 
+interface AwardMedia {
+  url: string
+  description: string
+}
+
 interface EnhancementRequest {
   organization_id: string
   current_schema: any
   enhancements: {
-    awards_media?: string // Newline-separated awards/media mentions
+    awards_media?: AwardMedia[] // Array of awards/media mentions with URL and description
     social_profiles?: {
       linkedin?: string
       twitter?: string
@@ -28,7 +33,10 @@ interface EnhancementRequest {
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response(null, {
+      status: 204,
+      headers: corsHeaders
+    })
   }
 
   try {
@@ -90,9 +98,9 @@ ${JSON.stringify(current_schema, null, 2)}
 </current_schema>
 
 <user_enhancements>
-${enhancements.awards_media ? `
+${enhancements.awards_media && enhancements.awards_media.length > 0 ? `
 AWARDS & MEDIA HIGHLIGHTS:
-${enhancements.awards_media}
+${enhancements.awards_media.map((award: AwardMedia) => `- ${award.description} (Source: ${award.url})`).join('\n')}
 ` : ''}
 
 ${enhancements.social_profiles ? `
@@ -176,30 +184,18 @@ Return the enhanced schema as valid JSON with @context and @graph structure.`
       ).length || 0
     }
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        enhanced_schema: enhancedSchema,
-        enhancements_applied: stats
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200
-      }
-    )
+    return jsonResponse({
+      success: true,
+      enhanced_schema: enhancedSchema,
+      enhancements_applied: stats
+    })
 
   } catch (error: any) {
     console.error('❌ Enhancement error:', error)
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error.message || 'Enhancement failed',
-        details: error.toString()
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500
-      }
+    return errorResponse(
+      error.message || 'Enhancement failed',
+      500,
+      error.toString()
     )
   }
 })
