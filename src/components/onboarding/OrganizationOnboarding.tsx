@@ -897,7 +897,7 @@ export default function OrganizationOnboarding({
             organizationId: orgId,
             title: `${orgNameToUse} - Complete Schema`
           },
-          folder: 'Schemas'
+          folder: 'Schemas/Active/'
         })
       })
 
@@ -905,6 +905,32 @@ export default function OrganizationOnboarding({
         const saveData = await saveResponse.json()
         console.log('✅ Schema saved to Memory Vault:', saveData)
         setGeneratedSchemaData(saveData.data)
+
+        // Step 7: Auto-generate company profile from schema
+        console.log('📋 Auto-generating company profile from schema...')
+        try {
+          const profileResponse = await fetch(`/api/organizations/generate-profile?id=${orgId}`, {
+            method: 'POST'
+          })
+
+          if (profileResponse.ok) {
+            const profileData = await profileResponse.json()
+            console.log('✅ Company profile auto-generated:', profileData.profile)
+
+            // Save the generated profile
+            await fetch(`/api/organizations/profile?id=${orgId}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ company_profile: profileData.profile })
+            })
+            console.log('✅ Company profile saved to organization')
+          } else {
+            console.warn('⚠️ Failed to auto-generate profile:', await profileResponse.text())
+          }
+        } catch (err) {
+          console.error('❌ Profile auto-generation error:', err)
+          // Don't fail onboarding if profile generation fails
+        }
       } else {
         const errorText = await saveResponse.text()
         console.error('Failed to save schema:', errorText)
