@@ -110,6 +110,7 @@ export default function OrganizationOnboarding({
   const [testimonials, setTestimonials] = useState('')
   const [productsPage, setProductsPage] = useState('')
   const [generatedSchemaData, setGeneratedSchemaData] = useState<any>(null)
+  const [enhancementLoading, setEnhancementLoading] = useState(false)
 
   const totalSteps = 7  // Added GEO discovery step
   const MAX_TOTAL_TARGETS = 20  // Hard limit: 15 from discovery + up to 5 custom
@@ -976,6 +977,129 @@ export default function OrganizationOnboarding({
         schemaSynthesis: 'failed',
         message: 'Schema generation failed. You can continue anyway.'
       })
+    }
+  }
+
+  const handleSchemaEnhancement = async () => {
+    if (!generatedSchemaData || !createdOrganization?.id) {
+      console.error('❌ No schema data available for enhancement')
+      return
+    }
+
+    // Check if any enhancements were provided
+    const hasEnhancements =
+      awardsMedia.trim() ||
+      socialProfiles.linkedin ||
+      socialProfiles.twitter ||
+      socialProfiles.facebook ||
+      socialProfiles.instagram ||
+      testimonials.trim() ||
+      productsPage.trim()
+
+    if (!hasEnhancements) {
+      alert('Please provide at least one enhancement before regenerating.')
+      return
+    }
+
+    setEnhancementLoading(true)
+
+    try {
+      console.log('🎯 Enhancing schema with user-provided data...')
+
+      const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
+      const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/schema-enhancement-regenerator`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+        },
+        body: JSON.stringify({
+          organization_id: createdOrganization.id,
+          current_schema: generatedSchemaData,
+          enhancements: {
+            awards_media: awardsMedia.trim() || undefined,
+            social_profiles: {
+              linkedin: socialProfiles.linkedin || undefined,
+              twitter: socialProfiles.twitter || undefined,
+              facebook: socialProfiles.facebook || undefined,
+              instagram: socialProfiles.instagram || undefined
+            },
+            testimonials: testimonials.trim() || undefined,
+            products_page: productsPage.trim() || undefined
+          }
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Enhancement failed')
+      }
+
+      console.log('✅ Schema enhanced successfully:', data.enhancements_applied)
+
+      // Update the displayed schema
+      setGeneratedSchemaData(data.enhanced_schema)
+
+      // Save enhanced schema to Memory Vault
+      const supabase = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!)
+
+      const { error: saveError } = await supabase
+        .from('content_library')
+        .update({
+          content: data.enhanced_schema,
+          updated_at: new Date().toISOString()
+        })
+        .eq('organization_id', createdOrganization.id)
+        .eq('content_type', 'schema')
+        .eq('folder', 'Schemas/Active/')
+
+      if (saveError) {
+        console.error('❌ Failed to save enhanced schema:', saveError)
+        throw new Error('Failed to save enhanced schema')
+      }
+
+      console.log('✅ Enhanced schema saved to Memory Vault')
+
+      // Regenerate company profile if products/pricing were added
+      if (data.enhancements_applied.products_with_pricing > 0) {
+        console.log('📋 Regenerating company profile with new product data...')
+        try {
+          const profileResponse = await fetch(`/api/organizations/generate-profile?id=${createdOrganization.id}`, {
+            method: 'POST'
+          })
+
+          if (profileResponse.ok) {
+            const profileData = await profileResponse.json()
+            await fetch(`/api/organizations/profile?id=${createdOrganization.id}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ company_profile: profileData.profile })
+            })
+            console.log('✅ Company profile updated with product data')
+          }
+        } catch (err) {
+          console.warn('⚠️ Failed to update company profile:', err)
+        }
+      }
+
+      // Show success message
+      const stats = data.enhancements_applied
+      const messages = []
+      if (stats.awards_added > 0) messages.push(`${stats.awards_added} awards`)
+      if (stats.social_profiles_added > 0) messages.push(`${stats.social_profiles_added} social profiles`)
+      if (stats.reviews_added > 0) messages.push(`${stats.reviews_added} testimonials`)
+      if (stats.products_with_pricing > 0) messages.push(`${stats.products_with_pricing} products with pricing`)
+
+      alert(`✅ Schema enhanced successfully!\n\nAdded:\n- ${messages.join('\n- ')}`)
+
+    } catch (error: any) {
+      console.error('❌ Enhancement error:', error)
+      alert(`Failed to enhance schema: ${error.message || 'Unknown error'}`)
+    } finally {
+      setEnhancementLoading(false)
     }
   }
 
@@ -2310,19 +2434,18 @@ export default function OrganizationOnboarding({
                             </div>
 
                             <button
-                              onClick={() => {
-                                // TODO: Implement enhancement regeneration
-                                console.log('Enhancing schema with:', {
-                                  awardsMedia,
-                                  socialProfiles,
-                                  testimonials,
-                                  productsPage
-                                })
-                                alert('Schema enhancement coming soon! For now, click Complete Onboarding.')
-                              }}
-                              className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium"
+                              onClick={handleSchemaEnhancement}
+                              disabled={enhancementLoading}
+                              className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors text-sm font-medium flex items-center justify-center gap-2"
                             >
-                              Regenerate with Enhancements
+                              {enhancementLoading ? (
+                                <>
+                                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                  Enhancing Schema...
+                                </>
+                              ) : (
+                                'Regenerate with Enhancements'
+                              )}
                             </button>
                           </div>
                         )}
