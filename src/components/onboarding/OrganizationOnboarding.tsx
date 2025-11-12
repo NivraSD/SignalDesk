@@ -97,6 +97,18 @@ export default function OrganizationOnboarding({
   const [schemaGenerationStarted, setSchemaGenerationStarted] = useState(false)
   const [createdOrganization, setCreatedOrganization] = useState<any>(null)
   const [existingSchemaData, setExistingSchemaData] = useState<any>(null)
+
+  // Step 8: Optional Schema Enhancements
+  const [showEnhancements, setShowEnhancements] = useState(false)
+  const [awardsMedia, setAwardsMedia] = useState('')
+  const [socialProfiles, setSocialProfiles] = useState({
+    linkedin: '',
+    twitter: '',
+    facebook: '',
+    instagram: ''
+  })
+  const [testimonials, setTestimonials] = useState('')
+  const [productsPage, setProductsPage] = useState('')
   const [generatedSchemaData, setGeneratedSchemaData] = useState<any>(null)
 
   const totalSteps = 7  // Added GEO discovery step
@@ -2195,6 +2207,125 @@ export default function OrganizationOnboarding({
                         <p className="text-xs text-gray-500 mt-2">
                           Full schema saved to Content Library → Schemas/Active/
                         </p>
+                      </div>
+
+                      {/* Optional Enhancements Section */}
+                      <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                        <div className="flex items-center justify-between mb-3">
+                          <div>
+                            <p className="text-sm font-medium text-blue-300">🎯 Enhance Your Schema (Optional)</p>
+                            <p className="text-xs text-blue-400/70 mt-1">
+                              Add more details to make your schema even more powerful
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => setShowEnhancements(!showEnhancements)}
+                            className="text-blue-400 hover:text-blue-300 transition-colors"
+                          >
+                            {showEnhancements ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+                          </button>
+                        </div>
+
+                        {showEnhancements && (
+                          <div className="space-y-4 mt-4">
+                            {/* Awards/Media */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-2">
+                                📰 Awards/Media Highlights
+                              </label>
+                              <textarea
+                                value={awardsMedia}
+                                onChange={(e) => setAwardsMedia(e.target.value)}
+                                placeholder="e.g., 'Best SaaS Product 2024 - TechCrunch', 'Featured in Forbes Top 50 Startups'"
+                                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 text-sm"
+                                rows={3}
+                              />
+                              <p className="text-xs text-gray-500 mt-1">One per line</p>
+                            </div>
+
+                            {/* Social Media */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-2">
+                                🔗 Social Media Profiles
+                              </label>
+                              <div className="grid grid-cols-2 gap-2">
+                                <input
+                                  type="url"
+                                  value={socialProfiles.linkedin}
+                                  onChange={(e) => setSocialProfiles({...socialProfiles, linkedin: e.target.value})}
+                                  placeholder="LinkedIn URL"
+                                  className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 text-sm"
+                                />
+                                <input
+                                  type="url"
+                                  value={socialProfiles.twitter}
+                                  onChange={(e) => setSocialProfiles({...socialProfiles, twitter: e.target.value})}
+                                  placeholder="Twitter/X URL"
+                                  className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 text-sm"
+                                />
+                                <input
+                                  type="url"
+                                  value={socialProfiles.facebook}
+                                  onChange={(e) => setSocialProfiles({...socialProfiles, facebook: e.target.value})}
+                                  placeholder="Facebook URL"
+                                  className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 text-sm"
+                                />
+                                <input
+                                  type="url"
+                                  value={socialProfiles.instagram}
+                                  onChange={(e) => setSocialProfiles({...socialProfiles, instagram: e.target.value})}
+                                  placeholder="Instagram URL"
+                                  className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 text-sm"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Testimonials */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-2">
+                                💬 Customer Testimonials
+                              </label>
+                              <textarea
+                                value={testimonials}
+                                onChange={(e) => setTestimonials(e.target.value)}
+                                placeholder="Paste customer testimonials or review URLs (one per line)"
+                                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 text-sm"
+                                rows={3}
+                              />
+                            </div>
+
+                            {/* Products/Pricing Page */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-2">
+                                🛍️ Products/Pricing Page URL
+                              </label>
+                              <input
+                                type="url"
+                                value={productsPage}
+                                onChange={(e) => setProductsPage(e.target.value)}
+                                placeholder="https://example.com/products or /pricing"
+                                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 text-sm"
+                              />
+                              <p className="text-xs text-gray-500 mt-1">We'll extract product details and pricing if available</p>
+                            </div>
+
+                            <button
+                              onClick={() => {
+                                // TODO: Implement enhancement regeneration
+                                console.log('Enhancing schema with:', {
+                                  awardsMedia,
+                                  socialProfiles,
+                                  testimonials,
+                                  productsPage
+                                })
+                                alert('Schema enhancement coming soon! For now, click Complete Onboarding.')
+                              }}
+                              className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium"
+                            >
+                              Regenerate with Enhancements
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
