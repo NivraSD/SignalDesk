@@ -74,16 +74,25 @@ serve(async (req) => {
       console.log(`First 500 chars of content:`, combinedContent.substring(0, 500))
     }
 
-    // Extract entities using Claude with structured output
-    const message = await anthropic.messages.create({
-      model: 'claude-3-5-haiku-20241022', // Fast and cheap
-      max_tokens: 4096,
-      messages: [{
-        role: 'user',
-        content: `You are analyzing website content for ${organization_name}. Extract structured information about the organization.
+    // Check if content exceeds safe limit (~400K chars ≈ 100K tokens, well below 200K limit)
+    const MAX_CHARS_PER_CHUNK = 400000
+    const needsChunking = combinedContent.length > MAX_CHARS_PER_CHUNK
+
+    if (needsChunking) {
+      console.log(`⚠️  Content too large (${combinedContent.length} chars), chunking into ${Math.ceil(combinedContent.length / MAX_CHARS_PER_CHUNK)} parts`)
+    }
+
+    // Helper function to extract entities from content
+    const extractEntitiesFromContent = async (content: string) => {
+      const message = await anthropic.messages.create({
+        model: 'claude-3-5-haiku-20241022', // Fast and cheap
+        max_tokens: 4096,
+        messages: [{
+          role: 'user',
+          content: `You are analyzing website content for ${organization_name}. Extract structured information about the organization.
 
 <website_content>
-${combinedContent}
+${content}
 </website_content>
 
 Extract and return a JSON object with the following structure:
@@ -145,64 +154,120 @@ Guidelines:
 - For team members, prioritize leadership and executives
 - Include as much detail as available for each entity
 - Return valid JSON only, no additional text`
-      }]
-    })
+        }]
+      })
 
-    const responseText = message.content[0].type === 'text' ? message.content[0].text : '{}'
+      const responseText = message.content[0].type === 'text' ? message.content[0].text : '{}'
 
-    // Extract JSON from response (Claude sometimes adds explanatory text before/after JSON)
-    let jsonText = responseText
-    const jsonMatch = responseText.match(/\{[\s\S]*\}/)
-    if (jsonMatch) {
-      jsonText = jsonMatch[0]
+      // Extract JSON from response
+      let jsonText = responseText
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/)
+      if (jsonMatch) {
+        jsonText = jsonMatch[0]
+      }
+
+      // Parse and return entities
+      try {
+        return JSON.parse(jsonText)
+      } catch (parseError) {
+        console.error('Failed to parse Claude response:', parseError)
+        throw new Error('Failed to parse entity extraction results')
+      }
     }
 
-    // Parse the JSON response
-    let entities
-    try {
-      entities = JSON.parse(jsonText)
-    } catch (parseError) {
-      console.error('Failed to parse Claude response:', parseError)
-      console.error('Response was:', responseText)
-      console.error('Extracted JSON:', jsonText)
-      throw new Error('Failed to parse entity extraction results')
+    // Process content (chunked if necessary)
+    let allEntities
+
+    if (needsChunking) {
+      // Split pages into chunks based on character count
+      const chunks: string[] = []
+      let currentChunk = ''
+
+      for (const page of scraped_pages) {
+        const pageContent = `# ${page.title || page.url}\n\n${page.markdown}\n\n---\n\n`
+
+        // If adding this page would exceed chunk size, start new chunk
+        if (currentChunk.length + pageContent.length > MAX_CHARS_PER_CHUNK && currentChunk.length > 0) {
+          chunks.push(currentChunk)
+          currentChunk = pageContent
+        } else {
+          currentChunk += pageContent
+        }
+      }
+
+      // Add final chunk
+      if (currentChunk.length > 0) {
+        chunks.push(currentChunk)
+      }
+
+      console.log(`📦 Processing ${chunks.length} chunks:`, chunks.map(c => `${c.length} chars`))
+
+      // Extract entities from each chunk
+      const chunkResults = await Promise.all(
+        chunks.map((chunk, idx) => {
+          console.log(`   Processing chunk ${idx + 1}/${chunks.length}...`)
+          return extractEntitiesFromContent(chunk)
+        })
+      )
+
+      // Merge results from all chunks
+      allEntities = {
+        products: [],
+        services: [],
+        team: [],
+        locations: [],
+        subsidiaries: []
+      }
+
+      for (const result of chunkResults) {
+        allEntities.products.push(...(result.products || []))
+        allEntities.services.push(...(result.services || []))
+        allEntities.team.push(...(result.team || []))
+        allEntities.locations.push(...(result.locations || []))
+        allEntities.subsidiaries.push(...(result.subsidiaries || []))
+      }
+
+      console.log(`✅ Merged results from ${chunks.length} chunks`)
+    } else {
+      // Process all content at once (small enough)
+      allEntities = await extractEntitiesFromContent(combinedContent)
     }
 
     // Count totals
     const totalEntities =
-      (entities.products?.length || 0) +
-      (entities.services?.length || 0) +
-      (entities.team?.length || 0) +
-      (entities.locations?.length || 0) +
-      (entities.subsidiaries?.length || 0)
+      (allEntities.products?.length || 0) +
+      (allEntities.services?.length || 0) +
+      (allEntities.team?.length || 0) +
+      (allEntities.locations?.length || 0) +
+      (allEntities.subsidiaries?.length || 0)
 
     console.log('✅ Entity Extraction Complete:', {
       total_entities: totalEntities,
-      products: entities.products?.length || 0,
-      services: entities.services?.length || 0,
-      team: entities.team?.length || 0,
-      locations: entities.locations?.length || 0,
-      subsidiaries: entities.subsidiaries?.length || 0
+      products: allEntities.products?.length || 0,
+      services: allEntities.services?.length || 0,
+      team: allEntities.team?.length || 0,
+      locations: allEntities.locations?.length || 0,
+      subsidiaries: allEntities.subsidiaries?.length || 0
     })
 
     return new Response(
       JSON.stringify({
         success: true,
         entities: {
-          products: entities.products || [],
-          services: entities.services || [],
-          team: entities.team || [],
-          locations: entities.locations || [],
-          subsidiaries: entities.subsidiaries || []
+          products: allEntities.products || [],
+          services: allEntities.services || [],
+          team: allEntities.team || [],
+          locations: allEntities.locations || [],
+          subsidiaries: allEntities.subsidiaries || []
         },
         summary: {
           total_entities: totalEntities,
           by_type: {
-            products: entities.products?.length || 0,
-            services: entities.services?.length || 0,
-            team: entities.team?.length || 0,
-            locations: entities.locations?.length || 0,
-            subsidiaries: entities.subsidiaries?.length || 0
+            products: allEntities.products?.length || 0,
+            services: allEntities.services?.length || 0,
+            team: allEntities.team?.length || 0,
+            locations: allEntities.locations?.length || 0,
+            subsidiaries: allEntities.subsidiaries?.length || 0
           }
         }
       }),
