@@ -226,15 +226,17 @@ serve(async (req) => {
 
     console.log('✅ Synthesis Generated:', {
       key_findings: synthesis.key_findings?.length || 0,
-      recommendations: synthesis.recommendations?.length || 0,
-      critical_actions: synthesis.critical_actions?.length || 0
+      schema_recommendations: synthesis.schema_recommendations?.length || 0,
+      strategic_actions: synthesis.strategic_actions?.length || 0,
+      has_competitive_analysis: !!synthesis.competitive_analysis,
+      has_source_strategy: !!synthesis.source_strategy
     })
 
     // Save schema recommendations to database
-    if (synthesis.recommendations && synthesis.recommendations.length > 0) {
-      console.log(`💾 Saving ${synthesis.recommendations.length} recommendations to database...`)
+    if (synthesis.schema_recommendations && synthesis.schema_recommendations.length > 0) {
+      console.log(`💾 Saving ${synthesis.schema_recommendations.length} schema recommendations to database...`)
 
-      for (const rec of synthesis.recommendations) {
+      for (const rec of synthesis.schema_recommendations) {
         try {
           const { error } = await supabase
             .from('schema_recommendations')
@@ -649,28 +651,53 @@ Generate your strategic analysis and recommendations now:`
  */
 function parseSynthesisResponse(response: string): any {
   try {
+    // Log the raw response to debug
+    console.log('📝 Raw Claude response length:', response.length)
+    console.log('📝 First 500 chars:', response.substring(0, 500))
+
     // Try to find JSON in response
     const jsonMatch = response.match(/\{[\s\S]*\}/)
     if (jsonMatch) {
-      return JSON.parse(jsonMatch[0])
+      const parsed = JSON.parse(jsonMatch[0])
+      console.log('✅ Parsed synthesis:', {
+        has_executive_summary: !!parsed.executive_summary,
+        key_findings_count: parsed.key_findings?.length || 0,
+        has_competitive_analysis: !!parsed.competitive_analysis,
+        has_source_strategy: !!parsed.source_strategy,
+        schema_recommendations_count: parsed.schema_recommendations?.length || 0,
+        strategic_actions_count: parsed.strategic_actions?.length || 0
+      })
+      return parsed
     }
 
-    // Fallback: return basic structure
+    console.warn('⚠️ No JSON found in response, using fallback structure')
+    // Fallback: return NEW structure
     return {
       executive_summary: response.substring(0, 500),
       key_findings: [],
-      critical_actions: [],
-      recommendations: [],
-      competitive_insights: '',
-      trend_analysis: ''
+      competitive_analysis: {
+        who_is_winning: 'Unable to parse response',
+        success_patterns: '',
+        gaps_to_exploit: ''
+      },
+      source_strategy: {
+        priority_publications: [],
+        coverage_approach: '',
+        content_types: ''
+      },
+      schema_recommendations: [],
+      strategic_actions: []
     }
   } catch (error) {
-    console.error('Error parsing synthesis response:', error)
+    console.error('❌ Error parsing synthesis response:', error)
+    console.error('Response that failed to parse:', response.substring(0, 1000))
     return {
       executive_summary: 'Error parsing synthesis',
       key_findings: [],
-      critical_actions: [],
-      recommendations: [],
+      competitive_analysis: {},
+      source_strategy: {},
+      schema_recommendations: [],
+      strategic_actions: [],
       parse_error: error.message
     }
   }

@@ -653,6 +653,7 @@ export default function OrganizationOnboarding({
         body: {
           organization_id: orgId,
           organization_name: orgNameToUse,
+          industry: industry || undefined,  // Pass industry for context
           geo_results: transformedResults
         }
       })

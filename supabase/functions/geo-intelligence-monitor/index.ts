@@ -148,13 +148,13 @@ serve(async (req) => {
       chatgpt: []
     }
 
-    // RUN ALL PLATFORM TESTS IN PARALLEL (4x faster: ~35-45s vs ~60-75s)
-    console.log('🚀 Testing all platforms in parallel (10 queries each)...')
+    // RUN META-ANALYSIS ACROSS ALL PLATFORMS (Single comprehensive query per platform)
+    console.log('🚀 Running meta-analysis across all platforms (1 comprehensive query each)...')
     const [claudeResults, geminiResults, perplexityResults, chatgptResults] = await Promise.all([
-      testClaudeVisibility(queries, organization_name),
-      testGeminiVisibility(queries, organization_name),
-      testPerplexityVisibility(queries, organization_name),
-      testChatGPTVisibility(queries, organization_name)
+      testClaudeMetaAnalysis(queries, organization_name, orgIndustry, org?.website),
+      testGeminiMetaAnalysis(queries, organization_name, orgIndustry, org?.website),
+      testPerplexityMetaAnalysis(queries, organization_name, orgIndustry, org?.website),
+      testChatGPTMetaAnalysis(queries, organization_name, orgIndustry, org?.website)
     ])
 
     // Aggregate results
@@ -454,7 +454,249 @@ function generateIndustryQueries(
 }
 
 /**
- * Test Claude visibility
+ * Build comprehensive meta-analysis prompt
+ */
+function buildMetaAnalysisPrompt(
+  organizationName: string,
+  industry: string,
+  website: string | undefined,
+  queries: any[]
+): string {
+  const queryList = queries.slice(0, 10).map((q, idx) =>
+    `${idx + 1}. "${q.query}" (${q.intent || 'informational'}, priority: ${q.priority || 'medium'})`
+  ).join('\n')
+
+  return `You are conducting a GEO (Generative Engine Optimization) visibility analysis for ${organizationName}, ${industry ? `a ${industry} company` : 'an organization'}.
+
+CONTEXT:
+- Organization: ${organizationName}
+- Industry: ${industry || 'Not specified'}
+${website ? `- Website: ${website}` : ''}
+
+YOUR TASK:
+Simulate what happens when potential clients search for services in this space. For each query scenario below, analyze ${organizationName}'s visibility and competitive positioning.
+
+QUERY SCENARIOS TO ANALYZE:
+${queryList}
+
+Please provide your analysis in valid JSON format (no markdown, just JSON):
+
+{
+  "overall_visibility": "high|medium|low|none",
+  "visibility_summary": "2-3 sentence assessment of ${organizationName}'s overall presence across these query types",
+
+  "query_results": [
+    {
+      "query": "the query text",
+      "organizations_mentioned": ["Org1", "Org2", "Org3"],
+      "target_mentioned": true/false,
+      "target_rank": 1-10 or null,
+      "why_these_appeared": "Brief explanation of what made these organizations appear",
+      "sources_cited": ["domain1.com", "domain2.com"],
+      "what_target_needs": "Specific gap ${organizationName} should address"
+    }
+  ],
+
+  "competitive_intelligence": {
+    "dominant_competitors": ["Top 3-5 organizations that appear most frequently"],
+    "success_factors": "What makes certain organizations appear consistently (schema, content, authority signals)",
+    "industry_patterns": "Common characteristics of high-visibility firms in this space"
+  },
+
+  "recommendations": [
+    {
+      "priority": "critical|high|medium",
+      "category": "schema|content|pr|technical",
+      "action": "Specific action ${organizationName} should take",
+      "reasoning": "Why this matters based on competitive analysis",
+      "expected_impact": "How this would improve visibility"
+    }
+  ],
+
+  "source_intelligence": {
+    "most_cited_sources": ["Publications/sites you reference most"],
+    "why_these_sources": "What makes these sources authoritative to you",
+    "coverage_strategy": "Where ${organizationName} should get featured to improve visibility"
+  }
+}
+
+CRITICAL: Be honest about ${organizationName}'s current visibility. If they don't appear, say so. Base recommendations on real competitive gaps you observe.`
+}
+
+/**
+ * META-ANALYSIS: Test Claude with comprehensive single-query analysis
+ */
+async function testClaudeMetaAnalysis(
+  queries: any[],
+  organizationName: string,
+  industry: string,
+  website: string | undefined
+): Promise<any[]> {
+  console.log('🔮 Running Claude meta-analysis...')
+
+  const anthropic = new Anthropic({
+    apiKey: Deno.env.get('ANTHROPIC_API_KEY')
+  })
+
+  const signals: any[] = []
+
+  try {
+    const prompt = buildMetaAnalysisPrompt(organizationName, industry, website, queries)
+
+    const message = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 4096,
+      temperature: 0.3,
+      messages: [{
+        role: 'user',
+        content: prompt
+      }]
+    })
+
+    const responseText = message.content[0].type === 'text'
+      ? message.content[0].text
+      : ''
+
+    console.log('📝 Claude meta-analysis response length:', responseText.length)
+
+    // Parse JSON response
+    let analysis: any
+    try {
+      // Try to extract JSON from response
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/)
+      if (jsonMatch) {
+        analysis = JSON.parse(jsonMatch[0])
+        console.log('✅ Parsed Claude meta-analysis:', {
+          overall_visibility: analysis.overall_visibility,
+          query_results_count: analysis.query_results?.length || 0,
+          recommendations_count: analysis.recommendations?.length || 0
+        })
+      } else {
+        throw new Error('No JSON found in response')
+      }
+    } catch (parseError) {
+      console.error('❌ Failed to parse Claude meta-analysis:', parseError)
+      console.log('Raw response:', responseText.substring(0, 500))
+      // Return empty results if parsing fails
+      return signals
+    }
+
+    // Convert meta-analysis to signals format
+    for (const queryResult of (analysis.query_results || [])) {
+      if (queryResult.target_mentioned) {
+        signals.push({
+          type: 'ai_visibility',
+          platform: 'claude',
+          priority: queryResult.target_rank <= 3 ? 'high' : 'medium',
+          data: {
+            query: queryResult.query,
+            mentioned: true,
+            position: queryResult.target_rank || 999,
+            context: queryResult.why_these_appeared,
+            competitors_mentioned: queryResult.organizations_mentioned || [],
+            meta_insights: {
+              sources_cited: queryResult.sources_cited,
+              what_target_needs: queryResult.what_target_needs
+            }
+          },
+          recommendation: {
+            action: queryResult.target_rank > 3 ? 'improve_ranking' : 'maintain_visibility',
+            reasoning: `Ranked #${queryResult.target_rank}: ${queryResult.why_these_appeared}`
+          }
+        })
+      } else {
+        signals.push({
+          type: 'visibility_gap',
+          platform: 'claude',
+          priority: 'high',
+          data: {
+            query: queryResult.query,
+            mentioned: false,
+            competitors_mentioned: queryResult.organizations_mentioned || [],
+            meta_insights: {
+              why_missing: queryResult.why_these_appeared,
+              what_target_needs: queryResult.what_target_needs,
+              sources_cited: queryResult.sources_cited
+            }
+          },
+          recommendation: {
+            action: 'improve_visibility',
+            reasoning: queryResult.what_target_needs
+          }
+        })
+      }
+    }
+
+    // Add competitive intelligence signal
+    if (analysis.competitive_intelligence) {
+      signals.push({
+        type: 'competitive_intelligence',
+        platform: 'claude',
+        priority: 'medium',
+        data: {
+          dominant_competitors: analysis.competitive_intelligence.dominant_competitors,
+          success_factors: analysis.competitive_intelligence.success_factors,
+          industry_patterns: analysis.competitive_intelligence.industry_patterns
+        }
+      })
+    }
+
+    // Add source intelligence signal
+    if (analysis.source_intelligence) {
+      signals.push({
+        type: 'source_intelligence',
+        platform: 'claude',
+        priority: 'medium',
+        data: {
+          most_cited_sources: analysis.source_intelligence.most_cited_sources,
+          why_these_sources: analysis.source_intelligence.why_these_sources,
+          coverage_strategy: analysis.source_intelligence.coverage_strategy
+        }
+      })
+    }
+
+    console.log(`✅ Claude meta-analysis complete: ${signals.length} signals generated`)
+
+  } catch (error) {
+    console.error('❌ Claude meta-analysis error:', error)
+  }
+
+  return signals
+}
+
+// Placeholder stubs for other platforms (to be implemented)
+async function testGeminiMetaAnalysis(
+  queries: any[],
+  organizationName: string,
+  industry: string,
+  website: string | undefined
+): Promise<any[]> {
+  console.log('⚠️ Gemini meta-analysis not yet implemented, using fallback')
+  return testGeminiVisibility(queries, organizationName)
+}
+
+async function testPerplexityMetaAnalysis(
+  queries: any[],
+  organizationName: string,
+  industry: string,
+  website: string | undefined
+): Promise<any[]> {
+  console.log('⚠️ Perplexity meta-analysis not yet implemented, using fallback')
+  return testPerplexityVisibility(queries, organizationName)
+}
+
+async function testChatGPTMetaAnalysis(
+  queries: any[],
+  organizationName: string,
+  industry: string,
+  website: string | undefined
+): Promise<any[]> {
+  console.log('⚠️ ChatGPT meta-analysis not yet implemented, using fallback')
+  return testChatGPTVisibility(queries, organizationName)
+}
+
+/**
+ * Test Claude visibility (OLD METHOD - kept for fallback)
  */
 async function testClaudeVisibility(
   queries: any[],
