@@ -1492,8 +1492,11 @@ export default function IntelligenceModule() {
         {activeTab === 'geo' && (
           <div className="p-6 overflow-y-auto h-full">
             <div className="max-w-6xl mx-auto">
-              {/* Header */}
-              <div className="bg-gray-800/50 rounded-lg p-6 mb-6">
+              {/* Show synthesis if available, otherwise show controls */}
+              {!geoResults?.synthesis ? (
+                <>
+                  {/* Header */}
+                  <div className="bg-gray-800/50 rounded-lg p-6 mb-6">
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <h3 className="text-xl font-bold text-green-400 flex items-center gap-2">
@@ -1639,39 +1642,8 @@ export default function IntelligenceModule() {
                   />
                 </div>
               )}
-
-              {/* Results Summary */}
-              {geoResults && !geoLoading && (
-                <div className="grid grid-cols-6 gap-3 mb-6">
-                  <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
-                    <div className="text-blue-400 text-3xl font-bold">{geoResults.summary?.total_queries || 0}</div>
-                    <div className="text-gray-400 text-sm mt-1">Queries Tested</div>
-                  </div>
-                  <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
-                    <div className="text-green-400 text-3xl font-bold">{geoResults.summary?.claude_mentions || 0}</div>
-                    <div className="text-gray-400 text-sm mt-1">Claude</div>
-                  </div>
-                  <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4">
-                    <div className="text-purple-400 text-3xl font-bold">{geoResults.summary?.gemini_mentions || 0}</div>
-                    <div className="text-gray-400 text-sm mt-1">Gemini</div>
-                  </div>
-                  <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-4">
-                    <div className="text-cyan-400 text-3xl font-bold">{geoResults.summary?.perplexity_mentions || 0}</div>
-                    <div className="text-gray-400 text-sm mt-1">Perplexity</div>
-                  </div>
-                  <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
-                    <div className="text-yellow-400 text-3xl font-bold">{geoResults.summary?.chatgpt_mentions || 0}</div>
-                    <div className="text-gray-400 text-sm mt-1">ChatGPT</div>
-                  </div>
-                  <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-                    <div className="text-red-400 text-3xl font-bold">{geoResults.summary?.critical_signals || 0}</div>
-                    <div className="text-gray-400 text-sm mt-1">Critical</div>
-                  </div>
-                </div>
-              )}
-
-              {/* Executive Synthesis - Use full component */}
-              {geoResults?.synthesis && !geoLoading && (
+                </>
+              ) : (
                 <IntelligenceSynthesisDisplay synthesis={geoResults} loading={false} />
               )}
 
