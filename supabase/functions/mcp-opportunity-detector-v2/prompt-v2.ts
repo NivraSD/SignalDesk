@@ -142,13 +142,33 @@ For EACH opportunity you detect, you must provide:
    - Why this is strategically valuable right now
    - What advantage we can gain
    - How long the window is open
+   - MEDIA TARGETING: Which journalists would care about this story and why
 
 2. COMPLETE EXECUTION PLAN
    - Identify 2-4 key stakeholder groups to influence
    - For EACH stakeholder, design a multi-piece content campaign
    - Provide detailed briefs for EACH content piece
 
-3. Content types you can recommend (platform can create these):
+3. MEDIA TARGETING GUIDANCE
+   When recommending media pitches, think like a PR strategist:
+   - WHO would actually care about this story?
+   - WHICH journalists cover this beat?
+   - WHY would this be newsworthy to them?
+
+   Available journalist database includes:
+   - PUBLIC RELATIONS: PRWeek, PR News, Ragan, PRovoke Media, The Holmes Report
+   - TECHNOLOGY: TechCrunch, The Verge, Ars Technica, NYT Tech, WSJ Tech, Bloomberg Tech
+   - ADVERTISING/MARKETING: Ad Age, Digiday, Axios Media, Marketing Dive
+   - HEALTHCARE, FINTECH, CLIMATE, CRYPTOCURRENCY: Various industry-specific journalists
+
+   For each opportunity, specify:
+   - primary_journalist_types: Who would DEFINITELY care (e.g., "PR trade journalists", "tech journalists covering AI")
+   - target_industries: Which journalist database industries to query (e.g., ["public_relations"], ["technology"])
+   - target_outlets: Specific publications that would be interested
+   - reasoning: Why these journalists would care about this story
+   - beat_keywords: Keywords to filter by journalist beats (e.g., "PR technology", "enterprise security")
+
+4. Content types you can recommend (platform can create these):
    - media_pitch: Pitches to journalists/outlets
    - social_post: LinkedIn/Twitter/Instagram posts
    - thought_leadership: Blog posts, articles, op-eds
@@ -183,7 +203,26 @@ Return ONLY a JSON array with this EXACT structure:
       "competitive_advantage": "Our security record is spotless and we can authentically claim leadership.",
       "time_window": "3-5 days",
       "expected_impact": "15-20% increase in demo requests from security-conscious segment. Establish security leadership position.",
-      "risk_if_missed": "Competitors will fill the narrative void. Opportunity to differentiate on security lost for months."
+      "risk_if_missed": "Competitors will fill the narrative void. Opportunity to differentiate on security lost for months.",
+      "media_targeting": {
+        "primary_journalist_types": [
+          "Tech journalists covering cybersecurity",
+          "Enterprise tech reporters",
+          "Industry analysts covering SaaS security"
+        ],
+        "target_industries": ["technology", "cybersecurity"],
+        "target_outlets": [
+          "TechCrunch",
+          "The Verge",
+          "SecurityWeek",
+          "Dark Reading",
+          "Ars Technica",
+          "WSJ Tech",
+          "Bloomberg Technology"
+        ],
+        "reasoning": "Tech and security journalists are actively covering this breach and looking for expert commentary on enterprise security. This is a timely hook that makes our security expertise newsworthy. Tech trade journalists will want expert voices to explain the implications and best practices.",
+        "beat_keywords": ["cybersecurity", "enterprise security", "data breaches", "SaaS security", "cloud security"]
+      }
     },
 
     "execution_plan": {
@@ -394,11 +433,15 @@ CRITICAL REQUIREMENTS
    - Opportunity-level urgency: MUST be "high", "medium", or "low" (NOT time durations like "24-48 hours")
    - Content-level urgency: MUST be "immediate", "this_week", "this_month", or "ongoing"
    - Use strategic_context.time_window for time-based descriptions like "3-5 days"
-5. Content briefs must be SPECIFIC and ACTIONABLE
-6. Reference SPECIFIC events from the data provided
-7. Map 80% of content to competitor/market events (not internal)
-8. Be realistic about time windows and execution effort
-9. Score opportunities: impact (40%) + time sensitivity (30%) + feasibility (30%)
+5. **MEDIA TARGETING (REQUIRED):**
+   - strategic_context.media_targeting MUST be included for every opportunity
+   - Must specify primary_journalist_types, target_industries, target_outlets, reasoning, and beat_keywords
+   - Think like a PR strategist: WHO would care about this story and WHY?
+6. Content briefs must be SPECIFIC and ACTIONABLE
+7. Reference SPECIFIC events from the data provided
+8. Map 80% of content to competitor/market events (not internal)
+9. Be realistic about time windows and execution effort
+10. Score opportunities: impact (40%) + time sensitivity (30%) + feasibility (30%)
 
 CONTENT BRIEF QUALITY CHECKLIST:
 ✅ Angle is specific and differentiated

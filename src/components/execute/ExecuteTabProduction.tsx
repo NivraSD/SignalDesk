@@ -158,12 +158,19 @@ export default function ExecuteTabProduction({
   const handleContentGenerated = (content: ContentItem) => {
     console.log('🎉 Content generated:', content)
 
+    // Check if NIV auto-saved this content (indicated by saved_to in metadata)
+    const autoSaved = content.metadata?.saved_to !== undefined
+
     // Ensure content has required fields
     const completeContent = {
       ...content,
       id: content.id || `content-${Date.now()}`,
-      saved: content.saved !== undefined ? content.saved : false,
+      saved: content.saved !== undefined ? content.saved : autoSaved,
       timestamp: content.timestamp || Date.now()
+    }
+
+    if (autoSaved) {
+      console.log('✅ Content was auto-saved by NIV to:', content.metadata?.saved_to)
     }
 
     // Add to generated content list

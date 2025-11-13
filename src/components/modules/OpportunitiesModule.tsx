@@ -43,6 +43,14 @@ interface ExecutionPlan {
   success_metrics: any[]
 }
 
+interface MediaTargeting {
+  primary_journalist_types: string[]
+  target_industries: string[]
+  target_outlets: string[]
+  reasoning: string
+  beat_keywords: string[]
+}
+
 interface StrategicContext {
   trigger_events: string[]
   market_dynamics: string
@@ -51,6 +59,7 @@ interface StrategicContext {
   time_window: string
   expected_impact: string
   risk_if_missed: string
+  media_targeting?: MediaTargeting
 }
 
 interface Opportunity {
@@ -218,6 +227,23 @@ ${opp.description}
 **Trigger Events:**
 ${opp.strategic_context?.trigger_events?.map(e => `- ${e}`).join('\n') || 'N/A'}
 
+${opp.strategic_context?.media_targeting ? `## Media Targeting Strategy
+
+**Why These Journalists Care:**
+${opp.strategic_context.media_targeting.reasoning}
+
+**Target Journalist Types:**
+${opp.strategic_context.media_targeting.primary_journalist_types?.map(t => `- ${t}`).join('\n') || 'N/A'}
+
+**Priority Outlets:**
+${opp.strategic_context.media_targeting.target_outlets?.join(', ') || 'N/A'}
+
+**Database Industries:**
+${opp.strategic_context.media_targeting.target_industries?.join(', ') || 'N/A'}
+
+**Beat Keywords:**
+${opp.strategic_context.media_targeting.beat_keywords?.join(', ') || 'N/A'}
+` : ''}
 ## Execution Plan
 
 **Stakeholder Campaigns:**
@@ -742,6 +768,81 @@ ${opp.execution_plan?.success_metrics?.map((m: any) => `- ${JSON.stringify(m)}`)
                     <h4 className="text-sm font-semibold text-orange-400 mb-2">Expected Impact</h4>
                     <p className="text-sm text-gray-300">{selectedOpp.strategic_context.expected_impact}</p>
                   </div>
+
+                  {/* Media Targeting */}
+                  {selectedOpp.strategic_context.media_targeting && (
+                    <div className="mb-4 p-4 bg-gradient-to-br from-pink-900/20 to-purple-900/20 rounded-lg border border-pink-500/30">
+                      <h4 className="text-sm font-semibold text-pink-400 mb-3 flex items-center gap-2">
+                        <Users className="w-4 h-4" />
+                        Media Targeting Strategy
+                      </h4>
+
+                      {/* Reasoning */}
+                      <div className="mb-3 p-3 bg-gray-900/50 rounded border border-gray-800">
+                        <p className="text-xs text-gray-400 mb-1">Why these journalists care:</p>
+                        <p className="text-sm text-gray-300">{selectedOpp.strategic_context.media_targeting.reasoning}</p>
+                      </div>
+
+                      {/* Journalist Types */}
+                      <div className="mb-3">
+                        <p className="text-xs text-gray-400 mb-2">Target Journalist Types:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedOpp.strategic_context.media_targeting.primary_journalist_types.map((type, idx) => (
+                            <span key={idx} className="px-2 py-1 text-xs bg-pink-500/20 text-pink-300 rounded border border-pink-500/30">
+                              {type}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Target Outlets */}
+                      {selectedOpp.strategic_context.media_targeting.target_outlets && selectedOpp.strategic_context.media_targeting.target_outlets.length > 0 && (
+                        <div className="mb-3">
+                          <p className="text-xs text-gray-400 mb-2">Priority Outlets:</p>
+                          <div className="flex flex-wrap gap-2">
+                            {selectedOpp.strategic_context.media_targeting.target_outlets.slice(0, 6).map((outlet, idx) => (
+                              <span key={idx} className="px-2 py-1 text-xs bg-purple-500/20 text-purple-300 rounded border border-purple-500/30">
+                                {outlet}
+                              </span>
+                            ))}
+                            {selectedOpp.strategic_context.media_targeting.target_outlets.length > 6 && (
+                              <span className="px-2 py-1 text-xs bg-gray-800 text-gray-400 rounded border border-gray-700">
+                                +{selectedOpp.strategic_context.media_targeting.target_outlets.length - 6} more
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Industries */}
+                      {selectedOpp.strategic_context.media_targeting.target_industries && selectedOpp.strategic_context.media_targeting.target_industries.length > 0 && (
+                        <div className="mb-3">
+                          <p className="text-xs text-gray-400 mb-2">Database Industries:</p>
+                          <div className="flex flex-wrap gap-2">
+                            {selectedOpp.strategic_context.media_targeting.target_industries.map((industry, idx) => (
+                              <span key={idx} className="px-2 py-1 text-xs bg-blue-500/20 text-blue-300 rounded border border-blue-500/30">
+                                {industry}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Beat Keywords */}
+                      {selectedOpp.strategic_context.media_targeting.beat_keywords && selectedOpp.strategic_context.media_targeting.beat_keywords.length > 0 && (
+                        <div>
+                          <p className="text-xs text-gray-400 mb-2">Beat Keywords:</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {selectedOpp.strategic_context.media_targeting.beat_keywords.map((keyword, idx) => (
+                              <span key={idx} className="px-2 py-0.5 text-xs bg-gray-800 text-gray-400 rounded border border-gray-700">
+                                {keyword}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 

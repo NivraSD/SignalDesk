@@ -84,6 +84,15 @@ export interface ExecutionPlan {
   total_content_items?: number
 }
 
+export interface MediaTargeting {
+  // Journalist targeting guidance for when opportunity is executed
+  primary_journalist_types: string[]  // e.g., "PR trade journalists", "tech journalists covering AI"
+  target_industries: string[]  // e.g., ["public_relations"], ["technology", "healthcare"]
+  target_outlets: string[]  // e.g., ["PRWeek", "PR News"], ["TechCrunch", "The Verge"]
+  reasoning: string  // Why these journalists would care about this opportunity
+  beat_keywords: string[]  // Keywords to filter journalists by beat (e.g., "PR tech", "enterprise software")
+}
+
 export interface StrategicContext {
   // What happened
   trigger_events: string[]
@@ -100,6 +109,9 @@ export interface StrategicContext {
   // Impact
   expected_impact: string
   risk_if_missed: string
+
+  // Media targeting (for when user executes opportunity)
+  media_targeting?: MediaTargeting
 }
 
 export interface PresentationData {

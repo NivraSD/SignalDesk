@@ -896,6 +896,15 @@ serve(async (req) => {
 
         for (let i = 0; i < opportunitiesV2.length; i++) {
           const opp = opportunitiesV2[i];
+        // Log media targeting if present
+        if (opp.strategic_context?.media_targeting) {
+          console.log(`📰 Media targeting for "${opp.title}":`, {
+            journalist_types: opp.strategic_context.media_targeting.primary_journalist_types,
+            target_industries: opp.strategic_context.media_targeting.target_industries,
+            target_outlets: opp.strategic_context.media_targeting.target_outlets?.slice(0, 3)
+          });
+        }
+
         const insertData = {
           organization_id,
           title: opp.title,
