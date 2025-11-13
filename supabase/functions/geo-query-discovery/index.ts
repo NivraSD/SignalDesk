@@ -87,77 +87,38 @@ serve(async (req) => {
       console.log(`📚 No GEO targets configured, using industry patterns`)
     }
 
-    // Get GEO Intelligence Registry patterns for this industry (fallback)
-    const industryPatterns = getIndustryPatterns(orgIndustry)
-    console.log(`📚 Found ${industryPatterns.length} industry patterns`)
+    // Build 10 query scenarios from templates (NO Claude call for query generation)
+    console.log('📋 Building query scenarios from templates...')
 
-    // Use Claude to generate intelligent, contextual queries
-    const anthropic = new Anthropic({
-      apiKey: Deno.env.get('ANTHROPIC_API_KEY')
-    })
-
-    const prompt = buildQueryDiscoveryPrompt({
+    const queryScenarios = buildQueryScenarios({
       organizationName: organization_name,
       industry: orgIndustry,
       competitors: orgCompetitors,
-      description: orgDescription,
-      recentNews: recent_news,
-      industryPatterns,
-      geoTargets,
-      serviceLines,  // NEW: Pass service lines from MCP
-      mcpProfile: mcp_profile,  // NEW: Pass full MCP profile
-      campaignGoal: campaign_goal,  // NEW: Campaign-specific
-      positioning,  // NEW: Campaign-specific
-      stakeholders  // NEW: Campaign-specific
+      serviceLines: geoTargets?.service_lines || serviceLines || [],
+      geoTargets
     })
 
-    console.log('🤖 Calling Claude for query generation...')
+    console.log(`✅ Built ${queryScenarios.length} query scenarios`)
 
-    const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 4096,
-      temperature: 0.7,
-      messages: [{
-        role: 'user',
-        content: prompt
-      }]
-    })
-
-    const responseText = message.content[0].type === 'text'
-      ? message.content[0].text
-      : ''
-
-    // Parse Claude's response to extract query scenarios
-    const queries = parseQueryResponse(responseText)
-    console.log(`✅ Generated ${queries.length} query scenarios`)
-
-    // Take top 10 most important queries for meta-analysis
-    const topQueries = queries.slice(0, 10)
-
-    // Build meta-analysis prompt
+    // Build meta-analysis prompt directly
     const metaAnalysisPrompt = buildMetaAnalysisPrompt({
       organizationName: organization_name,
       industry: orgIndustry,
       website: org?.website,
-      queries: topQueries,
+      queries: queryScenarios,
       description: orgDescription,
       competitors: orgCompetitors
     })
 
     console.log('✅ Built meta-analysis prompt')
 
-    // Categorize and prioritize queries (for reference)
-    const categorizedQueries = categorizeQueries(queries)
-
     return new Response(
       JSON.stringify({
         success: true,
         organization_name,
         industry: orgIndustry,
-        total_queries: queries.length,
-        queries: categorizedQueries,  // Keep for backwards compatibility
-        query_scenarios: topQueries,  // NEW: Top 10 scenarios for meta-analysis
-        meta_analysis_prompt: metaAnalysisPrompt,  // NEW: Single comprehensive prompt
+        query_scenarios: queryScenarios,  // 10 scenario templates
+        meta_analysis_prompt: metaAnalysisPrompt,  // Single comprehensive prompt for all platforms
         geo_targets_used: !!geoTargets,
         geo_targets_summary: geoTargets ? {
           service_lines: geoTargets.service_lines?.length || 0,
@@ -165,7 +126,6 @@ serve(async (req) => {
           priority_queries: geoTargets.priority_queries?.length || 0,
           industry_verticals: geoTargets.industry_verticals?.length || 0
         } : null,
-        industry_patterns_used: !geoTargets ? industryPatterns.length : 0,
         generated_at: new Date().toISOString()
       }),
       {
@@ -263,6 +223,63 @@ function getIndustryPatterns(industry: string): string[] {
 
   const normalizedIndustry = industry.toLowerCase().replace(/[^a-z]/g, '')
   return patterns[normalizedIndustry] || patterns.default
+}
+
+/**
+ * Build 10 query scenarios from templates (NO Claude API call)
+ */
+function buildQueryScenarios(context: {
+  organizationName: string
+  industry: string
+  competitors: string[]
+  serviceLines: string[]
+  geoTargets?: any
+}): Array<{ query: string, intent: string, priority: string }> {
+  const scenarios: Array<{ query: string, intent: string, priority: string }> = []
+  const industry = context.industry.toLowerCase()
+  const serviceLines = context.serviceLines.length > 0 ? context.serviceLines : [industry + ' services']
+  const competitors = context.competitors.slice(0, 3)
+
+  // Scenario 1-3: Discovery/Superlative queries (HIGHEST VALUE)
+  scenarios.push(
+    { query: `best ${serviceLines[0]} companies`, intent: 'comparison', priority: 'critical' },
+    { query: `top ${industry} firms`, intent: 'comparison', priority: 'critical' },
+    { query: `leading ${serviceLines[0]} providers`, intent: 'comparison', priority: 'high' }
+  )
+
+  // Scenario 4-5: Industry-specific superlatives
+  if (serviceLines.length > 1) {
+    scenarios.push({ query: `top rated ${serviceLines[1]} companies`, intent: 'comparison', priority: 'high' })
+  }
+  scenarios.push({ query: `largest ${industry} companies`, intent: 'comparison', priority: 'high' })
+
+  // Scenario 6-7: Solution-seeking queries
+  scenarios.push(
+    { query: `who provides ${serviceLines[0]}`, intent: 'informational', priority: 'medium' },
+    { query: `${industry} companies in North America`, intent: 'informational', priority: 'medium' }
+  )
+
+  // Scenario 8-10: Competitive queries (if competitors available)
+  if (competitors.length > 0) {
+    scenarios.push(
+      { query: `${context.organizationName} vs ${competitors[0]}`, intent: 'competitive', priority: 'high' },
+      { query: `alternatives to ${competitors[0]}`, intent: 'competitive', priority: 'medium' }
+    )
+    if (competitors.length > 1) {
+      scenarios.push({ query: `${competitors[0]} vs ${competitors[1]}`, intent: 'competitive', priority: 'medium' })
+    }
+  }
+
+  // Fill remaining slots with more discovery queries
+  while (scenarios.length < 10) {
+    scenarios.push({
+      query: `industry leading ${serviceLines[scenarios.length % serviceLines.length]} companies`,
+      intent: 'comparison',
+      priority: 'medium'
+    })
+  }
+
+  return scenarios.slice(0, 10)
 }
 
 /**

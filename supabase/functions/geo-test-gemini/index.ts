@@ -3,7 +3,7 @@ import { corsHeaders } from '../_shared/cors.ts'
 
 /**
  * GEO Test Gemini
- * Tests organization visibility in Gemini responses with search grounding
+ * Tests organization visibility in Gemini with meta-analysis
  */
 
 serve(async (req) => {
@@ -12,13 +12,13 @@ serve(async (req) => {
   }
 
   try {
-    const { organization_name, queries } = await req.json()
+    const { organization_name, meta_analysis_prompt } = await req.json()
 
-    if (!organization_name || !queries) {
-      throw new Error('organization_name and queries required')
+    if (!organization_name || !meta_analysis_prompt) {
+      throw new Error('organization_name and meta_analysis_prompt required')
     }
 
-    console.log(`🌟 Testing Gemini visibility for ${organization_name} (${queries.length} queries)`)
+    console.log(`🔮 Running Gemini meta-analysis for ${organization_name}`)
 
     const GOOGLE_API_KEY = Deno.env.get('GOOGLE_API_KEY')
 
@@ -26,142 +26,69 @@ serve(async (req) => {
       throw new Error('Google API key not configured')
     }
 
-    const signals: any[] = []
-    let mentionCount = 0
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key=${GOOGLE_API_KEY}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          contents: [{
+            role: 'user',
+            parts: [{ text: meta_analysis_prompt }]
+          }],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 4096
+          },
+          tools: [{
+            google_search: {}
+          }]
+        })
+      }
+    )
 
-    // Test queries
-    for (const q of queries) {
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('❌ Gemini API error:', errorText)
+      throw new Error(`Gemini API error: ${errorText}`)
+    }
+
+    const data = await response.json()
+    const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
+
+    // Extract grounding sources
+    const groundingMetadata = data.candidates?.[0]?.groundingMetadata
+    const sources = groundingMetadata?.groundingChunks?.map((chunk: any) => ({
+      url: chunk.web?.uri || '',
+      title: chunk.web?.title || '',
+      snippet: chunk.web?.snippet || ''
+    })) || []
+
+    console.log(`📚 Gemini cited ${sources.length} sources`)
+
+    // Parse JSON response
+    const jsonMatch = responseText.match(/\{[\s\S]*\}/)
+    let analysis = null
+    if (jsonMatch) {
       try {
-        console.log(` 🔍 Testing: "${q.query}"`)
-
-        const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key=${GOOGLE_API_KEY}`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              contents: [{
-                role: 'user',
-                parts: [{ text: `${q.query}\n\nProvide comprehensive recommendations with sources.` }]
-              }],
-              generationConfig: {
-                temperature: 0.7,
-                maxOutputTokens: 1024
-              },
-              tools: [{
-                google_search: {}
-              }]
-            })
-          }
-        )
-
-        if (!response.ok) {
-          console.error('Gemini API error:', await response.text())
-          continue
-        }
-
-        const data = await response.json()
-        const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
-
-        // Extract grounding sources
-        const groundingMetadata = data.candidates?.[0]?.groundingMetadata
-        const sources = groundingMetadata?.groundingChunks?.map((chunk: any) => ({
-          url: chunk.web?.uri || '',
-          title: chunk.web?.title || '',
-          snippet: chunk.web?.snippet || ''
-        })) || []
-
-        console.log(`  📚 Gemini cited ${sources.length} sources`)
-        if (sources.length > 0) {
-          console.log(`     Sources: ${sources.map((s: any) => s.url).join(', ')}`)
-        }
-
-        const mentioned = responseText.toLowerCase().includes(organization_name.toLowerCase())
-        const position = extractMentionPosition(responseText, organization_name)
-
-        if (mentioned) {
-          mentionCount++
-          console.log(` ✅ Mentioned in position ${position}`)
-
-          signals.push({
-            type: 'ai_visibility',
-            platform: 'gemini',
-            priority: position <= 3 ? 'high' : 'medium',
-            data: {
-              query: q.query,
-              mentioned: true,
-              position,
-              context: extractContext(responseText, organization_name),
-              sources,
-              source_count: sources.length,
-              source_domains: sources.map((s: any) => {
-                try {
-                  return new URL(s.url).hostname
-                } catch {
-                  return null
-                }
-              }).filter((h: string | null) => h)
-            },
-            recommendation: {
-              action: position > 3 ? 'improve_ranking' : 'maintain_visibility',
-              reasoning: `Brand mentioned in position ${position} on Gemini${sources.length > 0 ? `. Sources cited: ${sources.map((s: any) => {
-                try {
-                  return new URL(s.url).hostname
-                } catch {
-                  return ''
-                }
-              }).filter((h: string) => h).join(', ')}` : ''}`
-            }
-          })
-        } else {
-          console.log(` ❌ Not mentioned`)
-
-          signals.push({
-            type: 'visibility_gap',
-            platform: 'gemini',
-            priority: q.priority === 'critical' ? 'critical' : 'high',
-            data: {
-              query: q.query,
-              mentioned: false,
-              sources,
-              source_count: sources.length,
-              source_domains: sources.map((s: any) => {
-                try {
-                  return new URL(s.url).hostname
-                } catch {
-                  return null
-                }
-              }).filter((h: string | null) => h)
-            },
-            recommendation: {
-              action: 'improve_schema',
-              reasoning: `Not visible on Gemini for: "${q.query}"${sources.length > 0 ? `. Target these publications for PR: ${sources.slice(0, 3).map((s: any) => {
-                try {
-                  return new URL(s.url).hostname
-                } catch {
-                  return ''
-                }
-              }).filter((h: string) => h).join(', ')}` : ''}`
-            }
-          })
-        }
-
-      } catch (error) {
-        console.error('Gemini query error:', error)
+        analysis = JSON.parse(jsonMatch[0])
+      } catch (e) {
+        console.error('Failed to parse meta-analysis JSON:', e)
       }
     }
 
-    console.log(`✅ Gemini testing complete: ${mentionCount}/${queries.length} mentions`)
+    console.log(`✅ Gemini meta-analysis complete`)
 
     return new Response(
       JSON.stringify({
         success: true,
         platform: 'gemini',
-        queries_tested: queries.length,
-        mentions: mentionCount,
-        signals
+        meta_analysis: analysis,
+        sources: sources,  // Grounding sources from Google Search
+        raw_response: responseText,
+        signals: parseMetaAnalysisToSignals(analysis, organization_name, sources)
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
@@ -170,28 +97,92 @@ serve(async (req) => {
     console.error('❌ Gemini test error:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
     )
   }
 })
 
-// Helper functions
-function extractMentionPosition(text: string, name: string): number {
-  const sentences = text.split(/[.!?]+/)
-  for (let i = 0; i < sentences.length; i++) {
-    if (sentences[i].toLowerCase().includes(name.toLowerCase())) {
-      return i + 1
-    }
-  }
-  return 999
-}
+// Helper function to parse meta-analysis into signals
+function parseMetaAnalysisToSignals(analysis: any, organizationName: string, sources: any[]): any[] {
+  if (!analysis) return []
 
-function extractContext(text: string, name: string): string {
-  const sentences = text.split(/[.!?]+/)
-  for (const sentence of sentences) {
-    if (sentence.toLowerCase().includes(name.toLowerCase())) {
-      return sentence.trim()
+  const signals: any[] = []
+
+  // Add visibility signals from query results
+  if (analysis.query_results && Array.isArray(analysis.query_results)) {
+    for (const result of analysis.query_results) {
+      if (result.target_mentioned) {
+        signals.push({
+          type: 'ai_visibility',
+          platform: 'gemini',
+          priority: result.target_rank <= 3 ? 'high' : 'medium',
+          data: {
+            query: result.query,
+            mentioned: true,
+            rank: result.target_rank,
+            organizations_mentioned: result.organizations_mentioned,
+            why_appeared: result.why_these_appeared,
+            sources_cited: result.sources_cited || [],
+            what_needed: result.what_target_needs
+          }
+        })
+      } else {
+        signals.push({
+          type: 'visibility_gap',
+          platform: 'gemini',
+          priority: 'high',
+          data: {
+            query: result.query,
+            mentioned: false,
+            organizations_mentioned: result.organizations_mentioned,
+            why_others_appeared: result.why_these_appeared,
+            what_needed: result.what_target_needs
+          }
+        })
+      }
     }
   }
-  return ''
+
+  // Add competitive intelligence signal
+  if (analysis.competitive_intelligence) {
+    signals.push({
+      type: 'competitive_intelligence',
+      platform: 'gemini',
+      priority: 'high',
+      data: {
+        ...analysis.competitive_intelligence,
+        grounding_sources: sources  // Include Google Search sources
+      }
+    })
+  }
+
+  // Add source intelligence signal
+  if (analysis.source_intelligence) {
+    signals.push({
+      type: 'source_intelligence',
+      platform: 'gemini',
+      priority: 'high',
+      data: {
+        ...analysis.source_intelligence,
+        grounding_sources: sources  // Include Google Search sources
+      }
+    })
+  }
+
+  // Add recommendation signals
+  if (analysis.recommendations && Array.isArray(analysis.recommendations)) {
+    for (const rec of analysis.recommendations) {
+      signals.push({
+        type: 'recommendation',
+        platform: 'gemini',
+        priority: rec.priority || 'medium',
+        data: rec
+      })
+    }
+  }
+
+  return signals
 }

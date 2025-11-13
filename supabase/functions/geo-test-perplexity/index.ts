@@ -3,7 +3,7 @@ import { corsHeaders } from '../_shared/cors.ts'
 
 /**
  * GEO Test Perplexity
- * Tests organization visibility in Perplexity Sonar responses with citations
+ * Tests organization visibility in Perplexity with meta-analysis
  */
 
 serve(async (req) => {
@@ -12,13 +12,13 @@ serve(async (req) => {
   }
 
   try {
-    const { organization_name, queries } = await req.json()
+    const { organization_name, meta_analysis_prompt } = await req.json()
 
-    if (!organization_name || !queries) {
-      throw new Error('organization_name and queries required')
+    if (!organization_name || !meta_analysis_prompt) {
+      throw new Error('organization_name and meta_analysis_prompt required')
     }
 
-    console.log(`🔮 Testing Perplexity visibility for ${organization_name} (${queries.length} queries)`)
+    console.log(`🔮 Running Perplexity meta-analysis for ${organization_name}`)
 
     const PERPLEXITY_API_KEY = Deno.env.get('PERPLEXITY_API_KEY')
 
@@ -26,148 +26,59 @@ serve(async (req) => {
       throw new Error('Perplexity API key not configured')
     }
 
-    const signals: any[] = []
-    let mentionCount = 0
+    const response = await fetch('https://api.perplexity.ai/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'llama-3.1-sonar-large-128k-online',
+        messages: [{
+          role: 'user',
+          content: meta_analysis_prompt
+        }],
+        max_tokens: 4096,
+        temperature: 0.7,
+        search_domain_filter: [],
+        return_citations: true,
+        return_images: false
+      })
+    })
 
-    // Test queries
-    for (const q of queries) {
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('❌ Perplexity API error:', errorText)
+      throw new Error(`Perplexity API error: ${errorText}`)
+    }
+
+    const data = await response.json()
+    const responseText = data.choices?.[0]?.message?.content || ''
+    const citations = data.citations || []
+
+    console.log(`📚 Perplexity cited ${citations.length} sources`)
+
+    // Parse JSON response
+    const jsonMatch = responseText.match(/\{[\s\S]*\}/)
+    let analysis = null
+    if (jsonMatch) {
       try {
-        console.log(` 🔍 Testing: "${q.query}"`)
-
-        const response = await fetch(
-          'https://api.perplexity.ai/chat/completions',
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${PERPLEXITY_API_KEY}`
-            },
-            body: JSON.stringify({
-              model: 'sonar',
-              messages: [{
-                role: 'user',
-                content: `${q.query}\n\nProvide a comprehensive answer with sources.`
-              }],
-              temperature: 0.7,
-              max_tokens: 1024,
-              return_citations: true,
-              return_images: false
-            })
-          }
-        )
-
-        if (!response.ok) {
-          console.error('Perplexity API error:', await response.text())
-          continue
-        }
-
-        const data = await response.json()
-        const responseText = data.choices?.[0]?.message?.content || ''
-
-        // Extract citations
-        const citations = data.citations || []
-        const sources = citations.map((url: string) => {
-          try {
-            const urlObj = new URL(url)
-            return {
-              url: url,
-              title: urlObj.hostname,
-              snippet: ''
-            }
-          } catch {
-            return { url, title: url, snippet: '' }
-          }
-        })
-
-        console.log(`  📚 Perplexity cited ${sources.length} sources`)
-        if (sources.length > 0) {
-          console.log(`     Sources: ${sources.map((s: any) => s.url).join(', ')}`)
-        }
-
-        const mentioned = responseText.toLowerCase().includes(organization_name.toLowerCase())
-        const position = extractMentionPosition(responseText, organization_name)
-
-        if (mentioned) {
-          mentionCount++
-          console.log(` ✅ Mentioned in position ${position}`)
-
-          signals.push({
-            type: 'ai_visibility',
-            platform: 'perplexity',
-            priority: position <= 3 ? 'high' : 'medium',
-            data: {
-              query: q.query,
-              mentioned: true,
-              position,
-              context: extractContext(responseText, organization_name),
-              sources,
-              source_count: sources.length,
-              source_domains: sources.map((s: any) => {
-                try {
-                  return new URL(s.url).hostname
-                } catch {
-                  return s.url
-                }
-              }).filter((h: string) => h)
-            },
-            recommendation: {
-              action: position > 3 ? 'improve_ranking' : 'maintain_visibility',
-              reasoning: `Brand mentioned in position ${position} on Perplexity${sources.length > 0 ? `. Sources cited: ${sources.slice(0, 3).map((s: any) => {
-                try {
-                  return new URL(s.url).hostname
-                } catch {
-                  return s.url
-                }
-              }).join(', ')}` : ''}`
-            }
-          })
-        } else {
-          console.log(` ❌ Not mentioned`)
-
-          signals.push({
-            type: 'visibility_gap',
-            platform: 'perplexity',
-            priority: q.priority === 'critical' ? 'critical' : 'high',
-            data: {
-              query: q.query,
-              mentioned: false,
-              sources,
-              source_count: sources.length,
-              source_domains: sources.map((s: any) => {
-                try {
-                  return new URL(s.url).hostname
-                } catch {
-                  return s.url
-                }
-              }).filter((h: string) => h)
-            },
-            recommendation: {
-              action: 'improve_schema',
-              reasoning: `Not visible on Perplexity for: "${q.query}"${sources.length > 0 ? `. Target these publications for PR: ${sources.slice(0, 3).map((s: any) => {
-                try {
-                  return new URL(s.url).hostname
-                } catch {
-                  return s.url
-                }
-              }).join(', ')}` : ''}`
-            }
-          })
-        }
-
-      } catch (error) {
-        console.error('Perplexity query error:', error)
+        analysis = JSON.parse(jsonMatch[0])
+      } catch (e) {
+        console.error('Failed to parse meta-analysis JSON:', e)
       }
     }
 
-    console.log(`✅ Perplexity testing complete: ${mentionCount}/${queries.length} mentions`)
+    console.log(`✅ Perplexity meta-analysis complete`)
 
     return new Response(
       JSON.stringify({
         success: true,
         platform: 'perplexity',
-        queries_tested: queries.length,
-        mentions: mentionCount,
-        signals
+        meta_analysis: analysis,
+        sources: citations,  // Perplexity citations
+        raw_response: responseText,
+        signals: parseMetaAnalysisToSignals(analysis, organization_name, citations)
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
@@ -176,28 +87,92 @@ serve(async (req) => {
     console.error('❌ Perplexity test error:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
     )
   }
 })
 
-// Helper functions
-function extractMentionPosition(text: string, name: string): number {
-  const sentences = text.split(/[.!?]+/)
-  for (let i = 0; i < sentences.length; i++) {
-    if (sentences[i].toLowerCase().includes(name.toLowerCase())) {
-      return i + 1
-    }
-  }
-  return 999
-}
+// Helper function to parse meta-analysis into signals
+function parseMetaAnalysisToSignals(analysis: any, organizationName: string, sources: any[]): any[] {
+  if (!analysis) return []
 
-function extractContext(text: string, name: string): string {
-  const sentences = text.split(/[.!?]+/)
-  for (const sentence of sentences) {
-    if (sentence.toLowerCase().includes(name.toLowerCase())) {
-      return sentence.trim()
+  const signals: any[] = []
+
+  // Add visibility signals from query results
+  if (analysis.query_results && Array.isArray(analysis.query_results)) {
+    for (const result of analysis.query_results) {
+      if (result.target_mentioned) {
+        signals.push({
+          type: 'ai_visibility',
+          platform: 'perplexity',
+          priority: result.target_rank <= 3 ? 'high' : 'medium',
+          data: {
+            query: result.query,
+            mentioned: true,
+            rank: result.target_rank,
+            organizations_mentioned: result.organizations_mentioned,
+            why_appeared: result.why_these_appeared,
+            sources_cited: result.sources_cited || [],
+            what_needed: result.what_target_needs
+          }
+        })
+      } else {
+        signals.push({
+          type: 'visibility_gap',
+          platform: 'perplexity',
+          priority: 'high',
+          data: {
+            query: result.query,
+            mentioned: false,
+            organizations_mentioned: result.organizations_mentioned,
+            why_others_appeared: result.why_these_appeared,
+            what_needed: result.what_target_needs
+          }
+        })
+      }
     }
   }
-  return ''
+
+  // Add competitive intelligence signal
+  if (analysis.competitive_intelligence) {
+    signals.push({
+      type: 'competitive_intelligence',
+      platform: 'perplexity',
+      priority: 'high',
+      data: {
+        ...analysis.competitive_intelligence,
+        citations: sources  // Include Perplexity citations
+      }
+    })
+  }
+
+  // Add source intelligence signal
+  if (analysis.source_intelligence) {
+    signals.push({
+      type: 'source_intelligence',
+      platform: 'perplexity',
+      priority: 'high',
+      data: {
+        ...analysis.source_intelligence,
+        citations: sources  // Include Perplexity citations
+      }
+    })
+  }
+
+  // Add recommendation signals
+  if (analysis.recommendations && Array.isArray(analysis.recommendations)) {
+    for (const rec of analysis.recommendations) {
+      signals.push({
+        type: 'recommendation',
+        platform: 'perplexity',
+        priority: rec.priority || 'medium',
+        data: rec
+      })
+    }
+  }
+
+  return signals
 }

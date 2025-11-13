@@ -446,36 +446,15 @@ export default function IntelligenceModule() {
         throw new Error(queryData?.error || 'Failed to generate GEO queries')
       }
 
-      // Extract meta-analysis prompt (NEW) or fall back to queries (backwards compatible)
+      // Extract meta-analysis prompt (REQUIRED)
       const metaAnalysisPrompt = queryData.meta_analysis_prompt
-      const categorizedQueries = queryData.queries
-      let queries: any[] = []
 
-      // Flatten categorized structure into single array (for backwards compatibility)
-      if (categorizedQueries) {
-        if (Array.isArray(categorizedQueries)) {
-          // Already a flat array
-          queries = categorizedQueries
-        } else if (typeof categorizedQueries === 'object') {
-          // Categorized object - flatten by priority
-          queries = [
-            ...(categorizedQueries.critical || []),
-            ...(categorizedQueries.high || []),
-            ...(categorizedQueries.medium || [])
-          ]
-        }
+      if (!metaAnalysisPrompt) {
+        console.error('Query discovery response:', queryData)
+        throw new Error('No meta-analysis prompt generated')
       }
 
-      if (!metaAnalysisPrompt && (!Array.isArray(queries) || queries.length === 0)) {
-        console.error('Categorized queries:', categorizedQueries)
-        throw new Error('No queries or meta-analysis prompt generated')
-      }
-
-      if (metaAnalysisPrompt) {
-        console.log(`✅ Generated meta-analysis prompt (${queryData.query_scenarios?.length || 10} scenarios)`)
-      } else {
-        console.log(`✅ Generated ${queries.length} queries (fallback mode)`)
-      }
+      console.log(`✅ Generated meta-analysis prompt (${queryData.query_scenarios?.length || 10} scenarios)`)
 
       // STEP 2: Test all 4 platforms in PARALLEL with META-ANALYSIS
       console.log('🚀 Step 2/3: Testing all 4 platforms with meta-analysis (1 comprehensive call each)...')
@@ -485,32 +464,28 @@ export default function IntelligenceModule() {
           body: {
             organization_id: organization.id,
             organization_name: organization.name,
-            meta_analysis_prompt: metaAnalysisPrompt,
-            queries: metaAnalysisPrompt ? undefined : queries.slice(0, 10)  // Fallback
+            meta_analysis_prompt: metaAnalysisPrompt
           }
         }),
         supabase.functions.invoke('geo-test-gemini', {
           body: {
             organization_id: organization.id,
             organization_name: organization.name,
-            meta_analysis_prompt: metaAnalysisPrompt,
-            queries: metaAnalysisPrompt ? undefined : queries.slice(0, 10)  // Fallback
+            meta_analysis_prompt: metaAnalysisPrompt
           }
         }),
         supabase.functions.invoke('geo-test-perplexity', {
           body: {
             organization_id: organization.id,
             organization_name: organization.name,
-            meta_analysis_prompt: metaAnalysisPrompt,
-            queries: metaAnalysisPrompt ? undefined : queries.slice(0, 10)  // Fallback
+            meta_analysis_prompt: metaAnalysisPrompt
           }
         }),
         supabase.functions.invoke('geo-test-chatgpt', {
           body: {
             organization_id: organization.id,
             organization_name: organization.name,
-            meta_analysis_prompt: metaAnalysisPrompt,
-            queries: metaAnalysisPrompt ? undefined : queries.slice(0, 10)  // Fallback
+            meta_analysis_prompt: metaAnalysisPrompt
           }
         })
       ])
