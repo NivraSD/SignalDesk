@@ -527,36 +527,49 @@ export default function IntelligenceModule() {
         raw_response_length: chatgptResults.data?.raw_response?.length || 0
       })
 
-      // Combine all platform results
-      const allSignals = [
-        ...(claudeResults.data?.signals || []),
-        ...(geminiResults.data?.signals || []),
-        ...(perplexityResults.data?.signals || []),
-        ...(chatgptResults.data?.signals || [])
-      ]
+      // STEP 3: Generate executive synthesis from meta-analysis (NOT signals)
+      console.log('📊 Step 3/3: Generating executive synthesis from meta-analysis...')
 
-      console.log(`✅ Collected ${allSignals.length} signals from 4 platforms`)
+      // Prepare platform meta-analysis data
+      const platformAnalyses = {
+        claude: {
+          meta_analysis: claudeResults.data?.meta_analysis,
+          sources: [],
+          raw_response: claudeResults.data?.raw_response
+        },
+        gemini: {
+          meta_analysis: geminiResults.data?.meta_analysis,
+          sources: geminiResults.data?.sources || [],
+          raw_response: geminiResults.data?.raw_response
+        },
+        perplexity: {
+          meta_analysis: perplexityResults.data?.meta_analysis,
+          sources: perplexityResults.data?.sources || [],
+          raw_response: perplexityResults.data?.raw_response
+        },
+        chatgpt: {
+          meta_analysis: chatgptResults.data?.meta_analysis,
+          sources: [],
+          raw_response: chatgptResults.data?.raw_response
+        }
+      }
 
-      // Transform signals to format expected by synthesis function
-      const transformedResults = allSignals.map(signal => ({
-        query: signal.data?.query || '',
-        intent: signal.data?.intent || 'informational',
-        priority: signal.priority || 'medium',
-        platform: signal.platform,
-        response: signal.data?.context || signal.data?.response || '',
-        brand_mentioned: signal.data?.mentioned || false,
-        rank: signal.data?.position || undefined,
-        context_quality: signal.data?.context_quality || 'medium',
-        competitors_mentioned: signal.data?.competitors_mentioned || []
-      }))
+      console.log('📋 Meta-analysis collected:', {
+        claude: platformAnalyses.claude.meta_analysis ? 'Present' : 'Missing',
+        gemini: platformAnalyses.gemini.meta_analysis ? 'Present' : 'Missing',
+        perplexity: platformAnalyses.perplexity.meta_analysis ? 'Present' : 'Missing',
+        chatgpt: platformAnalyses.chatgpt.meta_analysis ? 'Present' : 'Missing',
+        gemini_sources: platformAnalyses.gemini.sources.length,
+        perplexity_sources: platformAnalyses.perplexity.sources.length
+      })
 
-      // STEP 3: Generate executive synthesis
-      console.log('📊 Step 3/3: Generating executive synthesis...')
       const { data: synthesisData, error: synthesisError } = await supabase.functions.invoke('geo-executive-synthesis', {
         body: {
           organization_id: organization.id,
           organization_name: organization.name,
-          geo_results: transformedResults
+          industry: organization.industry,
+          query_scenarios: queryScenarios,
+          platform_analyses: platformAnalyses
         }
       })
 
@@ -565,76 +578,28 @@ export default function IntelligenceModule() {
       }
 
       console.log('✅ GEO monitor complete:', {
-        total_signals: allSignals.length,
         scenarios_tested: queryScenarios.length,
-        platforms: '4 platforms (parallel)'
+        platforms: '4 platforms (parallel meta-analysis)',
+        synthesis: synthesisData?.synthesis ? 'Generated' : 'Failed'
       })
 
-      // Calculate platform-specific mention counts from signals
-      const claudeMentions = allSignals.filter(s =>
-        s.platform === 'claude' && s.type === 'ai_visibility'
-      ).length
-      const geminiMentions = allSignals.filter(s =>
-        s.platform === 'gemini' && s.type === 'ai_visibility'
-      ).length
-      const perplexityMentions = allSignals.filter(s =>
-        s.platform === 'perplexity' && s.type === 'ai_visibility'
-      ).length
-      const chatgptMentions = allSignals.filter(s =>
-        s.platform === 'chatgpt' && s.type === 'ai_visibility'
-      ).length
-      const criticalSignals = allSignals.filter(s =>
-        s.priority === 'critical'
-      ).length
-
-      // Construct final results object with UI-compatible summary
+      // Construct final results object with meta-analysis data
       const monitorData = {
         success: true,
         summary: {
           total_scenarios: queryScenarios.length,
-          total_signals: allSignals.length,
-          claude_mentions: claudeMentions,
-          gemini_mentions: geminiMentions,
-          perplexity_mentions: perplexityMentions,
-          chatgpt_mentions: chatgptMentions,
-          critical_signals: criticalSignals,
-          platforms_tested: 4
+          platforms_tested: 4,
+          synthesis_available: !!synthesisData?.synthesis
         },
         query_scenarios: queryScenarios,
-        signals: allSignals,
-        synthesis: synthesisData?.synthesis || null,
-        platform_details: {
-          claude: {
-            meta_analysis: claudeResults.data?.meta_analysis,
-            raw_response: claudeResults.data?.raw_response,
-            signal_count: claudeResults.data?.signals?.length || 0
-          },
-          gemini: {
-            meta_analysis: geminiResults.data?.meta_analysis,
-            sources: geminiResults.data?.sources || [],
-            raw_response: geminiResults.data?.raw_response,
-            signal_count: geminiResults.data?.signals?.length || 0
-          },
-          perplexity: {
-            meta_analysis: perplexityResults.data?.meta_analysis,
-            sources: perplexityResults.data?.sources || [],
-            raw_response: perplexityResults.data?.raw_response,
-            signal_count: perplexityResults.data?.signals?.length || 0
-          },
-          chatgpt: {
-            meta_analysis: chatgptResults.data?.meta_analysis,
-            raw_response: chatgptResults.data?.raw_response,
-            signal_count: chatgptResults.data?.signals?.length || 0
-          }
-        }
+        platform_analyses: platformAnalyses,
+        synthesis: synthesisData?.synthesis || null
       }
 
-      console.log('📊 Platform breakdown:', {
-        claude: claudeMentions,
-        gemini: geminiMentions,
-        perplexity: perplexityMentions,
-        chatgpt: chatgptMentions,
-        critical: criticalSignals
+      console.log('📊 GEO Results:', {
+        scenarios: queryScenarios.length,
+        platforms_analyzed: 4,
+        synthesis_generated: !!synthesisData?.synthesis
       })
 
       setGeoResults(monitorData)

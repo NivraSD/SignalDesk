@@ -1,138 +1,173 @@
+hook.js:608 Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
+overrideMethod @ hook.js:608
+hook.js:608 Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
+overrideMethod @ hook.js:608
+page-ec4fe18b668d43ec.js?dpl=dpl_3FvWs2QScw5z2T5BwYHPCX1V25Xz:1 🔍 InfiniteCanvas mount - checking for openPlan param: null
+page-ec4fe18b668d43ec.js?dpl=dpl_3FvWs2QScw5z2T5BwYHPCX1V25Xz:1 🔍 Full URL: https://signaldesk-v3.vercel.app/dashboard
+page-ec4fe18b668d43ec.js?dpl=dpl_3FvWs2QScw5z2T5BwYHPCX1V25Xz:1 🔍 Tab context: Object
+page-ec4fe18b668d43ec.js?dpl=dpl_3FvWs2QScw5z2T5BwYHPCX1V25Xz:1 Received addComponentToCanvas event: Object
+page-ec4fe18b668d43ec.js?dpl=dpl_3FvWs2QScw5z2T5BwYHPCX1V25Xz:1 Adding component: intelligence
+page-ec4fe18b668d43ec.js?dpl=dpl_3FvWs2QScw5z2T5BwYHPCX1V25Xz:1 New component at top, pushing 0 modules down by 620
+page-ec4fe18b668d43ec.js?dpl=dpl_3FvWs2QScw5z2T5BwYHPCX1V25Xz:1 🔄 Organization changed to Amplify, loading latest synthesis
+page-ec4fe18b668d43ec.js?dpl=dpl_3FvWs2QScw5z2T5BwYHPCX1V25Xz:1 🔍 InfiniteCanvas mount - checking for openPlan param: null
+page-ec4fe18b668d43ec.js?dpl=dpl_3FvWs2QScw5z2T5BwYHPCX1V25Xz:1 🔍 Full URL: https://signaldesk-v3.vercel.app/dashboard
+page-ec4fe18b668d43ec.js?dpl=dpl_3FvWs2QScw5z2T5BwYHPCX1V25Xz:1 🔍 Tab context: Object
+page-ec4fe18b668d43ec.js?dpl=dpl_3FvWs2QScw5z2T5BwYHPCX1V25Xz:1 No previous synthesis found
+page-ec4fe18b668d43ec.js?dpl=dpl_3FvWs2QScw5z2T5BwYHPCX1V25Xz:1 🔍 InfiniteCanvas mount - checking for openPlan param: null
+page-ec4fe18b668d43ec.js?dpl=dpl_3FvWs2QScw5z2T5BwYHPCX1V25Xz:1 🔍 Full URL: https://signaldesk-v3.vercel.app/dashboard
+page-ec4fe18b668d43ec.js?dpl=dpl_3FvWs2QScw5z2T5BwYHPCX1V25Xz:1 🔍 Tab context: Object
+page-ec4fe18b668d43ec.js?dpl=dpl_3FvWs2QScw5z2T5BwYHPCX1V25Xz:1 🔍 InfiniteCanvas mount - checking for openPlan param: null
+page-ec4fe18b668d43ec.js?dpl=dpl_3FvWs2QScw5z2T5BwYHPCX1V25Xz:1 🔍 Full URL: https://signaldesk-v3.vercel.app/dashboard
+page-ec4fe18b668d43ec.js?dpl=dpl_3FvWs2QScw5z2T5BwYHPCX1V25Xz:1 🔍 Tab context: Object
+page-ec4fe18b668d43ec.js?dpl=dpl_3FvWs2QScw5z2T5BwYHPCX1V25Xz:1 🌍 Starting GEO Intelligence Monitor for Amplify
+page-ec4fe18b668d43ec.js?dpl=dpl_3FvWs2QScw5z2T5BwYHPCX1V25Xz:1 📋 Step 1/3: Generating GEO queries...
+page-ec4fe18b668d43ec.js?dpl=dpl_3FvWs2QScw5z2T5BwYHPCX1V25Xz:1 ✅ Generated meta-analysis prompt (10 scenarios)
+page-ec4fe18b668d43ec.js?dpl=dpl_3FvWs2QScw5z2T5BwYHPCX1V25Xz:1 🚀 Step 2/3: Testing all 4 platforms with meta-analysis (1 comprehensive call each)...
+page-ec4fe18b668d43ec.js?dpl=dpl_3FvWs2QScw5z2T5BwYHPCX1V25Xz:1 ✓ All platforms tested
+page-ec4fe18b668d43ec.js?dpl=dpl_3FvWs2QScw5z2T5BwYHPCX1V25Xz:1 📊 Claude Results: Objectmeta_analysis: "Received"raw_response_length: 9500signals: 17success: true[[Prototype]]: Objectconstructor: ƒ Object()hasOwnProperty: ƒ hasOwnProperty()isPrototypeOf: ƒ isPrototypeOf()propertyIsEnumerable: ƒ propertyIsEnumerable()toLocaleString: ƒ toLocaleString()toString: ƒ toString()valueOf: ƒ valueOf()**defineGetter**: ƒ **defineGetter**()**defineSetter**: ƒ **defineSetter**()**lookupGetter**: ƒ **lookupGetter**()**lookupSetter**: ƒ **lookupSetter**()**proto**: (...)get **proto**: ƒ **proto**()set **proto**: ƒ **proto**()
+page-ec4fe18b668d43ec.js?dpl=dpl_3FvWs2QScw5z2T5BwYHPCX1V25Xz:1 📊 Gemini Results: Object
+page-ec4fe18b668d43ec.js?dpl=dpl_3FvWs2QScw5z2T5BwYHPCX1V25Xz:1 📊 Perplexity Results: Object
+page-ec4fe18b668d43ec.js?dpl=dpl_3FvWs2QScw5z2T5BwYHPCX1V25Xz:1 📊 ChatGPT Results: Object
+page-ec4fe18b668d43ec.js?dpl=dpl_3FvWs2QScw5z2T5BwYHPCX1V25Xz:1 ✅ Collected 64 signals from 4 platforms
+page-ec4fe18b668d43ec.js?dpl=dpl_3FvWs2QScw5z2T5BwYHPCX1V25Xz:1 📊 Step 3/3: Generating executive synthesis...
+page-ec4fe18b668d43ec.js?dpl=dpl_3FvWs2QScw5z2T5BwYHPCX1V25Xz:1 ✅ GEO monitor complete: Object
+page-ec4fe18b668d43ec.js?dpl=dpl_3FvWs2QScw5z2T5BwYHPCX1V25Xz:1 📊 Platform breakdown: Object
+
 [
 {
-"event_message": "Error saving recommendation: {\n code: \"23502\",\n details: \"Failing row contains (662d5b96-9c4e-4bd4-b49b-76c8850c19e3, 53ab1d52-5ee6-42da-8b69-97bab4748a6f, null, LocalBusiness, add_structured_data, medium, all, Add LocalBusiness schema if serving specific geographic markets, null, Location-based service queries often show higher conversion. If ..., Improve visibility for location + service queries, potentially 2..., {}, f, f, pending, null, null, null, null, null, null, 2025-11-13 11:40:32.588476+00, 2025-11-13 11:40:32.588476+00).\",\n hint: null,\n message: 'null value in column \"description\" of relation \"schema_recommendations\" violates not-null constraint'\n}\n",
+"event_message": "shutdown",
+"event_type": "Shutdown",
+"function_id": "4b0a9f1e-f9e2-46eb-951b-0bd14a69fb2c",
+"id": "4560708b-5315-40b3-840b-1e86b64f398d",
+"level": "log",
+"timestamp": 1763034945179000
+},
+{
+"event_message": "Error saving recommendation: {\n code: \"23502\",\n details: \"Failing row contains (41e3a29a-0cc8-4f15-9c96-0a6ac5e6f3a5, 53ab1d52-5ee6-42da-8b69-97bab4748a6f, null, FAQPage, add_structured_data, high, all, Implement FAQPage schema for service-related questions, null, AI platforms often pull FAQ content for informational queries. S..., Potential to appear in informational queries about marketing ser..., {}, f, f, pending, null, null, null, null, null, null, 2025-11-13 11:53:01.160656+00, 2025-11-13 11:53:01.160656+00).\",\n hint: null,\n message: 'null value in column \"description\" of relation \"schema_recommendations\" violates not-null constraint'\n}\n",
 "event_type": "Log",
 "function_id": "4b0a9f1e-f9e2-46eb-951b-0bd14a69fb2c",
-"id": "13950cc7-d6a7-4f90-b433-137b2dcf1cb2",
+"id": "a0068512-1443-416a-bb60-b884a4bf2e59",
 "level": "error",
-"timestamp": 1763034032597000
+"timestamp": 1763034781172000
 },
 {
-"event_message": "Error saving recommendation: {\n code: \"23502\",\n details: \"Failing row contains (9f811b93-16f7-4137-9f74-666b98072c7c, 53ab1d52-5ee6-42da-8b69-97bab4748a6f, null, FAQPage, add_structured_data, high, all, Implement FAQPage schema with industry-specific questions, null, AI platforms heavily favor FAQ content for conversational respon..., Potential to appear in 30-40% of advice-seeking queries about br..., {}, f, f, pending, null, null, null, null, null, null, 2025-11-13 11:40:32.548764+00, 2025-11-13 11:40:32.548764+00).\",\n hint: null,\n message: 'null value in column \"description\" of relation \"schema_recommendations\" violates not-null constraint'\n}\n",
+"event_message": "Error saving recommendation: {\n code: \"23502\",\n details: \"Failing row contains (655a3a26-f1b7-4224-aa27-fb7e7bf69e4a, 53ab1d52-5ee6-42da-8b69-97bab4748a6f, null, Service, add_structured_data, critical, all, Add Service schema for each practice area, null, Queries focus on specific services ('Brand Strategy and Position..., Improve chances of appearing in service-specific queries where c..., {}, f, f, pending, null, null, null, null, null, null, 2025-11-13 11:53:01.129205+00, 2025-11-13 11:53:01.129205+00).\",\n hint: null,\n message: 'null value in column \"description\" of relation \"schema_recommendations\" violates not-null constraint'\n}\n",
 "event_type": "Log",
 "function_id": "4b0a9f1e-f9e2-46eb-951b-0bd14a69fb2c",
-"id": "560e26ff-90df-488e-b52f-85cf93b4cad7",
+"id": "6b7fc20f-a7e7-4552-a216-2fccf687ff5a",
 "level": "error",
-"timestamp": 1763034032556000
+"timestamp": 1763034781137000
 },
 {
-"event_message": "Error saving recommendation: {\n code: \"23502\",\n details: \"Failing row contains (7c232d79-6da8-47d0-b557-5d901409bbcc, 53ab1d52-5ee6-42da-8b69-97bab4748a6f, null, Service, add_structured_data, critical, all, Add comprehensive Service schema for each offering, null, Service-specific queries showed 0% visibility - Service schema w..., Target 15-25% visibility improvement for service-specific querie..., {}, f, f, pending, null, null, null, null, null, null, 2025-11-13 11:40:32.521811+00, 2025-11-13 11:40:32.521811+00).\",\n hint: null,\n message: 'null value in column \"description\" of relation \"schema_recommendations\" violates not-null constraint'\n}\n",
+"event_message": "Error saving recommendation: {\n code: \"23502\",\n details: \"Failing row contains (69c68ee8-33ba-4de9-9ae9-25d7e1647c71, 53ab1d52-5ee6-42da-8b69-97bab4748a6f, null, Organization, deploy_schema, critical, all, Deploy existing Organization schema with enhanced service proper..., null, Schema exists but isn't live. Immediate deployment required for ..., Enable basic AI platform recognition and potential inclusion in ..., {}, f, f, pending, null, null, null, null, null, null, 2025-11-13 11:53:01.093374+00, 2025-11-13 11:53:01.093374+00).\",\n hint: null,\n message: 'null value in column \"description\" of relation \"schema_recommendations\" violates not-null constraint'\n}\n",
 "event_type": "Log",
 "function_id": "4b0a9f1e-f9e2-46eb-951b-0bd14a69fb2c",
-"id": "2177e7c9-6971-4752-9b08-e5b6419ff98c",
+"id": "74e0f341-d1a8-443d-9cea-6bc68ab1a39e",
 "level": "error",
-"timestamp": 1763034032529000
+"timestamp": 1763034781102000
 },
 {
-"event_message": "Error saving recommendation: {\n code: \"23502\",\n details: \"Failing row contains (8dab35a2-354a-473b-846f-34f8e7228d76, 53ab1d52-5ee6-42da-8b69-97bab4748a6f, null, Organization, deploy_schema, critical, all, Deploy existing Organization schema immediately, null, Schema exists in memory vault but isn't deployed - this is block..., Immediate improvement from 0% visibility to 10-20% mention rate ..., {}, f, f, pending, null, null, null, null, null, null, 2025-11-13 11:40:32.486708+00, 2025-11-13 11:40:32.486708+00).\",\n hint: null,\n message: 'null value in column \"description\" of relation \"schema_recommendations\" violates not-null constraint'\n}\n",
+"event_message": "📝 Raw Claude response length: 7562\n",
 "event_type": "Log",
 "function_id": "4b0a9f1e-f9e2-46eb-951b-0bd14a69fb2c",
-"id": "7745453b-a259-4e66-8803-750910ef54dd",
-"level": "error",
-"timestamp": 1763034032500000
-},
-{
-"event_message": "💾 Saving 4 schema recommendations to database...\n",
-"event_type": "Log",
-"function_id": "4b0a9f1e-f9e2-46eb-951b-0bd14a69fb2c",
-"id": "95cde2b3-96ca-4863-b2a2-10a6dae8e6bc",
+"id": "6f865822-8946-478c-a495-9501d6777701",
 "level": "info",
-"timestamp": 1763034032385000
+"timestamp": 1763034781055000
 },
 {
-"event_message": "✅ Parsed synthesis: {\n has_executive_summary: true,\n key_findings_count: 4,\n has_competitive_analysis: true,\n has_source_strategy: true,\n schema_recommendations_count: 4,\n strategic_actions_count: 5\n}\n",
+"event_message": "📝 First 500 chars: ```json\n{\n \"executive_summary\": \"Amplify faces a critical AI visibility crisis with 0% mention rate across 64 queries on all major AI platforms. This complete absence from AI responses indicates fundamental gaps in digital presence, content strategy, and structured data implementation. The lack of competitor mentions in the same queries suggests either overly broad query targeting or an industry segment with generally poor AI optimization. With schema markup created but not deployed, Amplify ha\n",
 "event_type": "Log",
 "function_id": "4b0a9f1e-f9e2-46eb-951b-0bd14a69fb2c",
-"id": "89bf0119-996a-41e4-bec8-fb8fdb24df11",
+"id": "36124c87-a6aa-4c0a-a02c-5b1447f3e424",
 "level": "info",
-"timestamp": 1763034032385000
+"timestamp": 1763034781055000
 },
 {
-"event_message": "✅ Synthesis Generated: {\n key_findings: 4,\n schema_recommendations: 4,\n strategic_actions: 5,\n has_competitive_analysis: true,\n has_source_strategy: true\n}\n",
+"event_message": "✅ Synthesis Generated: {\n key_findings: 5,\n schema_recommendations: 3,\n strategic_actions: 5,\n has_competitive_analysis: true,\n has_source_strategy: true\n}\n",
 "event_type": "Log",
 "function_id": "4b0a9f1e-f9e2-46eb-951b-0bd14a69fb2c",
-"id": "0b74c54a-55ab-422a-9fa6-1524d2d66e7b",
+"id": "53f897a3-2df9-46ba-a5ac-6db4f46a1f0c",
 "level": "info",
-"timestamp": 1763034032385000
+"timestamp": 1763034781055000
 },
 {
-"event_message": "📝 Raw Claude response length: 8730\n",
+"event_message": "✅ Parsed synthesis: {\n has_executive_summary: true,\n key_findings_count: 5,\n has_competitive_analysis: true,\n has_source_strategy: true,\n schema_recommendations_count: 3,\n strategic_actions_count: 5\n}\n",
 "event_type": "Log",
 "function_id": "4b0a9f1e-f9e2-46eb-951b-0bd14a69fb2c",
-"id": "c038f55f-e569-4947-943a-a769886507e2",
+"id": "d26191db-68c0-4b63-b433-7b254cf0fc5e",
 "level": "info",
-"timestamp": 1763034032384000
+"timestamp": 1763034781055000
 },
 {
-"event_message": "📝 First 500 chars: ```json\n{\n \"executive_summary\": \"Amplify faces a critical AI visibility crisis with 0% mention rate across 47 queries and all major AI platforms (Claude, ChatGPT, Gemini). The complete absence of competitor mentions in queries suggests either overly broad query targeting or an industry segment with inherently low AI visibility. This presents both a challenge and a massive first-mover opportunity. With schema markup created but not deployed and no website configured, Amplify is essentially invis\n",
+"event_message": "💾 Saving 3 schema recommendations to database...\n",
 "event_type": "Log",
 "function_id": "4b0a9f1e-f9e2-46eb-951b-0bd14a69fb2c",
-"id": "f35ea4d9-f406-42ad-8fa3-c132f14fb9f1",
+"id": "ff0ce624-aab8-4a2d-96fa-830691ad4d2f",
 "level": "info",
-"timestamp": 1763034032384000
+"timestamp": 1763034781055000
 },
 {
 "event_message": "🤖 Calling Claude for executive synthesis...\n",
 "event_type": "Log",
 "function_id": "4b0a9f1e-f9e2-46eb-951b-0bd14a69fb2c",
-"id": "4fdaa647-40d3-4a4c-994e-a0fe414c60c8",
+"id": "78cf1edd-2472-4b63-b18d-b85a99440b25",
 "level": "info",
-"timestamp": 1763033990548000
+"timestamp": 1763034745264000
 },
 {
 "event_message": "📊 Schema Status: { inMemoryVault: true, onWebsite: false, overall: \"Schema exists\" }\n",
 "event_type": "Log",
 "function_id": "4b0a9f1e-f9e2-46eb-951b-0bd14a69fb2c",
-"id": "2fbb1f9f-c800-465e-9bb2-ce25f0ea19d2",
+"id": "96a374c4-d2f1-4f54-bf69-ea5ca8ed09f1",
 "level": "info",
-"timestamp": 1763033990547000
+"timestamp": 1763034745263000
 },
 {
 "event_message": "✅ Schema found in Memory Vault: { type: undefined, fields: 0 }\n",
 "event_type": "Log",
 "function_id": "4b0a9f1e-f9e2-46eb-951b-0bd14a69fb2c",
-"id": "edc785b7-405e-431d-acbb-2969d7b2483b",
+"id": "d3ab26d2-386e-417d-b988-f6118306c2e5",
 "level": "info",
-"timestamp": 1763033990547000
+"timestamp": 1763034745263000
 },
 {
 "event_message": "🌐 Organization website: Not set\n",
 "event_type": "Log",
 "function_id": "4b0a9f1e-f9e2-46eb-951b-0bd14a69fb2c",
-"id": "9223537d-770b-4c87-a5ac-02071d4824a5",
+"id": "27e5781a-29fe-453d-b6c3-74675b443e66",
 "level": "info",
-"timestamp": 1763033990517000
+"timestamp": 1763034745235000
 },
 {
-"event_message": "📈 Analysis Complete: {\n total_queries: 47,\n mention_rate: 0,\n critical_gaps: 44,\n opportunities: 0\n}\n",
+"event_message": "📈 Analysis Complete: {\n total_queries: 64,\n mention_rate: 0,\n critical_gaps: 60,\n opportunities: 0\n}\n",
 "event_type": "Log",
 "function_id": "4b0a9f1e-f9e2-46eb-951b-0bd14a69fb2c",
-"id": "d2093c9e-3caf-4b09-9448-1384f0951019",
+"id": "dae27299-adb5-4aa6-99e0-6c82f78258c5",
 "level": "info",
-"timestamp": 1763033990405000
+"timestamp": 1763034745179000
 },
 {
-"event_message": "📊 GEO Executive Synthesis Starting: {\n organization: \"Amplify\",\n industry: undefined,\n results_count: 47,\n timestamp: \"2025-11-13T11:39:50.400Z\"\n}\n",
+"event_message": "📊 GEO Executive Synthesis Starting: {\n organization: \"Amplify\",\n industry: undefined,\n results_count: 64,\n timestamp: \"2025-11-13T11:52:25.174Z\"\n}\n",
 "event_type": "Log",
 "function_id": "4b0a9f1e-f9e2-46eb-951b-0bd14a69fb2c",
-"id": "3e259bda-e047-4429-a43a-bf8222e25fa7",
+"id": "d4aec7a9-e1f3-4fb0-9de6-9e25fa374058",
 "level": "info",
-"timestamp": 1763033990402000
+"timestamp": 1763034745176000
 },
 {
 "event_message": "Listening on http://localhost:9999/\n",
 "event_type": "Log",
 "function_id": "4b0a9f1e-f9e2-46eb-951b-0bd14a69fb2c",
-"id": "4550460c-801c-4038-8cfe-d3d54d27a5ba",
+"id": "4cf6080f-50ff-42c6-a508-e06072b9d002",
 "level": "info",
-"timestamp": 1763033990397000
+"timestamp": 1763034745171000
 },
 {
-"event_message": "booted (time: 34ms)",
+"event_message": "booted (time: 35ms)",
 "event_type": "Boot",
 "function_id": "4b0a9f1e-f9e2-46eb-951b-0bd14a69fb2c",
-"id": "d7e3aa77-ca11-47ff-8135-50f1c13384a3",
+"id": "522b772a-3abb-447b-8029-8989f4fe5db3",
 "level": "log",
-"timestamp": 1763033990392000
+"timestamp": 1763034745166000
 }
 ]

@@ -4,32 +4,17 @@ import { corsHeaders } from '../_shared/cors.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 /**
- * GEO EXECUTIVE SYNTHESIS
+ * GEO EXECUTIVE SYNTHESIS V2
  *
- * Transforms raw GEO monitoring results into executive-level insights
- * Similar to how executive-synthesis analyzes PR intelligence
+ * Aggregates meta-analysis from all AI platforms and generates executive insights
  *
- * Input: Raw GEO test results (queries + AI responses)
- * Output: Executive synthesis with actionable recommendations
+ * Input: Platform meta-analyses (competitive intelligence from Claude/Gemini/ChatGPT/Perplexity)
+ * Output: Executive synthesis with competitive patterns, source intelligence, recommendations
  */
-
-interface GEOTestResult {
-  query: string
-  intent: string
-  priority: string
-  platform: 'claude' | 'gemini' | 'chatgpt' | 'perplexity'
-  response: string
-  brand_mentioned: boolean
-  rank?: number
-  context_quality?: 'strong' | 'medium' | 'weak'
-  competitors_mentioned?: string[]
-  sources?: any[] // Sources cited by AI platforms (from Gemini/Perplexity)
-  source_domains?: string[] // Domain names of cited sources
-}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders, status: 204 })
   }
 
   try {
@@ -37,45 +22,19 @@ serve(async (req) => {
       organization_id,
       organization_name,
       industry,
-      geo_results, // Raw results from geo-intelligence-monitor
-      geo_targets // User's GEO targets if available
+      query_scenarios,
+      platform_analyses
     } = await req.json()
 
-    if (!organization_id || !organization_name || !geo_results) {
-      throw new Error('organization_id, organization_name, and geo_results required')
+    if (!organization_id || !organization_name || !platform_analyses) {
+      throw new Error('organization_id, organization_name, and platform_analyses required')
     }
 
-    if (!Array.isArray(geo_results) || geo_results.length === 0) {
-      console.log('⚠️  No GEO results provided, returning empty synthesis')
-      return new Response(
-        JSON.stringify({
-          success: true,
-          synthesis: {
-            overview: 'No GEO testing results available yet. Run GEO testing first to generate insights.',
-            visibility_score: 0,
-            critical_issues: [],
-            opportunities: [],
-            recommendations: []
-          },
-          summary: {
-            total_queries: 0,
-            claude_mentions: 0,
-            gemini_mentions: 0,
-            perplexity_mentions: 0,
-            chatgpt_mentions: 0,
-            critical_signals: 0
-          }
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      )
-    }
-
-    console.log('📊 GEO Executive Synthesis Starting:', {
+    console.log('📊 GEO Executive Synthesis V2 Starting:', {
       organization: organization_name,
-      industry,
-      results_count: geo_results.length,
+      industry: industry || 'Not specified',
+      scenarios: query_scenarios?.length || 0,
+      platforms: Object.keys(platform_analyses),
       timestamp: new Date().toISOString()
     })
 
@@ -83,234 +42,93 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    // Analyze results
-    const analysis = analyzeGEOResults(geo_results, organization_name)
+    // STEP 1: Aggregate competitive intelligence across platforms
+    console.log('🔍 Step 1/3: Aggregating competitive intelligence...')
+    const competitiveIntel = aggregateCompetitiveIntelligence(platform_analyses, organization_name)
 
-    console.log('📈 Analysis Complete:', {
-      total_queries: analysis.total_queries,
-      mention_rate: analysis.mention_rate,
-      critical_gaps: analysis.critical_gaps.length,
-      opportunities: analysis.opportunities.length
+    console.log('📈 Competitive Intelligence:', {
+      total_competitors_mentioned: competitiveIntel.all_competitors.size,
+      most_mentioned: competitiveIntel.competitor_frequency.slice(0, 5).map(c => c.name),
+      platforms_analyzed: competitiveIntel.platforms_analyzed
     })
 
-    // Check for schema in TWO places:
-    // 1. Memory Vault (stored but may not be deployed)
-    // 2. Live website (actually deployed and visible to AI)
+    // STEP 2: Aggregate source intelligence (which publications cited)
+    console.log('📰 Step 2/3: Aggregating source intelligence...')
+    const sourceIntel = aggregateSourceIntelligence(platform_analyses)
 
-    let currentSchema: any = null
-    let hasSchemaInMemoryVault = false
-    let hasSchemaOnWebsite = false
-    let websiteUrl: string | null = null
-
-    // Get organization's website URL
-    try {
-      const { data: orgData } = await supabase
-        .from('organizations')
-        .select('website')
-        .eq('id', organization_id)
-        .single()
-
-      websiteUrl = orgData?.website || null
-      console.log('🌐 Organization website:', websiteUrl || 'Not set')
-    } catch (error) {
-      console.error('Error fetching organization website:', error)
-    }
-
-    // 1. Check Memory Vault for schema
-    try {
-      const { data: schemaData } = await supabase
-        .from('content_library')
-        .select('content')
-        .eq('organization_id', organization_id)
-        .eq('content_type', 'schema')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-
-      if (schemaData) {
-        currentSchema = typeof schemaData.content === 'string'
-          ? JSON.parse(schemaData.content)
-          : schemaData.content
-        hasSchemaInMemoryVault = true
-        console.log('✅ Schema found in Memory Vault:', {
-          type: currentSchema['@type'],
-          fields: Object.keys(currentSchema).filter(k => !k.startsWith('@')).length
-        })
-      } else {
-        console.log('⚠️  No schema in Memory Vault')
-      }
-    } catch (error) {
-      console.error('Error fetching schema from Memory Vault:', error)
-    }
-
-    // 2. Check if schema is actually deployed on website
-    if (websiteUrl) {
-      try {
-        console.log('🔍 Checking for live schema deployment on', websiteUrl)
-        const response = await fetch(websiteUrl, {
-          headers: { 'User-Agent': 'Mozilla/5.0 (compatible; GEO-Monitor/1.0)' }
-        })
-
-        if (response.ok) {
-          const html = await response.text()
-
-          // Look for JSON-LD schema markup
-          const jsonLdMatch = html.match(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)
-
-          if (jsonLdMatch && jsonLdMatch.length > 0) {
-            hasSchemaOnWebsite = true
-            console.log('✅ Schema.org JSON-LD found on live website:', jsonLdMatch.length, 'blocks')
-
-            // Try to parse first schema block to get type
-            try {
-              const firstBlock = jsonLdMatch[0].replace(/<script[^>]*>/, '').replace(/<\/script>/, '').trim()
-              const parsed = JSON.parse(firstBlock)
-              const schemaType = parsed['@type'] || (Array.isArray(parsed['@graph']) ? parsed['@graph'][0]?.['@type'] : 'Unknown')
-              console.log('   Schema type on website:', schemaType)
-            } catch (e) {
-              console.log('   Could not parse schema block')
-            }
-          } else {
-            console.log('❌ No Schema.org JSON-LD found on live website')
-          }
-        } else {
-          console.log('⚠️  Could not fetch website (HTTP', response.status, ')')
-        }
-      } catch (error) {
-        console.error('Error checking live website for schema:', error.message)
-      }
-    }
-
-    const hasSchema = hasSchemaInMemoryVault || hasSchemaOnWebsite
-    console.log('📊 Schema Status:', {
-      inMemoryVault: hasSchemaInMemoryVault,
-      onWebsite: hasSchemaOnWebsite,
-      overall: hasSchema ? 'Schema exists' : 'No schema found'
+    console.log('📚 Source Intelligence:', {
+      total_sources: sourceIntel.all_sources.size,
+      top_sources: sourceIntel.source_frequency.slice(0, 5).map(s => s.domain)
     })
 
-    // Use Claude to generate executive-level insights
-    const anthropic = new Anthropic({
-      apiKey: Deno.env.get('ANTHROPIC_API_KEY')
-    })
+    // STEP 3: Generate synthesis with Claude
+    console.log('🤖 Step 3/3: Generating executive synthesis...')
 
-    const prompt = buildSynthesisPrompt({
-      organizationName: organization_name,
+    const synthesisPrompt = buildSynthesisPrompt({
+      organization_name,
       industry,
-      analysis,
-      geoTargets: geo_targets,
-      currentSchema,
-      hasSchema,
-      hasSchemaInMemoryVault,
-      hasSchemaOnWebsite,
-      websiteUrl
+      query_scenarios,
+      competitive_intel: competitiveIntel,
+      source_intel: sourceIntel,
+      platform_analyses
     })
 
-    console.log('🤖 Calling Claude for executive synthesis...')
+    const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY')
+    if (!anthropicKey) {
+      throw new Error('ANTHROPIC_API_KEY not configured')
+    }
+
+    const anthropic = new Anthropic({ apiKey: anthropicKey })
 
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 4096,
+      max_tokens: 8000,
       temperature: 0.7,
       messages: [{
         role: 'user',
-        content: prompt
+        content: synthesisPrompt
       }]
     })
 
-    const responseText = message.content[0].type === 'text'
-      ? message.content[0].text
-      : ''
+    const responseText = message.content[0].type === 'text' ? message.content[0].text : ''
 
-    // Parse Claude's synthesis
-    const synthesis = parseSynthesisResponse(responseText)
+    console.log('📝 Synthesis generated:', responseText.length, 'chars')
 
-    console.log('✅ Synthesis Generated:', {
+    // Parse synthesis
+    const synthesis = parseSynthesis(responseText)
+
+    console.log('✅ Synthesis complete:', {
+      has_executive_summary: !!synthesis.executive_summary,
       key_findings: synthesis.key_findings?.length || 0,
-      schema_recommendations: synthesis.schema_recommendations?.length || 0,
-      strategic_actions: synthesis.strategic_actions?.length || 0,
-      has_competitive_analysis: !!synthesis.competitive_analysis,
-      has_source_strategy: !!synthesis.source_strategy
+      recommendations: synthesis.strategic_actions?.length || 0
     })
-
-    // Save schema recommendations to database
-    if (synthesis.schema_recommendations && synthesis.schema_recommendations.length > 0) {
-      console.log(`💾 Saving ${synthesis.schema_recommendations.length} schema recommendations to database...`)
-
-      for (const rec of synthesis.schema_recommendations) {
-        try {
-          const { error } = await supabase
-            .from('schema_recommendations')
-            .insert({
-              organization_id,
-              schema_type: rec.schema_type || 'Organization',
-              recommendation_type: rec.type || 'optimize_existing',
-              priority: rec.priority || 'medium',
-              source_platform: rec.platform || 'all',
-              title: rec.title,
-              description: rec.description,
-              reasoning: rec.reasoning,
-              expected_impact: rec.expected_impact,
-              changes: rec.changes || {},
-              auto_executable: rec.auto_executable || false,
-              status: 'pending'
-            })
-
-          if (error) {
-            console.error('Error saving recommendation:', error)
-          } else {
-            console.log(`  ✓ Saved: ${rec.title}`)
-          }
-        } catch (err) {
-          console.error('Error saving recommendation:', err)
-        }
-      }
-    }
-
-    // Build summary metrics for UI display
-    const summary = {
-      total_queries: analysis.total_queries,
-      claude_mentions: analysis.mentions_by_platform.claude || 0,
-      gemini_mentions: analysis.mentions_by_platform.gemini || 0,
-      perplexity_mentions: analysis.mentions_by_platform.perplexity || 0,
-      chatgpt_mentions: analysis.mentions_by_platform.chatgpt || 0,
-      critical_signals: analysis.critical_gaps.length
-    }
-
-    // Extract top cited sources for easy access
-    const topCitedSources = Object.entries(analysis.top_domains)
-      .sort((a, b) => (b[1] as number) - (a[1] as number))
-      .slice(0, 10)
-      .map(([domain, count]) => ({
-        domain,
-        citation_count: count,
-        recommendation: `Target ${domain} for PR coverage to improve AI visibility`
-      }))
 
     return new Response(
       JSON.stringify({
         success: true,
-        synthesis: {
-          ...synthesis,
-          raw_analysis: analysis,
-          organization_name,
-          industry,
-          generated_at: new Date().toISOString(),
-          cited_sources: topCitedSources // Add top sources for UI display
+        synthesis,
+        competitive_intel: {
+          top_competitors: competitiveIntel.competitor_frequency.slice(0, 10),
+          total_competitors: competitiveIntel.all_competitors.size,
+          platforms_analyzed: competitiveIntel.platforms_analyzed
         },
-        summary  // Add summary for UI display
+        source_intel: {
+          top_sources: sourceIntel.source_frequency.slice(0, 10),
+          total_sources: sourceIntel.all_sources.size
+        },
+        meta: {
+          scenarios_analyzed: query_scenarios?.length || 0,
+          platforms_analyzed: Object.keys(platform_analyses).length,
+          generated_at: new Date().toISOString()
+        }
       }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
   } catch (error: any) {
-    console.error('❌ GEO Executive Synthesis Error:', error)
+    console.error('❌ Synthesis error:', error)
     return new Response(
-      JSON.stringify({
-        error: error.message,
-        details: error.toString()
-      }),
+      JSON.stringify({ error: error.message }),
       {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -320,385 +138,302 @@ serve(async (req) => {
 })
 
 /**
- * Analyze raw GEO results to extract key metrics and patterns
+ * Aggregate competitive intelligence from all platform meta-analyses
  */
-function analyzeGEOResults(results: GEOTestResult[], organizationName: string) {
-  const platforms = ['claude', 'gemini', 'chatgpt', 'perplexity']
+function aggregateCompetitiveIntelligence(platform_analyses: any, target_org: string) {
+  const all_competitors = new Set<string>()
+  const competitor_mentions: Record<string, { count: number, platforms: string[], reasons: string[] }> = {}
+  const success_factors = new Set<string>()
+  let platforms_analyzed = 0
 
-  const analysis = {
-    total_queries: results.length,
-    queries_by_platform: {} as Record<string, number>,
-    mentions_by_platform: {} as Record<string, number>,
-    mention_rate: 0,
-    avg_rank: 0,
-    critical_gaps: [] as any[],
-    opportunities: [] as any[],
-    competitor_analysis: {} as Record<string, number>,
-    cited_sources: [] as any[], // Track all sources cited by AI platforms
-    top_domains: {} as Record<string, number> // Domain frequency
+  for (const [platform, analysis] of Object.entries(platform_analyses)) {
+    const meta = (analysis as any).meta_analysis
+    if (!meta) continue
+
+    platforms_analyzed++
+
+    // Extract query results
+    if (meta.query_results && Array.isArray(meta.query_results)) {
+      for (const result of meta.query_results) {
+        if (result.organizations_mentioned && Array.isArray(result.organizations_mentioned)) {
+          for (const org of result.organizations_mentioned) {
+            if (org && org !== target_org) {
+              all_competitors.add(org)
+              if (!competitor_mentions[org]) {
+                competitor_mentions[org] = { count: 0, platforms: [], reasons: [] }
+              }
+              competitor_mentions[org].count++
+              if (!competitor_mentions[org].platforms.includes(platform)) {
+                competitor_mentions[org].platforms.push(platform)
+              }
+              if (result.why_these_appeared) {
+                competitor_mentions[org].reasons.push(result.why_these_appeared)
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Extract competitive intelligence
+    if (meta.competitive_intelligence) {
+      if (meta.competitive_intelligence.success_factors) {
+        success_factors.add(meta.competitive_intelligence.success_factors)
+      }
+      if (meta.competitive_intelligence.dominant_competitors && Array.isArray(meta.competitive_intelligence.dominant_competitors)) {
+        for (const comp of meta.competitive_intelligence.dominant_competitors) {
+          if (comp && comp !== target_org) {
+            all_competitors.add(comp)
+          }
+        }
+      }
+    }
   }
 
-  // Initialize platform counters
-  platforms.forEach(p => {
-    analysis.queries_by_platform[p] = 0
-    analysis.mentions_by_platform[p] = 0
-  })
+  // Sort competitors by frequency
+  const competitor_frequency = Object.entries(competitor_mentions)
+    .map(([name, data]) => ({
+      name,
+      mentions: data.count,
+      platforms: data.platforms,
+      reasons: [...new Set(data.reasons)]
+    }))
+    .sort((a, b) => b.mentions - a.mentions)
 
-  let totalMentions = 0
-  let totalRanks = 0
-  let rankedMentions = 0
-
-  // Analyze each result
-  results.forEach(result => {
-    const platform = result.platform
-    analysis.queries_by_platform[platform] = (analysis.queries_by_platform[platform] || 0) + 1
-
-    if (result.brand_mentioned) {
-      totalMentions++
-      analysis.mentions_by_platform[platform] = (analysis.mentions_by_platform[platform] || 0) + 1
-
-      if (result.rank) {
-        totalRanks += result.rank
-        rankedMentions++
-      }
-    } else {
-      // Track visibility gaps
-      if (result.priority === 'critical' || result.priority === 'high') {
-        analysis.critical_gaps.push({
-          query: result.query,
-          platform: result.platform,
-          intent: result.intent,
-          priority: result.priority,
-          competitors_mentioned: result.competitors_mentioned || []
-        })
-      }
-    }
-
-    // Track competitor mentions
-    if (result.competitors_mentioned && result.competitors_mentioned.length > 0) {
-      result.competitors_mentioned.forEach(competitor => {
-        analysis.competitor_analysis[competitor] = (analysis.competitor_analysis[competitor] || 0) + 1
-      })
-    }
-
-    // Identify opportunities
-    if (!result.brand_mentioned && result.context_quality === 'strong') {
-      analysis.opportunities.push({
-        query: result.query,
-        platform: result.platform,
-        intent: result.intent,
-        why: 'Strong context but no brand mention - opportunity to optimize'
-      })
-    }
-
-    // Collect cited sources (from Gemini and Perplexity)
-    if (result.sources && result.sources.length > 0) {
-      result.sources.forEach(source => {
-        analysis.cited_sources.push({
-          ...source,
-          platform: result.platform,
-          query: result.query,
-          brand_mentioned: result.brand_mentioned
-        })
-      })
-    }
-
-    // Track domain frequency
-    if (result.source_domains && result.source_domains.length > 0) {
-      result.source_domains.forEach(domain => {
-        analysis.top_domains[domain] = (analysis.top_domains[domain] || 0) + 1
-      })
-    }
-  })
-
-  analysis.mention_rate = analysis.total_queries > 0
-    ? Math.round((totalMentions / analysis.total_queries) * 100)
-    : 0
-
-  analysis.avg_rank = rankedMentions > 0
-    ? Math.round(totalRanks / rankedMentions * 10) / 10
-    : 0
-
-  return analysis
+  return {
+    all_competitors,
+    competitor_mentions,
+    competitor_frequency,
+    success_factors: Array.from(success_factors),
+    platforms_analyzed
+  }
 }
 
 /**
- * Build prompt for Claude to generate executive synthesis
+ * Aggregate source intelligence (which publications cited)
  */
-function buildSynthesisPrompt(context: {
-  organizationName: string
-  industry?: string
-  analysis: any
-  geoTargets?: any
-  currentSchema?: any
-  hasSchema?: boolean
-  hasSchemaInMemoryVault?: boolean
-  hasSchemaOnWebsite?: boolean
-  websiteUrl?: string | null
-}): string {
-  const currentDate = new Date().toISOString().split('T')[0]
+function aggregateSourceIntelligence(platform_analyses: any) {
+  const all_sources = new Set<string>()
+  const source_mentions: Record<string, { count: number, platforms: string[] }> = {}
 
-  // Build schema status context (informational, not prescriptive)
-  let schemaStatusMessage = ''
-  if (context.hasSchemaOnWebsite) {
-    schemaStatusMessage = `✅ SCHEMA DEPLOYED ON WEBSITE: ${context.websiteUrl}
-Type: ${context.currentSchema?.['@type'] || 'Detected'}
-Status: Live and accessible to AI platforms`
-  } else if (context.hasSchemaInMemoryVault && !context.hasSchemaOnWebsite) {
-    schemaStatusMessage = `⚠️ SCHEMA IN MEMORY VAULT BUT NOT DEPLOYED
-Type: ${context.currentSchema?.['@type'] || 'Not set'}
-Website: ${context.websiteUrl || 'Not configured'}
-Status: Created but not yet live (deployment needed)`
-  } else if (!context.websiteUrl) {
-    schemaStatusMessage = `⚠️ NO WEBSITE CONFIGURED
-Status: Cannot verify schema deployment`
-  } else {
-    schemaStatusMessage = `❌ NO SCHEMA DETECTED
-Website: ${context.websiteUrl}
-Status: No Schema.org markup found`
+  for (const [platform, analysis] of Object.entries(platform_analyses)) {
+    const meta = (analysis as any).meta_analysis
+    const sources = (analysis as any).sources || []
+
+    // From meta_analysis
+    if (meta?.source_intelligence?.most_cited_sources && Array.isArray(meta.source_intelligence.most_cited_sources)) {
+      for (const source of meta.source_intelligence.most_cited_sources) {
+        if (source) {
+          all_sources.add(source)
+          if (!source_mentions[source]) {
+            source_mentions[source] = { count: 0, platforms: [] }
+          }
+          source_mentions[source].count++
+          if (!source_mentions[source].platforms.includes(platform)) {
+            source_mentions[source].platforms.push(platform)
+          }
+        }
+      }
+    }
+
+    // From query results
+    if (meta?.query_results && Array.isArray(meta.query_results)) {
+      for (const result of meta.query_results) {
+        if (result.sources_cited && Array.isArray(result.sources_cited)) {
+          for (const source of result.sources_cited) {
+            if (source) {
+              all_sources.add(source)
+              if (!source_mentions[source]) {
+                source_mentions[source] = { count: 0, platforms: [] }
+              }
+              source_mentions[source].count++
+              if (!source_mentions[source].platforms.includes(platform)) {
+                source_mentions[source].platforms.push(platform)
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // From platform-specific sources (Gemini grounding, Perplexity citations)
+    if (sources && Array.isArray(sources)) {
+      for (const source of sources) {
+        const domain = source.url ? new URL(source.url).hostname : source
+        if (domain) {
+          all_sources.add(domain)
+          if (!source_mentions[domain]) {
+            source_mentions[domain] = { count: 0, platforms: [] }
+          }
+          source_mentions[domain].count++
+          if (!source_mentions[domain].platforms.includes(platform)) {
+            source_mentions[domain].platforms.push(platform)
+          }
+        }
+      }
+    }
   }
 
-  return `You are a GEO (Generative Experience Optimization) strategist analyzing AI visibility for ${context.organizationName}.
+  const source_frequency = Object.entries(source_mentions)
+    .map(([domain, data]) => ({
+      domain,
+      mentions: data.count,
+      platforms: data.platforms
+    }))
+    .sort((a, b) => b.mentions - a.mentions)
 
-CURRENT DATE: ${currentDate}
+  return {
+    all_sources,
+    source_mentions,
+    source_frequency
+  }
+}
 
-ORGANIZATION: ${context.organizationName}
-INDUSTRY: ${context.industry || 'Not specified'}
-WEBSITE: ${context.websiteUrl || 'Not configured'}
+/**
+ * Build synthesis prompt for Claude
+ */
+function buildSynthesisPrompt(context: {
+  organization_name: string
+  industry: string | undefined
+  query_scenarios: any[]
+  competitive_intel: any
+  source_intel: any
+  platform_analyses: any
+}): string {
+  const topCompetitors = context.competitive_intel.competitor_frequency.slice(0, 10)
+    .map((c: any) => `- ${c.name}: ${c.mentions} mentions across ${c.platforms.join(', ')}`)
+    .join('\n')
 
-SCHEMA.ORG STATUS:
-${schemaStatusMessage}
+  const topSources = context.source_intel.source_frequency.slice(0, 10)
+    .map((s: any) => `- ${s.domain}: Cited by ${s.platforms.join(', ')}`)
+    .join('\n')
 
-YOUR MISSION:
-You are conducting COMPETITIVE INTELLIGENCE analysis for GEO optimization. Your job is to:
-1. **Analyze who IS appearing** - What makes successful organizations show up?
-2. **Identify strategic patterns** - What sources, content types, and schema elements work?
-3. **Recommend optimizations** - Specific, actionable schema and content improvements
-4. **Guide overall strategy** - Not just "what to do" but "why it works"
+  const scenarioList = context.query_scenarios?.map((q: any, idx: number) =>
+    `${idx + 1}. "${q.query}" (${q.intent}, ${q.priority})`
+  ).join('\n') || 'N/A'
 
-CRITICAL: This is about LEARNING FROM THE DATA, not making assumptions.
-- If competitors are appearing, analyze WHAT THEY'RE DOING that works
-- If org has 0% visibility, analyze what WOULD work based on successful competitors
-- Schema recommendations should be based on patterns you observe in successful appearances
+  return `You are analyzing GEO (Generative Engine Optimization) results for ${context.organization_name}${context.industry ? `, a ${context.industry} company` : ''}.
 
-GEO PERFORMANCE ANALYSIS:
-- Total Queries Tested: ${context.analysis.total_queries}
-- Overall Mention Rate: ${context.analysis.mention_rate}%
-- Average Rank When Mentioned: ${context.analysis.avg_rank}
-- Critical Visibility Gaps: ${context.analysis.critical_gaps.length}
-- Opportunities Identified: ${context.analysis.opportunities.length}
+We tested ${context.query_scenarios?.length || 0} query scenarios across 4 AI platforms (Claude, Gemini, ChatGPT, Perplexity) and collected competitive intelligence.
 
-PLATFORM BREAKDOWN:
-${Object.entries(context.analysis.queries_by_platform).map(([platform, count]) => {
-  const mentions = context.analysis.mentions_by_platform[platform] || 0
-  const rate = count > 0 ? Math.round((mentions / (count as number)) * 100) : 0
-  return `- ${platform.toUpperCase()}: ${mentions}/${count} queries (${rate}% mention rate)`
-}).join('\n')}
+## QUERY SCENARIOS TESTED:
+${scenarioList}
 
-CRITICAL GAPS (High-priority queries where brand was NOT mentioned):
-${context.analysis.critical_gaps.slice(0, 5).map((gap: any) =>
-  `- "${gap.query}" (${gap.platform}) - Competitors mentioned: ${gap.competitors_mentioned.join(', ') || 'none'}`
-).join('\n')}
+## COMPETITIVE INTELLIGENCE (Who AI Platforms Recommend):
 
-═══════════════════════════════════════════════════════════
-🎯 COMPETITIVE INTELLIGENCE: WHO'S WINNING AND WHY
-═══════════════════════════════════════════════════════════
+**Top Competitors Mentioned Across Platforms:**
+${topCompetitors || 'No competitors identified'}
 
-ORGANIZATIONS APPEARING IN AI RESPONSES:
-${Object.entries(context.analysis.competitor_analysis).length > 0
-  ? Object.entries(context.analysis.competitor_analysis)
-      .sort((a, b) => (b[1] as number) - (a[1] as number))
-      .slice(0, 10)
-      .map(([comp, count], idx) => `${idx + 1}. ${comp}: ${count} mentions across platforms`)
-      .join('\n')
-  : 'No competitor organizations mentioned (indicates queries may be too broad or industry has low AI visibility)'}
+**Total Unique Competitors:** ${context.competitive_intel.all_competitors.size}
+**Platforms Analyzed:** ${context.competitive_intel.platforms_analyzed}/4
 
-CRITICAL QUESTION: Why are THESE organizations appearing?
-- What content are they publishing that AI platforms cite?
-- What schema markup are they likely using?
-- What authoritative sources cover them?
-- How can ${context.organizationName} replicate their success?
+## SOURCE INTELLIGENCE (What Publications AI Platforms Cite):
 
-═══════════════════════════════════════════════════════════
-📚 SOURCE INTELLIGENCE: WHERE AI GETS ITS INFORMATION
-═══════════════════════════════════════════════════════════
+**Top Sources Cited:**
+${topSources || 'No sources identified'}
 
-AI PLATFORMS CITED THESE SOURCES (from Gemini & Perplexity):
-${Object.entries(context.analysis.top_domains).length > 0
-  ? Object.entries(context.analysis.top_domains)
-      .sort((a, b) => (b[1] as number) - (a[1] as number))
-      .slice(0, 20)
-      .map(([domain, count], idx) => `${idx + 1}. ${domain} - cited ${count} times`)
-      .join('\n')
-  : 'No source data available (only Claude/ChatGPT tested, which don\'t provide citations)'}
+**Total Unique Sources:** ${context.source_intel.all_sources.size}
 
-STRATEGIC INSIGHT:
-${Object.entries(context.analysis.top_domains).length > 0 ? `
-These ${Object.keys(context.analysis.top_domains).length} sources are the AUTHORITY LAYER that AI platforms trust.
-Getting cited by these publications = Direct AI visibility improvement.
+## RAW PLATFORM META-ANALYSES:
 
-TOP 5 TARGET PUBLICATIONS FOR PR/CONTENT:
-${Object.entries(context.analysis.top_domains)
-  .sort((a, b) => (b[1] as number) - (a[1] as number))
-  .slice(0, 5)
-  .map(([domain, count], idx) => `${idx + 1}. ${domain} (${count} citations)`)
-  .join('\n')}
-` : 'Need to test Gemini/Perplexity to identify which sources AI platforms trust in this industry.'}
+${Object.entries(context.platform_analyses).map(([platform, data]: [string, any]) => {
+  const meta = data.meta_analysis
+  if (!meta) return `**${platform}**: No meta-analysis available`
 
-${context.geoTargets ? `
-ORGANIZATION'S GEO TARGETS:
-- Service Lines: ${context.geoTargets.service_lines?.join(', ') || 'Not specified'}
-- Geographic Focus: ${context.geoTargets.geographic_focus?.join(', ') || 'Not specified'}
-- Priority Queries: ${context.geoTargets.priority_queries?.slice(0, 3).join(', ') || 'None configured'}
-` : ''}
+  return `**${platform}**:
+- Overall Visibility: ${meta.overall_visibility || 'N/A'}
+- Visibility Summary: ${meta.visibility_summary || 'N/A'}
+- Query Results: ${meta.query_results?.length || 0} analyzed
+- Recommendations: ${meta.recommendations?.length || 0} provided`
+}).join('\n\n')}
 
-═══════════════════════════════════════════════════════════
-📋 YOUR ANALYSIS TASK
-═══════════════════════════════════════════════════════════
+---
 
-Analyze this GEO intelligence data and provide STRATEGIC, DATA-DRIVEN recommendations.
+YOUR TASK:
+Generate an executive synthesis in JSON format that helps ${context.organization_name} understand:
+1. **Why competitors appear** (patterns across platforms)
+2. **What sources matter** (where to get PR coverage)
+3. **What ${context.organization_name} needs** to gain AI visibility
 
-Structure your response as JSON:
+Output ONLY valid JSON in this format:
 
 {
-  "executive_summary": "2-3 paragraphs analyzing: (1) Current visibility performance, (2) Competitive positioning based on who's appearing, (3) Strategic opportunities based on source/competitor analysis",
+  "executive_summary": "2-3 paragraph executive summary highlighting key findings and strategic implications",
 
   "key_findings": [
-    "Data-driven insight 1 with specific metrics",
-    "Pattern observation 2 explaining WHY certain orgs appear",
-    "Strategic gap 3 with competitive intelligence",
-    "Source analysis 4 identifying key publications to target"
-  ],
-
-  "competitive_analysis": {
-    "who_is_winning": "Which organizations dominate AI visibility and why",
-    "success_patterns": "Common traits of appearing organizations (content, sources, likely schema)",
-    "gaps_to_exploit": "Where ${context.organizationName} can differentiate"
-  },
-
-  "source_strategy": {
-    "priority_publications": ["Top 3-5 publications AI platforms cite most"],
-    "coverage_approach": "How to get cited by these sources",
-    "content_types": "What content formats work (based on source analysis)"
-  },
-
-  "schema_recommendations": [
     {
-      "title": "Specific schema optimization",
-      "schema_type": "Organization|Product|FAQPage|Service|etc",
-      "type": "add_field|update_field|add_structured_data|deploy_schema",
-      "priority": "critical|high|medium",
-      "reasoning": "Why this specific change based on competitive/source analysis",
-      "expected_impact": "What AI visibility improvement to expect",
-      "implementation": "Exact technical steps to implement",
-      "example": "Code example if applicable",
-      "auto_executable": false
+      "title": "Brief finding title",
+      "insight": "What this means for ${context.organization_name}",
+      "evidence": "Data/pattern supporting this (e.g., 'Accenture mentioned by 3/4 platforms due to comprehensive schema')",
+      "priority": "critical|high|medium"
     }
   ],
 
+  "competitive_analysis": {
+    "dominant_players": [
+      {
+        "name": "Competitor name",
+        "visibility": "Why they appear (schema, PR, content)",
+        "platforms": ["Which platforms mention them"]
+      }
+    ],
+    "success_patterns": "What makes competitors successful in AI visibility (schema types, PR coverage, content patterns)",
+    "gaps_for_target": "Specific gaps ${context.organization_name} has compared to successful competitors"
+  },
+
+  "source_strategy": {
+    "priority_publications": [
+      {
+        "name": "Publication/domain",
+        "reasoning": "Why AI platforms trust this source",
+        "action": "How ${context.organization_name} should approach coverage"
+      }
+    ],
+    "coverage_strategy": "Overall strategy for gaining authoritative source citations"
+  },
+
   "strategic_actions": [
     {
-      "category": "pr|content|schema|technical|partnerships",
-      "action": "Specific action with clear outcome",
       "priority": "critical|high|medium",
-      "timeline": "immediate|this_week|this_month",
-      "expected_impact": "Measurable improvement",
-      "based_on": "Which data point drove this recommendation"
+      "category": "schema|content|pr|technical",
+      "action": "Specific action to take",
+      "reasoning": "Why this matters based on competitive analysis",
+      "expected_impact": "How this improves AI visibility",
+      "timeline": "immediate|short-term|medium-term"
     }
   ]
 }
 
-═══════════════════════════════════════════════════════════
-🎯 RECOMMENDATION PRINCIPLES
-═══════════════════════════════════════════════════════════
-
-1. **DATA-DRIVEN**: Base recommendations on competitive/source analysis, not generic advice
-2. **SPECIFIC**: "Add FAQPage schema with these 10 questions" not "implement schema"
-3. **STRATEGIC**: Explain WHY based on what successful competitors are doing
-4. **ACTIONABLE**: Provide exact implementation steps, code examples where useful
-5. **PRIORITIZED**: Critical (do now) > High (this week) > Medium (this month)
-
-SCHEMA RECOMMENDATIONS APPROACH:
-- Current status: ${schemaStatusMessage}
-- Make schema recommendations REGARDLESS of current deployment status
-- Focus on OPTIMIZATION and ENHANCEMENT, not just "implement schema"
-- Analyze what schema elements successful competitors likely have
-- Recommend specific fields, structured data types, content updates
-- If schema exists: Recommend enhancements, additions, optimizations
-- If no schema: Recommend implementation as part of integrated strategy
-- Always explain the competitive/strategic reasoning
-
-EXAMPLE GOOD SCHEMA RECOMMENDATION:
-{
-  "title": "Add Service schema for each practice area",
-  "reasoning": "Analysis shows competitors appearing for service-specific queries likely have Service schema. ${context.organizationName}'s competitors X and Y dominate 'PR consulting services' queries.",
-  "implementation": "Create Service schema for each service line with provider, areaServed, and offers properties",
-  "expected_impact": "Improve visibility for service-specific queries where competitors currently dominate"
-}
-
-EXAMPLE BAD SCHEMA RECOMMENDATION:
-{
-  "title": "Implement Schema.org markup",
-  "reasoning": "Schema helps with SEO",
-  "implementation": "Add schema to website"
-}
-
-Generate your strategic analysis and recommendations now:`
+Be specific. Use actual competitor names, publication names, and concrete patterns from the data.`
 }
 
 /**
- * Parse Claude's synthesis response
+ * Parse synthesis response
  */
-function parseSynthesisResponse(response: string): any {
+function parseSynthesis(responseText: string): any {
   try {
-    // Log the raw response to debug
-    console.log('📝 Raw Claude response length:', response.length)
-    console.log('📝 First 500 chars:', response.substring(0, 500))
-
-    // Try to find JSON in response
-    const jsonMatch = response.match(/\{[\s\S]*\}/)
+    // Try to extract JSON
+    const jsonMatch = responseText.match(/\{[\s\S]*\}/)
     if (jsonMatch) {
-      const parsed = JSON.parse(jsonMatch[0])
-      console.log('✅ Parsed synthesis:', {
-        has_executive_summary: !!parsed.executive_summary,
-        key_findings_count: parsed.key_findings?.length || 0,
-        has_competitive_analysis: !!parsed.competitive_analysis,
-        has_source_strategy: !!parsed.source_strategy,
-        schema_recommendations_count: parsed.schema_recommendations?.length || 0,
-        strategic_actions_count: parsed.strategic_actions?.length || 0
-      })
-      return parsed
+      return JSON.parse(jsonMatch[0])
     }
 
-    console.warn('⚠️ No JSON found in response, using fallback structure')
-    // Fallback: return NEW structure
+    // Fallback: return as text
     return {
-      executive_summary: response.substring(0, 500),
-      key_findings: [],
-      competitive_analysis: {
-        who_is_winning: 'Unable to parse response',
-        success_patterns: '',
-        gaps_to_exploit: ''
-      },
-      source_strategy: {
-        priority_publications: [],
-        coverage_approach: '',
-        content_types: ''
-      },
-      schema_recommendations: [],
-      strategic_actions: []
-    }
-  } catch (error) {
-    console.error('❌ Error parsing synthesis response:', error)
-    console.error('Response that failed to parse:', response.substring(0, 1000))
-    return {
-      executive_summary: 'Error parsing synthesis',
+      executive_summary: responseText,
       key_findings: [],
       competitive_analysis: {},
       source_strategy: {},
-      schema_recommendations: [],
-      strategic_actions: [],
-      parse_error: error.message
+      strategic_actions: []
+    }
+  } catch (error) {
+    console.error('Error parsing synthesis:', error)
+    return {
+      executive_summary: responseText,
+      key_findings: [],
+      competitive_analysis: {},
+      source_strategy: {},
+      strategic_actions: []
     }
   }
 }
