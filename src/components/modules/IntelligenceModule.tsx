@@ -499,6 +499,34 @@ export default function IntelligenceModule() {
       if (perplexityResults.error) console.warn('Perplexity error:', perplexityResults.error)
       if (chatgptResults.error) console.warn('ChatGPT error:', chatgptResults.error)
 
+      // Log detailed platform results for debugging
+      console.log('📊 Claude Results:', {
+        success: claudeResults.data?.success,
+        signals: claudeResults.data?.signals?.length || 0,
+        meta_analysis: claudeResults.data?.meta_analysis ? 'Received' : 'Missing',
+        raw_response_length: claudeResults.data?.raw_response?.length || 0
+      })
+      console.log('📊 Gemini Results:', {
+        success: geminiResults.data?.success,
+        signals: geminiResults.data?.signals?.length || 0,
+        meta_analysis: geminiResults.data?.meta_analysis ? 'Received' : 'Missing',
+        sources: geminiResults.data?.sources?.length || 0,
+        raw_response_length: geminiResults.data?.raw_response?.length || 0
+      })
+      console.log('📊 Perplexity Results:', {
+        success: perplexityResults.data?.success,
+        signals: perplexityResults.data?.signals?.length || 0,
+        meta_analysis: perplexityResults.data?.meta_analysis ? 'Received' : 'Missing',
+        sources: perplexityResults.data?.sources?.length || 0,
+        raw_response_length: perplexityResults.data?.raw_response?.length || 0
+      })
+      console.log('📊 ChatGPT Results:', {
+        success: chatgptResults.data?.success,
+        signals: chatgptResults.data?.signals?.length || 0,
+        meta_analysis: chatgptResults.data?.meta_analysis ? 'Received' : 'Missing',
+        raw_response_length: chatgptResults.data?.raw_response?.length || 0
+      })
+
       // Combine all platform results
       const allSignals = [
         ...(claudeResults.data?.signals || []),
@@ -574,7 +602,31 @@ export default function IntelligenceModule() {
         },
         query_scenarios: queryScenarios,
         signals: allSignals,
-        synthesis: synthesisData?.synthesis || null
+        synthesis: synthesisData?.synthesis || null,
+        platform_details: {
+          claude: {
+            meta_analysis: claudeResults.data?.meta_analysis,
+            raw_response: claudeResults.data?.raw_response,
+            signal_count: claudeResults.data?.signals?.length || 0
+          },
+          gemini: {
+            meta_analysis: geminiResults.data?.meta_analysis,
+            sources: geminiResults.data?.sources || [],
+            raw_response: geminiResults.data?.raw_response,
+            signal_count: geminiResults.data?.signals?.length || 0
+          },
+          perplexity: {
+            meta_analysis: perplexityResults.data?.meta_analysis,
+            sources: perplexityResults.data?.sources || [],
+            raw_response: perplexityResults.data?.raw_response,
+            signal_count: perplexityResults.data?.signals?.length || 0
+          },
+          chatgpt: {
+            meta_analysis: chatgptResults.data?.meta_analysis,
+            raw_response: chatgptResults.data?.raw_response,
+            signal_count: chatgptResults.data?.signals?.length || 0
+          }
+        }
       }
 
       console.log('📊 Platform breakdown:', {
