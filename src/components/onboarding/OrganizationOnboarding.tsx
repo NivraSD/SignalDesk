@@ -534,7 +534,7 @@ export default function OrganizationOnboarding({
       }
 
       if (metaAnalysisPrompt) {
-        console.log(`✅ Generated meta-analysis prompt`)
+        console.log(`✅ Generated meta-analysis prompt (${topQueries?.length || 10} scenarios)`)
       } else {
         console.log(`✅ Generated ${queries.length} queries (fallback mode)`)
       }
