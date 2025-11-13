@@ -446,15 +446,16 @@ export default function IntelligenceModule() {
         throw new Error(queryData?.error || 'Failed to generate GEO queries')
       }
 
-      // Extract meta-analysis prompt (REQUIRED)
+      // Extract meta-analysis prompt and scenarios (REQUIRED)
       const metaAnalysisPrompt = queryData.meta_analysis_prompt
+      const queryScenarios = queryData.query_scenarios || []
 
       if (!metaAnalysisPrompt) {
         console.error('Query discovery response:', queryData)
         throw new Error('No meta-analysis prompt generated')
       }
 
-      console.log(`✅ Generated meta-analysis prompt (${queryData.query_scenarios?.length || 10} scenarios)`)
+      console.log(`✅ Generated meta-analysis prompt (${queryScenarios.length} scenarios)`)
 
       // STEP 2: Test all 4 platforms in PARALLEL with META-ANALYSIS
       console.log('🚀 Step 2/3: Testing all 4 platforms with meta-analysis (1 comprehensive call each)...')
@@ -537,7 +538,7 @@ export default function IntelligenceModule() {
 
       console.log('✅ GEO monitor complete:', {
         total_signals: allSignals.length,
-        queries_tested: queries.length,
+        scenarios_tested: queryScenarios.length,
         platforms: '4 platforms (parallel)'
       })
 
@@ -562,7 +563,7 @@ export default function IntelligenceModule() {
       const monitorData = {
         success: true,
         summary: {
-          total_queries: queries.length,
+          total_scenarios: queryScenarios.length,
           total_signals: allSignals.length,
           claude_mentions: claudeMentions,
           gemini_mentions: geminiMentions,
@@ -571,7 +572,7 @@ export default function IntelligenceModule() {
           critical_signals: criticalSignals,
           platforms_tested: 4
         },
-        queries: queries,
+        query_scenarios: queryScenarios,
         signals: allSignals,
         synthesis: synthesisData?.synthesis || null
       }
