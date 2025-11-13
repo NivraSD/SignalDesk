@@ -127,11 +127,26 @@ serve(async (req) => {
       ? message.content[0].text
       : ''
 
-    // Parse Claude's response to extract queries
+    // Parse Claude's response to extract query scenarios
     const queries = parseQueryResponse(responseText)
-    console.log(`✅ Generated ${queries.length} test queries`)
+    console.log(`✅ Generated ${queries.length} query scenarios`)
 
-    // Categorize and prioritize queries
+    // Take top 10 most important queries for meta-analysis
+    const topQueries = queries.slice(0, 10)
+
+    // Build meta-analysis prompt
+    const metaAnalysisPrompt = buildMetaAnalysisPrompt({
+      organizationName: organization_name,
+      industry: orgIndustry,
+      website: org?.website,
+      queries: topQueries,
+      description: orgDescription,
+      competitors: orgCompetitors
+    })
+
+    console.log('✅ Built meta-analysis prompt')
+
+    // Categorize and prioritize queries (for reference)
     const categorizedQueries = categorizeQueries(queries)
 
     return new Response(
@@ -140,7 +155,9 @@ serve(async (req) => {
         organization_name,
         industry: orgIndustry,
         total_queries: queries.length,
-        queries: categorizedQueries,
+        queries: categorizedQueries,  // Keep for backwards compatibility
+        query_scenarios: topQueries,  // NEW: Top 10 scenarios for meta-analysis
+        meta_analysis_prompt: metaAnalysisPrompt,  // NEW: Single comprehensive prompt
         geo_targets_used: !!geoTargets,
         geo_targets_summary: geoTargets ? {
           service_lines: geoTargets.service_lines?.length || 0,
@@ -617,4 +634,78 @@ function categorizeQueries(queries: any[]): {
   }
 
   return categorized
+}
+
+/**
+ * Build comprehensive meta-analysis prompt for AI platforms
+ */
+function buildMetaAnalysisPrompt(context: {
+  organizationName: string
+  industry: string
+  website: string | undefined
+  queries: any[]
+  description: string
+  competitors: string[]
+}): string {
+  const queryList = context.queries.map((q, idx) =>
+    `${idx + 1}. "${q.query}" (${q.intent || 'informational'}, priority: ${q.priority || 'medium'})`
+  ).join('\n')
+
+  return `You are conducting a GEO (Generative Engine Optimization) visibility analysis for ${context.organizationName}, ${context.industry ? `a ${context.industry} company` : 'an organization'}.
+
+CONTEXT:
+- Organization: ${context.organizationName}
+- Industry: ${context.industry || 'Not specified'}
+${context.website ? `- Website: ${context.website}` : ''}
+${context.description ? `- Description: ${context.description}` : ''}
+${context.competitors.length > 0 ? `- Competitors: ${context.competitors.slice(0, 5).join(', ')}` : ''}
+
+YOUR TASK:
+Simulate what happens when potential clients search for services in this space. For each query scenario below, analyze ${context.organizationName}'s visibility and competitive positioning.
+
+QUERY SCENARIOS TO ANALYZE:
+${queryList}
+
+Please provide your analysis in valid JSON format (no markdown, just JSON):
+
+{
+  "overall_visibility": "high|medium|low|none",
+  "visibility_summary": "2-3 sentence assessment of ${context.organizationName}'s overall presence across these query types",
+
+  "query_results": [
+    {
+      "query": "the query text",
+      "organizations_mentioned": ["Org1", "Org2", "Org3"],
+      "target_mentioned": true/false,
+      "target_rank": 1-10 or null,
+      "why_these_appeared": "Brief explanation of what made these organizations appear",
+      "sources_cited": ["domain1.com", "domain2.com"],
+      "what_target_needs": "Specific gap ${context.organizationName} should address"
+    }
+  ],
+
+  "competitive_intelligence": {
+    "dominant_competitors": ["Top 3-5 organizations that appear most frequently"],
+    "success_factors": "What makes certain organizations appear consistently (schema, content, authority signals)",
+    "industry_patterns": "Common characteristics of high-visibility firms in this space"
+  },
+
+  "recommendations": [
+    {
+      "priority": "critical|high|medium",
+      "category": "schema|content|pr|technical",
+      "action": "Specific action ${context.organizationName} should take",
+      "reasoning": "Why this matters based on competitive analysis",
+      "expected_impact": "How this would improve visibility"
+    }
+  ],
+
+  "source_intelligence": {
+    "most_cited_sources": ["Publications/sites you reference most"],
+    "why_these_sources": "What makes these sources authoritative to you",
+    "coverage_strategy": "Where ${context.organizationName} should get featured to improve visibility"
+  }
+}
+
+CRITICAL: Be honest about ${context.organizationName}'s current visibility. If they don't appear, say so. Base recommendations on real competitive gaps you observe.`
 }

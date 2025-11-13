@@ -508,11 +508,12 @@ export default function OrganizationOnboarding({
         throw new Error(queryData?.error || 'Failed to generate GEO queries')
       }
 
-      // Extract queries from categorized response
+      // Extract meta-analysis prompt (NEW) or fall back to queries (backwards compatible)
+      const metaAnalysisPrompt = queryData.meta_analysis_prompt
       const categorizedQueries = queryData.queries
       let queries: any[] = []
 
-      // Flatten categorized structure into single array
+      // Flatten categorized structure into single array (for backwards compatibility)
       if (categorizedQueries) {
         if (Array.isArray(categorizedQueries)) {
           // Already a flat array
@@ -527,110 +528,72 @@ export default function OrganizationOnboarding({
         }
       }
 
-      if (!Array.isArray(queries) || queries.length === 0) {
+      if (!metaAnalysisPrompt && (!Array.isArray(queries) || queries.length === 0)) {
         console.error('Categorized queries:', categorizedQueries)
-        throw new Error('No queries generated or invalid format')
+        throw new Error('No queries or meta-analysis prompt generated')
       }
 
-      console.log(`✅ Generated ${queries.length} queries`)
+      if (metaAnalysisPrompt) {
+        console.log(`✅ Generated meta-analysis prompt`)
+      } else {
+        console.log(`✅ Generated ${queries.length} queries (fallback mode)`)
+      }
 
-      // STEP 2: Test all 4 platforms with MULTI-BATCH approach
-      // Call each platform twice with 5 queries each = 10 queries per platform
-      console.log('🚀 Step 2/3: Testing all 4 platforms in 2 batches (10 queries total per platform)...')
+      // STEP 2: Test all 4 platforms in PARALLEL with META-ANALYSIS
+      console.log('🚀 Step 2/3: Testing all 4 platforms with meta-analysis (1 comprehensive call each)...')
 
-      // Batch 1: First 5 queries on all platforms
-      console.log('   Batch 1/2: Testing queries 1-5 on all platforms...')
-      const [claudeBatch1, geminiBatch1, perplexityBatch1, chatgptBatch1] = await Promise.all([
+      const [claudeResults, geminiResults, perplexityResults, chatgptResults] = await Promise.all([
         supabase.functions.invoke('geo-test-claude', {
           body: {
             organization_id: orgId,
             organization_name: orgNameToUse,
-            queries: queries.slice(0, 5)
+            meta_analysis_prompt: metaAnalysisPrompt,
+            queries: metaAnalysisPrompt ? undefined : queries.slice(0, 10)  // Fallback
           }
         }),
         supabase.functions.invoke('geo-test-gemini', {
           body: {
             organization_id: orgId,
             organization_name: orgNameToUse,
-            queries: queries.slice(0, 5)
+            meta_analysis_prompt: metaAnalysisPrompt,
+            queries: metaAnalysisPrompt ? undefined : queries.slice(0, 10)  // Fallback
           }
         }),
         supabase.functions.invoke('geo-test-perplexity', {
           body: {
             organization_id: orgId,
             organization_name: orgNameToUse,
-            queries: queries.slice(0, 5)
+            meta_analysis_prompt: metaAnalysisPrompt,
+            queries: metaAnalysisPrompt ? undefined : queries.slice(0, 10)  // Fallback
           }
         }),
         supabase.functions.invoke('geo-test-chatgpt', {
           body: {
             organization_id: orgId,
             organization_name: orgNameToUse,
-            queries: queries.slice(0, 5)
+            meta_analysis_prompt: metaAnalysisPrompt,
+            queries: metaAnalysisPrompt ? undefined : queries.slice(0, 10)  // Fallback
           }
         })
       ])
 
-      console.log('   ✓ Batch 1/2 complete')
-
-      // Batch 2: Next 5 queries on all platforms
-      console.log('   Batch 2/2: Testing queries 6-10 on all platforms...')
-      const [claudeBatch2, geminiBatch2, perplexityBatch2, chatgptBatch2] = await Promise.all([
-        supabase.functions.invoke('geo-test-claude', {
-          body: {
-            organization_id: orgId,
-            organization_name: orgNameToUse,
-            queries: queries.slice(5, 10)
-          }
-        }),
-        supabase.functions.invoke('geo-test-gemini', {
-          body: {
-            organization_id: orgId,
-            organization_name: orgNameToUse,
-            queries: queries.slice(5, 10)
-          }
-        }),
-        supabase.functions.invoke('geo-test-perplexity', {
-          body: {
-            organization_id: orgId,
-            organization_name: orgNameToUse,
-            queries: queries.slice(5, 10)
-          }
-        }),
-        supabase.functions.invoke('geo-test-chatgpt', {
-          body: {
-            organization_id: orgId,
-            organization_name: orgNameToUse,
-            queries: queries.slice(5, 10)
-          }
-        })
-      ])
-
-      console.log('   ✓ Batch 2/2 complete')
+      console.log('   ✓ All platforms tested')
 
       // Check for errors but don't block on them
-      if (claudeBatch1.error) console.warn('Claude batch 1 error (non-blocking):', claudeBatch1.error)
-      if (claudeBatch2.error) console.warn('Claude batch 2 error (non-blocking):', claudeBatch2.error)
-      if (geminiBatch1.error) console.warn('Gemini batch 1 error (non-blocking):', geminiBatch1.error)
-      if (geminiBatch2.error) console.warn('Gemini batch 2 error (non-blocking):', geminiBatch2.error)
-      if (perplexityBatch1.error) console.warn('Perplexity batch 1 error (non-blocking):', perplexityBatch1.error)
-      if (perplexityBatch2.error) console.warn('Perplexity batch 2 error (non-blocking):', perplexityBatch2.error)
-      if (chatgptBatch1.error) console.warn('ChatGPT batch 1 error (non-blocking):', chatgptBatch1.error)
-      if (chatgptBatch2.error) console.warn('ChatGPT batch 2 error (non-blocking):', chatgptBatch2.error)
+      if (claudeResults.error) console.warn('Claude error (non-blocking):', claudeResults.error)
+      if (geminiResults.error) console.warn('Gemini error (non-blocking):', geminiResults.error)
+      if (perplexityResults.error) console.warn('Perplexity error (non-blocking):', perplexityResults.error)
+      if (chatgptResults.error) console.warn('ChatGPT error (non-blocking):', chatgptResults.error)
 
-      // Combine all platform results from both batches
+      // Combine all platform results
       const allSignals = [
-        ...(claudeBatch1.data?.signals || []),
-        ...(claudeBatch2.data?.signals || []),
-        ...(geminiBatch1.data?.signals || []),
-        ...(geminiBatch2.data?.signals || []),
-        ...(perplexityBatch1.data?.signals || []),
-        ...(perplexityBatch2.data?.signals || []),
-        ...(chatgptBatch1.data?.signals || []),
-        ...(chatgptBatch2.data?.signals || [])
+        ...(claudeResults.data?.signals || []),
+        ...(geminiResults.data?.signals || []),
+        ...(perplexityResults.data?.signals || []),
+        ...(chatgptResults.data?.signals || [])
       ]
 
-      console.log(`✅ Collected ${allSignals.length} signals from 4 platforms (2 batches each)`)
+      console.log(`✅ Collected ${allSignals.length} signals from 4 platforms`)
 
       // Transform signals to format expected by synthesis function
       const transformedResults = allSignals.map(signal => ({
