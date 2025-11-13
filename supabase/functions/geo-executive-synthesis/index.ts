@@ -93,15 +93,36 @@ serve(async (req) => {
       opportunities: analysis.opportunities.length
     })
 
-    // Fetch current schema from Memory Vault
+    // Check for schema in TWO places:
+    // 1. Memory Vault (stored but may not be deployed)
+    // 2. Live website (actually deployed and visible to AI)
+
     let currentSchema: any = null
+    let hasSchemaInMemoryVault = false
+    let hasSchemaOnWebsite = false
+    let websiteUrl: string | null = null
+
+    // Get organization's website URL
+    try {
+      const { data: orgData } = await supabase
+        .from('organizations')
+        .select('website')
+        .eq('id', organization_id)
+        .single()
+
+      websiteUrl = orgData?.website || null
+      console.log('🌐 Organization website:', websiteUrl || 'Not set')
+    } catch (error) {
+      console.error('Error fetching organization website:', error)
+    }
+
+    // 1. Check Memory Vault for schema
     try {
       const { data: schemaData } = await supabase
         .from('content_library')
         .select('content')
         .eq('organization_id', organization_id)
         .eq('content_type', 'schema')
-        .eq('folder', 'Schemas/Active/')
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle()
@@ -110,16 +131,62 @@ serve(async (req) => {
         currentSchema = typeof schemaData.content === 'string'
           ? JSON.parse(schemaData.content)
           : schemaData.content
-        console.log('📋 Current schema loaded:', {
+        hasSchemaInMemoryVault = true
+        console.log('✅ Schema found in Memory Vault:', {
           type: currentSchema['@type'],
           fields: Object.keys(currentSchema).filter(k => !k.startsWith('@')).length
         })
       } else {
-        console.log('⚠️  No schema found in Memory Vault')
+        console.log('⚠️  No schema in Memory Vault')
       }
     } catch (error) {
-      console.error('Error fetching schema:', error)
+      console.error('Error fetching schema from Memory Vault:', error)
     }
+
+    // 2. Check if schema is actually deployed on website
+    if (websiteUrl) {
+      try {
+        console.log('🔍 Checking for live schema deployment on', websiteUrl)
+        const response = await fetch(websiteUrl, {
+          headers: { 'User-Agent': 'Mozilla/5.0 (compatible; GEO-Monitor/1.0)' }
+        })
+
+        if (response.ok) {
+          const html = await response.text()
+
+          // Look for JSON-LD schema markup
+          const jsonLdMatch = html.match(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)
+
+          if (jsonLdMatch && jsonLdMatch.length > 0) {
+            hasSchemaOnWebsite = true
+            console.log('✅ Schema.org JSON-LD found on live website:', jsonLdMatch.length, 'blocks')
+
+            // Try to parse first schema block to get type
+            try {
+              const firstBlock = jsonLdMatch[0].replace(/<script[^>]*>/, '').replace(/<\/script>/, '').trim()
+              const parsed = JSON.parse(firstBlock)
+              const schemaType = parsed['@type'] || (Array.isArray(parsed['@graph']) ? parsed['@graph'][0]?.['@type'] : 'Unknown')
+              console.log('   Schema type on website:', schemaType)
+            } catch (e) {
+              console.log('   Could not parse schema block')
+            }
+          } else {
+            console.log('❌ No Schema.org JSON-LD found on live website')
+          }
+        } else {
+          console.log('⚠️  Could not fetch website (HTTP', response.status, ')')
+        }
+      } catch (error) {
+        console.error('Error checking live website for schema:', error.message)
+      }
+    }
+
+    const hasSchema = hasSchemaInMemoryVault || hasSchemaOnWebsite
+    console.log('📊 Schema Status:', {
+      inMemoryVault: hasSchemaInMemoryVault,
+      onWebsite: hasSchemaOnWebsite,
+      overall: hasSchema ? 'Schema exists' : 'No schema found'
+    })
 
     // Use Claude to generate executive-level insights
     const anthropic = new Anthropic({
@@ -131,7 +198,11 @@ serve(async (req) => {
       industry,
       analysis,
       geoTargets: geo_targets,
-      currentSchema
+      currentSchema,
+      hasSchema,
+      hasSchemaInMemoryVault,
+      hasSchemaOnWebsite,
+      websiteUrl
     })
 
     console.log('🤖 Calling Claude for executive synthesis...')
@@ -358,8 +429,32 @@ function buildSynthesisPrompt(context: {
   analysis: any
   geoTargets?: any
   currentSchema?: any
+  hasSchema?: boolean
+  hasSchemaInMemoryVault?: boolean
+  hasSchemaOnWebsite?: boolean
+  websiteUrl?: string | null
 }): string {
   const currentDate = new Date().toISOString().split('T')[0]
+
+  // Build schema status context (informational, not prescriptive)
+  let schemaStatusMessage = ''
+  if (context.hasSchemaOnWebsite) {
+    schemaStatusMessage = `✅ SCHEMA DEPLOYED ON WEBSITE: ${context.websiteUrl}
+Type: ${context.currentSchema?.['@type'] || 'Detected'}
+Status: Live and accessible to AI platforms`
+  } else if (context.hasSchemaInMemoryVault && !context.hasSchemaOnWebsite) {
+    schemaStatusMessage = `⚠️ SCHEMA IN MEMORY VAULT BUT NOT DEPLOYED
+Type: ${context.currentSchema?.['@type'] || 'Not set'}
+Website: ${context.websiteUrl || 'Not configured'}
+Status: Created but not yet live (deployment needed)`
+  } else if (!context.websiteUrl) {
+    schemaStatusMessage = `⚠️ NO WEBSITE CONFIGURED
+Status: Cannot verify schema deployment`
+  } else {
+    schemaStatusMessage = `❌ NO SCHEMA DETECTED
+Website: ${context.websiteUrl}
+Status: No Schema.org markup found`
+  }
 
   return `You are a GEO (Generative Experience Optimization) strategist analyzing AI visibility for ${context.organizationName}.
 
@@ -367,13 +462,22 @@ CURRENT DATE: ${currentDate}
 
 ORGANIZATION: ${context.organizationName}
 INDUSTRY: ${context.industry || 'Not specified'}
+WEBSITE: ${context.websiteUrl || 'Not configured'}
 
-${context.currentSchema ? `CURRENT SCHEMA IN MEMORY VAULT:
-Schema Type: ${context.currentSchema['@type'] || 'Not set'}
-Existing Fields: ${Object.keys(context.currentSchema).filter(k => !k.startsWith('@')).join(', ')}
+SCHEMA.ORG STATUS:
+${schemaStatusMessage}
 
-IMPORTANT: Only recommend fields that are MISSING from the current schema above. Do NOT recommend adding fields that already exist.
-` : 'CURRENT SCHEMA: Not available - recommend foundational schema setup'}
+YOUR MISSION:
+You are conducting COMPETITIVE INTELLIGENCE analysis for GEO optimization. Your job is to:
+1. **Analyze who IS appearing** - What makes successful organizations show up?
+2. **Identify strategic patterns** - What sources, content types, and schema elements work?
+3. **Recommend optimizations** - Specific, actionable schema and content improvements
+4. **Guide overall strategy** - Not just "what to do" but "why it works"
+
+CRITICAL: This is about LEARNING FROM THE DATA, not making assumptions.
+- If competitors are appearing, analyze WHAT THEY'RE DOING that works
+- If org has 0% visibility, analyze what WOULD work based on successful competitors
+- Schema recommendations should be based on patterns you observe in successful appearances
 
 GEO PERFORMANCE ANALYSIS:
 - Total Queries Tested: ${context.analysis.total_queries}
@@ -394,29 +498,50 @@ ${context.analysis.critical_gaps.slice(0, 5).map((gap: any) =>
   `- "${gap.query}" (${gap.platform}) - Competitors mentioned: ${gap.competitors_mentioned.join(', ') || 'none'}`
 ).join('\n')}
 
-COMPETITOR VISIBILITY:
-${Object.entries(context.analysis.competitor_analysis).slice(0, 5).map(([comp, count]) =>
-  `- ${comp}: ${count} mentions`
-).join('\n')}
+═══════════════════════════════════════════════════════════
+🎯 COMPETITIVE INTELLIGENCE: WHO'S WINNING AND WHY
+═══════════════════════════════════════════════════════════
 
-SOURCES CITED BY AI PLATFORMS:
-${Object.entries(context.analysis.top_domains)
-  .sort((a, b) => (b[1] as number) - (a[1] as number))
-  .slice(0, 15)
-  .map(([domain, count]) => `- ${domain}: cited ${count} times`)
-  .join('\n')}
+ORGANIZATIONS APPEARING IN AI RESPONSES:
+${Object.entries(context.analysis.competitor_analysis).length > 0
+  ? Object.entries(context.analysis.competitor_analysis)
+      .sort((a, b) => (b[1] as number) - (a[1] as number))
+      .slice(0, 10)
+      .map(([comp, count], idx) => `${idx + 1}. ${comp}: ${count} mentions across platforms`)
+      .join('\n')
+  : 'No competitor organizations mentioned (indicates queries may be too broad or industry has low AI visibility)'}
 
-${context.analysis.cited_sources.length > 0 ? `
-INSIGHT: AI platforms are citing these publications when answering queries in your space.
-Getting coverage in these publications will directly improve AI visibility.
+CRITICAL QUESTION: Why are THESE organizations appearing?
+- What content are they publishing that AI platforms cite?
+- What schema markup are they likely using?
+- What authoritative sources cover them?
+- How can ${context.organizationName} replicate their success?
 
-Top ${Math.min(5, Object.keys(context.analysis.top_domains).length)} publications to target for PR/content:
+═══════════════════════════════════════════════════════════
+📚 SOURCE INTELLIGENCE: WHERE AI GETS ITS INFORMATION
+═══════════════════════════════════════════════════════════
+
+AI PLATFORMS CITED THESE SOURCES (from Gemini & Perplexity):
+${Object.entries(context.analysis.top_domains).length > 0
+  ? Object.entries(context.analysis.top_domains)
+      .sort((a, b) => (b[1] as number) - (a[1] as number))
+      .slice(0, 20)
+      .map(([domain, count], idx) => `${idx + 1}. ${domain} - cited ${count} times`)
+      .join('\n')
+  : 'No source data available (only Claude/ChatGPT tested, which don\'t provide citations)'}
+
+STRATEGIC INSIGHT:
+${Object.entries(context.analysis.top_domains).length > 0 ? `
+These ${Object.keys(context.analysis.top_domains).length} sources are the AUTHORITY LAYER that AI platforms trust.
+Getting cited by these publications = Direct AI visibility improvement.
+
+TOP 5 TARGET PUBLICATIONS FOR PR/CONTENT:
 ${Object.entries(context.analysis.top_domains)
   .sort((a, b) => (b[1] as number) - (a[1] as number))
   .slice(0, 5)
-  .map(([domain, count], idx) => `${idx + 1}. ${domain} (cited ${count} times across Gemini/Perplexity)`)
+  .map(([domain, count], idx) => `${idx + 1}. ${domain} (${count} citations)`)
   .join('\n')}
-` : ''}
+` : 'Need to test Gemini/Perplexity to identify which sources AI platforms trust in this industry.'}
 
 ${context.geoTargets ? `
 ORGANIZATION'S GEO TARGETS:
@@ -425,62 +550,98 @@ ORGANIZATION'S GEO TARGETS:
 - Priority Queries: ${context.geoTargets.priority_queries?.slice(0, 3).join(', ') || 'None configured'}
 ` : ''}
 
-TASK:
-Provide an executive-level synthesis of this GEO performance. Structure your response as JSON:
+═══════════════════════════════════════════════════════════
+📋 YOUR ANALYSIS TASK
+═══════════════════════════════════════════════════════════
+
+Analyze this GEO intelligence data and provide STRATEGIC, DATA-DRIVEN recommendations.
+
+Structure your response as JSON:
 
 {
-  "executive_summary": "2-3 sentence overview of AI visibility performance",
+  "executive_summary": "2-3 paragraphs analyzing: (1) Current visibility performance, (2) Competitive positioning based on who's appearing, (3) Strategic opportunities based on source/competitor analysis",
+
   "key_findings": [
-    "Finding 1 with specific data",
-    "Finding 2 with specific data",
-    "Finding 3 with specific data"
+    "Data-driven insight 1 with specific metrics",
+    "Pattern observation 2 explaining WHY certain orgs appear",
+    "Strategic gap 3 with competitive intelligence",
+    "Source analysis 4 identifying key publications to target"
   ],
-  "critical_actions": [
+
+  "competitive_analysis": {
+    "who_is_winning": "Which organizations dominate AI visibility and why",
+    "success_patterns": "Common traits of appearing organizations (content, sources, likely schema)",
+    "gaps_to_exploit": "Where ${context.organizationName} can differentiate"
+  },
+
+  "source_strategy": {
+    "priority_publications": ["Top 3-5 publications AI platforms cite most"],
+    "coverage_approach": "How to get cited by these sources",
+    "content_types": "What content formats work (based on source analysis)"
+  },
+
+  "schema_recommendations": [
     {
-      "action": "Specific action to take",
+      "title": "Specific schema optimization",
+      "schema_type": "Organization|Product|FAQPage|Service|etc",
+      "type": "add_field|update_field|add_structured_data|deploy_schema",
       "priority": "critical|high|medium",
-      "expected_impact": "What will improve",
-      "platform": "claude|gemini|all"
+      "reasoning": "Why this specific change based on competitive/source analysis",
+      "expected_impact": "What AI visibility improvement to expect",
+      "implementation": "Exact technical steps to implement",
+      "example": "Code example if applicable",
+      "auto_executable": false
     }
   ],
-  "recommendations": [
+
+  "strategic_actions": [
     {
-      "title": "Brief recommendation title",
-      "description": "Detailed description of what to do",
-      "schema_type": "Organization|Product|FAQPage|etc",
-      "type": "update_field|add_field|create_new",
+      "category": "pr|content|schema|technical|partnerships",
+      "action": "Specific action with clear outcome",
       "priority": "critical|high|medium",
-      "platform": "claude|gemini|all",
-      "reasoning": "Why this matters",
-      "expected_impact": "What will improve",
-      "changes": {"field": "description", "action": "add", "value": "suggested text"},
-      "auto_executable": true|false
+      "timeline": "immediate|this_week|this_month",
+      "expected_impact": "Measurable improvement",
+      "based_on": "Which data point drove this recommendation"
     }
-  ],
-  "competitive_insights": "Analysis of competitive positioning",
-  "trend_analysis": "What patterns emerge from the data"
+  ]
 }
 
-Focus on:
-1. **Actionable insights** (what to do, not just what happened)
-2. **Specific schema recommendations** (exact changes to make)
-3. **Priority-based actions** (critical issues first)
-4. **Platform-specific guidance** (what works where)
+═══════════════════════════════════════════════════════════
+🎯 RECOMMENDATION PRINCIPLES
+═══════════════════════════════════════════════════════════
 
-IMPORTANT FOR SCHEMA RECOMMENDATIONS:
-- Only recommend fields that are MISSING from the current schema
-- If the schema already has good coverage, focus on CONTENT recommendations instead (e.g., "Update description to emphasize X")
-- If no schema exists, recommend foundational setup
-- Make recommendations ACTIONABLE and SPECIFIC
-- For auto_executable: true only for simple field additions (not complex nested objects)
+1. **DATA-DRIVEN**: Base recommendations on competitive/source analysis, not generic advice
+2. **SPECIFIC**: "Add FAQPage schema with these 10 questions" not "implement schema"
+3. **STRATEGIC**: Explain WHY based on what successful competitors are doing
+4. **ACTIONABLE**: Provide exact implementation steps, code examples where useful
+5. **PRIORITIZED**: Critical (do now) > High (this week) > Medium (this month)
 
-ABOUT SCHEMA DEPLOYMENT:
-Note that the schema in Memory Vault may not be deployed to the organization's website yet. Your recommendations should:
-1. Prioritize fields that will have the biggest impact on AI visibility
-2. Include a note if deployment is needed
-3. Focus on what SHOULD be in the schema, regardless of current deployment status
+SCHEMA RECOMMENDATIONS APPROACH:
+- Current status: ${schemaStatusMessage}
+- Make schema recommendations REGARDLESS of current deployment status
+- Focus on OPTIMIZATION and ENHANCEMENT, not just "implement schema"
+- Analyze what schema elements successful competitors likely have
+- Recommend specific fields, structured data types, content updates
+- If schema exists: Recommend enhancements, additions, optimizations
+- If no schema: Recommend implementation as part of integrated strategy
+- Always explain the competitive/strategic reasoning
 
-Generate the synthesis now:`
+EXAMPLE GOOD SCHEMA RECOMMENDATION:
+{
+  "title": "Add Service schema for each practice area",
+  "reasoning": "Analysis shows competitors appearing for service-specific queries likely have Service schema. ${context.organizationName}'s competitors X and Y dominate 'PR consulting services' queries.",
+  "implementation": "Create Service schema for each service line with provider, areaServed, and offers properties",
+  "expected_impact": "Improve visibility for service-specific queries where competitors currently dominate"
+}
+
+EXAMPLE BAD SCHEMA RECOMMENDATION:
+{
+  "title": "Implement Schema.org markup",
+  "reasoning": "Schema helps with SEO",
+  "implementation": "Add schema to website"
+}
+
+Generate your strategic analysis and recommendations now:`
 }
 
 /**

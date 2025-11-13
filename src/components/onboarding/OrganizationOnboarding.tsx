@@ -113,6 +113,7 @@ export default function OrganizationOnboarding({
   const [productsPage, setProductsPage] = useState('')
   const [generatedSchemaData, setGeneratedSchemaData] = useState<any>(null)
   const [enhancementLoading, setEnhancementLoading] = useState(false)
+  const [schemaSaved, setSchemaSaved] = useState(false) // Track if schema has been saved
 
   const totalSteps = 7  // Added GEO discovery step
   const MAX_TOTAL_TARGETS = 20  // Hard limit: 15 from discovery + up to 5 custom
@@ -641,7 +642,9 @@ export default function OrganizationOnboarding({
         brand_mentioned: signal.data?.mentioned || false,
         rank: signal.data?.position || undefined,
         context_quality: signal.data?.context_quality || 'medium',
-        competitors_mentioned: signal.data?.competitors_mentioned || []
+        competitors_mentioned: signal.data?.competitors_mentioned || [],
+        sources: signal.data?.sources || [],  // Pass through source citations from Gemini/Perplexity
+        source_domains: signal.data?.source_domains || []  // Pass through source domains
       }))
 
       // STEP 3: Generate executive synthesis
@@ -965,6 +968,7 @@ export default function OrganizationOnboarding({
 
     const saveData = await saveResponse.json()
     console.log('✅ Schema saved to Memory Vault:', saveData)
+    setSchemaSaved(true) // Mark as saved
 
     // Auto-generate company profile from schema
     console.log('📋 Auto-generating company profile from schema...')
@@ -2050,6 +2054,7 @@ export default function OrganizationOnboarding({
 
                   {showGeoResults && geoResults && !geoResults.error && (
                     <div className="space-y-4">
+                      {/* AI Platform Visibility */}
                       <div className="grid grid-cols-2 gap-4">
                         <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700">
                           <p className="text-xs text-gray-400 mb-1">Claude Mentions</p>
@@ -2068,6 +2073,51 @@ export default function OrganizationOnboarding({
                           <p className="text-2xl font-bold text-white">{geoResults.summary?.perplexity_mentions || 0}</p>
                         </div>
                       </div>
+
+                      {/* Competitive Intelligence */}
+                      {geoResults.synthesis?.competitive_analysis && (
+                        <div className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg">
+                          <p className="text-sm font-medium text-purple-300 mb-2">🎯 Competitive Intelligence</p>
+                          <p className="text-xs text-purple-200/80 mb-3">
+                            {geoResults.synthesis.competitive_analysis.who_is_winning}
+                          </p>
+                          {geoResults.synthesis.competitive_analysis.success_patterns && (
+                            <p className="text-xs text-purple-200/60">
+                              <span className="font-medium">Success Patterns:</span> {geoResults.synthesis.competitive_analysis.success_patterns}
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Source Strategy */}
+                      {geoResults.synthesis?.source_strategy?.priority_publications && geoResults.synthesis.source_strategy.priority_publications.length > 0 && (
+                        <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                          <p className="text-sm font-medium text-blue-300 mb-2">📚 Target Publications</p>
+                          <p className="text-xs text-blue-200/80 mb-2">AI platforms cite these sources most frequently:</p>
+                          <ul className="space-y-1">
+                            {geoResults.synthesis.source_strategy.priority_publications.slice(0, 5).map((pub: string, idx: number) => (
+                              <li key={idx} className="text-xs text-blue-200/70 flex items-start gap-2">
+                                <span className="text-blue-400">•</span>
+                                <span>{pub}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Schema Recommendations Preview */}
+                      {geoResults.synthesis?.schema_recommendations && geoResults.synthesis.schema_recommendations.length > 0 && (
+                        <div className="p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-lg">
+                          <p className="text-sm font-medium text-cyan-300 mb-2">🔧 Key Schema Recommendations</p>
+                          <ul className="space-y-2">
+                            {geoResults.synthesis.schema_recommendations.slice(0, 3).map((rec: any, idx: number) => (
+                              <li key={idx} className="text-xs text-cyan-200/80">
+                                <span className="font-medium text-cyan-300">{rec.title}:</span> {rec.reasoning?.substring(0, 100)}...
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
 
                       <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
                         <p className="text-sm text-green-300 font-medium">
@@ -2520,7 +2570,7 @@ export default function OrganizationOnboarding({
                         onClick={async () => {
                           if (createdOrganization) {
                             // Save schema if it exists and hasn't been saved yet
-                            if (generatedSchemaData) {
+                            if (generatedSchemaData && !schemaSaved) {
                               try {
                                 console.log('💾 Saving schema before completing onboarding...')
                                 await saveSchemaToMemoryVault(generatedSchemaData)
@@ -2529,6 +2579,8 @@ export default function OrganizationOnboarding({
                                 alert('Failed to save schema. Please try again or contact support.')
                                 return
                               }
+                            } else if (schemaSaved) {
+                              console.log('✅ Schema already saved, skipping duplicate save')
                             }
 
                             onComplete({

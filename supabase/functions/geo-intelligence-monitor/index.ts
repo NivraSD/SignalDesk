@@ -970,17 +970,34 @@ function extractContext(text: string, name: string): string {
 }
 
 function extractCompetitors(text: string): string[] {
-  // Simple competitor extraction (could be enhanced with NER)
+  // Enhanced competitor extraction
   const competitors: string[] = []
-  const commonCompetitors = ['Salesforce', 'HubSpot', 'Microsoft', 'Google', 'Amazon', 'Oracle']
 
-  for (const comp of commonCompetitors) {
-    if (text.includes(comp)) {
-      competitors.push(comp)
+  // Look for company name patterns (Capitalized words, possibly with Inc, LLC, Corp)
+  // Match patterns like "Acme Corp", "Widget Inc", "TechStart"
+  const companyPattern = /\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*(?:\s+(?:Inc|LLC|Corp|Corporation|Limited|Ltd|Group|Partners|Ventures|Capital|Holdings|Technologies|Tech))?)\b/g
+  const matches = text.match(companyPattern) || []
+
+  // Filter out common words that aren't companies
+  const stopWords = new Set(['The', 'This', 'That', 'These', 'Those', 'What', 'Which', 'When', 'Where', 'Who', 'Why', 'How', 'Many', 'Some', 'All', 'Most', 'Each', 'Every', 'Both', 'Few', 'More', 'Less', 'Other', 'Another', 'Such', 'No', 'Nor', 'Not', 'Only', 'Own', 'Same', 'So', 'Than', 'Too', 'Very', 'Can', 'Will', 'Just', 'Should', 'Now'])
+
+  for (const match of matches) {
+    // Skip single words that are likely not companies
+    if (!match.includes(' ') && !match.match(/[A-Z]{2,}/)) {
+      continue
     }
+    // Skip stop words
+    if (stopWords.has(match)) {
+      continue
+    }
+    // Skip if already in list (case insensitive)
+    if (competitors.some(c => c.toLowerCase() === match.toLowerCase())) {
+      continue
+    }
+    competitors.push(match)
   }
 
-  return competitors
+  return competitors.slice(0, 10) // Return top 10 to avoid noise
 }
 
 function extractSchemasFromHTML(html: string): any[] {
