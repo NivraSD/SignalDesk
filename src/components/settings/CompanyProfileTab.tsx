@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Building2, MapPin, Users, DollarSign, Calendar, Plus, Trash2, Save, Loader, CheckCircle, AlertCircle, X as CloseIcon, RefreshCw } from 'lucide-react'
+import { Building2, MapPin, Users, DollarSign, Calendar, Plus, Trash2, Save, Loader, CheckCircle, AlertCircle, X as CloseIcon, RefreshCw, Target } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface LeadershipMember {
@@ -9,6 +9,12 @@ interface LeadershipMember {
   title: string
   email?: string
   linkedin?: string
+}
+
+interface StrategicGoal {
+  goal: string
+  timeframe: string
+  priority: 'high' | 'medium' | 'low'
 }
 
 interface CompanyProfile {
@@ -29,6 +35,7 @@ interface CompanyProfile {
   product_lines?: string[]
   key_markets?: string[]
   business_model?: string
+  strategic_goals?: StrategicGoal[]
 }
 
 interface CompanyProfileTabProps {
@@ -45,7 +52,8 @@ export default function CompanyProfileTab({
     headquarters: {},
     company_size: {},
     product_lines: [],
-    key_markets: []
+    key_markets: [],
+    strategic_goals: []
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -57,6 +65,7 @@ export default function CompanyProfileTab({
   const [newLeader, setNewLeader] = useState<LeadershipMember>({ name: '', title: '' })
   const [newProduct, setNewProduct] = useState('')
   const [newMarket, setNewMarket] = useState('')
+  const [newGoal, setNewGoal] = useState<StrategicGoal>({ goal: '', timeframe: '', priority: 'medium' })
 
   useEffect(() => {
     if (organizationId) {
@@ -98,7 +107,8 @@ export default function CompanyProfileTab({
           parent_company: cp.parent_company || '',
           product_lines: cp.product_lines || [],
           key_markets: cp.key_markets || [],
-          business_model: cp.business_model || ''
+          business_model: cp.business_model || '',
+          strategic_goals: cp.strategic_goals || []
         })
       }
     } catch (err: any) {
@@ -198,6 +208,22 @@ export default function CompanyProfileTab({
     }))
   }
 
+  const addGoal = () => {
+    if (!newGoal.goal.trim()) return
+    setProfile(prev => ({
+      ...prev,
+      strategic_goals: [...(prev.strategic_goals || []), { ...newGoal }]
+    }))
+    setNewGoal({ goal: '', timeframe: '', priority: 'medium' })
+  }
+
+  const removeGoal = (index: number) => {
+    setProfile(prev => ({
+      ...prev,
+      strategic_goals: (prev.strategic_goals || []).filter((_, i) => i !== index)
+    }))
+  }
+
   const generateFromSchema = async () => {
     try {
       setGenerating(true)
@@ -228,7 +254,8 @@ export default function CompanyProfileTab({
         parent_company: data.profile.parent_company || prev.parent_company,
         product_lines: data.profile.product_lines?.length ? data.profile.product_lines : prev.product_lines,
         key_markets: data.profile.key_markets?.length ? data.profile.key_markets : prev.key_markets,
-        business_model: data.profile.business_model || prev.business_model
+        business_model: data.profile.business_model || prev.business_model,
+        strategic_goals: data.profile.strategic_goals?.length ? data.profile.strategic_goals : prev.strategic_goals
       }))
 
       setSuccess(true)
@@ -579,6 +606,85 @@ export default function CompanyProfileTab({
             className="px-4 py-2 bg-gray-800 hover:bg-gray-700 disabled:bg-gray-800 disabled:text-gray-600 text-white rounded flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Strategic Goals */}
+      <div className="p-6 bg-gray-900 border border-gray-700 rounded-lg">
+        <div className="flex items-center gap-2 mb-4">
+          <Target className="w-5 h-5 text-cyan-400" />
+          <h4 className="text-white font-semibold">Strategic Goals</h4>
+        </div>
+        <p className="text-sm text-gray-400 mb-4">
+          Define your organization's strategic goals. These will be used to generate more relevant opportunities and content.
+        </p>
+
+        <div className="space-y-3 mb-4">
+          {(profile.strategic_goals || []).map((goal, idx) => (
+            <div key={idx} className="p-3 bg-gray-800 border border-gray-700 rounded-lg">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                      goal.priority === 'high' ? 'bg-red-500/20 text-red-400' :
+                      goal.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                      'bg-blue-500/20 text-blue-400'
+                    }`}>
+                      {goal.priority}
+                    </span>
+                    {goal.timeframe && (
+                      <span className="text-xs text-gray-500">{goal.timeframe}</span>
+                    )}
+                  </div>
+                  <div className="text-white">{goal.goal}</div>
+                </div>
+                <button
+                  onClick={() => removeGoal(idx)}
+                  className="text-red-400 hover:text-red-300"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2">
+              <input
+                type="text"
+                placeholder="Strategic goal (e.g., Expand into European markets)"
+                value={newGoal.goal}
+                onChange={(e) => setNewGoal(prev => ({ ...prev, goal: e.target.value }))}
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
+              />
+            </div>
+            <input
+              type="text"
+              placeholder="Timeframe (e.g., 2025 Q2-Q4)"
+              value={newGoal.timeframe}
+              onChange={(e) => setNewGoal(prev => ({ ...prev, timeframe: e.target.value }))}
+              className="px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
+            />
+            <select
+              value={newGoal.priority}
+              onChange={(e) => setNewGoal(prev => ({ ...prev, priority: e.target.value as 'high' | 'medium' | 'low' }))}
+              className="px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:border-cyan-500"
+            >
+              <option value="high">High Priority</option>
+              <option value="medium">Medium Priority</option>
+              <option value="low">Low Priority</option>
+            </select>
+          </div>
+          <button
+            onClick={addGoal}
+            disabled={!newGoal.goal.trim()}
+            className="w-full px-4 py-2 bg-gray-800 hover:bg-gray-700 disabled:bg-gray-800 disabled:text-gray-600 text-white rounded-lg flex items-center justify-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Add Strategic Goal
           </button>
         </div>
       </div>

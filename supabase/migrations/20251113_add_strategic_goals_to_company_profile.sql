@@ -1,0 +1,34 @@
+-- Add strategic_goals to company_profile JSONB documentation
+-- Strategic goals will be used in playbook generation and opportunity detection
+
+-- Update comment to document strategic_goals field
+COMMENT ON COLUMN organizations.company_profile IS 'Company profile data including leadership team, headquarters, size, key facts, and strategic goals';
+
+-- Example structure with strategic_goals (for documentation):
+-- {
+--   "leadership": [...],
+--   "headquarters": {...},
+--   "company_size": {...},
+--   "founded": "2020",
+--   "parent_company": "Acme Corp",
+--   "product_lines": ["Product A", "Product B"],
+--   "key_markets": ["North America", "Europe"],
+--   "business_model": "B2B SaaS",
+--   "strategic_goals": [
+--     {
+--       "goal": "Expand into European markets",
+--       "timeframe": "2025 Q2-Q4",
+--       "priority": "high"
+--     },
+--     {
+--       "goal": "Launch AI-powered analytics feature",
+--       "timeframe": "2025 Q1",
+--       "priority": "high"
+--     },
+--     {
+--       "goal": "Increase enterprise customer base by 50%",
+--       "timeframe": "2025",
+--       "priority": "medium"
+--     }
+--   ]
+-- }

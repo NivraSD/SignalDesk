@@ -119,7 +119,10 @@ Founded: ${org.company_profile.founded || 'Not specified'}
 Products: ${org.company_profile.product_lines?.join(', ') || 'Not specified'}
 Markets: ${org.company_profile.key_markets?.join(', ') || 'Not specified'}
 Business Model: ${org.company_profile.business_model || 'Not specified'}
-` : ''}
+${org.company_profile.strategic_goals?.length ? `
+Strategic Goals:
+${org.company_profile.strategic_goals.map((g: any) => `  - [${g.priority.toUpperCase()}] ${g.goal}${g.timeframe ? ` (${g.timeframe})` : ''}`).join('\n')}
+` : ''}` : ''}
 ` : ''
 
     const synthesisPrompt = `You are a strategic communications analyst. Analyze these ${content.length} pieces of ${contentType} content about ${topic} and create a compact playbook for future content creation.

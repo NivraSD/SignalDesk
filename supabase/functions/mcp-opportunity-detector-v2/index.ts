@@ -108,6 +108,13 @@ async function extractIntelligenceData(enrichedData: any, organizationName: stri
     .eq('organization_id', organizationId)
     .eq('active', true);
 
+  // Fetch organization company_profile for strategic goals
+  const { data: org } = await supabase
+    .from('organizations')
+    .select('company_profile')
+    .eq('id', organizationId)
+    .single();
+
   const discoveryTargets = {
     competitors: intelligenceTargets?.filter(t => t.type === 'competitor').map(t => t.name) || [],
     stakeholders: intelligenceTargets?.filter(t => t.type === 'stakeholder' || t.type === 'influencer').map(t => t.name) || [],
@@ -146,7 +153,8 @@ async function extractIntelligenceData(enrichedData: any, organizationName: stri
       strengths: profile?.strengths || [],
       weaknesses: profile?.weaknesses || [],
       industry: profile?.industry || '',
-      competitors: discoveryTargets.competitors
+      competitors: discoveryTargets.competitors,
+      strategic_goals: org?.company_profile?.strategic_goals || []
     }
   };
 }
@@ -229,8 +237,14 @@ ${entities.slice(0, 15).map(e =>
 ).join('\n')}
 
 ORGANIZATION STRENGTHS: ${organizationProfile.strengths.join(', ')}
-
+${organizationProfile.strategic_goals?.length ? `
+STRATEGIC GOALS:
+${organizationProfile.strategic_goals.map((g: any) =>
+  `• [${g.priority.toUpperCase()}] ${g.goal}${g.timeframe ? ` (${g.timeframe})` : ''}`
+).join('\n')}
+` : ''}
 Analyze the intelligence above and identify 8-10 HIGH-VALUE PR opportunities based on the patterns I know.
+${organizationProfile.strategic_goals?.length ? 'IMPORTANT: Prioritize opportunities that align with the strategic goals listed above.' : ''}
 Each opportunity must:
 - Be based on SPECIFIC events from the data above
 - Be actionable within a defined time window

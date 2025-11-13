@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { withCors, jsonResponse, errorResponse } from '../_shared/cors.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 
 // Try both API key names like NIV does
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY') || Deno.env.get('CLAUDE_API_KEY')
@@ -1392,7 +1393,8 @@ function generateMediaTargets(category: OpportunityCategory, insight: any): Arra
 async function addCreativeEnhancement(
   opportunities: any[],
   orgName: string,
-  apiKey: string | undefined
+  apiKey: string | undefined,
+  strategicGoals?: any[]
 ): Promise<any[]> {
   if (!apiKey) {
     console.log('⚠️ No Anthropic API key, skipping creative enhancement')
@@ -1404,6 +1406,12 @@ async function addCreativeEnhancement(
   const prompt = `You are a practical, creative PR strategist focused on EXECUTABLE campaigns. Create unique campaign names and approaches for these opportunities.
 
 Organization: ${orgName}
+${strategicGoals?.length ? `
+Strategic Goals:
+${strategicGoals.map((g: any) => `  - [${g.priority.toUpperCase()}] ${g.goal}${g.timeframe ? ` (${g.timeframe})` : ''}`).join('\n')}
+
+IMPORTANT: Ensure campaign names and approaches align with these strategic goals.
+` : ''}
 
 ${opportunities.map((opp, i) => `
 Opportunity ${i + 1}:
@@ -1800,8 +1808,22 @@ serve(withCors(async (req) => {
     const maxOpportunities = 10  // Increase from 7 to 10 for better coverage
     const topOpportunities = opportunities.slice(0, maxOpportunities)
 
+    // Fetch organization strategic goals for creative enhancement
+    let strategicGoals: any[] = []
+    try {
+      const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+      const { data: orgData } = await supabase
+        .from('organizations')
+        .select('company_profile')
+        .eq('id', orgId)
+        .single()
+      strategicGoals = orgData?.company_profile?.strategic_goals || []
+    } catch (err) {
+      console.log('⚠️ Could not fetch strategic goals:', err)
+    }
+
     // Add creative enhancement to all opportunities in a single Claude call
-    const creativelyEnhanced = await addCreativeEnhancement(topOpportunities, orgName, ANTHROPIC_API_KEY)
+    const creativelyEnhanced = await addCreativeEnhancement(topOpportunities, orgName, ANTHROPIC_API_KEY, strategicGoals)
 
     // Add user actions and media targets to each opportunity
     const fullyEnhanced = creativelyEnhanced.map(opp => ({
