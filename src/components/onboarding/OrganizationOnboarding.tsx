@@ -698,7 +698,6 @@ export default function OrganizationOnboarding({
 
       setSchemaProgress({
         schemaDiscovery: 'completed',
-        geoDiscovery: geoResults ? 'completed' : 'skipped',
         websiteScraping: 'completed',
         entityExtraction: 'completed',
         entityEnrichment: 'completed',
