@@ -1610,6 +1610,82 @@ REMINDER: Current date is ${currentDate}. Ensure all data references and example
           try {
             console.log(`  📝 Generating ${mediaReq.type} for ${mediaReq.journalists?.join(', ') || 'media'}...`)
 
+            // SPECIAL HANDLING: media_list should use mcp-media-list service
+            if (mediaReq.type === 'media_list') {
+              console.log('  📋 Detected media_list - calling mcp-media-list service...')
+
+              // Extract focus area from purpose/topic or use campaign objective
+              const focusArea = mediaReq.purpose || mediaReq.topic || objective
+              const requestedCount = mediaReq.count || 15
+              const tier = mediaReq.tier || 'tier1'
+
+              console.log(`  🎯 Media list parameters: topic="${focusArea}", count=${requestedCount}, tier=${tier}`)
+
+              // Call the intelligent MCP media list service
+              const mcpResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/mcp-media-list`, {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  tool: 'generate_media_list',
+                  arguments: {
+                    topic: focusArea,
+                    count: requestedCount,
+                    tier: tier,
+                    enrich_with_web: false
+                  }
+                })
+              })
+
+              const mcpData = await mcpResponse.json()
+
+              if (!mcpData.success || !mcpData.content || !mcpData.content[0]?.journalists) {
+                throw new Error('MCP media list service failed')
+              }
+
+              const journalists = mcpData.content[0].journalists
+              const metadata = mcpData.content[0].metadata
+
+              console.log(`  ✅ Generated media list: ${journalists.length} journalists`)
+
+              // Format as markdown table for content library
+              const mediaListContent = `# Media List: ${focusArea}
+
+**Generated:** ${currentDate}
+**Count:** ${journalists.length} journalists
+**Tier:** ${tier}
+**Strategy:** ${metadata.strategy}
+
+## Target Journalists
+
+| Name | Outlet | Beat | Tier | Email | Twitter | LinkedIn |
+|------|--------|------|------|-------|---------|----------|
+${journalists.map((j: any) =>
+  `| ${j.name} | ${j.outlet} | ${j.beat || 'N/A'} | ${j.tier} | ${j.email || 'N/A'} | ${j.twitter || 'N/A'} | ${j.linkedin || 'N/A'} |`
+).join('\n')}
+
+---
+*Primary Industry: ${metadata.primary_industry}*
+*Secondary Industries: ${metadata.secondary_industries?.join(', ') || 'N/A'}*
+*Source: Database + Intelligent Targeting*`
+
+              return {
+                type: mediaReq.type,
+                journalists: journalists.map((j: any) => j.name),
+                content: mediaListContent,
+                channel: 'media',
+                story: mediaReq.story || focusArea,
+                metadata: {
+                  journalist_count: journalists.length,
+                  primary_industry: metadata.primary_industry,
+                  strategy: metadata.strategy
+                }
+              }
+            }
+
+            // For other media types (press_release, media_pitch), use standard flow
             // Use NIV to craft a strategic media brief
             const strategicBrief = await craftStrategicContentBrief({
               contentType: mediaReq.type,
