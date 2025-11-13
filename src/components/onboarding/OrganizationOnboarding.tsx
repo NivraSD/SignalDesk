@@ -63,6 +63,10 @@ export default function OrganizationOnboarding({
   const [strategicPriorities, setStrategicPriorities] = useState<string[]>([])
   const [newPriority, setNewPriority] = useState('')
 
+  // Strategic Goals (structured for company_profile)
+  const [strategicGoals, setStrategicGoals] = useState<Array<{goal: string, timeframe: string, priority: 'high' | 'medium' | 'low'}>>([])
+  const [newGoal, setNewGoal] = useState({ goal: '', timeframe: '', priority: 'medium' as 'high' | 'medium' | 'low' })
+
   // Step 5: GEO Targets
   const [serviceLines, setServiceLines] = useState<string[]>([])
   const [geographicFocus, setGeographicFocus] = useState<string[]>([])
@@ -381,6 +385,40 @@ export default function OrganizationOnboarding({
           }
         } catch (error) {
           console.warn('Error saving strategic context:', error)
+        }
+      }
+
+      // 3b. Update strategic goals in organizations.company_profile
+      if (strategicGoals.length > 0 && createdOrganization?.id) {
+        console.log('🎯 Updating strategic goals in company profile...')
+        try {
+          // First fetch existing company_profile
+          const { data: orgData } = await supabase
+            .from('organizations')
+            .select('company_profile')
+            .eq('id', createdOrganization.id)
+            .single()
+
+          const existingProfile = orgData?.company_profile || {}
+
+          // Update with strategic goals
+          const { error: goalsError } = await supabase
+            .from('organizations')
+            .update({
+              company_profile: {
+                ...existingProfile,
+                strategic_goals: strategicGoals
+              }
+            })
+            .eq('id', createdOrganization.id)
+
+          if (goalsError) {
+            console.warn('Failed to update strategic goals:', goalsError)
+          } else {
+            console.log('✅ Strategic goals saved to company profile')
+          }
+        } catch (error) {
+          console.warn('Error saving strategic goals:', error)
         }
       }
 
@@ -1560,6 +1598,89 @@ export default function OrganizationOnboarding({
                       </div>
                       <p className="text-xs text-gray-500 mt-1">Current focus areas or strategic initiatives</p>
                     </div>
+
+                    {/* Strategic Goals (Structured) */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Strategic Goals
+                      </label>
+                      <p className="text-xs text-gray-500 mb-3">Add specific goals with timeframes to help generate relevant opportunities</p>
+
+                      {/* Display existing goals */}
+                      {strategicGoals.length > 0 && (
+                        <div className="space-y-2 mb-3">
+                          {strategicGoals.map((goal, index) => (
+                            <div key={index} className="p-3 bg-gray-800 border border-gray-700 rounded-lg">
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                                      goal.priority === 'high' ? 'bg-red-500/20 text-red-400' :
+                                      goal.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                                      'bg-blue-500/20 text-blue-400'
+                                    }`}>
+                                      {goal.priority}
+                                    </span>
+                                    {goal.timeframe && (
+                                      <span className="text-xs text-gray-500">{goal.timeframe}</span>
+                                    )}
+                                  </div>
+                                  <div className="text-white text-sm">{goal.goal}</div>
+                                </div>
+                                <button
+                                  onClick={() => setStrategicGoals(strategicGoals.filter((_, i) => i !== index))}
+                                  className="text-red-400 hover:text-red-300"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Add new goal form */}
+                      <div className="space-y-2">
+                        <input
+                          type="text"
+                          value={newGoal.goal}
+                          onChange={(e) => setNewGoal({ ...newGoal, goal: e.target.value })}
+                          placeholder="e.g., Expand into European markets"
+                          className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                        />
+                        <div className="grid grid-cols-2 gap-2">
+                          <input
+                            type="text"
+                            value={newGoal.timeframe}
+                            onChange={(e) => setNewGoal({ ...newGoal, timeframe: e.target.value })}
+                            placeholder="Timeframe (e.g., 2025 Q2-Q4)"
+                            className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                          />
+                          <select
+                            value={newGoal.priority}
+                            onChange={(e) => setNewGoal({ ...newGoal, priority: e.target.value as 'high' | 'medium' | 'low' })}
+                            className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                          >
+                            <option value="high">High Priority</option>
+                            <option value="medium">Medium Priority</option>
+                            <option value="low">Low Priority</option>
+                          </select>
+                        </div>
+                        <button
+                          onClick={() => {
+                            if (newGoal.goal.trim()) {
+                              setStrategicGoals([...strategicGoals, newGoal])
+                              setNewGoal({ goal: '', timeframe: '', priority: 'medium' })
+                            }
+                          }}
+                          disabled={!newGoal.goal.trim()}
+                          className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Add Strategic Goal
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -1574,6 +1695,7 @@ export default function OrganizationOnboarding({
                         {getTotalTargets() >= MAX_TOTAL_TARGETS && ' (Maximum reached)'}
                       </li>
                       <li>• Industry: {discovered.industry}</li>
+                      <li>• {strategicGoals.length} strategic goal{strategicGoals.length !== 1 ? 's' : ''} defined</li>
                     </ul>
                   </div>
                 </div>

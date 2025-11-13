@@ -45,8 +45,10 @@ const IntelligenceSynthesisDisplay: React.FC<IntelligenceSynthesisDisplayProps> 
   // Debug logging
   console.log('🔍 IntelligenceSynthesisDisplay received:', {
     hasExecutiveSummary: !!data.executive_summary,
-    executiveSummaryLength: data.executive_summary?.length,
-    executiveSummaryPreview: data.executive_summary?.substring(0, 200),
+    hasKeyFindings: !!data.key_findings,
+    hasCompetitiveAnalysis: !!data.competitive_analysis,
+    hasSourceStrategy: !!data.source_strategy,
+    hasStrategicActions: !!data.strategic_actions,
     hasCompetitiveMoves: !!data.competitive_moves,
     hasStakeholderDynamics: !!data.stakeholder_dynamics,
     hasMediaLandscape: !!data.media_landscape,
@@ -54,6 +56,170 @@ const IntelligenceSynthesisDisplay: React.FC<IntelligenceSynthesisDisplayProps> 
     hasRiskAlerts: !!data.risk_alerts,
     allKeys: Object.keys(data || {})
   });
+
+  // Handle GEO format (key_findings, competitive_analysis, source_strategy)
+  if (data.key_findings || data.competitive_analysis || data.source_strategy) {
+    return (
+      <div className="space-y-6">
+        {/* Executive Summary */}
+        {data.executive_summary && (
+          <div className="bg-gray-900 rounded-xl p-6 border-2 border-purple-800">
+            <div className="flex items-center mb-4">
+              <Eye className="w-6 h-6 text-purple-400 mr-3" />
+              <h2 className="text-xl font-bold text-white">Executive Summary</h2>
+            </div>
+            <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">{data.executive_summary}</p>
+          </div>
+        )}
+
+        {/* Key Findings */}
+        {data.key_findings && data.key_findings.length > 0 && (
+          <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+            <div className="flex items-center mb-6">
+              <Lightbulb className="w-6 h-6 text-yellow-400 mr-3" />
+              <h2 className="text-xl font-bold text-white">Key Findings</h2>
+            </div>
+            <div className="space-y-4">
+              {data.key_findings.map((finding: any, i: number) => (
+                <div key={i} className={`p-4 rounded-lg border ${
+                  finding.priority === 'critical' ? 'bg-red-900/20 border-red-700' :
+                  finding.priority === 'high' ? 'bg-orange-900/20 border-orange-700' :
+                  'bg-blue-900/20 border-blue-700'
+                }`}>
+                  <div className="flex items-start gap-3">
+                    <span className={`text-lg font-bold ${
+                      finding.priority === 'critical' ? 'text-red-400' :
+                      finding.priority === 'high' ? 'text-orange-400' :
+                      'text-blue-400'
+                    }`}>#{i + 1}</span>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-white mb-2">{finding.title}</h3>
+                      <p className="text-gray-300 mb-2">{finding.insight}</p>
+                      <p className="text-sm text-gray-400 italic">{finding.evidence}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Competitive Analysis */}
+        {data.competitive_analysis && (
+          <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+            <div className="flex items-center mb-6">
+              <Target className="w-6 h-6 text-red-400 mr-3" />
+              <h2 className="text-xl font-bold text-white">Competitive Analysis</h2>
+            </div>
+
+            {data.competitive_analysis.dominant_players && data.competitive_analysis.dominant_players.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-white mb-3">Dominant Players</h3>
+                <div className="space-y-3">
+                  {data.competitive_analysis.dominant_players.map((player: any, i: number) => (
+                    <div key={i} className="bg-gray-800/50 p-4 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="font-semibold text-white">{player.name}</span>
+                        <span className="text-xs text-gray-400">• {player.platforms?.join(', ')}</span>
+                      </div>
+                      <p className="text-sm text-gray-300">{player.visibility}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {data.competitive_analysis.success_patterns && (
+              <div className="mb-4 bg-green-900/20 p-4 rounded-lg border border-green-700">
+                <h3 className="text-green-400 font-semibold mb-2">Success Patterns</h3>
+                <p className="text-gray-300">{data.competitive_analysis.success_patterns}</p>
+              </div>
+            )}
+
+            {data.competitive_analysis.gaps_for_target && (
+              <div className="bg-orange-900/20 p-4 rounded-lg border border-orange-700">
+                <h3 className="text-orange-400 font-semibold mb-2">Gaps to Address</h3>
+                <p className="text-gray-300">{data.competitive_analysis.gaps_for_target}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Source Strategy */}
+        {data.source_strategy && (
+          <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+            <div className="flex items-center mb-6">
+              <MessageSquare className="w-6 h-6 text-blue-400 mr-3" />
+              <h2 className="text-xl font-bold text-white">Source Strategy</h2>
+            </div>
+
+            {data.source_strategy.priority_publications && data.source_strategy.priority_publications.length > 0 && (
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold text-white mb-3">Priority Publications</h3>
+                <div className="space-y-3">
+                  {data.source_strategy.priority_publications.map((pub: any, i: number) => (
+                    <div key={i} className="bg-gray-800/50 p-4 rounded-lg">
+                      <h4 className="font-semibold text-blue-400 mb-1">{pub.name}</h4>
+                      <p className="text-sm text-gray-300 mb-2">{pub.reasoning}</p>
+                      <p className="text-sm text-gray-400 italic">Action: {pub.action}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {data.source_strategy.coverage_strategy && (
+              <div className="bg-cyan-900/20 p-4 rounded-lg border border-cyan-700">
+                <h3 className="text-cyan-400 font-semibold mb-2">Coverage Strategy</h3>
+                <p className="text-gray-300">{data.source_strategy.coverage_strategy}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Strategic Actions */}
+        {data.strategic_actions && data.strategic_actions.length > 0 && (
+          <div className="bg-gray-900 rounded-xl p-6 border-2 border-cyan-800">
+            <div className="flex items-center mb-6">
+              <Megaphone className="w-6 h-6 text-cyan-400 mr-3" />
+              <h2 className="text-xl font-bold text-white">Strategic Actions</h2>
+            </div>
+            <div className="space-y-4">
+              {data.strategic_actions.map((action: any, i: number) => (
+                <div key={i} className={`p-4 rounded-lg border ${
+                  action.priority === 'critical' ? 'bg-red-900/10 border-red-600' :
+                  action.priority === 'high' ? 'bg-yellow-900/10 border-yellow-600' :
+                  'bg-purple-900/10 border-purple-600'
+                }`}>
+                  <div className="flex items-start justify-between mb-2">
+                    <h3 className={`font-semibold ${
+                      action.priority === 'critical' ? 'text-red-400' :
+                      action.priority === 'high' ? 'text-yellow-400' :
+                      'text-purple-400'
+                    }`}>{action.action}</h3>
+                    <span className="text-xs bg-gray-800 text-gray-400 px-2 py-1 rounded">{action.category}</span>
+                  </div>
+                  <p className="text-sm text-gray-300 mb-2">{action.reasoning}</p>
+                  <div className="flex justify-between items-center text-xs text-gray-400">
+                    <span>Impact: {action.expected_impact}</span>
+                    <span>Timeline: {action.timeline}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Metadata */}
+        {synthesis.meta && (
+          <div className="flex justify-between items-center px-4 py-2 bg-gray-900 rounded-lg border border-gray-800 text-xs text-gray-500">
+            <span>Analysis Date: {new Date(synthesis.meta.generated_at).toLocaleString()}</span>
+            <span>Scenarios: {synthesis.meta.scenarios_analyzed} | Platforms: {synthesis.meta.platforms_analyzed}</span>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   // Handle new PR-focused format
   if (data.executive_summary || data.competitive_moves) {
