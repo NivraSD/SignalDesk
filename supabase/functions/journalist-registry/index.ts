@@ -17,7 +17,9 @@ const INDUSTRY_ALIASES: { [key: string]: string[] } = {
   "cybersecurity": ["security", "infosec", "cyber"],
   "climate": ["environment", "sustainability", "esg"],
   "cryptocurrency": ["crypto", "blockchain", "web3", "defi"],
-  "real_estate": ["property", "housing", "commercial_real_estate"]
+  "real_estate": ["property", "housing", "commercial_real_estate"],
+  "public_relations": ["pr", "communications", "public affairs"],
+  "advertising": ["marketing", "martech", "ad tech"]
 };
 
 // Resolve industry aliases to canonical industry name

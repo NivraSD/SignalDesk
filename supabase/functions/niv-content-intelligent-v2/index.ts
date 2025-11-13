@@ -74,6 +74,9 @@ async function generateEmbeddingAsync(contentId: string, text: string, organizat
       return
     }
 
+    // Create supabase client for this async function
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+
     const { error } = await supabase
       .from('content_library')
       .update({
@@ -2386,14 +2389,159 @@ ${campaignContext.timeline || 'Not specified'}
         }
       }
 
-      // Handle simple media list generation
+      // Handle media list generation by delegating to intelligent MCP service
       if (toolUse && toolUse.name === 'generate_media_list') {
-        console.log('📋 Generating media list with journalist registry')
+        console.log('📋 Delegating media list generation to mcp-media-list (intelligent)')
 
-        const requestedCount = toolUse.input.count || 15;  // Default to 15 (manageable size, can request more)
+        const requestedCount = toolUse.input.count || 15;
         const focusArea = toolUse.input.focus_area || '';
         const tier = toolUse.input.tier?.toLowerCase().replace(' ', '') || 'tier1';
 
+        try {
+          // Call the intelligent MCP media list service
+          const mcpResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/mcp-media-list`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              tool: 'generate_media_list',
+              arguments: {
+                topic: focusArea,
+                count: requestedCount,
+                tier: tier,
+                enrich_with_web: false
+              }
+            })
+          });
+
+          const mcpData = await mcpResponse.json();
+
+          if (!mcpData.success || !mcpData.content || !mcpData.content[0]?.journalists) {
+            throw new Error('MCP media list service failed');
+          }
+
+          const journalists = mcpData.content[0].journalists;
+          const metadata = mcpData.content[0].metadata;
+
+          console.log(`✅ MCP returned ${journalists.length} journalists`);
+          console.log(`📊 Primary industry:`, metadata.primary_industry);
+          console.log(`📊 Secondary industries:`, metadata.secondary_industries);
+
+          // QUALITY CHECK: If we got 0 primary journalists, this is a FAILURE
+          const primaryJournalists = journalists.filter((j: any) => j.priority === 'primary');
+          const secondaryJournalists = journalists.filter((j: any) => j.priority === 'secondary');
+
+          console.log(`   PRIMARY journalists: ${primaryJournalists.length}`);
+          console.log(`   SECONDARY journalists: ${secondaryJournalists.length}`);
+
+          if (primaryJournalists.length === 0 && metadata.primary_industry) {
+            // We got ZERO journalists from the primary industry - this is unacceptable
+            const errorMsg = `❌ MEDIA LIST GENERATION FAILED\n\nRequested: ${focusArea}\nPrimary Target: ${metadata.primary_industry}\n\nThe journalist database returned ZERO journalists for the primary industry "${metadata.primary_industry}".\n\nThis is a data quality issue - the system cannot build a media list with only secondary/tangential journalists.\n\nPlease try:\n1. A different topic/industry\n2. Contact support to add journalists for "${metadata.primary_industry}"`;
+
+            return new Response(JSON.stringify({
+              success: false,
+              mode: 'single_response',
+              message: errorMsg,
+              conversationId
+            }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          }
+
+          // Format journalists for display
+          const formattedList = journalists.map((j: any, i: number) => {
+            const lines = [`${i + 1}. **${j.name}** - ${j.outlet}`];
+            if (j.beat) lines.push(`   Focus: ${j.beat}`);
+
+            const contacts = [];
+            if (j.email) contacts.push(`📧 ${j.email}`);
+            if (j.twitter) contacts.push(`🐦 @${j.twitter}`);
+            if (j.linkedin) contacts.push(`💼 ${j.linkedin}`);
+
+            if (contacts.length > 0) {
+              lines.push(`   ${contacts.join(' • ')}`);
+            }
+
+            return lines.join('\n');
+          }).join('\n\n');
+
+          const allIndustries = [metadata.primary_industry, ...(metadata.secondary_industries || [])].filter(Boolean);
+
+          const displayMessage = `# Media List - ${focusArea}\n\n✅ Found ${journalists.length} verified journalists\n\n**Strategy:** ${metadata.strategy}\n\n**Primary Target:** ${metadata.primary_industry}\n${metadata.secondary_industries?.length > 0 ? `**Secondary Targets:** ${metadata.secondary_industries.join(', ')}` : ''}\n\n${formattedList}`;
+
+          // Auto-save to Memory Vault
+          const mediaListFolder = 'Media Lists/';
+          console.log(`💾 Auto-saving media list to folder: ${mediaListFolder}`);
+
+          const mediaListContent = {
+            focus_area: focusArea,
+            tier: tier,
+            total_count: journalists.length,
+            journalists: journalists,
+            generated_at: new Date().toISOString(),
+            primary_industry: metadata.primary_industry,
+            secondary_industries: metadata.secondary_industries,
+            strategy: metadata.strategy
+          };
+
+          const mediaListTitle = `Media List - ${focusArea} (${tier})`;
+          const mediaListId = crypto.randomUUID();
+
+          await supabase.from('content_library').insert({
+            id: mediaListId,
+            organization_id: organizationId,
+            content_type: 'media-list',
+            title: mediaListTitle,
+            content: mediaListContent,
+            folder: mediaListFolder,
+            metadata: {
+              focus_area: focusArea,
+              tier: tier,
+              journalist_count: journalists.length,
+              source: 'mcp-media-list',
+              generated_by: 'niv-content',
+              primary_industry: metadata.primary_industry,
+              secondary_industries: metadata.secondary_industries,
+              strategy: metadata.strategy
+            },
+            embedding: null,
+            embedding_model: null,
+            embedding_updated_at: null
+          });
+
+          console.log(`✅ Auto-saved media list to ${mediaListFolder}`);
+
+          // Generate embedding async
+          generateEmbeddingAsync(mediaListId, JSON.stringify(mediaListContent), organizationId);
+
+          return new Response(JSON.stringify({
+            success: true,
+            mode: 'single_response',
+            message: displayMessage,
+            metadata: {
+              content_type: 'media-list',
+              journalist_count: journalists.length,
+              primary_industry: metadata.primary_industry,
+              secondary_industries: metadata.secondary_industries,
+              strategy: metadata.strategy,
+              saved_to: mediaListFolder
+            },
+            conversationId
+          }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+
+        } catch (error) {
+          console.error('❌ MCP media list generation failed:', error);
+          return new Response(JSON.stringify({
+            success: false,
+            mode: 'single_response',
+            message: `Failed to generate media list: ${error.message}`,
+            conversationId
+          }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+      }
+
+      // OLD KEYWORD MATCHING CODE BELOW - TO BE DELETED
+      if (false) {
         // Map focus area to industry name in database
         const industryMapping: { [key: string]: string } = {
           'ai': 'artificial_intelligence',
@@ -2426,10 +2574,10 @@ ${campaignContext.timeline || 'Not specified'}
           'entertainment': 'media',
           'advertising': 'advertising',
           'marketing': 'advertising',
-          'pr': 'advertising',  // PR/Communications map to advertising industry
-          'public relations': 'advertising',
-          'communications': 'advertising',
           'martech': 'advertising',
+          'pr': 'public_relations',
+          'public relations': 'public_relations',
+          'communications': 'public_relations',
           'real estate': 'real_estate',
           'property': 'real_estate',
           'vc': 'venture_capital',
@@ -2469,7 +2617,7 @@ ${campaignContext.timeline || 'Not specified'}
             // This prevents "PR technology" from matching "technology" instead of "PR"
             if (keyword.includes('pr ') || keyword.includes(' pr') || keyword.startsWith('pr') ||
                 keyword.includes('public relations') || keyword.includes('communications')) {
-              industries.push('advertising');
+              industries.push('public_relations');
             } else {
               // Try keyword match for other industries
               for (const [key, value] of Object.entries(industryMapping)) {
