@@ -118,6 +118,7 @@ serve(async (req) => {
         organization_name,
         industry: orgIndustry,
         query_scenarios: queryScenarios,  // 10 scenario templates
+        queries: queryScenarios,  // Alias for backward compatibility with campaign builder
         meta_analysis_prompt: metaAnalysisPrompt,  // Single comprehensive prompt for all platforms
         geo_targets_used: !!geoTargets,
         geo_targets_summary: geoTargets ? {

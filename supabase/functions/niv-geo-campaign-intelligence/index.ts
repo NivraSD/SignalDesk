@@ -1,9 +1,9 @@
-// GEO Campaign Intelligence Layer
-// Lightweight intelligence gathering for campaign builder (no orchestrator - called from frontend)
-// Provides AI query ownership context for VECTOR campaigns
+// GEO Campaign Intelligence Layer V2
+// Campaign-specific intelligence gathering using meta-analysis approach
+// Provides competitive intelligence and source strategy for VECTOR campaigns
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import Anthropic from 'https://esm.sh/@anthropic-ai/sdk@0.24.3'
+import Anthropic from 'https://esm.sh/@anthropic-ai/sdk@0.27.3'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
@@ -16,7 +16,7 @@ interface GeoIntelligenceRequest {
   organization_name: string
   industry: string
   campaign_goal: string
-  stakeholders?: any[]  // From campaign research
+  stakeholders?: any[]
 }
 
 serve(async (req) => {
@@ -33,25 +33,34 @@ serve(async (req) => {
       stakeholders = []
     } = await req.json() as GeoIntelligenceRequest
 
-    console.log('🎯 GEO Campaign Intelligence:', {
+    console.log('🎯 GEO Campaign Intelligence V2:', {
       organization: organization_name,
       industry,
       goal: campaign_goal
     })
 
-    const anthropic = new Anthropic({
-      apiKey: Deno.env.get('ANTHROPIC_API_KEY') || '',
-    })
-
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const supabase = createClient(supabaseUrl, supabaseKey)
 
-    // STEP 1: Generate target queries using geo-query-discovery
-    console.log('🔍 Discovering target AI queries...')
-    const queryResponse = await fetch(
-      `${supabaseUrl}/functions/v1/geo-query-discovery`,
-      {
+    // STEP 1: Generate campaign-specific query scenarios
+    console.log('📋 Step 1/3: Generating campaign-specific queries...')
+    const queryScenarios = buildCampaignQueries(campaign_goal, organization_name, industry)
+
+    console.log(`✅ Built ${queryScenarios.length} campaign-specific scenarios`)
+
+    // STEP 2: Build meta-analysis prompt for campaign context
+    const metaAnalysisPrompt = buildCampaignMetaAnalysisPrompt({
+      organizationName: organization_name,
+      industry,
+      campaignGoal: campaign_goal,
+      queries: queryScenarios
+    })
+
+    // STEP 3: Test all 4 platforms in parallel with meta-analysis
+    console.log('🚀 Step 2/3: Testing all 4 platforms with campaign meta-analysis...')
+
+    const [claudeRes, geminiRes, perplexityRes, chatgptRes] = await Promise.all([
+      fetch(`${supabaseUrl}/functions/v1/geo-test-claude`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${supabaseKey}`,
@@ -60,192 +69,361 @@ serve(async (req) => {
         body: JSON.stringify({
           organization_id,
           organization_name,
-          industry
+          meta_analysis_prompt: metaAnalysisPrompt
         })
-      }
+      }),
+      fetch(`${supabaseUrl}/functions/v1/geo-test-gemini`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          organization_id,
+          organization_name,
+          meta_analysis_prompt: metaAnalysisPrompt
+        })
+      }),
+      fetch(`${supabaseUrl}/functions/v1/geo-test-perplexity`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          organization_id,
+          organization_name,
+          meta_analysis_prompt: metaAnalysisPrompt
+        })
+      }),
+      fetch(`${supabaseUrl}/functions/v1/geo-test-chatgpt`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          organization_id,
+          organization_name,
+          meta_analysis_prompt: metaAnalysisPrompt
+        })
+      })
+    ])
+
+    const claudeData = claudeRes.ok ? await claudeRes.json() : null
+    const geminiData = geminiRes.ok ? await geminiRes.json() : null
+    const perplexityData = perplexityRes.ok ? await perplexityRes.json() : null
+    const chatgptData = chatgptRes.ok ? await chatgptRes.json() : null
+
+    console.log('✅ Platform testing complete:', {
+      claude: claudeData?.success,
+      gemini: geminiData?.success,
+      perplexity: perplexityData?.success,
+      chatgpt: chatgptData?.success
+    })
+
+    // STEP 4: Aggregate competitive intelligence
+    console.log('🔍 Step 3/3: Aggregating campaign intelligence...')
+
+    const competitiveIntel = aggregateCompetitors({
+      claude: claudeData?.meta_analysis,
+      gemini: geminiData?.meta_analysis,
+      perplexity: perplexityData?.meta_analysis,
+      chatgpt: chatgptData?.meta_analysis
+    }, organization_name)
+
+    const sourceIntel = aggregateSources({
+      claude: { meta_analysis: claudeData?.meta_analysis, sources: [] },
+      gemini: { meta_analysis: geminiData?.meta_analysis, sources: geminiData?.sources || [] },
+      perplexity: { meta_analysis: perplexityData?.meta_analysis, sources: perplexityData?.sources || [] },
+      chatgpt: { meta_analysis: chatgptData?.meta_analysis, sources: [] }
+    })
+
+    console.log('📊 Intelligence gathered:', {
+      competitors: competitiveIntel.all_competitors.size,
+      top_competitor: competitiveIntel.competitor_frequency[0]?.name,
+      sources: sourceIntel.all_sources.size,
+      top_source: sourceIntel.source_frequency[0]?.domain
+    })
+
+    // Return campaign-specific intelligence
+    return new Response(
+      JSON.stringify({
+        success: true,
+        campaign_intelligence: {
+          targetQueries: queryScenarios,
+          competitiveIntelligence: {
+            dominant_players: competitiveIntel.competitor_frequency.slice(0, 10),
+            total_competitors: competitiveIntel.all_competitors.size,
+            success_patterns: competitiveIntel.success_factors.join('; ')
+          },
+          sourceStrategy: {
+            priority_sources: sourceIntel.source_frequency.slice(0, 10),
+            total_sources: sourceIntel.all_sources.size
+          },
+          platformAnalyses: {
+            claude: claudeData?.meta_analysis,
+            gemini: geminiData?.meta_analysis,
+            perplexity: perplexityData?.meta_analysis,
+            chatgpt: chatgptData?.meta_analysis
+          }
+        }
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
-    if (!queryResponse.ok) {
-      throw new Error('Query discovery failed')
-    }
-
-    const queryData = await queryResponse.json()
-    const targetQueries = queryData.queries || []
-
-    console.log(`✅ Discovered ${targetQueries.length} target queries`)
-
-    // STEP 2: Analyze citation sources and content type recommendations
-    console.log('📊 Analyzing AI citation patterns...')
-
-    const systemPrompt = `You are a GEO (Generative Engine Optimization) strategist analyzing AI platform behavior.
-
-## Your Task
-Given an organization's campaign goal and target queries, provide intelligence on:
-1. Which publications/domains AI platforms cite most for these queries
-2. What content types have highest citation rates
-3. Schema opportunities for direct AI optimization
-4. How to map traditional comms tactics to AI query ownership
-
-## AI Platform Citation Patterns
-
-**ChatGPT (GPT-4o)**:
-- Highly cited: TechCrunch, ArsTechnica, Verge, official docs, G2, Capterra
-- Citation rate by content: Structured schemas 75%, Official docs 70%, Tier-1 media 65%, G2/reviews 60%, Blog posts 40%
-- Queries: Product comparisons, how-to, best [category], features
-
-**Claude (Anthropic)**:
-- Highly cited: Academic papers, thoughtful analysis, official documentation
-- Citation rate: Long-form analysis 65%, Technical docs 70%, Thoughtful essays 50%, News 45%
-- Queries: Deep analysis, ethical considerations, technical implementation
-
-**Perplexity**:
-- Highly cited: Cited sources with authority signals, recent content, diverse perspectives
-- Citation rate: Research papers 75%, News 70%, Official docs 65%, Analysis 55%
-- Queries: Research-oriented, data-driven, comparative analysis
-
-**Gemini (Google)**:
-- Highly cited: Google-indexed content, structured data, authoritative domains
-- Citation rate: Schemas 75%, High-authority sites 60%, Google News 55%
-- Queries: Factual queries, definitions, broad comparisons
-
-## Output Format
-Return ONLY valid JSON matching this structure:
-
-{
-  "targetQueries": [
-    {
-      "query": "best CRM for enterprise",
-      "priority": "high" | "medium" | "low",
-      "platforms": ["ChatGPT", "Perplexity"],
-      "currentVisibility": "none" | "low" | "medium" | "high",
-      "intent": "transactional" | "commercial" | "informational"
-    }
-  ],
-  "citationSources": [
-    {
-      "domain": "techcrunch.com",
-      "citationRate": 80,
-      "platforms": ["ChatGPT", "Perplexity"],
-      "contentTypes": ["news", "analysis"],
-      "rationale": "TechCrunch cited in 80% of enterprise software queries on ChatGPT"
-    }
-  ],
-  "schemaOpportunities": [
-    {
-      "type": "Product",
-      "priority": 1,
-      "impactScore": 90,
-      "targetQueries": ["best CRM", "CRM features"],
-      "platforms": ["ChatGPT", "Gemini"],
-      "rationale": "Product schema has 75% citation rate across all platforms"
-    }
-  ],
-  "contentRecommendations": [
-    {
-      "tacticType": "media_pitch" | "thought_leadership" | "documentation" | "social_post",
-      "priority": 1,
-      "targetQueries": ["query1", "query2"],
-      "citationImpact": "high" | "medium" | "low",
-      "rationale": "Why this tactic type helps own target queries",
-      "targetOutlets": ["outlet1", "outlet2"]
-    }
-  ],
-  "queryOwnershipMap": {
-    "media_coverage": {
-      "targetQueries": ["query1", "query2"],
-      "expectedImpact": "Description of impact",
-      "timeline": "2-4 weeks"
-    },
-    "documentation": {
-      "targetQueries": ["query3"],
-      "expectedImpact": "Impact description",
-      "timeline": "1-2 weeks"
-    }
-  }
-}`
-
-    const userPrompt = `Analyze AI query ownership opportunities for this campaign:
-
-**Organization**: ${organization_name}
-**Industry**: ${industry}
-**Campaign Goal**: ${campaign_goal}
-
-**Target Stakeholders** (human audiences we're trying to reach):
-${stakeholders.length > 0 ? stakeholders.map((s: any) => `- ${s.name || s}`).join('\n') : 'Not yet identified'}
-
-**Discovered AI Queries** (what people ask AI about ${organization_name}):
-${targetQueries.slice(0, 20).map((q: any) =>
-  `- "${q.query}" (${q.category || 'general'}, priority: ${q.priority || 'medium'})`
-).join('\n')}
-
-Generate GEO intelligence that:
-1. Identifies which publications/domains to target based on AI citation patterns
-2. Maps content types to query ownership potential
-3. Prioritizes schema opportunities
-4. Shows how traditional comms tactics drive AI visibility
-
-Focus on actionable recommendations that can be integrated into a VECTOR campaign blueprint.`
-
-    const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 8000,
-      temperature: 0.7,
-      system: systemPrompt,
-      messages: [{
-        role: 'user',
-        content: userPrompt
-      }]
-    })
-
-    const responseText = message.content[0].type === 'text' ? message.content[0].text : ''
-
-    // Extract JSON from response
-    let geoIntelligence: any
-    try {
-      const jsonMatch = responseText.match(/\{[\s\S]*\}/)
-      if (jsonMatch) {
-        geoIntelligence = JSON.parse(jsonMatch[0])
-      } else {
-        geoIntelligence = JSON.parse(responseText)
+  } catch (error: any) {
+    console.error('❌ Campaign intelligence error:', error)
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
-    } catch (parseError) {
-      console.error('Failed to parse GEO intelligence:', parseError)
-      console.error('Raw response:', responseText.substring(0, 500))
-      throw new Error('Failed to parse GEO intelligence from Claude response')
-    }
-
-    console.log('✅ GEO intelligence generated:', {
-      targetQueries: geoIntelligence.targetQueries?.length || 0,
-      citationSources: geoIntelligence.citationSources?.length || 0,
-      schemaOpportunities: geoIntelligence.schemaOpportunities?.length || 0,
-      contentRecommendations: geoIntelligence.contentRecommendations?.length || 0
-    })
-
-    return new Response(JSON.stringify({
-      success: true,
-      geoIntelligence,
-      metadata: {
-        discoveredQueries: targetQueries.length,
-        generatedAt: new Date().toISOString()
-      }
-    }), {
-      headers: {
-        'Content-Type': 'application/json',
-        ...corsHeaders
-      }
-    })
-
-  } catch (error) {
-    console.error('❌ GEO Campaign Intelligence error:', error)
-    return new Response(JSON.stringify({
-      error: error.message,
-      details: error.toString()
-    }), {
-      status: 400,
-      headers: {
-        'Content-Type': 'application/json',
-        ...corsHeaders
-      }
-    })
+    )
   }
 })
+
+/**
+ * Build campaign-specific query scenarios (NOT generic industry queries)
+ */
+function buildCampaignQueries(campaignGoal: string, orgName: string, industry: string): any[] {
+  // Extract key concepts from campaign goal
+  const goal = campaignGoal.toLowerCase()
+  const scenarios: any[] = []
+
+  // Scenario 1-3: Direct goal alignment (HIGHEST VALUE)
+  scenarios.push(
+    { query: `${campaignGoal} leaders`, intent: 'comparison', priority: 'critical' },
+    { query: `best ${campaignGoal} companies`, intent: 'comparison', priority: 'critical' },
+    { query: `${campaignGoal} experts`, intent: 'informational', priority: 'high' }
+  )
+
+  // Scenario 4-6: Problem/solution queries
+  if (goal.includes('increase') || goal.includes('drive') || goal.includes('improve')) {
+    const target = goal.split('increase ')[1] || goal.split('drive ')[1] || goal.split('improve ')[1] || 'results'
+    scenarios.push(
+      { query: `how to ${target.trim()}`, intent: 'informational', priority: 'high' },
+      { query: `${target.trim()} best practices`, intent: 'informational', priority: 'high' }
+    )
+  } else {
+    scenarios.push(
+      { query: `${industry} ${campaignGoal}`, intent: 'informational', priority: 'high' },
+      { query: `${campaignGoal} strategies`, intent: 'informational', priority: 'high' }
+    )
+  }
+
+  // Scenario 7-8: Thought leadership queries
+  scenarios.push(
+    { query: `${campaignGoal} thought leaders`, intent: 'informational', priority: 'medium' },
+    { query: `${campaignGoal} trends ${new Date().getFullYear()}`, intent: 'informational', priority: 'medium' }
+  )
+
+  // Scenario 9-10: Competitive/alternative queries
+  scenarios.push(
+    { query: `top ${industry} companies for ${campaignGoal}`, intent: 'comparison', priority: 'medium' },
+    { query: `${campaignGoal} solutions comparison`, intent: 'comparison', priority: 'medium' }
+  )
+
+  return scenarios.slice(0, 10)
+}
+
+/**
+ * Build campaign-specific meta-analysis prompt
+ */
+function buildCampaignMetaAnalysisPrompt(context: {
+  organizationName: string
+  industry: string
+  campaignGoal: string
+  queries: any[]
+}): string {
+  const queryList = context.queries.map((q, idx) =>
+    `${idx + 1}. "${q.query}" (${q.intent}, priority: ${q.priority})`
+  ).join('\n')
+
+  return `You are conducting a GEO (Generative Engine Optimization) analysis for a SPECIFIC CAMPAIGN.
+
+**Campaign Context:**
+- Organization: ${context.organizationName}
+- Industry: ${context.industry}
+- Campaign Goal: ${context.campaignGoal}
+
+**Your Task:**
+Simulate what happens when potential clients search for solutions related to this campaign goal. For each query scenario, analyze which organizations AI platforms would recommend and why.
+
+**Query Scenarios (Campaign-Specific):**
+${queryList}
+
+Please provide your analysis in valid JSON format (no markdown, just JSON):
+
+{
+  "overall_visibility": "high|medium|low|none",
+  "visibility_summary": "2-3 sentence assessment of ${context.organizationName}'s visibility for THIS CAMPAIGN GOAL",
+
+  "query_results": [
+    {
+      "query": "the query text",
+      "organizations_mentioned": ["Org1", "Org2", "Org3"],
+      "target_mentioned": true/false,
+      "target_rank": 1-10 or null,
+      "why_these_appeared": "What makes these organizations appear for THIS campaign goal (thought leadership, case studies, schema)",
+      "sources_cited": ["domain1.com", "domain2.com"],
+      "what_target_needs": "Specific gap ${context.organizationName} should address for THIS campaign goal"
+    }
+  ],
+
+  "competitive_intelligence": {
+    "dominant_competitors": ["Organizations that appear most for THIS campaign goal"],
+    "success_factors": "What makes organizations succeed at THIS campaign goal in AI visibility (content types, sources, positioning)",
+    "campaign_patterns": "Common characteristics of orgs winning THIS campaign goal queries"
+  },
+
+  "recommendations": [
+    {
+      "priority": "critical|high|medium",
+      "category": "schema|content|pr|technical",
+      "action": "Specific action for THIS campaign goal",
+      "reasoning": "Why this helps win these specific campaign queries",
+      "expected_impact": "How this improves visibility for THIS campaign"
+    }
+  ],
+
+  "source_intelligence": {
+    "most_cited_sources": ["Publications cited for THIS campaign goal"],
+    "why_these_sources": "What makes these sources authoritative for THIS topic",
+    "coverage_strategy": "Where ${context.organizationName} should get featured for THIS campaign"
+  }
+}
+
+CRITICAL: Focus on THIS specific campaign goal. Don't give generic industry advice - tell us who wins for THESE specific queries and why.`
+}
+
+/**
+ * Aggregate competitor mentions across platforms
+ */
+function aggregateCompetitors(platforms: any, targetOrg: string) {
+  const all_competitors = new Set<string>()
+  const competitor_mentions: Record<string, { count: number, platforms: string[], reasons: string[] }> = {}
+  const success_factors = new Set<string>()
+
+  for (const [platform, meta] of Object.entries(platforms)) {
+    if (!meta) continue
+
+    if (meta.query_results && Array.isArray(meta.query_results)) {
+      for (const result of meta.query_results) {
+        if (result.organizations_mentioned && Array.isArray(result.organizations_mentioned)) {
+          for (const org of result.organizations_mentioned) {
+            if (org && org !== targetOrg) {
+              all_competitors.add(org)
+              if (!competitor_mentions[org]) {
+                competitor_mentions[org] = { count: 0, platforms: [], reasons: [] }
+              }
+              competitor_mentions[org].count++
+              if (!competitor_mentions[org].platforms.includes(platform)) {
+                competitor_mentions[org].platforms.push(platform)
+              }
+              if (result.why_these_appeared) {
+                competitor_mentions[org].reasons.push(result.why_these_appeared)
+              }
+            }
+          }
+        }
+      }
+    }
+
+    if (meta.competitive_intelligence?.success_factors) {
+      success_factors.add(meta.competitive_intelligence.success_factors)
+    }
+  }
+
+  const competitor_frequency = Object.entries(competitor_mentions)
+    .map(([name, data]) => ({
+      name,
+      mentions: data.count,
+      platforms: data.platforms,
+      reasons: [...new Set(data.reasons)]
+    }))
+    .sort((a, b) => b.mentions - a.mentions)
+
+  return {
+    all_competitors,
+    competitor_frequency,
+    success_factors: Array.from(success_factors)
+  }
+}
+
+/**
+ * Aggregate source citations across platforms
+ */
+function aggregateSources(platforms: any) {
+  const all_sources = new Set<string>()
+  const source_mentions: Record<string, { count: number, platforms: string[] }> = {}
+
+  for (const [platform, data] of Object.entries(platforms)) {
+    const meta = (data as any).meta_analysis
+    const sources = (data as any).sources || []
+
+    if (meta?.source_intelligence?.most_cited_sources && Array.isArray(meta.source_intelligence.most_cited_sources)) {
+      for (const source of meta.source_intelligence.most_cited_sources) {
+        if (source) {
+          all_sources.add(source)
+          if (!source_mentions[source]) {
+            source_mentions[source] = { count: 0, platforms: [] }
+          }
+          source_mentions[source].count++
+          if (!source_mentions[source].platforms.includes(platform)) {
+            source_mentions[source].platforms.push(platform)
+          }
+        }
+      }
+    }
+
+    if (meta?.query_results && Array.isArray(meta.query_results)) {
+      for (const result of meta.query_results) {
+        if (result.sources_cited && Array.isArray(result.sources_cited)) {
+          for (const source of result.sources_cited) {
+            if (source) {
+              all_sources.add(source)
+              if (!source_mentions[source]) {
+                source_mentions[source] = { count: 0, platforms: [] }
+              }
+              source_mentions[source].count++
+              if (!source_mentions[source].platforms.includes(platform)) {
+                source_mentions[source].platforms.push(platform)
+              }
+            }
+          }
+        }
+      }
+    }
+
+    if (sources && Array.isArray(sources)) {
+      for (const source of sources) {
+        const domain = source.url ? new URL(source.url).hostname : source
+        if (domain) {
+          all_sources.add(domain)
+          if (!source_mentions[domain]) {
+            source_mentions[domain] = { count: 0, platforms: [] }
+          }
+          source_mentions[domain].count++
+          if (!source_mentions[domain].platforms.includes(platform)) {
+            source_mentions[domain].platforms.push(platform)
+          }
+        }
+      }
+    }
+  }
+
+  const source_frequency = Object.entries(source_mentions)
+    .map(([domain, data]) => ({
+      domain,
+      mentions: data.count,
+      platforms: data.platforms
+    }))
+    .sort((a, b) => b.mentions - a.mentions)
+
+  return {
+    all_sources,
+    source_frequency
+  }
+}

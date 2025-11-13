@@ -82,27 +82,21 @@ export default function OrganizationOnboarding({
   // Step 5: Memory Vault
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
 
-  // Step 6: GEO Discovery Results (NEW)
-  const [geoResults, setGeoResults] = useState<any>(null)
-  const [geoDiscoveryStarted, setGeoDiscoveryStarted] = useState(false)
-  const [showGeoResults, setShowGeoResults] = useState(false)
-
-  // Step 7: Schema Generation Progress (Enhanced Pipeline)
+  // Step 6: Schema Generation Progress (Enhanced Pipeline)
   const [schemaProgress, setSchemaProgress] = useState({
     schemaDiscovery: 'pending', // pending, processing, completed, failed
-    geoDiscovery: 'pending',
     websiteScraping: 'pending',
     entityExtraction: 'pending',
     entityEnrichment: 'pending',
     schemaSynthesis: 'pending',
-    schemaEnhancement: 'pending', // Stage 7
+    schemaEnhancement: 'pending',
     message: ''
   })
   const [schemaGenerationStarted, setSchemaGenerationStarted] = useState(false)
   const [createdOrganization, setCreatedOrganization] = useState<any>(null)
   const [existingSchemaData, setExistingSchemaData] = useState<any>(null)
 
-  // Step 8: Optional Schema Enhancements
+  // Step 7: Optional Schema Enhancements
   const [showEnhancements, setShowEnhancements] = useState(false)
   const [awardsMedia, setAwardsMedia] = useState<Array<{ url: string; description: string }>>([])
   const [currentAwardUrl, setCurrentAwardUrl] = useState('')
@@ -119,7 +113,7 @@ export default function OrganizationOnboarding({
   const [enhancementLoading, setEnhancementLoading] = useState(false)
   const [schemaSaved, setSchemaSaved] = useState(false) // Track if schema has been saved
 
-  const totalSteps = 7  // Added GEO discovery step
+  const totalSteps = 6  // Removed GEO discovery step - focus on schema only
   const MAX_TOTAL_TARGETS = 20  // Hard limit: 15 from discovery + up to 5 custom
 
   // Helper function to calculate total targets
@@ -500,187 +494,15 @@ export default function OrganizationOnboarding({
       // Turn off loading
       setLoading(false)
 
-      // Move to Step 6: GEO Discovery
+      // Move to Step 6: Schema Generation
       setTimeout(() => {
         setStep(6)
-        console.log('➡️ Moved to step 6 (GEO Discovery)')
+        console.log('➡️ Moved to step 6 (Schema Generation)')
       }, 0)
     } catch (err: any) {
       console.error('Create organization error:', err)
       setError(err.message || 'Failed to create organization')
       setLoading(false)
-    }
-  }
-
-  const handleGeoDiscovery = async () => {
-    setGeoDiscoveryStarted(true)
-
-    const orgId = createdOrganization?.id
-    const orgNameToUse = createdOrganization?.name || orgName
-
-    if (!orgId) {
-      console.error('❌ No organization ID available for GEO discovery')
-      return
-    }
-
-    try {
-      console.log('🎯 Running GEO Discovery with frontend orchestration...')
-
-      // STEP 1: Generate strategic GEO queries
-      console.log('📋 Step 1/3: Generating GEO queries...')
-      const { data: queryData, error: queryError } = await supabase.functions.invoke('geo-query-discovery', {
-        body: {
-          organization_id: orgId,
-          organization_name: orgNameToUse,
-          industry: discovered?.industry || industry
-        }
-      })
-
-      if (queryError) {
-        console.error('Query generation error:', queryError)
-        throw new Error(`Failed to generate GEO queries: ${queryError.message}`)
-      }
-
-      if (!queryData?.success) {
-        console.error('Query generation failed:', queryData)
-        throw new Error(queryData?.error || 'Failed to generate GEO queries')
-      }
-
-      // Extract meta-analysis prompt (REQUIRED)
-      const metaAnalysisPrompt = queryData.meta_analysis_prompt
-
-      if (!metaAnalysisPrompt) {
-        console.error('Query discovery response:', queryData)
-        throw new Error('No meta-analysis prompt generated')
-      }
-
-      console.log(`✅ Generated meta-analysis prompt (${queryData.query_scenarios?.length || 10} scenarios)`)
-
-      // STEP 2: Test all 4 platforms in PARALLEL with META-ANALYSIS
-      console.log('🚀 Step 2/3: Testing all 4 platforms with meta-analysis (1 comprehensive call each)...')
-
-      const [claudeResults, geminiResults, perplexityResults, chatgptResults] = await Promise.all([
-        supabase.functions.invoke('geo-test-claude', {
-          body: {
-            organization_id: orgId,
-            organization_name: orgNameToUse,
-            meta_analysis_prompt: metaAnalysisPrompt
-          }
-        }),
-        supabase.functions.invoke('geo-test-gemini', {
-          body: {
-            organization_id: orgId,
-            organization_name: orgNameToUse,
-            meta_analysis_prompt: metaAnalysisPrompt
-          }
-        }),
-        supabase.functions.invoke('geo-test-perplexity', {
-          body: {
-            organization_id: orgId,
-            organization_name: orgNameToUse,
-            meta_analysis_prompt: metaAnalysisPrompt
-          }
-        }),
-        supabase.functions.invoke('geo-test-chatgpt', {
-          body: {
-            organization_id: orgId,
-            organization_name: orgNameToUse,
-            meta_analysis_prompt: metaAnalysisPrompt
-          }
-        })
-      ])
-
-      console.log('   ✓ All platforms tested')
-
-      // Check for errors but don't block on them
-      if (claudeResults.error) console.warn('Claude error (non-blocking):', claudeResults.error)
-      if (geminiResults.error) console.warn('Gemini error (non-blocking):', geminiResults.error)
-      if (perplexityResults.error) console.warn('Perplexity error (non-blocking):', perplexityResults.error)
-      if (chatgptResults.error) console.warn('ChatGPT error (non-blocking):', chatgptResults.error)
-
-      // Combine all platform results
-      const allSignals = [
-        ...(claudeResults.data?.signals || []),
-        ...(geminiResults.data?.signals || []),
-        ...(perplexityResults.data?.signals || []),
-        ...(chatgptResults.data?.signals || [])
-      ]
-
-      console.log(`✅ Collected ${allSignals.length} signals from 4 platforms`)
-
-      // Transform signals to format expected by synthesis function
-      const transformedResults = allSignals.map(signal => ({
-        query: signal.data?.query || '',
-        intent: signal.data?.intent || 'informational',
-        priority: signal.priority || 'medium',
-        platform: signal.platform,
-        response: signal.data?.context || signal.data?.response || '',
-        brand_mentioned: signal.data?.mentioned || false,
-        rank: signal.data?.position || undefined,
-        context_quality: signal.data?.context_quality || 'medium',
-        competitors_mentioned: signal.data?.competitors_mentioned || [],
-        sources: signal.data?.sources || [],  // Pass through source citations from Gemini/Perplexity
-        source_domains: signal.data?.source_domains || []  // Pass through source domains
-      }))
-
-      // STEP 3: Generate executive synthesis
-      console.log('📊 Step 3/3: Generating executive synthesis...')
-      const { data: synthesisData, error: synthesisError } = await supabase.functions.invoke('geo-executive-synthesis', {
-        body: {
-          organization_id: orgId,
-          organization_name: orgNameToUse,
-          industry: industry || undefined,  // Pass industry for context
-          geo_results: transformedResults
-        }
-      })
-
-      if (synthesisError) {
-        console.warn('Synthesis error (non-blocking):', synthesisError)
-      }
-
-      console.log('✅ GEO Discovery Complete:', {
-        total_signals: allSignals.length,
-        queries_tested: queries.length,
-        platforms_tested: 4
-      })
-
-      // Count mentions by platform (combine both batches)
-      const claudeSignals = [
-        ...(claudeBatch1.data?.signals || []),
-        ...(claudeBatch2.data?.signals || [])
-      ]
-      const geminiSignals = [
-        ...(geminiBatch1.data?.signals || []),
-        ...(geminiBatch2.data?.signals || [])
-      ]
-      const perplexitySignals = [
-        ...(perplexityBatch1.data?.signals || []),
-        ...(perplexityBatch2.data?.signals || [])
-      ]
-      const chatgptSignals = [
-        ...(chatgptBatch1.data?.signals || []),
-        ...(chatgptBatch2.data?.signals || [])
-      ]
-
-      // Format results for display
-      const geoData = {
-        success: true,
-        summary: {
-          total_queries: queries.length,
-          total_signals: allSignals.length,
-          claude_mentions: claudeSignals.filter((s: any) => s.type === 'ai_visibility').length,
-          gemini_mentions: geminiSignals.filter((s: any) => s.type === 'ai_visibility').length,
-          perplexity_mentions: perplexitySignals.filter((s: any) => s.type === 'ai_visibility').length,
-          chatgpt_mentions: chatgptSignals.filter((s: any) => s.type === 'ai_visibility').length
-        },
-        synthesis: synthesisData?.synthesis || null
-      }
-
-      setGeoResults(geoData)
-      setShowGeoResults(true)
-    } catch (error) {
-      console.error('GEO Discovery error:', error)
-      setGeoResults({ error: 'GEO Discovery failed' })
     }
   }
 
@@ -1074,12 +896,8 @@ export default function OrganizationOnboarding({
     setNewCompetitor('')
     setNewTopic('')
     setUploadedFiles([])
-    setGeoResults(null)
-    setGeoDiscoveryStarted(false)
-    setShowGeoResults(false)
     setSchemaProgress({
       schemaDiscovery: 'pending',
-      geoDiscovery: 'pending',
       websiteScraping: 'pending',
       entityExtraction: 'pending',
       entityEnrichment: 'pending',
@@ -2050,181 +1868,8 @@ export default function OrganizationOnboarding({
               </motion.div>
             )}
 
-            {/* Step 6: GEO Discovery Results */}
+            {/* Step 6: Schema Generation Progress (Enhanced Pipeline) */}
             {step === 6 && (
-              <motion.div
-                key="step6-geo"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                className="space-y-6"
-              >
-                <div>
-                  <h3 className="text-lg font-semibold text-white mb-2">
-                    GEO Discovery & AI Visibility Analysis
-                  </h3>
-                  <p className="text-sm text-gray-400 mb-6">
-                    Discover how your organization appears across AI platforms before generating your schema.
-                  </p>
-
-                  {!geoDiscoveryStarted && (
-                    <div className="space-y-4">
-                      <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-4">
-                        <div className="flex gap-3">
-                          <Sparkles className="w-5 h-5 text-cyan-400 flex-shrink-0 mt-0.5" />
-                          <div>
-                            <p className="text-sm text-cyan-300 font-medium">
-                              AI Visibility Testing
-                            </p>
-                            <p className="text-xs text-cyan-400/70 mt-1">
-                              We'll test how your organization appears in Claude, ChatGPT, Gemini, and Perplexity.
-                              This helps identify gaps and opportunities before building your schema.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={handleGeoDiscovery}
-                        disabled={!createdOrganization}
-                        className="w-full px-6 py-3 bg-cyan-600 hover:bg-cyan-700 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
-                      >
-                        <Globe className="w-5 h-5" />
-                        Run GEO Discovery
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          setGeoResults({ skipped: true })
-                          setStep(7)
-                        }}
-                        className="w-full px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
-                      >
-                        Skip GEO Discovery
-                      </button>
-                    </div>
-                  )}
-
-                  {geoDiscoveryStarted && !showGeoResults && (
-                    <div className="flex flex-col items-center justify-center py-12">
-                      <Loader className="w-12 h-12 text-cyan-400 animate-spin mb-4" />
-                      <p className="text-gray-400">Running AI visibility tests across multiple platforms...</p>
-                      <p className="text-xs text-gray-500 mt-2">This may take 30-40 seconds</p>
-                    </div>
-                  )}
-
-                  {showGeoResults && geoResults && !geoResults.error && (
-                    <div className="space-y-4">
-                      {/* AI Platform Visibility */}
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700">
-                          <p className="text-xs text-gray-400 mb-1">Claude Mentions</p>
-                          <p className="text-2xl font-bold text-white">{geoResults.summary?.claude_mentions || 0}</p>
-                        </div>
-                        <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700">
-                          <p className="text-xs text-gray-400 mb-1">ChatGPT Mentions</p>
-                          <p className="text-2xl font-bold text-white">{geoResults.summary?.chatgpt_mentions || 0}</p>
-                        </div>
-                        <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700">
-                          <p className="text-xs text-gray-400 mb-1">Gemini Mentions</p>
-                          <p className="text-2xl font-bold text-white">{geoResults.summary?.gemini_mentions || 0}</p>
-                        </div>
-                        <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700">
-                          <p className="text-xs text-gray-400 mb-1">Perplexity Mentions</p>
-                          <p className="text-2xl font-bold text-white">{geoResults.summary?.perplexity_mentions || 0}</p>
-                        </div>
-                      </div>
-
-                      {/* Competitive Intelligence */}
-                      {geoResults.synthesis?.competitive_analysis && (
-                        <div className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg">
-                          <p className="text-sm font-medium text-purple-300 mb-2">🎯 Competitive Intelligence</p>
-                          <p className="text-xs text-purple-200/80 mb-3">
-                            {geoResults.synthesis.competitive_analysis.who_is_winning}
-                          </p>
-                          {geoResults.synthesis.competitive_analysis.success_patterns && (
-                            <p className="text-xs text-purple-200/60">
-                              <span className="font-medium">Success Patterns:</span> {geoResults.synthesis.competitive_analysis.success_patterns}
-                            </p>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Source Strategy */}
-                      {geoResults.synthesis?.source_strategy?.priority_publications && geoResults.synthesis.source_strategy.priority_publications.length > 0 && (
-                        <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                          <p className="text-sm font-medium text-blue-300 mb-2">📚 Target Publications</p>
-                          <p className="text-xs text-blue-200/80 mb-2">AI platforms cite these sources most frequently:</p>
-                          <ul className="space-y-1">
-                            {geoResults.synthesis.source_strategy.priority_publications.slice(0, 5).map((pub: string, idx: number) => (
-                              <li key={idx} className="text-xs text-blue-200/70 flex items-start gap-2">
-                                <span className="text-blue-400">•</span>
-                                <span>{pub}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-
-                      {/* Schema Recommendations Preview */}
-                      {geoResults.synthesis?.schema_recommendations && geoResults.synthesis.schema_recommendations.length > 0 && (
-                        <div className="p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-lg">
-                          <p className="text-sm font-medium text-cyan-300 mb-2">🔧 Key Schema Recommendations</p>
-                          <ul className="space-y-2">
-                            {geoResults.synthesis.schema_recommendations.slice(0, 3).map((rec: any, idx: number) => (
-                              <li key={idx} className="text-xs text-cyan-200/80">
-                                <span className="font-medium text-cyan-300">{rec.title}:</span> {rec.reasoning?.substring(0, 100)}...
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-
-                      <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
-                        <p className="text-sm text-green-300 font-medium">
-                          ✓ GEO Discovery Complete
-                        </p>
-                        <p className="text-xs text-green-400/70 mt-1">
-                          Found {geoResults.summary?.total_signals || 0} intelligence signals.
-                          These insights will inform your schema generation.
-                        </p>
-                      </div>
-
-                      <button
-                        onClick={() => setStep(7)}
-                        className="w-full px-6 py-3 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
-                      >
-                        Continue to Schema Generation
-                        <ChevronRight className="w-4 h-4" />
-                      </button>
-                    </div>
-                  )}
-
-                  {geoResults?.error && (
-                    <div className="space-y-4">
-                      <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-                        <p className="text-sm text-red-300 font-medium">
-                          GEO Discovery Failed
-                        </p>
-                        <p className="text-xs text-red-400/70 mt-1">
-                          Don't worry - you can still proceed with schema generation.
-                        </p>
-                      </div>
-
-                      <button
-                        onClick={() => setStep(7)}
-                        className="w-full px-6 py-3 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors"
-                      >
-                        Continue Anyway
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            )}
-
-            {/* Step 7: Schema Generation Progress (Enhanced Pipeline) */}
-            {step === 7 && (
               <motion.div
                 key="step7"
                 initial={{ opacity: 0, x: 20 }}

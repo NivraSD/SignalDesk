@@ -13,14 +13,16 @@ export async function POST(req: NextRequest) {
       organizationName,
       industry,
       session_id,
-      organization_id
+      organization_id,
+      campaign_intelligence  // New: accept campaign intelligence
     } = body
 
     console.log('📋 GEO Blueprint Generator API:', {
       objective,
       organization: organizationName,
       automated_count: selectedContentTypes.automated?.length,
-      user_assisted_count: selectedContentTypes.user_assisted?.length
+      user_assisted_count: selectedContentTypes.user_assisted?.length,
+      has_intelligence: !!campaign_intelligence
     })
 
     const supabase = createClient(
@@ -28,7 +30,7 @@ export async function POST(req: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
 
-    const { data, error } = await supabase.functions.invoke('niv-geo-vector-orchestrator', {
+    const { data, error} = await supabase.functions.invoke('niv-geo-vector-orchestrator', {
       body: {
         campaignGoal,
         objective,
@@ -37,7 +39,8 @@ export async function POST(req: NextRequest) {
         organizationName,
         industry,
         session_id,
-        organization_id
+        organization_id,
+        campaign_intelligence  // Pass campaign intelligence to orchestrator
       }
     })
 

@@ -10,12 +10,25 @@ interface StakeholderOrchestrationRequest {
   part2_psychologicalInfluence: any
   sessionId?: string
   orgId?: string
-  geoIntelligence?: {  // OPTIONAL: GEO-VECTOR augmentation
+  geoIntelligence?: {  // LEGACY: Old GEO-VECTOR format
     targetQueries: any[]
     citationSources: any[]
     schemaOpportunities: any[]
     contentRecommendations: any[]
     queryOwnershipMap: any
+  }
+  campaign_intelligence?: {  // NEW: Meta-analysis format
+    targetQueries: Array<{ query: string, intent: string, priority: string }>
+    competitiveIntelligence: {
+      dominant_players: Array<{ name: string, mentions: number, platforms: string[], reasons: string[] }>
+      total_competitors: number
+      success_patterns: string
+    }
+    sourceStrategy: {
+      priority_sources: Array<{ domain: string, mentions: number, platforms: string[] }>
+      total_sources: number
+    }
+    platformAnalyses: any
   }
 }
 
@@ -102,14 +115,15 @@ serve(async (req) => {
   }
 
   try {
-    const { part1_strategicFoundation, part2_psychologicalInfluence, sessionId, orgId, geoIntelligence } = await req.json() as StakeholderOrchestrationRequest
+    const { part1_strategicFoundation, part2_psychologicalInfluence, sessionId, orgId, geoIntelligence, campaign_intelligence } = await req.json() as StakeholderOrchestrationRequest
 
     console.log('🎯 Generating stakeholder orchestration...')
     console.log('   Session:', sessionId)
     console.log('   Org:', orgId)
     console.log('   Part1 keys:', Object.keys(part1_strategicFoundation || {}))
     console.log('   Part2 keys:', Object.keys(part2_psychologicalInfluence || {}))
-    console.log('   GEO Intelligence:', geoIntelligence ? '✅ Present (GEO-VECTOR campaign)' : '❌ Not present (pure VECTOR campaign)')
+    console.log('   GEO Intelligence (legacy):', geoIntelligence ? '✅ Present' : '❌ Not present')
+    console.log('   Campaign Intelligence (new):', campaign_intelligence ? '✅ Present (GEO-VECTOR campaign)' : '❌ Not present')
 
     if (!part1_strategicFoundation || !part2_psychologicalInfluence) {
       throw new Error('Missing required parts: need part1_strategicFoundation and part2_psychologicalInfluence')
@@ -120,7 +134,7 @@ serve(async (req) => {
     }
 
     // Build comprehensive prompt for Claude (with optional GEO intelligence)
-    const prompt = buildOrchestrationPrompt(part1_strategicFoundation, part2_psychologicalInfluence, geoIntelligence)
+    const prompt = buildOrchestrationPrompt(part1_strategicFoundation, part2_psychologicalInfluence, geoIntelligence, campaign_intelligence)
 
     console.log('📡 Calling Claude for orchestration generation...')
 
@@ -299,7 +313,7 @@ serve(async (req) => {
   }
 })
 
-function buildOrchestrationPrompt(part1: any, part2: any, geoIntelligence?: any): string {
+function buildOrchestrationPrompt(part1: any, part2: any, geoIntelligence?: any, campaign_intelligence?: any): string {
   const currentDate = new Date().toISOString().split('T')[0]
 
   // Extract key info - adapt to actual Part 1 and Part 2 structure
@@ -307,8 +321,67 @@ function buildOrchestrationPrompt(part1: any, part2: any, geoIntelligence?: any)
   const stakeholders = part2.groups || part1.targetStakeholders || []
   const influenceStrategies = part2.influenceStrategies || part2.groups || []
 
-  // Build GEO intelligence section if present
-  const geoSection = geoIntelligence ? `
+  // Build NEW campaign intelligence section (competitive landscape + outlets + schema)
+  let geoSection = ''
+
+  if (campaign_intelligence) {
+    const topCompetitors = campaign_intelligence.competitiveIntelligence?.dominant_players?.slice(0, 5).map((c: any) =>
+      `- ${c.name}: ${c.mentions} mentions across ${c.platforms.join(', ')}\n  Why they win: ${c.reasons.slice(0, 2).join('; ')}`
+    ).join('\n') || 'None identified'
+
+    const topSources = campaign_intelligence.sourceStrategy?.priority_sources?.slice(0, 5).map((s: any) =>
+      `- ${s.domain}: Cited by ${s.platforms.join(', ')}`
+    ).join('\n') || 'None identified'
+
+    geoSection = `
+
+### 🎯 AI Query Ownership Strategy
+
+This is a GEO-VECTOR campaign. Focus your tactics on:
+1. **Competitive Landscape** - Who wins AI citations and why
+2. **Key Outlets** - Where to target PR for AI platform authority
+3. **Schema Opportunities** - Structured data to implement
+
+---
+
+#### 1. COMPETITIVE LANDSCAPE (Who Wins AI Citations for This Campaign Goal)
+
+**Target Queries:**
+${campaign_intelligence.targetQueries?.map((q: any) => `- "${q.query}" (${q.priority} priority)`).join('\n')}
+
+**Dominant Competitors:**
+${topCompetitors}
+
+**Success Patterns:**
+${campaign_intelligence.competitiveIntelligence?.success_patterns || 'Analysis pending'}
+
+**Total Competitors Identified:** ${campaign_intelligence.competitiveIntelligence?.total_competitors || 0}
+
+---
+
+#### 2. KEY OUTLETS TO TARGET (Publications AI Platforms Trust)
+
+**Priority Publications for PR:**
+${topSources}
+
+**Total Sources Analyzed:** ${campaign_intelligence.sourceStrategy?.total_sources || 0}
+
+**Why These Matter:** AI platforms cite these publications most frequently for queries in this space. Getting featured here dramatically increases citation probability.
+
+---
+
+#### 3. SCHEMA OPPORTUNITIES
+
+[Schema recommendations will be added based on competitive analysis above]
+
+**INSTRUCTIONS:**
+- Create tactics that target the priority publications listed above
+- Position against the dominant competitors identified
+- Address the success patterns they're using
+`
+  } else if (geoIntelligence) {
+    // Legacy format
+    geoSection = `
 
 ### GEO Intelligence (AI Query Ownership - AUGMENTATION):
 This is a GEO-VECTOR campaign. For each tactical action, you MUST add AI query ownership metadata showing how this tactic helps own target AI queries.
@@ -351,7 +424,8 @@ ${geoIntelligence.synthesis?.priorityActions?.map((a: string, i: number) => `${i
    - timeline: When AI platforms will start citing this
    - platforms: Which AI platforms (ChatGPT, Claude, Perplexity, Gemini)
    - rationale: Why this tactic helps own those queries
-` : ''
+`
+  }
 
   return `You are an expert campaign strategist. Your task is to create a stakeholder orchestration plan using a multi-channel, WHO → WHAT → WHERE approach.
 

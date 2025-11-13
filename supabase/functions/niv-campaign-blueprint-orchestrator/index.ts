@@ -14,12 +14,25 @@ interface OrchestratorRequest {
     name: string
     industry: string
   }
-  geoIntelligence?: {  // OPTIONAL: GEO-VECTOR augmentation for AI query ownership
+  geoIntelligence?: {  // LEGACY: Old GEO-VECTOR format
     targetQueries: any[]
     citationSources: any[]
     schemaOpportunities: any[]
     contentRecommendations: any[]
     queryOwnershipMap: any
+  }
+  campaign_intelligence?: {  // NEW: Meta-analysis format (competitive landscape + outlets + schema)
+    targetQueries: Array<{ query: string, intent: string, priority: string }>
+    competitiveIntelligence: {
+      dominant_players: Array<{ name: string, mentions: number, platforms: string[], reasons: string[] }>
+      total_competitors: number
+      success_patterns: string
+    }
+    sourceStrategy: {
+      priority_sources: Array<{ domain: string, mentions: number, platforms: string[] }>
+      total_sources: number
+    }
+    platformAnalyses: any
   }
 }
 
@@ -125,7 +138,8 @@ serve(async (req) => {
       part1_strategicFoundation: blueprintBase.part1_goalFramework,
       part2_psychologicalInfluence: blueprintBase.part2_stakeholderMapping,
       sessionId: payload.sessionId,
-      geoIntelligence: payload.geoIntelligence  // Pass GEO intelligence if present
+      geoIntelligence: payload.geoIntelligence,  // Legacy format
+      campaign_intelligence: payload.campaign_intelligence  // NEW: Rich competitive intelligence
     }).catch(err => {
       console.log('⚠️ Orchestration started in background (HTTP response will timeout)')
     })

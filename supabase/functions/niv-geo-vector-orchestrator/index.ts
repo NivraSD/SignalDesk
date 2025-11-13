@@ -10,8 +10,28 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+interface CampaignIntelligence {
+  targetQueries: Array<{ query: string, intent: string, priority: string }>
+  competitiveIntelligence: {
+    dominant_players: Array<{ name: string, mentions: number, platforms: string[], reasons: string[] }>
+    total_competitors: number
+    success_patterns: string
+  }
+  sourceStrategy: {
+    priority_sources: Array<{ domain: string, mentions: number, platforms: string[] }>
+    total_sources: number
+  }
+  platformAnalyses: {
+    claude?: any
+    gemini?: any
+    perplexity?: any
+    chatgpt?: any
+  }
+}
+
 interface GeoVectorRequest {
-  geoResearchData?: any
+  geoResearchData?: any // Legacy format
+  campaign_intelligence?: CampaignIntelligence // New meta-analysis format
   campaignGoal: string
   objective: 'drive_sales' | 'thought_leadership' | 'technical_adoption'
   selectedContentTypes: {
@@ -36,6 +56,7 @@ serve(async (req) => {
   try {
     const {
       geoResearchData,
+      campaign_intelligence,
       campaignGoal,
       objective,
       selectedContentTypes,
@@ -50,27 +71,14 @@ serve(async (req) => {
       objective,
       automated_count: selectedContentTypes.automated.length,
       user_assisted_count: selectedContentTypes.user_assisted.length,
-      organization: organizationName
+      organization: organizationName,
+      has_intelligence: !!campaign_intelligence,
+      intelligence_queries: campaign_intelligence?.targetQueries?.length || 0
     })
 
     const anthropic = new Anthropic({
       apiKey: Deno.env.get('ANTHROPIC_API_KEY') || '',
     })
-
-    // Build comprehensive context for Claude
-    const context = {
-      organization: {
-        name: organizationName,
-        industry,
-        goal: campaignGoal
-      },
-      objective,
-      selectedContent: selectedContentTypes,
-      constraints: constraints || { time_per_week: 2, technical_capability: 'medium' },
-      geoResearch: geoResearchData || {
-        note: 'No GEO research provided, using general recommendations'
-      }
-    }
 
     const systemPrompt = `You are an expert in GEO-VECTOR campaign orchestration - optimizing content for AI platform visibility.
 
@@ -316,6 +324,58 @@ Output ONLY valid JSON matching this EXACT structure:
 
 Output ONLY the JSON blueprint, no other text.`
 
+    // Build competitive intelligence section for prompt
+    let competitiveIntelSection = ''
+    if (campaign_intelligence) {
+      const topCompetitors = campaign_intelligence.competitiveIntelligence.dominant_players
+        .slice(0, 5)
+        .map(c => `- ${c.name}: ${c.mentions} mentions across ${c.platforms.join(', ')}`)
+        .join('\n')
+
+      const topSources = campaign_intelligence.sourceStrategy.priority_sources
+        .slice(0, 5)
+        .map(s => `- ${s.domain}: Cited by ${s.platforms.join(', ')}`)
+        .join('\n')
+
+      const targetQueries = campaign_intelligence.targetQueries
+        .map(q => `- "${q.query}" (${q.priority} priority, ${q.intent})`)
+        .join('\n')
+
+      competitiveIntelSection = `
+
+**Campaign Intelligence (from AI Platform Analysis):**
+
+TARGET QUERIES (queries where we need AI citations):
+${targetQueries}
+
+COMPETITIVE LANDSCAPE:
+Top competitors appearing in AI platforms for this campaign goal:
+${topCompetitors}
+
+Total competitors identified: ${campaign_intelligence.competitiveIntelligence.total_competitors}
+
+Success patterns: ${campaign_intelligence.competitiveIntelligence.success_patterns}
+
+PRIORITY SOURCES:
+Publications AI platforms cite for this campaign goal:
+${topSources}
+
+Total sources identified: ${campaign_intelligence.sourceStrategy.total_sources}
+
+PLATFORM VISIBILITY:
+${Object.entries(campaign_intelligence.platformAnalyses).map(([platform, data]: [string, any]) => {
+  const meta = data?.meta_analysis
+  if (!meta) return `- ${platform}: No data`
+  return `- ${platform}: ${meta.overall_visibility || 'unknown'} visibility (${meta.visibility_summary || 'N/A'})`
+}).join('\n')}
+
+Use this intelligence to:
+1. Set targetQueries in strategicFoundation (use the queries above)
+2. Inform aiPlatformPriorities based on platform visibility data
+3. Prioritize content types that address competitive gaps
+4. Target sources where competitors are winning citations`
+    }
+
     const userPrompt = `Generate a complete GEO-VECTOR campaign blueprint for ${organizationName}.
 
 **Campaign Goal:** ${campaignGoal}
@@ -336,20 +396,24 @@ ${selectedContentTypes.user_assisted.map(ct => `- ${ct.label} (${ct.citation_rat
 
 **Organization Context:**
 - Industry: ${industry}
-- Goal: ${campaignGoal}
+- Goal: ${campaignGoal}${competitiveIntelSection}
 
 Generate a complete 12-week GEO-VECTOR blueprint that:
 1. Prioritizes schemas first (if included)
-2. Spreads content execution realistically over 12 weeks
-3. Provides specific, actionable deliverables for each content type
-4. Clearly separates what SignalDesk does vs what user does
-5. Includes measurable success metrics
-6. Creates a week-by-week execution roadmap
+2. Uses the targetQueries from campaign intelligence (if provided)
+3. Spreads content execution realistically over 12 weeks
+4. Provides specific, actionable deliverables for each content type
+5. Clearly separates what SignalDesk does vs what user does
+6. Includes measurable success metrics
+7. Creates a week-by-week execution roadmap
+8. Addresses competitive gaps identified in the intelligence
 
 Output ONLY the JSON blueprint matching the structure above.`
 
     console.log('📤 Sending request to Claude...')
-    console.log('Context size:', JSON.stringify(context).length, 'bytes')
+    if (campaign_intelligence) {
+      console.log('📊 Using campaign intelligence with', campaign_intelligence.targetQueries.length, 'target queries')
+    }
 
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',

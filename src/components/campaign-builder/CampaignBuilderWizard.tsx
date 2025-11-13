@@ -704,247 +704,70 @@ export function CampaignBuilderWizard() {
 
         console.log('✅ Research pipeline completed')
 
-        // STEP 2: Generate GEO intelligence (AI query ownership layer)
-        console.log('🎯 Step 2: Generating GEO intelligence using frontend calls...')
+        // STEP 2: Generate GEO intelligence (competitive landscape + outlets + schema)
+        console.log('🎯 Step 2: Generating campaign intelligence (competitive landscape, outlets, schema)...')
         setConversationHistory(prev => [
           ...prev,
           {
             role: 'assistant',
-            content: '🔍 GEO Step 1/6: Discovering target queries for AI ownership...',
+            content: '🔍 Analyzing competitive landscape and AI platform visibility for this campaign goal...',
             stage: 'geo_intelligence'
           }
         ])
 
-        // Step 2.1: Discover campaign-specific queries
-        console.log('🔍 Step 2.1/3: Discovering campaign-specific queries...')
-        const queryDiscoveryResponse = await supabase.functions.invoke('geo-query-discovery', {
-          body: {
+        // Call new campaign intelligence endpoint
+        console.log('🔍 Calling niv-geo-campaign-intelligence with campaign goal...')
+        const intelligenceResponse = await fetch('/api/geo/intelligence', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
             organization_id: organization.id,
             organization_name: organization.name,
             industry: organization.industry || 'Technology',
-            campaign_goal: session.campaignGoal,  // CAMPAIGN-SPECIFIC
-            positioning: session.selectedPositioning,  // CAMPAIGN-SPECIFIC
-            stakeholders: researchData?.intelligenceBrief?.stakeholders || []  // CAMPAIGN-SPECIFIC
-          }
-        })
-
-        if (queryDiscoveryResponse.error) {
-          throw new Error('Failed to discover queries: ' + queryDiscoveryResponse.error.message)
-        }
-
-        console.log('📊 Raw query discovery response:', queryDiscoveryResponse.data)
-
-        const responseData = queryDiscoveryResponse.data
-        if (!responseData) {
-          throw new Error('No data returned from query discovery')
-        }
-
-        const categorizedQueries = responseData.queries
-        console.log('📊 Categorized queries structure:', categorizedQueries)
-
-        // Flatten categorized queries into a single array
-        let allQueries: any[] = []
-
-        if (Array.isArray(categorizedQueries)) {
-          // If it's already an array, use it directly
-          allQueries = categorizedQueries
-        } else if (categorizedQueries && typeof categorizedQueries === 'object') {
-          // If it's an object with categories, flatten it
-          allQueries = [
-            ...(categorizedQueries.critical || []),
-            ...(categorizedQueries.high || []),
-            ...(categorizedQueries.medium || [])
-          ]
-        } else {
-          throw new Error('Unexpected query structure: ' + JSON.stringify(categorizedQueries))
-        }
-
-        console.log('✅ Discovered', allQueries.length, 'target queries')
-
-        if (!allQueries || allQueries.length === 0) {
-          throw new Error('No queries discovered')
-        }
-
-        // Step 2.2: Test queries against all 4 AI platforms in parallel
-        console.log('🤖 Step 2.2/3: Testing queries against AI platforms...')
-        setConversationHistory(prev => [
-          ...prev,
-          {
-            role: 'assistant',
-            content: '🤖 GEO Step 2/6: Testing queries against ChatGPT, Claude, Perplexity, and Gemini (5 queries × 4 platforms = 20 tests)...',
-            stage: 'geo_intelligence'
-          }
-        ])
-
-        // Use first 5 queries (prioritizing critical/high) and extract query strings
-        const testQueries = allQueries.slice(0, 5).map(q => {
-          // Handle both string and object formats
-          if (typeof q === 'string') return q
-          if (q && typeof q === 'object' && q.query) return q.query
-          return String(q)
-        })
-
-        const [claudeResults, geminiResults, perplexityResults, chatgptResults] = await Promise.all([
-          supabase.functions.invoke('geo-test-claude', {
-            body: {
-              organization_id: organization.id,
-              organization_name: organization.name,
-              queries: testQueries
-            }
-          }),
-          supabase.functions.invoke('geo-test-gemini', {
-            body: {
-              organization_id: organization.id,
-              organization_name: organization.name,
-              queries: testQueries
-            }
-          }),
-          supabase.functions.invoke('geo-test-perplexity', {
-            body: {
-              organization_id: organization.id,
-              organization_name: organization.name,
-              queries: testQueries
-            }
-          }),
-          supabase.functions.invoke('geo-test-chatgpt', {
-            body: {
-              organization_id: organization.id,
-              organization_name: organization.name,
-              queries: testQueries
-            }
-          })
-        ])
-
-        console.log('✅ Platform testing complete:', {
-          claude: claudeResults.data?.results?.length || 0,
-          gemini: geminiResults.data?.results?.length || 0,
-          perplexity: perplexityResults.data?.results?.length || 0,
-          chatgpt: chatgptResults.data?.results?.length || 0
-        })
-
-        // Step 2.3: Synthesize results into actionable recommendations
-        console.log('📊 Step 2.3/3: Synthesizing GEO findings...')
-        setConversationHistory(prev => [
-          ...prev,
-          {
-            role: 'assistant',
-            content: '📊 GEO Step 3/6: Analyzing citation patterns and generating schema + content recommendations...',
-            stage: 'geo_intelligence'
-          }
-        ])
-
-        // Combine all platform results
-        const allResults = [
-          ...(claudeResults.data?.results || []),
-          ...(geminiResults.data?.results || []),
-          ...(perplexityResults.data?.results || []),
-          ...(chatgptResults.data?.results || [])
-        ]
-
-        // Extract citation sources
-        const citationSources = allResults
-          .flatMap(r => r.citations || [])
-          .filter(c => c.url && c.title)
-
-        // Build query ownership map
-        const queryOwnershipMap: any = {}
-        const ownedQueries: string[] = []
-        const unownedQueries: string[] = []
-
-        testQueries.forEach(query => {
-          const queryResults = allResults.filter(r => r.query === query)
-          const isMentioned = queryResults.some(r => r.is_mentioned)
-          const platforms = queryResults
-            .filter(r => r.is_mentioned)
-            .map(r => r.platform)
-
-          queryOwnershipMap[query] = {
-            isMentioned,
-            platforms,
-            citationProbability: isMentioned ? 'medium' : 'low',
-            rationale: isMentioned
-              ? `Currently mentioned on ${platforms.join(', ')}`
-              : 'Not yet mentioned - opportunity for ownership'
-          }
-
-          if (isMentioned) {
-            ownedQueries.push(query)
-          } else {
-            unownedQueries.push(query)
-          }
-        })
-
-        // Call GEO synthesis to generate actionable recommendations
-        console.log('🧠 Calling GEO synthesis for actionable recommendations...')
-        const synthesisResponse = await supabase.functions.invoke('geo-synthesis', {
-          body: {
-            organization_id: organization.id,
-            organization_name: organization.name,
             campaign_goal: session.campaignGoal,
-            positioning: session.selectedPositioning,
-            queries: testQueries,
-            results: allResults,
-            citationSources,
-            ownedQueries,
-            unownedQueries
-          }
+            stakeholders: researchData?.intelligenceBrief?.stakeholders || []
+          })
         })
 
-        if (synthesisResponse.error) {
-          console.warn('⚠️ GEO synthesis failed, using basic intelligence:', synthesisResponse.error)
+        if (!intelligenceResponse.ok) {
+          throw new Error('Failed to generate campaign intelligence')
         }
 
-        const synthesis = synthesisResponse.data?.synthesis || {}
+        const intelligenceData = await intelligenceResponse.json()
+        console.log('📊 Campaign intelligence received:', intelligenceData)
 
-        // geo-executive-synthesis returns "recommendations" which should be schema opportunities
-        const schemaRecommendations = synthesis.recommendations || synthesis.schemaOpportunities || []
-
-        console.log('📊 GEO synthesis received:', {
-          hasRecommendations: !!synthesis.recommendations,
-          recommendationsCount: schemaRecommendations.length,
-          sampleRecommendation: schemaRecommendations[0]
-        })
-
-        const geoIntelligence = {
-          targetQueries: testQueries,
-          citationSources,
-          queryOwnershipMap,
-          ownedQueries,
-          unownedQueries,
-          synthesis: {
-            gapAnalysis: synthesis.gapAnalysis || synthesis.executive_summary || `${unownedQueries.length} of ${testQueries.length} queries need ownership`,
-            schemaOpportunities: schemaRecommendations,
-            contentRecommendations: synthesis.contentRecommendations || [],
-            priorityActions: synthesis.critical_actions || synthesis.priorityActions || []
-          }
+        if (!intelligenceData.success || !intelligenceData.campaign_intelligence) {
+          throw new Error('No campaign intelligence returned')
         }
 
-        console.log('✅ GEO intelligence synthesized:', {
-          targetQueries: testQueries.length,
-          ownedQueries: ownedQueries.length,
-          unownedQueries: unownedQueries.length,
-          schemaOpportunities: geoIntelligence.synthesis.schemaOpportunities.length,
-          contentRecommendations: geoIntelligence.synthesis.contentRecommendations.length
+        const campaignIntelligence = intelligenceData.campaign_intelligence
+
+        console.log('✅ Campaign intelligence complete:', {
+          targetQueries: campaignIntelligence.targetQueries?.length || 0,
+          dominantPlayers: campaignIntelligence.competitiveIntelligence?.dominant_players?.length || 0,
+          prioritySources: campaignIntelligence.sourceStrategy?.priority_sources?.length || 0,
+          totalCompetitors: campaignIntelligence.competitiveIntelligence?.total_competitors || 0,
+          totalSources: campaignIntelligence.sourceStrategy?.total_sources || 0
         })
 
-        // STEP 3: Generate VECTOR blueprint with GEO augmentation
-        console.log('📋 Step 3: Generating VECTOR blueprint with GEO augmentation...')
+        // STEP 3: Generate VECTOR blueprint with campaign intelligence
+        console.log('📋 Step 3: Generating VECTOR blueprint with campaign intelligence...')
         setConversationHistory(prev => [
           ...prev,
           {
             role: 'assistant',
-            content: '📋 GEO Step 4/6: Creating VECTOR blueprint base (stakeholder mapping + goal framework)...',
+            content: '📋 Generating campaign blueprint with competitive landscape and source strategy...',
             stage: 'blueprint'
           }
         ])
 
-        // Use VECTOR orchestrator with GEO intelligence
+        // Use VECTOR orchestrator with campaign intelligence
         const response = await fetch('/api/generate-blueprint', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             sessionId: session.sessionId,
-            blueprintType: 'VECTOR_CAMPAIGN',  // Use VECTOR orchestrator!
+            blueprintType: 'VECTOR_CAMPAIGN',
             researchData: researchData,
             selectedPositioning: session.selectedPositioning,
             campaignGoal: session.campaignGoal,
@@ -952,7 +775,7 @@ export function CampaignBuilderWizard() {
               name: organization.name,
               industry: organization.industry || 'Technology'
             },
-            geoIntelligence: geoIntelligence  // AUGMENTATION!
+            campaign_intelligence: campaignIntelligence  // NEW: Rich competitive intelligence
           })
         })
 
