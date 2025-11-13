@@ -170,6 +170,7 @@ For EACH opportunity you detect, you must provide:
 
 4. Content types you can recommend (platform can create these):
    - media_pitch: Pitches to journalists/outlets
+   - media_list: Targeted journalist lists with contact info (IMPORTANT: Use media_targeting guidance to generate)
    - social_post: LinkedIn/Twitter/Instagram posts
    - thought_leadership: Blog posts, articles, op-eds
    - press_release: Formal announcements
@@ -327,6 +328,26 @@ Return ONLY a JSON array with this EXACT structure:
           "lever_priority": 1,
           "lever_description": "Establish ${organizationName} as go-to expert on security",
           "content_items": [
+            {
+              "type": "media_list",
+              "topic": "Tech and security journalists covering enterprise security and data breaches",
+              "brief": {
+                "angle": "Targeted list of journalists actively covering security breaches who would be interested in expert commentary",
+                "key_points": [
+                  "Use media_targeting data from strategic_context",
+                  "Focus on tech journalists covering cybersecurity",
+                  "Include enterprise tech reporters and security analysts",
+                  "Prioritize outlets: TechCrunch, SecurityWeek, Dark Reading, WSJ Tech"
+                ],
+                "tone": "Strategic, targeted",
+                "length": "15-20 journalists",
+                "cta": "Generate targeted media list using journalist database",
+                "target_audience": "Tech and security journalists",
+                "data_to_include": ["Journalist names", "Outlets", "Beats", "Contact info"]
+              },
+              "urgency": "immediate",
+              "estimated_effort": "5 minutes"
+            },
             {
               "type": "presentation",
               "topic": "Enterprise Security Best Practices: Lessons from Recent Breaches",

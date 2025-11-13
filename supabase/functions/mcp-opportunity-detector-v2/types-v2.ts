@@ -3,6 +3,7 @@
 
 export type ContentType =
   | 'media_pitch'
+  | 'media_list'
   | 'social_post'
   | 'thought_leadership'
   | 'press_release'
