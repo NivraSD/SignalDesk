@@ -328,6 +328,15 @@ Instagram posts require BOTH caption AND image. Use generate_content_package to 
 - "press release" / "announcement" / "news" = Use generate_press_release tool
 - If user says "media list", they want CONTACTS not a press release!
 
+**CRITICAL - EXECUTION PLAN CONTENT TYPES:**
+When processing content items from an opportunity execution plan:
+- If content_item.type === "media_list" → Use generate_media_list tool with topic from content_item.topic
+- If content_item.type === "media_pitch" → Use generate_media_pitch tool
+- If content_item.type === "thought_leadership" → Use generate_thought_leadership tool
+- If content_item.type === "social_post" → Use generate_social_post tool
+- If content_item.type === "press_release" → Use generate_press_release tool
+- IMPORTANT: Match the content type to the correct tool - don't just generate text descriptions!
+
 **IMPORTANT:** If the user has selected a content type from the UI (indicated by selectedContentType in the context), ALWAYS use that content type even if their message is generic.
 
 **AVAILABLE CONTENT TYPES & TOOLS (ALL 34 TYPES):**
