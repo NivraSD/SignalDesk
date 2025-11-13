@@ -326,7 +326,7 @@ ${opp.execution_plan?.success_metrics?.map((m: any) => `- ${JSON.stringify(m)}`)
             keyPoints: item.brief?.key_points || []
           }
 
-          if (item.type === 'press_release' || item.type === 'media_pitch') {
+          if (item.type === 'press_release' || item.type === 'media_pitch' || item.type === 'media_list') {
             contentRequirements.media.push(contentReq)
           } else {
             contentRequirements.owned.push(contentReq)
