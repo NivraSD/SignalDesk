@@ -1691,14 +1691,15 @@ export default function IntelligenceModule() {
                         <Lightbulb className="w-5 h-5" />
                         Key Findings
                       </h4>
-                      <ul className="space-y-3">
-                        {geoResults.synthesis.key_findings.map((finding: string, idx: number) => (
-                          <li key={idx} className="flex items-start gap-3">
-                            <span className="text-blue-400 font-bold mt-1">•</span>
-                            <span className="text-gray-300">{finding}</span>
-                          </li>
+                      <div className="space-y-3">
+                        {geoResults.synthesis.key_findings.map((finding: any, idx: number) => (
+                          <div key={idx} className="bg-gray-900/30 border border-gray-700/30 rounded-lg p-4">
+                            <h5 className="text-white font-semibold mb-2">{finding.title || finding}</h5>
+                            {finding.insight && <p className="text-gray-300 mb-2">{finding.insight}</p>}
+                            {finding.evidence && <p className="text-sm text-gray-400 italic">{finding.evidence}</p>}
+                          </div>
                         ))}
-                      </ul>
+                      </div>
                     </div>
                   )}
 
