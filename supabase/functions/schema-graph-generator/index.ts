@@ -24,6 +24,7 @@ interface GeneratorRequest {
   url?: string
   entities?: any // Entities passed directly from scraper
   coverage?: any[] // Coverage articles passed directly from scraper
+  existing_schema?: any // Existing schema.org markup to enhance (from schema-discovery)
 }
 
 serve(async (req) => {
@@ -38,7 +39,8 @@ serve(async (req) => {
       industry,
       url,
       entities: passedEntities,
-      coverage: passedCoverage
+      coverage: passedCoverage,
+      existing_schema
     }: GeneratorRequest = await req.json()
 
     if (!organization_id || !organization_name) {
@@ -199,14 +201,68 @@ serve(async (req) => {
         // Support both enriched entity format (name, description) and DB format (title, content)
         const productName = p.name || p.title
         if (productName) {
-          graph.push({
+          const productSchema: any = {
             '@type': 'Product',
             '@id': `${baseUrl}#product-${idx}`,
             'name': productName,
-            'description': p.description || p.content,
-            'category': p.category || p.metadata?.category,
-            'url': p.url || p.metadata?.url
-          })
+            'description': p.description || p.content
+          }
+
+          // Add brand (required by Google)
+          if (p.brand || p.metadata?.brand) {
+            productSchema.brand = {
+              '@type': 'Brand',
+              'name': p.brand || p.metadata?.brand
+            }
+          } else {
+            // Use organization as brand if no specific brand
+            productSchema.brand = {
+              '@type': 'Brand',
+              'name': organization_name
+            }
+          }
+
+          // Add image (recommended by Google)
+          if (p.image || p.image_url || p.metadata?.image || p.metadata?.image_url) {
+            productSchema.image = p.image || p.image_url || p.metadata?.image || p.metadata?.image_url
+          }
+
+          // Add SKU if available
+          if (p.sku || p.metadata?.sku) {
+            productSchema.sku = p.sku || p.metadata?.sku
+          }
+
+          // Add category
+          if (p.category || p.metadata?.category) {
+            productSchema.category = p.category || p.metadata?.category
+          }
+
+          // Add URL
+          if (p.url || p.metadata?.url) {
+            productSchema.url = p.url || p.metadata?.url
+          }
+
+          // Add offers with price (required by Google for products with pricing)
+          if (p.price || p.metadata?.price) {
+            productSchema.offers = {
+              '@type': 'Offer',
+              'price': p.price || p.metadata?.price,
+              'priceCurrency': p.currency || p.metadata?.currency || 'USD',
+              'availability': p.availability || p.metadata?.availability || 'https://schema.org/InStock',
+              'url': p.url || p.metadata?.url
+            }
+          }
+
+          // Add aggregate rating if available
+          if (p.rating || p.metadata?.rating) {
+            productSchema.aggregateRating = {
+              '@type': 'AggregateRating',
+              'ratingValue': p.rating || p.metadata?.rating,
+              'reviewCount': p.review_count || p.metadata?.review_count || 1
+            }
+          }
+
+          graph.push(productSchema)
         }
       })
     }
@@ -347,6 +403,54 @@ serve(async (req) => {
 
     // Add Organization as first item in graph
     graph.unshift(organizationSchema)
+
+    // STEP 4.5: Enhance existing schema if one was discovered
+    if (existing_schema) {
+      console.log('🔄 Enhancing existing schema...')
+
+      const existing = existing_schema
+
+      // If existing schema has a @graph structure, merge entities
+      if (existing.all_schemas && existing.all_schemas.length > 0) {
+        for (const existingSchemaObj of existing.all_schemas) {
+          if (existingSchemaObj['@graph'] && Array.isArray(existingSchemaObj['@graph'])) {
+            // Add entities from existing graph that we don't already have
+            for (const existingEntity of existingSchemaObj['@graph']) {
+              const entityType = existingEntity['@type']
+              const entityId = existingEntity['@id']
+
+              // Skip if we already have this entity (by @id or by type+name match)
+              const alreadyExists = graph.some(g => {
+                if (g['@id'] === entityId) return true
+                if (g['@type'] === entityType && g.name === existingEntity.name) return true
+                return false
+              })
+
+              if (!alreadyExists) {
+                console.log(`   ✓ Preserving existing ${entityType}: ${existingEntity.name || entityId}`)
+                graph.push(existingEntity)
+              }
+            }
+          }
+        }
+      }
+
+      // If existing schema is a single object (not @graph), merge properties into our Organization
+      if (existing.organization_schema && !existing.organization_schema['@graph']) {
+        const existingOrg = existing.organization_schema
+        console.log(`   ✓ Merging existing Organization properties`)
+
+        // Merge properties that we don't already have
+        for (const [key, value] of Object.entries(existingOrg)) {
+          if (!organizationSchema[key] && key !== '@context' && key !== '@type') {
+            organizationSchema[key] = value
+            console.log(`   ✓ Added property: ${key}`)
+          }
+        }
+      }
+
+      console.log(`✅ Schema enhancement complete. Total entities: ${graph.length}`)
+    }
 
     // Build final schema package
     const schemaPackage = {

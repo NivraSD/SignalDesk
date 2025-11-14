@@ -103,7 +103,13 @@ Extract and return a JSON object with the following structure:
       "name": "Product name",
       "description": "What it does",
       "category": "Product category",
-      "url": "Product page URL if mentioned"
+      "url": "Product page URL if mentioned",
+      "brand": "Brand name (use organization name if not specified)",
+      "price": "Price as number (e.g., 99.99)",
+      "currency": "Currency code (e.g., USD, EUR)",
+      "image": "Product image URL if available",
+      "sku": "Product SKU/ID if mentioned",
+      "availability": "in_stock|out_of_stock|pre_order"
     }
   ],
   "services": [

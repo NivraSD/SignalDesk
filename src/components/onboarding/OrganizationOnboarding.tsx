@@ -550,7 +550,46 @@ export default function OrganizationOnboarding({
       // Frontend-orchestrated pipeline (individual Edge Function calls)
       // This avoids Edge Function timeout issues by running each stage from the frontend
 
-      // Step 1: Scrape website
+      // Step 1: Check for existing schema
+      setSchemaProgress(prev => ({ ...prev, schemaDiscovery: 'processing', message: 'Checking for existing schema.org markup...' }))
+      const discoveryResponse = await fetch(`${SUPABASE_URL}/functions/v1/schema-discovery`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          organization_id: orgId,
+          organization_name: orgNameToUse,
+          website_url: website
+        })
+      })
+
+      let existingSchema = null
+      if (discoveryResponse.ok) {
+        const discoveryData = await discoveryResponse.json()
+        console.log('✅ Schema discovery:', {
+          has_schema: discoveryData.has_schema,
+          schema_types: discoveryData.schema_types,
+          recommendation: discoveryData.recommendation
+        })
+
+        if (discoveryData.has_schema) {
+          existingSchema = discoveryData
+          setExistingSchemaData(discoveryData)
+        }
+
+        setSchemaProgress(prev => ({
+          ...prev,
+          schemaDiscovery: 'completed',
+          message: discoveryData.recommendation || 'Schema check complete'
+        }))
+      } else {
+        console.warn('Schema discovery failed (non-critical):', await discoveryResponse.text())
+        setSchemaProgress(prev => ({ ...prev, schemaDiscovery: 'completed', message: 'Schema check complete' }))
+      }
+
+      // Step 2: Scrape website
       setSchemaProgress(prev => ({ ...prev, websiteScraping: 'processing', message: 'Scraping website content...' }))
       const scrapeResponse = await fetch(`${SUPABASE_URL}/functions/v1/website-entity-scraper`, {
         method: 'POST',
@@ -573,7 +612,7 @@ export default function OrganizationOnboarding({
       console.log(`✅ Scraped ${scrapeData.summary?.total_pages || 0} pages`)
       setSchemaProgress(prev => ({ ...prev, websiteScraping: 'completed' }))
 
-      // Step 2: Extract entities
+      // Step 3: Extract entities
       setSchemaProgress(prev => ({ ...prev, entityExtraction: 'processing', message: 'Extracting entities with AI...' }))
       const extractResponse = await fetch(`${SUPABASE_URL}/functions/v1/entity-extractor`, {
         method: 'POST',
@@ -596,7 +635,7 @@ export default function OrganizationOnboarding({
       console.log(`✅ Extracted ${extractData.summary?.total_entities || 0} entities`)
       setSchemaProgress(prev => ({ ...prev, entityExtraction: 'completed' }))
 
-      // Step 3: Enrich entities
+      // Step 4: Enrich entities
       setSchemaProgress(prev => ({ ...prev, entityEnrichment: 'processing', message: 'Enriching and validating entities...' }))
       const enrichResponse = await fetch(`${SUPABASE_URL}/functions/v1/entity-enricher`, {
         method: 'POST',
@@ -619,8 +658,14 @@ export default function OrganizationOnboarding({
       console.log(`✅ Enriched ${enrichData.summary?.total_entities || 0} entities`)
       setSchemaProgress(prev => ({ ...prev, entityEnrichment: 'completed' }))
 
-      // Step 4: Generate base schema
-      setSchemaProgress(prev => ({ ...prev, schemaSynthesis: 'processing', message: 'Synthesizing schema.org graph...' }))
+      // Step 5: Generate/enhance schema
+      setSchemaProgress(prev => ({
+        ...prev,
+        schemaSynthesis: 'processing',
+        message: existingSchema
+          ? 'Enhancing existing schema.org markup...'
+          : 'Synthesizing schema.org graph...'
+      }))
       const schemaResponse = await fetch(`${SUPABASE_URL}/functions/v1/schema-graph-generator`, {
         method: 'POST',
         headers: {
@@ -633,7 +678,8 @@ export default function OrganizationOnboarding({
           industry: discovered?.industry || industry,
           url: website,
           entities: enrichData.enriched_entities || {},
-          coverage: []
+          coverage: [],
+          existing_schema: existingSchema // Pass existing schema for enhancement
         })
       })
 
