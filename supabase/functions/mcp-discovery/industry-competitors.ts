@@ -460,6 +460,13 @@ export function discoverSubCategory(organization: string, industry: string, desc
       electric_vehicles: ['electric vehicle', 'EV', 'battery electric', 'Tesla competitor'],
       luxury: ['luxury car', 'premium vehicle', 'luxury automotive'],
       mass_market: ['mass market', 'affordable', 'mainstream automotive']
+    },
+    retail: {
+      apparel_retail: ['clothing', 'apparel', 'fashion', 'menswear', 'womenswear', 'garment', 'dress', 'shirt', 'pants', 'jeans', 'streetwear', 'workwear'],
+      luxury_retail: ['luxury', 'premium', 'high-end', 'designer', 'haute couture', 'luxury goods'],
+      mass_merchants: ['discount', 'general merchandise', 'big box', 'wholesale club', 'value retailer'],
+      grocery: ['grocery', 'supermarket', 'food retail', 'organic food', 'fresh produce'],
+      home_improvement: ['home improvement', 'hardware', 'home renovation', 'DIY', 'building materials', 'furniture', 'home goods']
     }
   };
   
