@@ -41,6 +41,7 @@ serve(async (req) => {
         max_tokens: 4096,
         temperature: 0.7,
         search_domain_filter: [],
+        search_recency_filter: 'month', // Only include articles from last 30 days
         return_citations: true,
         return_images: false
       })

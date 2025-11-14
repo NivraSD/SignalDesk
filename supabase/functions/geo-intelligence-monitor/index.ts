@@ -925,6 +925,7 @@ async function testPerplexityVisibility(queries: any[], organizationName: string
             }],
             temperature: 0.7,
             max_tokens: 1024,
+            search_recency_filter: 'month', // Only include articles from last 30 days
             return_citations: true, // Enable citations
             return_images: false
           })
