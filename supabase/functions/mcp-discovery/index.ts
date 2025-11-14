@@ -207,9 +207,9 @@ async function createOrganizationProfile(args: any) {
     // Get sources from master-source-registry with semantic matching
     const sourcesData = await gatherSourcesData(industryData.industry, organization_name, initialDescription);
     
-    // STEP 2: Use Claude to analyze gaps and create comprehensive profile
-    console.log('🤖 Step 2: Using Claude to analyze gaps and enhance profile...');
-    
+    // STEP 2: Use Claude to analyze company and identify competitors independently
+    console.log('🤖 Step 2: Using Claude to analyze company and identify competitors...');
+
     const enhancedProfile = await analyzeAndEnhanceProfile(
       organization_name,
       industryData,
@@ -218,6 +218,15 @@ async function createOrganizationProfile(args: any) {
       product_lines,
       key_markets,
       business_model
+    );
+
+    // STEP 2b: Validate and supplement Claude's competitors with registry
+    console.log('🔍 Step 2b: Validating competitors against registry...');
+    enhancedProfile.competition.direct_competitors = mergeAndValidateCompetitors(
+      enhancedProfile.competition.direct_competitors || [],
+      industryData.competitors,
+      organization_name,
+      enhancedProfile.description
     );
     
     // STEP 3: Fill remaining gaps with web search if needed
@@ -602,7 +611,6 @@ COMPANY PROFILE:
 ${product_lines.length > 0 ? `- Key Product Lines: ${product_lines.join(', ')}` : ''}
 ${key_markets.length > 0 ? `- Key Markets: ${key_markets.join(', ')}` : ''}
 ${business_model ? `- Business Model: ${business_model}` : ''}
-- Known Competitors: ${industryData.competitors.slice(0, 10).join(', ')}
 
 🎯 CRITICAL: Use the product lines and markets above to generate SPECIFIC search queries.
    For example, if product lines include "CRM Software" and "Sales Automation",
@@ -731,7 +739,11 @@ NOW, provide your COMPREHENSIVE profile in this JSON format:
       "Competitor 1 Name",
       "Competitor 2 Name",
       "Competitor 3 Name",
-      "List 10-15 major competitors - IMPORTANT: Use CURRENT company names (if a company has rebranded, use the new name, e.g., 'BrandTech Group' not 'You & Mr Jones')"
+      "List 10-15 ACTUAL competitors who serve the SAME customers with SIMILAR products/services",
+      "⚠️ CRITICAL: Identify competitors based on BUSINESS MODEL and CUSTOMER BASE, not just industry category",
+      "Example: For 'Buck Mason' (premium menswear brand), competitors are Bonobos, Everlane, Todd Snyder - NOT Walmart, Target, Home Depot",
+      "Example: For 'Edelman' (strategic communications firm), competitors are Weber Shandwick, FleishmanHillard - NOT AT&T, Verizon",
+      "Use CURRENT company names (if rebranded, use new name: 'BrandTech Group' not 'You & Mr Jones')"
     ],
     "indirect_competitors": ["5-10 companies that could become competitors"],
     "emerging_threats": ["3-5 startups or new entrants to watch"],
@@ -1289,6 +1301,64 @@ function expandKeywordsForSources(
 }
 
 // Fill any remaining gaps with web search
+/**
+ * Merge Claude-identified competitors with registry competitors intelligently
+ * Prioritizes Claude's analysis but supplements with relevant registry entries
+ */
+function mergeAndValidateCompetitors(
+  claudeCompetitors: string[],
+  registryCompetitors: string[],
+  organizationName: string,
+  description: string
+): string[] {
+  console.log(`   📊 Claude identified: ${claudeCompetitors.length} competitors`);
+  console.log(`   📚 Registry has: ${registryCompetitors.length} competitors`);
+
+  // Start with Claude's competitors (they're context-aware)
+  const merged = [...claudeCompetitors];
+
+  // Keywords that indicate generic/wrong competitors to filter out
+  const genericRetailers = ['walmart', 'target', 'costco', 'home depot', 'lowes', 'cvs', 'walgreens', 'kroger', 'best buy'];
+  const orgLower = organizationName.toLowerCase();
+  const descLower = description.toLowerCase();
+
+  // Check if this is a specialized business (not a mass merchant)
+  const isSpecialized = descLower.includes('premium') ||
+                       descLower.includes('luxury') ||
+                       descLower.includes('menswear') ||
+                       descLower.includes('womenswear') ||
+                       descLower.includes('apparel') ||
+                       descLower.includes('fashion') ||
+                       descLower.includes('clothing') ||
+                       descLower.includes('agency') ||
+                       descLower.includes('consulting') ||
+                       descLower.includes('services');
+
+  // Add relevant registry competitors that Claude might have missed
+  for (const comp of registryCompetitors) {
+    const compLower = comp.toLowerCase();
+
+    // Skip if already in list
+    if (merged.some(c => c.toLowerCase() === compLower)) {
+      continue;
+    }
+
+    // Filter out generic mass retailers if this is a specialized business
+    if (isSpecialized && genericRetailers.some(gr => compLower.includes(gr))) {
+      console.log(`   ⚠️ Filtering out generic retailer: ${comp}`);
+      continue;
+    }
+
+    // Add registry competitor if not generic and we have room
+    if (merged.length < 15) {
+      merged.push(comp);
+    }
+  }
+
+  console.log(`   ✅ Final competitor list: ${merged.length} competitors`);
+  return merged.slice(0, 15); // Cap at 15
+}
+
 async function fillGapsWithWebSearch(profile: any, organization_name: string) {
   // DISABLED: Web scraping has been broken since Oct 2025 and returns garbage
   // Claude already knows major competitors for Fortune 500 companies
