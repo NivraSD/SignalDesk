@@ -480,49 +480,8 @@ serve(async (req) => {
       }
     })
 
-    // STEP 5: Save to content_library
-    console.log('💾 Step 5: Saving schema graph...')
-
-    // Check for existing schema
-    const { data: existingSchema } = await supabase
-      .from('content_library')
-      .select('*')
-      .eq('organization_id', organization_id)
-      .eq('content_type', 'schema')
-      .eq('folder', 'Schemas')
-      .maybeSingle()
-
-    const { error: saveError } = await supabase
-      .from('content_library')
-      .upsert({
-        id: existingSchema?.id,
-        organization_id,
-        content_type: 'schema',
-        title: `${organization_name} - Schema Graph`,
-        content: JSON.stringify(schemaPackage),
-        folder: 'Schemas',
-        status: 'published',
-        metadata: {
-          version: (existingSchema?.metadata?.version || 0) + 1,
-          schema_type: 'Graph',
-          generated_by: 'schema-graph-generator',
-          generation_date: new Date().toISOString(),
-          entity_count: graph.length,
-          includes: {
-            products: products?.length || 0,
-            services: services?.length || 0,
-            locations: locations?.length || 0,
-            subsidiaries: subsidiaries?.length || 0,
-            team: team?.length || 0,
-            coverage: positiveCoverage?.length || 0
-          }
-        }
-      }, { onConflict: 'id' })
-
-    if (saveError) {
-      console.error('Failed to save schema:', saveError)
-      throw saveError
-    }
+    // NOTE: Removed automatic save to content_library
+    // The schema is returned to the caller (onboarding) which handles saving after enhancements
 
     console.log('✅ Schema Graph Generator Complete')
 

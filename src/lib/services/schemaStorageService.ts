@@ -9,7 +9,7 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
  * Manages schema storage in Memory Vault (content_library table)
  * Schemas are stored with:
  * - content_type: 'schema'
- * - folder: 'Schemas/Active/', 'Schemas/{Platform}-Optimized/', etc.
+ * - folder: 'Schemas', 'Schemas/{Platform}-Optimized/', etc.
  * - content: JSON schema
  * - metadata: { schema_type, platform_optimized, version }
  * - intelligence: GEO performance data
@@ -131,7 +131,7 @@ export class SchemaStorageService {
         .insert({
           organization_id: schema.organization_id,
           content_type: 'schema',
-          folder: schema.folder || 'Schemas/Active/',
+          folder: schema.folder || 'Schemas',
           content: schema.content,
           metadata: schema.metadata,
           intelligence: schema.intelligence || {},
@@ -247,7 +247,7 @@ export class SchemaStorageService {
         schema = await this.saveSchema({
           organization_id: organizationId,
           schema_type: recommendation.schema_type,
-          folder: `Schemas/Active/`,
+          folder: `Schemas`,
           content: newContent,
           metadata: {
             schema_type: recommendation.schema_type,

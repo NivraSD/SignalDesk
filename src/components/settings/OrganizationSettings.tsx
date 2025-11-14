@@ -335,7 +335,7 @@ export default function OrganizationSettings({
           organizationId,
           title: `${orgData.name} - Complete Schema`
         },
-        folder: 'Schemas/Active/'
+        folder: 'Schemas'
       }
 
       console.log('💾 SCHEMA SAVE: Payload prepared, making API call...')

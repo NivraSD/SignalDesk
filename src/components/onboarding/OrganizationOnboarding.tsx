@@ -801,7 +801,7 @@ export default function OrganizationOnboarding({
           organizationId: orgId,
           title: `${orgNameToUse} - Complete Schema`
         },
-        folder: 'Schemas/Active/'
+        folder: 'Schemas'
       })
     })
 

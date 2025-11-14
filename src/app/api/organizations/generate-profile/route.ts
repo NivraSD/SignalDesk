@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
       .select('content')
       .eq('organization_id', organizationId)
       .eq('content_type', 'schema')
-      .eq('folder', 'Schemas/Active/')
+      .eq('folder', 'Schemas')
       .order('updated_at', { ascending: false })
       .limit(1)
       .single()
