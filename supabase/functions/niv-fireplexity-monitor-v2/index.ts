@@ -695,7 +695,7 @@ async function fetchRealtimeArticles(
   const searchLimit = limitMap[recencyWindow] || 10
 
   console.log(`   Using dynamic limit: ${searchLimit} results per query (recency: ${recencyWindow})`)
-  console.log(`   Cache strategy: ${recencyWindow === '1hour' ? 'No cache (fresh data)' : '1hr cache (500% faster)'}`)
+  console.log(`   Cache strategy: No cache (fresh data to prevent old articles)`)
 
   // Execute searches in parallel (larger batch for speed - all at once)
   const batchSize = 15 // Increased from 5 to process all queries in one batch
@@ -724,7 +724,7 @@ async function fetchRealtimeArticles(
             scrapeOptions: {
               formats: ['markdown'],
               onlyMainContent: true,
-              maxAge: recencyWindow === '1hour' ? 0 : 3600000 // No cache for 1hr, 1hr cache for others (500% speed boost)
+              maxAge: 0 // No cache - always fetch fresh results to prevent old articles from slipping through
             }
           }),
           signal: controller.signal
