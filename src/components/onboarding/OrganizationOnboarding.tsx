@@ -276,14 +276,16 @@ export default function OrganizationOnboarding({
       console.log(`   📊 Competitors: ${allCompetitors.length}`, allCompetitors)
       console.log(`   📊 Stakeholders: ${allStakeholders.length}`, allStakeholders)
 
-      // Helper to find monitoring context from discovery data
+      // Helper to find or generate monitoring context
       const findTargetContext = (name: string, type: 'competitor' | 'stakeholder') => {
+        let context: any = {}
+
         if (type === 'competitor') {
           const competitor = fullProfile?.competition?.direct_competitors?.find(
             (c: any) => (typeof c === 'string' ? c : c.name) === name
           )
           if (competitor && typeof competitor === 'object') {
-            return {
+            context = {
               monitoring_context: competitor.monitoring_context,
               industry_context: competitor.industry_context,
               relevance_filter: competitor.relevance_filter
@@ -306,15 +308,42 @@ export default function OrganizationOnboarding({
               (s: any) => (typeof s === 'string' ? s : s.name) === name
             )
             if (stakeholder && typeof stakeholder === 'object') {
-              return {
+              context = {
                 monitoring_context: stakeholder.monitoring_context,
                 industry_context: stakeholder.industry_context,
                 relevance_filter: stakeholder.relevance_filter
               }
+              break
             }
           }
         }
-        return {}
+
+        // Generate default context if not found from MCP
+        if (!context.monitoring_context || !context.industry_context) {
+          const industry = discovered?.industry || industry || fullProfile?.industry || 'industry'
+
+          if (type === 'competitor') {
+            return {
+              monitoring_context: `Monitor ${name} for product launches, strategic partnerships, market expansions, leadership changes, and competitive positioning in ${industry}`,
+              industry_context: `Direct competitor in ${industry} sector`,
+              relevance_filter: {
+                keywords: [name, 'announcement', 'launch', 'partnership'],
+                topics: ['product', 'strategy', 'market', 'leadership']
+              }
+            }
+          } else {
+            return {
+              monitoring_context: `Track ${name} activities that may impact ${industry} sector operations, regulations, or market conditions`,
+              industry_context: `Key stakeholder in ${industry} ecosystem`,
+              relevance_filter: {
+                keywords: [name],
+                topics: ['regulation', 'policy', 'industry']
+              }
+            }
+          }
+        }
+
+        return context
       }
 
       const targets = [
