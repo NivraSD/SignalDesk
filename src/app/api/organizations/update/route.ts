@@ -84,6 +84,42 @@ export async function PUT(request: Request) {
 
     console.log('✅ Organization updated successfully')
 
+    // Update memory_vault with latest org context
+    try {
+      const memoryValue = {
+        organization_name: data.name,
+        industry: data.industry,
+        url: updateData.settings.url,
+        size: updateData.settings.size,
+        business_description: data.company_profile?.business_description,
+        business_model: data.company_profile?.business_model,
+        key_markets: data.company_profile?.key_markets,
+        product_lines: data.company_profile?.product_lines,
+        leadership: data.company_profile?.leadership,
+        updated_at: new Date().toISOString()
+      }
+
+      await supabase
+        .from('memory_vault')
+        .upsert({
+          organization_id: id,
+          memory_type: 'org_context',
+          memory_key: 'organizational_profile',
+          memory_value: memoryValue,
+          category: 'profile',
+          content: `${data.name} is a ${data.company_profile?.business_model || 'company'} in ${data.industry || 'the industry'}. ${data.company_profile?.business_description || ''}`,
+          confidence_score: 1.0,
+          source: 'organization_update_api',
+          source_timestamp: new Date().toISOString()
+        }, {
+          onConflict: 'organization_id,memory_type,memory_key'
+        })
+
+      console.log('✅ Updated memory_vault with org context')
+    } catch (mvError: any) {
+      console.error('⚠️ Failed to update memory_vault (non-blocking):', mvError.message)
+    }
+
     // Flatten settings for easier access
     const flatOrg = {
       ...data,
