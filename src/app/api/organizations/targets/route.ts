@@ -97,10 +97,14 @@ export async function POST(req: NextRequest) {
     }
 
     // WORKAROUND: Use direct PostgreSQL connection to bypass Supabase client schema cache
+    console.log('🔌 DATABASE_URL available:', !!DATABASE_URL)
+    console.log('🔌 Attempting PostgreSQL connection...')
+
     const pool = new Pool({ connectionString: DATABASE_URL })
 
     try {
       const client = await pool.connect()
+      console.log('✅ PostgreSQL connection successful')
 
       try {
         // Build parameterized query
