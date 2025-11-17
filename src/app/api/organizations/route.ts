@@ -56,12 +56,13 @@ export async function GET(req: NextRequest) {
         )
       }
 
-      // Flatten settings for easier access
+      // Flatten company_profile for easier access
       const flatOrg = {
         ...org,
-        url: org.settings?.url,
-        size: org.settings?.size,
-        description: org.settings?.description
+        industry: org.company_profile?.industry,
+        url: org.company_profile?.url,
+        size: org.company_profile?.size,
+        description: org.company_profile?.description
       }
 
       return NextResponse.json({
@@ -108,12 +109,13 @@ export async function GET(req: NextRequest) {
       )
     }
 
-    // Flatten settings for easier access
+    // Flatten company_profile for easier access
     const flatOrgs = organizations?.map(org => ({
       ...org,
-      url: org.settings?.url,
-      size: org.settings?.size,
-      description: org.settings?.description
+      industry: org.company_profile?.industry,
+      url: org.company_profile?.url,
+      size: org.company_profile?.size,
+      description: org.company_profile?.description
     })) || []
 
     return NextResponse.json({
@@ -160,17 +162,19 @@ export async function POST(req: NextRequest) {
     // CRITICAL FIX: Generate UUID for id field (table has no default)
     const orgId = crypto.randomUUID()
 
-    // Create organization
+    // Create organization - store all metadata in company_profile JSONB
     const { data: org, error: orgError } = await serviceClient
       .from('organizations')
       .insert({
         id: orgId,
         name,
-        industry,
-        settings: {
+        company_profile: {
+          industry,
           url,
           description,
-          ...body
+          size: body.size,
+          created_by: user.id,
+          created_at: new Date().toISOString()
         }
       })
       .select()
@@ -215,12 +219,13 @@ export async function POST(req: NextRequest) {
 
     console.log(`✅ Created organization: ${org.name} (${org.id}) for user ${user.email}`)
 
-    // Flatten settings for easier access
+    // Flatten company_profile for easier access
     const flatOrg = {
       ...org,
-      url: org.settings?.url,
-      size: org.settings?.size,
-      description: org.settings?.description
+      industry: org.company_profile?.industry,
+      url: org.company_profile?.url,
+      size: org.company_profile?.size,
+      description: org.company_profile?.description
     }
 
     return NextResponse.json({

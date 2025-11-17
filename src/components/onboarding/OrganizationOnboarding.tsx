@@ -340,7 +340,8 @@ export default function OrganizationOnboarding({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           organization_id: organization.id,
-          targets
+          targets,
+          append: false  // Replace all targets during onboarding
         })
       })
 
@@ -349,6 +350,7 @@ export default function OrganizationOnboarding({
       if (!targetsData.success) {
         console.error('❌ Failed to save targets:', targetsData.error)
         console.error('   Response:', targetsData)
+        throw new Error(`Failed to save intelligence targets: ${targetsData.error}`)
       } else {
         console.log(`✅ Successfully saved ${targetsData.count || 0} targets`)
       }
