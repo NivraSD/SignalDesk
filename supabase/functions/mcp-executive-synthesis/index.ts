@@ -218,6 +218,7 @@ async function synthesizeExecutiveIntelligence(args: any) {
     topics: []
   };
   let synthesisMetadata = null; // Declare at function scope to avoid reference error
+  let companyProfile = {}; // Declare at function scope
 
   try {
     // CRITICAL FIX: Load targets from intelligence_targets table instead of old profile
@@ -245,6 +246,12 @@ async function synthesizeExecutiveIntelligence(args: any) {
         });
       } else {
         console.log('⚠️ No intelligence_targets found, falling back to profile');
+        console.log('🔍 Profile structure:', {
+          has_competition: !!profile?.competition,
+          has_stakeholders: !!profile?.stakeholders,
+          direct_competitors: profile?.competition?.direct_competitors?.length || 0,
+          regulators: profile?.stakeholders?.regulators?.length || 0
+        });
         // Fallback to profile format if no targets in database
         discoveryTargets = {
           competitors: [
@@ -266,7 +273,35 @@ async function synthesizeExecutiveIntelligence(args: any) {
             ...(profile?.monitoring_config?.keywords || [])
           ].filter(Boolean) || []
         };
+        console.log('📋 Loaded from profile fallback:', {
+          competitors: discoveryTargets.competitors.length,
+          stakeholders: discoveryTargets.stakeholders.length,
+          topics: discoveryTargets.topics.length
+        });
       }
+
+      // CRITICAL: Use company_profile from enriched_data (comes from discovery via enrichment)
+      companyProfile = profile?.company_profile || {};
+
+      if (companyProfile && Object.keys(companyProfile).length > 0) {
+        console.log('✅ Using company profile from discovery:', {
+          has_business_model: !!companyProfile.business_model,
+          product_lines: companyProfile.product_lines?.length || 0,
+          key_markets: companyProfile.key_markets?.length || 0,
+          strategic_goals: companyProfile.strategic_goals?.length || 0
+        });
+      } else {
+        console.log('⚠️ No company profile in enriched data - using fallback from profile');
+        companyProfile = {
+          business_model: profile?.description || 'Not specified',
+          product_lines: profile?.service_lines || [],
+          key_markets: profile?.market?.key_markets || [],
+          strategic_goals: profile?.strategic_context?.strategic_priorities || []
+        };
+      }
+
+      // Store company profile for use in synthesis prompt
+      synthesisMetadata = { companyProfile };
     } else {
       // No org_id provided, use profile fallback
       discoveryTargets = {
@@ -288,6 +323,14 @@ async function synthesizeExecutiveIntelligence(args: any) {
           ...(profile?.keywords || []),
           ...(profile?.monitoring_config?.keywords || [])
         ].filter(Boolean) || []
+      };
+
+      // Also set companyProfile in fallback path
+      companyProfile = profile?.company_profile || {
+        business_model: profile?.description || 'Not specified',
+        product_lines: profile?.service_lines || [],
+        key_markets: profile?.market?.key_markets || [],
+        strategic_goals: profile?.strategic_context?.strategic_priorities || []
       };
     }
 
@@ -399,11 +442,119 @@ async function synthesizeExecutiveIntelligence(args: any) {
     quotes: context.structuredContext.evidence.quotes.length,
     metrics: context.structuredContext.evidence.metrics.length
   });
-  
+
+  // 🎯 CRITICAL: Check if enrichment provided pre-analyzed executive intelligence summary
+  const executiveIntelligence = enriched_data?.extracted_data?.executive_intelligence || enriched_data?.executive_intelligence;
+
+  if (executiveIntelligence) {
+    console.log('\n✨✨✨ EXECUTIVE INTELLIGENCE SUMMARY AVAILABLE FROM ENRICHMENT ✨✨✨');
+    console.log('Using pre-analyzed intelligence brief instead of raw events processing');
+    console.log({
+      competitor_moves: executiveIntelligence.top_competitor_moves?.length || 0,
+      regulatory_developments: executiveIntelligence.regulatory_developments?.length || 0,
+      market_trends: executiveIntelligence.market_trends?.length || 0,
+      stakeholder_activity: executiveIntelligence.stakeholder_activity?.length || 0,
+      key_insights: executiveIntelligence.key_insights?.length || 0,
+      coverage: `${executiveIntelligence.coverage_summary?.competitors_mentioned || 0}/${executiveIntelligence.coverage_summary?.total_competitors_tracked || 0} competitors, ${executiveIntelligence.coverage_summary?.stakeholders_mentioned || 0}/${executiveIntelligence.coverage_summary?.total_stakeholders_tracked || 0} stakeholders`
+    });
+  } else {
+    console.log('⚠️ No executive intelligence summary from enrichment - falling back to raw events processing');
+  }
+
   // Create synthesis prompt with STRUCTURED DATA
   let prompt;
-  
-  if (synthesis_focus === 'all_consolidated') {
+
+  // 🎯 NEW PATH: If enrichment provided executive intelligence summary, use it directly
+  if (executiveIntelligence && executiveIntelligence.top_competitor_moves) {
+    console.log('📝 Using executive intelligence summary path for synthesis');
+
+    // Format the pre-analyzed intelligence for Claude to write up
+    const competitorMoves = executiveIntelligence.top_competitor_moves || [];
+    const regulatoryDev = executiveIntelligence.regulatory_developments || [];
+    const marketTrends = executiveIntelligence.market_trends || [];
+    const stakeholderActivity = executiveIntelligence.stakeholder_activity || [];
+    const keyInsights = executiveIntelligence.key_insights || [];
+    const coverage = executiveIntelligence.coverage_summary || {};
+
+    prompt = `You are writing a DAILY COMPETITIVE INTELLIGENCE BRIEF FOR ${organization?.name}.
+
+🎯 CRITICAL: UNDERSTAND YOUR ROLE
+${organization?.name} is YOUR CLIENT. You are writing TO them, not ABOUT them.
+${organization?.name} is a ${companyProfile?.business_model || 'company'} operating in ${companyProfile?.key_markets?.join(', ') || 'their markets'}.
+
+YOUR JOB: Tell ${organization?.name} what their COMPETITORS and STAKEHOLDERS are doing.
+
+DO NOT write about ${organization?.name} - they know their own news.
+DO NOT say "limited intelligence for ${organization?.name}" - you're writing TO them, not monitoring them.
+DO NOT treat ${organization?.name} as a monitoring subject - they are the RECIPIENT of this brief.
+
+═══════════════════════════════════════════════════════════
+🎯 PRE-ANALYZED INTELLIGENCE FROM ENRICHMENT
+═══════════════════════════════════════════════════════════
+
+The hard analysis work has already been done. Format it clearly for ${organization?.name}'s executives.
+
+TODAY'S DATE: ${new Date().toISOString().split('T')[0]}
+
+COVERAGE SUMMARY:
+- Competitors mentioned: ${coverage.competitors_mentioned || 0}/${coverage.total_competitors_tracked || 0}
+- Stakeholders mentioned: ${coverage.stakeholders_mentioned || 0}/${coverage.total_stakeholders_tracked || 0}
+- Events today: ${coverage.recency_breakdown?.today || 0}
+- Events this week: ${coverage.recency_breakdown?.this_week || 0}
+- Older events: ${coverage.recency_breakdown?.older || 0}
+
+TOP COMPETITOR MOVES (${competitorMoves.length}):
+${competitorMoves.map((move, i) => `${i+1}. [${move.date}] ${move.competitor}: ${move.action}
+   Significance: ${move.significance}
+   Implications: ${move.implications}`).join('\n\n')}
+
+REGULATORY DEVELOPMENTS (${regulatoryDev.length}):
+${regulatoryDev.map((dev, i) => `${i+1}. [${dev.date}] ${dev.regulator}: ${dev.development}
+   Impact: ${dev.impact}`).join('\n\n')}
+
+MARKET TRENDS (${marketTrends.length}):
+${marketTrends.map((trend, i) => `${i+1}. ${trend.trend}
+   Evidence: ${trend.evidence}
+   Relevance: ${trend.relevance}`).join('\n\n')}
+
+STAKEHOLDER ACTIVITY (${stakeholderActivity.length}):
+${stakeholderActivity.map((activity, i) => `${i+1}. [${activity.date}] ${activity.stakeholder}: ${activity.activity}
+   Significance: ${activity.significance}`).join('\n\n')}
+
+KEY INSIGHTS FOR EXECUTIVES:
+${keyInsights.map((insight, i) => `${i+1}. ${insight}`).join('\n')}
+
+═══════════════════════════════════════════════════════════
+YOUR TASK: FORMAT THIS INTO EXECUTIVE BRIEF
+═══════════════════════════════════════════════════════════
+
+Write a professional daily brief using the pre-analyzed intelligence above.
+
+STRUCTURE YOUR BRIEF:
+1. Executive Summary (3-5 bullet points of top takeaways)
+2. Competitive Landscape (report ALL competitor moves listed above)
+3. Regulatory & Policy Developments (if any regulatory developments listed)
+4. Market Dynamics (if any trends listed)
+5. Stakeholder Activity (if any stakeholder activity listed)
+6. Strategic Implications (key insights for ${organization?.name})
+
+CRITICAL RULES:
+- REPORT ON EVERY COMPETITOR LISTED ABOVE - don't cherry-pick
+- PRIORITIZE RECENT (TODAY > THIS WEEK > OLDER)
+- BE SPECIFIC - use exact details from the intelligence above
+- NO EXCUSES - if the coverage summary shows limited data, acknowledge it briefly but report what WE DO HAVE
+
+Return ONLY valid JSON in this format:
+{
+  "executive_summary": ["Bullet 1", "Bullet 2", "Bullet 3"],
+  "competitive_landscape": "Detailed write-up of ALL competitor moves",
+  "regulatory_developments": "Detailed write-up of regulatory news (or null if none)",
+  "market_dynamics": "Detailed write-up of market trends (or null if none)",
+  "stakeholder_activity": "Detailed write-up of stakeholder activity (or null if none)",
+  "strategic_implications": "What ${organization?.name} should know/do based on key insights"
+}`;
+
+  } else if (synthesis_focus === 'all_consolidated') {
     // Extract the structured data properly
     const { structuredContext, discoveryTargets } = context;
 
@@ -519,7 +670,9 @@ async function synthesizeExecutiveIntelligence(args: any) {
       sentiment: article.deep_analysis?.sentiment || 'neutral',
       key_insight: article.deep_analysis?.key_takeaway || article.summary?.substring(0, 150),
       entities_mentioned: article.entities?.slice(0, 3) || [],
-      competitive_relevance: article.deep_analysis?.competitive_relevance || 'medium'
+      competitive_relevance: article.deep_analysis?.competitive_relevance || 'medium',
+      has_full_content: article.has_full_content || false,
+      content_quality: article.content_quality || 'enhanced_summary'
     }));
 
     console.log('📊 Article summaries prepared:', articleSummaries.length);
@@ -568,32 +721,48 @@ The events below are ALL from TODAY'S news monitoring - they are NOT hypothetica
 🎯 CRITICAL: UNDERSTAND THE MONITORING CONTEXT
 ═══════════════════════════════════════════════════════════
 
-ORGANIZATION CONTEXT:
-- Organization: ${organization?.name}
-- Industry: ${profile?.industry || organization?.industry || 'Unknown'}
-- What ${organization?.name} Does: ${profile?.description || organization?.description || 'See discovery profile for details'}
+🎯 CRITICAL: UNDERSTAND YOUR ROLE
+${organization?.name} is YOUR CLIENT. You are writing TO them, not ABOUT them.
 
-${organization?.name}'s DIRECT COMPETITORS (companies in the SAME industry):
+ABOUT YOUR CLIENT:
+- Company: ${organization?.name}
+- Business: ${companyProfile?.business_model || profile?.description || 'Not specified'}
+- Markets: ${companyProfile?.key_markets?.join(', ') || 'Not specified'}
+- Industry: ${profile?.industry || organization?.industry || 'Unknown'}
+
+YOUR JOB: Tell ${organization?.name} what their COMPETITORS and STAKEHOLDERS are doing.
+
+DO NOT write about ${organization?.name} - they know their own news.
+DO NOT say "limited intelligence for ${organization?.name}" - you're writing TO them, not monitoring them.
+
+COMPETITORS TO REPORT ON (companies ${organization?.name} competes with):
 ${discoveryTargets.competitors.slice(0, 10).join(', ')}
 
-MONITORING TARGETS (entities we're tracking - may be outside our industry):
-- Competitors: ${discoveryTargets.competitors.slice(0, 5).join(', ')}
-- Stakeholders: ${discoveryTargets.stakeholders.slice(0, 5).join(', ')}
+STAKEHOLDERS TO REPORT ON (entities that impact ${organization?.name}'s business):
+${discoveryTargets.stakeholders.slice(0, 10).join(', ')}
 
-⚠️ CRITICAL DISTINCTION:
-- When analyzing "competitive moves", focus on ${organization?.name}'s INDUSTRY COMPETITORS
-- When analyzing "stakeholder dynamics", that's about the monitoring targets
-- DO NOT confuse stakeholder/regulatory news with competitive moves unless it directly impacts ${organization?.industry}
+⚠️ CRITICAL:
+- Report on what COMPETITORS are doing (launches, deals, expansions)
+- Report on what STAKEHOLDERS are doing (regulations, policy changes)
+- DO NOT report on what ${organization?.name} is doing - that's not intelligence, that's their own activity
 
 **TODAY'S DATE:** ${new Date().toISOString().split('T')[0]}
 
-PRE-ANALYZED ARTICLES (${context.totalArticlesAnalyzed} articles processed by our AI):
-${articleSummaries.map((article, i) => `
-${i+1}. ${article.headline}
+PRE-ANALYZED ARTICLES (${context.totalArticlesAnalyzed} articles processed - ~10 with full content, ~${context.totalArticlesAnalyzed - 10} with enhanced summaries):
+${articleSummaries.map((article, i) => {
+  const contentQuality = article.has_full_content ? '✓ FULL' : '◆ SUMMARY';
+  return `
+${i+1}. [${contentQuality}] ${article.headline}
    Category: ${article.category} | Relevance: ${article.relevance}/100 | Sentiment: ${article.sentiment}
    Key Insight: ${article.key_insight}
-   Entities: ${article.entities_mentioned.join(', ') || 'None identified'}
-`).join('') || 'No enriched articles available'}
+   Entities: ${article.entities_mentioned.join(', ') || 'None identified'}`;
+}).join('') || 'No enriched articles available'}
+
+⚠️ Content Quality Legend:
+- [✓ FULL] = Complete scraped article text (high-priority articles)
+- [◆ SUMMARY] = Enhanced summary from title + description + source (most articles)
+  Summary articles provide headlines and context but not full article text.
+  Use these to identify trends and cross-reference events across multiple sources.
 
 PRE-EXTRACTED EVENTS (These ${topEvents.length} events include ${orgSlots} org, ${competitorSlots} competitor, ${stakeholderSlots} stakeholder, ${otherSlots} industry/regulatory - **SORTED BY RECENCY**):
 ${topEvents.map((e, i) =>
@@ -617,17 +786,45 @@ ${metrics.length > 0 ? `METRICS:\n${metrics.map(m =>
 ).join('\n')}` : ''}
 
 SYNTHESIS REQUIREMENTS:
+
+🚨 PRIORITY #1: SYSTEMATIC COMPETITOR COVERAGE (NOT CHERRY-PICKING)
+You have ${competitorSlots} competitor events. You MUST mention EACH competitor that appears:
+- Competitors to cover: ${discoveryTargets.competitors.slice(0, 15).join(', ')}
+- If ICR has 39 mentions, report on ICR
+- If Edelman has 3 mentions, report on Edelman
+- If Weber Shandwick has 1 mention, report on Weber Shandwick
+- Format: "ICR announced X, Edelman launched Y, Weber Shandwick hired Z"
+- DO NOT say "lack of competitive intelligence" when competitors ARE in the data
+
+⚠️ PRIORITY #2: RECENCY (TODAY > THIS WEEK > OLD NEWS)
+- Events from TODAY or THIS WEEK go in executive_summary
+- Events from 1-2 weeks ago = brief mention only if strategic
+- Events from 2+ weeks ago = ignore unless ongoing strategic impact
+- NEVER lead with "5 days ago" when today's data exists
+- Check EVERY event date before writing
+
+⚠️ PRIORITY #3: BUSINESS RELEVANCE
+- ${organization?.name} is a ${synthesisMetadata?.companyProfile?.business_model || 'company'}
+- Focus on: ${synthesisMetadata?.companyProfile?.key_markets?.join(', ') || 'their markets'}
+- IGNORE: Stories that don't affect ${organization?.name}'s business
+- Think: "Would their CEO care about this in TODAY's 9am meeting?"
+
+⚠️ PRIORITY #4: EXECUTIVE FORMAT (SCANNABLE, ACTIONABLE)
+- Lead with the competitive landscape summary in 2-3 sentences
+- Then: Recent competitor moves (mention EACH one)
+- Then: Regulatory/stakeholder developments
+- Then: Opportunities and threats
+- NO academic language, NO generic trends, NO excuses for "quiet periods"
+
+STANDARD REQUIREMENTS:
 1. Your executive_summary MUST provide BALANCED coverage of ALL event categories:
    - Organization news (${orgSlots} events provided)
    - Competitor developments (${competitorSlots} events provided)
    - Stakeholder actions/regulatory news (${stakeholderSlots} events provided)
    - Industry trends/other relevant news (${otherSlots} events provided)
 2. DO NOT over-emphasize any single category - ensure the summary reflects the diversity of today's developments
-3. If there are significant developments in any category, they MUST be mentioned in the executive_summary
-4. Reference events by describing them, not by number
-5. Every claim must come from the events above - no external knowledge
-6. If major competitors or stakeholders are missing from the events, note this as an intelligence gap
-7. The tone should convey the VOLUME and VARIETY of news - don't make it sound quiet if there were many developments
+3. Reference events by describing them, not by number
+4. Every claim must come from the events above - no external knowledge
 
 ⚠️ CRITICAL SYNTHESIS RULES:
 - "competitive_moves" = Actions by ${organization?.name}'s INDUSTRY COMPETITORS (other ${organization?.industry} companies)
@@ -743,7 +940,36 @@ Provide a concise executive synthesis focusing on:
         model: 'claude-sonnet-4-20250514',  // Back to Sonnet 4 - was working before
         max_tokens: 4000,
         temperature: 0.3,  // Lower temperature for more focused, strategic output
-        system: `You are a senior PR strategist receiving ENRICHED INTELLIGENCE DATA for ${organization?.name || 'a major corporation'}.
+        system: `You are writing a DAILY COMPETITIVE INTELLIGENCE BRIEF for ${organization?.name}'s executive team.
+
+MISSION: Report what competitors are doing TODAY so executives can make business decisions.
+
+ABSOLUTE RULES:
+1. REPORT ON EVERY COMPETITOR IN THE DATA - no cherry-picking
+2. RECENT NEWS FIRST - Today > This week > Old (ignore 2+ weeks unless critical)
+3. BE DIRECT - "Glencore did X, Trafigura did Y" not "industry trends show..."
+4. NO EXCUSES - Don't say "limited intelligence" when competitors ARE in the data
+
+${synthesisMetadata?.companyProfile ? `
+═══════════════════════════════════════════════════════════
+ORGANIZATIONAL CONTEXT - WHO YOU'RE WORKING FOR
+═══════════════════════════════════════════════════════════
+Company: ${organization?.name}
+Business Model: ${synthesisMetadata.companyProfile.business_model || 'Not specified'}
+Product Lines: ${synthesisMetadata.companyProfile.product_lines?.join(', ') || 'Not specified'}
+Key Markets: ${synthesisMetadata.companyProfile.key_markets?.join(', ') || 'Not specified'}
+Strategic Goals: ${synthesisMetadata.companyProfile.strategic_goals?.map(g => `${g.goal} (${g.timeframe})`).join('; ') || 'Not specified'}
+
+KEY COMPETITORS TO MONITOR:
+${discoveryTargets.competitors.slice(0, 15).join(', ') || 'None specified'}
+
+KEY STAKEHOLDERS TO MONITOR (regulators, analysts, investors):
+${discoveryTargets.stakeholders.slice(0, 15).join(', ') || 'None specified'}
+
+⚠️ CRITICAL: Your synthesis MUST systematically cover intelligence about THESE competitors and stakeholders.
+Do NOT cherry-pick sensational stories that aren't relevant to ${organization?.name}'s business.
+Focus on what matters to a ${synthesisMetadata.companyProfile.business_model || 'company in this industry'}.
+` : ''}
 
 WHAT YOU ARE RECEIVING:
 This is NOT raw data. You are receiving the OUTPUT of our intelligence pipeline:
@@ -757,7 +983,21 @@ THE ENRICHED DATA STRUCTURE:
 - ENTITIES: Companies, people, and organizations mentioned
 - QUOTES: Key statements from executives, analysts, and media
 - METRICS: Financial figures, percentages, and data points
-- ARTICLE SUMMARIES: Pre-analyzed articles with categories and relevance scores
+- ARTICLE SUMMARIES: Pre-analyzed articles with ENHANCED SUMMARIES (title + description + source)
+
+⚠️ CRITICAL: ARTICLE CONTENT LIMITATIONS
+Most articles (90%) contain ENHANCED SUMMARIES only:
+- Title + Description (search snippet) + Source attribution
+- These are NOT full article text - they are intelligent summaries from search results
+- About 10 high-priority articles (score ≥90) have FULL SCRAPED CONTENT
+- The summaries marked "has_full_content: true" have complete article text
+- All other summaries are enhanced from title+description - treat them as high-quality headlines with context
+
+How to work with summaries:
+- Use them to identify trends, patterns, and themes across many articles
+- Cross-reference multiple summaries to build intelligence about events
+- The volume and diversity of summaries is valuable - many partial insights = comprehensive picture
+- Focus on what summaries REVEAL about the news landscape, not what they lack
 
 **CRITICAL: RECENCY PRIORITIZATION**
 Each event has a date stamp. Your executive_summary MUST prioritize by recency:

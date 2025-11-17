@@ -208,6 +208,7 @@ serve(async (req) => {
 
     const queries = generateRealtimeQueries(profile, orgName, recency_window, discoveryTargets, targetsByPriority, targetsWithContext)
     console.log(`   ✓ Generated ${queries.length} queries for real-time monitoring`)
+    console.log(`   📋 Sample queries (first 5):`, queries.slice(0, 5))
 
     // STEP 2.5: Fetch articles from master-source-registry RSS feeds
     console.log('\n📡 Step 2.5: Fetching from curated RSS sources...')
@@ -361,20 +362,39 @@ serve(async (req) => {
     console.log('\n🎯 Step 4: Scoring article relevance...')
 
     const scoredArticles = scoreArticlesRelevance(filteredArticles, profile, orgName, discoveryTargets, targetsWithContext)
-    console.log(`   ✓ Scored ${scoredArticles.length} relevant articles`)
+    console.log(`   ✓ Scored ${scoredArticles.length} articles`)
+
+    // STEP 4.5: CRITICAL - Filter out articles that mention ZERO intelligence targets
+    // These are noise from generic queries that don't relate to our monitoring goals
+    const relevantArticles = scoredArticles.filter(article => {
+      const hasCoverage = (
+        (article.discovery_coverage?.competitors?.length > 0) ||
+        (article.discovery_coverage?.stakeholders?.length > 0) ||
+        (article.discovery_coverage?.topics?.length > 0) ||
+        article.relevance_score >= 50 // Keep if high score (mentions org directly)
+      )
+
+      if (!hasCoverage) {
+        console.log(`   🚫 Filtered out (no target mentions): "${article.title?.substring(0, 60)}..."`)
+      }
+
+      return hasCoverage
+    })
+
+    console.log(`   ✓ Target filtering: ${scoredArticles.length} scored → ${relevantArticles.length} relevant (${scoredArticles.length - relevantArticles.length} filtered out)`)
 
     // STEP 5: Deduplicate against previously processed articles
     console.log('\n🔍 Step 5: Checking for previously processed articles...')
 
-    let newArticles = scoredArticles
+    let newArticles = relevantArticles
     let skippedCount = 0
 
     if (!skip_deduplication) {
-      const deduplicationResult = await deduplicateArticles(scoredArticles, organization_id, supabase)
+      const deduplicationResult = await deduplicateArticles(relevantArticles, organization_id, supabase)
       newArticles = deduplicationResult.newArticles
       skippedCount = deduplicationResult.skippedCount
 
-      console.log(`   ✓ Filtered: ${scoredArticles.length} scored → ${newArticles.length} new (${skippedCount} already processed)`)
+      console.log(`   ✓ Filtered: ${relevantArticles.length} relevant → ${newArticles.length} new (${skippedCount} already processed)`)
     } else {
       console.log(`   ⚠️ Deduplication skipped`)
     }
@@ -742,11 +762,13 @@ async function fetchRealtimeArticles(
         const newsResults = searchData.data?.news || []
 
         // Convert to standard article format
+        // CRITICAL: Don't use result.markdown as content - it's just a snippet with garbage
+        // Let enrichment use title + description which are clean
         return [...webResults, ...newsResults].map(result => ({
           title: result.title || 'Untitled',
           url: result.url,
-          content: result.markdown || result.description || '',
-          description: result.description || '',
+          content: '', // Don't use markdown snippet - it has cookie consent garbage
+          description: result.description || result.markdown?.substring(0, 300) || '', // Use description, fallback to first 300 chars of markdown
           published_at: result.publishedTime || new Date().toISOString(),
           source: result.source || extractDomain(result.url),
           relevance_score: result.score || 50
@@ -959,18 +981,29 @@ function scoreArticlesRelevance(
     const keywordMatches = keywords.filter((kw: string) => kw && text.includes(kw.toLowerCase())).length
     score += Math.min(keywordMatches * 10, 30)
 
-    // Source tier bonus
+    // Check if article has ANY base relevance (mentions org, competitor, stakeholder, topic, or keyword)
+    const hasBaseRelevance = score > 0 ||
+      coveredCompetitors.length > 0 ||
+      coveredStakeholders.length > 0 ||
+      coveredTopics.length > 0
+
+    // ONLY apply recency and source bonuses if article has base relevance
+    // This prevents generic recent articles from passing through
     const sourceName = typeof article.source === 'object' ? article.source.name : article.source
     const sourceTier = getSourceTier(sourceName, profile)
-    if (sourceTier === 'critical') score += 15
-    else if (sourceTier === 'high') score += 10
 
-    // Recency bonus (more recent = higher score)
-    const publishedDate = new Date(article.publishDate || article.published_at || Date.now())
-    const hoursAgo = (Date.now() - publishedDate.getTime()) / (1000 * 60 * 60)
-    if (hoursAgo < 1) score += 20 // Within 1 hour
-    else if (hoursAgo < 6) score += 10 // Within 6 hours
-    else if (hoursAgo < 24) score += 5 // Within 24 hours
+    if (hasBaseRelevance) {
+      // Source tier bonus (only for relevant articles)
+      if (sourceTier === 'critical') score += 15
+      else if (sourceTier === 'high') score += 10
+
+      // Recency bonus (only for relevant articles)
+      const publishedDate = new Date(article.publishDate || article.published_at || Date.now())
+      const hoursAgo = (Date.now() - publishedDate.getTime()) / (1000 * 60 * 60)
+      if (hoursAgo < 1) score += 20 // Within 1 hour
+      else if (hoursAgo < 6) score += 10 // Within 6 hours
+      else if (hoursAgo < 24) score += 5 // Within 24 hours
+    }
 
     // Discovery coverage score (how many targets covered)
     const coverageScore = coveredCompetitors.length * 10 + coveredStakeholders.length * 5 + coveredTopics.length * 5

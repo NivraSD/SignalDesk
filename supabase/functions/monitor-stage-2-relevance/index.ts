@@ -941,38 +941,19 @@ serve(async (req) => {
       }
     });
     
-    // MCP FIRECRAWL ENHANCEMENT: Dynamic tiered scraping for maximum intelligence
-    console.log('🔥 Preparing articles for MCP Firecrawl with tiered strategy');
-    
-    // Dynamic scraping strategy based on score tiers
-    const articlesToScrape = [];
-    
-    // Tier 1: CRITICAL (score 80+) - Scrape ALL
-    const tier1Articles = selectedArticles.filter(a => a.pr_relevance_score >= 80);
-    articlesToScrape.push(...tier1Articles.map(a => ({ ...a, tier: 1, scrape: true })));
-    
-    // Tier 2: HIGH VALUE (score 60-79) - Scrape 80% (increased for better coverage)
-    const tier2Articles = selectedArticles.filter(a => a.pr_relevance_score >= 60 && a.pr_relevance_score < 80);
-    const tier2Sample = tier2Articles.slice(0, Math.ceil(tier2Articles.length * 0.80));
-    articlesToScrape.push(...tier2Sample.map(a => ({ ...a, tier: 2, scrape: true })));
-    
-    // Tier 3: COVERAGE (score 40-59) - Scrape 40% (increased for diversity)
-    const tier3Articles = selectedArticles.filter(a => a.pr_relevance_score >= 40 && a.pr_relevance_score < 60);
-    const tier3Sample = tier3Articles.slice(0, Math.ceil(tier3Articles.length * 0.40));
-    articlesToScrape.push(...tier3Sample.map(a => ({ ...a, tier: 3, scrape: true })));
-    
-    // Cap at 30 total for better coverage while maintaining quality control
-    const finalScrapeList = articlesToScrape.slice(0, 30);
-    
-    console.log(`📊 Tiered scraping strategy:`, {
-      tier1_critical: tier1Articles.length,
-      tier2_selected: tier2Sample.length,
-      tier3_selected: tier3Sample.length,
-      total_to_scrape: finalScrapeList.length
-    });
-    
-    // Call MCP Firecrawl with batch scraping
-    if (finalScrapeList.length > 0) {
+    // SCRAPING RE-ENABLED: Limited to top 10 articles to prevent timeouts
+    // Synthesis needs at least some full content to generate quality reports
+    console.log('🔥 Preparing top articles for MCP Firecrawl (limited scraping)');
+
+    // Only scrape the absolute top articles (score 90+) to avoid timeout
+    const articlesToScrape = selectedArticles
+      .filter(a => a.pr_relevance_score >= 90)
+      .slice(0, 10); // Hard limit to 10 articles
+
+    console.log(`📊 Scraping strategy: Top ${articlesToScrape.length} critical articles (score 90+) out of ${selectedArticles.length} total`);
+
+    // Call MCP Firecrawl with minimal batch
+    if (articlesToScrape.length > 0) {
       try {
         const firecrawlResponse = await fetch('https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/mcp-firecrawl', {
           method: 'POST',
@@ -985,118 +966,55 @@ serve(async (req) => {
             params: {
               name: 'batch_scrape_articles',
               arguments: {
-                articles: finalScrapeList.map(article => ({
+                articles: articlesToScrape.map(article => ({
                   url: article.url,
                   priority: article.pr_relevance_score,
                   metadata: {
                     title: article.title,
-                    tier: article.tier,
-                    factors: article.pr_factors,
                     category: article.pr_category
                   }
                 })),
                 formats: ['markdown'],
-                extractSchema: {
-                  quotes: { 
-                    type: 'array', 
-                    items: { type: 'string' },
-                    description: 'Important quotes from executives or experts'
-                  },
-                  metrics: {
-                    type: 'object',
-                    properties: {
-                      financial: { type: 'array', items: { type: 'string' } },
-                      percentages: { type: 'array', items: { type: 'string' } }
-                    }
-                  },
-                  entities: {
-                    type: 'object',
-                    properties: {
-                      companies: { type: 'array', items: { type: 'string' } },
-                      people: { type: 'array', items: { type: 'string' } }
-                    }
-                  },
-                  key_points: {
-                    type: 'array',
-                    items: { type: 'string' },
-                    description: 'Key takeaways for intelligence'
-                  }
-                },
-                maxTimeout: 15000
+                maxTimeout: 10000
               }
             }
           })
         });
-        
+
         if (firecrawlResponse.ok) {
           const firecrawlData = await firecrawlResponse.json();
           const scrapeResults = JSON.parse(firecrawlData.content[0].text);
-          
+
           console.log('✅ MCP Firecrawl results:', scrapeResults.stats);
-          
-          // DEBUG: Log sample result structure
-          if (scrapeResults.results && scrapeResults.results.length > 0) {
-            const sampleResult = scrapeResults.results[0];
-            console.log('🔍 Sample Firecrawl result structure:', {
-              success: sampleResult.success,
-              has_data: !!sampleResult.data,
-              has_markdown: !!sampleResult.data?.markdown,
-              markdown_length: sampleResult.data?.markdown?.length || 0,
-              has_content: !!sampleResult.data?.content,
-              content_length: sampleResult.data?.content?.length || 0,
-              has_extracted: !!sampleResult.extracted,
-              url: sampleResult.url
-            });
-          }
-          
+
           // Merge scraped content back into articles
           for (const result of scrapeResults.results) {
             if (result.success && result.data) {
               const article = selectedArticles.find(a => a.url === result.url);
               if (article) {
-                // CRITICAL FIX: Only set has_full_content if we actually have substantial, valid content
                 const markdown = result.data.markdown || result.data.content || '';
-                
-                // Enhanced validation: Check for real content, not just length
-                const hasSubstantialContent = markdown && 
-                                           markdown.length > 500 && // Increased minimum length
-                                           !/<[^>]+>/g.test(markdown.substring(0, 200)) && // No HTML in first 200 chars
-                                           markdown.split(' ').length > 50; // At least 50 words
-                
+
+                // Validate content quality
+                const hasSubstantialContent = markdown &&
+                                           markdown.length > 500 &&
+                                           markdown.split(' ').length > 50;
+
                 if (hasSubstantialContent) {
                   article.full_content = markdown;
                   article.content_length = markdown.length;
                   article.has_full_content = true;
-                  console.log(`✅ Quality content for ${new URL(article.url).hostname}: ${markdown.length} chars, ${markdown.split(' ').length} words`);
-                } else {
-                  // Log when we don't get quality content
-                  console.warn(`⚠️ Poor quality content for ${article.url}: markdown length = ${markdown?.length}, words = ${markdown?.split(' ').length || 0}`);
-                  article.full_content = '';
-                  article.content_length = 0;
-                  article.has_full_content = false;
-                }
-                article.firecrawl_extracted = result.extracted || null;
-                
-                // Add extracted intelligence to pr_extraction
-                if (result.extracted) {
-                  article.pr_extraction.extracted_quotes = result.extracted.quotes || [];
-                  article.pr_extraction.extracted_metrics = result.extracted.metrics || {};
-                  article.pr_extraction.extracted_entities = result.extracted.entities || {};
-                  article.pr_extraction.key_points = result.extracted.key_points || [];
-                  article.pr_extraction.has_actionable_data = true;
+                  console.log(`✅ Quality content: ${markdown.length} chars`);
                 }
               }
             }
           }
-          
+
           const enhancedCount = selectedArticles.filter(a => a.has_full_content).length;
-          const withRealContent = selectedArticles.filter(a => a.full_content && a.full_content.length > 100).length;
-          console.log(`🎯 Enhanced ${enhancedCount} articles with full content and extraction`);
-          console.log(`📊 Final content status: ${withRealContent} have real content, ${selectedArticles.length - withRealContent} without`);
+          console.log(`🎯 Enhanced ${enhancedCount} articles with full content`);
         }
       } catch (error) {
         console.error('❌ MCP Firecrawl error:', error);
-        // Continue without scraping - fallback to RSS summaries
+        // Continue without scraping
       }
     }
     

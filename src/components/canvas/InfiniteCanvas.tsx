@@ -58,7 +58,7 @@ const COMPONENT_MARGIN = 20
 
 const COMPONENT_TYPES: ComponentType[] = [
   { id: 'niv-command', label: 'NIV', icon: Brain, color: 'from-purple-500 to-purple-600', defaultWidth: 770, defaultHeight: 525 },
-  { id: 'intelligence', label: 'Intelligence', icon: Brain, color: 'from-purple-400 to-purple-500', defaultWidth: 800, defaultHeight: 600 },
+  { id: 'intelligence', label: 'Intelligence', icon: Brain, color: 'from-purple-400 to-purple-500', defaultWidth: 950, defaultHeight: 730 },
   { id: 'niv', label: 'NIV Strategy', icon: MessageSquare, color: 'from-purple-500 to-purple-600', defaultWidth: 640, defaultHeight: 480 },
   { id: 'niv-capabilities', label: 'NIV Resources', icon: Brain, color: 'from-purple-400 to-purple-600', defaultWidth: 900, defaultHeight: 700 },
   { id: 'niv-prompts', label: 'NIV Resources', icon: Brain, color: 'from-purple-400 to-purple-600', defaultWidth: 900, defaultHeight: 700 },

@@ -91,8 +91,15 @@ function extractValidText(content: string, maxLength = 200): string {
  * Claude-powered deep analysis of articles with full content
  */
 async function analyzeWithClaude(articlesWithContent: any[], profile: any, orgName: string, coverageContext?: any) {
-  if (!ANTHROPIC_API_KEY || articlesWithContent.length === 0) {
-    console.log('⚠️ Claude analysis skipped (no API key or no articles with content)');
+  console.log(`🔍 analyzeWithClaude called with ${articlesWithContent.length} articles, API key exists: ${!!ANTHROPIC_API_KEY}`);
+
+  if (!ANTHROPIC_API_KEY) {
+    console.error('❌ ANTHROPIC_API_KEY is missing!');
+    return null;
+  }
+
+  if (articlesWithContent.length === 0) {
+    console.log('⚠️ Claude analysis skipped - no articles provided');
     return null;
   }
 
@@ -129,9 +136,10 @@ async function analyzeWithClaude(articlesWithContent: any[], profile: any, orgNa
       extraction_focus: intelligenceContext?.extraction_focus || []
     };
 
-    // Process all articles in ONE Claude call to avoid timeout
-    // Was: batchSize = 5, causing 5+ sequential API calls = 100+ seconds
-    const batchSize = 30; // Process all at once
+    // Process articles in larger batches since we're using title + description
+    // Was: batchSize = 5 (too slow), then 30
+    // Now: 100 - we can handle more since we're not processing full article content
+    const batchSize = 100;
     const allExtractedData = {
       events: [],
       entities: [],
@@ -145,10 +153,13 @@ async function analyzeWithClaude(articlesWithContent: any[], profile: any, orgNa
     for (let i = 0; i < articlesWithContent.length; i += batchSize) {
       const batch = articlesWithContent.slice(i, i + batchSize);
       
-      const prompt = `You are extracting PR intelligence from news articles for ${targets.organization}.
+      const prompt = `You are extracting PR intelligence from news articles FOR ${targets.organization}.
 
-DISCOVERY TARGETS:
-- Organization: ${targets.organization}
+🎯 YOUR CLIENT:
+${targets.organization} is a ${companyProfile?.business_model || 'company'} operating in ${companyProfile?.key_markets?.join(', ') || 'their markets'}.
+${companyProfile?.product_lines?.length > 0 ? `Product Lines: ${companyProfile.product_lines.join(', ')}` : ''}
+
+INTELLIGENCE TARGETS (companies/people to monitor):
 - Competitors: ${targets.competitors.join(', ')}
 - Stakeholders: ${targets.stakeholders.join(', ')}
 - Priority Topics: ${targets.topics.join(', ')}
@@ -912,6 +923,9 @@ serve(async (req) => {
     const startTime = Date.now();
     const { articles, profile, organization_name, coverage_report } = await req.json();
 
+    // Extract company_profile from profile (passed by orchestrator from discovery)
+    const companyProfile = profile?.company_profile || {};
+
     console.log(`📊 Enrichment received ${articles?.length || 0} articles`);
 
     // Log article dates to understand timeframe
@@ -973,24 +987,15 @@ serve(async (req) => {
       });
     }
     
-    // Separate articles with and without full content
-    const articlesWithFullContent = articles.filter(a => 
-      a.has_full_content && a.full_content && a.full_content.length > 500
-    );
-    const articlesWithoutFullContent = articles.filter(a => 
-      !articlesWithFullContent.includes(a)
-    );
-    
-    console.log(`📄 Content analysis:`, {
-      with_full_content: articlesWithFullContent.length,
-      without_full_content: articlesWithoutFullContent.length,
-      total: articles.length
-    });
-    
-    // Step 1: Use Claude to deeply analyze articles with full content
+    // CRITICAL FIX: Don't wait for full_content - use title + description from ALL articles
+    // Process them in LARGER batches since we're not relying on full scrapes
+    console.log(`📄 Analyzing ALL ${articles.length} articles with Claude (title + description + any content)`);
+
+    // Step 1: Use Claude to analyze ALL articles in larger batches (not just 30)
+    // Since we're using title + description, we can process more at once
     let claudeAnalysis = null;
-    if (articlesWithFullContent.length > 0) {
-      claudeAnalysis = await analyzeWithClaude(articlesWithFullContent, profile, organization_name, coverage_report);
+    if (articles.length > 0) {
+      claudeAnalysis = await analyzeWithClaude(articles, profile, organization_name, coverage_report);
     }
     
     // Step 2: Identify if we need to fetch additional articles based on coverage gaps
@@ -1110,9 +1115,12 @@ serve(async (req) => {
     const responsePayload = {
       success: true,
 
+      // CRITICAL: Pass profile with company_profile to synthesis
+      profile: profile,
+
       // Provide data in multiple formats for compatibility
       extracted_data: extractedData,
-      
+
       // For synthesis - give it the organized data
       organized_intelligence: {
         events: extractedData.events,

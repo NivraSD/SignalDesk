@@ -1581,6 +1581,19 @@ async function callFireplexity(query: string, context: any) {
 
     console.log(`⏰ Timeframe detected: ${timeframe}`)
 
+    // Enrich query with industry context to prevent generic results
+    let enrichedQuery = query
+    if (context.industry && context.industry !== 'Technology') {
+      // Add industry context for better targeting (unless query already mentions it)
+      const industryKeywords = context.industry.toLowerCase().split(/[,\s]+/).filter((k: string) => k.length > 3)
+      const queryHasIndustry = industryKeywords.some((k: string) => queryLower.includes(k))
+
+      if (!queryHasIndustry) {
+        enrichedQuery = `${query} ${context.industry}`
+        console.log(`🎯 Enriched query with industry context: "${enrichedQuery}"`)
+      }
+    }
+
     // Call Firecrawl directly (like monitor-stage-1-fireplexity does)
     // No wrappers, no validation, no decomposition - just search and return
     const FIRECRAWL_API_KEY = Deno.env.get('FIRECRAWL_API_KEY') || 'fc-3048810124b640eb99293880a4ab25d0'
@@ -1605,7 +1618,7 @@ async function callFireplexity(query: string, context: any) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        query: query,
+        query: enrichedQuery,
         limit: 10, // Get top 10 results
         tbs, // Time-based filter
         scrapeOptions: {

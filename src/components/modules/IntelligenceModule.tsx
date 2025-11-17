@@ -99,16 +99,16 @@ export default function IntelligenceModule() {
   const [schemaExtracting, setSchemaExtracting] = useState(false)
   const [showSchemaViewer, setShowSchemaViewer] = useState(false)
 
-  // Prompt categories with icons
+  // Prompt categories with Nivria styling
   const promptCategories = [
-    { id: 'quick-wins', label: 'Quick Wins', icon: <Zap className="w-4 h-4" />, color: 'text-yellow-400' },
-    { id: 'research', label: 'Research & Discovery', icon: <Search className="w-4 h-4" />, color: 'text-blue-400' },
-    { id: 'strategy', label: 'Strategic Planning', icon: <Target className="w-4 h-4" />, color: 'text-purple-400' },
-    { id: 'campaign', label: 'Campaign Development', icon: <Rocket className="w-4 h-4" />, color: 'text-green-400' },
-    { id: 'competitive', label: 'Competitive Intelligence', icon: <TrendingUp className="w-4 h-4" />, color: 'text-orange-400' },
+    { id: 'quick-wins', label: 'Quick Wins', icon: <Zap className="w-4 h-4" />, color: 'text-mauve' },
+    { id: 'research', label: 'Research & Discovery', icon: <Search className="w-4 h-4" />, color: 'text-mauve' },
+    { id: 'strategy', label: 'Strategic Planning', icon: <Target className="w-4 h-4" />, color: 'text-mauve' },
+    { id: 'campaign', label: 'Campaign Development', icon: <Rocket className="w-4 h-4" />, color: 'text-mauve' },
+    { id: 'competitive', label: 'Competitive Intelligence', icon: <TrendingUp className="w-4 h-4" />, color: 'text-mauve' },
     { id: 'crisis', label: 'Crisis Management', icon: <Shield className="w-4 h-4" />, color: 'text-red-400' },
-    { id: 'content', label: 'Content & Media', icon: <FileText className="w-4 h-4" />, color: 'text-indigo-400' },
-    { id: 'stakeholder', label: 'Stakeholder Analysis', icon: <Users className="w-4 h-4" />, color: 'text-pink-400' },
+    { id: 'content', label: 'Content & Media', icon: <FileText className="w-4 h-4" />, color: 'text-mauve' },
+    { id: 'stakeholder', label: 'Stakeholder Analysis', icon: <Users className="w-4 h-4" />, color: 'text-mauve' },
   ]
 
   // Expanded prompt library with NIV-specific prompts
@@ -919,63 +919,83 @@ export default function IntelligenceModule() {
       <div className="border-b border-gray-800">
         <div className="p-4">
           <div className="flex items-center gap-2 mb-4">
-            <Brain className="w-6 h-6 text-purple-400" />
-            <h2 className="text-xl font-bold">Intelligence Hub</h2>
+            <Brain className="w-5 h-5" style={{ color: 'var(--mauve)' }} />
+            <h2 className="text-lg font-light" style={{ color: 'var(--pearl)' }}>Intelligence Hub</h2>
           </div>
 
           {/* Tab Navigation */}
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <button
               onClick={() => setActiveTab('synthesis')}
-              className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+              className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2 text-sm font-light ${
                 activeTab === 'synthesis'
-                  ? 'bg-purple-500/20 text-purple-400'
-                  : 'bg-gray-800 hover:bg-gray-700 text-gray-400'
+                  ? ''
+                  : 'hover:bg-gray-800 text-gray-400'
               }`}
+              style={activeTab === 'synthesis' ? {
+                background: 'rgba(184, 160, 200, 0.15)',
+                color: 'var(--mauve)'
+              } : {}}
             >
               <Sparkles className="w-4 h-4" />
               Executive Report
             </button>
             <button
               onClick={() => setActiveTab('social')}
-              className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+              className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2 text-sm font-light ${
                 activeTab === 'social'
-                  ? 'bg-purple-500/20 text-purple-400'
-                  : 'bg-gray-800 hover:bg-gray-700 text-gray-400'
+                  ? ''
+                  : 'hover:bg-gray-800 text-gray-400'
               }`}
+              style={activeTab === 'social' ? {
+                background: 'rgba(184, 160, 200, 0.15)',
+                color: 'var(--mauve)'
+              } : {}}
             >
               <Share2 className="w-4 h-4" />
               Social Intelligence
             </button>
             <button
               onClick={() => setActiveTab('realtime')}
-              className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+              className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2 text-sm font-light ${
                 activeTab === 'realtime'
-                  ? 'bg-purple-500/20 text-purple-400'
-                  : 'bg-gray-800 hover:bg-gray-700 text-gray-400'
+                  ? ''
+                  : 'hover:bg-gray-800 text-gray-400'
               }`}
+              style={activeTab === 'realtime' ? {
+                background: 'rgba(184, 160, 200, 0.15)',
+                color: 'var(--mauve)'
+              } : {}}
             >
               <Activity className="w-4 h-4" />
               Real-Time Monitor
             </button>
             <button
               onClick={() => setActiveTab('predictions')}
-              className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+              className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2 text-sm font-light ${
                 activeTab === 'predictions'
-                  ? 'bg-purple-500/20 text-purple-400'
-                  : 'bg-gray-800 hover:bg-gray-700 text-gray-400'
+                  ? ''
+                  : 'hover:bg-gray-800 text-gray-400'
               }`}
+              style={activeTab === 'predictions' ? {
+                background: 'rgba(184, 160, 200, 0.15)',
+                color: 'var(--mauve)'
+              } : {}}
             >
               <AlertTriangle className="w-4 h-4" />
               Predictions
             </button>
             <button
               onClick={() => setActiveTab('geo')}
-              className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+              className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2 text-sm font-light ${
                 activeTab === 'geo'
-                  ? 'bg-purple-500/20 text-purple-400'
-                  : 'bg-gray-800 hover:bg-gray-700 text-gray-400'
+                  ? ''
+                  : 'hover:bg-gray-800 text-gray-400'
               }`}
+              style={activeTab === 'geo' ? {
+                background: 'rgba(184, 160, 200, 0.15)',
+                color: 'var(--mauve)'
+              } : {}}
             >
               <Globe className="w-4 h-4" />
               GEO Monitor
@@ -992,11 +1012,15 @@ export default function IntelligenceModule() {
             <div className="max-w-4xl mx-auto">
               {/* Start Report Button - Always visible at top */}
               <div className="mb-6 flex justify-between items-center">
-                <h3 className="text-xl font-bold text-yellow-400">Executive Report</h3>
+                <h3 className="text-lg font-light" style={{ color: 'var(--mauve)' }}>Executive Report</h3>
                 <button
                   onClick={runPipeline}
                   disabled={isRunning || !organization}
-                  className="px-6 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg hover:from-yellow-600 hover:to-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm font-light"
+                  style={{
+                    background: isRunning || !organization ? 'var(--charcoal-light)' : 'var(--mauve)',
+                    color: 'var(--pearl)'
+                  }}
                 >
                   <Sparkles className="w-4 h-4" />
                   {executiveSynthesis ? 'Generate New Report' : 'Generate Report'}
@@ -1010,21 +1034,25 @@ export default function IntelligenceModule() {
                     {error ? (
                       <>
                         <AlertCircle className="w-12 h-12 mx-auto mb-4 text-red-400" />
-                        <h4 className="text-lg font-semibold mb-2 text-red-400">Error</h4>
-                        <p className="text-gray-400 mb-6">{error}</p>
+                        <h4 className="text-base font-light mb-2 text-red-400">Error</h4>
+                        <p className="text-gray-400 mb-6 text-sm font-light">{error}</p>
                         <button
                           onClick={() => { setError(null); runPipeline(); }}
                           disabled={isRunning || !organization}
-                          className="px-6 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg hover:from-yellow-600 hover:to-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-light"
+                          style={{
+                            background: isRunning || !organization ? 'var(--charcoal-light)' : 'var(--mauve)',
+                            color: 'var(--pearl)'
+                          }}
                         >
                           Retry Report Generation
                         </button>
                       </>
                     ) : isRunning ? (
                       <>
-                        <Loader2 className="w-12 h-12 mx-auto mb-4 text-yellow-400 animate-spin" />
-                        <h4 className="text-lg font-semibold mb-2">Running Intelligence Pipeline</h4>
-                        <p className="text-gray-400 mb-6">
+                        <Loader2 className="w-12 h-12 mx-auto mb-4 animate-spin" style={{ color: 'var(--mauve)' }} />
+                        <h4 className="text-base font-light mb-2" style={{ color: 'var(--pearl)' }}>Running Intelligence Pipeline</h4>
+                        <p className="text-gray-400 mb-6 text-sm font-light">
                           {getPipelineStages()[currentStage]?.name || 'Initializing...'}
                         </p>
                         <div className="space-y-2 mt-6">
@@ -1056,8 +1084,8 @@ export default function IntelligenceModule() {
                       </>
                     ) : (
                       <>
-                        <Sparkles className="w-12 h-12 mx-auto mb-4 text-yellow-400" />
-                        <p className="text-gray-400">
+                        <Sparkles className="w-12 h-12 mx-auto mb-4" style={{ color: 'var(--mauve)' }} />
+                        <p className="text-gray-400 text-sm font-light">
                           {!organization ? 'Please select an organization first' : 'Click "Generate Report" above to transform research into strategic insights'}
                         </p>
                       </>
@@ -1079,18 +1107,22 @@ export default function IntelligenceModule() {
               <div className="bg-gray-800/50 rounded-lg p-6 mb-6">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h3 className="text-xl font-bold text-cyan-400 flex items-center gap-2">
-                      <Share2 className="w-6 h-6" />
+                    <h3 className="text-base font-light flex items-center gap-2" style={{ color: 'var(--mauve)' }}>
+                      <Share2 className="w-5 h-5" />
                       Social Intelligence
                     </h3>
-                    <p className="text-gray-400 text-sm mt-1">
+                    <p className="text-gray-400 text-xs font-light mt-1">
                       Real-time social media monitoring across all major platforms
                     </p>
                   </div>
                   <button
                     onClick={fetchSocialIntelligence}
                     disabled={socialLoading}
-                    className="px-4 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50"
+                    className="px-3 py-1.5 rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50 text-sm font-light"
+                    style={{
+                      background: 'rgba(184, 160, 200, 0.2)',
+                      color: 'var(--mauve)'
+                    }}
                   >
                     <RefreshCw className={`w-4 h-4 ${socialLoading ? 'animate-spin' : ''}`} />
                     Refresh
@@ -1100,17 +1132,21 @@ export default function IntelligenceModule() {
                 {/* Filters */}
                 <div className="flex gap-4 flex-wrap">
                   {/* Time Range */}
-                  <div className="flex gap-2">
-                    <span className="text-gray-400 text-sm">Time:</span>
+                  <div className="flex gap-2 items-center">
+                    <span className="text-gray-400 text-xs font-light">Time:</span>
                     {(['1h', '24h', '7d'] as const).map(range => (
                       <button
                         key={range}
                         onClick={() => setSocialTimeRange(range)}
-                        className={`px-3 py-1 rounded text-sm transition-colors ${
+                        className={`px-3 py-1 rounded text-xs font-light transition-colors ${
                           socialTimeRange === range
-                            ? 'bg-cyan-500/20 text-cyan-400'
+                            ? ''
                             : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
                         }`}
+                        style={socialTimeRange === range ? {
+                          background: 'rgba(184, 160, 200, 0.2)',
+                          color: 'var(--mauve)'
+                        } : {}}
                       >
                         {range}
                       </button>

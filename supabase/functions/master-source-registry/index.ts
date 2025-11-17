@@ -158,6 +158,14 @@ function mapIndustryToCategory(industryInput: string): string | null {
     return 'conglomerate'
   }
 
+  // PUBLIC RELATIONS & COMMUNICATIONS - PR agencies, strategic communications (NOT management consulting)
+  if (
+    input.includes('public') && input.includes('relations') || input.includes('publicrelations') ||
+    input.includes('communications') && !input.includes('consulting') // Exclude "strategic communications consulting" - that's professional services
+  ) {
+    return 'public_relations'
+  }
+
   // No match found - will check exact industry key
   return null
 }
@@ -770,9 +778,19 @@ const INDUSTRY_SOURCES = {
   professional_services: {
     competitive: {
       rss: [
-        { name: 'Consulting Magazine', url: 'https://www.consultingmag.com/feed/', type: 'rss', priority: 'high' },
-        { name: 'Accounting Today', url: 'https://www.accountingtoday.com/feed', type: 'rss', priority: 'high' },
-        { name: 'Law.com', url: 'https://www.law.com/rss/', type: 'rss', priority: 'high' }
+        { name: 'Consulting Magazine', url: 'https://www.consultingmag.com/feed/', type: 'rss', priority: 'critical' },
+        { name: 'Management Consulting News', url: 'https://www.consultancy.uk/news/rss', type: 'rss', priority: 'critical' },
+        { name: 'Harvard Business Review', url: 'https://hbr.org/feed', type: 'rss', priority: 'high' },
+        { name: 'Strategy+Business', url: 'https://www.strategy-business.com/rss', type: 'rss', priority: 'high' },
+        { name: 'McKinsey Insights', url: 'https://www.mckinsey.com/insights/rss', type: 'rss', priority: 'high' },
+        { name: 'BCG Insights', url: 'https://www.bcg.com/rss', type: 'rss', priority: 'high' },
+        { name: 'Accounting Today', url: 'https://www.accountingtoday.com/feed', type: 'rss', priority: 'medium' },
+        { name: 'Law.com', url: 'https://www.law.com/rss/', type: 'rss', priority: 'medium' }
+      ],
+      search_queries: [
+        'management consulting news', 'consulting firm merger', 'strategy consulting',
+        'corporate restructuring', 'M&A advisory', 'crisis management consulting',
+        'consulting firm appointments', 'professional services growth', 'Big Four consulting'
       ]
     }
   },
@@ -907,7 +925,8 @@ serve(async (req) => {
         'food_beverage': ['food', 'beverage', 'restaurant', 'agriculture', 'farming', 'agribusiness', 'grain', 'livestock'],
         'transportation': ['transportation', 'logistics', 'shipping', 'freight', 'supply chain', 'maritime', 'port', 'warehouse'],
         'telecommunications': ['telecom', 'wireless', 'internet provider', 'broadband', '5g', 'network'],
-        'pr_communications': ['public relations', 'communications', 'pr agency', 'strategic communications', 'corporate communications']
+        'public_relations': ['public relations', 'pr agency', 'corporate communications'],
+        'professional_services': ['management consulting', 'strategic advisory', 'consulting', 'professional services', 'advisory', 'legal services', 'accounting', 'audit']
       }
 
       for (const [industryKey, keywords] of Object.entries(industryKeywords)) {

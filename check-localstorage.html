@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Check localStorage for Organizations</title>
+</head>
+<body>
+    <h1>Nivria localStorage Contents</h1>
+    <button onclick="checkStorage()">Check localStorage</button>
+    <button onclick="clearOrgData()">Clear Organization Data</button>
+    <pre id="output"></pre>
+
+    <script>
+        function checkStorage() {
+            const storage = localStorage.getItem('signaldesk-v3-storage');
+            if (storage) {
+                const parsed = JSON.parse(storage);
+                document.getElementById('output').textContent = JSON.stringify(parsed, null, 2);
+            } else {
+                document.getElementById('output').textContent = 'No data found';
+            }
+        }
+
+        function clearOrgData() {
+            const storage = localStorage.getItem('signaldesk-v3-storage');
+            if (storage) {
+                const parsed = JSON.parse(storage);
+                parsed.state.organization = null;
+                localStorage.setItem('signaldesk-v3-storage', JSON.stringify(parsed));
+                alert('Organization data cleared! Refresh the page to see changes.');
+            }
+        }
+
+        // Auto-run on load
+        checkStorage();
+    </script>
+</body>
+</html>

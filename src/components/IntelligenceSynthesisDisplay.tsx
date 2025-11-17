@@ -15,6 +15,365 @@ interface IntelligenceSynthesisDisplayProps {
   loading?: boolean;
 }
 
+// TEXTURE & MATERIAL SYSTEM
+// ==========================
+
+// SVG Noise Filter - Subtle film grain texture
+const NoiseFilter = () => (
+  <svg className="absolute w-0 h-0">
+    <defs>
+      <filter id="noise-texture">
+        <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" stitchTiles="stitch" />
+        <feColorMatrix type="saturate" values="0" />
+        <feComponentTransfer>
+          <feFuncA type="discrete" tableValues="0 0.015" />
+        </feComponentTransfer>
+        <feBlend mode="overlay" in="SourceGraphic" />
+      </filter>
+      <filter id="noise-texture-subtle">
+        <feTurbulence type="fractalNoise" baseFrequency="1.2" numOctaves="3" stitchTiles="stitch" />
+        <feColorMatrix type="saturate" values="0" />
+        <feComponentTransfer>
+          <feFuncA type="discrete" tableValues="0 0.008" />
+        </feComponentTransfer>
+        <feBlend mode="overlay" in="SourceGraphic" />
+      </filter>
+    </defs>
+  </svg>
+);
+
+// Scanline Pattern Generator
+const ScanlinePattern = () => (
+  <div
+    className="absolute inset-0 pointer-events-none opacity-[0.03]"
+    style={{
+      backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(255, 255, 255, 0.03) 1px, rgba(255, 255, 255, 0.03) 2px)',
+      mixBlendMode: 'overlay',
+    }}
+  />
+);
+
+// Dot Grid Pattern
+const DotGridPattern = () => (
+  <div
+    className="absolute inset-0 pointer-events-none opacity-[0.02]"
+    style={{
+      backgroundImage: 'radial-gradient(circle, rgba(184, 160, 200, 0.15) 1px, transparent 1px)',
+      backgroundSize: '16px 16px',
+      mixBlendMode: 'overlay',
+    }}
+  />
+);
+
+// Edge Ticks - Bloomberg style markers
+const EdgeTicks = ({ variant = 'default' }: { variant?: string }) => {
+  const color = variant === 'accent' ? 'rgba(184, 160, 200, 0.2)' : 'rgba(255, 255, 255, 0.08)';
+  return (
+    <>
+      {/* Top-left corner ticks */}
+      <div className="absolute top-0 left-0 w-2 h-px" style={{ background: color }} />
+      <div className="absolute top-0 left-0 w-px h-2" style={{ background: color }} />
+
+      {/* Top-right corner ticks */}
+      <div className="absolute top-0 right-0 w-2 h-px" style={{ background: color }} />
+      <div className="absolute top-0 right-0 w-px h-2" style={{ background: color }} />
+
+      {/* Bottom-left corner ticks */}
+      <div className="absolute bottom-0 left-0 w-2 h-px" style={{ background: color }} />
+      <div className="absolute bottom-0 left-0 w-px h-2" style={{ background: color }} />
+
+      {/* Bottom-right corner ticks */}
+      <div className="absolute bottom-0 right-0 w-2 h-px" style={{ background: color }} />
+      <div className="absolute bottom-0 right-0 w-px h-2" style={{ background: color }} />
+    </>
+  );
+};
+
+// DESIGN SYSTEM COMPONENTS
+// ========================
+
+// Typography Scale - Bloomberg Editorial Style
+const Typography = {
+  // Level 1: Section Headers - Wide tracking, tight leading
+  SectionHeader: ({ children, icon: Icon, className = '' }: any) => (
+    <div className={`flex items-center gap-3 mb-5 ${className}`}>
+      {Icon && <Icon className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--mauve)' }} />}
+      <h2 className="text-[10px] font-normal uppercase tracking-[0.15em] leading-none" style={{ color: 'var(--mauve)' }}>
+        {children}
+      </h2>
+    </div>
+  ),
+
+  // Level 2: Subsection Headers
+  SubsectionHeader: ({ children, className = '', color = 'var(--mauve)' }: any) => (
+    <h3 className={`text-[9px] font-normal uppercase tracking-[0.12em] leading-none mb-3 ${className}`} style={{ color }}>
+      {children}
+    </h3>
+  ),
+
+  // Level 3: Card Titles - Tighter leading, more space
+  CardTitle: ({ children, className = '' }: any) => (
+    <h4 className={`text-[15px] font-light leading-[1.3] mb-2 ${className}`} style={{ color: 'var(--pearl)' }}>
+      {children}
+    </h4>
+  ),
+
+  // Level 4: Primary Body
+  BodyPrimary: ({ children, className = '' }: any) => (
+    <p className={`text-[14px] font-light leading-[1.6] text-gray-200 ${className}`}>
+      {children}
+    </p>
+  ),
+
+  // Level 5: Secondary Body
+  BodySecondary: ({ children, className = '' }: any) => (
+    <p className={`text-[13px] font-light leading-[1.5] text-gray-300 ${className}`}>
+      {children}
+    </p>
+  ),
+
+  // Level 6: Caption/Meta
+  Caption: ({ children, className = '' }: any) => (
+    <p className={`text-[11px] font-light leading-[1.4] tracking-[0.02em] text-gray-400 ${className}`}>
+      {children}
+    </p>
+  ),
+};
+
+// Shadow System - Depth hierarchy with inset shadows for material depth
+const shadows = {
+  low: '0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.02)',
+  medium: '0 4px 6px rgba(0, 0, 0, 0.4), 0 2px 4px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.03)',
+  high: '0 10px 20px rgba(0, 0, 0, 0.5), 0 6px 6px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.04)',
+  raised: '0 20px 40px rgba(0, 0, 0, 0.6), 0 10px 10px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
+  inset: 'inset 0 2px 4px rgba(0, 0, 0, 0.3), inset 0 1px 2px rgba(0, 0, 0, 0.2)',
+};
+
+// Card Component System - With depth and layering
+const Card = {
+  // Base container with depth
+  Container: ({ children, variant = 'default', elevation = 'low', className = '', style: customStyle = {}, texture = true }: any) => {
+    const variants = {
+      default: {
+        bg: 'linear-gradient(135deg, rgba(20, 20, 25, 0.65) 0%, rgba(20, 20, 25, 0.55) 100%)',
+        border: 'linear-gradient(135deg, rgba(184, 160, 200, 0.18), rgba(184, 160, 200, 0.12))',
+        innerGlow: 'rgba(184, 160, 200, 0.05)',
+        glow: 'none',
+        edgeLight: 'rgba(255, 255, 255, 0.04)',
+      },
+      accent: {
+        bg: 'linear-gradient(135deg, rgba(184, 160, 200, 0.12) 0%, rgba(184, 160, 200, 0.06) 100%)',
+        border: 'linear-gradient(135deg, rgba(184, 160, 200, 0.4), rgba(184, 160, 200, 0.25))',
+        innerGlow: 'rgba(184, 160, 200, 0.08)',
+        glow: '0 0 20px rgba(184, 160, 200, 0.1)',
+        edgeLight: 'rgba(184, 160, 200, 0.15)',
+      },
+      critical: {
+        bg: 'linear-gradient(135deg, rgba(255, 68, 68, 0.12) 0%, rgba(255, 68, 68, 0.06) 100%)',
+        border: 'linear-gradient(135deg, rgba(255, 68, 68, 0.5), rgba(255, 68, 68, 0.3))',
+        innerGlow: 'rgba(255, 68, 68, 0.1)',
+        glow: '0 0 15px rgba(255, 68, 68, 0.15)',
+        edgeLight: 'rgba(255, 68, 68, 0.2)',
+      },
+      warning: {
+        bg: 'linear-gradient(135deg, rgba(255, 165, 0, 0.12) 0%, rgba(255, 165, 0, 0.06) 100%)',
+        border: 'linear-gradient(135deg, rgba(255, 165, 0, 0.5), rgba(255, 165, 0, 0.3))',
+        innerGlow: 'rgba(255, 165, 0, 0.08)',
+        glow: '0 0 15px rgba(255, 165, 0, 0.12)',
+        edgeLight: 'rgba(255, 165, 0, 0.18)',
+      },
+      glass: {
+        bg: 'linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)',
+        border: 'linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.08))',
+        innerGlow: 'rgba(255, 255, 255, 0.03)',
+        glow: 'none',
+        edgeLight: 'rgba(255, 255, 255, 0.06)',
+      },
+    };
+    const variantStyle = variants[variant as keyof typeof variants];
+    const shadow = shadows[elevation as keyof typeof shadows];
+
+    return (
+      <div
+        className={`rounded-lg border relative overflow-hidden ${className}`}
+        style={{
+          background: variantStyle.bg,
+          borderImage: `${variantStyle.border} 1`,
+          boxShadow: `${shadow}, ${variantStyle.glow}`,
+          
+          ...customStyle
+        }}
+      >
+        {/* Edge lighting - top and left highlight */}
+        <div
+          className="absolute top-0 left-0 right-0 h-px pointer-events-none"
+          style={{
+            background: `linear-gradient(90deg, transparent, ${variantStyle.edgeLight}, transparent)`,
+          }}
+        />
+        <div
+          className="absolute top-0 left-0 bottom-0 w-px pointer-events-none"
+          style={{
+            background: `linear-gradient(180deg, transparent, ${variantStyle.edgeLight}, transparent)`,
+          }}
+        />
+
+        {/* Inner glow for depth */}
+        <div
+          className="absolute inset-0 pointer-events-none rounded-lg"
+          style={{
+            boxShadow: `inset 0 0 30px ${variantStyle.innerGlow}`,
+            opacity: 0.6,
+          }}
+        />
+
+        {/* Corner ticks for premium feel */}
+        <EdgeTicks variant={variant} />
+
+        {/* Subtle radial gradient overlay for spotlight effect */}
+        <div
+          className="absolute inset-0 pointer-events-none opacity-30"
+          style={{
+            background: 'radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.03) 0%, transparent 50%)',
+          }}
+        />
+
+        {/* Content with relative positioning */}
+        <div className="relative z-10">
+          {children}
+        </div>
+      </div>
+    );
+  },
+
+  // Floating card with subtle rotation
+  Floating: ({ children, rotation = 0, elevation = 'medium', className = '' }: any) => (
+    <Card.Container
+      elevation={elevation}
+      variant="glass"
+      className={className}
+      style={{
+        
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      }}
+    >
+      {children}
+    </Card.Container>
+  ),
+
+  // List item with proper spacing
+  ListItem: ({ children, icon: Icon, iconColor = 'var(--mauve-light)', className = '' }: any) => (
+    <li className={`flex items-start gap-2.5 mb-2 last:mb-0 ${className}`}>
+      {Icon && <Icon className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" style={{ color: iconColor }} />}
+      <Typography.BodySecondary className="flex-1">{children}</Typography.BodySecondary>
+    </li>
+  ),
+};
+
+// Asymmetric Layout System - Break the grid
+const Layout = {
+  // Masonry-style asymmetric grid
+  Masonry: ({ children, className = '' }: any) => (
+    <div className={`grid gap-5 ${className}`} style={{
+      gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))',
+      gridAutoFlow: 'dense',
+    }}>
+      {children}
+    </div>
+  ),
+
+  // Staggered columns with varying widths
+  Staggered: ({ children, className = '' }: any) => (
+    <div className={`flex flex-col lg:flex-row gap-6 ${className}`}>
+      {children}
+    </div>
+  ),
+
+  // Overlapping cards container
+  Layered: ({ children, className = '' }: any) => (
+    <div className={`relative ${className}`} style={{ minHeight: '100px' }}>
+      {children}
+    </div>
+  ),
+};
+
+// Section Container - Glassmorphic with depth and texture
+const Section = ({ children, className = '', variant = 'default' }: any) => {
+  const variants = {
+    default: {
+      bg: 'linear-gradient(145deg, rgba(17, 17, 20, 0.75) 0%, rgba(17, 17, 20, 0.65) 100%)',
+      border: 'linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.06))',
+      innerGlow: 'rgba(184, 160, 200, 0.03)',
+      edgeLight: 'rgba(255, 255, 255, 0.05)',
+    },
+    elevated: {
+      bg: 'linear-gradient(145deg, rgba(17, 17, 20, 0.9) 0%, rgba(17, 17, 20, 0.8) 100%)',
+      border: 'linear-gradient(145deg, rgba(184, 160, 200, 0.2), rgba(184, 160, 200, 0.12))',
+      innerGlow: 'rgba(184, 160, 200, 0.05)',
+      edgeLight: 'rgba(184, 160, 200, 0.08)',
+    },
+    minimal: {
+      bg: 'transparent',
+      border: 'transparent',
+      innerGlow: 'transparent',
+      edgeLight: 'transparent',
+    },
+  };
+  const style = variants[variant as keyof typeof variants];
+
+  return (
+    <div
+      className={`rounded-xl p-6 border relative overflow-hidden ${className}`}
+      style={{
+        background: style.bg,
+        borderImage: variant !== 'minimal' ? `${style.border} 1` : 'none',
+        boxShadow: variant !== 'minimal' ? shadows.low : 'none',
+        
+      }}
+    >
+      {/* Scanlines for terminal aesthetic */}
+      {variant !== 'minimal' && <ScanlinePattern />}
+
+      {/* Edge lighting */}
+      {variant !== 'minimal' && (
+        <>
+          <div
+            className="absolute top-0 left-0 right-0 h-px pointer-events-none"
+            style={{
+              background: `linear-gradient(90deg, transparent, ${style.edgeLight}, transparent)`,
+            }}
+          />
+          <div
+            className="absolute top-0 left-0 bottom-0 w-px pointer-events-none"
+            style={{
+              background: `linear-gradient(180deg, transparent, ${style.edgeLight}, transparent)`,
+            }}
+          />
+        </>
+      )}
+
+      {/* Inner glow */}
+      {variant !== 'minimal' && (
+        <div
+          className="absolute inset-0 pointer-events-none rounded-xl"
+          style={{
+            boxShadow: `inset 0 0 40px ${style.innerGlow}`,
+            opacity: 0.5,
+          }}
+        />
+      )}
+
+      {/* Content */}
+      <div className="relative z-10">
+        {children}
+      </div>
+    </div>
+  );
+};
+
+// MAIN COMPONENT
+// ==============
+
 const IntelligenceSynthesisDisplay: React.FC<IntelligenceSynthesisDisplayProps> = ({ synthesis, loading }) => {
   const [expandedDevelopment, setExpandedDevelopment] = useState<number | null>(0);
 
@@ -32,437 +391,661 @@ const IntelligenceSynthesisDisplay: React.FC<IntelligenceSynthesisDisplayProps> 
 
   if (!synthesis?.synthesis) {
     return (
-      <div className="bg-gray-900 rounded-xl p-12 text-center border border-gray-800">
-        <Eye className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-        <h3 className="text-xl font-semibold text-gray-400 mb-2">No Intelligence Available</h3>
-        <p className="text-gray-500">Run the pipeline to generate market intelligence</p>
+      <div className="bg-gray-900 rounded-lg p-8 text-center border border-gray-800">
+        <Eye className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+        <Typography.SubsectionHeader className="text-gray-400 mb-2">
+          No Intelligence Available
+        </Typography.SubsectionHeader>
+        <Typography.Caption>Run the pipeline to generate market intelligence</Typography.Caption>
       </div>
     );
   }
 
   const { synthesis: data } = synthesis;
 
-  // Debug logging
-  console.log('🔍 IntelligenceSynthesisDisplay received:', {
-    hasExecutiveSummary: !!data.executive_summary,
-    hasKeyFindings: !!data.key_findings,
-    hasCompetitiveAnalysis: !!data.competitive_analysis,
-    hasSourceStrategy: !!data.source_strategy,
-    hasStrategicActions: !!data.strategic_actions,
-    hasCompetitiveMoves: !!data.competitive_moves,
-    hasStakeholderDynamics: !!data.stakeholder_dynamics,
-    hasMediaLandscape: !!data.media_landscape,
-    hasPrActions: !!data.pr_actions,
-    hasRiskAlerts: !!data.risk_alerts,
-    allKeys: Object.keys(data || {})
-  });
-
   // Handle GEO format (key_findings, competitive_analysis, source_strategy)
   if (data.key_findings || data.competitive_analysis || data.source_strategy) {
     return (
-      <div className="space-y-6">
-        {/* Executive Summary */}
+      <div className="space-y-7">
+        {/* Include noise filters globally */}
+        <NoiseFilter />
+        {/* Executive Summary - Hero with elevation */}
         {data.executive_summary && (
-          <div className="bg-gray-900 rounded-xl p-6 border-2 border-purple-800">
-            <div className="flex items-center mb-4">
-              <Eye className="w-6 h-6 text-purple-400 mr-3" />
-              <h2 className="text-xl font-bold text-white">Executive Summary</h2>
-            </div>
-            <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">{data.executive_summary}</p>
-          </div>
+          <Section variant="elevated">
+            <Typography.SectionHeader icon={Eye}>Executive Summary</Typography.SectionHeader>
+            <Typography.BodyPrimary className="whitespace-pre-wrap">
+              {data.executive_summary}
+            </Typography.BodyPrimary>
+          </Section>
         )}
 
-        {/* Key Findings */}
+        {/* Key Findings - Asymmetric layered cards */}
         {data.key_findings && data.key_findings.length > 0 && (
-          <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
-            <div className="flex items-center mb-6">
-              <Lightbulb className="w-6 h-6 text-yellow-400 mr-3" />
-              <h2 className="text-xl font-bold text-white">Key Findings</h2>
-            </div>
-            <div className="space-y-4">
-              {data.key_findings.map((finding: any, i: number) => (
-                <div key={i} className={`p-4 rounded-lg border ${
-                  finding.priority === 'critical' ? 'bg-red-900/20 border-red-700' :
-                  finding.priority === 'high' ? 'bg-orange-900/20 border-orange-700' :
-                  'bg-blue-900/20 border-blue-700'
-                }`}>
-                  <div className="flex items-start gap-3">
-                    <span className={`text-lg font-bold ${
-                      finding.priority === 'critical' ? 'text-red-400' :
-                      finding.priority === 'high' ? 'text-orange-400' :
-                      'text-blue-400'
-                    }`}>#{i + 1}</span>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-white mb-2">{finding.title}</h3>
-                      <p className="text-gray-300 mb-2">{finding.insight}</p>
-                      <p className="text-sm text-gray-400 italic">{finding.evidence}</p>
+          <Section variant="minimal">
+            <Typography.SectionHeader icon={Lightbulb}>Key Findings</Typography.SectionHeader>
+            <Layout.Masonry className="mt-6">
+              {data.key_findings.map((finding: any, i: number) => {
+                const isCritical = finding.priority === 'critical';
+                const rotation = i % 3 === 0 ? -0.5 : i % 3 === 1 ? 0.5 : 0;
+
+                return (
+                  <Card.Container
+                    key={i}
+                    variant={isCritical ? 'critical' : 'accent'}
+                    elevation={isCritical ? 'medium' : 'low'}
+                    className="p-5 hover:scale-[1.01] transition-transform duration-300"
+                    style={{
+                      
+                      gridColumn: i === 0 ? 'span 1' : 'auto',
+                    }}
+                  >
+                    <div className="flex items-start gap-4">
+                      <span
+                        className="text-[20px] font-extralight leading-none flex-shrink-0 opacity-40"
+                        style={{
+                          color: isCritical ? '#ff4444' : 'var(--mauve)',
+                          fontVariantNumeric: 'tabular-nums'
+                        }}
+                      >
+                        {String(i + 1).padStart(2, '0')}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <Typography.CardTitle className="mb-3">{finding.title}</Typography.CardTitle>
+                        <Typography.BodyPrimary className="mb-3">{finding.insight}</Typography.BodyPrimary>
+                        <div
+                          className="pt-3 mt-3"
+                          style={{ borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}
+                        >
+                          <Typography.Caption>{finding.evidence}</Typography.Caption>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+                  </Card.Container>
+                );
+              })}
+            </Layout.Masonry>
+          </Section>
         )}
 
-        {/* Competitive Analysis */}
+        {/* Competitive Analysis - Staggered layout */}
         {data.competitive_analysis && (
-          <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
-            <div className="flex items-center mb-6">
-              <Target className="w-6 h-6 text-red-400 mr-3" />
-              <h2 className="text-xl font-bold text-white">Competitive Analysis</h2>
-            </div>
+          <Section variant="elevated">
+            <Typography.SectionHeader icon={Target}>Competitive Analysis</Typography.SectionHeader>
 
             {data.competitive_analysis.dominant_players && data.competitive_analysis.dominant_players.length > 0 && (
               <div className="mb-6">
-                <h3 className="text-lg font-semibold text-white mb-3">Dominant Players</h3>
-                <div className="space-y-3">
+                <Typography.SubsectionHeader>Dominant Players</Typography.SubsectionHeader>
+                <div className="grid gap-4 mt-4" style={{
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))',
+                }}>
                   {data.competitive_analysis.dominant_players.map((player: any, i: number) => (
-                    <div key={i} className="bg-gray-800/50 p-4 rounded-lg">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="font-semibold text-white">{player.name}</span>
-                        <span className="text-xs text-gray-400">• {player.platforms?.join(', ')}</span>
+                    <Card.Container
+                      key={i}
+                      variant="glass"
+                      elevation="low"
+                      className="p-4"
+                      style={{
+                        transform: `translateY(${i % 2 === 0 ? '0' : '8px'})`,
+                      }}
+                    >
+                      <div className="flex items-start gap-3 mb-2">
+                        <span
+                          className="text-[16px] font-extralight opacity-30"
+                          style={{ fontVariantNumeric: 'tabular-nums' }}
+                        >
+                          {String(i + 1).padStart(2, '0')}
+                        </span>
+                        <Typography.CardTitle className="mb-0 flex-1">{player.name}</Typography.CardTitle>
                       </div>
-                      <p className="text-sm text-gray-300">{player.visibility}</p>
-                    </div>
+                      {player.platforms && (
+                        <Typography.Caption className="mb-2 ml-9">
+                          {player.platforms.join(' / ')}
+                        </Typography.Caption>
+                      )}
+                      <Typography.BodySecondary className="ml-9">{player.visibility}</Typography.BodySecondary>
+                    </Card.Container>
                   ))}
                 </div>
               </div>
             )}
 
-            {data.competitive_analysis.success_patterns && (
-              <div className="mb-4 bg-green-900/20 p-4 rounded-lg border border-green-700">
-                <h3 className="text-green-400 font-semibold mb-2">Success Patterns</h3>
-                <p className="text-gray-300">{data.competitive_analysis.success_patterns}</p>
-              </div>
-            )}
+            <Layout.Staggered>
+              {data.competitive_analysis.success_patterns && (
+                <Card.Container variant="accent" elevation="medium" className="p-5 flex-1">
+                  <Typography.SubsectionHeader color="var(--mauve-light)">
+                    Success Patterns
+                  </Typography.SubsectionHeader>
+                  <Typography.BodySecondary>{data.competitive_analysis.success_patterns}</Typography.BodySecondary>
+                </Card.Container>
+              )}
 
-            {data.competitive_analysis.gaps_for_target && (
-              <div className="bg-orange-900/20 p-4 rounded-lg border border-orange-700">
-                <h3 className="text-orange-400 font-semibold mb-2">Gaps to Address</h3>
-                <p className="text-gray-300">{data.competitive_analysis.gaps_for_target}</p>
-              </div>
-            )}
-          </div>
+              {data.competitive_analysis.gaps_for_target && (
+                <Card.Container variant="accent" elevation="medium" className="p-5 flex-1" style={{
+                  transform: 'translateY(12px)',
+                }}>
+                  <Typography.SubsectionHeader color="var(--mauve)">
+                    Gaps to Address
+                  </Typography.SubsectionHeader>
+                  <Typography.BodySecondary>{data.competitive_analysis.gaps_for_target}</Typography.BodySecondary>
+                </Card.Container>
+              )}
+            </Layout.Staggered>
+          </Section>
         )}
 
-        {/* Source Strategy */}
+        {/* Source Strategy - Overlapping cards */}
         {data.source_strategy && (
-          <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
-            <div className="flex items-center mb-6">
-              <MessageSquare className="w-6 h-6 text-blue-400 mr-3" />
-              <h2 className="text-xl font-bold text-white">Source Strategy</h2>
-            </div>
+          <Section variant="default">
+            <Typography.SectionHeader icon={MessageSquare}>Source Strategy</Typography.SectionHeader>
 
             {data.source_strategy.priority_publications && data.source_strategy.priority_publications.length > 0 && (
-              <div className="mb-4">
-                <h3 className="text-lg font-semibold text-white mb-3">Priority Publications</h3>
-                <div className="space-y-3">
+              <div className="mb-6">
+                <Typography.SubsectionHeader>Priority Publications</Typography.SubsectionHeader>
+                <div className="grid gap-4 mt-4" style={{
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))',
+                }}>
                   {data.source_strategy.priority_publications.map((pub: any, i: number) => (
-                    <div key={i} className="bg-gray-800/50 p-4 rounded-lg">
-                      <h4 className="font-semibold text-blue-400 mb-1">{pub.name}</h4>
-                      <p className="text-sm text-gray-300 mb-2">{pub.reasoning}</p>
-                      <p className="text-sm text-gray-400 italic">Action: {pub.action}</p>
-                    </div>
+                    <Card.Container
+                      key={i}
+                      variant="glass"
+                      elevation="low"
+                      className="p-4 hover:scale-[1.02] transition-all duration-300"
+                      style={{
+                        
+                      }}
+                    >
+                      <Typography.CardTitle style={{ color: 'var(--mauve)' }} className="mb-3">
+                        {pub.name}
+                      </Typography.CardTitle>
+                      <Typography.BodySecondary className="mb-3">{pub.reasoning}</Typography.BodySecondary>
+                      <div
+                        className="pt-2 mt-2"
+                        style={{ borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}
+                      >
+                        <Typography.Caption>Action: {pub.action}</Typography.Caption>
+                      </div>
+                    </Card.Container>
                   ))}
                 </div>
               </div>
             )}
 
             {data.source_strategy.coverage_strategy && (
-              <div className="bg-cyan-900/20 p-4 rounded-lg border border-cyan-700">
-                <h3 className="text-cyan-400 font-semibold mb-2">Coverage Strategy</h3>
-                <p className="text-gray-300">{data.source_strategy.coverage_strategy}</p>
-              </div>
+              <Card.Container variant="accent" elevation="medium" className="p-5">
+                <Typography.SubsectionHeader>Coverage Strategy</Typography.SubsectionHeader>
+                <Typography.BodySecondary>{data.source_strategy.coverage_strategy}</Typography.BodySecondary>
+              </Card.Container>
             )}
-          </div>
+          </Section>
         )}
 
-        {/* Strategic Actions */}
+        {/* Strategic Actions - Layered cards with depth */}
         {data.strategic_actions && data.strategic_actions.length > 0 && (
-          <div className="bg-gray-900 rounded-xl p-6 border-2 border-cyan-800">
-            <div className="flex items-center mb-6">
-              <Megaphone className="w-6 h-6 text-cyan-400 mr-3" />
-              <h2 className="text-xl font-bold text-white">Strategic Actions</h2>
+          <Section variant="minimal">
+            <Typography.SectionHeader icon={Megaphone}>Strategic Actions</Typography.SectionHeader>
+            <div className="space-y-4 mt-6">
+              {data.strategic_actions.map((action: any, i: number) => {
+                const isCritical = action.priority === 'critical';
+                return (
+                  <Card.Container
+                    key={i}
+                    variant={isCritical ? 'critical' : 'accent'}
+                    elevation={isCritical ? 'high' : 'medium'}
+                    className="p-5 hover:scale-[1.005] transition-all duration-300"
+                    style={{
+                      transform: `translateX(${i % 2 === 0 ? '-4px' : '4px'})`,
+                    }}
+                  >
+                    <div className="flex items-start justify-between gap-4 mb-3 flex-wrap">
+                      <div className="flex items-start gap-3 flex-1">
+                        <span
+                          className="text-[18px] font-extralight opacity-30 leading-none"
+                          style={{ fontVariantNumeric: 'tabular-nums' }}
+                        >
+                          {String(i + 1).padStart(2, '0')}
+                        </span>
+                        <Typography.CardTitle
+                          className="mb-0 flex-1"
+                          style={{ color: isCritical ? '#ff4444' : 'var(--pearl)' }}
+                        >
+                          {action.action}
+                        </Typography.CardTitle>
+                      </div>
+                      <span
+                        className="text-[9px] font-normal uppercase tracking-[0.1em] px-3 py-1.5 rounded-full border"
+                        style={{
+                          background: 'rgba(255, 255, 255, 0.03)',
+                          borderColor: 'rgba(255, 255, 255, 0.1)',
+                          color: 'var(--mauve)',
+                        }}
+                      >
+                        {action.category}
+                      </span>
+                    </div>
+                    <Typography.BodySecondary className="mb-4 ml-9">{action.reasoning}</Typography.BodySecondary>
+                    <div
+                      className="flex flex-wrap gap-x-6 gap-y-2 ml-9 pt-3"
+                      style={{ borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}
+                    >
+                      <Typography.Caption>Impact: {action.expected_impact}</Typography.Caption>
+                      <Typography.Caption>Timeline: {action.timeline}</Typography.Caption>
+                    </div>
+                  </Card.Container>
+                );
+              })}
             </div>
-            <div className="space-y-4">
-              {data.strategic_actions.map((action: any, i: number) => (
-                <div key={i} className={`p-4 rounded-lg border ${
-                  action.priority === 'critical' ? 'bg-red-900/10 border-red-600' :
-                  action.priority === 'high' ? 'bg-yellow-900/10 border-yellow-600' :
-                  'bg-purple-900/10 border-purple-600'
-                }`}>
-                  <div className="flex items-start justify-between mb-2">
-                    <h3 className={`font-semibold ${
-                      action.priority === 'critical' ? 'text-red-400' :
-                      action.priority === 'high' ? 'text-yellow-400' :
-                      'text-purple-400'
-                    }`}>{action.action}</h3>
-                    <span className="text-xs bg-gray-800 text-gray-400 px-2 py-1 rounded">{action.category}</span>
-                  </div>
-                  <p className="text-sm text-gray-300 mb-2">{action.reasoning}</p>
-                  <div className="flex justify-between items-center text-xs text-gray-400">
-                    <span>Impact: {action.expected_impact}</span>
-                    <span>Timeline: {action.timeline}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          </Section>
         )}
 
         {/* Metadata */}
         {synthesis.meta && (
-          <div className="flex justify-between items-center px-4 py-2 bg-gray-900 rounded-lg border border-gray-800 text-xs text-gray-500">
-            <span>Analysis Date: {new Date(synthesis.meta.generated_at).toLocaleString()}</span>
-            <span>Scenarios: {synthesis.meta.scenarios_analyzed} | Platforms: {synthesis.meta.platforms_analyzed}</span>
+          <div
+            className="relative overflow-hidden flex flex-wrap justify-between items-center gap-3 px-4 py-2.5 rounded-lg border"
+            style={{
+              background: 'linear-gradient(135deg, rgba(17, 17, 20, 0.5), rgba(17, 17, 20, 0.3))',
+              borderImage: 'linear-gradient(135deg, rgba(184, 160, 200, 0.15), rgba(184, 160, 200, 0.08)) 1',
+              boxShadow: `${shadows.inset}, inset 0 0 20px rgba(184, 160, 200, 0.02)`,
+              
+            }}
+          >
+            {/* Subtle dot grid */}
+            <DotGridPattern />
+
+            {/* Edge highlight */}
+            <div
+              className="absolute top-0 left-0 right-0 h-px pointer-events-none"
+              style={{ background: 'linear-gradient(90deg, transparent, rgba(184, 160, 200, 0.08), transparent)' }}
+            />
+
+            <Typography.Caption>
+              Analysis Date: {new Date(synthesis.meta.generated_at).toLocaleString()}
+            </Typography.Caption>
+            <Typography.Caption>
+              Scenarios: {synthesis.meta.scenarios_analyzed} | Platforms: {synthesis.meta.platforms_analyzed}
+            </Typography.Caption>
           </div>
         )}
       </div>
     );
   }
 
-  // Handle new PR-focused format
+  // Handle PR-focused format
   if (data.executive_summary || data.competitive_moves) {
     return (
-      <div className="space-y-6">
-        {/* Executive Summary */}
+      <div className="space-y-7">
+        {/* Include noise filters globally */}
+        <NoiseFilter />
+        {/* Executive Summary - Hero elevated */}
         {data.executive_summary && (
-          <div className="bg-gray-900 rounded-xl p-6 border-2 border-purple-800">
-            <div className="flex items-center mb-4">
-              <Eye className="w-6 h-6 text-purple-400 mr-3" />
-              <h2 className="text-xl font-bold text-white">Executive PR Summary</h2>
-            </div>
-            <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">{data.executive_summary}</p>
-          </div>
+          <Section variant="elevated">
+            <Typography.SectionHeader icon={Eye}>Executive PR Summary</Typography.SectionHeader>
+            <Typography.BodyPrimary className="whitespace-pre-wrap">
+              {data.executive_summary}
+            </Typography.BodyPrimary>
+          </Section>
         )}
 
-        {/* Competitive Moves */}
+        {/* Competitive Intelligence - Asymmetric masonry */}
         {data.competitive_moves && (
-          <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
-            <div className="flex items-center mb-6">
-              <Target className="w-6 h-6 text-red-400 mr-3" />
-              <h2 className="text-xl font-bold text-white">Competitive Intelligence</h2>
-            </div>
-            <div className="grid md:grid-cols-3 gap-4">
+          <Section variant="minimal">
+            <Typography.SectionHeader icon={Target}>Competitive Intelligence</Typography.SectionHeader>
+            <Layout.Masonry className="mt-6">
               {data.competitive_moves.immediate_threats?.length > 0 && (
-                <div className="bg-red-900/20 p-4 rounded-lg border border-red-700">
-                  <h3 className="text-red-400 font-semibold mb-3">Immediate Threats</h3>
-                  <ul className="space-y-2">
+                <Card.Container variant="critical" elevation="high" className="p-5">
+                  <Typography.SubsectionHeader color="#ff4444">
+                    Immediate Threats
+                  </Typography.SubsectionHeader>
+                  <ul className="space-y-2.5 mt-3">
                     {data.competitive_moves.immediate_threats.map((threat: string, i: number) => (
-                      <li key={i} className="text-gray-300 text-sm flex items-start">
-                        <AlertTriangle className="w-4 h-4 text-red-400 mr-2 mt-0.5 flex-shrink-0" />
-                        <span>{threat}</span>
-                      </li>
+                      <Card.ListItem key={i} icon={AlertTriangle} iconColor="#ff4444">
+                        {threat}
+                      </Card.ListItem>
                     ))}
                   </ul>
-                </div>
+                </Card.Container>
               )}
+
               {data.competitive_moves.opportunities?.length > 0 && (
-                <div className="bg-green-900/20 p-4 rounded-lg border border-green-700">
-                  <h3 className="text-green-400 font-semibold mb-3">PR Opportunities</h3>
-                  <ul className="space-y-2">
+                <Card.Container
+                  variant="accent"
+                  elevation="medium"
+                  className="p-5"
+                  style={{  }}
+                >
+                  <Typography.SubsectionHeader color="var(--mauve-light)">
+                    PR Opportunities
+                  </Typography.SubsectionHeader>
+                  <ul className="space-y-2.5 mt-3">
                     {data.competitive_moves.opportunities.map((opp: string, i: number) => (
-                      <li key={i} className="text-gray-300 text-sm flex items-start">
-                        <Lightbulb className="w-4 h-4 text-green-400 mr-2 mt-0.5 flex-shrink-0" />
-                        <span>{opp}</span>
-                      </li>
+                      <Card.ListItem key={i} icon={Lightbulb} iconColor="var(--mauve-light)">
+                        {opp}
+                      </Card.ListItem>
                     ))}
                   </ul>
-                </div>
+                </Card.Container>
               )}
+
               {data.competitive_moves.narrative_gaps?.length > 0 && (
-                <div className="bg-blue-900/20 p-4 rounded-lg border border-blue-700">
-                  <h3 className="text-blue-400 font-semibold mb-3">Narrative Gaps</h3>
-                  <ul className="space-y-2">
+                <Card.Container
+                  variant="accent"
+                  elevation="medium"
+                  className="p-5"
+                  style={{  }}
+                >
+                  <Typography.SubsectionHeader color="var(--mauve)">
+                    Narrative Gaps
+                  </Typography.SubsectionHeader>
+                  <ul className="space-y-2.5 mt-3">
                     {data.competitive_moves.narrative_gaps.map((gap: string, i: number) => (
-                      <li key={i} className="text-gray-300 text-sm flex items-start">
-                        <MessageSquare className="w-4 h-4 text-blue-400 mr-2 mt-0.5 flex-shrink-0" />
-                        <span>{gap}</span>
+                      <Card.ListItem key={i} icon={MessageSquare} iconColor="var(--mauve)">
+                        {gap}
+                      </Card.ListItem>
+                    ))}
+                  </ul>
+                </Card.Container>
+              )}
+            </Layout.Masonry>
+          </Section>
+        )}
+
+        {/* Stakeholder Dynamics - Staggered layout */}
+        {data.stakeholder_dynamics && (
+          <Section variant="elevated">
+            <Typography.SectionHeader icon={TrendingUp}>Stakeholder Dynamics</Typography.SectionHeader>
+            <Layout.Staggered className="mt-6">
+              {data.stakeholder_dynamics.key_movements?.length > 0 && (
+                <Card.Container variant="accent" elevation="medium" className="p-5 flex-1">
+                  <Typography.SubsectionHeader color="var(--mauve)">
+                    Key Movements
+                  </Typography.SubsectionHeader>
+                  <ul className="space-y-2.5 mt-3">
+                    {data.stakeholder_dynamics.key_movements.map((movement: string, i: number) => (
+                      <li key={i} className="flex items-start gap-2.5">
+                        <span className="text-gray-400 mt-1 flex-shrink-0 text-xs">•</span>
+                        <Typography.BodySecondary className="flex-1">{movement}</Typography.BodySecondary>
                       </li>
                     ))}
                   </ul>
-                </div>
+                </Card.Container>
               )}
-            </div>
-          </div>
-        )}
 
-        {/* Stakeholder Dynamics */}
-        {data.stakeholder_dynamics && (
-          <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
-            <div className="flex items-center mb-6">
-              <TrendingUp className="w-6 h-6 text-yellow-400 mr-3" />
-              <h2 className="text-xl font-bold text-white">Stakeholder Dynamics</h2>
-            </div>
-            <div className="grid md:grid-cols-3 gap-4">
-              {data.stakeholder_dynamics.key_movements?.length > 0 && (
-                <div className="bg-yellow-900/20 p-4 rounded-lg border border-yellow-700">
-                  <h3 className="text-yellow-400 font-semibold mb-3">Key Movements</h3>
-                  <ul className="space-y-2">
-                    {data.stakeholder_dynamics.key_movements.map((movement: string, i: number) => (
-                      <li key={i} className="text-gray-300 text-sm">• {movement}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
               {data.stakeholder_dynamics.influence_shifts?.length > 0 && (
-                <div className="bg-orange-900/20 p-4 rounded-lg border border-orange-700">
-                  <h3 className="text-orange-400 font-semibold mb-3">Influence Shifts</h3>
-                  <ul className="space-y-2">
+                <Card.Container
+                  variant="accent"
+                  elevation="medium"
+                  className="p-5 flex-1"
+                  style={{ transform: 'translateY(16px)' }}
+                >
+                  <Typography.SubsectionHeader color="var(--mauve-light)">
+                    Influence Shifts
+                  </Typography.SubsectionHeader>
+                  <ul className="space-y-2.5 mt-3">
                     {data.stakeholder_dynamics.influence_shifts.map((shift: string, i: number) => (
-                      <li key={i} className="text-gray-300 text-sm">• {shift}</li>
+                      <li key={i} className="flex items-start gap-2.5">
+                        <span className="text-gray-400 mt-1 flex-shrink-0 text-xs">•</span>
+                        <Typography.BodySecondary className="flex-1">{shift}</Typography.BodySecondary>
+                      </li>
                     ))}
                   </ul>
-                </div>
+                </Card.Container>
               )}
-              {data.stakeholder_dynamics.engagement_opportunities?.length > 0 && (
-                <div className="bg-green-900/20 p-4 rounded-lg border border-green-700">
-                  <h3 className="text-green-400 font-semibold mb-3">Engagement Opportunities</h3>
-                  <ul className="space-y-2">
-                    {data.stakeholder_dynamics.engagement_opportunities.map((opp: string, i: number) => (
-                      <li key={i} className="text-gray-300 text-sm">• {opp}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          </div>
+            </Layout.Staggered>
+
+            {data.stakeholder_dynamics.engagement_opportunities?.length > 0 && (
+              <Card.Container variant="accent" elevation="medium" className="p-5 mt-5" style={{  }}>
+                <Typography.SubsectionHeader color="var(--mauve)">
+                  Engagement Opportunities
+                </Typography.SubsectionHeader>
+                <ul className="space-y-2.5 mt-3">
+                  {data.stakeholder_dynamics.engagement_opportunities.map((opp: string, i: number) => (
+                    <li key={i} className="flex items-start gap-2.5">
+                      <span className="text-gray-400 mt-1 flex-shrink-0 text-xs">•</span>
+                      <Typography.BodySecondary className="flex-1">{opp}</Typography.BodySecondary>
+                    </li>
+                  ))}
+                </ul>
+              </Card.Container>
+            )}
+          </Section>
         )}
 
-        {/* Media Landscape */}
+        {/* Media Landscape - Masonry asymmetric */}
         {data.media_landscape && (
-          <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
-            <div className="flex items-center mb-6">
-              <MessageSquare className="w-6 h-6 text-blue-400 mr-3" />
-              <h2 className="text-xl font-bold text-white">Media Landscape</h2>
-            </div>
-            <div className="grid md:grid-cols-3 gap-4">
+          <Section variant="minimal">
+            <Typography.SectionHeader icon={MessageSquare}>Media Landscape</Typography.SectionHeader>
+            <Layout.Masonry className="mt-6">
               {data.media_landscape.trending_narratives?.length > 0 && (
-                <div className="bg-blue-900/20 p-4 rounded-lg border border-blue-700">
-                  <h3 className="text-blue-400 font-semibold mb-3">Trending Narratives</h3>
-                  <ul className="space-y-2">
+                <Card.Container
+                  variant="accent"
+                  elevation="medium"
+                  className="p-5"
+                  style={{  }}
+                >
+                  <Typography.SubsectionHeader color="var(--mauve)">
+                    Trending Narratives
+                  </Typography.SubsectionHeader>
+                  <ul className="space-y-2.5 mt-3">
                     {data.media_landscape.trending_narratives.map((narrative: string, i: number) => (
-                      <li key={i} className="text-gray-300 text-sm">📈 {narrative}</li>
+                      <li key={i} className="flex items-start gap-2.5">
+                        <span className="mt-1 flex-shrink-0 opacity-50">→</span>
+                        <Typography.BodySecondary className="flex-1">{narrative}</Typography.BodySecondary>
+                      </li>
                     ))}
                   </ul>
-                </div>
+                </Card.Container>
               )}
+
               {data.media_landscape.sentiment_shifts?.length > 0 && (
-                <div className="bg-purple-900/20 p-4 rounded-lg border border-purple-700">
-                  <h3 className="text-purple-400 font-semibold mb-3">Sentiment Shifts</h3>
-                  <ul className="space-y-2">
+                <Card.Container
+                  variant="accent"
+                  elevation="medium"
+                  className="p-5"
+                  style={{  }}
+                >
+                  <Typography.SubsectionHeader color="var(--mauve-light)">
+                    Sentiment Shifts
+                  </Typography.SubsectionHeader>
+                  <ul className="space-y-2.5 mt-3">
                     {data.media_landscape.sentiment_shifts.map((shift: string, i: number) => (
-                      <li key={i} className="text-gray-300 text-sm">• {shift}</li>
+                      <li key={i} className="flex items-start gap-2.5">
+                        <span className="text-gray-400 mt-1 flex-shrink-0 text-xs">•</span>
+                        <Typography.BodySecondary className="flex-1">{shift}</Typography.BodySecondary>
+                      </li>
                     ))}
                   </ul>
-                </div>
+                </Card.Container>
               )}
+
               {data.media_landscape.journalist_interests?.length > 0 && (
-                <div className="bg-cyan-900/20 p-4 rounded-lg border border-cyan-700">
-                  <h3 className="text-cyan-400 font-semibold mb-3">Journalist Interests</h3>
-                  <ul className="space-y-2">
+                <Card.Container
+                  variant="accent"
+                  elevation="medium"
+                  className="p-5"
+                  style={{  }}
+                >
+                  <Typography.SubsectionHeader color="var(--mauve)">
+                    Journalist Interests
+                  </Typography.SubsectionHeader>
+                  <ul className="space-y-2.5 mt-3">
                     {data.media_landscape.journalist_interests.map((interest: string, i: number) => (
-                      <li key={i} className="text-gray-300 text-sm">📰 {interest}</li>
+                      <li key={i} className="flex items-start gap-2.5">
+                        <span className="mt-1 flex-shrink-0 opacity-50">→</span>
+                        <Typography.BodySecondary className="flex-1">{interest}</Typography.BodySecondary>
+                      </li>
                     ))}
                   </ul>
-                </div>
+                </Card.Container>
               )}
-            </div>
-          </div>
+            </Layout.Masonry>
+          </Section>
         )}
 
-        {/* PR Actions */}
+        {/* PR Action Items - Layered with elevation hierarchy */}
         {data.pr_actions && (
-          <div className="bg-gray-900 rounded-xl p-6 border-2 border-cyan-800">
-            <div className="flex items-center mb-6">
-              <Megaphone className="w-6 h-6 text-cyan-400 mr-3" />
-              <h2 className="text-xl font-bold text-white">PR Action Items</h2>
-              <span className="ml-auto text-xs bg-cyan-900/50 text-cyan-300 px-3 py-1 rounded-full">
-                Time-Based Priorities
-              </span>
+          <Section variant="elevated">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+              <Typography.SectionHeader icon={Megaphone} className="mb-0">
+                PR Action Items
+              </Typography.SectionHeader>
+              <Typography.Caption>Time-Based Priorities</Typography.Caption>
             </div>
-            <div className="grid md:grid-cols-3 gap-4">
+
+            <div className="space-y-5">
               {data.pr_actions.immediate?.length > 0 && (
-                <div className="bg-red-900/10 rounded-lg p-4 border border-red-600">
-                  <h3 className="text-red-400 font-semibold mb-3">🔥 Next 24-48 Hours</h3>
-                  <ul className="space-y-2">
+                <Card.Container variant="critical" elevation="high" className="p-5" style={{ transform: 'translateX(-6px)' }}>
+                  <Typography.SubsectionHeader color="#ff4444">
+                    Next 24-48 Hours
+                  </Typography.SubsectionHeader>
+                  <ul className="space-y-2.5 mt-3">
                     {data.pr_actions.immediate.map((action: string, i: number) => (
-                      <li key={i} className="text-gray-300 text-sm">• {action}</li>
+                      <li key={i} className="flex items-start gap-2.5">
+                        <span className="text-gray-400 mt-1 flex-shrink-0 text-xs">•</span>
+                        <Typography.BodySecondary className="flex-1">{action}</Typography.BodySecondary>
+                      </li>
                     ))}
                   </ul>
-                </div>
+                </Card.Container>
               )}
-              {data.pr_actions.this_week?.length > 0 && (
-                <div className="bg-yellow-900/10 rounded-lg p-4 border border-yellow-600">
-                  <h3 className="text-yellow-400 font-semibold mb-3">📅 This Week</h3>
-                  <ul className="space-y-2">
-                    {data.pr_actions.this_week.map((action: string, i: number) => (
-                      <li key={i} className="text-gray-300 text-sm">• {action}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {data.pr_actions.strategic?.length > 0 && (
-                <div className="bg-purple-900/10 rounded-lg p-4 border border-purple-600">
-                  <h3 className="text-purple-400 font-semibold mb-3">🎯 Strategic</h3>
-                  <ul className="space-y-2">
-                    {data.pr_actions.strategic.map((action: string, i: number) => (
-                      <li key={i} className="text-gray-300 text-sm">• {action}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+
+              <Layout.Staggered>
+                {data.pr_actions.this_week?.length > 0 && (
+                  <Card.Container variant="accent" elevation="medium" className="p-5 flex-1">
+                    <Typography.SubsectionHeader color="var(--mauve)">
+                      This Week
+                    </Typography.SubsectionHeader>
+                    <ul className="space-y-2.5 mt-3">
+                      {data.pr_actions.this_week.map((action: string, i: number) => (
+                        <li key={i} className="flex items-start gap-2.5">
+                          <span className="text-gray-400 mt-1 flex-shrink-0 text-xs">•</span>
+                          <Typography.BodySecondary className="flex-1">{action}</Typography.BodySecondary>
+                        </li>
+                      ))}
+                    </ul>
+                  </Card.Container>
+                )}
+
+                {data.pr_actions.strategic?.length > 0 && (
+                  <Card.Container
+                    variant="accent"
+                    elevation="medium"
+                    className="p-5 flex-1"
+                    style={{ transform: 'translateY(10px)' }}
+                  >
+                    <Typography.SubsectionHeader color="var(--mauve-light)">
+                      Strategic
+                    </Typography.SubsectionHeader>
+                    <ul className="space-y-2.5 mt-3">
+                      {data.pr_actions.strategic.map((action: string, i: number) => (
+                        <li key={i} className="flex items-start gap-2.5">
+                          <span className="text-gray-400 mt-1 flex-shrink-0 text-xs">•</span>
+                          <Typography.BodySecondary className="flex-1">{action}</Typography.BodySecondary>
+                        </li>
+                      ))}
+                    </ul>
+                  </Card.Container>
+                )}
+              </Layout.Staggered>
             </div>
-          </div>
+          </Section>
         )}
 
-        {/* Risk Alerts */}
+        {/* Risk Monitoring - Asymmetric masonry with high elevation */}
         {data.risk_alerts && (
-          <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
-            <div className="flex items-center mb-6">
-              <AlertTriangle className="w-6 h-6 text-orange-400 mr-3" />
-              <h2 className="text-xl font-bold text-white">Risk Monitoring</h2>
-            </div>
-            <div className="grid md:grid-cols-3 gap-4">
+          <Section variant="minimal">
+            <Typography.SectionHeader icon={AlertTriangle}>Risk Monitoring</Typography.SectionHeader>
+            <Layout.Masonry className="mt-6">
               {data.risk_alerts.crisis_signals?.length > 0 && (
-                <div className="bg-orange-900/20 p-4 rounded-lg border border-orange-700">
-                  <h3 className="text-orange-400 font-semibold mb-3">Crisis Signals</h3>
-                  <ul className="space-y-2">
+                <Card.Container
+                  variant="warning"
+                  elevation="high"
+                  className="p-5"
+                  style={{  }}
+                >
+                  <Typography.SubsectionHeader color="#ffa500">
+                    Crisis Signals
+                  </Typography.SubsectionHeader>
+                  <ul className="space-y-2.5 mt-3">
                     {data.risk_alerts.crisis_signals.map((signal: string, i: number) => (
-                      <li key={i} className="text-gray-300 text-sm">⚠️ {signal}</li>
+                      <li key={i} className="flex items-start gap-2.5">
+                        <span className="mt-1 flex-shrink-0 opacity-60">!</span>
+                        <Typography.BodySecondary className="flex-1">{signal}</Typography.BodySecondary>
+                      </li>
                     ))}
                   </ul>
-                </div>
+                </Card.Container>
               )}
+
               {data.risk_alerts.reputation_threats?.length > 0 && (
-                <div className="bg-red-900/20 p-4 rounded-lg border border-red-700">
-                  <h3 className="text-red-400 font-semibold mb-3">Reputation Threats</h3>
-                  <ul className="space-y-2">
+                <Card.Container
+                  variant="critical"
+                  elevation="raised"
+                  className="p-5"
+                  style={{  }}
+                >
+                  <Typography.SubsectionHeader color="#ff4444">
+                    Reputation Threats
+                  </Typography.SubsectionHeader>
+                  <ul className="space-y-2.5 mt-3">
                     {data.risk_alerts.reputation_threats.map((threat: string, i: number) => (
-                      <li key={i} className="text-gray-300 text-sm">🎯 {threat}</li>
+                      <li key={i} className="flex items-start gap-2.5">
+                        <span className="mt-1 flex-shrink-0 opacity-60">×</span>
+                        <Typography.BodySecondary className="flex-1">{threat}</Typography.BodySecondary>
+                      </li>
                     ))}
                   </ul>
-                </div>
+                </Card.Container>
               )}
+
               {data.risk_alerts.mitigation_steps?.length > 0 && (
-                <div className="bg-green-900/20 p-4 rounded-lg border border-green-700">
-                  <h3 className="text-green-400 font-semibold mb-3">Mitigation Steps</h3>
-                  <ul className="space-y-2">
+                <Card.Container
+                  variant="accent"
+                  elevation="medium"
+                  className="p-5"
+                  style={{  }}
+                >
+                  <Typography.SubsectionHeader color="var(--mauve-light)">
+                    Mitigation Steps
+                  </Typography.SubsectionHeader>
+                  <ul className="space-y-2.5 mt-3">
                     {data.risk_alerts.mitigation_steps.map((step: string, i: number) => (
-                      <li key={i} className="text-gray-300 text-sm">✓ {step}</li>
+                      <li key={i} className="flex items-start gap-2.5">
+                        <span className="mt-1 flex-shrink-0 opacity-50">→</span>
+                        <Typography.BodySecondary className="flex-1">{step}</Typography.BodySecondary>
+                      </li>
                     ))}
                   </ul>
-                </div>
+                </Card.Container>
               )}
-            </div>
-          </div>
+            </Layout.Masonry>
+          </Section>
         )}
 
-        {/* Metadata */}
+        {/* Metadata - Frosted footer */}
         {synthesis.metadata && (
-          <div className="flex justify-between items-center px-4 py-2 bg-gray-900 rounded-lg border border-gray-800 text-xs text-gray-500">
-            <span>Analysis Date: {new Date(synthesis.metadata.timestamp || synthesis.metadata.analysis_date).toLocaleString()}</span>
-            <span>Events Analyzed: {synthesis.metadata.events_analyzed || synthesis.metadata.articles_analyzed || 0}</span>
+          <div
+            className="relative overflow-hidden flex flex-wrap justify-between items-center gap-4 px-5 py-3 rounded-lg border"
+            style={{
+              background: 'linear-gradient(135deg, rgba(17, 17, 20, 0.5), rgba(17, 17, 20, 0.3))',
+              borderImage: 'linear-gradient(135deg, rgba(184, 160, 200, 0.15), rgba(184, 160, 200, 0.08)) 1',
+              boxShadow: `${shadows.inset}, inset 0 0 20px rgba(184, 160, 200, 0.02)`,
+              
+            }}
+          >
+            {/* Subtle dot grid */}
+            <DotGridPattern />
+
+            {/* Edge highlight */}
+            <div
+              className="absolute top-0 left-0 right-0 h-px pointer-events-none"
+              style={{ background: 'linear-gradient(90deg, transparent, rgba(184, 160, 200, 0.08), transparent)' }}
+            />
+
+            <Typography.Caption>
+              Analysis Date: {new Date(synthesis.metadata.timestamp || synthesis.metadata.analysis_date).toLocaleString()}
+            </Typography.Caption>
+            <Typography.Caption>
+              Events Analyzed: {synthesis.metadata.events_analyzed || synthesis.metadata.articles_analyzed || 0}
+            </Typography.Caption>
           </div>
         )}
       </div>
@@ -471,197 +1054,263 @@ const IntelligenceSynthesisDisplay: React.FC<IntelligenceSynthesisDisplayProps> 
 
   // Fall back to original display for old format
   return (
-    <div className="space-y-6">
-      {/* Section 1: Top Developments */}
+    <div className="space-y-7">
+      {/* Include noise filters globally */}
+      <NoiseFilter />
+      {/* Top Developments - Interactive cards with depth */}
       {data.top_developments && data.top_developments.length > 0 && (
-        <div className="bg-gray-900 rounded-xl p-6 border-2 border-cyan-800">
-          <div className="flex items-center mb-6">
-            <TrendingUp className="w-6 h-6 text-cyan-400 mr-3" />
-            <h2 className="text-xl font-bold text-white">Top Developments</h2>
-            <span className="ml-auto text-xs bg-cyan-900/50 text-cyan-300 px-3 py-1 rounded-full">
-              This Week's Key Events
-            </span>
+        <Section variant="elevated">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+            <Typography.SectionHeader icon={TrendingUp} className="mb-0">
+              Top Developments
+            </Typography.SectionHeader>
+            <Typography.Caption>This Week's Key Events</Typography.Caption>
           </div>
 
           <div className="space-y-4">
             {data.top_developments.map((dev: any, i: number) => (
-              <div
+              <Card.Container
                 key={i}
-                className={`bg-gray-800/50 rounded-lg border transition-all cursor-pointer ${
-                  expandedDevelopment === i ? 'border-cyan-600 bg-gray-800' : 'border-gray-700 hover:border-gray-600'
-                }`}
+                variant={expandedDevelopment === i ? 'accent' : 'glass'}
+                elevation={expandedDevelopment === i ? 'high' : 'medium'}
+                className="cursor-pointer transition-all duration-300 hover:scale-[1.005]"
+                style={{
+                  transform: `translateX(${i % 2 === 0 ? '-3px' : '3px'})`,
+                }}
                 onClick={() => setExpandedDevelopment(expandedDevelopment === i ? null : i)}
               >
-                <div className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-cyan-400 font-bold">#{i + 1}</span>
+                <div className="p-5">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 mb-3 flex-wrap">
+                        <span
+                          className="text-[18px] font-extralight opacity-30"
+                          style={{ fontVariantNumeric: 'tabular-nums' }}
+                        >
+                          {String(i + 1).padStart(2, '0')}
+                        </span>
                         {dev.entity && (
-                          <span className="text-xs bg-blue-900/50 text-blue-300 px-2 py-0.5 rounded">
+                          <span
+                            className="text-[9px] font-normal uppercase tracking-[0.1em] px-3 py-1.5 rounded-full border"
+                            style={{
+                              background: 'rgba(255, 255, 255, 0.03)',
+                              borderColor: 'rgba(255, 255, 255, 0.1)',
+                              color: 'var(--mauve)',
+                            }}
+                          >
                             {dev.entity}
                           </span>
                         )}
                       </div>
-                      <h3 className="text-white font-semibold text-lg mb-2">{dev.headline}</h3>
+                      <Typography.CardTitle className="mb-3">{dev.headline}</Typography.CardTitle>
 
                       {expandedDevelopment === i && (
                         <>
-                          <p className="text-gray-300 mb-3">{dev.details}</p>
+                          <Typography.BodyPrimary className="mb-4">{dev.details}</Typography.BodyPrimary>
                           {dev.impact && (
-                            <div className="bg-gray-900/50 rounded p-3 border border-gray-700">
-                              <div className="flex items-center text-yellow-400 text-sm mb-1">
-                                <AlertTriangle className="w-4 h-4 mr-2" />
-                                Impact
+                            <Card.Container variant="accent" elevation="low" className="p-4">
+                              <div className="flex items-center gap-2 mb-2">
+                                <AlertTriangle className="w-3.5 h-3.5" style={{ color: 'var(--mauve)' }} />
+                                <Typography.SubsectionHeader className="mb-0">Impact</Typography.SubsectionHeader>
                               </div>
-                              <p className="text-gray-300 text-sm">{dev.impact}</p>
-                            </div>
+                              <Typography.BodySecondary>{dev.impact}</Typography.BodySecondary>
+                            </Card.Container>
                           )}
                         </>
                       )}
                     </div>
-                    <ChevronRight className={`w-5 h-5 text-gray-500 transform transition-transform ${
-                      expandedDevelopment === i ? 'rotate-90' : ''
-                    }`} />
+                    <ChevronRight
+                      className={`w-4 h-4 text-gray-500 flex-shrink-0 transform transition-transform mt-1 ${
+                        expandedDevelopment === i ? 'rotate-90' : ''
+                      }`}
+                    />
                   </div>
                 </div>
-              </div>
+              </Card.Container>
             ))}
           </div>
-        </div>
+        </Section>
       )}
 
-      {/* Section 2: Narratives and Insights */}
+      {/* Narratives and Insights - Asymmetric masonry */}
       {data.narratives_and_insights && (
-        <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
-          <div className="flex items-center mb-6">
-            <Lightbulb className="w-6 h-6 text-yellow-400 mr-3" />
-            <h2 className="text-xl font-bold text-white">Narratives & Insights</h2>
-          </div>
+        <Section variant="minimal">
+          <Typography.SectionHeader icon={Lightbulb}>Narratives & Insights</Typography.SectionHeader>
 
-          <div className="grid md:grid-cols-2 gap-4">
+          <Layout.Masonry className="mt-6">
             {data.narratives_and_insights.dominant_narrative && (
-              <div className="bg-purple-900/20 p-4 rounded-lg border border-purple-700">
-                <h3 className="text-purple-400 font-semibold mb-2 flex items-center">
-                  <MessageSquare className="w-4 h-4 mr-2" />
-                  Dominant Narrative
-                </h3>
-                <p className="text-gray-300">{data.narratives_and_insights.dominant_narrative}</p>
-              </div>
+              <Card.Container
+                variant="accent"
+                elevation="medium"
+                className="p-5"
+                style={{  }}
+              >
+                <div className="flex items-center gap-2.5 mb-3">
+                  <MessageSquare className="w-4 h-4" style={{ color: 'var(--mauve)' }} />
+                  <Typography.SubsectionHeader className="mb-0" color="var(--mauve)">
+                    Dominant Narrative
+                  </Typography.SubsectionHeader>
+                </div>
+                <Typography.BodyPrimary>{data.narratives_and_insights.dominant_narrative}</Typography.BodyPrimary>
+              </Card.Container>
             )}
 
             {data.narratives_and_insights.hidden_patterns && (
-              <div className="bg-blue-900/20 p-4 rounded-lg border border-blue-700">
-                <h3 className="text-blue-400 font-semibold mb-2 flex items-center">
-                  <Eye className="w-4 h-4 mr-2" />
-                  Hidden Patterns
-                </h3>
-                <p className="text-gray-300">{data.narratives_and_insights.hidden_patterns}</p>
-              </div>
+              <Card.Container
+                variant="accent"
+                elevation="medium"
+                className="p-5"
+                style={{  }}
+              >
+                <div className="flex items-center gap-2.5 mb-3">
+                  <Eye className="w-4 h-4" style={{ color: 'var(--mauve-light)' }} />
+                  <Typography.SubsectionHeader className="mb-0" color="var(--mauve-light)">
+                    Hidden Patterns
+                  </Typography.SubsectionHeader>
+                </div>
+                <Typography.BodyPrimary>{data.narratives_and_insights.hidden_patterns}</Typography.BodyPrimary>
+              </Card.Container>
             )}
 
             {data.narratives_and_insights.market_direction && (
-              <div className="bg-green-900/20 p-4 rounded-lg border border-green-700">
-                <h3 className="text-green-400 font-semibold mb-2 flex items-center">
-                  <TrendingUp className="w-4 h-4 mr-2" />
-                  Market Direction
-                </h3>
-                <p className="text-gray-300">{data.narratives_and_insights.market_direction}</p>
-              </div>
+              <Card.Container
+                variant="accent"
+                elevation="medium"
+                className="p-5"
+                style={{  }}
+              >
+                <div className="flex items-center gap-2.5 mb-3">
+                  <TrendingUp className="w-4 h-4" style={{ color: 'var(--mauve)' }} />
+                  <Typography.SubsectionHeader className="mb-0" color="var(--mauve)">
+                    Market Direction
+                  </Typography.SubsectionHeader>
+                </div>
+                <Typography.BodyPrimary>{data.narratives_and_insights.market_direction}</Typography.BodyPrimary>
+              </Card.Container>
             )}
 
             {data.narratives_and_insights.power_dynamics && (
-              <div className="bg-orange-900/20 p-4 rounded-lg border border-orange-700">
-                <h3 className="text-orange-400 font-semibold mb-2">Power Dynamics</h3>
-                <p className="text-gray-300">{data.narratives_and_insights.power_dynamics}</p>
-              </div>
+              <Card.Container
+                variant="accent"
+                elevation="medium"
+                className="p-5"
+                style={{  }}
+              >
+                <Typography.SubsectionHeader color="var(--mauve)">Power Dynamics</Typography.SubsectionHeader>
+                <Typography.BodyPrimary className="mt-3">{data.narratives_and_insights.power_dynamics}</Typography.BodyPrimary>
+              </Card.Container>
             )}
-          </div>
-        </div>
+          </Layout.Masonry>
+        </Section>
       )}
 
-      {/* Section 3: PR Implications */}
+      {/* PR Implications - Staggered and masonry mix */}
       {data.pr_implications && (
-        <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
-          <div className="flex items-center mb-6">
-            <Megaphone className="w-6 h-6 text-red-400 mr-3" />
-            <h2 className="text-xl font-bold text-white">PR Implications</h2>
-          </div>
+        <Section variant="elevated">
+          <Typography.SectionHeader icon={Megaphone}>PR Implications</Typography.SectionHeader>
 
-          <div className="grid md:grid-cols-2 gap-4">
-            {/* Opportunities */}
+          <Layout.Masonry className="mt-6">
             {data.pr_implications.immediate_opportunities && data.pr_implications.immediate_opportunities.length > 0 && (
-              <div className="bg-green-900/10 rounded-lg p-4 border border-green-800">
-                <h3 className="text-green-400 font-semibold mb-3 flex items-center">
-                  <Target className="w-4 h-4 mr-2" />
-                  Immediate Opportunities
-                </h3>
-                <div className="space-y-2">
+              <Card.Container variant="accent" elevation="high" className="p-5" style={{  }}>
+                <div className="flex items-center gap-2.5 mb-3">
+                  <Target className="w-4 h-4" style={{ color: 'var(--mauve-light)' }} />
+                  <Typography.SubsectionHeader className="mb-0" color="var(--mauve-light)">
+                    Immediate Opportunities
+                  </Typography.SubsectionHeader>
+                </div>
+                <ul className="space-y-2.5">
                   {data.pr_implications.immediate_opportunities.map((opp: string, i: number) => (
-                    <div key={i} className="flex items-start">
-                      <ChevronRight className="w-4 h-4 text-green-400 mt-0.5 mr-2 flex-shrink-0" />
-                      <p className="text-gray-300 text-sm">{opp}</p>
-                    </div>
+                    <Card.ListItem key={i} icon={ChevronRight} iconColor="var(--mauve-light)">
+                      {opp}
+                    </Card.ListItem>
                   ))}
-                </div>
-              </div>
+                </ul>
+              </Card.Container>
             )}
 
-            {/* Threats */}
             {data.pr_implications.narrative_threats && data.pr_implications.narrative_threats.length > 0 && (
-              <div className="bg-red-900/10 rounded-lg p-4 border border-red-800">
-                <h3 className="text-red-400 font-semibold mb-3 flex items-center">
-                  <AlertTriangle className="w-4 h-4 mr-2" />
-                  Narrative Threats
-                </h3>
-                <div className="space-y-2">
+              <Card.Container variant="critical" elevation="raised" className="p-5" style={{  }}>
+                <div className="flex items-center gap-2.5 mb-3">
+                  <AlertTriangle className="w-4 h-4" style={{ color: '#ff4444' }} />
+                  <Typography.SubsectionHeader className="mb-0" color="#ff4444">
+                    Narrative Threats
+                  </Typography.SubsectionHeader>
+                </div>
+                <ul className="space-y-2.5">
                   {data.pr_implications.narrative_threats.map((threat: string, i: number) => (
-                    <div key={i} className="flex items-start">
-                      <ChevronRight className="w-4 h-4 text-red-400 mt-0.5 mr-2 flex-shrink-0" />
-                      <p className="text-gray-300 text-sm">{threat}</p>
-                    </div>
+                    <Card.ListItem key={i} icon={ChevronRight} iconColor="#ff4444">
+                      {threat}
+                    </Card.ListItem>
                   ))}
-                </div>
-              </div>
+                </ul>
+              </Card.Container>
             )}
 
-            {/* Positioning */}
             {data.pr_implications.positioning_recommendations && data.pr_implications.positioning_recommendations.length > 0 && (
-              <div className="bg-cyan-900/10 rounded-lg p-4 border border-cyan-800">
-                <h3 className="text-cyan-400 font-semibold mb-3">Positioning Recommendations</h3>
-                <div className="space-y-2">
+              <Card.Container variant="accent" elevation="medium" className="p-5" style={{  }}>
+                <Typography.SubsectionHeader color="var(--mauve)">
+                  Positioning Recommendations
+                </Typography.SubsectionHeader>
+                <ul className="space-y-2.5 mt-3">
                   {data.pr_implications.positioning_recommendations.map((rec: string, i: number) => (
-                    <div key={i} className="flex items-start">
-                      <span className="text-cyan-400 mr-2">→</span>
-                      <p className="text-gray-300 text-sm">{rec}</p>
-                    </div>
+                    <li key={i} className="flex items-start gap-2.5">
+                      <span className="text-gray-400 mt-1 flex-shrink-0 opacity-50">→</span>
+                      <Typography.BodySecondary className="flex-1">{rec}</Typography.BodySecondary>
+                    </li>
                   ))}
-                </div>
-              </div>
+                </ul>
+              </Card.Container>
             )}
 
-            {/* Key Messages */}
             {data.pr_implications.key_messages && data.pr_implications.key_messages.length > 0 && (
-              <div className="bg-purple-900/10 rounded-lg p-4 border border-purple-800">
-                <h3 className="text-purple-400 font-semibold mb-3">Key Messages</h3>
-                <div className="space-y-2">
+              <Card.Container variant="accent" elevation="medium" className="p-5" style={{  }}>
+                <Typography.SubsectionHeader color="var(--mauve)">Key Messages</Typography.SubsectionHeader>
+                <div className="space-y-3 mt-3">
                   {data.pr_implications.key_messages.map((msg: string, i: number) => (
-                    <div key={i} className="p-2 bg-purple-900/20 rounded">
-                      <p className="text-gray-300 text-sm italic">"{msg}"</p>
+                    <div
+                      key={i}
+                      className="p-3.5 rounded-lg border"
+                      style={{
+                        background: 'rgba(184, 160, 200, 0.06)',
+                        borderColor: 'rgba(184, 160, 200, 0.15)',
+                      }}
+                    >
+                      <Typography.BodySecondary className="italic">"{msg}"</Typography.BodySecondary>
                     </div>
                   ))}
                 </div>
-              </div>
+              </Card.Container>
             )}
-          </div>
-        </div>
+          </Layout.Masonry>
+        </Section>
       )}
 
-      {/* Metadata */}
+      {/* Metadata - Frosted footer */}
       {synthesis.metadata && (
-        <div className="flex justify-between items-center px-4 py-2 bg-gray-900 rounded-lg border border-gray-800 text-xs text-gray-500">
-          <span>Analysis Date: {new Date(synthesis.metadata.timestamp || synthesis.metadata.analysis_date).toLocaleString()}</span>
-          <span>Events Analyzed: {synthesis.metadata.events_analyzed || synthesis.metadata.articles_analyzed || 0}</span>
+        <div
+          className="relative overflow-hidden flex flex-wrap justify-between items-center gap-4 px-5 py-3 rounded-lg border"
+          style={{
+            background: 'linear-gradient(135deg, rgba(17, 17, 20, 0.5), rgba(17, 17, 20, 0.3))',
+            borderImage: 'linear-gradient(135deg, rgba(184, 160, 200, 0.15), rgba(184, 160, 200, 0.08)) 1',
+            boxShadow: `${shadows.inset}, inset 0 0 20px rgba(184, 160, 200, 0.02)`,
+            
+          }}
+        >
+          {/* Subtle dot grid */}
+          <DotGridPattern />
+
+          {/* Edge highlight */}
+          <div
+            className="absolute top-0 left-0 right-0 h-px pointer-events-none"
+            style={{ background: 'linear-gradient(90deg, transparent, rgba(184, 160, 200, 0.08), transparent)' }}
+          />
+
+          <Typography.Caption>
+            Analysis Date: {new Date(synthesis.metadata.timestamp || synthesis.metadata.analysis_date).toLocaleString()}
+          </Typography.Caption>
+          <Typography.Caption>
+            Events Analyzed: {synthesis.metadata.events_analyzed || synthesis.metadata.articles_analyzed || 0}
+          </Typography.Caption>
         </div>
       )}
     </div>

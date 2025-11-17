@@ -1410,6 +1410,14 @@ function structureFinalProfile(profileData: any, organization_name: string) {
       strategic_priorities: []
     },
 
+    // CRITICAL: Company profile for enrichment/synthesis context
+    company_profile: {
+      business_model: profileData.business_model || '',
+      product_lines: profileData.product_lines || [],
+      key_markets: profileData.key_markets || profileData.market?.key_markets || [],
+      strategic_goals: profileData.strategic_goals || profileData.strategic_context?.strategic_priorities || []
+    },
+
     // Topics removed - not effective for monitoring
     topics: [],
     
