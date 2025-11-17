@@ -75,6 +75,46 @@ export const JOURNALIST_REGISTRY = {
       { name: 'Senior Strategy Reporter', outlet: 'Ars Technica', beat: 'Strategy', twitter: '@arstechnica', email: 'tips@arstechnica.com' }
     ],
     tier2: []
+  },
+
+  // FINTECH / BANKING
+  fintech: {
+    tier1: [
+      // WSJ Banking/Fintech
+      { name: 'AnnaMaria Andriotis', outlet: 'Wall Street Journal', beat: 'Consumer Finance & Credit Cards', twitter: '@AnnaMaria', email: 'annamaria.andriotis@wsj.com' },
+      { name: 'Peter Rudegeair', outlet: 'Wall Street Journal', beat: 'Banking & Finance', twitter: '@rudegeair', email: 'peter.rudegeair@wsj.com' },
+      { name: 'David Benoit', outlet: 'Wall Street Journal', beat: 'Banking Industry', twitter: '@DavidBenoit', email: 'david.benoit@wsj.com' },
+
+      // Bloomberg Banking/Fintech
+      { name: 'Sridhar Natarajan', outlet: 'Bloomberg', beat: 'Fintech & Digital Banking', twitter: '@sridnews', email: 'snatarajan52@bloomberg.net' },
+      { name: 'Gillian Tan', outlet: 'Bloomberg', beat: 'Finance & Deals', twitter: '@gillianwtan', email: 'gtan10@bloomberg.net' },
+      { name: 'Sonali Basak', outlet: 'Bloomberg', beat: 'Wall Street & Banking', twitter: '@sonalibasak', email: 'sbasak4@bloomberg.net' },
+
+      // NYT Finance
+      { name: 'Emily Flitter', outlet: 'New York Times', beat: 'Banking & Finance', twitter: '@FlitterOnFraud', email: 'emily.flitter@nytimes.com' },
+      { name: 'Nathaniel Popper', outlet: 'New York Times', beat: 'Fintech & Crypto', twitter: '@nathanielpopper', email: 'nathaniel.popper@nytimes.com' },
+
+      // American Banker
+      { name: 'Penny Crosman', outlet: 'American Banker', beat: 'Banking Technology', twitter: '@PennyCrosman', email: 'penny.crosman@arizent.com' },
+      { name: 'Kate Fitzgerald', outlet: 'American Banker', beat: 'Payments & Fintech', twitter: '@katefitzgeraldb', email: 'kate.fitzgerald@arizent.com' },
+
+      // TechCrunch Fintech
+      { name: 'Mary Ann Azevedo', outlet: 'TechCrunch', beat: 'Fintech & Venture Capital', twitter: '@MaryAnnAzevedo', email: 'maryann@techcrunch.com' },
+
+      // The Information Fintech
+      { name: 'Tom Dotan', outlet: 'The Information', beat: 'Fintech & Payments', twitter: '@cityofthetown', email: 'tom@theinformation.com' },
+
+      // Reuters Finance
+      { name: 'Elizabeth Dilts Marshall', outlet: 'Reuters', beat: 'Banking & Regulation', twitter: '@ediltsmarshal', email: 'elizabeth.diltsmarshall@reuters.com' },
+
+      // FT Banking
+      { name: 'Robert Armstrong', outlet: 'Financial Times', beat: 'Finance & Markets', twitter: '@robertarmstrong', email: 'robert.armstrong@ft.com' },
+      { name: 'Sujeet Indap', outlet: 'Financial Times', beat: 'Banking & M&A', twitter: '@sujeetindap', email: 'sujeet.indap@ft.com' }
+    ],
+    tier2: [
+      { name: 'Ron Shevlin', outlet: 'Forbes', beat: 'Banking & Fintech Strategy', twitter: '@rshevlin', email: 'rshevlin@forbes.com' },
+      { name: 'Jason Mikula', outlet: 'Fintech Business Weekly', beat: 'Fintech Analysis', twitter: '@jasonmikula', email: 'jason@fintechbusinessweekly.com' }
+    ]
   }
 };
 
