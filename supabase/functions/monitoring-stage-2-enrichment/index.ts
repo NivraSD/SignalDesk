@@ -106,7 +106,8 @@ async function analyzeWithClaude(articlesWithContent: any[], profile: any, orgNa
   try {
     console.log(`🤖 Using Claude to deeply analyze ${articlesWithContent.length} full-content articles...`);
 
-    // Get intelligence context if available
+    // Extract company profile and intelligence context
+    const companyProfile = profile?.company_profile || {};
     const intelligenceContext = profile?.intelligence_context;
 
     // Prepare discovery targets - FULLY DYNAMIC
