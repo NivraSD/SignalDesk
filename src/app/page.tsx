@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { createAuthClient } from '@/lib/supabase/auth-client'
-import { Brain, Target, Shield, Database, Sparkles, TrendingUp, Zap, Globe, AlertTriangle } from 'lucide-react'
+import { Brain, Target, Shield, Database, Sparkles, TrendingUp, Zap, Globe, AlertTriangle, ArrowUpRight } from 'lucide-react'
 
 export default function HomePage() {
   const router = useRouter()
@@ -27,32 +27,46 @@ export default function HomePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-white">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--charcoal)' }}>
+        <div style={{ color: 'var(--pearl)' }}>Loading...</div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
-      {/* Navigation */}
-      <nav className="fixed top-0 w-full bg-gray-900/80 backdrop-blur-sm border-b border-gray-800 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-2">
-              <Brain className="w-8 h-8 text-blue-500" />
-              <span className="text-2xl font-bold">SignalDesk</span>
+    <div className="min-h-screen" style={{ background: 'var(--charcoal)', color: 'var(--pearl)' }}>
+      {/* Navigation - Asymmetric */}
+      <nav className="fixed top-0 w-full z-50 backdrop-blur-md" style={{
+        background: 'rgba(26, 26, 26, 0.95)',
+        borderBottom: '1px solid var(--border)'
+      }}>
+        <div className="offset-container">
+          <div className="flex justify-between items-center h-20">
+            <div className="flex items-center">
+              <div className="px-6 py-2 flex items-center justify-center" style={{
+                background: 'var(--mauve)',
+                clipPath: 'polygon(0 0, 100% 0, 90% 100%, 0% 100%)'
+              }}>
+                <span className="text-xl font-light tracking-tight" style={{ color: 'var(--pearl)' }}>Nivria</span>
+              </div>
             </div>
-            <div className="flex space-x-4">
+            <div className="flex items-center space-x-6">
               <button
                 onClick={() => router.push('/auth/login')}
-                className="px-4 py-2 text-gray-300 hover:text-white transition-colors"
+                className="text-sm font-light tracking-wide transition-colors"
+                style={{ color: 'var(--pearl)' }}
+                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--mauve)'}
+                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--pearl)'}
               >
                 Sign In
               </button>
               <button
                 onClick={() => router.push('/auth/signup')}
-                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors"
+                className="px-6 py-2.5 text-sm font-light tracking-wide border-glow"
+                style={{
+                  background: 'var(--mauve)',
+                  color: 'var(--pearl)'
+                }}
               >
                 Get Started
               </button>
@@ -61,231 +75,301 @@ export default function HomePage() {
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="pt-32 pb-20 px-4">
-        <div className="max-w-7xl mx-auto text-center">
-          <div className="inline-block mb-6 px-4 py-2 bg-blue-900/30 border border-blue-700 rounded-full text-blue-300 text-sm">
-            Intelligence-Driven Communications Platform
+      {/* Hero Section - Asymmetric Layout */}
+      <section className="pt-40 pb-32 offset-container">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+          {/* Main Content - 70% */}
+          <div className="lg:col-span-8">
+            <div className="mb-8 inline-block px-4 py-1.5 text-xs font-light tracking-widest uppercase" style={{
+              border: '1px solid var(--border-accent)',
+              color: 'var(--mauve)'
+            }}>
+              Autonomous Intelligence → Strategy → Execution
+            </div>
+            <h1 className="mb-8 font-light" style={{ color: 'var(--pearl)' }}>
+              Your Always-On<br />Strategic Partner
+            </h1>
+            <div className="w-16 h-0.5 mb-8" style={{ background: 'var(--mauve)' }}></div>
+            <p className="text-lg md:text-xl font-light mb-12 max-w-2xl leading-relaxed" style={{
+              color: 'var(--pearl)',
+              letterSpacing: '-0.01em'
+            }}>
+              Nivria is an autonomous operating system that orchestrates influence across human and machine—creating
+              novel strategies, executing campaigns with one click, and learning from every interaction.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <button
+                onClick={() => router.push('/auth/signup')}
+                className="group px-8 py-4 text-sm font-light tracking-wide border-glow inline-flex items-center justify-center"
+                style={{
+                  background: 'var(--mauve)',
+                  color: 'var(--pearl)'
+                }}
+              >
+                Start Creating
+                <ArrowUpRight className="ml-2 w-4 h-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+              </button>
+              <button
+                onClick={() => router.push('/auth/login')}
+                className="px-8 py-4 text-sm font-light tracking-wide transition-all inline-flex items-center justify-center"
+                style={{
+                  border: '1px solid var(--border)',
+                  color: 'var(--pearl)'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--border-accent)'
+                  e.currentTarget.style.background = 'var(--charcoal-light)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--border)'
+                  e.currentTarget.style.background = 'transparent'
+                }}
+              >
+                See It In Action
+              </button>
+            </div>
           </div>
-          <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-            Transform Information Into Strategic Action
-          </h1>
-          <p className="text-xl md:text-2xl text-gray-400 mb-10 max-w-3xl mx-auto">
-            SignalDesk empowers PR and communications teams with real-time intelligence monitoring,
-            crisis detection, and AI-powered strategic planning.
-          </p>
-          <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <button
-              onClick={() => router.push('/auth/signup')}
-              className="px-8 py-4 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium text-lg transition-colors flex items-center justify-center"
-            >
-              Start Free Trial
-              <Sparkles className="ml-2 w-5 h-5" />
-            </button>
-            <button
-              onClick={() => router.push('/auth/login')}
-              className="px-8 py-4 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg font-medium text-lg transition-colors"
-            >
-              View Demo
-            </button>
+
+          {/* Aside - 30% */}
+          <div className="lg:col-span-4 mt-0 lg:mt-6">
+            <div className="space-y-6">
+              <div className="p-6 border-glow" style={{ background: 'var(--charcoal-light)' }}>
+                <div className="text-4xl font-light mb-2" style={{ color: 'var(--mauve)' }}>24/7</div>
+                <div className="text-sm font-light" style={{ color: 'var(--pearl)' }}>
+                  Monitoring for risks and opportunities with action plans automatically generated when detected
+                </div>
+              </div>
+              <div className="p-6 border-glow" style={{ background: 'var(--charcoal-light)' }}>
+                <div className="text-4xl font-light mb-2" style={{ color: 'var(--mauve)' }}>1-Click</div>
+                <div className="text-sm font-light" style={{ color: 'var(--pearl)' }}>
+                  Execute full campaigns—from strategy to content—with minimal effort
+                </div>
+              </div>
+              <div className="p-6 border-glow" style={{ background: 'var(--charcoal-light)' }}>
+                <div className="text-4xl font-light mb-2" style={{ color: 'var(--mauve)' }}>Learning</div>
+                <div className="text-sm font-light" style={{ color: 'var(--pearl)' }}>
+                  Attributes success, leverages organizational context, and continuously improves from every campaign
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Features Grid */}
-      <section className="py-20 px-4 bg-gray-800/30">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">Comprehensive Intelligence Suite</h2>
-            <p className="text-xl text-gray-400">Everything you need to stay ahead of the story</p>
+      {/* Features Section - Diagonal Divide */}
+      <section className="py-32 diagonal-divide" style={{ background: 'var(--charcoal-light)' }}>
+        <div className="offset-container">
+          <div className="mb-20">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+              <div className="lg:col-span-5">
+                <h2 className="font-light mb-4" style={{ color: 'var(--pearl)' }}>
+                  Intelligence → Strategy → Execution
+                </h2>
+              </div>
+              <div className="lg:col-span-7">
+                <p className="text-lg font-light" style={{ color: 'var(--pearl)' }}>
+                  A complete autonomous loop. Nivria monitors, strategizes, creates, executes, and learns—all with minimal input from you.
+                </p>
+              </div>
+            </div>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Feature 1 */}
-            <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 hover:border-blue-600 transition-colors">
-              <div className="w-12 h-12 bg-blue-900/30 border border-blue-700 rounded-lg flex items-center justify-center mb-4">
-                <Brain className="w-6 h-6 text-blue-400" />
-              </div>
-              <h3 className="text-xl font-bold mb-2">Intelligence Monitoring</h3>
-              <p className="text-gray-400">
-                Track news, social media, and regulatory changes in real-time. Get instant alerts
-                on topics that matter to your organization.
+            <div className="p-8 border-glow group" style={{ background: 'var(--charcoal)' }}>
+              <Sparkles className="w-8 h-8 mb-6" style={{ color: 'var(--mauve)' }} />
+              <h3 className="text-xl font-light mb-3" style={{ color: 'var(--pearl)' }}>VECTOR Strategies</h3>
+              <p className="text-sm font-light leading-relaxed" style={{ color: 'var(--pearl)' }}>
+                Novel, data-driven campaign strategies created autonomously. Each one unique,
+                optimized for maximum impact across human and machine audiences.
               </p>
             </div>
 
             {/* Feature 2 */}
-            <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 hover:border-purple-600 transition-colors">
-              <div className="w-12 h-12 bg-purple-900/30 border border-purple-700 rounded-lg flex items-center justify-center mb-4">
-                <Globe className="w-6 h-6 text-purple-400" />
-              </div>
-              <h3 className="text-xl font-bold mb-2">GEO Intelligence</h3>
-              <p className="text-gray-400">
-                Monitor geographic-specific trends and events. Track regional sentiment and
-                emerging patterns across different markets.
+            <div className="p-8 border-glow group" style={{ background: 'var(--charcoal)' }}>
+              <Zap className="w-8 h-8 mb-6" style={{ color: 'var(--mauve)' }} />
+              <h3 className="text-xl font-light mb-3" style={{ color: 'var(--pearl)' }}>One-Click Execution</h3>
+              <p className="text-sm font-light leading-relaxed" style={{ color: 'var(--pearl)' }}>
+                From strategy to fully-executed campaigns in seconds. Content, media lists,
+                pitches, social posts—everything you need, automatically created.
               </p>
             </div>
 
             {/* Feature 3 */}
-            <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 hover:border-red-600 transition-colors">
-              <div className="w-12 h-12 bg-red-900/30 border border-red-700 rounded-lg flex items-center justify-center mb-4">
-                <Shield className="w-6 h-6 text-red-400" />
-              </div>
-              <h3 className="text-xl font-bold mb-2">Crisis Management</h3>
-              <p className="text-gray-400">
-                Detect potential crises before they escalate. Automated alerts and response
-                workflows to protect your reputation.
+            <div className="p-8 border-glow group" style={{ background: 'var(--charcoal)' }}>
+              <Globe className="w-8 h-8 mb-6" style={{ color: 'var(--mauve)' }} />
+              <h3 className="text-xl font-light mb-3" style={{ color: 'var(--pearl)' }}>Human-Machine Nexus</h3>
+              <p className="text-sm font-light leading-relaxed" style={{ color: 'var(--pearl)' }}>
+                Orchestrate influence across traditional PR, AI-powered channels, and emerging
+                platforms. One strategy, infinite reach.
               </p>
             </div>
 
             {/* Feature 4 */}
-            <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 hover:border-green-600 transition-colors">
-              <div className="w-12 h-12 bg-green-900/30 border border-green-700 rounded-lg flex items-center justify-center mb-4">
-                <Target className="w-6 h-6 text-green-400" />
-              </div>
-              <h3 className="text-xl font-bold mb-2">Opportunity Discovery</h3>
-              <p className="text-gray-400">
-                Find speaking opportunities, awards, and partnership possibilities. Never miss
-                a chance to elevate your brand.
+            <div className="p-8 border-glow group" style={{ background: 'var(--charcoal)' }}>
+              <Brain className="w-8 h-8 mb-6" style={{ color: 'var(--mauve)' }} />
+              <h3 className="text-xl font-light mb-3" style={{ color: 'var(--pearl)' }}>Autonomous Learning</h3>
+              <p className="text-sm font-light leading-relaxed" style={{ color: 'var(--pearl)' }}>
+                Continuous improvement from every campaign. Nivria learns what works,
+                adapts to your voice, and gets smarter with each execution.
               </p>
             </div>
 
             {/* Feature 5 */}
-            <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 hover:border-yellow-600 transition-colors">
-              <div className="w-12 h-12 bg-yellow-900/30 border border-yellow-700 rounded-lg flex items-center justify-center mb-4">
-                <Database className="w-6 h-6 text-yellow-400" />
-              </div>
-              <h3 className="text-xl font-bold mb-2">Memory Vault</h3>
-              <p className="text-gray-400">
-                Centralized knowledge repository with semantic search. Access institutional
-                memory and insights instantly.
+            <div className="p-8 border-glow group" style={{ background: 'var(--charcoal)' }}>
+              <Target className="w-8 h-8 mb-6" style={{ color: 'var(--mauve)' }} />
+              <h3 className="text-xl font-light mb-3" style={{ color: 'var(--pearl)' }}>Intelligent Monitoring</h3>
+              <p className="text-sm font-light leading-relaxed" style={{ color: 'var(--pearl)' }}>
+                Always-on intelligence gathering across news, social, and emerging platforms.
+                Opportunities surface automatically, ready for instant action.
               </p>
             </div>
 
             {/* Feature 6 */}
-            <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 hover:border-pink-600 transition-colors">
-              <div className="w-12 h-12 bg-pink-900/30 border border-pink-700 rounded-lg flex items-center justify-center mb-4">
-                <TrendingUp className="w-6 h-6 text-pink-400" />
-              </div>
-              <h3 className="text-xl font-bold mb-2">Strategic Planning</h3>
-              <p className="text-gray-400">
-                AI-powered strategic frameworks and campaign planning. Turn intelligence
-                into actionable communication strategies.
+            <div className="p-8 border-glow group" style={{ background: 'var(--charcoal)' }}>
+              <Database className="w-8 h-8 mb-6" style={{ color: 'var(--mauve)' }} />
+              <h3 className="text-xl font-light mb-3" style={{ color: 'var(--pearl)' }}>Institutional Memory</h3>
+              <p className="text-sm font-light leading-relaxed" style={{ color: 'var(--pearl)' }}>
+                Every insight, strategy, and outcome preserved and accessible. Your organizational
+                knowledge evolves into a strategic asset.
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Use Cases */}
-      <section className="py-20 px-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">Built for Communications Professionals</h2>
-            <p className="text-xl text-gray-400">Trusted by PR teams, communications directors, and crisis managers</p>
+      {/* Use Cases - Asymmetric */}
+      <section className="py-32 offset-container">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
+          <div className="lg:col-span-5">
+            <h2 className="font-light mb-6" style={{ color: 'var(--pearl)' }}>
+              Built for Strategic Leaders
+            </h2>
+            <div className="w-24 h-0.5 mb-6" style={{ background: 'var(--mauve)' }}></div>
+            <p className="text-sm font-light" style={{ color: 'var(--pearl)' }}>
+              Trusted by those who create the future
+            </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-blue-900/30 border border-blue-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Zap className="w-8 h-8 text-blue-400" />
+          <div className="lg:col-span-7 space-y-8">
+            <div className="grid grid-cols-1 gap-8">
+              <div className="border-glow p-8 group" style={{ background: 'var(--charcoal-light)' }}>
+                <Sparkles className="w-10 h-10 mb-4" style={{ color: 'var(--mauve)' }} />
+                <h3 className="text-2xl font-light mb-3" style={{ color: 'var(--pearl)' }}>Visionary Founders</h3>
+                <p className="text-sm font-light leading-relaxed" style={{ color: 'var(--pearl)' }}>
+                  Launch and scale narratives with minimal resources. From stealth to category leadership,
+                  Nivria executes the strategy you envision.
+                </p>
               </div>
-              <h3 className="text-xl font-bold mb-2">PR Teams</h3>
-              <p className="text-gray-400">
-                Monitor media coverage, track journalist interests, and identify
-                story opportunities in real-time.
-              </p>
-            </div>
 
-            <div className="text-center">
-              <div className="w-16 h-16 bg-purple-900/30 border border-purple-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                <AlertTriangle className="w-8 h-8 text-purple-400" />
-              </div>
-              <h3 className="text-xl font-bold mb-2">Crisis Managers</h3>
-              <p className="text-gray-400">
-                Early warning system for potential issues. Rapid response protocols
-                and stakeholder communication tools.
-              </p>
-            </div>
+              <div className="grid md:grid-cols-2 gap-8">
+                <div className="border-glow p-8 group" style={{ background: 'var(--charcoal-light)' }}>
+                  <TrendingUp className="w-10 h-10 mb-4" style={{ color: 'var(--mauve)' }} />
+                  <h3 className="text-2xl font-light mb-3" style={{ color: 'var(--pearl)' }}>Communications Leaders</h3>
+                  <p className="text-sm font-light leading-relaxed" style={{ color: 'var(--pearl)' }}>
+                    Multiply your team's impact. Execute sophisticated campaigns across every channel
+                    without expanding headcount.
+                  </p>
+                </div>
 
-            <div className="text-center">
-              <div className="w-16 h-16 bg-pink-900/30 border border-pink-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Brain className="w-8 h-8 text-pink-400" />
+                <div className="border-glow p-8 group" style={{ background: 'var(--charcoal-light)' }}>
+                  <Brain className="w-10 h-10 mb-4" style={{ color: 'var(--mauve)' }} />
+                  <h3 className="text-2xl font-light mb-3" style={{ color: 'var(--pearl)' }}>Strategic Advisors</h3>
+                  <p className="text-sm font-light leading-relaxed" style={{ color: 'var(--pearl)' }}>
+                    Deliver unprecedented value to clients. Novel strategies and complete execution
+                    at a fraction of traditional timelines.
+                  </p>
+                </div>
               </div>
-              <h3 className="text-xl font-bold mb-2">Strategic Advisors</h3>
-              <p className="text-gray-400">
-                Data-driven insights for executive communications. Competitive
-                intelligence and market positioning analysis.
-              </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-20 px-4 bg-gradient-to-r from-blue-900/30 to-purple-900/30 border-y border-gray-800">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl font-bold mb-6">Ready to Transform Your Communications Strategy?</h2>
-          <p className="text-xl text-gray-400 mb-8">
-            Join forward-thinking organizations using SignalDesk to stay ahead of the story.
-          </p>
-          <button
-            onClick={() => router.push('/auth/signup')}
-            className="px-8 py-4 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium text-lg transition-colors inline-flex items-center"
-          >
-            Start Your Free Trial
-            <Sparkles className="ml-2 w-5 h-5" />
-          </button>
-          <p className="text-sm text-gray-500 mt-4">No credit card required</p>
+      {/* CTA Section - Diagonal Reverse */}
+      <section className="py-32 diagonal-divide-reverse" style={{
+        background: 'linear-gradient(135deg, var(--mauve-light) 0%, var(--mauve) 100%)',
+        borderTop: '1px solid var(--border)'
+      }}>
+        <div className="offset-container">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            <div className="lg:col-span-7">
+              <h2 className="font-light mb-6" style={{ color: 'var(--pearl)' }}>
+                Ready to Create Without Limits?
+              </h2>
+              <p className="text-lg font-light mb-8" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>
+                Join visionaries using Nivria to shape narratives across every platform—with minimal effort.
+              </p>
+              <button
+                onClick={() => router.push('/auth/signup')}
+                className="group px-8 py-4 text-sm font-light tracking-wide inline-flex items-center shadow-nivria"
+                style={{
+                  background: 'var(--pearl)',
+                  color: 'var(--charcoal)'
+                }}
+              >
+                Start Creating Now
+                <ArrowUpRight className="ml-2 w-4 h-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+              </button>
+              <p className="text-xs font-light mt-4" style={{ color: 'rgba(255, 255, 255, 0.85)' }}>No credit card required</p>
+            </div>
+          </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="py-12 px-4 border-t border-gray-800">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-4 gap-8">
-            <div>
-              <div className="flex items-center space-x-2 mb-4">
-                <Brain className="w-6 h-6 text-blue-500" />
-                <span className="text-xl font-bold">SignalDesk</span>
+      <footer className="py-20 offset-container" style={{ borderTop: '1px solid var(--border)' }}>
+        <div className="grid md:grid-cols-12 gap-12 mb-16">
+          <div className="md:col-span-5">
+            <div className="flex items-center space-x-3 mb-6">
+              <div className="w-8 h-8 flex items-center justify-center" style={{
+                background: 'var(--mauve)',
+                clipPath: 'polygon(0 0, 100% 0, 85% 100%, 0% 100%)'
+              }}>
+                <Zap className="w-4 h-4" style={{ color: 'var(--pearl)' }} />
               </div>
-              <p className="text-gray-400 text-sm">
-                Intelligence-driven communications platform for modern PR teams.
-              </p>
+              <span className="text-xl font-light" style={{ color: 'var(--pearl)' }}>Nivria</span>
             </div>
-
-            <div>
-              <h4 className="font-bold mb-4">Product</h4>
-              <ul className="space-y-2 text-gray-400 text-sm">
-                <li><a href="#" className="hover:text-white">Features</a></li>
-                <li><a href="#" className="hover:text-white">Pricing</a></li>
-                <li><a href="#" className="hover:text-white">Use Cases</a></li>
-                <li><a href="#" className="hover:text-white">Documentation</a></li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-bold mb-4">Company</h4>
-              <ul className="space-y-2 text-gray-400 text-sm">
-                <li><a href="#" className="hover:text-white">About</a></li>
-                <li><a href="#" className="hover:text-white">Blog</a></li>
-                <li><a href="#" className="hover:text-white">Careers</a></li>
-                <li><a href="#" className="hover:text-white">Contact</a></li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-bold mb-4">Legal</h4>
-              <ul className="space-y-2 text-gray-400 text-sm">
-                <li><a href="#" className="hover:text-white">Privacy</a></li>
-                <li><a href="#" className="hover:text-white">Terms</a></li>
-                <li><a href="#" className="hover:text-white">Security</a></li>
-              </ul>
-            </div>
+            <p className="text-sm font-light leading-relaxed" style={{ color: 'var(--pearl)' }}>
+              Autonomous operating system for visionary leaders.
+            </p>
           </div>
 
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400 text-sm">
-            <p>&copy; 2025 SignalDesk. All rights reserved.</p>
+          <div className="md:col-span-2">
+            <h4 className="font-light mb-4 text-sm tracking-wider uppercase" style={{ color: 'var(--pearl)' }}>Product</h4>
+            <ul className="space-y-3 text-sm font-light" style={{ color: 'var(--pearl)' }}>
+              <li><a href="#" className="transition-colors" style={{ color: 'var(--pearl)' }} onMouseEnter={(e) => e.currentTarget.style.color = 'var(--mauve)'} onMouseLeave={(e) => e.currentTarget.style.color = 'var(--pearl)'}>Features</a></li>
+              <li><a href="#" className="transition-colors" style={{ color: 'var(--pearl)' }} onMouseEnter={(e) => e.currentTarget.style.color = 'var(--mauve)'} onMouseLeave={(e) => e.currentTarget.style.color = 'var(--pearl)'}>Pricing</a></li>
+              <li><a href="#" className="transition-colors" style={{ color: 'var(--pearl)' }} onMouseEnter={(e) => e.currentTarget.style.color = 'var(--mauve)'} onMouseLeave={(e) => e.currentTarget.style.color = 'var(--pearl)'}>Use Cases</a></li>
+              <li><a href="#" className="transition-colors" style={{ color: 'var(--pearl)' }} onMouseEnter={(e) => e.currentTarget.style.color = 'var(--mauve)'} onMouseLeave={(e) => e.currentTarget.style.color = 'var(--pearl)'}>Documentation</a></li>
+            </ul>
           </div>
+
+          <div className="md:col-span-2">
+            <h4 className="font-light mb-4 text-sm tracking-wider uppercase" style={{ color: 'var(--pearl)' }}>Company</h4>
+            <ul className="space-y-3 text-sm font-light" style={{ color: 'var(--pearl)' }}>
+              <li><a href="#" className="transition-colors" style={{ color: 'var(--pearl)' }} onMouseEnter={(e) => e.currentTarget.style.color = 'var(--mauve)'} onMouseLeave={(e) => e.currentTarget.style.color = 'var(--pearl)'}>About</a></li>
+              <li><a href="#" className="transition-colors" style={{ color: 'var(--pearl)' }} onMouseEnter={(e) => e.currentTarget.style.color = 'var(--mauve)'} onMouseLeave={(e) => e.currentTarget.style.color = 'var(--pearl)'}>Blog</a></li>
+              <li><a href="#" className="transition-colors" style={{ color: 'var(--pearl)' }} onMouseEnter={(e) => e.currentTarget.style.color = 'var(--mauve)'} onMouseLeave={(e) => e.currentTarget.style.color = 'var(--pearl)'}>Careers</a></li>
+              <li><a href="#" className="transition-colors" style={{ color: 'var(--pearl)' }} onMouseEnter={(e) => e.currentTarget.style.color = 'var(--mauve)'} onMouseLeave={(e) => e.currentTarget.style.color = 'var(--pearl)'}>Contact</a></li>
+            </ul>
+          </div>
+
+          <div className="md:col-span-3">
+            <h4 className="font-light mb-4 text-sm tracking-wider uppercase" style={{ color: 'var(--pearl)' }}>Legal</h4>
+            <ul className="space-y-3 text-sm font-light" style={{ color: 'var(--pearl)' }}>
+              <li><a href="#" className="transition-colors" style={{ color: 'var(--pearl)' }} onMouseEnter={(e) => e.currentTarget.style.color = 'var(--mauve)'} onMouseLeave={(e) => e.currentTarget.style.color = 'var(--pearl)'}>Privacy</a></li>
+              <li><a href="#" className="transition-colors" style={{ color: 'var(--pearl)' }} onMouseEnter={(e) => e.currentTarget.style.color = 'var(--mauve)'} onMouseLeave={(e) => e.currentTarget.style.color = 'var(--pearl)'}>Terms</a></li>
+              <li><a href="#" className="transition-colors" style={{ color: 'var(--pearl)' }} onMouseEnter={(e) => e.currentTarget.style.color = 'var(--mauve)'} onMouseLeave={(e) => e.currentTarget.style.color = 'var(--pearl)'}>Security</a></li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="pt-8 text-xs font-light" style={{
+          borderTop: '1px solid var(--border)',
+          color: 'var(--pearl)'
+        }}>
+          <p>&copy; 2025 Nivria. All rights reserved.</p>
         </div>
       </footer>
     </div>

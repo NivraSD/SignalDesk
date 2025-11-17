@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SignalDesk - Intelligence-Driven Communications Platform",
-  description: "Transform information into strategic action with real-time intelligence monitoring and AI-powered planning",
+  title: "Nivria - Intelligence-Driven Communications Platform",
+  description: "Transform information into strategic action with real-time intelligence monitoring and AI-powered planning. Built for those who shape narratives.",
 };
 
 export default function RootLayout({
@@ -26,7 +26,11 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full overflow-hidden">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-950 text-gray-100 h-full overflow-hidden`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased h-full overflow-hidden`}
+        style={{
+          background: 'var(--charcoal)',
+          color: 'var(--pearl)'
+        }}
       >
         <AuthProvider>
           {children}

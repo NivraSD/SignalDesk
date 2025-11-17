@@ -1,26 +1,122 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Nivria Design System - Autonomous Operating System */
+
+  /* Base Colors */
+  --charcoal: #1a1a1a;
+  --charcoal-light: #2a2a2a;
+  --pearl: #ffffff;
+  --pearl-soft: #f5f5f5;
+
+  /* Accent Colors - Lavender */
+  --mauve: #b8a0c8;
+  --mauve-light: #cebcda;
+  --mauve-dark: #9d84ad;
+
+  /* Functional Colors */
+  --background: var(--charcoal);
+  --foreground: var(--pearl);
+  --surface: var(--charcoal-light);
+  --border: rgba(255, 255, 255, 0.08);
+  --border-accent: rgba(184, 160, 200, 0.4);
+
+  /* Typography */
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  /* Spacing System */
+  --space-xs: 0.5rem;
+  --space-sm: 1rem;
+  --space-md: 2rem;
+  --space-lg: 4rem;
+  --space-xl: 6rem;
+
+  /* Asymmetric Grid */
+  --grid-offset: 8vw;
+  --grid-main: 70%;
+  --grid-aside: 30%;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-charcoal: var(--charcoal);
+  --color-charcoal-light: var(--charcoal-light);
+  --color-pearl: var(--pearl);
+  --color-mauve: var(--mauve);
+  --color-mauve-light: var(--mauve-light);
+  --color-mauve-dark: var(--mauve-dark);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  font-weight: 300;
+  letter-spacing: -0.01em;
+  line-height: 1.6;
+}
+
+/* Nivria Typography Scale */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+h1 {
+  font-size: clamp(3rem, 8vw, 5.5rem);
+  font-weight: 200;
+}
+
+h2 {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+}
+
+h3 {
+  font-size: clamp(1.5rem, 3vw, 2.25rem);
+}
+
+/* Asymmetric Diagonal Divider Utility */
+.diagonal-divide {
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 4rem), 0 100%);
+}
+
+.diagonal-divide-reverse {
+  clip-path: polygon(0 4rem, 100% 0, 100% 100%, 0 100%);
+}
+
+/* Layered Shadow System - Dark Theme */
+.shadow-nivria {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    0 4px 8px rgba(0, 0, 0, 0.3),
+    0 12px 24px rgba(0, 0, 0, 0.2);
+}
+
+.shadow-nivria-sm {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.3),
+    0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Subtle Border Glow - Lavender */
+.border-glow {
+  border: 1px solid var(--border);
+  box-shadow: 0 0 20px rgba(184, 160, 200, 0.1);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.border-glow:hover {
+  border-color: var(--border-accent);
+  box-shadow: 0 0 30px rgba(184, 160, 200, 0.2);
+}
+
+/* Offset Container */
+.offset-container {
+  padding-left: var(--grid-offset);
+  padding-right: var(--grid-offset);
 }
