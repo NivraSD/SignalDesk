@@ -15,13 +15,13 @@ import OrgManagementDashboard from '@/components/admin/OrgManagementDashboard'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const tabs = [
-  { id: 'niv-command', name: 'NIV', icon: Brain, color: '#bb44ff' },
-  { id: 'intelligence', name: 'Intelligence', icon: Brain, color: '#00ffcc' },
-  { id: 'opportunities', name: 'Opportunities', icon: Target, color: '#ff00ff' },
-  { id: 'campaign-planner', name: 'Campaigns', icon: TrendingUp, color: '#00ddff' },
-  { id: 'execute', name: 'Execute', icon: Rocket, color: '#00ff88' },
-  { id: 'crisis', name: 'Crisis', icon: Shield, color: '#ff0000' },
-  { id: 'memoryvault', name: 'MemoryVault', icon: Database, color: '#ffaa00' },
+  { id: 'niv-command', name: 'NIV', icon: Brain, color: '#b8a0c8' },
+  { id: 'intelligence', name: 'Intelligence', icon: Brain, color: '#9d84ad' },
+  { id: 'opportunities', name: 'Opportunities', icon: Target, color: '#cebcda' },
+  { id: 'campaign-planner', name: 'Campaigns', icon: TrendingUp, color: '#b8a0c8' },
+  { id: 'execute', name: 'Execute', icon: Rocket, color: '#9d84ad' },
+  { id: 'crisis', name: 'Crisis', icon: Shield, color: '#ff4444' },
+  { id: 'memoryvault', name: 'MemoryVault', icon: Database, color: '#cebcda' },
 ]
 
 export default function Dashboard() {
@@ -224,26 +224,27 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="h-screen overflow-hidden bg-gray-950 text-gray-100">
-      {/* Header with Neon Styling */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur-xl" 
-        style={{ 
-          borderBottom: '1px solid rgba(0, 255, 204, 0.2)',
-          boxShadow: '0 2px 20px rgba(0, 255, 204, 0.1)' 
+    <div className="h-screen overflow-hidden text-gray-100" style={{ background: 'var(--charcoal)' }}>
+      {/* Header with Nivria Styling */}
+      <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl"
+        style={{
+          background: 'rgba(26, 26, 26, 0.95)',
+          borderBottom: '1px solid var(--border)',
+          boxShadow: '0 2px 20px rgba(184, 160, 200, 0.1)'
         }}>
         <div className="flex items-center justify-between px-6 py-3">
-          {/* Logo */}
-          <div className="flex items-center gap-3">
-            <div>
-              <h1 className="text-xl font-bold" style={{ color: '#00ffcc', textShadow: '0 0 10px rgba(0, 255, 204, 0.5)' }}>
-                SIGNALDESK
-              </h1>
-              <p className="text-xs text-gray-500">Intelligence Command Center</p>
+          {/* Nivria Logo */}
+          <div className="flex items-center">
+            <div className="px-4 py-1.5 flex items-center justify-center" style={{
+              background: 'var(--mauve)',
+              clipPath: 'polygon(0 0, 100% 0, 90% 100%, 0% 100%)'
+            }}>
+              <span className="text-lg font-light tracking-tight" style={{ color: 'var(--pearl)' }}>Nivria</span>
             </div>
           </div>
           
           {/* Main Navigation Tabs */}
-          <nav className="flex gap-1 md:gap-2 flex-wrap" ref={menuRef}>
+          <nav className="flex gap-1 flex-wrap flex-1 justify-center" ref={menuRef}>
             {tabs.map((tab) => {
               const Icon = tab.icon
               const isActive = openComponents.includes(tab.id) ||
@@ -571,15 +572,19 @@ export default function Dashboard() {
           </nav>
 
           {/* Right Side: Project Selector and User Profile */}
-          <div className="flex items-center gap-4">
-            {/* Project Selector */}
+          <div className="flex items-center gap-2">
+            {/* Project Selector - Fixed Width */}
             <div className="relative">
               <button
                 onClick={() => setShowProjectMenu(!showProjectMenu)}
-                className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors w-52"
+                style={{
+                  background: 'var(--charcoal-light)',
+                  borderColor: 'var(--border)'
+                }}
               >
-                <span className="text-sm">{organization?.name || 'Select Organization'}</span>
-                <ChevronDown className="w-4 h-4" />
+                <span className="text-sm truncate flex-1 text-left">{organization?.name || 'Select Organization'}</span>
+                <ChevronDown className="w-4 h-4 flex-shrink-0" />
               </button>
               
               <AnimatePresence>
@@ -600,8 +605,9 @@ export default function Dashboard() {
                         <div
                           key={org.id}
                           className={`flex items-center justify-between gap-2 px-4 py-2 hover:bg-gray-800 text-sm group ${
-                            organization?.id === org.id ? 'bg-gray-800 text-cyan-400' : ''
+                            organization?.id === org.id ? 'bg-gray-800' : ''
                           }`}
+                          style={organization?.id === org.id ? { color: 'var(--mauve)' } : {}}
                         >
                           <button
                             onClick={() => {
@@ -648,7 +654,8 @@ export default function Dashboard() {
                           setShowProjectMenu(false)
                           setShowOnboarding(true)
                         }}
-                        className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm text-cyan-400 flex items-center gap-2"
+                        className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm flex items-center gap-2"
+                        style={{ color: 'var(--mauve)' }}
                       >
                         <Plus className="w-4 h-4" />
                         New Organization
