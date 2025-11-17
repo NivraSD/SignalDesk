@@ -1026,22 +1026,38 @@ async function optimizeContentSEO(args: any) {
 
 // Generate thought leadership content
 async function generateThoughtLeadership(args: any) {
-  const { topic, keyPoints = [], perspective, industry, wordCount = 1200, tone = 'authoritative' } = args;
+  const { topic, keyPoints = [], perspective, industry, wordCount = 1200, tone = 'authoritative', constraints } = args;
 
-  const prompt = `Write a ${tone} thought leadership article:
+  // Get current date
+  const currentDate = new Date().toISOString().split('T')[0];
+  const currentYear = new Date().getFullYear();
+
+  // Build industry context - use 'cross-industry' as default instead of 'technology'
+  const industryContext = industry || 'cross-industry and sector-agnostic';
+
+  // Build constraints section if provided
+  const constraintsSection = constraints
+    ? `\n\nIMPORTANT CONSTRAINTS:\n${constraints}\n`
+    : '';
+
+  const prompt = `TODAY'S DATE: ${currentDate} (${currentYear})
+
+Write a ${tone} thought leadership article:
   Topic: ${topic}
-  Industry: ${industry || 'technology'}
+  Industry: ${industryContext}
   Unique Perspective: ${perspective || 'forward-thinking'}
   Key Points: ${keyPoints.join('\n- ')}
-  Word Count: ~${wordCount}
+  Word Count: ~${wordCount}${constraintsSection}
 
   Requirements:
   - Start with a compelling hook
-  - Include data and trends
+  - Include data and trends from ${currentYear} (use CURRENT information, not outdated 2023/2024 references)
   - Provide unique insights and predictions
   - Challenge conventional thinking
   - End with actionable takeaways
-  - Use authoritative voice and expert positioning`;
+  - Use authoritative voice and expert positioning
+  - If constraints are provided above, follow them strictly
+  - DO NOT reference years before ${currentYear} unless providing historical context`;
 
   const content = await callAnthropic(
     [{ role: 'user', content: prompt }],

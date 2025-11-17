@@ -4812,7 +4812,9 @@ async function callMCPServiceWithContext(
     narrative: contentContext.narrative,
     positioning: contentContext.positioning,
     research: contentContext.research,
-    keyPoints: contentContext.keyPoints
+    keyPoints: contentContext.keyPoints,
+    constraints: contentContext.constraints,
+    industry: contentContext.industry
   })
 }
 
@@ -4898,12 +4900,45 @@ function buildContentContext(
   positioning: string
   research: string
   keyPoints: string[]
+  constraints: string
+  industry: string
 } {
   const context = {
     narrative: '',
     positioning: '',
     research: '',
-    keyPoints: [] as string[]
+    keyPoints: [] as string[],
+    constraints: '',
+    industry: ''
+  }
+
+  // Extract user constraints from conversation history
+  // Look for explicit instructions about what NOT to do or specific requirements
+  conversationHistory.forEach(msg => {
+    if (msg.role === 'user' && msg.content) {
+      const content = msg.content
+      const lower = content.toLowerCase()
+
+      // Look for explicit constraints (DO NOT, AVOID, NO, etc.)
+      if (lower.includes('do not') || lower.includes('don\'t') ||
+          lower.includes('avoid') || lower.includes('without') ||
+          lower.includes('no ') || lower.includes('never')) {
+        context.constraints += content + '\n'
+      }
+
+      // Look for industry specifications
+      if (lower.includes('industry:') || lower.includes('sector:')) {
+        const industryMatch = content.match(/(?:industry|sector):\s*([^\n]+)/i)
+        if (industryMatch) {
+          context.industry = industryMatch[1].trim()
+        }
+      }
+    }
+  })
+
+  // Also check campaign context for industry
+  if (!context.industry && campaignContext?.industry) {
+    context.industry = campaignContext.industry
   }
 
   // Extract from campaign context (VECTOR blueprint) if available
@@ -5022,7 +5057,9 @@ function buildContentContext(
     hasNarrative: !!context.narrative,
     hasPositioning: !!context.positioning,
     hasResearch: !!context.research,
-    keyPointsCount: context.keyPoints.length
+    keyPointsCount: context.keyPoints.length,
+    hasConstraints: !!context.constraints,
+    industry: context.industry || 'not specified'
   })
 
   return context

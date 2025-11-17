@@ -318,22 +318,32 @@ export default function OrganizationOnboarding({
       }
 
       const targets = [
-        ...allCompetitors.map(name => ({
-          name,
-          type: 'competitor',
-          priority: 'high',
-          active: true,
-          ...findTargetContext(name, 'competitor')
-        })),
+        ...allCompetitors.map(name => {
+          const context = findTargetContext(name, 'competitor')
+          console.log(`🎯 Competitor ${name} context:`, context)
+          return {
+            name,
+            type: 'competitor',
+            priority: 'high',
+            active: true,
+            ...context
+          }
+        }),
         // Topics removed - 0% monitoring effectiveness
-        ...allStakeholders.map(name => ({
-          name,
-          type: 'stakeholder',
-          priority: 'medium',
-          active: true,
-          ...findTargetContext(name, 'stakeholder')
-        }))
+        ...allStakeholders.map(name => {
+          const context = findTargetContext(name, 'stakeholder')
+          console.log(`🎯 Stakeholder ${name} context:`, context)
+          return {
+            name,
+            type: 'stakeholder',
+            priority: 'medium',
+            active: true,
+            ...context
+          }
+        })
       ]
+
+      console.log('📊 Sample target with context:', targets[0])
 
       const targetsResponse = await fetch('/api/organizations/targets', {
         method: 'POST',
