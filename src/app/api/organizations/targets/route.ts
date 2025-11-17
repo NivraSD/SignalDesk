@@ -298,3 +298,4 @@ export async function DELETE(req: NextRequest) {
     )
   }
 }
+# Testing DATABASE_URL connection
