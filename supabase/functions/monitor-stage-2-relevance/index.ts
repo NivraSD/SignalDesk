@@ -1,285 +1,23 @@
-// Monitor Stage 2: Intelligent PR-Focused Relevance Scoring
-// This stage ensures we get COVERAGE of all important entities from the profile
+// Monitor Stage 2: AI-Powered Intelligent Relevance Filtering
+// Uses Claude to understand if articles are actually about the organization's targets
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
 
-// Helper functions for extraction
-function extractKeyPhrases(text: string): string[] {
-  const phrases = [];
-  
-  // Extract quoted phrases
-  const quotedMatches = text.match(/["']([^"']{5,100})["']/g) || [];
-  phrases.push(...quotedMatches.map(m => m.replace(/["']/g, '')));
-  
-  // Extract capitalized multi-word phrases (likely proper nouns/products)
-  const capitalizedPhrases = text.match(/[A-Z][a-z]+(\s+[A-Z][a-z]+)+/g) || [];
-  phrases.push(...capitalizedPhrases);
-  
-  // Extract percentage/number patterns with context
-  const numberPatterns = text.match(/\d+(\.\d+)?\s*(percent|%|billion|million|thousand)/gi) || [];
-  phrases.push(...numberPatterns);
-  
-  return [...new Set(phrases)].slice(0, 10);
-}
+const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')!;
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-function detectEventType(text: string): string {
-  const eventPatterns = {
-    'product_launch': /launch|unveil|introduce|debut|release|announce/i,
-    'financial': /earnings|revenue|profit|loss|quarterly|ipo|funding|investment/i,
-    'partnership': /partner|collaborate|alliance|joint venture|agreement/i,
-    'acquisition': /acquire|merger|buyout|purchase|takeover/i,
-    'legal': /lawsuit|litigation|settlement|court|ruling|investigation/i,
-    'leadership': /ceo|executive|appoint|resign|hire|fire|departure/i,
-    'crisis': /recall|breach|scandal|crisis|emergency|failure/i,
-    'expansion': /expand|growth|new market|international|global/i,
-    'innovation': /breakthrough|innovation|patent|research|development/i,
-    'regulatory': /regulation|compliance|fda|sec|ftc|approval/i
-  };
-  
-  for (const [type, pattern] of Object.entries(eventPatterns)) {
-    if (pattern.test(text)) return type;
-  }
-  
-  return 'general_update';
-}
-
-function detectSentiment(text: string): { positive: string[], negative: string[], neutral: string[] } {
-  const positive = [];
-  const negative = [];
-  const neutral = [];
-  
-  // Positive indicators
-  const positiveWords = ['breakthrough', 'success', 'growth', 'innovation', 'record', 'leading', 'surge', 'boost', 'improve', 'gain'];
-  const negativeWords = ['decline', 'loss', 'fail', 'crash', 'scandal', 'lawsuit', 'recall', 'crisis', 'threat', 'risk'];
-  const neutralWords = ['announce', 'report', 'state', 'reveal', 'disclose', 'update'];
-  
-  positiveWords.forEach(word => {
-    if (text.toLowerCase().includes(word)) positive.push(word);
-  });
-  
-  negativeWords.forEach(word => {
-    if (text.toLowerCase().includes(word)) negative.push(word);
-  });
-  
-  neutralWords.forEach(word => {
-    if (text.toLowerCase().includes(word)) neutral.push(word);
-  });
-  
-  return { positive, negative, neutral };
-}
-
-function calculateStrategicRelevance(text: string, targetEntities: any): number {
-  let relevance = 0;
-  
-  // Check for strategic keywords
-  const strategicTerms = ['strategy', 'competitive', 'market share', 'positioning', 'differentiation', 'advantage'];
-  strategicTerms.forEach(term => {
-    if (text.toLowerCase().includes(term)) relevance += 10;
-  });
-  
-  // Check for multiple entity mentions (indicates comparison/analysis)
-  const competitorMentions = targetEntities.competitors.filter(comp => 
-    comp && text.toLowerCase().includes(comp.toLowerCase())
-  ).length;
-  
-  if (competitorMentions > 1) relevance += 20; // Multiple competitors mentioned
-  
-  // Check for forward-looking statements
-  const futurePhrases = ['will', 'plan to', 'expect', 'forecast', 'predict', 'upcoming', 'future'];
-  futurePhrases.forEach(phrase => {
-    if (text.toLowerCase().includes(phrase)) relevance += 5;
-  });
-  
-  return Math.min(relevance, 100);
-}
-
-function extractPotentialEvents(text: string): string[] {
-  const events = [];
-  
-  // Pattern for event-like phrases (verb + noun combinations)
-  const eventPatterns = [
-    /(?:announce|launch|release|unveil)\s+(?:a |an |the )?([\w\s]{3,30})/gi,
-    /(?:acquire|purchase|buy)\s+([\w\s]{3,30})/gi,
-    /(?:partner with|collaborate with|team up with)\s+([\w\s]{3,30})/gi,
-    /(?:invest|raise|secure)\s+\$?[\d.]+(\s+\w+)?/gi
-  ];
-  
-  eventPatterns.forEach(pattern => {
-    const matches = text.match(pattern) || [];
-    events.push(...matches);
-  });
-  
-  return [...new Set(events)].slice(0, 5);
-}
-
-function extractProducts(text: string): string[] {
-  const products = [];
-  
-  // Common product indicators
-  const productPatterns = [
-    /(?:Model|Version)\s+[A-Z0-9][\w-]*/gi,
-    /[A-Z][\w]+(?:Pro|Plus|Max|Ultra|X|S)\b/g,
-    /(?:the |new |latest )([A-Z][\w]+\s+[A-Z][\w]+)/g
-  ];
-  
-  productPatterns.forEach(pattern => {
-    const matches = text.match(pattern) || [];
-    products.push(...matches);
-  });
-  
-  // Also check for known product categories
-  const categories = ['vehicle', 'car', 'truck', 'suv', 'sedan', 'software', 'platform', 'service', 'app', 'device'];
-  categories.forEach(cat => {
-    const pattern = new RegExp(`(?:new |latest |upcoming )?${cat}s?\\b`, 'gi');
-    const matches = text.match(pattern) || [];
-    products.push(...matches);
-  });
-  
-  return [...new Set(products)].slice(0, 10);
-}
-
-function extractFinancialSignals(text: string): any {
-  const signals = {
-    amounts: [],
-    percentages: [],
-    metrics: []
-  };
-  
-  // Extract dollar amounts
-  const dollarAmounts = text.match(/\$[\d.]+(\s*(?:billion|million|thousand|B|M|K))?/gi) || [];
-  signals.amounts.push(...dollarAmounts);
-  
-  // Extract percentages
-  const percentages = text.match(/\d+(\.\d+)?\s*%/g) || [];
-  signals.percentages.push(...percentages);
-  
-  // Extract financial metrics
-  const metricKeywords = ['revenue', 'profit', 'earnings', 'ebitda', 'margin', 'growth', 'valuation'];
-  metricKeywords.forEach(metric => {
-    if (text.toLowerCase().includes(metric)) {
-      signals.metrics.push(metric);
-    }
-  });
-  
-  return signals;
-}
-
-function extractTimeMarkers(text: string): string[] {
-  const markers = [];
-
-  // Extract quarters
-  const quarters = text.match(/Q[1-4]\s*20\d{2}/gi) || [];
-  markers.push(...quarters);
-
-  // Extract months and years
-  const monthYear = text.match(/(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+20\d{2}/gi) || [];
-  markers.push(...monthYear);
-
-  // Extract relative time markers
-  const relativeTime = text.match(/(?:next|last|this)\s+(?:week|month|quarter|year)/gi) || [];
-  markers.push(...relativeTime);
-
-  // Extract specific dates
-  const dates = text.match(/\d{1,2}\/\d{1,2}\/\d{2,4}/g) || [];
-  markers.push(...dates);
-
-  return [...new Set(markers)].slice(0, 5);
-}
-
-function detectEventRecency(text: string, titleText: string): { isRecent: boolean, penalty: number, signals: string[] } {
-  const signals = [];
-  let isRecent = true;
-  let penalty = 0;
-
-  // CRITICAL: Detect retrospective/old event language
-  const oldEventPatterns = [
-    // Explicit time references to past
-    /\b(months?|years?|weeks?) ago\b/i,
-    /\b(back in|way back|remember when)\b/i,
-    /\b(last (january|february|march|april|may|june|july|august|september|october|november|december))\b/i,
-    /\bin (2021|2022|2023|early 2024|mid 2024)\b/i,
-
-    // Retrospective framing
-    /\b(look(ing)? back|in retrospect|historically|at the time)\b/i,
-    /\b(previously|formerly|used to|had been)\b/i,
-
-    // Roundup/compilation indicators
-    /\b(top \d+|best of|worst of|year in review|roundup|recap)\b/i,
-    /\b(trends of|highlights from|looking back at)\b/i,
-
-    // Past-tense crisis that's already resolved
-    /\b(faced|dealt with|survived|overcame) (a |the )?(crisis|scandal|controversy|backlash)\b/i,
-  ];
-
-  // Recent event indicators (should be present for truly new events)
-  const recentEventPatterns = [
-    /\b(today|yesterday|this (week|morning|afternoon))\b/i,
-    /\b(just (announced|launched|revealed|reported))\b/i,
-    /\b(breaking|developing|latest)\b/i,
-    /\b((will|plan to|expected to) (announce|launch|release))\b/i,
-    /\b(upcoming|imminent|soon to be)\b/i,
-  ];
-
-  // Check for old event signals
-  const hasOldEventSignals = oldEventPatterns.some(pattern => {
-    const match = pattern.test(text) || pattern.test(titleText);
-    if (match) {
-      signals.push(`OLD_EVENT: ${pattern.source.substring(0, 30)}`);
-    }
-    return match;
-  });
-
-  // Check for recent event signals
-  const hasRecentEventSignals = recentEventPatterns.some(pattern => {
-    const match = pattern.test(text) || pattern.test(titleText);
-    if (match) {
-      signals.push(`RECENT: ${pattern.source.substring(0, 30)}`);
-    }
-    return match;
-  });
-
-  // Decision logic
-  if (hasOldEventSignals && !hasRecentEventSignals) {
-    // Clearly old event being recirculated
-    isRecent = false;
-    penalty = 200; // Massive penalty - effectively filters out
-    signals.push('VERDICT: OLD_EVENT_RECIRCULATED');
-  } else if (hasOldEventSignals && hasRecentEventSignals) {
-    // Mixed signals - might be new development on old story
-    isRecent = true;
-    penalty = 30; // Moderate penalty
-    signals.push('VERDICT: MIXED_RECENCY');
-  } else if (!hasRecentEventSignals && !hasOldEventSignals) {
-    // No clear time signals - neutral
-    isRecent = true;
-    penalty = 10; // Small penalty for lack of timeliness
-    signals.push('VERDICT: UNCLEAR_TIMING');
-  } else {
-    // Has recent signals, no old signals - good
-    isRecent = true;
-    penalty = 0;
-    signals.push('VERDICT: RECENT_EVENT');
-  }
-
-  return { isRecent, penalty, signals };
-}
-
-// Helper function to find source profile
-function findSourceProfile(sourceName: string, profile: any): any {
-  if (!profile?.sources) return null;
-
-  const allSources = [
-    ...(profile.sources.competitive || []),
-    ...(profile.sources.media || []),
-    ...(profile.sources.regulatory || []),
-    ...(profile.sources.market || [])
-  ];
-
-  return allSources.find(s =>
-    s.name.toLowerCase() === sourceName.toLowerCase() ||
-    sourceName.toLowerCase().includes(s.name.toLowerCase())
-  );
+interface Article {
+  id?: number;
+  title: string;
+  description?: string;
+  content?: string;
+  url?: string;
+  source?: string;
+  published_at?: string;
+  [key: string]: any;
 }
 
 serve(async (req) => {
@@ -288,772 +26,217 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🎯 Starting monitor-stage-2-relevance...')
-    console.log('📦 Request method:', req.method)
-    console.log('📊 Content-Type:', req.headers.get('content-type'))
+    const { articles, organization_name, organization_id, profile } = await req.json();
 
-    let requestBody
-    try {
-      requestBody = await req.json()
-    } catch (jsonError) {
-      console.error('❌ JSON parsing failed:', jsonError)
-      return new Response(JSON.stringify({
-        success: false,
-        error: 'Failed to parse request body',
-        details: jsonError.message
-      }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
-    }
+    console.log(`🔍 Relevance filtering for ${organization_name}: ${articles?.length || 0} articles`);
 
-    const { articles, profile, organization_name, top_k = 50, coverage_report } = requestBody
-    
-    console.log('🎯 RELEVANCE SCORING STAGE 2');
-    console.log(`Organization: ${organization_name}`);
-    console.log(`Input articles: ${articles?.length || 0}`);
-    console.log(`Will return top: ${top_k}`);
-    
-    if (coverage_report) {
-      console.log('📊 Coverage report received:');
-      console.log(`   Context: ${coverage_report.context}`);
-      console.log(`   Priority articles: ${coverage_report.priorities?.length || 0}`);
-      console.log(`   Coverage gaps:`, coverage_report.gaps);
-    }
-    
     if (!articles || articles.length === 0) {
       return new Response(JSON.stringify({
-        findings: [],
-        articles: [],
-        statistics: {},
-        success: false,
-        error: 'No articles to process'
+        relevant_articles: [],
+        filtered_out: 0,
+        total: 0
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
-    
-    // Extract key entities from profile - FULLY DYNAMIC
-    // Use intelligence context if available, otherwise fall back to standard profile fields
-    const intelligenceContext = profile?.intelligence_context;
-    const scoringWeights = intelligenceContext?.relevance_criteria?.scoring_weights || {
-      organization_mention: 40,
-      competitor_action: 30,
-      regulatory_news: 25,
-      market_signal: 15
-    };
 
-    // Helper to extract names from arrays that might contain objects or strings
-    const extractNames = (items: any[]) => items.map(item =>
-      typeof item === 'string' ? item : item?.name
-    ).filter(Boolean);
+    // Load intelligence targets with monitoring context
+    console.log(`📊 Loading intelligence targets for ${organization_name}...`);
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
-    const targetEntities = {
-      organization: [
-        organization_name,
-        profile?.organization_name,
-        profile?.organization
-      ].filter(Boolean),
-      competitors: extractNames([
-        ...(profile?.competition?.direct_competitors || []),
-        ...(profile?.competition?.indirect_competitors || []),
-        ...(profile?.competition?.emerging_threats || []),
-        ...(profile?.competitors?.direct || []),
-        ...(profile?.competitors?.indirect || [])
-      ]),
-      stakeholders: extractNames([
-        ...(profile?.stakeholders?.regulators || []),
-        ...(profile?.stakeholders?.key_analysts || []),  // NEW field
-        ...(profile?.stakeholders?.activists || []),     // NEW field
-        ...(profile?.stakeholders?.major_investors || []),
-        ...(profile?.stakeholders?.major_customers || []),
-        ...(profile?.stakeholders?.key_partners || [])   // Renamed from 'partners'
-      ]),
-      keywords: [
-        ...(profile?.monitoring_config?.keywords || []),
-        ...(profile?.keywords || []),
-        ...(profile?.trending?.hot_topics || []),
-        ...(intelligenceContext?.topics || []),
-        ...(profile?.topics || [])
-      ].filter(Boolean)
-    };
+    const { data: targets, error: targetsError } = await supabase
+      .from('intelligence_targets')
+      .select('name, type, monitoring_context, industry_context, relevance_filter, priority')
+      .eq('organization_id', organization_id)
+      .eq('active', true);
 
-    // Log if we're using intelligence context
-    if (intelligenceContext) {
-      console.log('🎯 Using intelligence context from discovery:', {
-        hasMonitoringPrompt: !!intelligenceContext.monitoring_prompt,
-        hasRelevanceCriteria: !!intelligenceContext.relevance_criteria,
-        topicsCount: intelligenceContext.topics?.length || 0,
-        scoringWeights
+    if (targetsError) {
+      console.error('❌ Failed to load intelligence targets:', targetsError);
+      throw new Error(`Failed to load targets: ${targetsError.message}`);
+    }
+
+    console.log(`✅ Loaded ${targets?.length || 0} intelligence targets`);
+
+    const competitors = targets?.filter(t => t.type === 'competitor').map(t => ({
+      name: t.name,
+      monitoring_context: t.monitoring_context,
+      industry_context: t.industry_context,
+      keywords: t.relevance_filter?.keywords || []
+    })) || [];
+
+    const stakeholders = targets?.filter(t => t.type === 'stakeholder').map(t => ({
+      name: t.name,
+      monitoring_context: t.monitoring_context,
+      industry_context: t.industry_context,
+      keywords: t.relevance_filter?.keywords || []
+    })) || [];
+
+    if (competitors.length === 0 && stakeholders.length === 0) {
+      console.warn('⚠️ No intelligence targets found - returning all articles');
+      return new Response(JSON.stringify({
+        relevant_articles: articles,
+        filtered_out: 0,
+        total: articles.length,
+        warning: 'No intelligence targets configured'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
-    
-    console.log('📋 Coverage targets:', {
-      organization: targetEntities.organization,
-      competitors: targetEntities.competitors.slice(0, 10),
-      stakeholders: targetEntities.stakeholders.slice(0, 10),
-      keywords: targetEntities.keywords.slice(0, 10),
-      counts: {
-        organization: targetEntities.organization.length,
-        competitors: targetEntities.competitors.length,
-        stakeholders: targetEntities.stakeholders.length,
-        keywords: targetEntities.keywords.length
-      }
-    });
-    
-    // Track coverage to ensure diversity
-    const coverageTracker = {
-      organization: new Set(),
-      competitors: new Map(), // Track count per competitor
-      stakeholders: new Map(),
-      keywords: new Map(),
-      topics: new Map()
-    };
-    
-    // Score and categorize each article
-    const scoredArticles = articles.map(article => {
-      const text = `${article.title || ''} ${article.description || ''} ${article.content || ''}`.toLowerCase();
-      const titleText = (article.title || '').toLowerCase();
 
-      // CHECK EVENT RECENCY FIRST - filter out old events early
-      const recencyCheck = detectEventRecency(text, titleText);
+    // Use Claude to intelligently filter articles in batches
+    console.log(`🤖 Using Claude to intelligently filter ${articles.length} articles...`);
 
-      let score = 0;
-      const factors = [];
-      const entities_found = [];
-      let category = 'general';
-      let intelligence_type = 'none';
-      
-      // CRITICAL: Identify ACTIONABLE intelligence types first
-      const hasProductLaunch = /launch|unveil|introduce|debut|release|announce.*new|new.*product|new.*service|new.*model/i.test(text);
-      const hasFinancialData = /earnings|revenue|profit|loss|quarterly|guidance|forecast|billion|million|growth.*%|decline.*%/i.test(text);
-      const hasLeadershipChange = /ceo|cfo|cto|executive|appoint|resign|hire|fire|departure|replacement|new.*chief/i.test(text);
-      const hasCrisisEvent = /recall|lawsuit|investigation|breach|scandal|violation|fine|penalty|sue|complaint|regulatory/i.test(text);
-      const hasStrategicMove = /acquire|merger|partnership|collaborate|expand|enter.*market|exit|divest|restructure|pivot/i.test(text);
-      const hasTechnologyUpdate = /ai|autonomous|battery|software|patent|innovation|breakthrough|research|development|upgrade/i.test(text);
+    const batchSize = 20; // Process 20 articles at a time
+    const relevantArticles: any[] = [];
 
-      // NEW: Source-aware scoring boost
-      const articleSource = article.source || article.feed_name || 'unknown';
-      const sourceProfile = findSourceProfile(articleSource, profile);
+    for (let i = 0; i < articles.length; i += batchSize) {
+      const batch = articles.slice(i, i + batchSize);
 
-      if (sourceProfile) {
-        // Check if article uses this source's typical patterns
-        const sourceKeywords = profile?.monitoring_config?.keywords_by_source?.[articleSource] || [];
-        const matchedSourceKeywords = sourceKeywords.filter(kw =>
-          text.includes(kw.toLowerCase())
-        );
+      console.log(`   Processing batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(articles.length/batchSize)} (${batch.length} articles)...`);
 
-        if (matchedSourceKeywords.length > 0) {
-          score += 25 * matchedSourceKeywords.length;
-          factors.push(`SOURCE_OPTIMIZED: ${articleSource} (${matchedSourceKeywords.length} matches)`);
-        }
+      const prompt = `You are filtering news articles for ${organization_name}, a company in ${profile?.industry || 'their industry'}.
 
-        // Critical sources get priority
-        if (sourceProfile.priority === 'critical') {
-          score += 20;
-          factors.push('CRITICAL_SOURCE');
-        } else if (sourceProfile.priority === 'high') {
-          score += 10;
-          factors.push('HIGH_PRIORITY_SOURCE');
-        }
-      }
+CRITICAL CONTEXT:
+${organization_name} wants to monitor their COMPETITORS and STAKEHOLDERS, NOT themselves.
 
-      // PRIORITY 1: Direct competitive intelligence (HIGHEST VALUE)
-      // Check both exact and partial matches
-      const competitorInTitle = targetEntities.competitors.find(comp =>
-        comp && titleText.includes(comp.toLowerCase())
-      );
-      const competitorMentioned = targetEntities.competitors.filter(comp =>
-        comp && text.includes(comp.toLowerCase())
-      );
+COMPETITORS TO MONITOR (${competitors.length}):
+${competitors.map(c => `- ${c.name}: ${c.monitoring_context || 'Monitor for competitive intelligence'}`).join('\n')}
 
-      // BONUS: Articles covering multiple diverse topics get higher scores
-      const topicDiversity = new Set();
-      if (competitorMentioned.length > 0) topicDiversity.add('competitor');
+STAKEHOLDERS TO MONITOR (${stakeholders.length}):
+${stakeholders.map(s => `- ${s.name}: ${s.monitoring_context || 'Monitor for stakeholder activities'}`).join('\n')}
 
-      // Dynamic topic detection based on profile keywords
-      targetEntities.keywords.forEach(keyword => {
-        if (text.includes(keyword.toLowerCase())) {
-          // Categorize the keyword
-          if (/technolog|ai|software|hardware|innovation|patent|research/i.test(keyword)) {
-            topicDiversity.add('technology');
-          } else if (/regulat|compliance|law|legal|investigation|fine|penalty/i.test(keyword)) {
-            topicDiversity.add('regulatory');
-          } else if (/production|manufactur|supply|factory|output/i.test(keyword)) {
-            topicDiversity.add('operations');
-          } else if (/earnings|revenue|profit|financial|stock|invest/i.test(keyword)) {
-            topicDiversity.add('financial');
-          } else if (/partner|merger|acquisition|collaborate|alliance/i.test(keyword)) {
-            topicDiversity.add('strategic');
-          }
-        }
-      });
+YOUR JOB:
+For each article below, determine if it's ACTUALLY about one of the competitors or stakeholders listed above.
 
-      const diversityBonus = topicDiversity.size * 10;
-      
-      // BOOSTED: Competitor intelligence is our PRIMARY focus
-      const baseCompetitorScore = 60; // Doubled from 30 - competitors are priority
+An article IS relevant if:
+- It's primarily about a competitor (their announcements, hires, partnerships, products, crises)
+- It's primarily about a stakeholder (their activities, statements, movements)
+- It mentions strategic moves, leadership changes, or significant events involving targets
 
-      if (competitorInTitle && (hasProductLaunch || hasStrategicMove || hasCrisisEvent)) {
-        score += baseCompetitorScore * 3 + diversityBonus; // 180+ points for critical competitor actions
-        factors.push(`CRITICAL_COMPETITOR_ACTION: ${competitorInTitle} (+${diversityBonus} diversity)`);
-        entities_found.push(competitorInTitle);
-        category = 'competitive_intelligence';
-        intelligence_type = 'competitor_action';
-        coverageTracker.competitors.set(competitorInTitle, (coverageTracker.competitors.get(competitorInTitle) || 0) + 1);
-      } else if (competitorInTitle) {
-        score += baseCompetitorScore * 2 + diversityBonus; // 120+ points for competitor in title
-        factors.push(`COMPETITOR_FOCUS: ${competitorInTitle} (+${diversityBonus} diversity)`);
-        entities_found.push(competitorInTitle);
-        category = 'competitive';
-        intelligence_type = 'competitor_mention';
-        coverageTracker.competitors.set(competitorInTitle, (coverageTracker.competitors.get(competitorInTitle) || 0) + 1);
-      }
+An article is NOT relevant if:
+- It's about ${organization_name} themselves (that's not intelligence)
+- It mentions a competitor/stakeholder only in passing
+- It's generic industry news with no specific target mentioned
+- It's about random companies not in the target list
 
-      // Multiple competitor mentions = comparative analysis opportunity
-      if (competitorMentioned.length > 1) {
-        score += baseCompetitorScore * 1.5 * competitorMentioned.length + diversityBonus; // More points for multi-competitor analysis
-        factors.push(`MULTI_COMPETITOR_ANALYSIS: ${competitorMentioned.slice(0, 5).join(', ')} (+${diversityBonus} diversity)`);
-        intelligence_type = 'market_comparison';
-        // Track all mentioned competitors
-        competitorMentioned.forEach(comp => {
-          coverageTracker.competitors.set(comp, (coverageTracker.competitors.get(comp) || 0) + 1);
-        });
-      }
-      
-      // PRIORITY 2: Our organization with actionable context
-      const orgInTitle = targetEntities.organization.find(org =>
-        org && titleText.includes(org.toLowerCase())
-      );
-      const orgMentioned = targetEntities.organization.find(org =>
-        org && text.includes(org.toLowerCase())
-      );
+ARTICLES TO FILTER:
+${batch.map((a, idx) => `
+[${idx + 1}]
+Title: ${a.title}
+Description: ${a.description || 'N/A'}
+${a.content ? `Content Preview: ${a.content.substring(0, 300)}...` : ''}
+`).join('\n---\n')}
 
-      if (orgInTitle) {
-        // REDUCED WEIGHT: Organization-only articles should have lower priority
-        // We want them for context, but competitive intelligence is more valuable
-        const baseOrgScore = 15; // Reduced from 40
-
-        // Only boost if article ALSO mentions competitors (comparative context)
-        const hasComparativeContext = competitorMentioned.length > 0;
-
-        if (hasComparativeContext) {
-          // Articles comparing us to competitors are HIGH value
-          score += baseOrgScore * 4; // 60 points for comparative analysis
-          factors.push(`ORG_VS_COMPETITORS: ${orgInTitle} vs ${competitorMentioned.join(',')}`);
-          category = 'competitive_comparison';
-          intelligence_type = 'comparative_analysis';
-        } else if (hasProductLaunch || hasStrategicMove) {
-          score += baseOrgScore * 2; // 30 points (reduced from 120)
-          factors.push(`ORG_OPPORTUNITY: ${orgInTitle}`);
-          category = 'organization_opportunity';
-          intelligence_type = 'org_positive';
-        } else if (hasCrisisEvent) {
-          score += baseOrgScore * 2.5; // 37.5 points (reduced from 100)
-          factors.push(`ORG_CRISIS: ${orgInTitle}`);
-          category = 'organization_risk';
-          intelligence_type = 'org_crisis';
-        } else {
-          // Pure org mentions get minimal weight
-          score += baseOrgScore * 0.5; // Only 7.5 points for org-only articles
-          factors.push(`ORG_ONLY: ${orgInTitle}`);
-          category = 'organization';
-        }
-        entities_found.push(orgInTitle);
-        coverageTracker.organization.add(orgInTitle);
-      }
-      
-      // PRIORITY 3: Regulatory and stakeholder intelligence
-      const regulatorMentioned = targetEntities.stakeholders.filter(sh => {
-        if (!sh) return false;
-        const mentioned = text.includes(sh.toLowerCase());
-        if (mentioned && /regulat|investigat|fine|penalty|compliance|approval|ruling/i.test(text)) {
-          return true;
-        }
-        return false;
-      });
-      
-      if (regulatorMentioned.length > 0) {
-        const baseRegulatoryScore = scoringWeights.regulatory_news || 25;
-        score += baseRegulatoryScore * 2.8; // Regulatory news is high priority
-        factors.push(`REGULATORY_INTEL: ${regulatorMentioned.join(', ')}`);
-        entities_found.push(...regulatorMentioned);
-        category = 'regulatory';
-        intelligence_type = 'regulatory_action';
-        regulatorMentioned.forEach(reg => {
-          coverageTracker.stakeholders.set(reg, (coverageTracker.stakeholders.get(reg) || 0) + 1);
-        });
-      }
-      
-      // PRIORITY 3: Stakeholder coverage
-      const stakeholderMentioned = targetEntities.stakeholders.find(sh => 
-        sh && text.includes(sh.toLowerCase())
-      );
-      
-      if (stakeholderMentioned) {
-        const currentCount = coverageTracker.stakeholders.get(stakeholderMentioned) || 0;
-        const diversityBonus = currentCount < 2 ? 10 : 0;
-        
-        score += 25 + diversityBonus;
-        factors.push(`STAKEHOLDER: ${stakeholderMentioned}`);
-        entities_found.push(stakeholderMentioned);
-        if (category === 'general') category = 'regulatory';
-        coverageTracker.stakeholders.set(stakeholderMentioned, currentCount + 1);
-      }
-      
-      // PRIORITY 4: Technology and innovation intelligence
-      const techKeywords = profile?.monitoring_config?.keywords || [];
-      const hasTechInnovation = techKeywords.some(kw => kw && text.includes(kw.toLowerCase()));
-      
-      if (hasTechnologyUpdate && (competitorMentioned.length > 0 || orgMentioned)) {
-        score += 60;
-        factors.push('TECH_INTELLIGENCE');
-        if (intelligence_type === 'none') intelligence_type = 'technology';
-      }
-      
-      // PRIORITY 5: Market dynamics that affect positioning
-      if (hasFinancialData) {
-        if (competitorMentioned.length > 0) {
-          score += 50; // Competitor financials = benchmark opportunity
-          factors.push('COMPETITOR_FINANCIALS');
-          if (intelligence_type === 'none') intelligence_type = 'financial';
-        } else if (orgMentioned) {
-          score += 40;
-          factors.push('ORG_FINANCIALS');
-        } else {
-          score += 20; // Industry financials still matter
-          factors.push('MARKET_FINANCIALS');
-        }
-      }
-      
-      // PRIORITY 6: Strategic moves and market shifts
-      if (hasStrategicMove) {
-        const entities = [...competitorMentioned, orgMentioned].filter(Boolean);
-        if (entities.length > 0) {
-          score += 45 * entities.length;
-          factors.push(`STRATEGIC_MOVE: ${entities.join(', ')}`);
-          if (intelligence_type === 'none') intelligence_type = 'strategic';
-        }
-      }
-      
-      // PENALTY: Downrank generic content without specific entities
-      const totalEntities = competitorMentioned.length + (orgMentioned ? 1 : 0) + regulatorMentioned.length;
-      if (totalEntities === 0) {
-        score = Math.floor(score * 0.3); // Massive penalty for no entity mentions
-        factors.push('NO_ENTITIES_PENALTY');
-      }
-      
-      // BONUS: Time-sensitive and exclusive content
-      const hasExclusive = /exclusive|breaking|first|reveal|uncover|leak|source.*said|told.*exclusively/i.test(text);
-      const hasTimeSensitive = /today|tomorrow|this week|deadline|urgent|immediate|now|just.*announced/i.test(text);
-      
-      if (hasExclusive) {
-        score += 30;
-        factors.push('EXCLUSIVE_CONTENT');
-      }
-      if (hasTimeSensitive) {
-        score += 25;
-        factors.push('TIME_SENSITIVE');
-      }
-      
-      // PRIORITY 5: Keyword and topic coverage
-      const keywordMatches = targetEntities.keywords.filter(kw => 
-        kw && text.includes(kw.toLowerCase())
-      );
-      
-      keywordMatches.forEach(kw => {
-        const currentCount = coverageTracker.keywords.get(kw) || 0;
-        const diversityBonus = currentCount < 2 ? 5 : 0;
-        
-        score += 10 + diversityBonus;
-        factors.push(`KEYWORD: ${kw}`);
-        coverageTracker.keywords.set(kw, currentCount + 1);
-      });
-      
-      // PRIORITY 6: HUNT for market dynamics and actionable patterns
-      const marketSignals = ['ipo', 'merger', 'billion', 'million', 'valuation', 'market share', 'quarterly', 'earnings',
-                            'revenue', 'profit', 'stock', 'shares', 'invest', 'capital', 'fund', 'deal', 'transaction'];
-      const actionablePatterns = ['announce', 'plan to', 'will', 'expect', 'target', 'aim', 'launch', 'introduce', 
-                                 'partner with', 'acquire', 'expand', 'enter', 'exit', 'close', 'open', 'hire', 'appoint'];
-      
-      const hasMarketSignal = marketSignals.some(signal => text.includes(signal));
-      const hasActionablePattern = actionablePatterns.some(pattern => text.includes(pattern));
-      
-      if (hasMarketSignal) {
-        if (orgMentioned || competitorMentioned) {
-          score += 40; // Increased from 20
-          factors.push('MARKET_SIGNAL');
-          if (category === 'general') category = 'market';
-        } else {
-          score += 15; // Even general market signals have value
-          factors.push('MARKET_CONTEXT');
-        }
-      }
-      
-      if (hasActionablePattern) {
-        score += 25; // New: reward action-oriented content
-        factors.push('ACTIONABLE_PATTERN');
-        
-        // If it's about a competitor taking action, that's critical
-        if (competitorMentioned && !orgMentioned) {
-          score += 20;
-          factors.push('COMPETITOR_ACTION');
-        }
-      }
-      
-      // BONUS: Time-sensitive content (dates, deadlines, "today", "tomorrow", "this week")
-      const timeMarkers = ['today', 'tomorrow', 'yesterday', 'this week', 'next week', 'monday', 'tuesday', 'wednesday', 
-                          'thursday', 'friday', 'deadline', 'by', 'before', 'until', 'q1', 'q2', 'q3', 'q4'];
-      const hasTimeMarker = timeMarkers.some(marker => text.includes(marker));
-      
-      if (hasTimeMarker) {
-        score += 15;
-        factors.push('TIME_SENSITIVE');
-      }
-      
-      // Apply recency penalty BEFORE capping
-      score = Math.max(0, score - recencyCheck.penalty);
-
-      // Add recency signals to factors for transparency
-      if (recencyCheck.penalty > 0) {
-        factors.push(...recencyCheck.signals);
-      }
-
-      // CAP SCORE AT 100 - prevents broken 500+ scores
-      score = Math.min(100, score);
-
-      // Extract key data and initial analysis for enrichment
-      const pr_extraction = {
-        mentioned_entities: entities_found,
-        intelligence_type,
-        has_actionable_intel: intelligence_type !== 'none',
-        competitor_count: competitorMentioned.length,
-        primary_category: category,
-        coverage_gaps: [], // Will be filled in final selection
-
-        // Context for synthesis and opportunities
-        actionable_signals: {
-          product_launch: hasProductLaunch,
-          financial_data: hasFinancialData,
-          leadership_change: hasLeadershipChange,
-          crisis_event: hasCrisisEvent,
-          strategic_move: hasStrategicMove,
-          technology_update: hasTechnologyUpdate
-        },
-
-        // Extract key phrases and context for enrichment
-        key_phrases: extractKeyPhrases(text),
-        event_type: detectEventType(text),
-        sentiment_indicators: detectSentiment(text),
-        strategic_relevance: calculateStrategicRelevance(text, targetEntities),
-
-        // Pre-extract for enrichment efficiency
-        potential_events: extractPotentialEvents(text),
-        mentioned_products: extractProducts(text),
-        financial_signals: extractFinancialSignals(text),
-        temporal_markers: extractTimeMarkers(text),
-
-        // NEW: Include recency information
-        event_recency: {
-          is_recent: recencyCheck.isRecent,
-          recency_penalty: recencyCheck.penalty,
-          recency_signals: recencyCheck.signals
-        }
-      };
-
-      return {
-        ...article,
-        pr_relevance_score: score,
-        pr_factors: factors,
-        pr_extraction,
-        pr_category: category
-      };
-    });
-    
-    // Sort by score
-    scoredArticles.sort((a, b) => b.pr_relevance_score - a.pr_relevance_score);
-    
-    // INTELLIGENT SELECTION: Prioritize actionable intelligence
-    const selectedArticles = [];
-    const selectedUrls = new Set();
-    const intelligenceTypeCounts = {};
-    
-    // First pass: Get articles with actionable intelligence (50% of quota)
-    const actionableArticles = scoredArticles.filter(a => a.pr_extraction.has_actionable_intel);
-    for (const article of actionableArticles) {
-      if (selectedArticles.length >= Math.floor(top_k * 0.5)) break;
-      if (!selectedUrls.has(article.url)) {
-        selectedArticles.push(article);
-        selectedUrls.add(article.url);
-        intelligenceTypeCounts[article.pr_extraction.intelligence_type] = 
-          (intelligenceTypeCounts[article.pr_extraction.intelligence_type] || 0) + 1;
-      }
+RESPOND IN JSON:
+{
+  "relevant": [
+    {
+      "article_number": 1,
+      "is_relevant": true,
+      "target_mentioned": "Edelman",
+      "relevance_score": 95,
+      "reason": "Article announces Edelman's acquisition of a crisis communications firm"
     }
-    
-    // Second pass: Get high-scoring articles with good entity coverage (30% of quota)
-    for (const article of scoredArticles) {
-      if (selectedArticles.length >= Math.floor(top_k * 0.8)) break;
-      if (!selectedUrls.has(article.url) && article.pr_relevance_score >= 50) {
-        selectedArticles.push(article);
-        selectedUrls.add(article.url);
-      }
-    }
-    
-    // Second pass: AGGRESSIVELY fill gaps in coverage
-    // Prioritize competitors from profile that we haven't covered
-    const priorityCompetitors = targetEntities.competitors.slice(0, 7); // Top 7 competitors from profile
-    const uncoveredPriorityCompetitors = priorityCompetitors.filter(comp =>
-      !coverageTracker.competitors.has(comp) || coverageTracker.competitors.get(comp) < 1
-    );
-    
-    const uncoveredCompetitors = targetEntities.competitors.filter(comp => 
-      !coverageTracker.competitors.has(comp) || coverageTracker.competitors.get(comp) < 2
-    );
-    const uncoveredStakeholders = targetEntities.stakeholders.filter(sh => 
-      !coverageTracker.stakeholders.has(sh)
-    );
-    
-    // Check for topic gaps
-    const topicsCovered = new Set();
-    selectedArticles.forEach(article => {
-      const text = `${article.title || ''} ${article.description || ''}`.toLowerCase();
-      if (text.includes('battery') || text.includes('charging')) topicsCovered.add('technology');
-      if (text.includes('production') || text.includes('manufacturing')) topicsCovered.add('operations');
-      if (text.includes('regulation') || text.includes('safety')) topicsCovered.add('regulatory');
-      if (text.includes('earnings') || text.includes('financial')) topicsCovered.add('financial');
-    });
-    
-    const missingTopics = ['technology', 'operations', 'regulatory', 'financial'].filter(t => !topicsCovered.has(t));
-    
-    console.log('📊 Coverage gaps:', {
-      uncoveredPriorityCompetitors,
-      uncoveredCompetitors: uncoveredCompetitors.slice(0, 10),
-      uncoveredStakeholders: uncoveredStakeholders.slice(0, 10),
-      missingTopics,
-      topicsCovered: Array.from(topicsCovered)
-    });
-    
-    // Find articles that fill coverage gaps
-    for (const article of scoredArticles) {
-      if (selectedArticles.length >= top_k) break;
-      if (selectedUrls.has(article.url)) continue;
-      
-      const text = `${article.title || ''} ${article.description || ''}`.toLowerCase();
-      
-      // Prioritize articles that cover gaps
-      let gapScore = 0;
-      const gaps = [];
-      
-      // Check for priority competitors
-      uncoveredPriorityCompetitors.forEach(comp => {
-        if (text.includes(comp.toLowerCase())) {
-          gapScore += 50;
-          gaps.push(`PRIORITY_COMP:${comp}`);
-        }
-      });
-      
-      // Check for any uncovered competitors
-      uncoveredCompetitors.forEach(comp => {
-        if (text.includes(comp.toLowerCase())) {
-          gapScore += 30;
-          gaps.push(`COMP:${comp}`);
-        }
-      });
-      
-      // Check for uncovered stakeholders
-      uncoveredStakeholders.forEach(sh => {
-        if (text.includes(sh.toLowerCase())) {
-          gapScore += 20;
-          gaps.push(`STAKEHOLDER:${sh}`);
-        }
-      });
-      
-      // Check for missing topics
-      missingTopics.forEach(topic => {
-        let hasTopicContent = false;
-        if (topic === 'technology' && (text.includes('battery') || text.includes('charging') || text.includes('ai'))) hasTopicContent = true;
-        if (topic === 'operations' && (text.includes('production') || text.includes('manufacturing') || text.includes('factory'))) hasTopicContent = true;
-        if (topic === 'regulatory' && (text.includes('regulation') || text.includes('safety') || text.includes('nhtsa'))) hasTopicContent = true;
-        if (topic === 'financial' && (text.includes('earnings') || text.includes('revenue') || text.includes('profit'))) hasTopicContent = true;
-        
-        if (hasTopicContent) {
-          gapScore += 25;
-          gaps.push(`TOPIC:${topic}`);
-        }
-      });
-      
-      if (gapScore > 0) {
-        article.pr_extraction.coverage_gaps = gaps;
-        article.pr_relevance_score += gapScore; // Boost score for gap coverage
-        selectedArticles.push(article);
-        selectedUrls.add(article.url);
-      }
-    }
-    
-    // Final pass: Fill remaining slots with diverse content
-    for (const article of scoredArticles) {
-      if (selectedArticles.length >= top_k) break;
-      if (!selectedUrls.has(article.url)) {
-        selectedArticles.push(article);
-        selectedUrls.add(article.url);
-      }
-    }
-    
-    // Calculate statistics
-    const scoreDistribution = {
-      high: selectedArticles.filter(a => a.pr_relevance_score >= 70).length,
-      medium: selectedArticles.filter(a => a.pr_relevance_score >= 30 && a.pr_relevance_score < 70).length,
-      low: selectedArticles.filter(a => a.pr_relevance_score < 30).length
-    };
-    
-    const categoryBreakdown = selectedArticles.reduce((acc, article) => {
-      acc[article.pr_category] = (acc[article.pr_category] || 0) + 1;
-      return acc;
-    }, {});
-    
-    // Calculate actual coverage achieved
-    const coverageAchieved = {
-      competitors: Array.from(coverageTracker.competitors.keys()),
-      stakeholders: Array.from(coverageTracker.stakeholders.keys()),
-      keywords: Array.from(coverageTracker.keywords.keys())
-    };
-    
-    console.log('✅ PR relevance scoring complete:', {
-      input_count: articles.length,
-      output_count: selectedArticles.length,
-      articles_with_extraction: selectedArticles.filter(a => a.pr_extraction?.mentioned_entities?.length > 0).length,
-      avg_score: selectedArticles.reduce((sum, a) => sum + a.pr_relevance_score, 0) / selectedArticles.length,
-      score_distribution: scoreDistribution,
-      category_breakdown: categoryBreakdown,
-      coverage_achieved: {
-        competitors_covered: coverageAchieved.competitors.length,
-        stakeholders_covered: coverageAchieved.stakeholders.length,
-        keywords_covered: coverageAchieved.keywords.length
-      }
-    });
-    
-    // Log top articles for debugging
-    console.log('🏆 Top 5 articles:');
-    selectedArticles.slice(0, 5).forEach((article, i) => {
-      console.log(`  ${i + 1}. [${article.pr_relevance_score}] "${article.title?.substring(0, 60)}..."`);
-      if (article.pr_factors.length > 0) {
-        console.log(`     Factors: ${article.pr_factors.slice(0, 3).join(', ')}`);
-      }
-    });
-    
-    // SCRAPING RE-ENABLED: Limited to top 10 articles to prevent timeouts
-    // Synthesis needs at least some full content to generate quality reports
-    console.log('🔥 Preparing top articles for MCP Firecrawl (limited scraping)');
+  ]
+}
 
-    // Only scrape the absolute top articles (score 90+) to avoid timeout
-    const articlesToScrape = selectedArticles
-      .filter(a => a.pr_relevance_score >= 90)
-      .slice(0, 10); // Hard limit to 10 articles
+ONLY include articles that are CLEARLY about the competitors/stakeholders. Be strict. Quality over quantity.`;
 
-    console.log(`📊 Scraping strategy: Top ${articlesToScrape.length} critical articles (score 90+) out of ${selectedArticles.length} total`);
-
-    // Call MCP Firecrawl with minimal batch
-    if (articlesToScrape.length > 0) {
       try {
-        const firecrawlResponse = await fetch('https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/mcp-firecrawl', {
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
+            'x-api-key': ANTHROPIC_API_KEY,
+            'anthropic-version': '2023-06-01'
           },
           body: JSON.stringify({
-            method: 'tools/call',
-            params: {
-              name: 'batch_scrape_articles',
-              arguments: {
-                articles: articlesToScrape.map(article => ({
-                  url: article.url,
-                  priority: article.pr_relevance_score,
-                  metadata: {
-                    title: article.title,
-                    category: article.pr_category
-                  }
-                })),
-                formats: ['markdown'],
-                maxTimeout: 10000
-              }
-            }
+            model: 'claude-3-5-sonnet-20241022',
+            max_tokens: 4000,
+            temperature: 0.3,
+            messages: [{
+              role: 'user',
+              content: prompt
+            }]
           })
         });
 
-        if (firecrawlResponse.ok) {
-          const firecrawlData = await firecrawlResponse.json();
-          const scrapeResults = JSON.parse(firecrawlData.content[0].text);
-
-          console.log('✅ MCP Firecrawl results:', scrapeResults.stats);
-
-          // Merge scraped content back into articles
-          for (const result of scrapeResults.results) {
-            if (result.success && result.data) {
-              const article = selectedArticles.find(a => a.url === result.url);
-              if (article) {
-                const markdown = result.data.markdown || result.data.content || '';
-
-                // Validate content quality
-                const hasSubstantialContent = markdown &&
-                                           markdown.length > 500 &&
-                                           markdown.split(' ').length > 50;
-
-                if (hasSubstantialContent) {
-                  article.full_content = markdown;
-                  article.content_length = markdown.length;
-                  article.has_full_content = true;
-                  console.log(`✅ Quality content: ${markdown.length} chars`);
-                }
-              }
-            }
-          }
-
-          const enhancedCount = selectedArticles.filter(a => a.has_full_content).length;
-          console.log(`🎯 Enhanced ${enhancedCount} articles with full content`);
+        if (!response.ok) {
+          throw new Error(`Claude API error: ${response.statusText}`);
         }
-      } catch (error) {
-        console.error('❌ MCP Firecrawl error:', error);
-        // Continue without scraping
+
+        const data = await response.json();
+        const claudeResponse = data.content[0].text;
+
+        // Parse Claude's JSON response
+        const jsonMatch = claudeResponse.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+          console.error('❌ Failed to parse Claude response - no JSON found');
+          continue;
+        }
+
+        const filterResults = JSON.parse(jsonMatch[0]);
+
+        // Add relevant articles with enriched metadata
+        filterResults.relevant?.forEach((result: any) => {
+          const articleIdx = result.article_number - 1;
+          if (articleIdx >= 0 && articleIdx < batch.length) {
+            relevantArticles.push({
+              ...batch[articleIdx],
+              relevance_metadata: {
+                target: result.target_mentioned,
+                relevance_score: result.relevance_score,
+                reason: result.reason,
+                filtered_by: 'claude_ai'
+              }
+            });
+          }
+        });
+
+        console.log(`   ✅ Batch ${Math.floor(i/batchSize) + 1}: ${filterResults.relevant?.length || 0} relevant articles found`);
+
+      } catch (claudeError: any) {
+        console.error(`❌ Claude filtering error for batch ${Math.floor(i/batchSize) + 1}:`, claudeError.message);
+        // On error, include the batch as-is with lower confidence
+        batch.forEach(article => {
+          relevantArticles.push({
+            ...article,
+            relevance_metadata: {
+              relevance_score: 50,
+              reason: 'Included due to filtering error',
+              filtered_by: 'fallback'
+            }
+          });
+        });
       }
     }
-    
+
+    const filteredOut = articles.length - relevantArticles.length;
+
+    console.log(`✅ Relevance filtering complete:`);
+    console.log(`   Total articles: ${articles.length}`);
+    console.log(`   Relevant: ${relevantArticles.length}`);
+    console.log(`   Filtered out: ${filteredOut}`);
+    console.log(`   Keep rate: ${((relevantArticles.length / articles.length) * 100).toFixed(1)}%`);
+
     return new Response(JSON.stringify({
-      findings: selectedArticles,
-      articles: selectedArticles, // Include both for compatibility
-      statistics: {
-        total_processed: articles.length,
-        total_selected: selectedArticles.length,
-        avg_relevance_score: Math.round(selectedArticles.reduce((sum, a) => sum + a.pr_relevance_score, 0) / selectedArticles.length),
-        score_distribution: scoreDistribution,
-        category_breakdown: categoryBreakdown,
-        extraction_summary: {
-          companies_found: coverageAchieved.competitors.length,
-          stakeholders_found: coverageAchieved.stakeholders.length,
-          keywords_matched: coverageAchieved.keywords.length,
-          crisis_signals: selectedArticles.filter(a => a.pr_extraction?.has_crisis_signal).length,
-          opportunity_signals: selectedArticles.filter(a => a.pr_extraction?.has_opportunity_signal).length
-        },
-        coverage_achieved: coverageAchieved
-      },
-      metadata: {
-        stage: 'relevance_scoring',
-        organization: organization_name,
-        profile_used: !!profile,
-        timestamp: new Date().toISOString(),
-        coverage_report: coverage_report  // Pass it along to enrichment
-      },
-      success: true
+      relevant_articles: relevantArticles,
+      filtered_out: filteredOut,
+      total: articles.length,
+      keep_rate: ((relevantArticles.length / articles.length) * 100).toFixed(1) + '%',
+      targets_loaded: {
+        competitors: competitors.length,
+        stakeholders: stakeholders.length
+      }
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
-    
-  } catch (error) {
-    console.error('❌ Relevance scoring error:', error);
+
+  } catch (error: any) {
+    console.error('❌ Relevance filtering error:', error);
     return new Response(JSON.stringify({
-      success: false,
       error: error.message,
-      stage: 'relevance_scoring'
+      stack: error.stack
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
