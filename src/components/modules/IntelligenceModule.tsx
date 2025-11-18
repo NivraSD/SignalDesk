@@ -855,6 +855,19 @@ export default function IntelligenceModule() {
 
     if (useRealPipeline) {
       try {
+        // Validate organization has required ID
+        if (!organization?.id) {
+          console.error('❌ Cannot start pipeline: organization.id is missing', organization)
+          setError('Organization ID is required to run intelligence pipeline')
+          return
+        }
+
+        console.log('✅ Starting pipeline with organization:', {
+          id: organization.id,
+          name: organization.name,
+          industry: organization.industry
+        })
+
         // Call the real pipeline with organization details and progress callback
         const pipelineData = await IntelligenceService.startPipeline(
           organization.id,

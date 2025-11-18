@@ -364,6 +364,13 @@ serve(async (req) => {
 
     let relevantArticles = []
     try {
+      console.log(`   📤 Sending to relevance API:`, {
+        article_count: filteredArticles.length,
+        organization_name: orgName,
+        organization_id,
+        has_profile: !!profile
+      })
+
       const relevanceResponse = await fetch(`${supabaseUrl}/functions/v1/monitor-stage-2-relevance`, {
         method: 'POST',
         headers: {

@@ -25,6 +25,7 @@ export class IntelligenceService {
 
       console.log('🚨🚨🚨 CRITICAL TEST - THIS CODE IS RUNNING - VERSION 2 🚨🚨🚨')
       console.log('Starting pipeline for organization:', orgName, 'Industry:', industry)
+      console.log('📋 organizationId parameter:', organizationId, 'Type:', typeof organizationId)
 
       // Fetch company profile from database to get product_lines and other key info
       const { data: orgData } = await supabase
