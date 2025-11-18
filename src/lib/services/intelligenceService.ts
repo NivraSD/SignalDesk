@@ -28,14 +28,18 @@ export class IntelligenceService {
       console.log('📋 organizationId parameter:', organizationId, 'Type:', typeof organizationId)
 
       // Fetch company profile from database to get product_lines and other key info
-      const { data: orgData } = await supabase
+      const { data: orgData, error: orgError } = await supabase
         .from('organizations')
-        .select('company_profile, website')
+        .select('company_profile, settings')
         .eq('id', organizationId)
         .single()
 
+      if (orgError) {
+        console.error('Failed to load organization:', orgError)
+      }
+
       const companyProfile = orgData?.company_profile || {}
-      const website = orgData?.website
+      const website = companyProfile?.url || orgData?.settings?.url
 
       console.log('📋 Company profile loaded:', {
         hasProfile: !!companyProfile,
