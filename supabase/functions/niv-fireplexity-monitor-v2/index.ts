@@ -497,7 +497,7 @@ serve(async (req) => {
         execution_time_ms: executionTime,
         deduplication: {
           enabled: !skip_deduplication,
-          total_scored: scoredArticles.length,
+          total_relevant: relevantArticles.length,
           already_processed: skippedCount,
           new_articles: topResults.length
         }
