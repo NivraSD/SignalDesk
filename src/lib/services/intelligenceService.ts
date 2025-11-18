@@ -68,20 +68,33 @@ export class IntelligenceService {
         console.error('Edge function error:', error)
         console.error('Error response:', error)
         onProgress?.('mcp-discovery', 'failed', error)
-        
+
         // Try to get more details about the error
         if ((error as any).context) {
           console.error('Error context:', (error as any).context)
         }
         throw error
       }
-      
+
       console.log('Pipeline started successfully:', data)
       onProgress?.('mcp-discovery', 'completed', data)
-      
-      // mcp-discovery returns { profile, content, success }
+
+      // Parse MCP response format: { content: [{ type: "text", text: "..." }] }
+      let profile = data?.profile
+      if (!profile && data?.content?.[0]?.text) {
+        try {
+          const parsedContent = JSON.parse(data.content[0].text)
+          profile = parsedContent.profile || parsedContent
+        } catch (e) {
+          console.warn('Failed to parse MCP response, using data as-is')
+          profile = data
+        }
+      }
+
+      console.log('✅ Profile extracted:', profile ? 'Yes' : 'No')
+
       // Use niv-fireplexity-monitor-v2 for Firecrawl-based monitoring (better than RSS)
-      if (data?.profile) {
+      if (profile) {
         console.log('Starting niv-fireplexity-monitor-v2 with 24-hour monitoring (Firecrawl-based with real-time accuracy)')
         onProgress?.('niv-fireplexity-monitor-v2', 'running')
 
