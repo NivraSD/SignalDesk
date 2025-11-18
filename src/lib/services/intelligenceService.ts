@@ -247,14 +247,13 @@ export class IntelligenceService {
               success: true,
               discoveryData: data,
               monitoringData: monitoringResponse.data,
-              relevanceData: relevanceResponse.data,
               enrichmentData: enrichmentResponse.data,
               executiveSynthesis: synthesisData,  // FIXED: Pass full object with nested .synthesis
               synthesis: synthesisData,  // FIXED: Pass full object with nested .synthesis
               opportunities: opportunities,
               statistics: {
                 articlesCollected: monitoringResponse.data?.metadata?.total_collected || 0,
-                articlesRelevant: relevanceResponse.data?.statistics?.output_count || 0,
+                articlesRelevant: monitoringResponse.data?.articles?.length || 0,
                 eventsExtracted: enrichmentResponse.data?.extracted_data?.events?.length || 0,
                 opportunitiesIdentified: opportunities.length || 0
               }
@@ -265,8 +264,7 @@ export class IntelligenceService {
           return {
             pipelineRunId: `pipeline-${Date.now()}`,
             discoveryData: data,
-            monitoringData: monitoringResponse.data,
-            relevanceData: relevanceResponse.data
+            monitoringData: monitoringResponse.data
           }
         }
         
