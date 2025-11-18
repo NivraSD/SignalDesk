@@ -364,11 +364,11 @@ serve(async (req) => {
 
     let relevantArticles = []
     try {
-      const relevanceResponse = await fetch(`${SUPABASE_URL}/functions/v1/monitor-stage-2-relevance`, {
+      const relevanceResponse = await fetch(`${supabaseUrl}/functions/v1/monitor-stage-2-relevance`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
+          'Authorization': `Bearer ${supabaseKey}`
         },
         body: JSON.stringify({
           articles: filteredArticles,
