@@ -358,30 +358,43 @@ serve(async (req) => {
       console.log(`   🗑️ Removed ${deduplicatedArticles.length - filteredArticles.length} old articles`)
     }
 
-    // STEP 4: Filter and score by relevance
-    console.log('\n🎯 Step 4: Scoring article relevance...')
+    // STEP 4: AI-Powered Intelligent Relevance Filtering
+    console.log('\n🎯 Step 4: AI-powered relevance filtering...')
+    console.log(`   Sending ${filteredArticles.length} articles to Claude for intelligent filtering...`)
 
-    const scoredArticles = scoreArticlesRelevance(filteredArticles, profile, orgName, discoveryTargets, targetsWithContext)
-    console.log(`   ✓ Scored ${scoredArticles.length} articles`)
+    let relevantArticles = []
+    try {
+      const relevanceResponse = await fetch(`${SUPABASE_URL}/functions/v1/monitor-stage-2-relevance`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
+        },
+        body: JSON.stringify({
+          articles: filteredArticles,
+          organization_name: orgName,
+          organization_id,
+          profile
+        })
+      })
 
-    // STEP 4.5: CRITICAL - Filter out articles that mention ZERO intelligence targets
-    // These are noise from generic queries that don't relate to our monitoring goals
-    const relevantArticles = scoredArticles.filter(article => {
-      const hasCoverage = (
-        (article.discovery_coverage?.competitors?.length > 0) ||
-        (article.discovery_coverage?.stakeholders?.length > 0) ||
-        (article.discovery_coverage?.topics?.length > 0) ||
-        article.relevance_score >= 50 // Keep if high score (mentions org directly)
-      )
-
-      if (!hasCoverage) {
-        console.log(`   🚫 Filtered out (no target mentions): "${article.title?.substring(0, 60)}..."`)
+      if (!relevanceResponse.ok) {
+        throw new Error(`Relevance API error: ${relevanceResponse.statusText}`)
       }
 
-      return hasCoverage
-    })
+      const relevanceData = await relevanceResponse.json()
+      relevantArticles = relevanceData.relevant_articles || []
 
-    console.log(`   ✓ Target filtering: ${scoredArticles.length} scored → ${relevantArticles.length} relevant (${scoredArticles.length - relevantArticles.length} filtered out)`)
+      console.log(`   ✅ AI filtering complete:`)
+      console.log(`      Total articles: ${filteredArticles.length}`)
+      console.log(`      Relevant: ${relevantArticles.length}`)
+      console.log(`      Filtered out: ${relevanceData.filtered_out}`)
+      console.log(`      Keep rate: ${relevanceData.keep_rate}`)
+    } catch (relevanceError: any) {
+      console.error(`   ❌ AI relevance filtering failed: ${relevanceError.message}`)
+      console.log(`   ⚠️ Falling back to all articles`)
+      relevantArticles = filteredArticles
+    }
 
     // STEP 5: Deduplicate against previously processed articles
     console.log('\n🔍 Step 5: Checking for previously processed articles...')
