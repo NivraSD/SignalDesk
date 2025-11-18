@@ -116,34 +116,25 @@ export class IntelligenceService {
         console.log('niv-fireplexity-monitor-v2 response:', monitoringResponse)
         onProgress?.('niv-fireplexity-monitor-v2', 'completed', monitoringResponse.data)
 
-        // monitor-stage-1 returns { articles, metadata, success }
-        // monitor-stage-2-relevance expects { articles, profile, organization_name, top_k }
+        // Monitoring now handles relevance filtering internally via AI
+        // Articles returned are already filtered by Claude based on intelligence_targets
         if (monitoringResponse.data?.articles) {
-          console.log('Starting monitor-stage-2-relevance')
-          onProgress?.('monitor-stage-2-relevance', 'running')
-          
-          const relevanceResponse = await supabase.functions.invoke('monitor-stage-2-relevance', {
-            body: {
-              articles: monitoringResponse.data.articles,
-              profile: data.profile,
-              organization_name: orgName,
-              top_k: 300  // Increased from 100 to get more diverse content
-            }
+          console.log('📊 Monitoring returned', monitoringResponse.data.articles.length, 'AI-filtered articles')
+          onProgress?.('monitor-stage-2-relevance', 'completed', {
+            articles: monitoringResponse.data.articles,
+            note: 'Filtered by monitoring function internally'
           })
-          
-          console.log('monitor-stage-2-relevance response:', relevanceResponse)
-          onProgress?.('monitor-stage-2-relevance', 'completed', relevanceResponse.data)
-          
-          // NEW FLOW: Call enrichment directly, then pass enriched data to orchestrator
-          if (relevanceResponse.data?.findings) {
+
+          // Call enrichment directly with the already-filtered articles
+          if (monitoringResponse.data?.articles?.length > 0) {
             // STEP 1: Call enrichment directly from frontend
             console.log('Starting monitoring-stage-2-enrichment directly')
             onProgress?.('monitoring-stage-2-enrichment', 'running')
             
             const enrichmentResponse = await supabase.functions.invoke('monitoring-stage-2-enrichment', {
               body: {
-                articles: relevanceResponse.data.findings || [],
-                profile: data.profile,
+                articles: monitoringResponse.data.articles,
+                profile: profile,
                 organization_name: orgName,
                 organization: { name: orgName },
                 articles_limit: 300
