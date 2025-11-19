@@ -58,33 +58,33 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    // STEP 1: Get organization profile from discovery (comprehensive intelligence context)
-    console.log('\n📋 Step 1: Loading organization profile from discovery...')
+    // STEP 1: Get organization profile (comprehensive intelligence context)
+    console.log('\n📋 Step 1: Loading organization profile...')
 
-    // Use organization_name for profile lookup (organization_id is UUID for intelligence_targets)
+    // Use organization_name for profile lookup
     const orgName = organization_name || organization_id
 
-    // Fetch from organization_profiles table (mcp-discovery creates these)
-    const { data: profileData, error: profileError } = await supabase
-      .from('organization_profiles')
-      .select('organization_name, profile_data')
-      .eq('organization_id', organization_id)
+    // Fetch from organizations table (single source of truth)
+    const { data: orgData, error: profileError } = await supabase
+      .from('organizations')
+      .select('id, name, industry, company_profile')
+      .eq('id', organization_id)
       .single()
 
-    if (profileError || !profileData) {
+    if (profileError || !orgData) {
       return new Response(JSON.stringify({
         success: false,
-        error: `No profile found for organization ID "${organization_id}". Run mcp-discovery first.`
+        error: `No organization found for ID "${organization_id}".`
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
-    const profile = profileData.profile_data || {}
+    const profile = orgData.company_profile || {}
 
-    console.log(`   ✓ Organization: ${profileData.organization_name}`)
-    console.log(`   ✓ Industry: ${profile.industry || 'Unknown'}`)
+    console.log(`   ✓ Organization: ${orgData.name}`)
+    console.log(`   ✓ Industry: ${orgData.industry || profile.industry || 'Unknown'}`)
     console.log(`   ✓ Strategic Goals: ${profile.strategic_goals?.length || 0}`)
     console.log(`   ✓ Intelligence Focus: ${profile.intelligence_focus?.priority_signals?.length || 0} signals`)
     console.log(`   ✓ Competitive Priorities: ${profile.competitive_intelligence_priorities?.focus_areas?.length || 0} areas`)
