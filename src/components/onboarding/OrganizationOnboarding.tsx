@@ -918,7 +918,7 @@ export default function OrganizationOnboarding({
     console.log('✅ Schema saved to Memory Vault:', saveData)
     setSchemaSaved(true) // Mark as saved
 
-    // Auto-generate company profile from schema
+    // Auto-generate company profile from schema (MERGE with existing MCP Discovery data)
     console.log('📋 Auto-generating company profile from schema...')
     try {
       const profileResponse = await fetch(`/api/organizations/generate-profile?id=${orgId}`, {
@@ -929,13 +929,28 @@ export default function OrganizationOnboarding({
         const profileData = await profileResponse.json()
         console.log('✅ Company profile auto-generated:', profileData.profile)
 
-        // Save the generated profile
+        // CRITICAL: MERGE schema-extracted data with existing MCP Discovery profile
+        // Get current profile first
+        const currentProfileResponse = await fetch(`/api/organizations/profile?id=${orgId}`)
+        const currentProfileData = await currentProfileResponse.json()
+
+        const mergedProfile = {
+          ...currentProfileData.organization.company_profile, // Keep all MCP Discovery data
+          ...profileData.profile, // Add schema-extracted data (leadership, headquarters, etc.)
+          // Ensure we don't overwrite critical MCP Discovery fields with empty values
+          industry: currentProfileData.organization.company_profile?.industry || profileData.profile.industry,
+          sub_industry: currentProfileData.organization.company_profile?.sub_industry || profileData.profile.sub_industry,
+          product_lines: currentProfileData.organization.company_profile?.product_lines || profileData.profile.product_lines,
+          mcp_discovery_data: currentProfileData.organization.company_profile?.mcp_discovery_data || profileData.profile.mcp_discovery_data
+        }
+
+        // Save the MERGED profile
         await fetch(`/api/organizations/profile?id=${orgId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ company_profile: profileData.profile })
+          body: JSON.stringify({ company_profile: mergedProfile })
         })
-        console.log('✅ Company profile saved to organization')
+        console.log('✅ Company profile merged and saved to organization')
       } else {
         console.warn('⚠️ Failed to auto-generate profile:', await profileResponse.text())
       }
