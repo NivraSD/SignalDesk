@@ -35,33 +35,12 @@ export async function PUT(request: Request) {
     console.log('🔑 Creating Supabase client...')
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // First, get current organization to preserve existing settings
-    console.log('📖 Fetching current organization...')
-    const { data: currentOrg, error: fetchError } = await supabase
-      .from('organizations')
-      .select('settings')
-      .eq('id', id)
-      .single()
-
-    if (fetchError) {
-      console.error('❌ Error fetching current organization:', fetchError)
-      return NextResponse.json(
-        { error: 'Failed to fetch organization', details: fetchError.message },
-        { status: 500 }
-      )
-    }
-
-    console.log('✅ Current org settings:', currentOrg?.settings)
-
-    // Update organization - store size in settings JSONB along with url
+    // Update organization - store url, industry, size at top level for consistency
     const updateData = {
       name: name.trim(),
-      industry: industry?.trim() || null,
-      settings: {
-        ...(currentOrg?.settings || {}),
-        url: domain.trim(),
-        size: size || null
-      },
+      url: domain.trim(),       // Top-level column
+      industry: industry?.trim() || null,  // Top-level column
+      size: size || null,        // Top-level column
       updated_at: new Date().toISOString()
     }
 
@@ -84,48 +63,50 @@ export async function PUT(request: Request) {
 
     console.log('✅ Organization updated successfully')
 
-    // Update memory_vault with latest org context
+    // Update content_library (MemoryVault) with org context so playbooks stay synced
     try {
-      const memoryValue = {
+      const orgContextContent = {
         organization_name: data.name,
         industry: data.industry,
-        url: updateData.settings.url,
-        size: updateData.settings.size,
-        business_description: data.company_profile?.business_description,
-        business_model: data.company_profile?.business_model,
-        key_markets: data.company_profile?.key_markets,
-        product_lines: data.company_profile?.product_lines,
-        leadership: data.company_profile?.leadership,
+        url: data.url,
+        size: data.size,
+        company_profile: data.company_profile,
         updated_at: new Date().toISOString()
       }
 
+      // Save/update as special 'org-profile' type in content_library
+      // This ensures playbooks have access to latest org context
       await supabase
-        .from('memory_vault')
+        .from('content_library')
         .upsert({
           organization_id: id,
-          memory_type: 'org_context',
-          memory_key: 'organizational_profile',
-          memory_value: memoryValue,
-          category: 'profile',
-          content: `${data.name} is a ${data.company_profile?.business_model || 'company'} in ${data.industry || 'the industry'}. ${data.company_profile?.business_description || ''}`,
-          confidence_score: 1.0,
-          source: 'organization_update_api',
-          source_timestamp: new Date().toISOString()
+          content_type: 'org-profile',
+          title: `${data.name} - Organization Profile`,
+          content: JSON.stringify(orgContextContent),
+          metadata: {
+            industry: data.industry,
+            url: data.url,
+            size: data.size,
+            last_updated: new Date().toISOString()
+          },
+          folder: 'Organization',
+          status: 'saved',
+          salience_score: 1.0,
+          last_accessed_at: new Date().toISOString()
         }, {
-          onConflict: 'organization_id,memory_type,memory_key'
+          onConflict: 'organization_id,content_type',
+          // Use unique constraint on (organization_id, content_type) to ensure only one org-profile per org
         })
 
-      console.log('✅ Updated memory_vault with org context')
+      console.log('✅ Updated org context in MemoryVault (content_library)')
     } catch (mvError: any) {
-      console.error('⚠️ Failed to update memory_vault (non-blocking):', mvError.message)
+      console.error('⚠️ Failed to update MemoryVault org context (non-blocking):', mvError.message)
     }
 
-    // Flatten settings for easier access
+    // Return with description from profile
     const flatOrg = {
       ...data,
-      url: data.settings?.url,
-      size: data.settings?.size,
-      description: data.settings?.description
+      description: data.company_profile?.description
     }
 
     return NextResponse.json({

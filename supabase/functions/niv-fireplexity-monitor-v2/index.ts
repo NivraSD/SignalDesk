@@ -58,40 +58,36 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    // STEP 1: Get organization profile (using fast company_profile from organizations table)
-    console.log('\n📋 Step 1: Loading organization profile...')
+    // STEP 1: Get organization profile from discovery (comprehensive intelligence context)
+    console.log('\n📋 Step 1: Loading organization profile from discovery...')
 
     // Use organization_name for profile lookup (organization_id is UUID for intelligence_targets)
     const orgName = organization_name || organization_id
 
-    // Fetch from organizations table (faster, contains intelligence context)
-    const { data: orgData, error: orgError } = await supabase
-      .from('organizations')
-      .select('name, industry, company_profile')
-      .eq('id', organization_id)
+    // Fetch from organization_profiles table (mcp-discovery creates these)
+    const { data: profileData, error: profileError } = await supabase
+      .from('organization_profiles')
+      .select('organization_name, profile_data')
+      .eq('organization_id', organization_id)
       .single()
 
-    if (orgError || !orgData) {
+    if (profileError || !profileData) {
       return new Response(JSON.stringify({
         success: false,
-        error: `No organization found for ID "${organization_id}".`
+        error: `No profile found for organization ID "${organization_id}". Run mcp-discovery first.`
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
-    const profile = {
-      industry: orgData.industry,
-      ...orgData.company_profile,
-      // Legacy compatibility - keep structure similar
-      sources: { source_priorities: {} }
-    }
+    const profile = profileData.profile_data || {}
 
-    console.log(`   ✓ Organization: ${orgData.name}`)
+    console.log(`   ✓ Organization: ${profileData.organization_name}`)
     console.log(`   ✓ Industry: ${profile.industry || 'Unknown'}`)
     console.log(`   ✓ Strategic Goals: ${profile.strategic_goals?.length || 0}`)
     console.log(`   ✓ Intelligence Focus: ${profile.intelligence_focus?.priority_signals?.length || 0} signals`)
+    console.log(`   ✓ Competitive Priorities: ${profile.competitive_intelligence_priorities?.focus_areas?.length || 0} areas`)
 
     // STEP 1.5: Load intelligence targets from database (not from stale profile)
     console.log('\n🎯 Step 1.5: Loading intelligence targets from database...')
@@ -218,12 +214,12 @@ serve(async (req) => {
     console.log('\n🔍 Step 2: Generating intelligent queries using AI...')
 
     // Try AI-driven query generation first (Fireplexity approach)
-    let queries = await generateIntelligentQueries(profile, orgData.name, discoveryTargets, targetsByPriority)
+    let queries = await generateIntelligentQueries(profile, orgName, discoveryTargets, targetsByPriority)
 
     // Fallback to static queries if AI fails
     if (queries.length === 0) {
       console.log('   ⚠️ Using fallback static query generation')
-      queries = generateRealtimeQueries(profile, orgData.name, recency_window, discoveryTargets, targetsByPriority, targetsWithContext)
+      queries = generateRealtimeQueries(profile, orgName, recency_window, discoveryTargets, targetsByPriority, targetsWithContext)
     }
 
     console.log(`   ✓ Generated ${queries.length} queries for real-time monitoring`)

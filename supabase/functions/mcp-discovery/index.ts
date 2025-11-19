@@ -840,7 +840,39 @@ NOW, provide your COMPREHENSIVE profile in this JSON format:
     "competitor_priorities": {
       "Top_Competitor_Name": ["What specific aspects to monitor"]
     }
-  }
+  },
+
+  "competitive_intelligence_priorities": {
+    "focus_areas": ["3-5 key intelligence focus areas - e.g., 'M&A activity in our sector', 'regulatory changes affecting operations', 'technology disruption in core services', 'market share shifts'"],
+    "competitor_threats": ["2-3 specific competitive threats to monitor - e.g., 'Competitor X's AI-powered platform launch', 'Competitor Y expanding into our key markets'"],
+    "market_opportunities": ["2-3 market opportunities to track - e.g., 'ESG reporting demand growth', 'emerging markets expansion', 'technology partnership opportunities'"]
+  },
+
+  "industry_context": {
+    "sub_sector": "Specific industry sub-sector - e.g., 'Strategic Communications & Investor Relations', 'Enterprise Cloud Infrastructure', 'Specialty Pharmaceuticals'",
+    "key_trends": ["3-5 major industry trends - e.g., 'AI-powered automation', 'ESG integration', 'digital transformation', 'regulatory compliance costs'"],
+    "regulatory_environment": "Brief description of regulatory landscape - e.g., 'SEC disclosure rules, industry self-regulation', 'HIPAA compliance required', 'Minimal regulatory oversight'",
+    "market_dynamics": "Key market dynamics - e.g., 'Consolidation through M&A', 'Shift to subscription models', 'Global expansion', 'Technology disruption'"
+  },
+
+  "intelligence_focus": {
+    "priority_signals": ["5-7 specific signals to monitor - e.g., 'competitor_product_launches', 'executive_hires', 'client_wins_losses', 'regulatory_changes', 'industry_partnerships', 'technology_investments'"],
+    "ignore_patterns": ["3-5 noise patterns to filter out - e.g., 'routine_pr_announcements', 'minor_staff_changes', 'promotional_content', 'social_media_posts'"],
+    "geographic_focus": ["Key geographic regions - e.g., 'North America', 'Europe', 'Asia-Pacific', 'Latin America'"],
+    "monitoring_intensity": "Monitoring level: 'high' (hourly checks, deep analysis), 'medium' (daily checks, moderate depth), or 'low' (weekly checks, headlines only)"
+  },
+
+  "strategic_goals": [
+    {"goal": "Strategic Goal 1", "description": "Why this matters and how to monitor progress"},
+    {"goal": "Strategic Goal 2", "description": "Why this matters and how to monitor progress"},
+    {"goal": "Strategic Goal 3", "description": "Why this matters and how to monitor progress"}
+  ],
+
+  "business_model": "Business model description - e.g., 'B2B SaaS subscription', 'Professional services retainer + project-based', 'B2C e-commerce', 'Asset-heavy trading and distribution'",
+
+  "product_lines": ["3-5 core product/service lines"],
+
+  "key_markets": ["Primary geographic markets or customer segments"]
 }
 
 ${industry_hint ? `\nIndustry context: ${industry_hint}` : ''}

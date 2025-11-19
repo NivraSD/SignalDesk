@@ -229,25 +229,52 @@ export default function OrganizationOnboarding({
         throw new Error('No organization data returned from API')
       }
 
-      // 1.5. Populate company profile from discovery data
-      console.log('📋 Populating company profile from discovery...')
+      // 1.5. Populate company profile from MCP Discovery data (CRITICAL for MemoryVault)
+      console.log('📋 Populating company profile from MCP Discovery...')
       const companyProfile = {
-        // Product lines from GEO service lines
-        product_lines: serviceLines || [],
+        // Core company data from MCP Discovery
+        industry: discovered?.industry || industry,
+        sub_industry: discovered?.sub_industry,
+        description: discovered?.description,
+
+        // Product lines from GEO service lines + MCP
+        product_lines: serviceLines || fullProfile?.service_lines || [],
+
         // Key markets from GEO geographic focus
-        key_markets: geographicFocus || [],
-        // Business context from discovery
+        key_markets: geographicFocus || fullProfile?.key_markets || [],
+
+        // Business model inference from discovery
         business_model: discovered?.description ?
           (discovered.description.includes('B2B') ? 'B2B' :
            discovered.description.includes('B2C') ? 'B2C' :
            discovered.description.includes('SaaS') ? 'B2B SaaS' : '') : '',
-        // Industry from discovery
-        // Leadership, headquarters, size can be filled later in settings
+
+        // Strategic context from MCP Discovery
+        strategic_context: {
+          target_customers: targetCustomers || fullProfile?.strategic_context?.target_customers || '',
+          brand_personality: brandPersonality || fullProfile?.strategic_context?.brand_personality || '',
+          strategic_priorities: strategicPriorities || fullProfile?.strategic_context?.strategic_priorities || []
+        },
+
+        // Strategic goals (user-defined during onboarding)
+        strategic_goals: strategicGoals || [],
+
+        // Competitors and stakeholders (reference to intelligence_targets)
+        competitors: Array.from(selectedCompetitors),
+        stakeholders: Array.from(selectedStakeholders),
+
+        // Leadership, headquarters, size can be filled via "Generate from Schema" or manual entry
         leadership: [],
         headquarters: {},
         company_size: {},
         founded: '',
-        parent_company: ''
+        parent_company: '',
+
+        // Store reference to full MCP Discovery profile
+        mcp_discovery_data: {
+          discovered_at: new Date().toISOString(),
+          has_full_profile: !!fullProfile
+        }
       }
 
       try {
@@ -817,7 +844,9 @@ export default function OrganizationOnboarding({
     const orgId = createdOrganization.id
     const orgNameToUse = createdOrganization.name || orgName
 
-    console.log('💾 Saving schema to Memory Vault...')
+    console.log('💾 Saving schema to MemoryVault...')
+
+    // Save schema as separate content item
     const saveResponse = await fetch('/api/content-library/save', {
       method: 'POST',
       headers: {
@@ -845,6 +874,40 @@ export default function OrganizationOnboarding({
         folder: 'Schemas'
       })
     })
+
+    if (!saveResponse.ok) {
+      const errorText = await saveResponse.text()
+      console.error('Failed to save schema to content_library:', errorText)
+    } else {
+      console.log('✅ Schema saved to content_library')
+    }
+
+    // CRITICAL: Also update org-profile in MemoryVault to include schema reference
+    try {
+      const updateOrgProfileResponse = await fetch(`/api/organizations/profile?id=${orgId}`)
+      const orgProfileData = await updateOrgProfileResponse.json()
+
+      if (orgProfileData.success && orgProfileData.organization) {
+        const updatedProfile = {
+          ...orgProfileData.organization.company_profile,
+          schema_org_data: {
+            has_schema: true,
+            generated_at: new Date().toISOString(),
+            schema_reference: 'content_library:schema'
+          }
+        }
+
+        await fetch(`/api/organizations/profile?id=${orgId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ company_profile: updatedProfile })
+        })
+
+        console.log('✅ Updated org profile with schema reference')
+      }
+    } catch (err) {
+      console.warn('⚠️ Failed to update org profile with schema reference:', err)
+    }
 
     if (!saveResponse.ok) {
       const errorText = await saveResponse.text()
