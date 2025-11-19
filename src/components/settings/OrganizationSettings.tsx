@@ -86,16 +86,21 @@ export default function OrganizationSettings({
       setError(null)
       setSuccess(null)
 
+      const payload = {
+        id: organizationId,
+        ...orgData
+      }
+      console.log('📤 Sending to API:', payload)
+
       const response = await fetch('/api/organizations/update', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: organizationId,
-          ...orgData
-        })
+        body: JSON.stringify(payload)
       })
 
+      console.log('📡 Response status:', response.status)
       const data = await response.json()
+      console.log('📦 Response data:', data)
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to update organization')
