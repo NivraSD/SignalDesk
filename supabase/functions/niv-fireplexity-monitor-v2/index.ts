@@ -643,6 +643,14 @@ function generateRealtimeQueries(
     // Add all context queries (industry, service lines, markets, strategic priorities)
     queries.push(...contextQueries.all)
 
+    // CRITICAL: Add high-priority competitor queries
+    // Context queries are too generic and miss specific competitor news
+    const highPriorityCompetitors = targetsByPriority.competitors.high.slice(0, 5)
+    highPriorityCompetitors.forEach(competitor => {
+      queries.push(`${competitor} news`)
+    })
+    console.log(`   Added ${highPriorityCompetitors.length} high-priority competitor queries`)
+
     // Add crisis/opportunity detection queries
     if (industry) {
       queries.push(`${industry} crisis OR scandal OR investigation`)
