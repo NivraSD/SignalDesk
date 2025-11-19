@@ -1,63 +1,15 @@
 // Conversation Context Synthesizer
 // Analyzes conversation history to extract key concepts, decisions, and narrative arc
 // Used when user requests content "based on what we discussed"
-
-export interface ConversationArtifact {
-  type: 'concept' | 'decision' | 'research' | 'preference' | 'agreement' | 'constraint'
-  title: string
-  content: string
-  timestamp: string
-  messageId: string
-  confidence: number // 0-1, how confident we are this is meaningful
-  relatedTo?: string[] // IDs of other artifacts this connects to
-}
-
-export interface ConversationTheme {
-  theme: string
-  description: string
-  artifacts: ConversationArtifact[]
-  narrative: string // How this theme developed through the conversation
-}
-
-export interface ConversationSynthesis {
-  summary: string // High-level overview of conversation
-  themes: ConversationTheme[]
-  keyDecisions: string[] // Critical decisions made
-  concepts: string[] // Core concepts/ideas developed
-  timeline: {
-    phase: string
-    description: string
-    messageCount: number
-  }[]
-  presentationStructure?: {
-    // Suggested structure for presentation based on conversation flow
-    title: string
-    sections: {
-      title: string
-      talking_points: string[]
-      supportingArtifacts: ConversationArtifact[]
-    }[]
-  }
-}
-
 /**
  * Synthesize conversation history into structured insights
  * This is called when user says things like:
  * - "create a presentation based on what we discussed"
  * - "use the concept we agreed on"
  * - "summarize what we've been talking about"
- */
-export async function synthesizeConversationContext(
-  conversationHistory: any[],
-  currentQuery: string,
-  claudeApiKey: string
-): Promise<ConversationSynthesis> {
-
+ */ export async function synthesizeConversationContext(conversationHistory, currentQuery, claudeApiKey) {
   // Build conversation context for Claude to analyze
-  const conversationText = conversationHistory
-    .map(msg => `[${msg.role}]: ${msg.content}`)
-    .join('\n\n')
-
+  const conversationText = conversationHistory.map((msg)=>`[${msg.role}]: ${msg.content}`).join('\n\n');
   const SYNTHESIS_PROMPT = `You are analyzing a conversation between a user and NIV (an AI strategic consultant).
 
 **Current User Request:** "${currentQuery}"
@@ -125,67 +77,63 @@ Return a JSON object with this structure:
       }
     ]
   }
-}`
-
+}`;
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'x-api-key': claudeApiKey,
         'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
+        'content-type': 'application/json'
       },
       body: JSON.stringify({
         model: 'claude-3-sonnet-20241022',
         max_tokens: 4000,
-        messages: [{
-          role: 'user',
-          content: SYNTHESIS_PROMPT
-        }]
-      }),
-    })
-
+        messages: [
+          {
+            role: 'user',
+            content: SYNTHESIS_PROMPT
+          }
+        ]
+      })
+    });
     if (response.ok) {
-      const data = await response.json()
-      const responseText = data.content[0].text
-
+      const data = await response.json();
+      const responseText = data.content[0].text;
       // Extract JSON from response
-      const jsonMatch = responseText.match(/\{[\s\S]*\}/)
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        const synthesis: ConversationSynthesis = JSON.parse(jsonMatch[0])
-
-        console.log('🧠 Conversation Synthesis Complete:')
-        console.log(`   - Themes: ${synthesis.themes.length}`)
-        console.log(`   - Key Decisions: ${synthesis.keyDecisions.length}`)
-        console.log(`   - Concepts: ${synthesis.concepts.length}`)
-        console.log(`   - Timeline Phases: ${synthesis.timeline.length}`)
-
-        return synthesis
+        const synthesis = JSON.parse(jsonMatch[0]);
+        console.log('🧠 Conversation Synthesis Complete:');
+        console.log(`   - Themes: ${synthesis.themes.length}`);
+        console.log(`   - Key Decisions: ${synthesis.keyDecisions.length}`);
+        console.log(`   - Concepts: ${synthesis.concepts.length}`);
+        console.log(`   - Timeline Phases: ${synthesis.timeline.length}`);
+        return synthesis;
       }
     }
   } catch (error) {
-    console.error('❌ Conversation synthesis failed:', error)
+    console.error('❌ Conversation synthesis failed:', error);
   }
-
   // Fallback: basic synthesis
   return {
     summary: 'Unable to fully synthesize conversation. Creating content based on current request.',
     themes: [],
     keyDecisions: [],
     concepts: [],
-    timeline: [{
-      phase: 'Full Conversation',
-      description: 'Multi-turn discussion',
-      messageCount: conversationHistory.length
-    }]
-  }
+    timeline: [
+      {
+        phase: 'Full Conversation',
+        description: 'Multi-turn discussion',
+        messageCount: conversationHistory.length
+      }
+    ]
+  };
 }
-
 /**
  * Detect if user query references conversation history
  * Signals: "based on what we discussed", "use the concept we agreed", "from our conversation"
- */
-export function requiresConversationSynthesis(query: string): boolean {
+ */ export function requiresConversationSynthesis(query) {
   const conversationSignals = [
     /based on what we (discussed|talked about)/i,
     /the concept we (agreed|developed|created)/i,
@@ -194,28 +142,25 @@ export function requiresConversationSynthesis(query: string): boolean {
     /(use|include) what we (said|discussed)/i,
     /the (idea|concept|strategy|approach) we (chose|picked|decided)/i,
     /incorporate our (discussion|conversation)/i
-  ]
-
-  return conversationSignals.some(pattern => pattern.test(query))
+  ];
+  return conversationSignals.some((pattern)=>pattern.test(query));
 }
-
 /**
  * Format synthesis for presentation outline tool
  * Converts conversation synthesis into presentation-ready structure
- */
-export function formatSynthesisForPresentation(synthesis: ConversationSynthesis) {
+ */ export function formatSynthesisForPresentation(synthesis) {
   return {
     topic: synthesis.presentationStructure?.title || 'Presentation Based on Discussion',
     keyMessages: synthesis.keyDecisions.concat(synthesis.concepts),
     narrative: synthesis.summary,
-    suggestedSections: synthesis.presentationStructure?.sections || synthesis.themes.map(theme => ({
-      title: theme.theme,
-      talking_points: theme.artifacts.map(a => a.title),
-      supportingArtifacts: theme.artifacts
-    })),
+    suggestedSections: synthesis.presentationStructure?.sections || synthesis.themes.map((theme)=>({
+        title: theme.theme,
+        talking_points: theme.artifacts.map((a)=>a.title),
+        supportingArtifacts: theme.artifacts
+      })),
     conversationContext: {
-      themes: synthesis.themes.map(t => t.theme),
+      themes: synthesis.themes.map((t)=>t.theme),
       timeline: synthesis.timeline
     }
-  }
+  };
 }

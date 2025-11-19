@@ -96,28 +96,26 @@ serve(async (req) => {
 
       const prompt = `You are filtering news articles for ${organization_name}, a company in ${profile?.industry || 'their industry'}.
 
-CRITICAL CONTEXT:
-${organization_name} wants to monitor their COMPETITORS and STAKEHOLDERS, NOT themselves.
+YOUR JOB:
+Filter articles for relevance to the ${profile?.industry || 'their industry'} industry. ${organization_name} wants to stay informed about industry trends, competitor activities, and stakeholder movements.
 
-COMPETITORS TO MONITOR (${competitors.length}):
+COMPETITORS TO TRACK (${competitors.length}):
 ${competitors.map(c => `- ${c.name}: ${c.monitoring_context || 'Monitor for competitive intelligence'}`).join('\n')}
 
-STAKEHOLDERS TO MONITOR (${stakeholders.length}):
+STAKEHOLDERS TO TRACK (${stakeholders.length}):
 ${stakeholders.map(s => `- ${s.name}: ${s.monitoring_context || 'Monitor for stakeholder activities'}`).join('\n')}
 
-YOUR JOB:
-For each article below, determine if it's ACTUALLY about one of the competitors or stakeholders listed above.
-
-An article IS relevant if:
-- It's primarily about a competitor (their announcements, hires, partnerships, products, crises)
-- It's primarily about a stakeholder (their activities, statements, movements)
-- It mentions strategic moves, leadership changes, or significant events involving targets
+An article IS relevant if it covers:
+✅ Competitor news (product launches, hires, partnerships, acquisitions, crises, strategy shifts)
+✅ Stakeholder activities (statements, policy changes, movements, initiatives)
+✅ Industry trends affecting ${profile?.industry || 'the industry'} (market shifts, new regulations, technology changes)
+✅ Major industry events, awards, or recognition
+✅ Thought leadership or research relevant to ${profile?.industry || 'the industry'}
 
 An article is NOT relevant if:
-- It's about ${organization_name} themselves (that's not intelligence)
-- It mentions a competitor/stakeholder only in passing
-- It's generic industry news with no specific target mentioned
-- It's about random companies not in the target list
+❌ It's about ${organization_name} themselves
+❌ It's completely unrelated to ${profile?.industry || 'the industry'} (tech, finance, healthcare, etc. unless relevant)
+❌ It's purely promotional/spam content
 
 ARTICLES TO FILTER:
 ${batch.map((a, idx) => `
@@ -133,14 +131,14 @@ RESPOND IN JSON:
     {
       "article_number": 1,
       "is_relevant": true,
-      "target_mentioned": "Edelman",
-      "relevance_score": 95,
-      "reason": "Article announces Edelman's acquisition of a crisis communications firm"
+      "target_mentioned": "Edelman" OR "Industry Trend" OR "Stakeholder Name",
+      "relevance_score": 85,
+      "reason": "Brief explanation of why this is relevant to ${profile?.industry || 'the industry'}"
     }
   ]
 }
 
-ONLY include articles that are CLEARLY about the competitors/stakeholders. Be strict. Quality over quantity.`;
+Include ALL articles relevant to ${profile?.industry || 'the industry'}. Be inclusive - industry news is valuable even without specific competitor mentions.`;
 
       try {
         const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -151,7 +149,7 @@ ONLY include articles that are CLEARLY about the competitors/stakeholders. Be st
             'anthropic-version': '2023-06-01'
           },
           body: JSON.stringify({
-            model: 'claude-3-5-sonnet-20241022',
+            model: 'claude-sonnet-4-20250514',
             max_tokens: 4000,
             temperature: 0.3,
             messages: [{

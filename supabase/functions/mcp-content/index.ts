@@ -1092,7 +1092,7 @@ async function generateCaseStudy(args: any) {
 
 CUSTOMER BACKGROUND:
 - Customer: ${customer}
-- Industry: ${industry || 'technology'}
+- Industry: ${industry || 'cross-industry'}
 
 CHALLENGE:
 ${challenge}
@@ -1158,7 +1158,7 @@ async function generateWhitePaper(args: any) {
 TITLE: ${title}
 TOPIC: ${topic}
 TARGET AUDIENCE: ${targetAudience}
-INDUSTRY: ${industry || 'technology'}
+INDUSTRY: ${industry || 'cross-industry'}
 
 ${narrative ? `\nCORE NARRATIVE:\n${narrative}\n` : ''}
 ${rationale ? `\nSTRATEGIC RATIONALE:\n${rationale}\n` : ''}
@@ -1288,7 +1288,7 @@ async function generateExecutiveStatement(args: any) {
 // Generate media list
 async function generateMediaList(args: any) {
   // Handle parameters from NIV with full context
-  const industry = args.industry || 'technology';
+  const industry = args.industry || 'business';
   const topic = args.topic || args.message || args.announcement || args.subject || 'company news';
   const company = args.company || args.organization || '';
   const companyDescription = args.companyDescription || '';

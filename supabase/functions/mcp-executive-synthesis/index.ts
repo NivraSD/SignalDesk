@@ -940,15 +940,16 @@ Provide a concise executive synthesis focusing on:
         model: 'claude-sonnet-4-20250514',  // Back to Sonnet 4 - was working before
         max_tokens: 4000,
         temperature: 0.3,  // Lower temperature for more focused, strategic output
-        system: `You are writing a DAILY COMPETITIVE INTELLIGENCE BRIEF for ${organization?.name}'s executive team.
+        system: `You are writing a DAILY INDUSTRY INTELLIGENCE BRIEF for ${organization?.name}'s executive team.
 
-MISSION: Report what competitors are doing TODAY so executives can make business decisions.
+MISSION: Report on the ${organization?.industry || 'industry'} landscape TODAY - market trends, competitor moves, regulatory shifts, thought leadership, and strategic opportunities.
 
 ABSOLUTE RULES:
-1. REPORT ON EVERY COMPETITOR IN THE DATA - no cherry-picking
-2. RECENT NEWS FIRST - Today > This week > Old (ignore 2+ weeks unless critical)
-3. BE DIRECT - "Glencore did X, Trafigura did Y" not "industry trends show..."
-4. NO EXCUSES - Don't say "limited intelligence" when competitors ARE in the data
+1. FOCUS ON INDUSTRY INTELLIGENCE - trends, events, regulatory changes, market shifts, thought leadership
+2. Competitor-specific news is ONE component, not the only component
+3. RECENT NEWS FIRST - Today > This week > Old (ignore 2+ weeks unless critical)
+4. BE SUBSTANTIVE - Report actual industry developments, not "limited intelligence detected"
+5. VALUE ALL SIGNALS - Industry news without specific competitor mentions is still valuable intelligence
 
 ${synthesisMetadata?.companyProfile ? `
 ═══════════════════════════════════════════════════════════
@@ -960,15 +961,22 @@ Product Lines: ${synthesisMetadata.companyProfile.product_lines?.join(', ') || '
 Key Markets: ${synthesisMetadata.companyProfile.key_markets?.join(', ') || 'Not specified'}
 Strategic Goals: ${synthesisMetadata.companyProfile.strategic_goals?.map(g => `${g.goal} (${g.timeframe})`).join('; ') || 'Not specified'}
 
-KEY COMPETITORS TO MONITOR:
+INDUSTRY FOCUS: ${organization?.industry || 'The industry'}
+
+KEY COMPETITORS TO TRACK (when mentioned):
 ${discoveryTargets.competitors.slice(0, 15).join(', ') || 'None specified'}
 
-KEY STAKEHOLDERS TO MONITOR (regulators, analysts, investors):
+KEY STAKEHOLDERS TO TRACK (regulators, analysts, investors):
 ${discoveryTargets.stakeholders.slice(0, 15).join(', ') || 'None specified'}
 
-⚠️ CRITICAL: Your synthesis MUST systematically cover intelligence about THESE competitors and stakeholders.
-Do NOT cherry-pick sensational stories that aren't relevant to ${organization?.name}'s business.
-Focus on what matters to a ${synthesisMetadata.companyProfile.business_model || 'company in this industry'}.
+⚠️ CRITICAL: Your synthesis should cover:
+- Industry trends and market shifts affecting ${organization?.industry || 'the industry'}
+- Competitor moves when available (but don't complain if not every competitor has news today)
+- Regulatory/policy changes
+- Thought leadership and industry discourse
+- Strategic opportunities for ${organization?.name}
+
+Focus on what matters to a ${synthesisMetadata.companyProfile.business_model || 'company in this industry'}, not just competitor tracking.
 ` : ''}
 
 WHAT YOU ARE RECEIVING:

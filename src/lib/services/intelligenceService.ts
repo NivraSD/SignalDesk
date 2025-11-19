@@ -109,31 +109,50 @@ export class IntelligenceService {
             organization_name: orgName,
             recency_window: '24hours',
             max_results: 100,
-            skip_deduplication: false
+            skip_deduplication: true // TEMP: Disable deduplication to see what AI filter is finding
           }
         })
 
         console.log('niv-fireplexity-monitor-v2 response:', monitoringResponse)
         onProgress?.('niv-fireplexity-monitor-v2', 'completed', monitoringResponse.data)
 
-        // Monitoring now handles relevance filtering internally via AI
-        // Articles returned are already filtered by Claude based on intelligence_targets
+        // STEP 3: AI-Powered Relevance Filtering
         if (monitoringResponse.data?.articles) {
-          console.log('📊 Monitoring returned', monitoringResponse.data.articles.length, 'AI-filtered articles')
-          onProgress?.('monitor-stage-2-relevance', 'completed', {
-            articles: monitoringResponse.data.articles,
-            note: 'Filtered by monitoring function internally'
+          console.log('📊 Monitoring collected', monitoringResponse.data.articles.length, 'articles')
+          console.log('Starting monitor-stage-2-relevance for AI filtering')
+          onProgress?.('monitor-stage-2-relevance', 'running')
+
+          const relevanceResponse = await supabase.functions.invoke('monitor-stage-2-relevance', {
+            body: {
+              articles: monitoringResponse.data.articles,
+              organization_name: orgName,
+              organization_id: organizationId,
+              profile: profile
+            }
           })
 
-          // Call enrichment directly with the already-filtered articles
-          if (monitoringResponse.data?.articles?.length > 0) {
-            // STEP 1: Call enrichment directly from frontend
-            console.log('Starting monitoring-stage-2-enrichment directly')
+          console.log('monitor-stage-2-relevance response:', relevanceResponse)
+
+          if (relevanceResponse.error) {
+            console.error('Relevance filtering error:', relevanceResponse.error)
+            onProgress?.('monitor-stage-2-relevance', 'failed', relevanceResponse.error)
+            throw new Error(`Relevance filtering failed: ${relevanceResponse.error.message || 'Unknown error'}`)
+          }
+
+          onProgress?.('monitor-stage-2-relevance', 'completed', relevanceResponse.data)
+
+          const relevantArticles = relevanceResponse.data?.relevant_articles || []
+          console.log('📊 Relevance filter kept', relevantArticles.length, 'articles')
+
+          // Call enrichment with filtered articles
+          if (relevantArticles.length > 0) {
+            // STEP 4: Call enrichment with relevant articles
+            console.log('Starting monitoring-stage-2-enrichment with', relevantArticles.length, 'relevant articles')
             onProgress?.('monitoring-stage-2-enrichment', 'running')
-            
+
             const enrichmentResponse = await supabase.functions.invoke('monitoring-stage-2-enrichment', {
               body: {
-                articles: monitoringResponse.data.articles,
+                articles: relevantArticles,
                 profile: profile,
                 organization_name: orgName,
                 organization: { name: orgName },

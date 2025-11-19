@@ -41,6 +41,11 @@ serve(async (req) => {
       skip_deduplication = false
     }: MonitorRequest = await req.json()
 
+    // CRITICAL: Limit articles to prevent timeout (Edge Functions have 150s limit)
+    // 100 articles = 5 batches of 20 = ~75-100s for AI filtering alone
+    // 50 articles = 2-3 batches = ~30-45s for AI filtering (leaves room for Firecrawl searches)
+    const ARTICLE_LIMIT = 50 // Process max 50 articles to stay under timeout
+
     console.log('🔍 Real-Time Monitor V2 (Firecrawl) Starting:', {
       organization_id,
       recency_window,
@@ -358,50 +363,17 @@ serve(async (req) => {
       console.log(`   🗑️ Removed ${deduplicatedArticles.length - filteredArticles.length} old articles`)
     }
 
-    // STEP 4: AI-Powered Intelligent Relevance Filtering
-    console.log('\n🎯 Step 4: AI-powered relevance filtering...')
-    console.log(`   Sending ${filteredArticles.length} articles to Claude for intelligent filtering...`)
+    // STEP 4: Return articles (relevance filtering happens downstream in enrichment)
+    console.log('\n🎯 Step 4: Preparing articles for downstream processing...')
+    console.log(`   Collected ${filteredArticles.length} recent articles`)
 
-    let relevantArticles = []
-    try {
-      console.log(`   📤 Sending to relevance API:`, {
-        article_count: filteredArticles.length,
-        organization_name: orgName,
-        organization_id,
-        has_profile: !!profile
-      })
-
-      const relevanceResponse = await fetch(`${supabaseUrl}/functions/v1/monitor-stage-2-relevance`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabaseKey}`
-        },
-        body: JSON.stringify({
-          articles: filteredArticles,
-          organization_name: orgName,
-          organization_id,
-          profile
-        })
-      })
-
-      if (!relevanceResponse.ok) {
-        throw new Error(`Relevance API error: ${relevanceResponse.statusText}`)
-      }
-
-      const relevanceData = await relevanceResponse.json()
-      relevantArticles = relevanceData.relevant_articles || []
-
-      console.log(`   ✅ AI filtering complete:`)
-      console.log(`      Total articles: ${filteredArticles.length}`)
-      console.log(`      Relevant: ${relevantArticles.length}`)
-      console.log(`      Filtered out: ${relevanceData.filtered_out}`)
-      console.log(`      Keep rate: ${relevanceData.keep_rate}`)
-    } catch (relevanceError: any) {
-      console.error(`   ❌ AI relevance filtering failed: ${relevanceError.message}`)
-      console.log(`   ⚠️ Falling back to all articles`)
-      relevantArticles = filteredArticles
+    // Limit to prevent overwhelming downstream functions
+    const articlesToReturn = filteredArticles.slice(0, 100)
+    if (filteredArticles.length > 100) {
+      console.log(`   ⚠️ Limited from ${filteredArticles.length} to 100 articles`)
     }
+
+    const relevantArticles = articlesToReturn
 
     // STEP 5: Deduplicate against previously processed articles
     console.log('\n🔍 Step 5: Checking for previously processed articles...')
@@ -677,10 +649,30 @@ function generateRealtimeQueries(
   // FALLBACK APPROACH: Simple industry monitoring if no context queries
   // This only runs for old profiles that don't have context_queries
 
-  // Basic industry queries
-  if (industry) {
+  // SMART INDUSTRY QUERIES: Use sub_industry and service_lines for specificity
+  // Generic industry names like "Public Relations" match too broadly
+  // Use more specific terms from the profile to disambiguate
+
+  const subIndustry = profile.sub_industry
+  const serviceLines = profile.service_lines || []
+
+  if (subIndustry && subIndustry !== industry) {
+    // Sub-industry is more specific - use it
+    queries.push(`${subIndustry} news`)
+    queries.push(`${subIndustry} trends`)
+  } else if (industry) {
+    // Use industry but try to make it more specific
     queries.push(`${industry} news`)
     queries.push(`${industry} trends`)
+  }
+
+  // Add service line queries for even more specificity
+  serviceLines.slice(0, 2).forEach((service: string) => {
+    queries.push(`${service} market news`)
+  })
+
+  // Add regulatory/partnership queries
+  if (industry) {
     queries.push(`${industry} partnerships`)
     queries.push(`${industry} regulatory`)
   }

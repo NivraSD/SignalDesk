@@ -225,14 +225,17 @@ export default function CompanyProfileTab({
   }
 
   const generateFromSchema = async () => {
+    console.log('🔄 Generate from schema clicked', { organizationId })
     try {
       setGenerating(true)
       setError(null)
       setSuccess(false)
 
+      console.log('📡 Fetching:', `/api/organizations/generate-profile?id=${organizationId}`)
       const response = await fetch(`/api/organizations/generate-profile?id=${organizationId}`, {
         method: 'POST'
       })
+      console.log('📡 Response status:', response.status)
 
       if (!response.ok) {
         const text = await response.text()
