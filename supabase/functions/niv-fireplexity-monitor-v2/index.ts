@@ -341,7 +341,7 @@ serve(async (req) => {
     const recencyLimits: Record<string, number> = {
       '1hour': 1,
       '6hours': 6,
-      '24hours': 48 // Allow up to 48 hours for executive synthesis (not just 24)
+      '24hours': 24 // Strict 24 hour limit for fresh news
     }
     const maxHoursOld = recencyLimits[recency_window] || 6
     const cutoffTime = new Date(Date.now() - maxHoursOld * 60 * 60 * 1000)
@@ -1009,29 +1009,22 @@ function scoreArticlesRelevance(
     const keywordMatches = keywords.filter((kw: string) => kw && text.includes(kw.toLowerCase())).length
     score += Math.min(keywordMatches * 10, 30)
 
-    // Check if article has ANY base relevance (mentions org, competitor, stakeholder, topic, or keyword)
-    const hasBaseRelevance = score > 0 ||
-      coveredCompetitors.length > 0 ||
-      coveredStakeholders.length > 0 ||
-      coveredTopics.length > 0
-
-    // ONLY apply recency and source bonuses if article has base relevance
-    // This prevents generic recent articles from passing through
+    // ALWAYS apply source tier and recency bonuses (not conditional on target mentions)
+    // High-quality sources publish relevant industry news even without specific target mentions
     const sourceName = typeof article.source === 'object' ? article.source.name : article.source
     const sourceTier = getSourceTier(sourceName, profile)
 
-    if (hasBaseRelevance) {
-      // Source tier bonus (only for relevant articles)
-      if (sourceTier === 'critical') score += 15
-      else if (sourceTier === 'high') score += 10
+    // Source tier bonus (critical sources are valuable even without target mentions)
+    if (sourceTier === 'critical') score += 15
+    else if (sourceTier === 'high') score += 10
+    else score += 5 // Medium sources get baseline score
 
-      // Recency bonus (only for relevant articles)
-      const publishedDate = new Date(article.publishDate || article.published_at || Date.now())
-      const hoursAgo = (Date.now() - publishedDate.getTime()) / (1000 * 60 * 60)
-      if (hoursAgo < 1) score += 20 // Within 1 hour
-      else if (hoursAgo < 6) score += 10 // Within 6 hours
-      else if (hoursAgo < 24) score += 5 // Within 24 hours
-    }
+    // Recency bonus (recent news is valuable)
+    const publishedDate = new Date(article.publishDate || article.published_at || Date.now())
+    const hoursAgo = (Date.now() - publishedDate.getTime()) / (1000 * 60 * 60)
+    if (hoursAgo < 1) score += 20 // Within 1 hour
+    else if (hoursAgo < 6) score += 10 // Within 6 hours
+    else if (hoursAgo < 24) score += 5 // Within 24 hours
 
     // Discovery coverage score (how many targets covered)
     const coverageScore = coveredCompetitors.length * 10 + coveredStakeholders.length * 5 + coveredTopics.length * 5
@@ -1049,7 +1042,9 @@ function scoreArticlesRelevance(
         score: coverageScore
       }
     }
-  }).filter(article => article.relevance_score > 0) // Only keep relevant articles
+  })
+  // Don't filter here - let ALL articles through to be ranked by score
+  // The AI relevance filter downstream will do the intelligent filtering
 }
 
 /**
