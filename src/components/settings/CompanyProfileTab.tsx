@@ -290,7 +290,10 @@ export default function CompanyProfileTab({
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={generateFromSchema}
+            onClick={(e) => {
+              console.log('🔘 BUTTON CLICKED', e)
+              generateFromSchema()
+            }}
             disabled={generating}
             className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg font-medium flex items-center gap-2"
           >
