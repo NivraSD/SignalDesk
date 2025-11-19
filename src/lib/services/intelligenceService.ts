@@ -52,6 +52,7 @@ export class IntelligenceService {
       const payload = {
         tool: 'create_organization_profile',
         arguments: {
+          organization_id: organizationId,
           organization_name: orgName,
           industry_hint: industry,
           website: website,
