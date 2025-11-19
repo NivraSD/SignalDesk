@@ -182,194 +182,29 @@ export default function OrganizationSettings({
         return
       }
 
-      console.log('🎯 Generating schema via direct pipeline calls...')
+      console.log('🎯 Generating schema via API route...')
 
-      const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
-      const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-      // Step 1: Scrape website
-      console.log('🌐 Step 1: Scraping website...')
-      const scrapeResponse = await fetch(`${SUPABASE_URL}/functions/v1/website-entity-scraper`, {
+      // Call our API route which proxies the Edge Functions (avoids CORS issues)
+      const response = await fetch(`/api/organizations/generate-schema?id=${organizationId}`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          organization_id: organizationId,
           organization_name: orgData.name,
-          website_url: orgData.domain
+          website: orgData.domain
         })
       })
 
-      if (!scrapeResponse.ok) {
-        throw new Error(`Website scraping failed: ${await scrapeResponse.text()}`)
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to generate schema')
       }
 
-      const scrapeData = await scrapeResponse.json()
-      console.log(`✅ Scraped ${scrapeData.summary?.total_pages || 0} pages`)
+      const data = await response.json()
+      console.log('✅ Schema generated successfully:', data)
 
-      // Step 2: Extract entities
-      console.log('🔍 Step 2: Extracting entities...')
-      const extractResponse = await fetch(`${SUPABASE_URL}/functions/v1/entity-extractor`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          organization_id: organizationId,
-          organization_name: orgData.name,
-          scraped_pages: scrapeData.pages || []
-        })
-      })
-
-      if (!extractResponse.ok) {
-        throw new Error(`Entity extraction failed: ${await extractResponse.text()}`)
-      }
-
-      const extractData = await extractResponse.json()
-      console.log(`✅ Extracted ${extractData.summary?.total_entities || 0} entities`)
-
-      // Step 3: Enrich entities
-      console.log('✨ Step 3: Enriching entities...')
-      const enrichResponse = await fetch(`${SUPABASE_URL}/functions/v1/entity-enricher`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          organization_id: organizationId,
-          organization_name: orgData.name,
-          entities: extractData.entities || {}
-        })
-      })
-
-      if (!enrichResponse.ok) {
-        throw new Error(`Entity enrichment failed: ${await enrichResponse.text()}`)
-      }
-
-      const enrichData = await enrichResponse.json()
-      console.log(`✅ Enriched ${enrichData.summary?.total_entities || 0} entities`)
-
-      // Step 4: Generate base schema
-      console.log('📊 Step 4: Generating base schema...')
-      const schemaResponse = await fetch(`${SUPABASE_URL}/functions/v1/schema-graph-generator`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          organization_id: organizationId,
-          organization_name: orgData.name,
-          industry: orgData.industry,
-          url: orgData.domain,
-          entities: enrichData.enriched_entities || {},
-          coverage: []
-        })
-      })
-
-      if (!schemaResponse.ok) {
-        throw new Error(`Schema generation failed: ${await schemaResponse.text()}`)
-      }
-
-      const schemaData = await schemaResponse.json()
-      console.log('✅ Base schema generated')
-
-      // Step 5: Enhance schema with FAQs, awards, keywords
-      // Claude will use its knowledge to add impressive context
-      console.log('✨ Step 5: Enhancing schema with GEO optimizations...')
-      const enhancerResponse = await fetch(`${SUPABASE_URL}/functions/v1/geo-schema-enhancer`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          organization_id: organizationId,
-          organization_name: orgData.name,
-          industry: orgData.industry,
-          base_schema: schemaData.schema_graph,
-          coverage_articles: [],
-          entities: enrichData.enriched_entities || {}
-        })
-      })
-
-      let finalSchema = schemaData.schema_graph // Default to base schema
-
-      if (!enhancerResponse.ok) {
-        console.warn('Schema enhancement failed (non-critical):', await enhancerResponse.text())
-        // Continue with base schema
-      } else {
-        const enhancerData = await enhancerResponse.json()
-        console.log('✅ Schema enhanced:', {
-          faqs: enhancerData.summary?.faq_questions_added || 0,
-          awards: enhancerData.enhancements_applied?.awards_count || 0,
-          keywords: enhancerData.enhancements_applied?.keywords_count || 0
-        })
-
-        // Use enhanced schema if available
-        if (enhancerData.enhanced_schema) {
-          finalSchema = enhancerData.enhanced_schema
-        }
-      }
-
-      // ALWAYS save the schema to Memory Vault (enhanced or base)
-      console.log('💾 SCHEMA SAVE: Starting save to Memory Vault...')
-      console.log('💾 SCHEMA SAVE: Organization ID:', organizationId)
-      console.log('💾 SCHEMA SAVE: Schema size:', JSON.stringify(finalSchema).length, 'bytes')
-
-      const savePayload = {
-        content: {
-          type: 'schema',
-          title: `${orgData.name} - Complete Schema`,
-          content: finalSchema,
-          organization_id: organizationId,
-          metadata: {
-            organizationId,
-            organizationName: orgData.name,
-            url: orgData.domain,
-            industry: orgData.industry,
-            generatedAt: new Date().toISOString(),
-            source: 'org_profile_extraction'
-          }
-        },
-        metadata: {
-          organizationId,
-          title: `${orgData.name} - Complete Schema`
-        },
-        folder: 'Schemas'
-      }
-
-      console.log('💾 SCHEMA SAVE: Payload prepared, making API call...')
-
-      const saveResponse = await fetch('/api/content-library/save', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(savePayload)
-      })
-
-      console.log('💾 SCHEMA SAVE: Response status:', saveResponse.status, saveResponse.statusText)
-
-      if (saveResponse.ok) {
-        const saveData = await saveResponse.json()
-        console.log('✅ SCHEMA SAVE SUCCESS:', saveData)
-        alert(`✅ Schema saved to Memory Vault! ID: ${saveData.id}`)
-      } else {
-        const errorText = await saveResponse.text()
-        console.error('❌ SCHEMA SAVE FAILED:', errorText)
-        alert(`❌ Failed to save schema: ${errorText}`)
-        throw new Error(`Failed to save schema: ${errorText}`)
-      }
-
-      const result = schemaData
-      console.log('✅ Complete schema generation finished')
-
-      setSuccess(`Schema generated successfully!`)
+      setSuccess('Schema generated and saved successfully!')
 
       // Reload schema data
       await loadSchema()
