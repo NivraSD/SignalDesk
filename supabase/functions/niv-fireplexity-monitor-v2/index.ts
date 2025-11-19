@@ -655,11 +655,15 @@ ${competitors.join(', ')}
 STAKEHOLDERS TO MONITOR:
 ${stakeholders.join(', ')}
 
-Generate 12 intelligent search queries that will find the most valuable intelligence for ${orgName}. Mix of:
-- Specific competitor queries (e.g., "Glencore lithium acquisition Africa")
-- Industry trend queries (e.g., "commodity trading AI technology")
-- Stakeholder activity queries (e.g., "DOE critical minerals policy 2025")
-- Strategic opportunity queries (e.g., "ESG reporting requirements trading firms")
+Generate 12 intelligent search queries that will find BREAKING NEWS and FRESH ANNOUNCEMENTS for ${orgName}. Mix of:
+- Specific competitor BREAKING NEWS (e.g., "Glencore announces lithium acquisition" OR "Mitsubishi launches renewable energy")
+- Industry ANNOUNCEMENTS (e.g., "commodity trading merger announced" OR "new technology unveiled")
+- Stakeholder POLICY CHANGES (e.g., "DOE announces critical minerals policy" OR "SEC ruling announced")
+- Strategic opportunity DEVELOPMENTS (e.g., "ESG regulation announced" OR "partnership unveiled")
+
+CRITICAL: Focus on BREAKING NEWS, ANNOUNCEMENTS, LAUNCHES, and NEW DEVELOPMENTS.
+Avoid generic queries that will find analysis articles about old events.
+Use action verbs: "announced", "launches", "unveils", "acquires", "partners", "files", "introduces"
 
 Make queries SPECIFIC and CONTEXTUAL based on their strategic goals and industry trends.
 Return ONLY a JSON array of query strings, no other text.`
@@ -741,18 +745,19 @@ function generateRealtimeQueries(
     // Add all context queries (industry, service lines, markets, strategic priorities)
     queries.push(...contextQueries.all)
 
-    // CRITICAL: Add high-priority competitor queries
+    // CRITICAL: Add high-priority competitor queries with BREAKING NEWS focus
     // Context queries are too generic and miss specific competitor news
     const highPriorityCompetitors = targetsByPriority.competitors.high.slice(0, 5)
     highPriorityCompetitors.forEach(competitor => {
-      queries.push(`${competitor} news`)
+      // BREAKING NEWS focus: "announced" "launches" "unveils" to avoid analysis of old events
+      queries.push(`${competitor} (announced OR launches OR unveils OR acquires OR partners)`)
     })
-    console.log(`   Added ${highPriorityCompetitors.length} high-priority competitor queries`)
+    console.log(`   Added ${highPriorityCompetitors.length} high-priority competitor BREAKING NEWS queries`)
 
-    // Add crisis/opportunity detection queries
+    // Add crisis/opportunity detection queries with breaking news modifiers
     if (industry) {
-      queries.push(`${industry} crisis OR scandal OR investigation`)
-      queries.push(`${industry} partnership OR acquisition OR merger`)
+      queries.push(`${industry} (investigation OR lawsuit OR recall) announced`)
+      queries.push(`${industry} (partnership OR acquisition OR merger) announced`)
     }
 
     return queries
@@ -793,15 +798,15 @@ function generateRealtimeQueries(
     queries.push(`${service} market news`)
   })
 
-  // Add regulatory/partnership queries
+  // Add regulatory/partnership queries with breaking news focus
   if (industry) {
-    queries.push(`${industry} partnerships`)
-    queries.push(`${industry} regulatory`)
+    queries.push(`${industry} (partnership OR deal) announced`)
+    queries.push(`${industry} (regulation OR ruling OR policy) announced`)
   }
 
-  // Crisis and opportunity detection
-  queries.push(`${orgName} crisis OR scandal OR investigation`)
-  queries.push(`${orgName} partnership OR acquisition OR merger`)
+  // Crisis and opportunity detection with breaking news modifiers
+  queries.push(`${orgName} (investigation OR lawsuit OR recall) announced`)
+  queries.push(`${orgName} (partnership OR acquisition OR launches) announced`)
 
   console.log(`   ⚠️ Using basic fallback: ${queries.length} queries generated`)
 
