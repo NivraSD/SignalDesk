@@ -63,46 +63,6 @@ export async function PUT(request: Request) {
 
     console.log('✅ Organization updated successfully')
 
-    // Update content_library (MemoryVault) with org context so playbooks stay synced
-    try {
-      const orgContextContent = {
-        organization_name: data.name,
-        industry: data.industry,
-        url: data.url,
-        size: data.size,
-        company_profile: data.company_profile,
-        updated_at: new Date().toISOString()
-      }
-
-      // Save/update as special 'org-profile' type in content_library
-      // This ensures playbooks have access to latest org context
-      await supabase
-        .from('content_library')
-        .upsert({
-          organization_id: id,
-          content_type: 'org-profile',
-          title: `${data.name} - Organization Profile`,
-          content: JSON.stringify(orgContextContent),
-          metadata: {
-            industry: data.industry,
-            url: data.url,
-            size: data.size,
-            last_updated: new Date().toISOString()
-          },
-          folder: 'Organization',
-          status: 'saved',
-          salience_score: 1.0,
-          last_accessed_at: new Date().toISOString()
-        }, {
-          onConflict: 'organization_id,content_type',
-          // Use unique constraint on (organization_id, content_type) to ensure only one org-profile per org
-        })
-
-      console.log('✅ Updated org context in MemoryVault (content_library)')
-    } catch (mvError: any) {
-      console.error('⚠️ Failed to update MemoryVault org context (non-blocking):', mvError.message)
-    }
-
     // Return with description from profile
     const flatOrg = {
       ...data,

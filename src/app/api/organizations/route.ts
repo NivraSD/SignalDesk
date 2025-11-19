@@ -213,43 +213,6 @@ export async function POST(req: NextRequest) {
 
     console.log(`✅ Created organization: ${org.name} (${org.id}) for user ${user.email}`)
 
-    // CRITICAL: Sync new org to MemoryVault immediately
-    // This ensures NIV Content and playbooks have org context from day 1
-    try {
-      const orgContextContent = {
-        organization_name: org.name,
-        industry: org.industry,
-        url: org.url,
-        size: org.size,
-        company_profile: org.company_profile,
-        created_at: new Date().toISOString()
-      }
-
-      await serviceClient
-        .from('content_library')
-        .insert({
-          organization_id: org.id,
-          content_type: 'org-profile',
-          title: `${org.name} - Organization Profile`,
-          content: JSON.stringify(orgContextContent),
-          metadata: {
-            industry: org.industry,
-            url: org.url,
-            size: org.size,
-            company_profile: org.company_profile,
-            created_at: new Date().toISOString()
-          },
-          folder: 'Organization',
-          status: 'saved',
-          salience_score: 1.0,
-          last_accessed_at: new Date().toISOString()
-        })
-
-      console.log('✅ Synced new org to MemoryVault')
-    } catch (mvError: any) {
-      console.error('⚠️ Failed to sync to MemoryVault (non-blocking):', mvError)
-    }
-
     // Return org with description from profile
     const flatOrg = {
       ...org,
