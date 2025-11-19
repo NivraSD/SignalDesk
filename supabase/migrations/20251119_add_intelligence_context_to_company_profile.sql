@@ -1,0 +1,49 @@
+-- Add intelligence monitoring context fields to company_profile
+-- These fields help the monitoring system make smarter decisions about what to search for
+
+-- Update comment to document new intelligence fields
+COMMENT ON COLUMN organizations.company_profile IS 'Company profile data including leadership, headquarters, size, strategic goals, and intelligence monitoring context';
+
+-- Example structure with new intelligence fields (for documentation):
+-- {
+--   "leadership": [...],
+--   "headquarters": {...},
+--   "company_size": {...},
+--   "founded": "2010",
+--   "product_lines": [...],
+--   "key_markets": [...],
+--   "business_model": "...",
+--   "strategic_goals": [...],
+--
+--   NEW FIELDS FOR INTELLIGENCE MONITORING:
+--
+--   "competitive_intelligence_priorities": {
+--     "focus_areas": ["M&A activity", "regulatory changes", "technology disruption"],
+--     "competitor_threats": ["Competitor X's AI pivot", "Competitor Y expanding to Asia"],
+--     "market_opportunities": ["ESG communications growth", "crisis management demand"]
+--   },
+--
+--   "industry_context": {
+--     "sub_sector": "Strategic Communications & Investor Relations",
+--     "key_trends": ["AI-powered media monitoring", "stakeholder capitalism", "ESG reporting"],
+--     "regulatory_environment": "SEC disclosure rules, GDPR, industry-specific regulations",
+--     "market_dynamics": "Consolidation, digital transformation, globalization"
+--   },
+--
+--   "intelligence_focus": {
+--     "priority_signals": [
+--       "competitor_product_launches",
+--       "executive_hires",
+--       "client_wins_losses",
+--       "regulatory_changes",
+--       "industry_partnerships"
+--     ],
+--     "ignore_patterns": [
+--       "routine_pr_announcements",
+--       "minor_staff_changes",
+--       "promotional_content"
+--     ],
+--     "geographic_focus": ["North America", "Europe", "Asia-Pacific"],
+--     "monitoring_intensity": "high"
+--   }
+-- }

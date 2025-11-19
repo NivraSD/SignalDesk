@@ -58,34 +58,40 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    // STEP 1: Get organization profile
+    // STEP 1: Get organization profile (using fast company_profile from organizations table)
     console.log('\n📋 Step 1: Loading organization profile...')
 
     // Use organization_name for profile lookup (organization_id is UUID for intelligence_targets)
     const orgName = organization_name || organization_id
 
-    const { data: profileData, error: profileError } = await supabase
-      .from('organization_profiles')
-      .select('profile_data')
-      .eq('organization_name', orgName)
+    // Fetch from organizations table (faster, contains intelligence context)
+    const { data: orgData, error: orgError } = await supabase
+      .from('organizations')
+      .select('name, industry, company_profile')
+      .eq('id', organization_id)
       .single()
 
-    if (profileError || !profileData) {
+    if (orgError || !orgData) {
       return new Response(JSON.stringify({
         success: false,
-        error: `No organization profile found for "${orgName}". Please run mcp-discovery first.`
+        error: `No organization found for ID "${organization_id}".`
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
-    const profile = profileData.profile_data
+    const profile = {
+      industry: orgData.industry,
+      ...orgData.company_profile,
+      // Legacy compatibility - keep structure similar
+      sources: { source_priorities: {} }
+    }
 
-    console.log(`   ✓ Organization: ${orgName}`)
+    console.log(`   ✓ Organization: ${orgData.name}`)
     console.log(`   ✓ Industry: ${profile.industry || 'Unknown'}`)
-    console.log(`   ✓ Competitors: ${profile.competition?.direct_competitors?.length || 0}`)
-    console.log(`   ✓ Sources: ${profile.sources?.source_priorities?.total_sources || 0}`)
+    console.log(`   ✓ Strategic Goals: ${profile.strategic_goals?.length || 0}`)
+    console.log(`   ✓ Intelligence Focus: ${profile.intelligence_focus?.priority_signals?.length || 0} signals`)
 
     // STEP 1.5: Load intelligence targets from database (not from stale profile)
     console.log('\n🎯 Step 1.5: Loading intelligence targets from database...')
@@ -208,10 +214,18 @@ serve(async (req) => {
       })
     }
 
-    // STEP 2: Generate real-time monitoring queries
-    console.log('\n🔍 Step 2: Generating real-time queries...')
+    // STEP 2: Generate intelligent monitoring queries using AI
+    console.log('\n🔍 Step 2: Generating intelligent queries using AI...')
 
-    const queries = generateRealtimeQueries(profile, orgName, recency_window, discoveryTargets, targetsByPriority, targetsWithContext)
+    // Try AI-driven query generation first (Fireplexity approach)
+    let queries = await generateIntelligentQueries(profile, orgData.name, discoveryTargets, targetsByPriority)
+
+    // Fallback to static queries if AI fails
+    if (queries.length === 0) {
+      console.log('   ⚠️ Using fallback static query generation')
+      queries = generateRealtimeQueries(profile, orgData.name, recency_window, discoveryTargets, targetsByPriority, targetsWithContext)
+    }
+
     console.log(`   ✓ Generated ${queries.length} queries for real-time monitoring`)
     console.log(`   📋 Sample queries (first 5):`, queries.slice(0, 5))
 
@@ -607,6 +621,94 @@ async function markArticlesAsProcessed(
  * - Context-based = finds unexpected connections
  * - Targets filter relevance = only see what matters to YOU
  */
+/**
+ * Use AI to generate intelligent search queries based on company context
+ * This is the "Fireplexity approach" - let AI understand what matters and formulate smart queries
+ */
+async function generateIntelligentQueries(
+  profile: any,
+  orgName: string,
+  discoveryTargets: { competitors: Set<string>, stakeholders: Set<string>, topics: Set<string> },
+  targetsByPriority: any
+): Promise<string[]> {
+  const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')!
+
+  const competitors = Array.from(discoveryTargets.competitors).slice(0, 10)
+  const stakeholders = Array.from(discoveryTargets.stakeholders).slice(0, 5)
+
+  const prompt = `You are a strategic intelligence analyst generating search queries for ${orgName}.
+
+COMPANY CONTEXT:
+Industry: ${profile.industry || 'Unknown'}
+Business Model: ${profile.business_model || 'Not specified'}
+${profile.strategic_goals?.length ? `
+Strategic Goals:
+${profile.strategic_goals.slice(0, 3).map((g: any) => `- ${g.goal}`).join('\n')}
+` : ''}
+${profile.competitive_intelligence_priorities ? `
+Focus Areas: ${profile.competitive_intelligence_priorities.focus_areas?.join(', ') || 'Not specified'}
+Competitor Threats: ${profile.competitive_intelligence_priorities.competitor_threats?.join(', ') || 'Not specified'}
+` : ''}
+${profile.intelligence_focus ? `
+Priority Signals: ${profile.intelligence_focus.priority_signals?.slice(0, 5).join(', ') || 'Not specified'}
+` : ''}
+
+COMPETITORS TO MONITOR:
+${competitors.join(', ')}
+
+STAKEHOLDERS TO MONITOR:
+${stakeholders.join(', ')}
+
+Generate 12 intelligent search queries that will find the most valuable intelligence for ${orgName}. Mix of:
+- Specific competitor queries (e.g., "Glencore lithium acquisition Africa")
+- Industry trend queries (e.g., "commodity trading AI technology")
+- Stakeholder activity queries (e.g., "DOE critical minerals policy 2025")
+- Strategic opportunity queries (e.g., "ESG reporting requirements trading firms")
+
+Make queries SPECIFIC and CONTEXTUAL based on their strategic goals and industry trends.
+Return ONLY a JSON array of query strings, no other text.`
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        temperature: 0.7,
+        messages: [{
+          role: 'user',
+          content: prompt
+        }]
+      })
+    })
+
+    if (!response.ok) {
+      console.log('⚠️ AI query generation failed, falling back to static queries')
+      return []
+    }
+
+    const data = await response.json()
+    const claudeResponse = data.content[0].text
+
+    // Parse JSON array from response
+    const jsonMatch = claudeResponse.match(/\[[\s\S]*\]/)
+    if (jsonMatch) {
+      const queries = JSON.parse(jsonMatch[0])
+      console.log(`   ✅ AI generated ${queries.length} intelligent queries`)
+      return queries
+    }
+  } catch (error: any) {
+    console.log(`   ⚠️ AI query generation error: ${error.message}`)
+  }
+
+  return [] // Return empty if AI fails, fallback will be used
+}
+
 function generateRealtimeQueries(
   profile: any,
   orgName: string,
