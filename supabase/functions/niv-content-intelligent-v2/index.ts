@@ -2171,7 +2171,11 @@ ${campaignContext.timeline || 'Not specified'}
       try {
         // Decompose query into research steps
         const researchPlan = await decomposeQuery(researchQuery.trim(), {
-          organizationId
+          organizationId,
+          organizationName: orgProfile.organizationName,
+          industry: orgProfile.industry,
+          competitors: orgProfile.competitors || [],
+          keywords: orgProfile.keywords || []
         }, ANTHROPIC_API_KEY);
         console.log(`📋 Research plan created: ${researchPlan.steps.length} steps`);
         // Define firesearch tool for orchestration
@@ -2180,11 +2184,15 @@ ${campaignContext.timeline || 'Not specified'}
           return await executeSimpleFirecrawl(query, organizationId);
         };
         // Execute orchestrated research
-        const orchestrationResult = await orchestrateResearch(researchPlan, {
-          organizationId
-        }, {
-          firesearch: firesearchTool
-        }, ANTHROPIC_API_KEY, orgProfile.organizationName);
+        const orchestrationResult = await orchestrateResearch(
+          researchPlan,
+          {
+            firesearch: firesearchTool
+          },
+          (step) => {
+            console.log(`✓ Completed step: ${step.id}`);
+          }
+        );
         console.log(`🔍 Orchestrated research complete: ${orchestrationResult.allArticles.length} articles`);
         // Format results like NIV Advisor
         const keyFindings = orchestrationResult.allArticles.slice(0, 10).map((article)=>{
@@ -4735,13 +4743,13 @@ async function executeSimpleFirecrawl(query, organizationId) {
     const FIRECRAWL_API_KEY = Deno.env.get('FIRECRAWL_API_KEY') || 'fc-3048810124b640eb99293880a4ab25d0';
     const FIRECRAWL_BASE_URL = 'https://api.firecrawl.dev/v2';
     // Determine timeframe
-    let timeframe = 'week';
+    let timeframe = 'recent'; // Default to recent (3 days) instead of week for better recency
     const queryLower = query.toLowerCase();
-    if (queryLower.match(/breaking|just|today|current|right now|this morning/i)) {
+    if (queryLower.match(/breaking|just|today|current|right now|this morning|made today|announced today|happening now/i)) {
       timeframe = 'current';
-    } else if (queryLower.match(/latest|recent|new/i)) {
+    } else if (queryLower.match(/latest|recent|new|allegations?|crisis|developing|emerging|ongoing/i)) {
       timeframe = 'recent';
-    } else if (queryLower.match(/this month|past month|market share|revenue|analysis|landscape|positioning/i)) {
+    } else if (queryLower.match(/this month|past month|market share|revenue|analysis|landscape|positioning|historical|background/i)) {
       timeframe = 'month';
     }
     const tbsMap = {

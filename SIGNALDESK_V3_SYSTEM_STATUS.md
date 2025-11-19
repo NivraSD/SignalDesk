@@ -1751,6 +1751,80 @@ CREATE TABLE playbooks (
 - No changes needed to NIV workflow - transparent upgrade
 - Falls back gracefully if no playbook exists
 
+**Company Profile Integration (CRITICAL):**
+
+The playbook system is tightly integrated with the organization's company profile stored in the `organizations` table. Here's how it works:
+
+1. **Company Profile Storage:**
+   - Located in `organizations.company_profile` (JSONB field)
+   - Contains: industry, leadership, competitors, keywords, positioning
+   - Retrieved automatically when playbook is fetched
+
+2. **Playbook Formatting Includes Company Context:**
+   ```typescript
+   // In getOrCreatePlaybook() - index.ts:94-99
+   const { data: orgData } = await supabase
+     .from('organizations')
+     .select('company_profile, industry')
+     .eq('id', params.organizationId)
+     .single();
+
+   const companyProfile = {
+     ...orgData.company_profile,
+     industry: orgData.industry
+   };
+
+   // Playbook is formatted WITH company profile
+   formatPlaybookForClaude(playbook, contentType, topic, companyProfile)
+   ```
+
+3. **What Gets Added to Playbook:**
+   - **Company Profile section** at the top of every playbook
+   - Industry context
+   - Leadership team (for executive quotes/statements)
+   - Key competitors (for competitive positioning)
+   - Focus areas/keywords (for topic relevance)
+   - Brand positioning (for messaging consistency)
+
+4. **Research Integration (NEW - Nov 19, 2025):**
+   - Company profile NOW passed to query decomposition
+   - Research queries include organization name, industry, competitors, keywords
+   - Makes research contextual instead of generic
+   - Example: "war crime allegations" → knows it's for LNG company, includes industry context
+
+   ```typescript
+   // In index.ts:2173-2179
+   const researchPlan = await decomposeQuery(query, {
+     organizationId,
+     organizationName: orgProfile.organizationName,
+     industry: orgProfile.industry,
+     competitors: orgProfile.competitors || [],
+     keywords: orgProfile.keywords || []
+   }, ANTHROPIC_API_KEY);
+   ```
+
+5. **End-to-End Flow:**
+   ```
+   User Query → NIV Content
+        ↓
+   Research: Uses company profile for context
+        ↓
+   Content Generation: Searches Memory Vault
+        ↓
+   Playbook Retrieved: Includes company profile
+        ↓
+   Claude Receives: Research + Playbook + Company Context
+        ↓
+   Output: Contextual, brand-appropriate content
+   ```
+
+**Why This Matters:**
+- Content is automatically brand-appropriate without manual context
+- Competitive intelligence is targeted to actual competitors
+- Executive statements use real leadership names
+- Industry-specific terminology and positioning
+- Research focused on relevant markets and topics
+
 **Edge Function:**
 - `generate-playbook` - Synthesizes playbooks from content patterns
   - Gathers 3-20 relevant content pieces

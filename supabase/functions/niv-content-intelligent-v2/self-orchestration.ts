@@ -23,7 +23,14 @@ Current Year: ${currentYear}
 Current Month: ${currentMonth} ${currentYear}
 
 User Query: ${userQuery}
-Current Context: We're researching for ${context.organizationId || 'a client'}
+
+**COMPANY PROFILE CONTEXT:**
+${context.organizationName ? `Organization: ${context.organizationName}` : `Client: ${context.organizationId || 'a client'}`}
+${context.industry ? `Industry: ${context.industry}` : ''}
+${context.competitors && context.competitors.length > 0 ? `Key Competitors: ${context.competitors.join(', ')}` : ''}
+${context.keywords && context.keywords.length > 0 ? `Focus Areas: ${context.keywords.join(', ')}` : ''}
+
+Use this company context to make research queries more relevant and competitive intelligence more targeted.
 
 Analyze the query and create a research plan with:
 1. Sequential steps for information that builds on previous findings
@@ -40,10 +47,14 @@ Consider:
 **IMPORTANT - TEMPORAL CONTEXT IN SEARCH QUERIES:**
 - For "recent" information: Use "last 2 weeks" or "last month" for specificity
 - For "latest" queries: Include timeframe like "past 14 days" or "Q4 ${currentYear}"
+- For breaking news/allegations: Include "today" or "${currentDate}" explicitly
 - ALWAYS include "${currentYear}" to avoid old results from 2024/2023
 - DON'T just search for "announcements" - tech news breaks via leaks, rumors, previews, API changes
+- For crisis/allegations: Add temporal keywords like "latest", "today", "recent", "breaking"
+- Example GOOD: "Mozambique LNG war crime allegations latest ${currentYear}"
 - Example GOOD: "Gemini 3 leak rumor development last 2 weeks ${currentYear}"
 - Example GOOD: "OpenAI regulatory changes past 30 days ${currentYear}"
+- Example BAD: "Mozambique LNG allegations" (no temporal context, will get old news)
 - Example BAD: "Gemini 3 announcement ${currentMonth} ${currentYear}" (too formal, misses leaks)
 - Example BAD: "OpenAI compliance ${currentYear}" (too broad, not specific timeframe)
 

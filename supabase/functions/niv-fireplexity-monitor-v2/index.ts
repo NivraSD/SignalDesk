@@ -797,18 +797,27 @@ async function fetchRealtimeArticles(
         const webResults = searchData.data?.web || []
         const newsResults = searchData.data?.news || []
 
-        // Convert to standard article format
-        // CRITICAL: Don't use result.markdown as content - it's just a snippet with garbage
-        // Let enrichment use title + description which are clean
-        return [...webResults, ...newsResults].map(result => ({
-          title: result.title || 'Untitled',
-          url: result.url,
-          content: '', // Don't use markdown snippet - it has cookie consent garbage
-          description: result.description || result.markdown?.substring(0, 300) || '', // Use description, fallback to first 300 chars of markdown
-          published_at: result.publishedTime || new Date().toISOString(),
-          source: result.source || extractDomain(result.url),
-          relevance_score: result.score || 50
-        }))
+        // Convert to standard article format with intelligent content extraction
+        // Use Fireplexity approach: extract relevant content from markdown using query keywords
+        return [...webResults, ...newsResults].map(result => {
+          // Get full markdown content from Firecrawl
+          const fullMarkdown = result.markdown || ''
+
+          // Extract relevant excerpt using query-based content selection (Fireplexity approach)
+          // This gives us ~1000 chars of the most relevant content based on query keywords
+          const relevantContent = fullMarkdown ? selectRelevantContent(fullMarkdown, query, 1000) : ''
+
+          return {
+            title: result.title || 'Untitled',
+            url: result.url,
+            content: relevantContent, // Use intelligent excerpt for AI relevance filtering
+            description: result.description || '',
+            published_at: result.publishedTime || new Date().toISOString(),
+            source: result.source || extractDomain(result.url),
+            relevance_score: result.score || 50,
+            full_markdown: fullMarkdown.substring(0, 5000) // Keep first 5000 chars of full content for enrichment
+          }
+        })
       } catch (err: any) {
         if (err.name === 'AbortError') {
           console.log(`   ⏱️ Search timed out for "${query}" (40s Firecrawl + 5s buffer)`)
@@ -1074,4 +1083,66 @@ function getSourceTier(sourceName: string, profile: any): string {
   }
 
   return 'medium'
+}
+
+/**
+ * Select relevant content from article markdown based on query keywords
+ * Inspired by Fireplexity's intelligent content selection
+ * Extracts ~maxLength characters of most relevant content for AI filtering
+ */
+function selectRelevantContent(content: string, query: string, maxLength: number = 1000): string {
+  if (!content || content.length <= maxLength) {
+    return content
+  }
+
+  // Split into paragraphs
+  const paragraphs = content.split('\n\n').filter(p => p.trim().length > 0)
+
+  if (paragraphs.length === 0) {
+    return content.substring(0, maxLength) + '...'
+  }
+
+  // Extract keywords from query (words > 3 chars, excluding stopwords)
+  const stopwords = ['what', 'when', 'where', 'which', 'who', 'how', 'the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'her', 'was', 'one', 'our', 'out', 'day', 'get', 'has', 'him', 'his', 'how', 'man', 'new', 'now', 'old', 'see', 'two', 'way', 'who', 'boy', 'did', 'its', 'let', 'put', 'say', 'she', 'too', 'use']
+  const keywords = query.toLowerCase()
+    .split(/\s+/)
+    .filter(word => word.length > 3 && !stopwords.includes(word))
+
+  // Always preserve intro (first paragraph)
+  const intro = paragraphs[0]
+
+  // Score middle paragraphs by keyword density
+  const scoredParagraphs = paragraphs.slice(1, -1).map((para, idx) => {
+    const paraLower = para.toLowerCase()
+    const score = keywords.reduce((sum, keyword) => {
+      const matches = (paraLower.match(new RegExp(keyword, 'g')) || []).length
+      return sum + matches
+    }, 0)
+    return { para, score, originalIndex: idx + 1 }
+  }).filter(p => p.score > 0) // Only keep paragraphs with keyword matches
+
+  // Sort by score and take top 3
+  scoredParagraphs.sort((a, b) => b.score - a.score)
+  const topParagraphs = scoredParagraphs.slice(0, 3)
+
+  // Restore original order
+  topParagraphs.sort((a, b) => a.originalIndex - b.originalIndex)
+
+  // Always preserve conclusion (last paragraph)
+  const conclusion = paragraphs.length > 1 ? paragraphs[paragraphs.length - 1] : ''
+
+  // Combine: intro + relevant middle paragraphs + conclusion
+  const selectedParagraphs = [intro, ...topParagraphs.map(p => p.para)]
+  if (conclusion) {
+    selectedParagraphs.push(conclusion)
+  }
+
+  const result = selectedParagraphs.join('\n\n')
+
+  // Truncate if still too long
+  if (result.length > maxLength) {
+    return result.substring(0, maxLength) + '...'
+  }
+
+  return result
 }

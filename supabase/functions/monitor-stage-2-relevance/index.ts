@@ -122,7 +122,7 @@ ${batch.map((a, idx) => `
 [${idx + 1}]
 Title: ${a.title}
 Description: ${a.description || 'N/A'}
-${a.content ? `Content Preview: ${a.content.substring(0, 300)}...` : ''}
+${a.content ? `Content: ${a.content}` : ''}
 `).join('\n---\n')}
 
 RESPOND IN JSON:
