@@ -363,14 +363,29 @@ serve(async (req) => {
       console.log(`   🗑️ Removed ${deduplicatedArticles.length - filteredArticles.length} old articles`)
     }
 
-    // STEP 4: Return articles (relevance filtering happens downstream in enrichment)
-    console.log('\n🎯 Step 4: Preparing articles for downstream processing...')
-    console.log(`   Collected ${filteredArticles.length} recent articles`)
+    // STEP 4: Score articles by relevance (source tier + recency + target mentions)
+    console.log('\n🎯 Step 4: Scoring articles for relevance...')
+    console.log(`   Scoring ${filteredArticles.length} articles by source quality, recency, and target mentions`)
+
+    const scoredArticles = scoreArticlesRelevance(
+      filteredArticles,
+      profile,
+      orgName,
+      discoveryTargets,
+      targetsWithContext
+    )
+
+    // Sort by relevance score and take top articles
+    scoredArticles.sort((a, b) => (b.relevance_score || 0) - (a.relevance_score || 0))
+
+    console.log(`   ✅ Scored and sorted ${scoredArticles.length} articles`)
+    console.log(`   Top article score: ${scoredArticles[0]?.relevance_score || 0}`)
+    console.log(`   Median article score: ${scoredArticles[Math.floor(scoredArticles.length / 2)]?.relevance_score || 0}`)
 
     // Limit to prevent overwhelming downstream functions
-    const articlesToReturn = filteredArticles.slice(0, 100)
-    if (filteredArticles.length > 100) {
-      console.log(`   ⚠️ Limited from ${filteredArticles.length} to 100 articles`)
+    const articlesToReturn = scoredArticles.slice(0, 100)
+    if (scoredArticles.length > 100) {
+      console.log(`   ⚠️ Limited from ${scoredArticles.length} to top 100 articles by relevance score`)
     }
 
     const relevantArticles = articlesToReturn
@@ -391,7 +406,8 @@ serve(async (req) => {
       console.log(`   ⚠️ Deduplication skipped`)
     }
 
-    // STEP 6: Sort and limit to top results
+    // STEP 6: Re-sort after deduplication and limit to top results
+    // (Deduplication may have removed high-scoring articles, so re-sort to get best remaining)
     newArticles.sort((a, b) => (b.relevance_score || 0) - (a.relevance_score || 0))
     const topResults = newArticles.slice(0, max_results)
 
