@@ -225,92 +225,83 @@ serve(async (req) => {
     console.log(`   ✓ Generated ${queries.length} queries for real-time monitoring`)
     console.log(`   📋 Sample queries (first 5):`, queries.slice(0, 5))
 
-    // STEP 2.5: Fetch articles from master-source-registry RSS feeds
-    console.log('\n📡 Step 2.5: Fetching from curated RSS sources...')
+    // STEP 2.5: Fetch articles from Yahoo Finance (company + competitor news)
+    console.log('\n📡 Step 2.5: Fetching from Yahoo Finance...')
 
-    let rssArticles: any[] = []
+    let yahooArticles: any[] = []
     try {
-      const industry = profile.industry || 'general'
-      console.log(`   Fetching sources for industry: ${industry}`)
+      // Get list of companies to track: organization + competitors
+      const companiesToTrack = [
+        orgName,
+        ...(profile.competition?.direct_competitors || []).slice(0, 9) // Top 10 total
+      ]
 
-      const sourceResponse = await fetch(`${supabaseUrl}/functions/v1/master-source-registry`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabaseKey}`
-        },
-        body: JSON.stringify({ industry })
-      })
+      console.log(`   Tracking news for ${companiesToTrack.length} companies: ${companiesToTrack.slice(0, 3).join(', ')}...`)
 
-      if (sourceResponse.ok) {
-        const sourceData = await sourceResponse.json()
+      // NEW APPROACH: Get general Latest News from Yahoo Finance
+      // This is broader than company-specific search
+      const yahooPromises = [
+        // Get general latest business/trading news
+        fetch('https://finance.yahoo.com/news/', {
+          headers: { 'User-Agent': 'Mozilla/5.0 (compatible; SignalDesk/1.0)' }
+        }).then(async (res) => {
+          if (!res.ok) return []
+          // Yahoo Finance latest news - broader industry coverage
+          // Note: We'll need to parse HTML or use their RSS feed
+          return []
+        }).catch(() => []),
 
-        // Collect all RSS sources from different categories
-        const allRssSources = [
-          ...(sourceData.competitive || []),
-          ...(sourceData.market || []),
-          ...(sourceData.regulatory || []),
-          ...(sourceData.media || []),
-          ...(sourceData.forward || []),
-          ...(sourceData.specialized || [])
-        ].filter((s: any) => s.type === 'rss' || !s.type)
-
-        console.log(`   ✓ Found ${allRssSources.length} RSS sources`)
-
-        // Prioritize: fetch critical first, then high, then medium (limit to 30 total)
-        const criticalSources = allRssSources.filter((s: any) => s.priority === 'critical')
-        const highSources = allRssSources.filter((s: any) => s.priority === 'high')
-        const mediumSources = allRssSources.filter((s: any) => s.priority === 'medium')
-
-        const sourcesToFetch = [
-          ...criticalSources,
-          ...highSources.slice(0, 15),
-          ...mediumSources.slice(0, 10)
-        ].slice(0, 30)
-
-        console.log(`   📰 Fetching from ${sourcesToFetch.length} prioritized sources (${criticalSources.length} critical, ${Math.min(15, highSources.length)} high, ${Math.min(10, mediumSources.length)} medium)`)
-
-        // Fetch RSS feeds in parallel
-        const rssPromises = sourcesToFetch.map(async (source: any) => {
+        // Also get company-specific news but use simpler endpoint
+        ...companiesToTrack.slice(0, 5).map(async (company: string) => {
           try {
-            const rssResponse = await fetch(`${supabaseUrl}/functions/v1/rss-proxy`, {
-              method: 'POST',
+            // Yahoo Finance RSS feed for company news (more reliable for latest)
+            const rssUrl = `https://finance.yahoo.com/rss/headline?s=${encodeURIComponent(company)}`
+
+            // Try RSS first, fallback to search
+            const searchUrl = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(company)}&quotesCount=1&newsCount=15&newsRange=1d`
+
+            const response = await fetch(searchUrl, {
               headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${supabaseKey}`
-              },
-              body: JSON.stringify({ url: source.url })
+                'User-Agent': 'Mozilla/5.0 (compatible; SignalDesk/1.0)'
+              }
             })
 
-            if (!rssResponse.ok) return []
+            if (!response.ok) return []
 
-            const rssData = await rssResponse.json()
-            const items = rssData.articles || rssData.items || []
+            const data = await response.json()
+            const news = data?.news || []
 
-            return items.map((item: any) => ({
-              title: item.title,
-              url: item.url || item.link,
-              description: item.description || item.content || '',
-              publishDate: item.publishedAt || item.pubDate || new Date().toISOString(),
-              source: source.name,
-              source_priority: source.priority,
-              from_rss: true
-            }))
+            // FILTER: Only include articles from last 48 hours at fetch time
+            const twoDaysAgo = Date.now() - (48 * 60 * 60 * 1000)
+
+            return news
+              .filter((item: any) => {
+                const pubTime = item.providerPublishTime * 1000
+                return pubTime >= twoDaysAgo
+              })
+              .map((item: any) => ({
+                title: item.title,
+                url: item.link,
+                description: item.summary || '',
+                publishDate: new Date(item.providerPublishTime * 1000).toISOString(),
+                source: item.publisher,
+                source_priority: 'high',
+                from_yahoo: true,
+                company_tracked: company
+              }))
           } catch (err) {
-            console.log(`   ⚠️ Failed to fetch ${source.name}: ${err.message}`)
+            console.log(`   ⚠️ Failed to fetch Yahoo news for ${company}: ${err.message}`)
             return []
           }
         })
+      ]
 
-        const rssResults = await Promise.all(rssPromises)
-        rssArticles = rssResults.flat()
+      const yahooResults = await Promise.all(yahooPromises)
+      yahooArticles = yahooResults.flat()
 
-        console.log(`   ✓ Collected ${rssArticles.length} articles from RSS feeds`)
-      } else {
-        console.log(`   ⚠️ Source registry unavailable, skipping RSS fetch`)
-      }
+      console.log(`   ✓ Collected ${yahooArticles.length} articles from Yahoo Finance`)
     } catch (err) {
-      console.error(`   ❌ RSS fetch error: ${err.message}`)
+      console.error(`   ❌ Yahoo Finance fetch error: ${err.message}`)
     }
 
     // STEP 3: Execute Firecrawl searches
@@ -327,14 +318,14 @@ serve(async (req) => {
 
     console.log(`   ✓ Found ${firecrawlArticles.length} articles from Firecrawl`)
 
-    // STEP 3.5: Combine RSS and Firecrawl results
-    console.log('\n🔗 Step 3.5: Combining RSS and Firecrawl results...')
+    // STEP 3.5: Combine Yahoo Finance and Firecrawl results
+    console.log('\n🔗 Step 3.5: Combining Yahoo Finance and Firecrawl results...')
 
     // Combine all articles
-    const allArticles = [...rssArticles, ...firecrawlArticles]
-    console.log(`   Combined: ${rssArticles.length} RSS + ${firecrawlArticles.length} Firecrawl = ${allArticles.length} total`)
+    const allArticles = [...yahooArticles, ...firecrawlArticles]
+    console.log(`   Combined: ${yahooArticles.length} Yahoo Finance + ${firecrawlArticles.length} Firecrawl = ${allArticles.length} total`)
 
-    // Deduplicate by URL (prefer RSS articles since they're from curated sources)
+    // Deduplicate by URL (prefer Yahoo articles since they're company-specific)
     const seenUrls = new Set<string>()
     const deduplicatedArticles = allArticles.filter(article => {
       const url = article.url
@@ -655,17 +646,39 @@ ${competitors.join(', ')}
 STAKEHOLDERS TO MONITOR:
 ${stakeholders.join(', ')}
 
-Generate 12 intelligent search queries that will find BREAKING NEWS and FRESH ANNOUNCEMENTS for ${orgName}. Mix of:
-- Specific competitor BREAKING NEWS (e.g., "Glencore announces lithium acquisition" OR "Mitsubishi launches renewable energy")
-- Industry ANNOUNCEMENTS (e.g., "commodity trading merger announced" OR "new technology unveiled")
-- Stakeholder POLICY CHANGES (e.g., "DOE announces critical minerals policy" OR "SEC ruling announced")
-- Strategic opportunity DEVELOPMENTS (e.g., "ESG regulation announced" OR "partnership unveiled")
+Generate 12 BROAD INDUSTRY QUERIES that will cast a wide net.
 
-CRITICAL: Focus on BREAKING NEWS, ANNOUNCEMENTS, LAUNCHES, and NEW DEVELOPMENTS.
-Avoid generic queries that will find analysis articles about old events.
-Use action verbs: "announced", "launches", "unveils", "acquires", "partners", "files", "introduces"
+DO NOT generate hyper-specific queries like "Mitsubishi announces acquisition" - those return 0 results.
+Instead, generate BROAD INDUSTRY queries that Relevance filter will narrow down later.
 
-Make queries SPECIFIC and CONTEXTUAL based on their strategic goals and industry trends.
+QUERY TYPES (all broad):
+
+1. INDUSTRY NEWS (4 queries):
+   - "${profile.industry || 'trading'} companies news"
+   - "commodity market developments"
+   - "${profile.industry || 'energy'} sector latest"
+   - "supply chain partnerships"
+
+2. REGULATORY & LEGAL (4 queries):
+   - "${profile.industry || 'energy'} company lawsuit"
+   - "${profile.industry || 'trading'} investigation"
+   - "${profile.industry || 'commodity'} violation"
+   - "war crimes ${profile.industry || 'energy'}"
+
+3. CORPORATE ACTIVITY (3 queries):
+   - "merger acquisition ${profile.industry || 'trading'}"
+   - "partnership announcement business"
+   - "executive appointment ${profile.industry || 'energy'}"
+
+4. MARKET TRENDS (1 query):
+   - "emerging markets ${profile.industry || 'trading'}"
+
+CRITICAL:
+- Make queries BROAD to catch everything (e.g., "energy company lawsuit" catches Total Energies war crimes lawsuit)
+- PRIORITIZE crisis/legal/regulatory news - these are high-value for intelligence
+- Let Relevance filter decide what matters for this specific company
+- Focus on RECENT events, not analysis of old news
+
 Return ONLY a JSON array of query strings, no other text.`
 
   try {
@@ -745,19 +758,28 @@ function generateRealtimeQueries(
     // Add all context queries (industry, service lines, markets, strategic priorities)
     queries.push(...contextQueries.all)
 
-    // CRITICAL: Add high-priority competitor queries with BREAKING NEWS focus
+    // CRITICAL: Add ALL competitor queries (not just high-priority) with comprehensive coverage
     // Context queries are too generic and miss specific competitor news
-    const highPriorityCompetitors = targetsByPriority.competitors.high.slice(0, 5)
-    highPriorityCompetitors.forEach(competitor => {
-      // BREAKING NEWS focus: "announced" "launches" "unveils" to avoid analysis of old events
+    const allCompetitors = Array.from(discoveryTargets.competitors).slice(0, 9) // All 9 competitors
+    allCompetitors.forEach(competitor => {
+      // COMPREHENSIVE COVERAGE: Include positive AND negative events
+      // Positive: launches, partnerships, acquisitions
       queries.push(`${competitor} (announced OR launches OR unveils OR acquires OR partners)`)
+      // Negative: lawsuits, investigations, scandals, regulatory issues
+      queries.push(`${competitor} (lawsuit OR investigation OR scandal OR regulatory OR violation OR accused)`)
     })
-    console.log(`   Added ${highPriorityCompetitors.length} high-priority competitor BREAKING NEWS queries`)
+    console.log(`   Added ${allCompetitors.length * 2} comprehensive competitor queries (${allCompetitors.length} competitors × 2 query types)`)
 
-    // Add crisis/opportunity detection queries with breaking news modifiers
+    // Add crisis/opportunity detection queries - BROADER to catch more stories
     if (industry) {
-      queries.push(`${industry} (investigation OR lawsuit OR recall) announced`)
+      // Crisis detection - removed "announced" to catch ongoing stories too
+      queries.push(`${industry} company (lawsuit OR investigation OR violation)`)
+      queries.push(`${industry} company (scandal OR accused OR regulatory action)`)
+      queries.push(`${industry} (fine OR penalty OR settlement OR enforcement)`)
+
+      // Opportunity detection
       queries.push(`${industry} (partnership OR acquisition OR merger) announced`)
+      queries.push(`${industry} company expansion`)
     }
 
     return queries
@@ -819,7 +841,44 @@ function generateRealtimeQueries(
 // - This is faster, cheaper, and finds more strategic intelligence
 
 /**
- * Fetch articles using DIRECT Firecrawl API (bypasses niv-fireplexity for speed + time filtering)
+ * Extract domains from master-source-registry sources for domain-restricted searches
+ */
+function extractDomainsFromSources(sources: any): string[] {
+  const domains = new Set<string>()
+
+  // Helper to extract domain from URL
+  const getDomain = (url: string): string | null => {
+    try {
+      const hostname = new URL(url).hostname
+      return hostname.replace(/^www\./, '') // Remove www. prefix
+    } catch {
+      return null
+    }
+  }
+
+  // Extract from all source categories
+  const processSourceList = (sourceList: any[]) => {
+    if (!sourceList) return
+    sourceList.forEach(source => {
+      const domain = getDomain(source.url)
+      if (domain) domains.add(domain)
+    })
+  }
+
+  // Process TIER1 and industry-specific sources
+  if (sources.media) processSourceList(sources.media)
+  if (sources.regulatory) processSourceList(sources.regulatory)
+  if (sources.market) processSourceList(sources.market)
+  if (sources.competitive) processSourceList(sources.competitive)
+  if (sources.specialized) processSourceList(sources.specialized)
+
+  return Array.from(domains)
+}
+
+/**
+ * Fetch articles using DIRECT Firecrawl API with TWO-TIER SEARCH STRATEGY:
+ * TIER 1: Domain-restricted search (trusted sources only)
+ * TIER 2: Open web search (strict quality filtering)
  */
 async function fetchRealtimeArticles(
   queries: string[],
@@ -835,6 +894,37 @@ async function fetchRealtimeArticles(
   const allArticles: any[] = []
   const seenUrls = new Set<string>()
 
+  // Get approved domains from company_profile.sources (set by MCP Discovery)
+  let approvedDomains: string[] = []
+
+  console.log(`   📋 Checking for sources in company_profile...`)
+  console.log(`   Profile keys: ${Object.keys(profile).join(', ')}`)
+
+  // MCP Discovery stores sources in multiple places - check all
+  const sourcesFromProfile = profile.sources || profile.monitoring_config?.sources_by_category
+
+  if (sourcesFromProfile) {
+    console.log(`   ✓ Found sources, extracting domains...`)
+    console.log(`   Source categories: ${Object.keys(sourcesFromProfile).join(', ')}`)
+
+    // Count sources in each category for debugging
+    Object.entries(sourcesFromProfile).forEach(([category, sources]) => {
+      if (Array.isArray(sources)) {
+        console.log(`     - ${category}: ${sources.length} sources`)
+      }
+    })
+
+    approvedDomains = extractDomainsFromSources(sourcesFromProfile)
+    console.log(`   ✅ Extracted ${approvedDomains.length} approved domains`)
+    if (approvedDomains.length > 0) {
+      console.log(`   Sample domains: ${approvedDomains.slice(0, 5).join(', ')}`)
+    }
+  } else {
+    console.log(`   ⚠️ No sources found in company_profile`)
+    console.log(`   This organization may not have run MCP Discovery yet`)
+    console.log(`   Falling back to TIER 2 (open web) search only`)
+  }
+
   // Map recency window to Firecrawl tbs parameter
   const tbsMap: Record<string, string> = {
     '1hour': 'qdr:h',   // Last 1 hour (production: hourly autonomous monitoring)
@@ -843,29 +933,120 @@ async function fetchRealtimeArticles(
   }
   const tbs = tbsMap[recencyWindow] || 'qdr:h' // Default 1 hour for real-time
 
-  console.log(`   Executing ${queries.length} real-time Firecrawl searches with time filter: ${tbs}`)
+  console.log(`   Executing ${queries.length} real-time Firecrawl searches with TWO-TIER strategy`)
+  console.log(`   TIER 1: Domain-restricted (${approvedDomains.length} trusted sources)`)
+  console.log(`   TIER 1 targeting top 15 domains: ${approvedDomains.slice(0, 15).join(', ')}`)
+  console.log(`   TIER 2: Open web with strict filtering (score >70)`)
+  console.log(`   Time filter: ${tbs}`)
 
-  // INCREASED LIMITS: With fewer context queries (~12 instead of 50+), we fetch MORE per query
-  const limitMap: Record<string, number> = {
-    '1hour': 10,   // Production: 10 results per query (cast wider net with context queries)
-    '6hours': 12,  // Testing: 12 results per query
-    '24hours': 15  // Executive synthesis: 15 results per query (comprehensive coverage)
-  }
-  const searchLimit = limitMap[recencyWindow] || 10
+  // TWO-TIER SEARCH LIMITS
+  const tier1Limit = 15  // More results from trusted sources
+  const tier2Limit = 5   // Fewer results from open web (strict quality threshold)
 
-  console.log(`   Using dynamic limit: ${searchLimit} results per query (recency: ${recencyWindow})`)
+  console.log(`   TIER 1 limit: ${tier1Limit} results per query`)
+  console.log(`   TIER 2 limit: ${tier2Limit} results per query (filtered to score >70)`)
   console.log(`   Cache strategy: No cache (fresh data to prevent old articles)`)
 
   // Execute searches in parallel (larger batch for speed - all at once)
-  const batchSize = 15 // Increased from 5 to process all queries in one batch
+  const batchSize = 15 // Process all queries in one batch
   for (let i = 0; i < queries.length; i += batchSize) {
     const batch = queries.slice(i, i + batchSize)
 
     const batchPromises = batch.map(async (query) => {
+      const queryResults: any[] = []
+
+      // TIER 1: Domain-restricted search (if we have approved domains)
+      if (approvedDomains.length > 0) {
+        // FIX: Instead of searching entire web and filtering, use site: operator to target specific domains
+        // Take top 10-15 most important domains (WSJ, Reuters, Bloomberg, FT, NYT, etc.)
+        const topDomains = approvedDomains.slice(0, 15)
+
+        // Create site-restricted query: "site:wsj.com OR site:reuters.com ... [query]"
+        const siteRestrictions = topDomains.map(d => `site:${d}`).join(' OR ')
+        const domainRestrictedQuery = `(${siteRestrictions}) ${query}`
+
+        // Log first query to verify structure
+        if (i === 0 && batch.indexOf(query) === 0) {
+          console.log(`   📍 Example TIER 1 query: ${domainRestrictedQuery.substring(0, 200)}...`)
+        }
+
+        try {
+          const controller = new AbortController()
+          const timeoutId = setTimeout(() => controller.abort(), 45000)
+
+          const searchResponse = await fetch(`${FIRECRAWL_BASE_URL}/search`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${FIRECRAWL_API_KEY}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              query: domainRestrictedQuery,  // Use domain-restricted query
+              sources: ['web', 'news'],
+              limit: tier1Limit,
+              tbs,
+              timeout: 40000,
+              ignoreInvalidURLs: true,
+              scrapeOptions: {
+                formats: ['markdown'],
+                onlyMainContent: true,
+                maxAge: 0
+              }
+            }),
+            signal: controller.signal
+          })
+
+          clearTimeout(timeoutId)
+
+          if (searchResponse.ok) {
+            const searchData = await searchResponse.json()
+            const webResults = searchData.data?.web || []
+            const newsResults = searchData.data?.news || []
+
+            console.log(`   ✓ TIER 1 query "${query.substring(0, 50)}..." returned ${webResults.length + newsResults.length} results`)
+
+            // Results should already be from trusted domains, but verify
+            const tier1Results = [...webResults, ...newsResults].filter(result => {
+              const domain = extractDomain(result.url)
+              return approvedDomains.includes(domain)
+            })
+
+            console.log(`   ✓ After domain filtering: ${tier1Results.length} articles from trusted sources`)
+
+            // Convert to standard format
+            tier1Results.forEach(result => {
+              const fullMarkdown = result.markdown || ''
+              const relevantContent = fullMarkdown ? selectRelevantContent(fullMarkdown, query, 1000) : ''
+
+              queryResults.push({
+                title: result.title || 'Untitled',
+                url: result.url,
+                content: relevantContent,
+                description: result.description || '',
+                published_at: result.publishedTime || new Date().toISOString(),
+                source: result.source || extractDomain(result.url),
+                relevance_score: result.score || 50,
+                full_markdown: fullMarkdown.substring(0, 5000),
+                search_tier: 'TIER1' // Mark as trusted source
+              })
+            })
+          } else {
+            const errorText = await searchResponse.text()
+            console.log(`   ❌ TIER 1 search HTTP error ${searchResponse.status} for "${query}": ${errorText.substring(0, 200)}`)
+          }
+        } catch (err: any) {
+          if (err.name === 'AbortError') {
+            console.log(`   ⏱️ TIER 1 search timed out for "${query.substring(0, 50)}..."`)
+          } else {
+            console.log(`   ⚠️ TIER 1 search failed for "${query.substring(0, 50)}...": ${err.message}`)
+          }
+        }
+      }
+
+      // TIER 2: Open web search with strict quality filtering
       try {
-        // Add 45-second timeout per search (gives Firecrawl more time for complex queries)
         const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), 45000) // 45 second timeout
+        const timeoutId = setTimeout(() => controller.abort(), 45000)
 
         const searchResponse = await fetch(`${FIRECRAWL_BASE_URL}/search`, {
           method: 'POST',
@@ -876,14 +1057,14 @@ async function fetchRealtimeArticles(
           body: JSON.stringify({
             query,
             sources: ['web', 'news'],
-            limit: searchLimit, // Dynamic based on recency window
-            tbs, // CRITICAL: Time-based search filter for real-time freshness
-            timeout: 40000, // Tell Firecrawl to timeout at 40s (before our 45s client timeout)
-            ignoreInvalidURLs: true, // Exclude problematic URLs that cause failures
+            limit: tier2Limit,
+            tbs,
+            timeout: 40000,
+            ignoreInvalidURLs: true,
             scrapeOptions: {
               formats: ['markdown'],
               onlyMainContent: true,
-              maxAge: 0 // No cache - always fetch fresh results to prevent old articles from slipping through
+              maxAge: 0
             }
           }),
           signal: controller.signal
@@ -891,44 +1072,45 @@ async function fetchRealtimeArticles(
 
         clearTimeout(timeoutId)
 
-        if (!searchResponse.ok) {
-          console.log(`   ⚠️ Search failed for "${query}": ${searchResponse.status}`)
-          return []
+        if (searchResponse.ok) {
+          const searchData = await searchResponse.json()
+          const webResults = searchData.data?.web || []
+          const newsResults = searchData.data?.news || []
+
+          // Filter to high-quality results NOT from approved domains (avoid duplicates)
+          const tier2Results = [...webResults, ...newsResults].filter(result => {
+            const domain = extractDomain(result.url)
+            const score = result.score || 0
+            return score > 70 && !approvedDomains.includes(domain) // Strict quality threshold
+          })
+
+          // Convert to standard format
+          tier2Results.forEach(result => {
+            const fullMarkdown = result.markdown || ''
+            const relevantContent = fullMarkdown ? selectRelevantContent(fullMarkdown, query, 1000) : ''
+
+            queryResults.push({
+              title: result.title || 'Untitled',
+              url: result.url,
+              content: relevantContent,
+              description: result.description || '',
+              published_at: result.publishedTime || new Date().toISOString(),
+              source: result.source || extractDomain(result.url),
+              relevance_score: result.score || 50,
+              full_markdown: fullMarkdown.substring(0, 5000),
+              search_tier: 'TIER2' // Mark as open web (high quality)
+            })
+          })
         }
-
-        const searchData = await searchResponse.json()
-        const webResults = searchData.data?.web || []
-        const newsResults = searchData.data?.news || []
-
-        // Convert to standard article format with intelligent content extraction
-        // Use Fireplexity approach: extract relevant content from markdown using query keywords
-        return [...webResults, ...newsResults].map(result => {
-          // Get full markdown content from Firecrawl
-          const fullMarkdown = result.markdown || ''
-
-          // Extract relevant excerpt using query-based content selection (Fireplexity approach)
-          // This gives us ~1000 chars of the most relevant content based on query keywords
-          const relevantContent = fullMarkdown ? selectRelevantContent(fullMarkdown, query, 1000) : ''
-
-          return {
-            title: result.title || 'Untitled',
-            url: result.url,
-            content: relevantContent, // Use intelligent excerpt for AI relevance filtering
-            description: result.description || '',
-            published_at: result.publishedTime || new Date().toISOString(),
-            source: result.source || extractDomain(result.url),
-            relevance_score: result.score || 50,
-            full_markdown: fullMarkdown.substring(0, 5000) // Keep first 5000 chars of full content for enrichment
-          }
-        })
       } catch (err: any) {
         if (err.name === 'AbortError') {
-          console.log(`   ⏱️ Search timed out for "${query}" (40s Firecrawl + 5s buffer)`)
+          console.log(`   ⏱️ TIER 2 search timed out for "${query}"`)
         } else {
-          console.log(`   ⚠️ Search failed for "${query}": ${err.message}`)
+          console.log(`   ⚠️ TIER 2 search failed for "${query}": ${err.message}`)
         }
-        return []
       }
+
+      return queryResults
     })
 
     const batchResults = await Promise.all(batchPromises)
@@ -951,6 +1133,14 @@ async function fetchRealtimeArticles(
       break
     }
   }
+
+  // Log tier statistics
+  const tier1Count = allArticles.filter(a => a.search_tier === 'TIER1').length
+  const tier2Count = allArticles.filter(a => a.search_tier === 'TIER2').length
+  console.log(`   📊 Search tier breakdown:`)
+  console.log(`      TIER 1 (trusted sources): ${tier1Count} articles`)
+  console.log(`      TIER 2 (open web >70 score): ${tier2Count} articles`)
+  console.log(`      Total unique articles: ${allArticles.length}`)
 
   return allArticles
 }

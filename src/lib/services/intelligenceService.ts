@@ -375,6 +375,7 @@ export class IntelligenceService {
             articles: monitoringResponse.data.articles,
             profile: profile,
             organization_name: organizationName,
+            organization_id: organizationId,  // CRITICAL: Added missing organization_id
             top_k: 300
           }
         })
@@ -387,6 +388,46 @@ export class IntelligenceService {
 
         console.log('✅ monitor-stage-2-relevance completed')
         onProgress?.('monitor-stage-2-relevance', 'completed', relevanceResponse.data)
+
+        // STEP 3.5: target-intelligence-collector (NEW: Save mentions to intelligence repository)
+        const relevantArticles = relevanceResponse.data?.relevant_articles || relevanceResponse.data?.findings || []
+        if (relevantArticles.length > 0) {
+          console.log('Starting target-intelligence-collector')
+          onProgress?.('target-intelligence-collector', 'running')
+
+          const collectorResponse = await supabase.functions.invoke('target-intelligence-collector', {
+            body: {
+              articles: relevantArticles,
+              organization_id: organizationId,
+              organization_name: organizationName
+            }
+          })
+
+          if (collectorResponse.error) {
+            console.warn('⚠️ Target intelligence collection failed (non-blocking):', collectorResponse.error)
+            // Non-blocking - continue with pipeline even if this fails
+          } else {
+            console.log(`✅ Saved ${collectorResponse.data?.mentions_saved || 0} target mentions to intelligence repository`)
+            onProgress?.('target-intelligence-collector', 'completed', collectorResponse.data)
+
+            // STEP 3.6: pattern-detector (NEW: Detect patterns and generate prediction signals)
+            console.log('Starting pattern-detector')
+            onProgress?.('pattern-detector', 'running')
+
+            const patternResponse = await supabase.functions.invoke('pattern-detector', {
+              body: {
+                organization_id: organizationId
+              }
+            })
+
+            if (patternResponse.error) {
+              console.warn('⚠️ Pattern detection failed (non-blocking):', patternResponse.error)
+            } else {
+              console.log(`✅ Generated ${patternResponse.data?.signals_generated || 0} prediction signals`)
+              onProgress?.('pattern-detector', 'completed', patternResponse.data)
+            }
+          }
+        }
 
         // STEP 4: monitoring-stage-2-enrichment
         if (relevanceResponse.data?.findings) {

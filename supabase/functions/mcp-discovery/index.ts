@@ -104,6 +104,10 @@ const TOOLS = [
     inputSchema: {
       type: "object",
       properties: {
+        organization_id: {
+          type: "string",
+          description: "Organization ID (UUID) to save profile to"
+        },
         organization_name: {
           type: "string",
           description: "Name of the organization to profile"
@@ -162,6 +166,7 @@ const TOOLS = [
 // Enhanced profile creation with intelligent gap filling
 async function createOrganizationProfile(args: any) {
   const {
+    organization_id,
     organization_name,
     industry_hint,
     website,
@@ -240,9 +245,11 @@ async function createOrganizationProfile(args: any) {
     const profile = structureFinalProfile(completeProfile, organization_name);
     
     // STEP 5: Save to persistence if requested
-    if (save_to_persistence) {
-      console.log('💾 Saving profile to persistence...');
-      await saveProfile(profile);
+    if (save_to_persistence && organization_id) {
+      console.log('💾 Saving profile to organizations.company_profile...');
+      await saveProfile(organization_id, profile);
+    } else if (save_to_persistence && !organization_id) {
+      console.log('⚠️ Cannot save profile - organization_id not provided');
     }
 
     // Log enhancement summary
@@ -487,16 +494,18 @@ async function gatherSourcesData(industry: string, organizationName?: string, co
     }
     
     const responseData = await response.json();
-    
+
     // Handle the response structure from master-source-registry
     const sources = responseData.data || responseData;
-    
+    const registryMetadata = responseData.metadata || {};
+
     console.log('Master-source-registry response:', {
       hasData: !!responseData.data,
       totalSources: responseData.total_sources,
-      categories: Object.keys(sources || {})
+      categories: Object.keys(sources || {}),
+      hasMetadata: !!responseData.metadata
     });
-    
+
     // Extract detailed source information including priorities
     const extractSourceDetails = (sourceList: any[]) => {
       if (!Array.isArray(sourceList)) return [];
@@ -508,11 +517,11 @@ async function gatherSourcesData(industry: string, organizationName?: string, co
         focus: s.focus || 'general'
       }));
     };
-    
+
     // Create source priority map for monitoring stages
     const criticalSources = [];
     const highPrioritySources = [];
-    
+
     // Aggregate all sources and identify critical ones
     Object.values(sources).forEach(category => {
       if (Array.isArray(category)) {
@@ -526,19 +535,29 @@ async function gatherSourcesData(industry: string, organizationName?: string, co
       }
     });
 
-    // Extract metadata for each category
-    const competitiveMetadata = extractCategoryMetadata(sources.competitive || {});
-    const mediaMetadata = extractCategoryMetadata(sources.media || {});
-    const regulatoryMetadata = extractCategoryMetadata(sources.regulatory || {});
-    const marketMetadata = extractCategoryMetadata(sources.market || {});
+    // FIX: Metadata comes from responseData.metadata, not from sources
+    // Create default metadata structure using registry metadata
+    const competitiveMetadata = {
+      searchQueries: registryMetadata.search_queries || [],
+      trackUrls: registryMetadata.track_urls || [],
+      keyJournalists: registryMetadata.keyJournalists || [],
+      podcasts: registryMetadata.podcasts || [],
+      agencies: registryMetadata.agencies || [],
+      complianceAreas: registryMetadata.compliance_areas || []
+    };
+    const mediaMetadata = { ...competitiveMetadata }; // Share same metadata for now
+    const regulatoryMetadata = { ...competitiveMetadata };
+    const marketMetadata = { ...competitiveMetadata };
 
+    // FIX: master-source-registry returns sources as direct arrays, not nested under .rss
+    // The .rss nesting exists in INDUSTRY_SOURCES definition, but is unpacked when pushed to sources
     return {
-      competitive: extractSourceDetails(sources.competitive?.rss || []),
-      media: extractSourceDetails(sources.media?.rss || []),
-      regulatory: extractSourceDetails(sources.regulatory?.rss || []),
-      market: extractSourceDetails(sources.market?.rss || []),
-      forward: extractSourceDetails(sources.forward?.rss || []),
-      specialized: extractSourceDetails(sources.specialized?.rss || []),
+      competitive: extractSourceDetails(sources.competitive || []),
+      media: extractSourceDetails(sources.media || []),
+      regulatory: extractSourceDetails(sources.regulatory || []),
+      market: extractSourceDetails(sources.market || []),
+      forward: extractSourceDetails(sources.forward || []),
+      specialized: extractSourceDetails(sources.specialized || []),
 
       // NEW: Include category metadata
       competitiveMetadata,
@@ -1321,7 +1340,13 @@ function expandKeywordsForSources(
 
     // Store by source name and priority
     expanded.bySourceType[source.name] = [...new Set(sourceKeywords)];
-    expanded.byPriority[source.priority].push(...sourceKeywords);
+
+    // FIX: Ensure priority key exists before pushing
+    const priority = source.priority || 'medium';
+    if (!expanded.byPriority[priority]) {
+      expanded.byPriority[priority] = [];
+    }
+    expanded.byPriority[priority].push(...sourceKeywords);
   });
 
   // Deduplicate priority keywords
@@ -1432,6 +1457,10 @@ function structureFinalProfile(profileData: any, organization_name: string) {
   return {
     organization_name,
     organization: organization_name,
+
+    // CRITICAL: Top-level sources field for monitoring (monitoring expects profile.sources)
+    sources: sources,
+
     industry: profileData.industry,
     sub_industry: profileData.sub_industry,
     description: profileData.description,
@@ -1534,42 +1563,37 @@ function structureFinalProfile(profileData: any, organization_name: string) {
   };
 }
 
-// Save profile to database
-async function saveProfile(profile: any) {
+// Save profile to organizations.company_profile column
+async function saveProfile(organizationId: string, profile: any) {
   try {
-    // Try with 'profile_data' column instead of 'profile'
+    console.log(`💾 Saving profile to organizations.company_profile for org: ${organizationId}`);
+    console.log(`   Profile has ${Object.keys(profile.sources || {}).length} source categories`);
+    console.log(`   Source categories: ${Object.keys(profile.sources || {}).join(', ')}`);
+
     const { data, error } = await supabase
-      .from('organization_profiles')
-      .upsert({
-        organization_name: profile.organization_name,
-        profile_data: profile,  // Changed from 'profile' to 'profile_data'
+      .from('organizations')
+      .update({
+        company_profile: profile,
         updated_at: new Date().toISOString()
-      }, {
-        onConflict: 'organization_name'
-      });
-      
+      })
+      .eq('id', organizationId)
+      .select();
+
     if (error) {
-      console.error('Failed to save profile with profile_data column:', error);
-      
-      // If that fails, try with 'data' column
-      const { data: data2, error: error2 } = await supabase
-        .from('organization_profiles')
-        .upsert({
-          organization_name: profile.organization_name,
-          data: profile,  // Try 'data' column
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'organization_name'
-        });
-        
-      if (error2) {
-        console.error('Failed to save profile with data column:', error2);
-        console.log('⚠️ Profile save disabled - continuing without persistence');
-      }
+      console.error('❌ Failed to save profile to organizations.company_profile:', error);
+      throw error;
     }
+
+    if (!data || data.length === 0) {
+      console.error('❌ Organization not found:', organizationId);
+      throw new Error(`Organization ${organizationId} not found`);
+    }
+
+    console.log('✅ Profile saved successfully to organizations.company_profile');
+    console.log(`   Verified sources in saved profile: ${Object.keys(data[0].company_profile?.sources || {}).length} categories`);
   } catch (e) {
-    console.error('Error saving profile:', e);
-    console.log('⚠️ Continuing without saving profile to database');
+    console.error('❌ Error saving profile:', e);
+    throw e;
   }
 }
 

@@ -66,15 +66,15 @@ serve(async (req) => {
       throw new Error(`Organization '${organization_name}' not found in database`);
     }
 
-    // Get organization profile for detectors
-    let { data: profileData } = await supabase
-      .from('organization_profiles')
-      .select('profile_data')
-      .eq('organization_name', organization_name)
+    // Get organization profile from organizations.company_profile (NOT organization_profiles)
+    let { data: orgProfileData } = await supabase
+      .from('organizations')
+      .select('company_profile')
+      .eq('id', organizationUuid)
       .single();
 
     // If no profile exists, run mcp-discovery first
-    if (!profileData) {
+    if (!orgProfileData || !orgProfileData.company_profile) {
       console.log('⚠️ No organization profile found. Running mcp-discovery first...');
 
       const discoveryResponse = await fetch(
@@ -101,15 +101,15 @@ serve(async (req) => {
 
       // Fetch the profile again after discovery
       const { data: newProfileData } = await supabase
-        .from('organization_profiles')
-        .select('profile_data')
-        .eq('organization_name', organization_name)
+        .from('organizations')
+        .select('company_profile')
+        .eq('id', organizationUuid)
         .single();
 
-      profileData = newProfileData;
+      orgProfileData = newProfileData;
     }
 
-    const profile = profileData?.profile_data || {};
+    const profile = orgProfileData?.company_profile || {};
 
     // ===== STEP 1: Get Search Results =====
     let searchResults = [];
@@ -150,7 +150,7 @@ serve(async (req) => {
             'Authorization': `Bearer ${SUPABASE_KEY}`
           },
           body: JSON.stringify({
-            organization_id: organization_name,
+            organization_id: organizationUuid,  // FIXED: Use UUID not name
             organization_name: organization_name,
             recency_window: time_window === '1hour' ? '1hour' :
                            time_window === '6hours' ? '6hours' : '24hours',

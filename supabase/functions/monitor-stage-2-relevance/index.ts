@@ -94,35 +94,49 @@ serve(async (req) => {
 
       console.log(`   Processing batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(articles.length/batchSize)} (${batch.length} articles)...`);
 
-      const prompt = `You are filtering news articles for ${organization_name}, a company in ${profile?.industry || 'their industry'}.
+      const prompt = `You are an INTELLIGENCE ANALYST filtering news for ${organization_name}, a ${profile?.industry || 'trading'} company.
 
-YOUR JOB:
-Filter articles for relevance to the ${profile?.industry || 'their industry'} industry. ${organization_name} wants to stay informed about industry trends, competitor activities, and stakeholder movements.
+YOUR MISSION:
+Cast a WIDE net. This company needs strategic intelligence about their industry, competitors, and market forces.
 
-COMPETITORS TO TRACK (${competitors.length}):
-${competitors.map(c => `- ${c.name}: ${c.monitoring_context || 'Monitor for competitive intelligence'}`).join('\n')}
+CONTEXT:
+Industry: ${profile?.industry || 'trading'}
+Competitors: ${competitors.map(c => c.name).join(', ')}
+Stakeholders: ${stakeholders.map(s => s.name).join(', ')}
 
-STAKEHOLDERS TO TRACK (${stakeholders.length}):
-${stakeholders.map(s => `- ${s.name}: ${s.monitoring_context || 'Monitor for stakeholder activities'}`).join('\n')}
+✅ RELEVANT ARTICLES (be INCLUSIVE):
 
-An article IS relevant if it covers:
-✅ Competitor news (product launches, hires, partnerships, acquisitions, crises, strategy shifts)
-✅ Stakeholder activities (statements, policy changes, movements, initiatives)
-✅ Industry trends affecting ${profile?.industry || 'the industry'} (market shifts, new regulations, technology changes)
-✅ Major industry events, awards, or recognition
-✅ Thought leadership or research relevant to ${profile?.industry || 'the industry'}
+1. DIRECT COMPETITOR INTELLIGENCE:
+   - Any news about competitors (launches, hires, partnerships, acquisitions, crises, lawsuits, investigations)
+   - Competitor financial results, strategy shifts, market moves
 
-An article is NOT relevant if:
-❌ It's about ${organization_name} themselves
-❌ It's completely unrelated to ${profile?.industry || 'the industry'} (tech, finance, healthcare, etc. unless relevant)
-❌ It's purely promotional/spam content
+2. INDUSTRY CONTEXT (CRITICAL - even without competitor mention):
+   - Major industry lawsuits/investigations (e.g., "Total Energies war crimes" affects trading industry)
+   - Regulatory changes affecting ${profile?.industry || 'trading'}
+   - Market trends, commodity price shifts, supply chain disruptions
+   - Technology innovations in the industry
+   - Major M&A activity in the sector
 
-ARTICLES TO FILTER:
+3. STAKEHOLDER ACTIVITY:
+   - Policy announcements, regulatory changes
+   - Government initiatives affecting the industry
+
+4. STRATEGIC SIGNALS:
+   - Emerging markets, new partnerships
+   - ESG/sustainability trends in industry
+   - Geopolitical events affecting ${profile?.industry || 'trading'}
+
+❌ NOT RELEVANT:
+   - Articles about ${organization_name} themselves
+   - Completely unrelated industries (unless clear spillover effect)
+   - Pure spam/promotional content
+
+ARTICLES:
 ${batch.map((a, idx) => `
 [${idx + 1}]
 Title: ${a.title}
 Description: ${a.description || 'N/A'}
-${a.content ? `Content: ${a.content}` : ''}
+${a.content ? `Content: ${a.content.substring(0, 500)}` : ''}
 `).join('\n---\n')}
 
 RESPOND IN JSON:
@@ -131,14 +145,14 @@ RESPOND IN JSON:
     {
       "article_number": 1,
       "is_relevant": true,
-      "target_mentioned": "Edelman" OR "Industry Trend" OR "Stakeholder Name",
+      "relevance_type": "competitor_intelligence" OR "industry_context" OR "regulatory" OR "strategic_signal",
       "relevance_score": 85,
-      "reason": "Brief explanation of why this is relevant to ${profile?.industry || 'the industry'}"
+      "reason": "Why this matters for ${organization_name}"
     }
   ]
 }
 
-Include ALL articles relevant to ${profile?.industry || 'the industry'}. Be inclusive - industry news is valuable even without specific competitor mentions.`;
+Be INCLUSIVE - when in doubt, include it. Better to have too many than miss critical intelligence.`;
 
       try {
         const response = await fetch('https://api.anthropic.com/v1/messages', {
