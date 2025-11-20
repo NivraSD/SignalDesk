@@ -766,11 +766,25 @@ export default function TargetManagementTab({
               <div className="p-6 border-t border-gray-700 flex gap-3">
                 <button
                   onClick={saveSelectedDiscoveryItems}
-                  disabled={selectedDiscoveryItems.size === 0 || saving}
+                  disabled={saving}
                   className="flex-1 px-4 py-2 bg-cyan-500 hover:bg-cyan-600 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg font-medium flex items-center justify-center gap-2"
                 >
-                  {saving ? <Loader className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                  Add Selected ({selectedDiscoveryItems.size})
+                  {saving ? (
+                    <>
+                      <Loader className="w-4 h-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : selectedDiscoveryItems.size > 0 ? (
+                    <>
+                      <Plus className="w-4 h-4" />
+                      Add Selected ({selectedDiscoveryItems.size})
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      Update Profile
+                    </>
+                  )}
                 </button>
                 <button
                   onClick={() => setShowDiscoveryResults(false)}
