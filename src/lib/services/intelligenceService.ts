@@ -145,6 +145,44 @@ export class IntelligenceService {
           const relevantArticles = relevanceResponse.data?.relevant_articles || []
           console.log('📊 Relevance filter kept', relevantArticles.length, 'articles')
 
+          // STEP 3.5: target-intelligence-collector (NEW: Save mentions to intelligence repository)
+          if (relevantArticles.length > 0) {
+            console.log('Starting target-intelligence-collector')
+            onProgress?.('target-intelligence-collector', 'running')
+
+            const collectorResponse = await supabase.functions.invoke('target-intelligence-collector', {
+              body: {
+                articles: relevantArticles,
+                organization_id: organizationId,
+                organization_name: orgName
+              }
+            })
+
+            if (collectorResponse.error) {
+              console.warn('⚠️ Target intelligence collection failed (non-blocking):', collectorResponse.error)
+            } else {
+              console.log(`✅ Saved ${collectorResponse.data?.mentions_saved || 0} target mentions to intelligence repository`)
+              onProgress?.('target-intelligence-collector', 'completed', collectorResponse.data)
+
+              // STEP 3.6: pattern-detector (NEW: Detect patterns and generate prediction signals)
+              console.log('Starting pattern-detector')
+              onProgress?.('pattern-detector', 'running')
+
+              const patternResponse = await supabase.functions.invoke('pattern-detector', {
+                body: {
+                  organization_id: organizationId
+                }
+              })
+
+              if (patternResponse.error) {
+                console.warn('⚠️ Pattern detection failed (non-blocking):', patternResponse.error)
+              } else {
+                console.log(`✅ Generated ${patternResponse.data?.signals_generated || 0} prediction signals`)
+                onProgress?.('pattern-detector', 'completed', patternResponse.data)
+              }
+            }
+          }
+
           // Call enrichment with filtered articles
           if (relevantArticles.length > 0) {
             // STEP 4: Call enrichment with relevant articles

@@ -1,4 +1,4 @@
--- Add intelligence monitoring context fields to company_profile
+2-- Add intelligence monitoring context fields to company_profile
 -- These fields help the monitoring system make smarter decisions about what to search for
 
 -- Update comment to document new intelligence fields
