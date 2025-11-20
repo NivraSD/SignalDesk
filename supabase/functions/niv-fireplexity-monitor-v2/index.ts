@@ -1020,7 +1020,19 @@ async function fetchRealtimeArticles(
   console.log(`   Profile keys: ${Object.keys(profile).join(', ')}`)
 
   // MCP Discovery stores sources in multiple places - check all
-  const sourcesFromProfile = profile.sources || profile.monitoring_config?.sources_by_category
+  let sourcesFromProfile = profile.sources || profile.monitoring_config?.sources_by_category
+
+  // CRITICAL FIX: sources might be a JSON string, not an object
+  if (sourcesFromProfile && typeof sourcesFromProfile === 'string') {
+    try {
+      console.log(`   🔧 Sources stored as string, parsing JSON...`)
+      sourcesFromProfile = JSON.parse(sourcesFromProfile)
+      console.log(`   ✅ Successfully parsed sources JSON`)
+    } catch (err) {
+      console.error(`   ❌ Failed to parse sources JSON: ${err.message}`)
+      sourcesFromProfile = null
+    }
+  }
 
   if (sourcesFromProfile) {
     console.log(`   ✓ Found sources, extracting domains...`)
