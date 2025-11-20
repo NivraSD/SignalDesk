@@ -1190,28 +1190,43 @@ async function fetchRealtimeArticles(
 
             console.log(`   ✓ Using ${tier1Results.length} articles from Firecrawl`)
 
-            // Convert to standard format
-            tier1Results.forEach((result, idx) => {
+            // INTELLIGENT FILTERING: Only keep articles that actually answer the strategic question
+            // Check title + description relevance before adding
+            for (const result of tier1Results) {
               const fullMarkdown = result.markdown || ''
               const relevantContent = fullMarkdown ? selectRelevantContent(fullMarkdown, query, 1000) : ''
 
-              // DEBUG: Log first article to see what Firecrawl returns
-              if (idx === 0 && i === 0) {
-                console.log(`   🔍 TIER 1 Sample article from Firecrawl:`, {
-                  title: result.title?.substring(0, 60),
-                  url: result.url,
-                  publishedTime: result.publishedTime,
-                  hasPublishedTime: !!result.publishedTime,
-                  score: result.score
-                })
+              const title = result.title || ''
+              const description = result.description || ''
+              const combined = `${title} ${description}`.toLowerCase()
+
+              // Extract key entities from query (competitors, topics, etc.)
+              const queryLower = query.toLowerCase()
+
+              // Check if article is relevant to the query
+              // For competitor queries, title/description should mention the competitor
+              // For industry queries, should mention industry keywords
+              let isRelevant = false
+
+              // Strategy 1: Title/description contains key terms from query
+              const queryWords = queryLower.split(/\s+/).filter(w => w.length > 4)
+              const matchedWords = queryWords.filter(word => combined.includes(word))
+              const matchRatio = matchedWords.length / Math.max(queryWords.length, 1)
+
+              if (matchRatio > 0.3) { // At least 30% of query words match
+                isRelevant = true
+              }
+
+              // Strategy 2: Contains competitor names from strategic context
+              if (strategicContext.organization && combined.includes(strategicContext.organization.toLowerCase())) {
+                isRelevant = true
+              }
+
+              if (!isRelevant) {
+                continue // Skip irrelevant articles
               }
 
               const publishDate = result.publishedTime || new Date().toISOString()
-
-              // WARN if no publish date
-              if (!result.publishedTime && idx < 2) {
-                console.log(`   ⚠️ TIER 1 article has NO publishedTime, defaulting to now: "${result.title?.substring(0, 60)}..."`)
-              }
 
               queryResults.push({
                 title: result.title || 'Untitled',
@@ -1220,12 +1235,12 @@ async function fetchRealtimeArticles(
                 description: result.description || '',
                 published_at: publishDate,
                 source: result.source || extractDomain(result.url),
-                relevance_score: result.score || 50,
+                relevance_score: Math.round(matchRatio * 100), // Score based on match ratio
                 full_markdown: fullMarkdown.substring(0, 5000),
-                search_tier: 'TIER1', // Mark as trusted source
-                had_published_time: !!result.publishedTime // Track if date was real or defaulted
+                search_tier: 'TIER1',
+                had_published_time: !!result.publishedTime
               })
-            })
+            }
           } else {
             const errorText = await searchResponse.text()
             console.log(`   ❌ TIER 1 search HTTP error ${searchResponse.status} for "${query}": ${errorText.substring(0, 200)}`)
@@ -1276,10 +1291,33 @@ async function fetchRealtimeArticles(
           // Use ALL results - no domain filtering
           const tier2Results = [...webResults, ...newsResults]
 
-          // Convert to standard format
-          tier2Results.forEach(result => {
+          // INTELLIGENT FILTERING: Same as TIER 1
+          for (const result of tier2Results) {
             const fullMarkdown = result.markdown || ''
             const relevantContent = fullMarkdown ? selectRelevantContent(fullMarkdown, query, 1000) : ''
+
+            const title = result.title || ''
+            const description = result.description || ''
+            const combined = `${title} ${description}`.toLowerCase()
+            const queryLower = query.toLowerCase()
+
+            // Check relevance
+            let isRelevant = false
+            const queryWords = queryLower.split(/\s+/).filter(w => w.length > 4)
+            const matchedWords = queryWords.filter(word => combined.includes(word))
+            const matchRatio = matchedWords.length / Math.max(queryWords.length, 1)
+
+            if (matchRatio > 0.3) {
+              isRelevant = true
+            }
+
+            if (strategicContext.organization && combined.includes(strategicContext.organization.toLowerCase())) {
+              isRelevant = true
+            }
+
+            if (!isRelevant) {
+              continue
+            }
 
             queryResults.push({
               title: result.title || 'Untitled',
@@ -1288,11 +1326,11 @@ async function fetchRealtimeArticles(
               description: result.description || '',
               published_at: result.publishedTime || new Date().toISOString(),
               source: result.source || extractDomain(result.url),
-              relevance_score: result.score || 50,
+              relevance_score: Math.round(matchRatio * 100),
               full_markdown: fullMarkdown.substring(0, 5000),
-              search_tier: 'TIER2' // Mark as open web (high quality)
+              search_tier: 'TIER2'
             })
-          })
+          }
         }
       } catch (err: any) {
         if (err.name === 'AbortError') {
