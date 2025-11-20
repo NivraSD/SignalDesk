@@ -255,12 +255,11 @@ export default function TargetManagementTab({
   }
 
   const saveSelectedDiscoveryItems = async () => {
-    if (selectedDiscoveryItems.size === 0) return
-
     try {
       setSaving(true)
       setError(null)
 
+      console.log('🔵 Saving discovery: selected items =', selectedDiscoveryItems.size)
       const targetsToAdd: any[] = []
 
       if (discoveredItems.competitors) {
