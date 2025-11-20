@@ -1185,13 +1185,10 @@ async function fetchRealtimeArticles(
 
             console.log(`   ✓ TIER 1 query "${query.substring(0, 50)}..." returned ${webResults.length + newsResults.length} results`)
 
-            // Results should already be from trusted domains, but verify
-            const tier1Results = [...webResults, ...newsResults].filter(result => {
-              const domain = extractDomain(result.url)
-              return approvedDomains.includes(domain)
-            })
+            // Use ALL results - don't filter by domain (Firecrawl doesn't support site: operators)
+            const tier1Results = [...webResults, ...newsResults]
 
-            console.log(`   ✓ After domain filtering: ${tier1Results.length} articles from trusted sources`)
+            console.log(`   ✓ Using ${tier1Results.length} articles from Firecrawl`)
 
             // Convert to standard format
             tier1Results.forEach((result, idx) => {
@@ -1276,12 +1273,8 @@ async function fetchRealtimeArticles(
           const webResults = searchData.data?.web || []
           const newsResults = searchData.data?.news || []
 
-          // Filter to high-quality results NOT from approved domains (avoid duplicates)
-          const tier2Results = [...webResults, ...newsResults].filter(result => {
-            const domain = extractDomain(result.url)
-            const score = result.score || 0
-            return score > 70 && !approvedDomains.includes(domain) // Strict quality threshold
-          })
+          // Use ALL results - no domain filtering
+          const tier2Results = [...webResults, ...newsResults]
 
           // Convert to standard format
           tier2Results.forEach(result => {
