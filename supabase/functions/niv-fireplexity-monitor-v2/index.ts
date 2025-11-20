@@ -83,8 +83,31 @@ serve(async (req) => {
 
     const profile = orgData.company_profile || {}
 
+    // CRITICAL FIX: Parse nested JSON strings in company_profile
+    // MCP Discovery saves many fields as JSON strings, not objects
+    const parseIfString = (field: any) => {
+      if (field && typeof field === 'string') {
+        try {
+          return JSON.parse(field)
+        } catch {
+          return field
+        }
+      }
+      return field
+    }
+
+    // Parse all potentially-stringified fields
+    profile.sources = parseIfString(profile.sources)
+    profile.intelligence_context = parseIfString(profile.intelligence_context)
+    profile.monitoring_config = parseIfString(profile.monitoring_config)
+    profile.competition = parseIfString(profile.competition)
+    profile.strategic_goals = parseIfString(profile.strategic_goals)
+
     console.log(`   ✓ Organization: ${orgData.name}`)
     console.log(`   ✓ Industry: ${orgData.industry || profile.industry || 'Unknown'}`)
+    console.log(`   ✓ Intelligence Context: ${profile.intelligence_context ? 'YES' : 'NO'}`)
+    console.log(`   ✓ Key Questions: ${profile.intelligence_context?.key_questions?.length || 0}`)
+    console.log(`   ✓ Sources: ${profile.sources ? Object.keys(profile.sources).length + ' categories' : 'NO'}`)
     console.log(`   ✓ Strategic Goals: ${profile.strategic_goals?.length || 0}`)
     console.log(`   ✓ Intelligence Focus: ${profile.intelligence_focus?.priority_signals?.length || 0} signals`)
     console.log(`   ✓ Competitive Priorities: ${profile.competitive_intelligence_priorities?.focus_areas?.length || 0} areas`)
@@ -215,18 +238,29 @@ serve(async (req) => {
 
     // Try AI-driven query generation first (now with industry-aware prompt)
     let queries = await generateIntelligentQueries(profile, orgName, discoveryTargets, targetsByPriority)
+    console.log(`   AI query generation returned: ${queries.length} queries`)
 
     // Fallback to static queries if AI fails
     if (queries.length === 0) {
-      console.log('   ⚠️ Using fallback static query generation')
+      console.log('   ⚠️ AI returned empty, using fallback static query generation')
       queries = generateRealtimeQueries(profile, orgName, recency_window, discoveryTargets, targetsByPriority, targetsWithContext)
+      console.log(`   Static query generation returned: ${queries.length} queries`)
     }
 
     // Strategic queries are now generated inside generateRealtimeQueries
     // No more dumb keyword additions - everything is intelligence-driven
 
-    console.log(`   ✓ Generated ${queries.length} strategic intelligence questions`)
-    console.log(`   📋 Sample questions (first 3):`, queries.slice(0, 3))
+    console.log(`   ✓ FINAL: Generated ${queries.length} strategic intelligence questions`)
+    console.log(`   📋 Sample questions (first 5):`, queries.slice(0, 5))
+
+    // CRITICAL: If still no queries, something is very wrong
+    if (queries.length === 0) {
+      console.error('   ❌ CRITICAL: No queries generated! Check intelligence_context and competitors.')
+      console.error(`   Intelligence context available: ${!!profile.intelligence_context}`)
+      console.error(`   Key questions: ${profile.intelligence_context?.key_questions?.length || 0}`)
+      console.error(`   Competitors: ${discoveryTargets.competitors.size}`)
+      console.error(`   Industry: ${profile.industry}`)
+    }
 
     // STEP 2.5: Fetch articles from Yahoo Finance (company + competitor news)
     console.log('\n📡 Step 2.5: Fetching from Yahoo Finance...')
@@ -1092,24 +1126,16 @@ async function fetchRealtimeArticles(
     const batchPromises = batch.map(async (query) => {
       const queryResults: any[] = []
 
-      // TIER 1: Domain-restricted search (if we have approved domains)
+      // TIER 1: High-quality search with strategic queries (NO domain restriction - Firecrawl doesn't support site: operators)
+      // Instead, use highly specific queries that naturally find industry-relevant content
       if (approvedDomains.length > 0) {
-        // FIX: Instead of searching entire web and filtering, use site: operator to target specific domains
-        // Take top 10-15 most important domains (WSJ, Reuters, Bloomberg, FT, NYT, etc.)
-        const topDomains = approvedDomains.slice(0, 15)
-
-        // Create site-restricted query with strategic context
-        // Format: "[strategic question] context:[positioning analysis for {org}]"
-        const siteRestrictions = topDomains.map(d => `site:${d}`).join(' OR ')
-        const contextualQuery = `${query} [Strategic intelligence for ${strategicContext.organization}: ${strategicContext.key_focus[0]}]`
-        const domainRestrictedQuery = `(${siteRestrictions}) ${contextualQuery}`
-
         // Log first query to verify structure
         if (i === 0 && batch.indexOf(query) === 0) {
-          console.log(`   📍 Example TIER 1 contextual query:`)
+          console.log(`   📍 Example TIER 1 strategic query:`)
           console.log(`      Question: ${query}`)
           console.log(`      Context: Strategic intelligence for ${strategicContext.organization}`)
-          console.log(`      Full query: ${domainRestrictedQuery.substring(0, 250)}...`)
+          console.log(`      Industry: ${strategicContext.industry}`)
+          console.log(`      Approved domains for post-filtering: ${approvedDomains.slice(0, 5).join(', ')}`)
         }
 
         try {
@@ -1123,7 +1149,7 @@ async function fetchRealtimeArticles(
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-              query: domainRestrictedQuery,  // Use domain-restricted query
+              query,  // Use clean strategic query - Firecrawl doesn't support site: operators
               sources: ['web', 'news'],
               limit: tier1Limit,
               tbs,
