@@ -1091,12 +1091,13 @@ async function fetchRealtimeArticles(
   }
 
   // Map recency window to Firecrawl tbs parameter
+  // IMPORTANT: Niche industry queries need broader time windows to find content
   const tbsMap: Record<string, string> = {
-    '1hour': 'qdr:h',   // Last 1 hour (production: hourly autonomous monitoring)
-    '6hours': 'qdr:d',  // Last day, filter to 6hr client-side (testing only)
-    '24hours': 'qdr:d'  // Last day (executive synthesis)
+    '1hour': 'qdr:d',   // Last day (even 1hr queries need broader search for industry content)
+    '6hours': 'qdr:w',  // Last week (PR industry content is less frequent)
+    '24hours': 'qdr:w'  // Last week (executive synthesis)
   }
-  const tbs = tbsMap[recencyWindow] || 'qdr:h' // Default 1 hour for real-time
+  const tbs = tbsMap[recencyWindow] || 'qdr:w' // Default to week for industry searches
 
   console.log(`   Executing ${queries.length} strategic intelligence searches with TWO-TIER strategy`)
   console.log(`   🎯 Strategic Context:`, {
