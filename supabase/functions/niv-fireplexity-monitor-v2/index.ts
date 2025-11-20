@@ -213,7 +213,7 @@ serve(async (req) => {
     // STEP 2: Generate intelligent monitoring queries using AI
     console.log('\n🔍 Step 2: Generating intelligent queries using AI...')
 
-    // Try AI-driven query generation first (Fireplexity approach)
+    // Try AI-driven query generation first (now with industry-aware prompt)
     let queries = await generateIntelligentQueries(profile, orgName, discoveryTargets, targetsByPriority)
 
     // Fallback to static queries if AI fails
@@ -222,8 +222,11 @@ serve(async (req) => {
       queries = generateRealtimeQueries(profile, orgName, recency_window, discoveryTargets, targetsByPriority, targetsWithContext)
     }
 
-    console.log(`   ✓ Generated ${queries.length} queries for real-time monitoring`)
-    console.log(`   📋 Sample queries (first 5):`, queries.slice(0, 5))
+    // Strategic queries are now generated inside generateRealtimeQueries
+    // No more dumb keyword additions - everything is intelligence-driven
+
+    console.log(`   ✓ Generated ${queries.length} strategic intelligence questions`)
+    console.log(`   📋 Sample questions (first 3):`, queries.slice(0, 3))
 
     // STEP 2.5: Fetch articles from Yahoo Finance (company + competitor news)
     console.log('\n📡 Step 2.5: Fetching from Yahoo Finance...')
@@ -307,10 +310,27 @@ serve(async (req) => {
     // STEP 3: Execute Firecrawl searches
     console.log('\n🌐 Step 3: Executing Firecrawl searches...')
 
+    // Build strategic context for Firecrawl searches
+    const intelligenceContext = profile?.intelligence_context
+    const strategicContext = {
+      organization: orgName,
+      industry: profile.industry || '',
+      analysis_goal: "Strategic positioning analysis for executive intelligence",
+      key_focus: [
+        "Competitive positioning shifts",
+        "Emerging opportunities and risks",
+        "Market narrative changes",
+        "Critical developments affecting business strategy"
+      ],
+      perspective: intelligenceContext?.analysis_perspective || `${orgName} executive team making strategic decisions`,
+      monitoring_prompt: intelligenceContext?.monitoring_prompt || ''
+    }
+
     const firecrawlArticles = await fetchRealtimeArticles(
       queries,
       profile,
       recency_window,
+      strategicContext,
       max_results,
       supabaseUrl,
       supabaseKey
@@ -353,11 +373,23 @@ serve(async (req) => {
 
       if (!isRecent) {
         const hoursAgo = Math.floor((Date.now() - publishedDate.getTime()) / (1000 * 60 * 60))
-        console.log(`   🚫 Filtered out OLD article (${hoursAgo}h ago, limit ${maxHoursOld}h): "${article.title?.substring(0, 60)}..."`)
+        const hadRealDate = article.had_published_time !== false
+        console.log(`   🚫 Filtered out OLD article (${hoursAgo}h ago, limit ${maxHoursOld}h): "${article.title?.substring(0, 60)}..." [had_date: ${hadRealDate}, date: ${article.publishDate || article.published_at}]`)
       }
 
       return isRecent
     })
+
+    // DEBUG: Check how many articles had real publish dates vs defaulted to "now"
+    const articlesWithRealDates = deduplicatedArticles.filter(a => a.had_published_time !== false).length
+    const articlesDefaultedToNow = deduplicatedArticles.length - articlesWithRealDates
+    console.log(`   📊 Date source breakdown:`)
+    console.log(`      - Articles with real publishedTime from Firecrawl: ${articlesWithRealDates}`)
+    console.log(`      - Articles defaulted to "now" (missing date): ${articlesDefaultedToNow}`)
+    if (articlesDefaultedToNow > articlesWithRealDates) {
+      console.log(`   ⚠️ WARNING: Most articles have NO publish date from Firecrawl!`)
+      console.log(`      This means old articles are passing date filter by defaulting to "now"`)
+    }
 
     console.log(`   ✓ Date filtering: ${deduplicatedArticles.length} articles → ${filteredArticles.length} recent articles (last ${maxHoursOld} hours)`)
     if (filteredArticles.length < deduplicatedArticles.length) {
@@ -646,40 +678,52 @@ ${competitors.join(', ')}
 STAKEHOLDERS TO MONITOR:
 ${stakeholders.join(', ')}
 
-Generate 12 BROAD INDUSTRY QUERIES that will cast a wide net.
+YOUR TASK: Generate 18-25 INDUSTRY-SPECIFIC search queries that will find relevant news about this industry.
 
-DO NOT generate hyper-specific queries like "Mitsubishi announces acquisition" - those return 0 results.
-Instead, generate BROAD INDUSTRY queries that Relevance filter will narrow down later.
+CRITICAL RULES:
+1. Queries must be SPECIFIC to the "${profile.industry || 'Unknown'}" industry
+2. DO NOT use generic templates like "commodity markets" or "war crimes" - adapt to the actual industry
+3. Balance BROAD industry trends with SPECIFIC competitor activity
+4. Include crisis, opportunity, and regulatory queries relevant to this specific industry
 
-QUERY TYPES (all broad):
+QUERY STRUCTURE:
 
-1. INDUSTRY NEWS (4 queries):
-   - "${profile.industry || 'trading'} companies news"
-   - "commodity market developments"
-   - "${profile.industry || 'energy'} sector latest"
-   - "supply chain partnerships"
+A. INDUSTRY-SPECIFIC NEWS (6-8 queries):
+   Examples for different industries:
+   - Public Relations: "PR agency acquisition", "communications firm expansion", "corporate communications trends", "reputation management news", "media relations developments", "PR executive hire", "agency wins account"
+   - Trading: "commodity market developments", "supply chain partnerships", "trading company expansion", "trader appointment", "trading desk launch"
+   - Technology: "tech company acquisition", "software partnership", "cloud computing trends", "CTO appointment", "product launch"
+   - Healthcare: "hospital merger", "pharmaceutical partnership", "medical device approval", "chief medical officer hire", "clinical trial results"
 
-2. REGULATORY & LEGAL (4 queries):
-   - "${profile.industry || 'energy'} company lawsuit"
-   - "${profile.industry || 'trading'} investigation"
-   - "${profile.industry || 'commodity'} violation"
-   - "war crimes ${profile.industry || 'energy'}"
+   Generate 6-8 queries that make sense for "${profile.industry || 'Unknown'}" including hires, announcements, wins, expansions
 
-3. CORPORATE ACTIVITY (3 queries):
-   - "merger acquisition ${profile.industry || 'trading'}"
-   - "partnership announcement business"
-   - "executive appointment ${profile.industry || 'energy'}"
+B. REGULATORY & LEGAL (4-5 queries):
+   Examples:
+   - Public Relations: "PR ethics violation", "FTC advertising investigation", "lobbying disclosure", "client conflict investigation"
+   - Trading: "commodity trading violation", "sanctions investigation", "price manipulation", "war crimes investigation"
+   - Technology: "antitrust investigation tech", "data privacy violation", "patent lawsuit"
 
-4. MARKET TRENDS (1 query):
-   - "emerging markets ${profile.industry || 'trading'}"
+   Generate 4-5 queries relevant to "${profile.industry || 'Unknown'}" regulatory landscape
 
-CRITICAL:
-- Make queries BROAD to catch everything (e.g., "energy company lawsuit" catches Total Energies war crimes lawsuit)
-- PRIORITIZE crisis/legal/regulatory news - these are high-value for intelligence
-- Let Relevance filter decide what matters for this specific company
+C. CORPORATE ACTIVITY (4-6 queries):
+   Examples:
+   - Public Relations: "PR agency merger", "communications firm acquisition", "PR executive appointment", "agency wins client", "creative director hired", "account director promoted"
+   - Trading: "trading company acquisition", "commodity supplier partnership", "head of trading appointed", "trading desk expansion"
+   - Technology: "tech company merger", "software partnership", "CTO hired", "VP engineering joins", "product manager promoted"
+
+   Generate 4-6 queries for M&A, partnerships, hires, promotions, and client wins in "${profile.industry || 'Unknown'}"
+
+D. CRISIS & OPPORTUNITY (3-4 queries):
+   - Include industry-specific crisis types
+   - Include growth opportunities
+
+IMPORTANT:
+- Make queries BROAD enough to cast a wide net (e.g., "PR agency" not "Weber Shandwick")
+- Relevance filter will narrow down to specific competitors later
 - Focus on RECENT events, not analysis of old news
+- Adapt all examples to "${profile.industry || 'Unknown'}" - do NOT use templates from other industries
 
-Return ONLY a JSON array of query strings, no other text.`
+Return ONLY a JSON array of 18-25 query strings, no other text. Include queries about hires, appointments, client wins, awards, office openings, and other corporate announcements.`
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -722,6 +766,10 @@ Return ONLY a JSON array of query strings, no other text.`
   return [] // Return empty if AI fails, fallback will be used
 }
 
+/**
+ * Generate strategic intelligence questions using MCP Discovery context
+ * This replaces dumb keyword queries with intelligent, goal-oriented questions
+ */
 function generateRealtimeQueries(
   profile: any,
   orgName: string,
@@ -740,8 +788,78 @@ function generateRealtimeQueries(
 ): string[] {
   const queries: string[] = []
   const industry = profile.industry || ''
+  const intelligenceContext = profile?.intelligence_context
 
-  // Check if profile has context queries from mcp-discovery
+  console.log(`   🎯 Intelligence-driven query generation for ${orgName}`)
+
+  // Extract strategic context from MCP Discovery
+  const monitoringPrompt = intelligenceContext?.monitoring_prompt || ''
+  const keyQuestions = intelligenceContext?.key_questions || []
+  const extractionFocus = intelligenceContext?.extraction_focus || []
+  const analysisPerspective = intelligenceContext?.analysis_perspective || `Analyze from ${orgName}'s executive perspective`
+
+  console.log(`   Strategic context available:`, {
+    hasMonitoringPrompt: !!monitoringPrompt,
+    keyQuestions: keyQuestions.length,
+    extractionFocus: extractionFocus.length,
+    hasAnalysisPerspective: !!analysisPerspective
+  })
+
+  // STRATEGY: Generate strategic questions focused on positioning, opportunities, risks, narratives
+  const strategicQueries: string[] = []
+
+  // 1. Use MCP Discovery key questions as foundation (if available)
+  if (keyQuestions.length > 0) {
+    console.log(`   ✅ Using ${keyQuestions.length} strategic questions from MCP Discovery`)
+    strategicQueries.push(...keyQuestions)
+  }
+
+  // 2. Generate competitor positioning questions
+  const topCompetitors = Array.from(discoveryTargets.competitors).slice(0, 5)
+  if (topCompetitors.length > 0) {
+    topCompetitors.forEach(competitor => {
+      strategicQueries.push(
+        `What recent strategic moves or positioning changes has ${competitor} made in the ${industry} market that could affect ${orgName}?`
+      )
+      strategicQueries.push(
+        `What vulnerabilities or opportunities has ${competitor} created through recent announcements or market activities?`
+      )
+    })
+  }
+
+  // 3. Industry dynamics and narrative shifts
+  if (industry) {
+    strategicQueries.push(
+      `What critical developments or narrative shifts are happening in the ${industry} industry that ${orgName} should be aware of?`
+    )
+    strategicQueries.push(
+      `What emerging opportunities or risks are appearing in the ${industry} market landscape?`
+    )
+  }
+
+  // 4. Stakeholder and regulatory questions (if we have high-priority stakeholders)
+  const topStakeholders = targetsByPriority.stakeholders.high.slice(0, 3)
+  if (topStakeholders.length > 0) {
+    topStakeholders.forEach(stakeholder => {
+      strategicQueries.push(
+        `What positions or actions is ${stakeholder} taking that could impact ${orgName}'s business or market positioning?`
+      )
+    })
+  }
+
+  console.log(`   📋 Generated ${strategicQueries.length} strategic intelligence questions`)
+  console.log(`   Sample questions:`, strategicQueries.slice(0, 3))
+
+  // If we generated strategic questions, return them
+  if (strategicQueries.length > 0) {
+    return strategicQueries
+  }
+
+  // If no strategic questions could be generated (no competitors, no industry), fall through to old approach
+  console.log(`   ⚠️ Could not generate strategic questions - falling back to context queries`)
+
+  // OLD FALLBACK: Keep for organizations without intelligence_context
+  // TODO: Remove once all orgs have run MCP Discovery
   const contextQueries = profile.monitoring_config?.context_queries
 
   if (contextQueries && contextQueries.all && contextQueries.all.length > 0) {
@@ -884,6 +1002,7 @@ async function fetchRealtimeArticles(
   queries: string[],
   profile: any,
   recencyWindow: string,
+  strategicContext: any,
   maxResults: number,
   supabaseUrl: string,
   supabaseKey: string
@@ -933,11 +1052,17 @@ async function fetchRealtimeArticles(
   }
   const tbs = tbsMap[recencyWindow] || 'qdr:h' // Default 1 hour for real-time
 
-  console.log(`   Executing ${queries.length} real-time Firecrawl searches with TWO-TIER strategy`)
+  console.log(`   Executing ${queries.length} strategic intelligence searches with TWO-TIER strategy`)
+  console.log(`   🎯 Strategic Context:`, {
+    organization: strategicContext.organization,
+    goal: strategicContext.analysis_goal,
+    key_focus: strategicContext.key_focus
+  })
+  console.log(`   📋 First 3 strategic questions:`, queries.slice(0, 3))
   console.log(`   TIER 1: Domain-restricted (${approvedDomains.length} trusted sources)`)
   console.log(`   TIER 1 targeting top 15 domains: ${approvedDomains.slice(0, 15).join(', ')}`)
   console.log(`   TIER 2: Open web with strict filtering (score >70)`)
-  console.log(`   Time filter: ${tbs}`)
+  console.log(`   Time filter: ${tbs} (${recencyWindow})`)
 
   // TWO-TIER SEARCH LIMITS
   const tier1Limit = 15  // More results from trusted sources
@@ -961,13 +1086,18 @@ async function fetchRealtimeArticles(
         // Take top 10-15 most important domains (WSJ, Reuters, Bloomberg, FT, NYT, etc.)
         const topDomains = approvedDomains.slice(0, 15)
 
-        // Create site-restricted query: "site:wsj.com OR site:reuters.com ... [query]"
+        // Create site-restricted query with strategic context
+        // Format: "[strategic question] context:[positioning analysis for {org}]"
         const siteRestrictions = topDomains.map(d => `site:${d}`).join(' OR ')
-        const domainRestrictedQuery = `(${siteRestrictions}) ${query}`
+        const contextualQuery = `${query} [Strategic intelligence for ${strategicContext.organization}: ${strategicContext.key_focus[0]}]`
+        const domainRestrictedQuery = `(${siteRestrictions}) ${contextualQuery}`
 
         // Log first query to verify structure
         if (i === 0 && batch.indexOf(query) === 0) {
-          console.log(`   📍 Example TIER 1 query: ${domainRestrictedQuery.substring(0, 200)}...`)
+          console.log(`   📍 Example TIER 1 contextual query:`)
+          console.log(`      Question: ${query}`)
+          console.log(`      Context: Strategic intelligence for ${strategicContext.organization}`)
+          console.log(`      Full query: ${domainRestrictedQuery.substring(0, 250)}...`)
         }
 
         try {
@@ -1014,20 +1144,39 @@ async function fetchRealtimeArticles(
             console.log(`   ✓ After domain filtering: ${tier1Results.length} articles from trusted sources`)
 
             // Convert to standard format
-            tier1Results.forEach(result => {
+            tier1Results.forEach((result, idx) => {
               const fullMarkdown = result.markdown || ''
               const relevantContent = fullMarkdown ? selectRelevantContent(fullMarkdown, query, 1000) : ''
+
+              // DEBUG: Log first article to see what Firecrawl returns
+              if (idx === 0 && i === 0) {
+                console.log(`   🔍 TIER 1 Sample article from Firecrawl:`, {
+                  title: result.title?.substring(0, 60),
+                  url: result.url,
+                  publishedTime: result.publishedTime,
+                  hasPublishedTime: !!result.publishedTime,
+                  score: result.score
+                })
+              }
+
+              const publishDate = result.publishedTime || new Date().toISOString()
+
+              // WARN if no publish date
+              if (!result.publishedTime && idx < 2) {
+                console.log(`   ⚠️ TIER 1 article has NO publishedTime, defaulting to now: "${result.title?.substring(0, 60)}..."`)
+              }
 
               queryResults.push({
                 title: result.title || 'Untitled',
                 url: result.url,
                 content: relevantContent,
                 description: result.description || '',
-                published_at: result.publishedTime || new Date().toISOString(),
+                published_at: publishDate,
                 source: result.source || extractDomain(result.url),
                 relevance_score: result.score || 50,
                 full_markdown: fullMarkdown.substring(0, 5000),
-                search_tier: 'TIER1' // Mark as trusted source
+                search_tier: 'TIER1', // Mark as trusted source
+                had_published_time: !!result.publishedTime // Track if date was real or defaulted
               })
             })
           } else {

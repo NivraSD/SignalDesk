@@ -133,10 +133,24 @@ function mapIndustryToCategory(industryInput: string): string | null {
     return 'travel_hospitality'
   }
 
-  // LEGAL & PROFESSIONAL SERVICES
+  // PUBLIC RELATIONS & COMMUNICATIONS - Check FIRST before professional services
+  // PR agencies, corporate communications firms, reputation management
   if (
-    input.includes('legal') || input.includes('law') || input.includes('consulting') ||
-    input.includes('professional') && input.includes('service')
+    input.includes('public') && input.includes('relations') || input.includes('publicrelations') ||
+    input.includes('pr') && (input.includes('agency') || input.includes('firm')) ||
+    input.includes('communications') && (input.includes('agency') || input.includes('firm') || input.includes('corporate')) ||
+    input.includes('reputation') && input.includes('management') ||
+    input.includes('strategic') && input.includes('communications') // Strategic comms firms are PR, not consulting
+  ) {
+    return 'public_relations'
+  }
+
+  // LEGAL & PROFESSIONAL SERVICES - Management consulting, strategy, legal (NOT PR)
+  if (
+    input.includes('legal') || input.includes('law') ||
+    input.includes('management') && input.includes('consulting') ||
+    input.includes('strategy') && input.includes('consulting') ||
+    input.includes('professional') && input.includes('service') && !input.includes('relations') // Exclude if "relations" is present
   ) {
     return 'professional_services'
   }
@@ -156,14 +170,6 @@ function mapIndustryToCategory(industryInput: string): string | null {
     input.includes('trading') && input.includes('investment') || input.includes('multi') && input.includes('industry')
   ) {
     return 'conglomerate'
-  }
-
-  // PUBLIC RELATIONS & COMMUNICATIONS - PR agencies, strategic communications (NOT management consulting)
-  if (
-    input.includes('public') && input.includes('relations') || input.includes('publicrelations') ||
-    input.includes('communications') && !input.includes('consulting') // Exclude "strategic communications consulting" - that's professional services
-  ) {
-    return 'public_relations'
   }
 
   // No match found - will check exact industry key

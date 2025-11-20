@@ -137,6 +137,14 @@ async function analyzeWithClaude(articlesWithContent: any[], profile: any, orgNa
       extraction_focus: intelligenceContext?.extraction_focus || []
     };
 
+    // DEBUG: Log what targets we're using
+    console.log(`🎯 Intelligence targets loaded:`, {
+      organization: targets.organization,
+      competitors: targets.competitors,
+      stakeholders: targets.stakeholders.slice(0, 5),
+      topics: targets.topics.slice(0, 5)
+    });
+
     // Process articles in larger batches since we're using title + description
     // Was: batchSize = 5 (too slow), then 30
     // Now: 100 - we can handle more since we're not processing full article content
@@ -229,9 +237,28 @@ Focus on:
 - Crisis indicators and reputation risks
 - Strategic positioning opportunities
 
-CRITICAL: For EVENTS, the "entity" field MUST be the company/person the event is ABOUT.
-Example: If Google announces a product, entity="Google", type="product"
-Example: If Microsoft acquires a startup, entity="Microsoft", type="acquisition"
+CRITICAL ENTITY EXTRACTION RULES:
+
+1. PRIORITIZE INTELLIGENCE TARGETS: If the article mentions ANY of these configured targets, use them as entities:
+   - Competitors: ${targets.competitors.join(', ')}
+   - Stakeholders: ${targets.stakeholders.slice(0, 10).join(', ')}
+
+2. For each event, check if ANY intelligence target is mentioned in the article
+   - If article mentions ANY of these competitors, extract that as the entity
+   - If article mentions multiple targets, create separate events for each
+
+3. **ENTITY EXTRACTION PRIORITY:**
+   a) FIRST: Check if article mentions any competitor from the list above
+   b) SECOND: Check if article mentions any stakeholder from the list above
+   c) LAST: Only if NO targets are mentioned, extract the primary company/person
+
+4. Examples:
+   - Article: "Edelman wins Toyota account" → entity="Edelman", type="partnership"
+   - Article: "Weber Shandwick hires new CEO" → entity="Weber Shandwick", type="workforce"
+   - Article about "Market trends" but mentions "FleishmanHillard expanding" → entity="FleishmanHillard", type="other"
+
+**VERY IMPORTANT**: Do NOT extract generic words like "Market", "Sports", "Include" as entities.
+Only extract actual company names or person names. When in doubt, check the competitors list above.
 
 Return ONLY valid JSON matching this structure:
 {
@@ -242,6 +269,13 @@ Return ONLY valid JSON matching this structure:
   "insights": [array of insight strings],
   "discovery_matches": {"competitors": [], "stakeholders": [], "topics": []}
 }`;
+
+      // DEBUG: Log entity extraction rules being sent to Claude
+      const entityRulesStart = prompt.indexOf('CRITICAL ENTITY EXTRACTION RULES:');
+      if (entityRulesStart !== -1) {
+        const rulesSection = prompt.substring(entityRulesStart, entityRulesStart + 800);
+        console.log(`📋 Entity extraction rules sent to Claude:\n${rulesSection}`);
+      }
 
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
@@ -268,6 +302,13 @@ Return ONLY valid JSON matching this structure:
           // Extract JSON from response
           const jsonMatch = content.match(/\{[^]*\}/s);
           const extracted = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
+
+          // DEBUG: Show what entities Claude extracted
+          if (extracted.events && extracted.events.length > 0) {
+            const extractedEntities = extracted.events.map((e: any) => e.entity).filter(Boolean);
+            const uniqueEntities = [...new Set(extractedEntities)];
+            console.log(`🔍 Claude extracted ${extracted.events.length} events with entities:`, uniqueEntities.slice(0, 10));
+          }
 
           // TRANSFORMATION LAYER: Normalize event structure
           if (extracted.events) {

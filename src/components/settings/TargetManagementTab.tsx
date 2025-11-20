@@ -186,7 +186,9 @@ export default function TargetManagementTab({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           organization_name: organizationName,
-          industry_hint: ''
+          organization_id: organizationId,
+          industry_hint: '',
+          save_profile: false // Don't save yet, let user customize first
         })
       })
 
@@ -318,6 +320,27 @@ export default function TargetManagementTab({
         if (!response.ok) {
           throw new Error(data.error || 'Failed to add targets')
         }
+      }
+
+      // CRITICAL: Save the full profile (with sources, intelligence_context) to organizations.company_profile
+      console.log('💾 Saving full discovery profile to company_profile...')
+      const profileResponse = await fetch('/api/organizations/discover', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          organization_name: organizationName,
+          organization_id: organizationId,
+          industry_hint: '',
+          save_profile: true // Save the full profile now
+        })
+      })
+
+      if (!profileResponse.ok) {
+        const profileError = await profileResponse.json()
+        console.error('Failed to save profile:', profileError)
+        // Don't fail the whole operation, just log the error
+      } else {
+        console.log('✅ Full profile saved successfully')
       }
 
       setShowDiscoveryResults(false)

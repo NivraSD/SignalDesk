@@ -10,7 +10,7 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { organization_name, industry_hint, website, about_page } = body
+    const { organization_name, organization_id, industry_hint, website, about_page, save_profile } = body
 
     if (!organization_name) {
       return NextResponse.json(
@@ -20,6 +20,7 @@ export async function POST(req: NextRequest) {
     }
 
     console.log(`🔍 Running MCP discovery for: ${organization_name}`)
+    console.log(`   Save profile: ${save_profile ? 'YES' : 'NO'}`)
 
     // Call MCP discovery function
     const response = await fetch(
@@ -34,10 +35,11 @@ export async function POST(req: NextRequest) {
           tool: 'create_organization_profile',
           arguments: {
             organization_name,
+            organization_id, // Pass org ID for saving
             industry_hint,
             website,
             about_page,
-            save_to_persistence: false // Don't save yet, let user customize first
+            save_to_persistence: save_profile || false // Save if requested
           }
         })
       }

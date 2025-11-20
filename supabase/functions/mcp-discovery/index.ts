@@ -1174,6 +1174,17 @@ REMEMBER:
 
         ${enhancedData.description || ''}`,
 
+      // FLATTEN: key_questions and analysis_perspective at top level for monitoring to find them
+      key_questions: [
+        `What moves are ${topCompetitors.slice(0, 3).join(', ')} making?`,
+        `How is ${organization_name} positioned relative to competitors?`,
+        `What regulatory changes affect the ${enhancedData.industry} industry?`,
+        `What market opportunities are emerging?`,
+        `What risks or threats are developing?`
+      ],
+
+      analysis_perspective: `Analyze from the perspective of ${organization_name}'s executive team making strategic decisions`,
+
       relevance_criteria: {
         must_include: [
           'organization mentions',
@@ -1208,19 +1219,7 @@ REMEMBER:
         'technology specifications',
         'crisis indicators',
         'strategic moves'
-      ],
-
-      synthesis_guidance: {
-        key_questions: [
-          `What moves are ${topCompetitors.slice(0, 3).join(', ')} making?`,
-          `How is ${organization_name} positioned relative to competitors?`,
-          `What regulatory changes affect the ${enhancedData.industry} industry?`,
-          `What market opportunities are emerging?`,
-          `What risks or threats are developing?`
-        ],
-        analysis_perspective: `Analyze from the perspective of ${organization_name}'s executive team making strategic decisions`,
-        output_focus: 'Actionable intelligence for immediate strategic response'
-      }
+      ]
     };
   };
   
