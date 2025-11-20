@@ -207,8 +207,22 @@ export async function POST(req: NextRequest) {
       })
 
     if (orgUserError) {
-      console.error('Failed to assign user to organization:', orgUserError)
-      // Don't fail the request, but log the error
+      console.error('CRITICAL: Failed to assign user to organization:', orgUserError)
+      // This is CRITICAL - without this, user can't access the org
+      // Delete the org we just created and fail the request
+      await serviceClient
+        .from('organizations')
+        .delete()
+        .eq('id', org.id)
+
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Failed to assign user permissions to organization',
+          details: orgUserError
+        },
+        { status: 500 }
+      )
     }
 
     console.log(`✅ Created organization: ${org.name} (${org.id}) for user ${user.email}`)
