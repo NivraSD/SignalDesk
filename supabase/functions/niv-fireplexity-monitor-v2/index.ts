@@ -233,18 +233,29 @@ serve(async (req) => {
       })
     }
 
-    // STEP 2: Generate intelligent monitoring queries using AI
-    console.log('\n🔍 Step 2: Generating intelligent queries using AI...')
+    // STEP 2: Generate intelligent monitoring queries
+    console.log('\n🔍 Step 2: Generating intelligent queries...')
 
-    // Try AI-driven query generation first (now with industry-aware prompt)
-    let queries = await generateIntelligentQueries(profile, orgName, discoveryTargets, targetsByPriority)
-    console.log(`   AI query generation returned: ${queries.length} queries`)
+    // PRIORITIZE: Use intelligence_context.key_questions from MCP Discovery if available
+    // These are strategic, competitor-specific questions that are higher quality than AI-generated generic queries
+    let queries: string[] = []
 
-    // Fallback to static queries if AI fails
-    if (queries.length === 0) {
-      console.log('   ⚠️ AI returned empty, using fallback static query generation')
+    if (profile.intelligence_context?.key_questions && profile.intelligence_context.key_questions.length > 0) {
+      console.log(`   ✅ Using ${profile.intelligence_context.key_questions.length} key_questions from MCP Discovery intelligence_context`)
       queries = generateRealtimeQueries(profile, orgName, recency_window, discoveryTargets, targetsByPriority, targetsWithContext)
-      console.log(`   Static query generation returned: ${queries.length} queries`)
+      console.log(`   Strategic query generation returned: ${queries.length} queries`)
+    } else {
+      // Fallback to AI-driven query generation if no intelligence_context
+      console.log('   No intelligence_context found, trying AI query generation...')
+      queries = await generateIntelligentQueries(profile, orgName, discoveryTargets, targetsByPriority)
+      console.log(`   AI query generation returned: ${queries.length} queries`)
+
+      // Final fallback to static queries if AI fails
+      if (queries.length === 0) {
+        console.log('   ⚠️ AI returned empty, using fallback static query generation')
+        queries = generateRealtimeQueries(profile, orgName, recency_window, discoveryTargets, targetsByPriority, targetsWithContext)
+        console.log(`   Static query generation returned: ${queries.length} queries`)
+      }
     }
 
     // Strategic queries are now generated inside generateRealtimeQueries
