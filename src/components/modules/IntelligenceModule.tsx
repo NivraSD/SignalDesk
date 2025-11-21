@@ -40,6 +40,7 @@ import { updateMemoryVaultContent } from '@/lib/memoryVaultAPI'
 import IntelligenceSynthesisDisplay from '@/components/IntelligenceSynthesisDisplay'
 import StakeholderPredictionDashboard from '@/components/predictions/StakeholderPredictionDashboard'
 import SchemaViewer from '@/components/schema/SchemaViewer'
+import { ConnectionsDashboard } from '@/components/intelligence/ConnectionsDashboard'
 
 // Import the executive report component if it exists
 // import ExecutiveSynthesisDisplay from '../intelligence/ExecutiveSynthesisDisplay'
@@ -65,7 +66,7 @@ interface PipelineStage {
 
 export default function IntelligenceModule() {
   const { organization } = useAppStore()
-  const [activeTab, setActiveTab] = useState<'synthesis' | 'social' | 'realtime' | 'predictions' | 'geo'>('synthesis')
+  const [activeTab, setActiveTab] = useState<'synthesis' | 'social' | 'realtime' | 'predictions' | 'geo' | 'connections'>('synthesis')
   const [activePromptCategory, setActivePromptCategory] = useState('quick-wins')
   const [copiedPromptId, setCopiedPromptId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -1013,6 +1014,21 @@ export default function IntelligenceModule() {
               <Globe className="w-4 h-4" />
               GEO Monitor
             </button>
+            <button
+              onClick={() => setActiveTab('connections')}
+              className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2 text-sm font-light ${
+                activeTab === 'connections'
+                  ? ''
+                  : 'hover:bg-gray-800 text-gray-400'
+              }`}
+              style={activeTab === 'connections' ? {
+                background: 'rgba(184, 160, 200, 0.15)',
+                color: 'var(--mauve)'
+              } : {}}
+            >
+              <Activity className="w-4 h-4" />
+              Connections
+            </button>
           </div>
         </div>
       </div>
@@ -1851,6 +1867,17 @@ export default function IntelligenceModule() {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* Connections Tab */}
+        {activeTab === 'connections' && organization && (
+          <div className="h-full overflow-y-auto">
+            <ConnectionsDashboard
+              organizationId={organization.id}
+              organizationName={organization.name}
+              industry={organization.industry}
+            />
           </div>
         )}
       </div>
