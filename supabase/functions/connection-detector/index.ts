@@ -49,26 +49,40 @@ serve(async (req) => {
     console.log(`   Organization: ${orgName}`);
     console.log(`   Industry: ${industry}`);
 
-    // Step 2: Load industry intelligence profile
-    const { data: industryProfile } = await supabase
+    // Step 2: Load industry intelligence profile (with fallback to DEFAULT)
+    let { data: industryProfile } = await supabase
       .from('industry_intelligence_profiles')
       .select('*')
       .eq('industry', industry)
       .single();
 
     if (!industryProfile) {
-      console.log(`⚠️ No industry profile found for: ${industry}`);
-      return new Response(JSON.stringify({
-        success: true,
-        connections_detected: 0,
-        signals_generated: 0,
-        message: `No industry profile configured for ${industry}`
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
+      console.log(`⚠️ No specific profile for: ${industry}, using DEFAULT profile`);
 
-    console.log(`   Loaded industry profile with ${industryProfile.connection_patterns?.length || 0} patterns`);
+      // Fallback to DEFAULT profile
+      const { data: defaultProfile } = await supabase
+        .from('industry_intelligence_profiles')
+        .select('*')
+        .eq('industry', 'DEFAULT')
+        .single();
+
+      if (!defaultProfile) {
+        console.log(`❌ No DEFAULT profile found either`);
+        return new Response(JSON.stringify({
+          success: true,
+          connections_detected: 0,
+          signals_generated: 0,
+          message: `No industry profile configured for ${industry} and no DEFAULT fallback`
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      industryProfile = defaultProfile;
+      console.log(`   Using DEFAULT profile with ${defaultProfile.connection_patterns?.length || 0} patterns`);
+    } else {
+      console.log(`   Loaded ${industry} profile with ${industryProfile.connection_patterns?.length || 0} patterns`);
+    }
 
     // Step 3: Load intelligence targets
     const { data: targets } = await supabase
