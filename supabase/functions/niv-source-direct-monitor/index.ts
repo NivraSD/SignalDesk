@@ -9,7 +9,7 @@ const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-const CODE_VERSION = 'v2025-11-21-with-date-filter';
+const CODE_VERSION = 'v2025-11-21-limit-sources';
 
 // Extract HTML sources from company profile sources (selected by mcp-discovery)
 function getHTMLSourcesFromProfile(companyProfile: any) {
@@ -361,9 +361,17 @@ serve(async (req) => {
       throw new Error('No HTML sources available - check master-source-registry configuration');
     }
 
-    // Step 2: Scrape all trusted sources in parallel
+    // Step 2: Scrape trusted sources in parallel (limit to prevent timeout)
+    const MAX_SOURCES_TO_SCRAPE = 10; // Limit sources to prevent timeout
+    const sourcesToScrape = htmlSources.slice(0, MAX_SOURCES_TO_SCRAPE);
+
     console.log('\n📡 Step 2: Scraping trusted sources...');
-    const sourcePromises = htmlSources.map(source => scrapeSouceListing(source));
+    console.log(`   Scraping ${sourcesToScrape.length} sources (available: ${htmlSources.length})`);
+    if (htmlSources.length > MAX_SOURCES_TO_SCRAPE) {
+      console.log(`   ⚠️ Capping at ${MAX_SOURCES_TO_SCRAPE} sources to prevent timeout`);
+    }
+
+    const sourcePromises = sourcesToScrape.map(source => scrapeSouceListing(source));
     const sourceResults = await Promise.all(sourcePromises);
 
     const allArticles = sourceResults.flat();
@@ -401,19 +409,27 @@ serve(async (req) => {
     const maxHoursOld = recencyLimits['48hours']; // Use 48h for batch monitoring
     const cutoffTime = new Date(Date.now() - maxHoursOld * 60 * 60 * 1000);
 
+    let filteredOldCount = 0;
     const recentArticles = dedupedArticles.filter(a => {
       const publishedDate = new Date(a.published_at || a.date || 0);
       const isRecent = publishedDate >= cutoffTime;
 
       if (!isRecent) {
-        const hoursAgo = Math.floor((Date.now() - publishedDate.getTime()) / (1000 * 60 * 60));
-        console.log(`   🚫 Filtered old article (${hoursAgo}h ago, limit ${maxHoursOld}h): "${a.title?.substring(0, 60)}..."`);
+        filteredOldCount++;
+        // Only log first 5 filtered articles to avoid timeout
+        if (filteredOldCount <= 5) {
+          const hoursAgo = Math.floor((Date.now() - publishedDate.getTime()) / (1000 * 60 * 60));
+          console.log(`   🚫 Filtered old article (${hoursAgo}h ago, limit ${maxHoursOld}h): "${a.title?.substring(0, 60)}..."`);
+        }
       }
 
       return isRecent;
     });
 
     console.log(`   ✅ Date filtering: ${dedupedArticles.length} → ${recentArticles.length} recent articles (last ${maxHoursOld}h)`);
+    if (filteredOldCount > 5) {
+      console.log(`   🗑️ Filtered ${filteredOldCount} old articles total (showing first 5 only)`);
+    }
 
     // 3c. Score by source priority (from HTML source metadata)
     const scoredArticles = recentArticles.map(a => ({
