@@ -223,7 +223,7 @@ serve(async (req) => {
     console.log(`\n🤖 Step 7: Calling mcp-discovery to determine gap-filling strategy...`);
 
     try {
-      // Call mcp-discovery with gap context
+      // Call mcp-discovery with gap context (use direct tool call format)
       const discoveryResponse = await fetch(`${SUPABASE_URL}/functions/v1/mcp-discovery`, {
         method: 'POST',
         headers: {
@@ -231,12 +231,15 @@ serve(async (req) => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          organization_id,
-          organization_name: organization_name,
-          industry_hint: companyProfile.industry,
-          gap_filling_mode: true,
-          gap_context: gapContext,
-          save_to_persistence: false // Don't overwrite existing profile
+          tool: 'create_organization_profile',
+          arguments: {
+            organization_id,
+            organization_name: organization_name,
+            industry_hint: companyProfile.industry,
+            gap_filling_mode: true,
+            gap_context: gapContext,
+            save_to_persistence: false // Don't overwrite existing profile
+          }
         })
       });
 
