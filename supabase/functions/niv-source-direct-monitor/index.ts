@@ -9,7 +9,7 @@ const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-const CODE_VERSION = 'v2025-11-21-listing-only';
+const CODE_VERSION = 'v2025-11-21-with-date-filter';
 
 // Extract HTML sources from company profile sources (selected by mcp-discovery)
 function getHTMLSourcesFromProfile(companyProfile: any) {
@@ -391,17 +391,41 @@ serve(async (req) => {
     });
     console.log(`   ✅ Deduplication: ${allArticles.length} → ${dedupedArticles.length} unique articles`);
 
-    // 3b. Score by source priority (from HTML source metadata)
-    const scoredArticles = dedupedArticles.map(a => ({
+    // 3b. Date filtering (remove old articles)
+    const recencyLimits: Record<string, number> = {
+      '1hour': 1,
+      '6hours': 6,
+      '24hours': 24,
+      '48hours': 48 // Default for batch monitoring
+    };
+    const maxHoursOld = recencyLimits['48hours']; // Use 48h for batch monitoring
+    const cutoffTime = new Date(Date.now() - maxHoursOld * 60 * 60 * 1000);
+
+    const recentArticles = dedupedArticles.filter(a => {
+      const publishedDate = new Date(a.published_at || a.date || 0);
+      const isRecent = publishedDate >= cutoffTime;
+
+      if (!isRecent) {
+        const hoursAgo = Math.floor((Date.now() - publishedDate.getTime()) / (1000 * 60 * 60));
+        console.log(`   🚫 Filtered old article (${hoursAgo}h ago, limit ${maxHoursOld}h): "${a.title?.substring(0, 60)}..."`);
+      }
+
+      return isRecent;
+    });
+
+    console.log(`   ✅ Date filtering: ${dedupedArticles.length} → ${recentArticles.length} recent articles (last ${maxHoursOld}h)`);
+
+    // 3c. Score by source priority (from HTML source metadata)
+    const scoredArticles = recentArticles.map(a => ({
       ...a,
       relevance_score: a.source_priority || 2, // 1=critical, 2=high, 3=medium
       filter_stage: 'mechanical'
     }));
 
-    // 3c. Sort by source priority (lower number = higher priority)
+    // 3d. Sort by source priority (lower number = higher priority)
     scoredArticles.sort((a, b) => a.relevance_score - b.relevance_score);
 
-    // 3d. Cap at ~100 articles for timeout safety (scraping + relevance filtering downstream)
+    // 3e. Cap at ~100 articles for timeout safety (scraping + relevance filtering downstream)
     // 100 articles = ~2-3 min scraping + stage-2 relevance has time to filter intelligently
     const MAX_ARTICLES_TO_SCRAPE = 100;
     const articlesToScrape = scoredArticles.slice(0, MAX_ARTICLES_TO_SCRAPE);
