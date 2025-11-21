@@ -81,7 +81,32 @@ export default function LiveActivityFeed({ organizationId, onNavigate }: LiveAct
         }
       })
 
-      // TODO: Load intelligence scans and crisis alerts
+      // Load recent intelligence scans
+      const { data: intelligence } = await supabase
+        .from('intelligence_summaries')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .order('created_at', { ascending: false })
+        .limit(5)
+
+      intelligence?.forEach(intel => {
+        const synthesisData = intel.synthesis_data || {}
+        const articleCount = synthesisData.article_count || 0
+
+        items.push({
+          id: intel.id,
+          type: 'intelligence',
+          title: 'Intelligence scan completed',
+          description: `Analyzed ${articleCount} articles${synthesisData.key_themes ? ` - ${synthesisData.key_themes[0]}` : ''}`,
+          timestamp: new Date(intel.created_at),
+          metadata: {
+            article_count: articleCount,
+            version: intel.version
+          }
+        })
+      })
+
+      // TODO: Load crisis alerts
       // Only show intelligence, opportunities, and crisis - NOT content
 
       // Sort all items by timestamp
