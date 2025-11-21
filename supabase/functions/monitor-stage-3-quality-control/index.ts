@@ -652,6 +652,61 @@ function generateGapFillingQueries(criticalGaps: any[], companyProfile: any, tar
     queries.push(`${companyProfile.industry} latest news today`);
   }
 
+  // Gap type 4: Extremely poor coverage (from override)
+  const poorCoverageGap = criticalGaps.find(g => g.type === 'extremely_poor_coverage');
+  if (poorCoverageGap) {
+    console.log(`   Handling extremely_poor_coverage gap`);
+
+    // Find uncovered competitors (priority high first)
+    const highPriorityCompetitors = targets.competitors
+      .filter((t: any) => t.priority === 'high')
+      .slice(0, 3);
+
+    highPriorityCompetitors.forEach((comp: any) => {
+      queries.push(`${comp.name} news`);
+      queries.push(`${comp.name} ${companyProfile.industry || ''}`);
+    });
+
+    // If we still have room, add stakeholder queries
+    if (queries.length < SAFETY_LIMITS.max_gap_queries) {
+      const topStakeholders = targets.stakeholders.slice(0, 2);
+      topStakeholders.forEach((sh: any) => {
+        if (queries.length < SAFETY_LIMITS.max_gap_queries) {
+          queries.push(`${sh.name} ${companyProfile.industry || ''}`);
+        }
+      });
+    }
+  }
+
+  // Gap type 5: Claude-identified gaps
+  const claudeGaps = criticalGaps.filter(g => g.type === 'claude_identified_gap');
+  if (claudeGaps.length > 0 && queries.length < SAFETY_LIMITS.max_gap_queries) {
+    console.log(`   Handling ${claudeGaps.length} Claude-identified gaps`);
+
+    // Use intelligence context to generate smart queries
+    const intelligenceContext = companyProfile.intelligence_context || {};
+    const keyQuestions = intelligenceContext.key_questions || [];
+
+    // Add key questions as search queries (these are strategic, not target-specific)
+    keyQuestions.slice(0, 2).forEach((question: string) => {
+      if (queries.length < SAFETY_LIMITS.max_gap_queries) {
+        // Convert question to search query (remove "What", "How", "Why")
+        const searchQuery = question
+          .replace(/^(What|How|Why|When|Where|Which|Who)\s+/i, '')
+          .replace(/\?$/, '')
+          .trim();
+        queries.push(searchQuery);
+      }
+    });
+
+    // If still have room, add industry + competitor context
+    if (queries.length < SAFETY_LIMITS.max_gap_queries && companyProfile.industry) {
+      queries.push(`${companyProfile.industry} competitive landscape`);
+    }
+  }
+
   // Cap at 5 queries max (SAFETY)
-  return queries.slice(0, SAFETY_LIMITS.max_gap_queries);
+  const finalQueries = [...new Set(queries)].slice(0, SAFETY_LIMITS.max_gap_queries);
+  console.log(`   Generated ${finalQueries.length} gap-filling queries:`, finalQueries);
+  return finalQueries;
 }
