@@ -526,33 +526,22 @@ const INDUSTRY_SOURCES = {
   // CONGLOMERATE & DIVERSIFIED TRADING HOUSES (Sogo Shosha)
   conglomerate: {
     competitive: {
+      // HTML Listing Pages - Reliable scraping with Firecrawl
+      html: [
+        { name: 'Bloomberg Commodities', url: 'https://www.bloomberg.com/commodities', type: 'html', priority: 'critical' },
+        { name: 'Reuters Commodities', url: 'https://www.reuters.com/markets/commodities/', type: 'html', priority: 'critical' },
+        { name: 'Financial Times Companies', url: 'https://www.ft.com/companies', type: 'html', priority: 'critical' },
+        { name: 'Nikkei Asia Markets', url: 'https://asia.nikkei.com/Business/Markets', type: 'html', priority: 'critical' },
+        { name: 'Wall Street Journal Commodities', url: 'https://www.wsj.com/market-data/commodities', type: 'html', priority: 'high' },
+        { name: 'Mining.com News', url: 'https://www.mining.com/news/', type: 'html', priority: 'high' },
+        { name: 'Oil Price Latest', url: 'https://oilprice.com/Latest-Energy-News/World-News', type: 'html', priority: 'high' },
+        { name: 'S&P Global Commodity Insights', url: 'https://www.spglobal.com/commodityinsights/en/market-insights', type: 'html', priority: 'high' },
+        { name: 'TradeWinds News', url: 'https://www.tradewindsnews.com/news', type: 'html', priority: 'high' },
+        { name: 'Japan Times Business', url: 'https://www.japantimes.co.jp/business/', type: 'html', priority: 'high' }
+      ],
+      // Working RSS Feeds only
       rss: [
-        // Asian Business News - Critical for trading houses
-        { name: 'Nikkei Asia', url: 'https://asia.nikkei.com/rss/feed/nar', type: 'rss', priority: 'critical' },
-        { name: 'South China Morning Post Business', url: 'https://www.scmp.com/rss/2/feed', type: 'rss', priority: 'critical' },
-        { name: 'Japan Times Business', url: 'https://www.japantimes.co.jp/feed/topstories/', type: 'rss', priority: 'critical' },
-        { name: 'Economic Times India', url: 'https://economictimes.indiatimes.com/rssfeedstopstories.cms', type: 'rss', priority: 'high' },
-
-        // Commodities & Trading
-        { name: 'Reuters Commodities', url: 'https://feeds.reuters.com/reuters/commoditiesNews', type: 'rss', priority: 'critical' },
-        { name: 'Bloomberg Commodities', url: 'https://feeds.bloomberg.com/commodities/news.rss', type: 'rss', priority: 'critical' },
-        { name: 'S&P Global Platts', url: 'https://www.spglobal.com/platts/en/rss-feed/oil', type: 'rss', priority: 'critical' },
-        { name: 'Metal Bulletin', url: 'https://www.metalbulletin.com/rss.xml', type: 'rss', priority: 'high' },
-        { name: 'Agrimoney', url: 'https://www.agrimoney.com/feed/', type: 'rss', priority: 'high' },
-
-        // Energy & Resources
-        { name: 'Oil Price', url: 'https://oilprice.com/rss/main', type: 'rss', priority: 'high' },
-        { name: 'Energy Intelligence', url: 'https://www.energyintel.com/rss', type: 'rss', priority: 'high' },
-        { name: 'Mining.com', url: 'https://www.mining.com/feed/', type: 'rss', priority: 'high' },
-
-        // Infrastructure & Shipping
-        { name: 'TradeWinds', url: 'https://www.tradewindsnews.com/rss', type: 'rss', priority: 'high' },
-        { name: 'Lloyd\'s List', url: 'https://lloydslist.maritimeintelligence.informa.com/rss', type: 'rss', priority: 'high' },
-        { name: 'Infrastructure Investor', url: 'https://www.infrastructureinvestor.com/feed/', type: 'rss', priority: 'medium' },
-
-        // General Business - Asia Focus
-        { name: 'Asian Business Review', url: 'https://asianbusinessreview.com/rss', type: 'rss', priority: 'medium' },
-        { name: 'The Straits Times Business', url: 'https://www.straitstimes.com/business/rss.xml', type: 'rss', priority: 'medium' }
+        { name: 'Agrimoney', url: 'https://www.agrimoney.com/feed/', type: 'rss', priority: 'medium' }
       ],
       search_queries: [
         'trading house acquisition', 'sogo shosha investment', 'commodity trading deal',
@@ -960,27 +949,42 @@ serve(async (req) => {
       if (industrySources) {
         console.log(`   ✓ Adding sources from: ${industryKey}`)
 
-          // Add competitive sources
+          // Add competitive sources (both HTML and RSS)
+          if (industrySources.competitive?.html) {
+            sources.competitive.push(...industrySources.competitive.html)
+          }
           if (industrySources.competitive?.rss) {
             sources.competitive.push(...industrySources.competitive.rss)
           }
 
           // Add media sources
+          if (industrySources.media?.html) {
+            sources.media.push(...industrySources.media.html)
+          }
           if (industrySources.media?.rss) {
             sources.media.push(...industrySources.media.rss)
           }
 
           // Add regulatory sources
+          if (industrySources.regulatory?.html) {
+            sources.regulatory.push(...industrySources.regulatory.html)
+          }
           if (industrySources.regulatory?.rss) {
             sources.regulatory.push(...industrySources.regulatory.rss)
           }
 
           // Add market sources
+          if (industrySources.market?.html) {
+            sources.market.push(...industrySources.market.html)
+          }
           if (industrySources.market?.rss) {
             sources.market.push(...industrySources.market.rss)
           }
 
           // Add forward-looking sources
+          if (industrySources.forward?.html) {
+            sources.forward.push(...industrySources.forward.html)
+          }
           if (industrySources.forward?.rss) {
             sources.forward.push(...industrySources.forward.rss)
           }

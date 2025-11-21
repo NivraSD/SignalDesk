@@ -9,51 +9,104 @@ const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-const CODE_VERSION = 'v2025-11-20-direct-scrape';
+const CODE_VERSION = 'v2025-11-21-registry-html';
 
-// Trusted news sources for commodity trading intelligence
-const TRUSTED_SOURCES = [
-  {
-    name: 'Bloomberg Commodities',
-    url: 'https://www.bloomberg.com/commodities',
-    priority: 1,
-    selector: 'article a[href*="/news/"]',
-    dateSelector: 'time',
-    topics: ['commodities', 'trading', 'energy', 'metals', 'agriculture']
-  },
-  {
-    name: 'Reuters Commodities',
-    url: 'https://www.reuters.com/markets/commodities/',
-    priority: 1,
-    selector: 'article a',
-    dateSelector: 'time',
-    topics: ['commodities', 'markets', 'trading']
-  },
-  {
-    name: 'Financial Times Companies',
-    url: 'https://www.ft.com/companies',
-    priority: 2,
-    selector: 'a.js-teaser-heading-link',
-    dateSelector: 'time',
-    topics: ['corporate', 'trading', 'commodities']
-  },
-  {
-    name: 'Nikkei Asia Markets',
-    url: 'https://asia.nikkei.com/Business/Markets',
-    priority: 2,
-    selector: 'article a',
-    dateSelector: 'time',
-    topics: ['asia', 'markets', 'trading', 'commodities']
-  },
-  {
-    name: 'Wall Street Journal Commodities',
-    url: 'https://www.wsj.com/market-data/commodities',
-    priority: 2,
-    selector: 'article a[href*="/articles/"]',
-    dateSelector: 'time',
-    topics: ['commodities', 'markets', 'trading']
+// Extract HTML sources from company profile sources (selected by mcp-discovery)
+function getHTMLSourcesFromProfile(companyProfile: any) {
+  const sources = companyProfile?.sources || {};
+  const allSources = [];
+
+  // Collect all sources from all categories
+  ['competitive', 'media', 'regulatory', 'market', 'forward', 'specialized'].forEach(category => {
+    if (sources[category]) {
+      allSources.push(...sources[category]);
+    }
+  });
+
+  // Filter to HTML sources only and map to our format
+  const htmlSources = allSources
+    .filter((s: any) => s.type === 'html')
+    .map((s: any) => ({
+      name: s.name,
+      url: s.url,
+      priority: s.priority === 'critical' ? 1 : s.priority === 'high' ? 2 : 3
+    }));
+
+  console.log(`   ✅ Found ${htmlSources.length} HTML sources from company profile`);
+  return htmlSources;
+}
+
+// Fallback: Load HTML sources from master-source-registry
+async function loadHTMLSourcesFromRegistry(companyProfile: any, organizationName: string) {
+  const industry = companyProfile?.industry || 'conglomerate';
+  const description = companyProfile?.description ||
+    `${organizationName}${companyProfile?.sub_industry ? ` - ${companyProfile.sub_industry}` : ''}`;
+
+  console.log(`   📚 Calling master-source-registry for industry: ${industry}`);
+
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/master-source-registry`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      industry: industry.toLowerCase(),
+      organization_name: organizationName,
+      company_description: description
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`Master source registry failed: ${response.status}`);
   }
-];
+
+  const data = await response.json();
+
+  if (!data.success || !data.data) {
+    throw new Error('No sources returned from registry');
+  }
+
+  // Get HTML sources from competitive category
+  let htmlSources = (data.data.competitive || [])
+    .filter((s: any) => s.type === 'html')
+    .map((s: any) => ({
+      name: s.name,
+      url: s.url,
+      priority: s.priority === 'critical' ? 1 : s.priority === 'high' ? 2 : 3
+    }));
+
+  // If no HTML sources for this industry, fall back to conglomerate
+  if (htmlSources.length === 0 && industry.toLowerCase() !== 'conglomerate') {
+    console.log(`   ⚠️ No HTML sources for '${industry}', trying conglomerate...`);
+    const fallbackResponse = await fetch(`${SUPABASE_URL}/functions/v1/master-source-registry`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        industry: 'conglomerate',
+        organization_name: organizationName,
+        company_description: description
+      })
+    });
+
+    if (fallbackResponse.ok) {
+      const fallbackData = await fallbackResponse.json();
+      htmlSources = (fallbackData.data?.competitive || [])
+        .filter((s: any) => s.type === 'html')
+        .map((s: any) => ({
+          name: s.name,
+          url: s.url,
+          priority: s.priority === 'critical' ? 1 : s.priority === 'high' ? 2 : 3
+        }));
+    }
+  }
+
+  console.log(`   ✅ Registry returned ${htmlSources.length} HTML sources`);
+  return htmlSources;
+}
 
 // MCP Client for Firecrawl
 async function callMCP(tool: string, args: any) {
@@ -152,7 +205,7 @@ Return ONLY a JSON array of relevant article numbers with scores:
 }
 
 // Scrape a source listing page and extract article links
-async function scrapeSouceListing(source: typeof TRUSTED_SOURCES[0]) {
+async function scrapeSouceListing(source: any) {
   console.log(`\n📰 Scraping ${source.name}...`);
 
   try {
@@ -232,8 +285,8 @@ serve(async (req) => {
     console.log(`   Time: ${new Date().toISOString()}`);
     console.log(`${'='.repeat(80)}\n`);
 
-    // Step 1: Fetch discovery targets from database
-    console.log('📋 Step 1: Loading discovery targets...');
+    // Step 1: Fetch discovery targets and industry from database
+    console.log('📋 Step 1: Loading discovery targets and industry...');
     const orgResponse = await fetch(
       `${SUPABASE_URL}/rest/v1/organizations?id=eq.${organization_id}&select=company_profile`,
       {
@@ -249,7 +302,8 @@ serve(async (req) => {
     }
 
     const [org] = await orgResponse.json();
-    const discoveryTargets = org?.company_profile?.discovery_targets || {
+    const companyProfile = org?.company_profile || {};
+    const discoveryTargets = companyProfile?.discovery_targets || {
       competitors: [],
       stakeholders: [],
       products: []
@@ -257,9 +311,24 @@ serve(async (req) => {
 
     console.log(`   ✅ Loaded targets: ${discoveryTargets.competitors?.length || 0} competitors, ${discoveryTargets.stakeholders?.length || 0} stakeholders`);
 
+    // Step 1b: Get HTML sources - prefer profile, fallback to registry
+    console.log('\n📚 Step 1b: Loading HTML sources...');
+    let htmlSources = getHTMLSourcesFromProfile(companyProfile);
+
+    if (htmlSources.length === 0) {
+      console.log('   ⚠️ No HTML sources in profile, loading from master-source-registry...');
+      htmlSources = await loadHTMLSourcesFromRegistry(companyProfile, organization_name);
+    } else {
+      console.log(`   ✅ Using ${htmlSources.length} HTML sources from company profile`);
+    }
+
+    if (htmlSources.length === 0) {
+      throw new Error('No HTML sources available - check master-source-registry configuration');
+    }
+
     // Step 2: Scrape all trusted sources in parallel
     console.log('\n📡 Step 2: Scraping trusted sources...');
-    const sourcePromises = TRUSTED_SOURCES.map(source => scrapeSouceListing(source));
+    const sourcePromises = htmlSources.map(source => scrapeSouceListing(source));
     const sourceResults = await Promise.all(sourcePromises);
 
     const allArticles = sourceResults.flat();
@@ -292,7 +361,7 @@ serve(async (req) => {
         articles: [],
         metadata: {
           code_version: CODE_VERSION,
-          sources_scraped: TRUSTED_SOURCES.length,
+          sources_scraped: htmlSources.length,
           articles_scanned: allArticles.length,
           articles_filtered: 0
         }
@@ -382,7 +451,7 @@ serve(async (req) => {
       articles: finalArticles,
       metadata: {
         code_version: CODE_VERSION,
-        sources_scraped: TRUSTED_SOURCES.length,
+        sources_scraped: htmlSources.length,
         articles_scanned: allArticles.length,
         articles_filtered: filteredArticles.length,
         articles_scraped: finalArticles.length,

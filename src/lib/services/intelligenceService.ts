@@ -99,51 +99,25 @@ export class IntelligenceService {
 
       console.log('✅ Profile extracted:', profile ? 'Yes' : 'No')
 
-      // Use niv-fireplexity-monitor-v2 for Firecrawl-based monitoring (better than RSS)
+      // Use niv-source-direct-monitor for HTML scraping with Claude filtering
       if (profile) {
-        console.log('Starting niv-fireplexity-monitor-v2 with 24-hour monitoring (Firecrawl-based with real-time accuracy)')
-        onProgress?.('niv-fireplexity-monitor-v2', 'running')
+        console.log('Starting niv-source-direct-monitor (HTML scraping with pre-filtering)')
+        onProgress?.('niv-source-direct-monitor', 'running')
 
-        const monitoringResponse = await supabase.functions.invoke('niv-fireplexity-monitor-v2', {
+        const monitoringResponse = await supabase.functions.invoke('niv-source-direct-monitor', {
           body: {
             organization_id: organizationId,
-            organization_name: orgName,
-            recency_window: '24hours',
-            max_results: 100,
-            skip_deduplication: true // TEMP: Disable deduplication to see what AI filter is finding
+            organization_name: orgName
           }
         })
 
-        console.log('niv-fireplexity-monitor-v2 response:', monitoringResponse)
-        onProgress?.('niv-fireplexity-monitor-v2', 'completed', monitoringResponse.data)
+        console.log('niv-source-direct-monitor response:', monitoringResponse)
+        onProgress?.('niv-source-direct-monitor', 'completed', monitoringResponse.data)
 
-        // STEP 3: AI-Powered Relevance Filtering
+        // Articles are already Claude-filtered for relevance by source-direct-monitor
         if (monitoringResponse.data?.articles) {
-          console.log('📊 Monitoring collected', monitoringResponse.data.articles.length, 'articles')
-          console.log('Starting monitor-stage-2-relevance for AI filtering')
-          onProgress?.('monitor-stage-2-relevance', 'running')
-
-          const relevanceResponse = await supabase.functions.invoke('monitor-stage-2-relevance', {
-            body: {
-              articles: monitoringResponse.data.articles,
-              organization_name: orgName,
-              organization_id: organizationId,
-              profile: profile
-            }
-          })
-
-          console.log('monitor-stage-2-relevance response:', relevanceResponse)
-
-          if (relevanceResponse.error) {
-            console.error('Relevance filtering error:', relevanceResponse.error)
-            onProgress?.('monitor-stage-2-relevance', 'failed', relevanceResponse.error)
-            throw new Error(`Relevance filtering failed: ${relevanceResponse.error.message || 'Unknown error'}`)
-          }
-
-          onProgress?.('monitor-stage-2-relevance', 'completed', relevanceResponse.data)
-
-          const relevantArticles = relevanceResponse.data?.relevant_articles || []
-          console.log('📊 Relevance filter kept', relevantArticles.length, 'articles')
+          const relevantArticles = monitoringResponse.data.articles
+          console.log('📊 Monitoring collected', relevantArticles.length, 'pre-filtered articles')
 
           // STEP 3.5: target-intelligence-collector (NEW: Save mentions to intelligence repository)
           if (relevantArticles.length > 0) {
@@ -397,55 +371,32 @@ export class IntelligenceService {
       console.log('✅ Profile loaded successfully')
       onProgress?.('load-profile', 'completed', { profile })
 
-      // STEP 2: Start with niv-fireplexity-monitor-v2 (uses saved intelligence targets)
-      console.log('Starting niv-fireplexity-monitor-v2 with 24-hour monitoring (Firecrawl-based with real-time accuracy)')
-      onProgress?.('niv-fireplexity-monitor-v2', 'running')
+      // STEP 2: Start with niv-source-direct-monitor (HTML scraping with pre-filtering)
+      console.log('Starting niv-source-direct-monitor (HTML scraping with pre-filtering)')
+      onProgress?.('niv-source-direct-monitor', 'running')
 
-      const monitoringResponse = await supabase.functions.invoke('niv-fireplexity-monitor-v2', {
+      const monitoringResponse = await supabase.functions.invoke('niv-source-direct-monitor', {
         body: {
           organization_id: organizationId,
-          organization_name: organizationName,
-          recency_window: '24hours',
-          max_results: 100,
-          skip_deduplication: false
+          organization_name: organizationName
         }
       })
 
       if (monitoringResponse.error) {
         console.error('❌ Monitoring error:', monitoringResponse.error)
-        onProgress?.('niv-fireplexity-monitor-v2', 'failed', monitoringResponse.error)
+        onProgress?.('niv-source-direct-monitor', 'failed', monitoringResponse.error)
         throw new Error(`Monitoring failed: ${monitoringResponse.error.message || 'Unknown error'}`)
       }
 
-      console.log('✅ niv-fireplexity-monitor-v2 completed')
-      onProgress?.('niv-fireplexity-monitor-v2', 'completed', monitoringResponse.data)
+      console.log('✅ niv-source-direct-monitor completed')
+      onProgress?.('niv-source-direct-monitor', 'completed', monitoringResponse.data)
 
-      // STEP 3: monitor-stage-2-relevance
+      // Articles are already Claude-filtered for relevance by source-direct-monitor
       if (monitoringResponse.data?.articles) {
-        console.log('Starting monitor-stage-2-relevance')
-        onProgress?.('monitor-stage-2-relevance', 'running')
-
-        const relevanceResponse = await supabase.functions.invoke('monitor-stage-2-relevance', {
-          body: {
-            articles: monitoringResponse.data.articles,
-            profile: profile,
-            organization_name: organizationName,
-            organization_id: organizationId,  // CRITICAL: Added missing organization_id
-            top_k: 300
-          }
-        })
-
-        if (relevanceResponse.error) {
-          console.error('❌ Relevance scoring error:', relevanceResponse.error)
-          onProgress?.('monitor-stage-2-relevance', 'failed', relevanceResponse.error)
-          throw new Error(`Relevance scoring failed: ${relevanceResponse.error.message || 'Unknown error'}`)
-        }
-
-        console.log('✅ monitor-stage-2-relevance completed')
-        onProgress?.('monitor-stage-2-relevance', 'completed', relevanceResponse.data)
+        const relevantArticles = monitoringResponse.data.articles
+        console.log('📊 Monitoring collected', relevantArticles.length, 'pre-filtered articles')
 
         // STEP 3.5: target-intelligence-collector (NEW: Save mentions to intelligence repository)
-        const relevantArticles = relevanceResponse.data?.relevant_articles || relevanceResponse.data?.findings || []
         if (relevantArticles.length > 0) {
           console.log('Starting target-intelligence-collector')
           onProgress?.('target-intelligence-collector', 'running')
@@ -502,13 +453,13 @@ export class IntelligenceService {
         }
 
         // STEP 4: monitoring-stage-2-enrichment
-        if (relevanceResponse.data?.findings) {
-          console.log('Starting monitoring-stage-2-enrichment')
+        if (relevantArticles.length > 0) {
+          console.log('Starting monitoring-stage-2-enrichment with', relevantArticles.length, 'articles')
           onProgress?.('monitoring-stage-2-enrichment', 'running')
 
           const enrichmentResponse = await supabase.functions.invoke('monitoring-stage-2-enrichment', {
             body: {
-              articles: relevanceResponse.data.findings || [],
+              articles: relevantArticles,
               profile: profile,
               organization_name: organizationName,
               organization: { name: organizationName },
