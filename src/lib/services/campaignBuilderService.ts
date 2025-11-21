@@ -40,7 +40,10 @@ export class CampaignBuilderService {
   ): Promise<CampaignResearchResult> {
     try {
       console.log('🚀 Campaign Builder: Starting research pipeline')
-      console.log('Session:', sessionId, 'Goal:', campaignGoal)
+      console.log('Session:', sessionId)
+      console.log('Campaign Goal:', campaignGoal)
+      console.log('Organization:', organizationName)
+      console.log('Industry:', industryHint)
 
       const startTime = Date.now()
 
@@ -72,11 +75,19 @@ export class CampaignBuilderService {
       console.log('🔍 Step 2: Gathering intelligence across dimensions...')
       onProgress?.('intelligence-gathering', 'running')
 
+      const narrativeQuery = `${industryHint} trends narrative 2025`
+      const normalizedIndustry = industryHint.toLowerCase().replace(/\s+/g, '_')
+      const historicalQuery = `${industryHint} successful campaigns case studies`
+
+      console.log('📰 Narrative query:', narrativeQuery)
+      console.log('👥 Journalist industry:', normalizedIndustry)
+      console.log('📚 Historical query:', historicalQuery)
+
       const researchCalls = await Promise.allSettled([
         // Narrative Environment
         supabase.functions.invoke('niv-fireplexity', {
           body: {
-            query: `${industryHint} trends narrative 2025`,
+            query: narrativeQuery,
             timeWindow: '7d',
             maxResults: 10,
             organization: organizationName
@@ -86,7 +97,7 @@ export class CampaignBuilderService {
         // Channel Intelligence - Journalists (don't pass tier to get all tiers)
         supabase.functions.invoke('journalist-registry', {
           body: {
-            industry: industryHint.toLowerCase().replace(/\s+/g, '_'), // Normalize: "Artificial Intelligence" -> "artificial_intelligence"
+            industry: normalizedIndustry, // Normalize: "Artificial Intelligence" -> "artificial_intelligence"
             // Don't pass tier parameter to get both tier1 and tier2
             count: 10
           }
@@ -95,7 +106,7 @@ export class CampaignBuilderService {
         // Historical Patterns
         supabase.functions.invoke('knowledge-library-registry', {
           body: {
-            query: `${industryHint} successful campaigns case studies`,
+            query: historicalQuery,
             research_area: 'case_studies',
             limit: 10
           }

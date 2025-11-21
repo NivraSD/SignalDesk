@@ -79,16 +79,21 @@ function generateFallbackJournalists(industry?: string, tier?: string, count: nu
   );
 
   const journalists = [];
-  const beats = ['AI', 'Technology', 'Business', 'Innovation', 'Policy', 'Markets', 'Strategy', 'Enterprise'];
+
+  // Generate industry-appropriate beats
+  const genericBeats = ['Business', 'Markets', 'Policy', 'Strategy', 'Enterprise'];
+  const industryBeats = industry ? [industry, `${industry} Reporter`, `${industry} Correspondent`] : [];
+  const beats = [...industryBeats, ...genericBeats];
 
   for (let i = 0; i < Math.min(count, outlets.length); i++) {
     const outlet = outlets[i];
+    const beat = beats[i % beats.length];
     journalists.push({
-      name: `Senior ${beats[i % beats.length]} Reporter`,
+      name: `Senior ${beat}${beat.includes('Reporter') || beat.includes('Correspondent') ? '' : ' Reporter'}`,
       outlet: outlet,
-      beat: beats[i % beats.length],
+      beat: beat.replace(' Reporter', '').replace(' Correspondent', ''),
       tier: OUTLET_METADATA[outlet].tier,
-      industry: industry || 'Technology',
+      industry: industry || 'General',
       contact: `${outlet.toLowerCase().replace(/\s+/g, '')}@media.com`,
       twitter: `@${outlet.toLowerCase().replace(/\s+/g, '')}`,
       role: 'Senior Reporter'
@@ -191,7 +196,11 @@ serve(async (req) => {
     let finalJournalists = journalists || [];
 
     if (finalJournalists.length === 0) {
-      console.log('⚠️ Database empty, using fallback journalist data');
+      console.log('⚠️ ⚠️ ⚠️ DATABASE EMPTY - USING FALLBACK JOURNALIST DATA ⚠️ ⚠️ ⚠️');
+      console.log(`   Industry: ${industry || 'None'}`);
+      console.log(`   Tier: ${tier || 'Any'}`);
+      console.log(`   Count: ${count}`);
+      console.log('   This is synthetic data - populate journalist_registry table for real journalists');
       finalJournalists = generateFallbackJournalists(industry, tier, count);
     }
 
