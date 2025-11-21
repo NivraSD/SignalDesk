@@ -179,6 +179,23 @@ export class IntelligenceService {
               } else {
                 console.log(`✅ Generated ${patternResponse.data?.signals_generated || 0} prediction signals`)
                 onProgress?.('pattern-detector', 'completed', patternResponse.data)
+
+                // STEP 3.7: connection-detector (NEW: Find connections between entities based on industry)
+                console.log('Starting connection-detector')
+                onProgress?.('connection-detector', 'running')
+
+                const connectionResponse = await supabase.functions.invoke('connection-detector', {
+                  body: {
+                    organization_id: organizationId
+                  }
+                })
+
+                if (connectionResponse.error) {
+                  console.warn('⚠️ Connection detection failed (non-blocking):', connectionResponse.error)
+                } else {
+                  console.log(`✅ Detected ${connectionResponse.data?.connections_detected || 0} connections, generated ${connectionResponse.data?.signals_generated || 0} connection signals`)
+                  onProgress?.('connection-detector', 'completed', connectionResponse.data)
+                }
               }
             }
           }
@@ -463,6 +480,23 @@ export class IntelligenceService {
             } else {
               console.log(`✅ Generated ${patternResponse.data?.signals_generated || 0} prediction signals`)
               onProgress?.('pattern-detector', 'completed', patternResponse.data)
+
+              // STEP 3.7: connection-detector (NEW: Find connections between entities based on industry)
+              console.log('Starting connection-detector')
+              onProgress?.('connection-detector', 'running')
+
+              const connectionResponse = await supabase.functions.invoke('connection-detector', {
+                body: {
+                  organization_id: organizationId
+                }
+              })
+
+              if (connectionResponse.error) {
+                console.warn('⚠️ Connection detection failed (non-blocking):', connectionResponse.error)
+              } else {
+                console.log(`✅ Detected ${connectionResponse.data?.connections_detected || 0} connections, generated ${connectionResponse.data?.signals_generated || 0} connection signals`)
+                onProgress?.('connection-detector', 'completed', connectionResponse.data)
+              }
             }
           }
         }

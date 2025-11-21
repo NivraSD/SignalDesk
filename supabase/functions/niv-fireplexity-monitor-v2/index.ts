@@ -46,7 +46,8 @@ serve(async (req) => {
     // 50 articles = 2-3 batches = ~30-45s for AI filtering (leaves room for Firecrawl searches)
     const ARTICLE_LIMIT = 50 // Process max 50 articles to stay under timeout
 
-    console.log('🔍 Real-Time Monitor V2 (Firecrawl) Starting:', {
+    const CODE_VERSION = 'v2025-11-20-filter-non-news'
+    console.log(`🔍 Real-Time Monitor V2 (Firecrawl) Starting:`, {
       organization_id,
       recency_window,
       max_results,
@@ -246,7 +247,7 @@ serve(async (req) => {
       console.log(`   Strategic query generation returned: ${queries.length} queries`)
     } else {
       // Fallback to AI-driven query generation if no intelligence_context
-      console.log('   No intelligence_context found, trying AI query generation...')
+      console.log('   ⚠️ No intelligence_context found, trying AI query generation...')
       queries = await generateIntelligentQueries(profile, orgName, discoveryTargets, targetsByPriority)
       console.log(`   AI query generation returned: ${queries.length} queries`)
 
@@ -262,7 +263,7 @@ serve(async (req) => {
     // No more dumb keyword additions - everything is intelligence-driven
 
     console.log(`   ✓ FINAL: Generated ${queries.length} strategic intelligence questions`)
-    console.log(`   📋 Sample questions (first 5):`, queries.slice(0, 5))
+    console.log(`   📋 Sample questions (first 3):`, queries.slice(0, 3))
 
     // CRITICAL: If still no queries, something is very wrong
     if (queries.length === 0) {
@@ -273,84 +274,13 @@ serve(async (req) => {
       console.error(`   Industry: ${profile.industry}`)
     }
 
-    // STEP 2.5: Fetch articles from Yahoo Finance (company + competitor news)
-    console.log('\n📡 Step 2.5: Fetching from Yahoo Finance...')
+    // Queries are now generated from intelligence_context
 
-    let yahooArticles: any[] = []
-    try {
-      // Get list of companies to track: organization + competitors
-      const companiesToTrack = [
-        orgName,
-        ...(profile.competition?.direct_competitors || []).slice(0, 9) // Top 10 total
-      ]
-
-      console.log(`   Tracking news for ${companiesToTrack.length} companies: ${companiesToTrack.slice(0, 3).join(', ')}...`)
-
-      // NEW APPROACH: Get general Latest News from Yahoo Finance
-      // This is broader than company-specific search
-      const yahooPromises = [
-        // Get general latest business/trading news
-        fetch('https://finance.yahoo.com/news/', {
-          headers: { 'User-Agent': 'Mozilla/5.0 (compatible; SignalDesk/1.0)' }
-        }).then(async (res) => {
-          if (!res.ok) return []
-          // Yahoo Finance latest news - broader industry coverage
-          // Note: We'll need to parse HTML or use their RSS feed
-          return []
-        }).catch(() => []),
-
-        // Also get company-specific news but use simpler endpoint
-        ...companiesToTrack.slice(0, 5).map(async (company: string) => {
-          try {
-            // Yahoo Finance RSS feed for company news (more reliable for latest)
-            const rssUrl = `https://finance.yahoo.com/rss/headline?s=${encodeURIComponent(company)}`
-
-            // Try RSS first, fallback to search
-            const searchUrl = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(company)}&quotesCount=1&newsCount=15&newsRange=1d`
-
-            const response = await fetch(searchUrl, {
-              headers: {
-                'User-Agent': 'Mozilla/5.0 (compatible; SignalDesk/1.0)'
-              }
-            })
-
-            if (!response.ok) return []
-
-            const data = await response.json()
-            const news = data?.news || []
-
-            // FILTER: Only include articles from last 48 hours at fetch time
-            const twoDaysAgo = Date.now() - (48 * 60 * 60 * 1000)
-
-            return news
-              .filter((item: any) => {
-                const pubTime = item.providerPublishTime * 1000
-                return pubTime >= twoDaysAgo
-              })
-              .map((item: any) => ({
-                title: item.title,
-                url: item.link,
-                description: item.summary || '',
-                publishDate: new Date(item.providerPublishTime * 1000).toISOString(),
-                source: item.publisher,
-                source_priority: 'high',
-                from_yahoo: true,
-                company_tracked: company
-              }))
-          } catch (err) {
-            console.log(`   ⚠️ Failed to fetch Yahoo news for ${company}: ${err.message}`)
-            return []
-          }
-        })
-      ]
-
-      const yahooResults = await Promise.all(yahooPromises)
-      yahooArticles = yahooResults.flat()
-
-      console.log(`   ✓ Collected ${yahooArticles.length} articles from Yahoo Finance`)
-    } catch (err) {
-      console.error(`   ❌ Yahoo Finance fetch error: ${err.message}`)
-    }
+    // STEP 2.5: Yahoo Finance DISABLED (returns stale/cached results)
+    // Yahoo Finance's search API returns old articles despite newsRange=1d parameter
+    // Firecrawl provides better, fresher results
+    console.log('\n📡 Step 2.5: Yahoo Finance disabled (using Firecrawl only for fresh results)')
+    const yahooArticles: any[] = []
 
     // STEP 3: Execute Firecrawl searches
     console.log('\n🌐 Step 3: Executing Firecrawl searches...')
@@ -371,6 +301,8 @@ serve(async (req) => {
       monitoring_prompt: intelligenceContext?.monitoring_prompt || ''
     }
 
+    console.log(`   🎯 About to call fetchRealtimeArticles with ${queries.length} queries`)
+
     const firecrawlArticles = await fetchRealtimeArticles(
       queries,
       profile,
@@ -381,7 +313,7 @@ serve(async (req) => {
       supabaseKey
     )
 
-    console.log(`   ✓ Found ${firecrawlArticles.length} articles from Firecrawl`)
+    console.log(`   ✓ fetchRealtimeArticles returned ${firecrawlArticles.length} articles`)
 
     // STEP 3.5: Combine Yahoo Finance and Firecrawl results
     console.log('\n🔗 Step 3.5: Combining Yahoo Finance and Firecrawl results...')
@@ -550,6 +482,7 @@ serve(async (req) => {
       social_signals: [], // NIV v2 doesn't collect social signals (can be added later)
       social_sentiment: null,
       metadata: {
+        code_version: CODE_VERSION,
         organization: orgName,
         total_collected: topResults.length,
         competitors_tracked: discoveryTargets.competitors.size,
@@ -859,36 +792,25 @@ function generateRealtimeQueries(
     strategicQueries.push(...keyQuestions)
   }
 
-  // 2. Generate competitor positioning questions
-  const topCompetitors = Array.from(discoveryTargets.competitors).slice(0, 5)
+  // 2. Competitor NEWS searches - add "news" to get articles not company pages
+  const topCompetitors = Array.from(discoveryTargets.competitors).slice(0, 10)
   if (topCompetitors.length > 0) {
     topCompetitors.forEach(competitor => {
-      strategicQueries.push(
-        `What recent strategic moves or positioning changes has ${competitor} made in the ${industry} market that could affect ${orgName}?`
-      )
-      strategicQueries.push(
-        `What vulnerabilities or opportunities has ${competitor} created through recent announcements or market activities?`
-      )
+      strategicQueries.push(`${competitor} news`) // Add "news" to get actual news articles
     })
   }
 
-  // 3. Industry dynamics and narrative shifts
+  // 3. Simple industry searches - just find what's happening
   if (industry) {
-    strategicQueries.push(
-      `What critical developments or narrative shifts are happening in the ${industry} industry that ${orgName} should be aware of?`
-    )
-    strategicQueries.push(
-      `What emerging opportunities or risks are appearing in the ${industry} market landscape?`
-    )
+    strategicQueries.push(`${industry} news`)
+    strategicQueries.push(`${industry} trends`)
   }
 
-  // 4. Stakeholder and regulatory questions (if we have high-priority stakeholders)
-  const topStakeholders = targetsByPriority.stakeholders.high.slice(0, 3)
+  // 4. Stakeholder NEWS searches - add "news" to get articles not company pages
+  const topStakeholders = targetsByPriority.stakeholders.high.slice(0, 5)
   if (topStakeholders.length > 0) {
     topStakeholders.forEach(stakeholder => {
-      strategicQueries.push(
-        `What positions or actions is ${stakeholder} taking that could impact ${orgName}'s business or market positioning?`
-      )
+      strategicQueries.push(`${stakeholder} news`) // Add "news" to get actual news articles
     })
   }
 
@@ -1094,6 +1016,8 @@ async function fetchRealtimeArticles(
     console.log(`   ✅ Extracted ${approvedDomains.length} approved domains`)
     if (approvedDomains.length > 0) {
       console.log(`   Sample domains: ${approvedDomains.slice(0, 5).join(', ')}`)
+    } else {
+      console.log(`   ⚠️ WARNING: Domain extraction returned ZERO domains!`)
     }
   } else {
     console.log(`   ⚠️ No sources found in company_profile`)
@@ -1102,13 +1026,18 @@ async function fetchRealtimeArticles(
   }
 
   // Map recency window to Firecrawl tbs parameter
-  // IMPORTANT: Niche industry queries need broader time windows to find content
+  // CRITICAL: Use qdr:d (day) ONLY - week allows too many old articles through
   const tbsMap: Record<string, string> = {
-    '1hour': 'qdr:d',   // Last day (even 1hr queries need broader search for industry content)
-    '6hours': 'qdr:w',  // Last week (PR industry content is less frequent)
-    '24hours': 'qdr:w'  // Last week (executive synthesis)
+    '1hour': 'qdr:d',   // Last day
+    '6hours': 'qdr:d',  // Last day
+    '24hours': 'qdr:d'  // Last day
   }
-  const tbs = tbsMap[recencyWindow] || 'qdr:w' // Default to week for industry searches
+  const tbs = tbsMap[recencyWindow] || 'qdr:d' // Default to day only
+
+  if (queries.length === 0) {
+    console.error(`   ⚠️ No queries provided! Returning empty array`)
+    return []
+  }
 
   console.log(`   Executing ${queries.length} strategic intelligence searches with TWO-TIER strategy`)
   console.log(`   🎯 Strategic Context:`, {
@@ -1147,7 +1076,7 @@ async function fetchRealtimeArticles(
           console.log(`      Question: ${query}`)
           console.log(`      Context: Strategic intelligence for ${strategicContext.organization}`)
           console.log(`      Industry: ${strategicContext.industry}`)
-          console.log(`      Approved domains for post-filtering: ${approvedDomains.slice(0, 5).join(', ')}`)
+          console.log(`      Approved domains: ${approvedDomains.length}`)
         }
 
         try {
@@ -1180,6 +1109,7 @@ async function fetchRealtimeArticles(
 
           if (searchResponse.ok) {
             const searchData = await searchResponse.json()
+
             const webResults = searchData.data?.web || []
             const newsResults = searchData.data?.news || []
 
@@ -1191,42 +1121,84 @@ async function fetchRealtimeArticles(
             console.log(`   ✓ Using ${tier1Results.length} articles from Firecrawl`)
 
             // INTELLIGENT FILTERING: Only keep articles that actually answer the strategic question
-            // Check title + description relevance before adding
+            console.log(`   🔍 TIER 1 returned ${tier1Results.length} results, applying intelligent filtering`)
+
             for (const result of tier1Results) {
+              // CRITICAL: Filter out non-news pages (stock prices, company pages, generic info pages)
+              const url = result.url || ''
+              const title = result.title || ''
+              const nonNewsPatterns = [
+                'stock-price', 'stock price', 'quote', 'shares', 'investor-relations',
+                'about-us', 'our-history', 'contact-us', 'world-map', 'media-contacts',
+                'income-statement', 'balance-sheet', 'cash-flow', 'financial-statements',
+                '/investors/', '/about/', '/history/', '/company/', '/corporate/',
+                'yahoo finance', 'robinhood', 'marketbeat', 'stock analysis'
+              ]
+
+              const isNonNews = nonNewsPatterns.some(pattern =>
+                url.toLowerCase().includes(pattern) || title.toLowerCase().includes(pattern)
+              )
+
+              if (isNonNews) {
+                console.log(`   🚫 Filtered non-news page: "${title.substring(0, 60)}"`)
+                continue
+              }
+
+              // Try to get accurate date: Firecrawl publishedTime > title parsing > trust tbs filter
+              let publishDate = result.publishedTime
+              let hasExtractedDate = !!result.publishedTime
+
+              // If no publishedTime, try parsing date from title
+              if (!publishDate && result.title) {
+                const dateMatches = result.title.match(/(\d{1,2}\/\d{1,2}\/\d{4})|(\w+ \d{1,2},? \d{4})/);
+                if (dateMatches) {
+                  try {
+                    const parsedDate = new Date(dateMatches[0]);
+                    if (!isNaN(parsedDate.getTime())) {
+                      publishDate = parsedDate.toISOString();
+                      hasExtractedDate = true;
+                      console.log(`   📅 Parsed date from title: "${dateMatches[0]}" → ${publishDate}`);
+                    }
+                  } catch (e) {
+                    // Parsing failed
+                  }
+                }
+              }
+
+              // Trust tbs=qdr:d filter - if Google returned it with day filter, it's from today
+              if (!publishDate) {
+                publishDate = new Date().toISOString();
+              }
+
               const fullMarkdown = result.markdown || ''
               const relevantContent = fullMarkdown ? selectRelevantContent(fullMarkdown, query, 1000) : ''
 
               const title = result.title || ''
               const description = result.description || ''
               const combined = `${title} ${description}`.toLowerCase()
-
-              // Extract key entities from query (competitors, topics, etc.)
               const queryLower = query.toLowerCase()
 
-              // Check if article is relevant to the query
-              // For competitor queries, title/description should mention the competitor
-              // For industry queries, should mention industry keywords
-              let isRelevant = false
-
-              // Strategy 1: Title/description contains key terms from query
-              const queryWords = queryLower.split(/\s+/).filter(w => w.length > 4)
+              // Simple relevance check: does the query appear in title/description?
+              const queryWords = queryLower.split(/\s+/).filter(w => w.length > 3)
               const matchedWords = queryWords.filter(word => combined.includes(word))
-              const matchRatio = matchedWords.length / Math.max(queryWords.length, 1)
+              let matchRatio = matchedWords.length / Math.max(queryWords.length, 1)
 
-              if (matchRatio > 0.3) { // At least 30% of query words match
-                isRelevant = true
+              // Entity boost: if this mentions a competitor/stakeholder, boost relevance
+              const allEntities = [
+                ...Array.from(strategicContext.competitors || []),
+                ...Array.from(strategicContext.stakeholders || [])
+              ]
+              const mentionsEntity = allEntities.some(entity =>
+                combined.includes(entity.toLowerCase())
+              )
+              if (mentionsEntity) {
+                matchRatio = Math.min(1.0, matchRatio + 0.3) // +30% boost for entity mentions
               }
 
-              // Strategy 2: Contains competitor names from strategic context
-              if (strategicContext.organization && combined.includes(strategicContext.organization.toLowerCase())) {
-                isRelevant = true
+              // Higher threshold: 40% match required (or entity mention)
+              if (matchRatio < 0.4 && !mentionsEntity) {
+                continue // Skip low-relevance articles
               }
-
-              if (!isRelevant) {
-                continue // Skip irrelevant articles
-              }
-
-              const publishDate = result.publishedTime || new Date().toISOString()
 
               queryResults.push({
                 title: result.title || 'Untitled',
@@ -1235,10 +1207,12 @@ async function fetchRealtimeArticles(
                 description: result.description || '',
                 published_at: publishDate,
                 source: result.source || extractDomain(result.url),
-                relevance_score: Math.round(matchRatio * 100), // Score based on match ratio
+                relevance_score: Math.round(matchRatio * 100),
+                pr_relevance_score: Math.round(matchRatio * 100),
+                pr_category: mentionsEntity ? 'competitor_news' : 'industry_news',
                 full_markdown: fullMarkdown.substring(0, 5000),
                 search_tier: 'TIER1',
-                had_published_time: !!result.publishedTime
+                had_published_time: hasExtractedDate
               })
             }
           } else {
@@ -1249,9 +1223,13 @@ async function fetchRealtimeArticles(
           if (err.name === 'AbortError') {
             console.log(`   ⏱️ TIER 1 search timed out for "${query.substring(0, 50)}..."`)
           } else {
-            console.log(`   ⚠️ TIER 1 search failed for "${query.substring(0, 50)}...": ${err.message}`)
+            console.error(`   ❌ TIER 1 search FAILED for "${query.substring(0, 50)}...": ${err.message}`)
+            console.error(`   ❌ Error stack: ${err.stack}`)
+            console.error(`   ❌ Error name: ${err.name}`)
           }
         }
+      } else {
+        console.log(`   ⚠️ TIER 1 SKIPPED (approvedDomains.length = ${approvedDomains.length})`)
       }
 
       // TIER 2: Open web search with strict quality filtering
@@ -1292,7 +1270,55 @@ async function fetchRealtimeArticles(
           const tier2Results = [...webResults, ...newsResults]
 
           // INTELLIGENT FILTERING: Same as TIER 1
+          console.log(`   🔍 TIER 2 returned ${tier2Results.length} results, applying intelligent filtering`)
+
           for (const result of tier2Results) {
+            // CRITICAL: Filter out non-news pages (stock prices, company pages, generic info pages)
+            const url = result.url || ''
+            const title = result.title || ''
+            const nonNewsPatterns = [
+              'stock-price', 'stock price', 'quote', 'shares', 'investor-relations',
+              'about-us', 'our-history', 'contact-us', 'world-map', 'media-contacts',
+              'income-statement', 'balance-sheet', 'cash-flow', 'financial-statements',
+              '/investors/', '/about/', '/history/', '/company/', '/corporate/',
+              'yahoo finance', 'robinhood', 'marketbeat', 'stock analysis'
+            ]
+
+            const isNonNews = nonNewsPatterns.some(pattern =>
+              url.toLowerCase().includes(pattern) || title.toLowerCase().includes(pattern)
+            )
+
+            if (isNonNews) {
+              console.log(`   🚫 TIER2: Filtered non-news page: "${title.substring(0, 60)}"`)
+              continue
+            }
+
+            // Try to get accurate date: Firecrawl publishedTime > title parsing > trust tbs filter
+            let publishDate = result.publishedTime
+            let hasExtractedDate = !!result.publishedTime
+
+            // If no publishedTime, try parsing date from title
+            if (!publishDate && result.title) {
+              const dateMatches = result.title.match(/(\d{1,2}\/\d{1,2}\/\d{4})|(\w+ \d{1,2},? \d{4})/);
+              if (dateMatches) {
+                try {
+                  const parsedDate = new Date(dateMatches[0]);
+                  if (!isNaN(parsedDate.getTime())) {
+                    publishDate = parsedDate.toISOString();
+                    hasExtractedDate = true;
+                    console.log(`   📅 TIER2: Parsed date from title: "${dateMatches[0]}" → ${publishDate}`);
+                  }
+                } catch (e) {
+                  // Parsing failed
+                }
+              }
+            }
+
+            // Trust tbs=qdr:d filter - if Google returned it with day filter, it's from today
+            if (!publishDate) {
+              publishDate = new Date().toISOString();
+            }
+
             const fullMarkdown = result.markdown || ''
             const relevantContent = fullMarkdown ? selectRelevantContent(fullMarkdown, query, 1000) : ''
 
@@ -1301,21 +1327,25 @@ async function fetchRealtimeArticles(
             const combined = `${title} ${description}`.toLowerCase()
             const queryLower = query.toLowerCase()
 
-            // Check relevance
-            let isRelevant = false
-            const queryWords = queryLower.split(/\s+/).filter(w => w.length > 4)
+            // Simple relevance check
+            const queryWords = queryLower.split(/\s+/).filter(w => w.length > 3)
             const matchedWords = queryWords.filter(word => combined.includes(word))
-            const matchRatio = matchedWords.length / Math.max(queryWords.length, 1)
+            let matchRatio = matchedWords.length / Math.max(queryWords.length, 1)
 
-            if (matchRatio > 0.3) {
-              isRelevant = true
+            // Entity boost: if this mentions a competitor/stakeholder, boost relevance
+            const allEntities = [
+              ...Array.from(strategicContext.competitors || []),
+              ...Array.from(strategicContext.stakeholders || [])
+            ]
+            const mentionsEntity = allEntities.some(entity =>
+              combined.includes(entity.toLowerCase())
+            )
+            if (mentionsEntity) {
+              matchRatio = Math.min(1.0, matchRatio + 0.3) // +30% boost
             }
 
-            if (strategicContext.organization && combined.includes(strategicContext.organization.toLowerCase())) {
-              isRelevant = true
-            }
-
-            if (!isRelevant) {
+            // Higher threshold for TIER2: 50% match required (more strict for open web)
+            if (matchRatio < 0.5 && !mentionsEntity) {
               continue
             }
 
@@ -1324,11 +1354,14 @@ async function fetchRealtimeArticles(
               url: result.url,
               content: relevantContent,
               description: result.description || '',
-              published_at: result.publishedTime || new Date().toISOString(),
+              published_at: publishDate,
               source: result.source || extractDomain(result.url),
               relevance_score: Math.round(matchRatio * 100),
+              pr_relevance_score: Math.round(matchRatio * 100),
+              pr_category: mentionsEntity ? 'competitor_news' : 'industry_news',
               full_markdown: fullMarkdown.substring(0, 5000),
-              search_tier: 'TIER2'
+              search_tier: 'TIER2',
+              had_published_time: hasExtractedDate
             })
           }
         }

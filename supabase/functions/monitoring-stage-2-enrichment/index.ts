@@ -338,6 +338,43 @@ Return ONLY valid JSON matching this structure:
               }
             }).filter(e => e.entity !== 'Unknown' && e.description !== 'No description'); // Filter out garbage
 
+            // 🔥 CRITICAL FIX: Use article publish dates, not Claude's extraction
+            // Claude might extract wrong dates from content
+            // Use the article's published_at (which comes from Firecrawl or title parsing)
+            // Build a map of article index to published_at
+            const articleDates = new Map();
+            batch.forEach((article, idx) => {
+              // Try to extract date from title if published_at is missing or defaulted to now
+              let articleDate = article.published_at;
+
+              // If no published_at or it was defaulted to "now", try parsing title
+              const hasExtractedDate = article.had_published_time || false;
+              if (!hasExtractedDate && article.title) {
+                // Look for dates in title like "11/14/2025" or "November 14, 2025"
+                const dateMatches = article.title.match(/(\d{1,2}\/\d{1,2}\/\d{4})|(\w+ \d{1,2},? \d{4})/);
+                if (dateMatches) {
+                  try {
+                    const parsedDate = new Date(dateMatches[0]);
+                    if (!isNaN(parsedDate.getTime())) {
+                      articleDate = parsedDate.toISOString();
+                      console.log(`   📅 Extracted date from title: "${dateMatches[0]}" → ${articleDate}`);
+                    }
+                  } catch (e) {
+                    // Parsing failed, use article.published_at
+                  }
+                }
+              }
+
+              articleDates.set(idx, articleDate || new Date().toISOString());
+            });
+
+            // Map events to their source articles' dates
+            normalizedEvents.forEach(event => {
+              // Events don't have article index, so use current batch start time as fallback
+              // This is better than using Claude's extracted dates which can be wrong
+              event.date = articleDates.get(0) || new Date().toISOString();
+            });
+
             allExtractedData.events.push(...normalizedEvents);
           }
 
@@ -1188,6 +1225,9 @@ serve(async (req) => {
       // Keep enriched_articles but minimal for compatibility
       enriched_articles: extractedData.article_summaries.map(summary => ({
         ...summary,
+        // Preserve pr_ prefixed fields for synthesis compatibility
+        pr_category: summary.category,
+        pr_relevance_score: summary.relevance_score,
         deep_analysis: {
           strategic_implications: 'See organized_intelligence for analysis',
           competitive_impact: 'See organized_intelligence for analysis',
