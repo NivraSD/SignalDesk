@@ -174,16 +174,26 @@ async function createOrganizationProfile(args: any) {
     product_lines = [],
     key_markets = [],
     business_model,
-    save_to_persistence = true
+    save_to_persistence = true,
+    gap_filling_mode = false,
+    gap_context = null
   } = args;
 
   console.log(`🔍 Creating SMART organization profile for: ${organization_name}`);
+  console.log(`   Mode: ${gap_filling_mode ? 'GAP-FILLING' : 'FULL PROFILE'}`);
   console.log(`   Industry hint: ${industry_hint || 'Auto-detect'}`);
-  console.log(`   About page: ${about_page || 'Not provided'}`);
-  console.log(`   Website: ${website || 'Not provided'}`);
-  console.log(`   Product lines: ${product_lines.length > 0 ? product_lines.join(', ') : 'Not provided'}`);
-  console.log(`   Key markets: ${key_markets.length > 0 ? key_markets.join(', ') : 'Not provided'}`);
-  console.log(`   Business model: ${business_model || 'Not provided'}`);
+
+  if (gap_filling_mode && gap_context) {
+    console.log(`   Gap type: ${gap_context.gap_type}`);
+    console.log(`   Missing entities: ${gap_context.missing_entities?.length || 0}`);
+    console.log(`   Strategic focus: ${gap_context.strategic_focus || 'N/A'}`);
+  } else {
+    console.log(`   About page: ${about_page || 'Not provided'}`);
+    console.log(`   Website: ${website || 'Not provided'}`);
+    console.log(`   Product lines: ${product_lines.length > 0 ? product_lines.join(', ') : 'Not provided'}`);
+    console.log(`   Key markets: ${key_markets.length > 0 ? key_markets.join(', ') : 'Not provided'}`);
+    console.log(`   Business model: ${business_model || 'Not provided'}`);
+  }
 
   // Debug: Check if API key is available
   const apiKeyCheck = ANTHROPIC_API_KEY || Deno.env.get('ANTHROPIC_API_KEY') || Deno.env.get('CLAUDE_API_KEY');
@@ -222,7 +232,9 @@ async function createOrganizationProfile(args: any) {
       industry_hint,
       product_lines,
       key_markets,
-      business_model
+      business_model,
+      gap_filling_mode,
+      gap_context
     );
 
     // STEP 2b: Validate and supplement Claude's competitors with registry
@@ -600,6 +612,145 @@ async function gatherSourcesData(industry: string, organizationName?: string, co
   }
 }
 
+/**
+ * Generate targeted search strategy for gap-filling mode
+ * Focuses on missing entities and strategic areas identified by QC
+ */
+async function generateGapFillingStrategy(
+  organization_name: string,
+  industryData: any,
+  sourcesData: any,
+  gap_context: any
+): Promise<any> {
+  console.log(`🎯 Generating gap-filling strategy for ${gap_context.gap_type}`);
+
+  const gapPrompt = `You are a strategic intelligence analyst helping to fill critical gaps in monitoring coverage for ${organization_name}.
+
+SITUATION:
+${organization_name} operates in ${industryData.industry}.
+
+GAP ANALYSIS:
+- Gap Type: ${gap_context.gap_type}
+- Strategic Focus: ${gap_context.strategic_focus}
+- Priority Areas: ${gap_context.priority_areas?.join(', ')}
+${gap_context.missing_entities?.length > 0 ? `
+- Missing Coverage:
+${gap_context.missing_entities.map((e: any) => `  • ${e.name || e.description} (${e.type}) - ${e.reason}`).join('\n')}
+` : ''}
+
+YOUR MISSION:
+Generate TARGETED search queries that will specifically find intelligence about these gaps.
+Focus on:
+1. The missing entities listed above
+2. Recent developments (last 7 days)
+3. High-signal sources that cover these specific topics
+
+Return a monitoring configuration in this JSON format:
+{
+  "search_queries": {
+    "competitor_queries": ["Targeted queries for missing competitors"],
+    "stakeholder_queries": ["Targeted queries for missing stakeholders"],
+    "strategic_queries": ["Queries for strategic intelligence gaps"]
+  },
+  "monitoring_focus": "What to prioritize in this gap-filling run",
+  "source_priorities": ["Which sources are most likely to have this intelligence"]
+}`;
+
+  try {
+    const response = await callAnthropic([{
+      role: 'user',
+      content: gapPrompt
+    }], 2000, 'claude-sonnet-4-20250514');
+
+    const claudeResponse = response.content[0];
+    if (claudeResponse.type !== 'text') {
+      throw new Error('Invalid Claude response for gap-filling');
+    }
+
+    const jsonMatch = claudeResponse.text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      console.error('No JSON in Claude gap-filling response');
+      // Fallback: generate basic queries from missing entities
+      return generateFallbackGapStrategy(organization_name, gap_context, sourcesData);
+    }
+
+    const gapStrategy = JSON.parse(jsonMatch[0]);
+    console.log(`✅ Generated ${gapStrategy.search_queries?.competitor_queries?.length || 0} competitor queries, ${gapStrategy.search_queries?.stakeholder_queries?.length || 0} stakeholder queries`);
+
+    // Return a simplified profile focused on gap-filling
+    return {
+      industry: industryData.industry,
+      monitoring_config: {
+        search_queries: gapStrategy.search_queries,
+        monitoring_focus: gapStrategy.monitoring_focus,
+        source_priorities: sourcesData.source_priorities,
+        gap_filling_mode: true
+      },
+      intelligence_context: {
+        monitoring_prompt: gap_context.strategic_focus,
+        key_questions: [gap_context.strategic_focus],
+        priority_areas: gap_context.priority_areas
+      },
+      sources: sourcesData
+    };
+
+  } catch (error: any) {
+    console.error('❌ Gap-filling strategy generation failed:', error.message);
+    return generateFallbackGapStrategy(organization_name, gap_context, sourcesData);
+  }
+}
+
+/**
+ * Fallback strategy when Claude generation fails
+ */
+function generateFallbackGapStrategy(organization_name: string, gap_context: any, sourcesData: any): any {
+  console.log('⚠️ Using fallback gap-filling strategy');
+
+  const queries = {
+    competitor_queries: [],
+    stakeholder_queries: [],
+    strategic_queries: []
+  };
+
+  // Generate queries from missing entities
+  gap_context.missing_entities?.forEach((entity: any) => {
+    if (entity.type === 'competitor') {
+      queries.competitor_queries.push(
+        `${entity.name} news`,
+        `${entity.name} announcement`,
+        `${entity.name} ${gap_context.industry}`
+      );
+    } else if (entity.type === 'stakeholder') {
+      queries.stakeholder_queries.push(
+        `${entity.name} ${gap_context.industry}`,
+        `${entity.name} policy`,
+        `${entity.name} announcement`
+      );
+    }
+  });
+
+  // Add strategic queries
+  if (gap_context.strategic_focus) {
+    queries.strategic_queries.push(gap_context.strategic_focus);
+  }
+
+  return {
+    industry: gap_context.industry,
+    monitoring_config: {
+      search_queries: queries,
+      monitoring_focus: gap_context.strategic_focus,
+      source_priorities: sourcesData.source_priorities,
+      gap_filling_mode: true
+    },
+    intelligence_context: {
+      monitoring_prompt: gap_context.strategic_focus,
+      key_questions: [gap_context.strategic_focus],
+      priority_areas: gap_context.priority_areas
+    },
+    sources: sourcesData
+  };
+}
+
 // Use Claude to analyze what we have and what we need
 async function analyzeAndEnhanceProfile(
   organization_name: string,
@@ -608,8 +759,17 @@ async function analyzeAndEnhanceProfile(
   industry_hint?: string,
   product_lines: string[] = [],
   key_markets: string[] = [],
-  business_model?: string
+  business_model?: string,
+  gap_filling_mode: boolean = false,
+  gap_context: any = null
 ) {
+  // GAP-FILLING MODE: Generate targeted profile to fill specific gaps
+  if (gap_filling_mode && gap_context) {
+    console.log(`🎯 GAP-FILLING MODE: Generating targeted search strategy`);
+    return await generateGapFillingStrategy(organization_name, industryData, sourcesData, gap_context);
+  }
+
+  // NORMAL MODE: Generate full profile
   const analysisPrompt = `
 You are creating a strategic intelligence profile for ${organization_name}.
 

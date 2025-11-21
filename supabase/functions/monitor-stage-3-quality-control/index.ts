@@ -197,22 +197,21 @@ serve(async (req) => {
       });
     }
 
-    // Step 6: Generate gap-filling queries (CRITICAL gaps only)
-    console.log(`\n🔧 Step 6: Generating gap-filling queries...`);
-    const gapQueries = generateGapFillingQueries(assessment.criticalGaps, companyProfile, targets);
+    // Step 6: Generate gap context for mcp-discovery
+    console.log(`\n🔧 Step 6: Creating gap context for mcp-discovery...`);
+    const gapContext = generateGapContext(assessment.criticalGaps, companyProfile, targets, organizationName);
 
-    console.log(`   Generated ${gapQueries.length} targeted queries for critical gaps`);
-    gapQueries.forEach((q, idx) => {
-      console.log(`   ${idx + 1}. "${q}"`);
-    });
+    console.log(`   Gap type: ${gapContext.gap_type}`);
+    console.log(`   Missing entities: ${gapContext.missing_entities?.length || 0}`);
+    console.log(`   Strategic focus: ${gapContext.strategic_focus || 'general coverage'}`);
 
-    if (gapQueries.length === 0) {
-      console.log(`   ⚠️ Could not generate gap-filling queries - PROCEEDING anyway`);
+    if (!gapContext.gap_type) {
+      console.log(`   ⚠️ Could not determine gap type - PROCEEDING anyway`);
       return new Response(JSON.stringify({
         proceed: true,
         articles,
         decision: 'PROCEED',
-        reason: 'No gap queries generated',
+        reason: 'No gap context generated',
         assessment,
         execution_time_ms: Date.now() - startTime
       }), {
@@ -220,11 +219,64 @@ serve(async (req) => {
       });
     }
 
-    // Step 7: Trigger gap-filling search (ONE iteration only)
-    console.log(`\n🔄 Step 7: Triggering gap-filling search (iteration ${iteration + 1})...`);
+    // Step 7: Use mcp-discovery to intelligently figure out how to fill gaps
+    console.log(`\n🤖 Step 7: Calling mcp-discovery to determine gap-filling strategy...`);
 
     try {
-      // Call niv-source-direct-monitor with targeted queries
+      // Call mcp-discovery with gap context
+      const discoveryResponse = await fetch(`${SUPABASE_URL}/functions/v1/mcp-discovery`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          organization_id,
+          organization_name: organizationName,
+          industry_hint: companyProfile.industry,
+          gap_filling_mode: true,
+          gap_context: gapContext,
+          save_to_persistence: false // Don't overwrite existing profile
+        })
+      });
+
+      if (!discoveryResponse.ok) {
+        console.log(`   ⚠️ mcp-discovery failed - PROCEEDING with current articles`);
+        return new Response(JSON.stringify({
+          proceed: true,
+          articles,
+          decision: 'PROCEED',
+          reason: 'Gap-fill discovery failed',
+          assessment,
+          execution_time_ms: Date.now() - startTime
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      const discoveryResult = await discoveryResponse.json();
+      const enhancedProfile = discoveryResult.profile;
+
+      if (!enhancedProfile) {
+        console.log(`   ⚠️ No enhanced profile from mcp-discovery - PROCEEDING with current articles`);
+        return new Response(JSON.stringify({
+          proceed: true,
+          articles,
+          decision: 'PROCEED',
+          reason: 'No enhanced profile returned',
+          assessment,
+          execution_time_ms: Date.now() - startTime
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      console.log(`   ✅ Got enhanced profile from mcp-discovery`);
+      console.log(`   Enhanced search queries: ${enhancedProfile.monitoring_config?.search_queries?.competitor_queries?.length || 0}`);
+
+      // Step 8: Trigger gap-filling search with enhanced strategy
+      console.log(`\n🔄 Step 8: Running targeted monitoring with enhanced strategy (iteration ${iteration + 1})...`);
+
       const monitorResponse = await fetch(`${SUPABASE_URL}/functions/v1/niv-source-direct-monitor`, {
         method: 'POST',
         headers: {
@@ -234,7 +286,8 @@ serve(async (req) => {
         body: JSON.stringify({
           organization_id,
           organization_name,
-          targeted_queries: gapQueries // Special parameter for gap-filling
+          profile: enhancedProfile, // Use enhanced profile from mcp-discovery
+          gap_filling_mode: true // Signal this is a gap-filling run
         })
       });
 
@@ -273,8 +326,8 @@ serve(async (req) => {
         });
       }
 
-      // Step 8: Run relevance filtering on gap articles
-      console.log(`\n🤖 Step 8: Running relevance filter on gap articles...`);
+      // Step 9: Run relevance filtering on gap articles
+      console.log(`\n🤖 Step 9: Running relevance filter on gap articles...`);
       const relevanceResponse = await fetch(`${SUPABASE_URL}/functions/v1/monitor-stage-2-relevance`, {
         method: 'POST',
         headers: {
@@ -620,93 +673,113 @@ function mentionsEntity(article: any, entityName: string): boolean {
 }
 
 /**
- * Generate targeted queries to fill CRITICAL gaps only
+ * Generate structured gap context for mcp-discovery to intelligently fill
+ * Instead of simple queries, describe WHAT is missing so mcp-discovery can figure out HOW to find it
  */
-function generateGapFillingQueries(criticalGaps: any[], companyProfile: any, targets: any): string[] {
-  const queries: string[] = [];
+function generateGapContext(criticalGaps: any[], companyProfile: any, targets: any, organizationName: string): any {
+  const context: any = {
+    organization_name: organizationName,
+    industry: companyProfile.industry,
+    gap_type: null,
+    missing_entities: [],
+    coverage_analysis: {},
+    strategic_focus: null,
+    priority_areas: []
+  };
 
-  // Gap type 1: Zero top competitor coverage
+  // Analyze gap type 1: Zero top competitor coverage
   const competitorGap = criticalGaps.find(g => g.type === 'zero_top_competitor_coverage');
   if (competitorGap && competitorGap.competitors_missing) {
-    // Simple, specific queries for each missing competitor
-    competitorGap.competitors_missing.forEach((comp: string) => {
-      queries.push(`${comp} news`);
-    });
+    context.gap_type = 'competitor_coverage';
+    context.missing_entities = competitorGap.competitors_missing.map((name: string) => ({
+      name,
+      type: 'competitor',
+      priority: 'high',
+      reason: 'Top competitor with zero coverage'
+    }));
+    context.strategic_focus = `Find recent news and developments about these key competitors: ${competitorGap.competitors_missing.join(', ')}`;
+    context.priority_areas = ['competitive_intelligence', 'market_movements', 'strategic_announcements'];
   }
 
-  // Gap type 2: Insufficient articles - use top strategic question
-  const articleGap = criticalGaps.find(g => g.type === 'insufficient_articles');
-  if (articleGap) {
-    const topQuestion = companyProfile.intelligence_context?.key_questions?.[0];
-    if (topQuestion) {
-      queries.push(topQuestion);
-    } else if (companyProfile.industry) {
-      // Fallback: industry news
-      queries.push(`${companyProfile.industry} news`);
-    }
-  }
-
-  // Gap type 3: Stale intelligence - search for recent news
-  const recencyGap = criticalGaps.find(g => g.type === 'stale_intelligence');
-  if (recencyGap && companyProfile.industry) {
-    queries.push(`${companyProfile.industry} latest news today`);
-  }
-
-  // Gap type 4: Extremely poor coverage (from override)
+  // Analyze gap type 2: Extremely poor coverage (from override)
   const poorCoverageGap = criticalGaps.find(g => g.type === 'extremely_poor_coverage');
   if (poorCoverageGap) {
-    console.log(`   Handling extremely_poor_coverage gap`);
+    context.gap_type = 'comprehensive_coverage';
 
-    // Find uncovered competitors (priority high first)
-    const highPriorityCompetitors = targets.competitors
+    // Find uncovered competitors
+    const uncoveredCompetitors = targets.competitors
       .filter((t: any) => t.priority === 'high')
-      .slice(0, 3);
+      .slice(0, 5);
 
-    highPriorityCompetitors.forEach((comp: any) => {
-      queries.push(`${comp.name} news`);
-      queries.push(`${comp.name} ${companyProfile.industry || ''}`);
-    });
+    context.missing_entities.push(...uncoveredCompetitors.map((comp: any) => ({
+      name: comp.name,
+      type: 'competitor',
+      priority: comp.priority,
+      reason: 'High-priority competitor with insufficient coverage'
+    })));
 
-    // If we still have room, add stakeholder queries
-    if (queries.length < SAFETY_LIMITS.max_gap_queries) {
-      const topStakeholders = targets.stakeholders.slice(0, 2);
-      topStakeholders.forEach((sh: any) => {
-        if (queries.length < SAFETY_LIMITS.max_gap_queries) {
-          queries.push(`${sh.name} ${companyProfile.industry || ''}`);
-        }
-      });
-    }
+    // Add stakeholders
+    const uncoveredStakeholders = targets.stakeholders.slice(0, 3);
+    context.missing_entities.push(...uncoveredStakeholders.map((sh: any) => ({
+      name: sh.name,
+      type: 'stakeholder',
+      priority: sh.priority || 'medium',
+      reason: 'Stakeholder with no coverage'
+    })));
+
+    context.coverage_analysis = {
+      competitor_coverage_rate: poorCoverageGap.coverage?.competitors || 0,
+      stakeholder_coverage_rate: poorCoverageGap.coverage?.stakeholders || 0,
+      severity: 'critical'
+    };
+
+    context.strategic_focus = `Achieve balanced coverage across key competitors and stakeholders for ${organizationName}`;
+    context.priority_areas = ['competitive_landscape', 'stakeholder_activity', 'industry_dynamics'];
   }
 
-  // Gap type 5: Claude-identified gaps
+  // Analyze gap type 3: Claude-identified gaps (use strategic questions)
   const claudeGaps = criticalGaps.filter(g => g.type === 'claude_identified_gap');
-  if (claudeGaps.length > 0 && queries.length < SAFETY_LIMITS.max_gap_queries) {
-    console.log(`   Handling ${claudeGaps.length} Claude-identified gaps`);
+  if (claudeGaps.length > 0 && !context.gap_type) {
+    context.gap_type = 'strategic_intelligence';
 
-    // Use intelligence context to generate smart queries
     const intelligenceContext = companyProfile.intelligence_context || {};
     const keyQuestions = intelligenceContext.key_questions || [];
 
-    // Add key questions as search queries (these are strategic, not target-specific)
-    keyQuestions.slice(0, 2).forEach((question: string) => {
-      if (queries.length < SAFETY_LIMITS.max_gap_queries) {
-        // Convert question to search query (remove "What", "How", "Why")
-        const searchQuery = question
-          .replace(/^(What|How|Why|When|Where|Which|Who)\s+/i, '')
-          .replace(/\?$/, '')
-          .trim();
-        queries.push(searchQuery);
+    context.strategic_focus = keyQuestions[0] || `Comprehensive intelligence about ${organizationName}'s competitive landscape`;
+    context.priority_areas = ['strategic_movements', 'market_opportunities', 'competitive_threats'];
+
+    // Extract gaps from Claude's reasoning
+    claudeGaps.forEach(gap => {
+      if (gap.message) {
+        context.missing_entities.push({
+          type: 'strategic_area',
+          description: gap.message,
+          reason: 'Claude-identified critical gap'
+        });
       }
     });
+  }
 
-    // If still have room, add industry + competitor context
-    if (queries.length < SAFETY_LIMITS.max_gap_queries && companyProfile.industry) {
-      queries.push(`${companyProfile.industry} competitive landscape`);
+  // Analyze gap type 4: Insufficient articles
+  const articleGap = criticalGaps.find(g => g.type === 'insufficient_articles');
+  if (articleGap && !context.gap_type) {
+    context.gap_type = 'volume';
+    context.strategic_focus = `Increase intelligence volume for ${organizationName}`;
+    context.priority_areas = ['industry_news', 'competitive_intelligence', 'market_trends'];
+  }
+
+  // Analyze gap type 5: Stale intelligence
+  const recencyGap = criticalGaps.find(g => g.type === 'stale_intelligence');
+  if (recencyGap) {
+    if (!context.gap_type) {
+      context.gap_type = 'recency';
+    }
+    context.recency_requirement = 'last_24_hours';
+    context.strategic_focus = `Find breaking news and recent developments in ${companyProfile.industry}`;
+    if (!context.priority_areas.includes('breaking_news')) {
+      context.priority_areas.push('breaking_news');
     }
   }
 
-  // Cap at 5 queries max (SAFETY)
-  const finalQueries = [...new Set(queries)].slice(0, SAFETY_LIMITS.max_gap_queries);
-  console.log(`   Generated ${finalQueries.length} gap-filling queries:`, finalQueries);
-  return finalQueries;
+  return context;
 }
