@@ -195,9 +195,14 @@ Be INCLUSIVE - when in doubt, include it. Better to have too many than miss crit
           if (articleIdx >= 0 && articleIdx < batch.length) {
             relevantArticles.push({
               ...batch[articleIdx],
+              // Top-level fields for enrichment stage
+              pr_relevance_score: result.relevance_score || 75,
+              pr_category: result.relevance_type || 'industry_context',
+              // Nested metadata for reference
               relevance_metadata: {
                 target: result.target_mentioned,
                 relevance_score: result.relevance_score,
+                relevance_type: result.relevance_type,
                 reason: result.reason,
                 filtered_by: 'claude_ai'
               }
@@ -213,6 +218,10 @@ Be INCLUSIVE - when in doubt, include it. Better to have too many than miss crit
         batch.forEach(article => {
           relevantArticles.push({
             ...article,
+            // Top-level fields for enrichment stage
+            pr_relevance_score: 50,
+            pr_category: 'general',
+            // Nested metadata for reference
             relevance_metadata: {
               relevance_score: 50,
               reason: 'Included due to filtering error',
