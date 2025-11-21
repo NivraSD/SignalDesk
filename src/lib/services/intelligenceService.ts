@@ -114,19 +114,69 @@ export class IntelligenceService {
         console.log('niv-source-direct-monitor response:', monitoringResponse)
         onProgress?.('niv-source-direct-monitor', 'completed', monitoringResponse.data)
 
-        // Articles are already Claude-filtered for relevance by source-direct-monitor
+        // STEP 2: Run relevance filtering on collected articles
         if (monitoringResponse.data?.articles) {
-          const relevantArticles = monitoringResponse.data.articles
-          console.log('📊 Monitoring collected', relevantArticles.length, 'pre-filtered articles')
+          const collectedArticles = monitoringResponse.data.articles
+          console.log('📊 Monitoring collected', collectedArticles.length, 'articles')
+
+          console.log('Starting monitor-stage-2-relevance')
+          onProgress?.('monitor-stage-2-relevance', 'running')
+
+          const relevanceResponse = await supabase.functions.invoke('monitor-stage-2-relevance', {
+            body: {
+              articles: collectedArticles,
+              organization_name: orgName,
+              organization_id: organizationId,
+              profile: profile
+            }
+          })
+
+          if (relevanceResponse.error) {
+            console.error('Relevance filtering error:', relevanceResponse.error)
+            onProgress?.('monitor-stage-2-relevance', 'failed', relevanceResponse.error)
+            throw new Error(`Relevance filtering failed: ${relevanceResponse.error.message || 'Unknown error'}`)
+          }
+
+          console.log('✅ monitor-stage-2-relevance completed')
+          onProgress?.('monitor-stage-2-relevance', 'completed', relevanceResponse.data)
+
+          const relevantArticles = relevanceResponse.data?.relevant_articles || []
+          console.log('📊 Relevance filtering:', collectedArticles.length, '→', relevantArticles.length, 'relevant articles')
+
+          // STEP 3: Run quality control check
+          console.log('Starting monitor-stage-3-quality-control')
+          onProgress?.('monitor-stage-3-quality-control', 'running')
+
+          const qualityControlResponse = await supabase.functions.invoke('monitor-stage-3-quality-control', {
+            body: {
+              articles: relevantArticles,
+              organization_id: organizationId,
+              organization_name: orgName,
+              iteration: 0
+            }
+          })
+
+          if (qualityControlResponse.error) {
+            console.warn('⚠️ Quality control failed (non-blocking):', qualityControlResponse.error)
+            // Non-blocking - continue with existing articles
+            onProgress?.('monitor-stage-3-quality-control', 'completed', { warning: 'QC skipped due to error' })
+          } else {
+            console.log('✅ monitor-stage-3-quality-control completed')
+            onProgress?.('monitor-stage-3-quality-control', 'completed', qualityControlResponse.data)
+          }
+
+          // Use QC-approved articles (may include gap-filled articles)
+          const finalArticles = qualityControlResponse.data?.articles || relevantArticles
+          console.log('📊 Quality control:', relevantArticles.length, '→', finalArticles.length, 'final articles')
 
           // STEP 3.5: target-intelligence-collector (NEW: Save mentions to intelligence repository)
-          if (relevantArticles.length > 0) {
+          if (finalArticles.length > 0) {
             console.log('Starting target-intelligence-collector')
             onProgress?.('target-intelligence-collector', 'running')
 
             const collectorResponse = await supabase.functions.invoke('target-intelligence-collector', {
               body: {
-                articles: relevantArticles,
+                articles: finalArticles,
                 organization_id: organizationId,
                 organization_name: orgName
               }
@@ -175,14 +225,14 @@ export class IntelligenceService {
           }
 
           // Call enrichment with filtered articles
-          if (relevantArticles.length > 0) {
-            // STEP 4: Call enrichment with relevant articles
-            console.log('Starting monitoring-stage-2-enrichment with', relevantArticles.length, 'relevant articles')
+          if (finalArticles.length > 0) {
+            // STEP 4: Call enrichment with final articles (after relevance + QC)
+            console.log('Starting monitoring-stage-2-enrichment with', finalArticles.length, 'final articles')
             onProgress?.('monitoring-stage-2-enrichment', 'running')
 
             const enrichmentResponse = await supabase.functions.invoke('monitoring-stage-2-enrichment', {
               body: {
-                articles: relevantArticles,
+                articles: finalArticles,
                 profile: profile,
                 organization_name: orgName,
                 organization: { name: orgName },
@@ -391,19 +441,69 @@ export class IntelligenceService {
       console.log('✅ niv-source-direct-monitor completed')
       onProgress?.('niv-source-direct-monitor', 'completed', monitoringResponse.data)
 
-      // Articles are already Claude-filtered for relevance by source-direct-monitor
+      // STEP 2: Run relevance filtering on collected articles
       if (monitoringResponse.data?.articles) {
-        const relevantArticles = monitoringResponse.data.articles
-        console.log('📊 Monitoring collected', relevantArticles.length, 'pre-filtered articles')
+        const collectedArticles = monitoringResponse.data.articles
+        console.log('📊 Monitoring collected', collectedArticles.length, 'articles')
+
+        console.log('Starting monitor-stage-2-relevance')
+        onProgress?.('monitor-stage-2-relevance', 'running')
+
+        const relevanceResponse = await supabase.functions.invoke('monitor-stage-2-relevance', {
+          body: {
+            articles: collectedArticles,
+            organization_name: organizationName,
+            organization_id: organizationId,
+            profile: profile
+          }
+        })
+
+        if (relevanceResponse.error) {
+          console.error('Relevance filtering error:', relevanceResponse.error)
+          onProgress?.('monitor-stage-2-relevance', 'failed', relevanceResponse.error)
+          throw new Error(`Relevance filtering failed: ${relevanceResponse.error.message || 'Unknown error'}`)
+        }
+
+        console.log('✅ monitor-stage-2-relevance completed')
+        onProgress?.('monitor-stage-2-relevance', 'completed', relevanceResponse.data)
+
+        const relevantArticles = relevanceResponse.data?.relevant_articles || []
+        console.log('📊 Relevance filtering:', collectedArticles.length, '→', relevantArticles.length, 'relevant articles')
+
+        // STEP 3: Run quality control check
+        console.log('Starting monitor-stage-3-quality-control')
+        onProgress?.('monitor-stage-3-quality-control', 'running')
+
+        const qualityControlResponse = await supabase.functions.invoke('monitor-stage-3-quality-control', {
+          body: {
+            articles: relevantArticles,
+            organization_id: organizationId,
+            organization_name: organizationName,
+            iteration: 0
+          }
+        })
+
+        if (qualityControlResponse.error) {
+          console.warn('⚠️ Quality control failed (non-blocking):', qualityControlResponse.error)
+          // Non-blocking - continue with existing articles
+          onProgress?.('monitor-stage-3-quality-control', 'completed', { warning: 'QC skipped due to error' })
+        } else {
+          console.log('✅ monitor-stage-3-quality-control completed')
+          onProgress?.('monitor-stage-3-quality-control', 'completed', qualityControlResponse.data)
+        }
+
+        // Use QC-approved articles (may include gap-filled articles)
+        const finalArticles = qualityControlResponse.data?.articles || relevantArticles
+        console.log('📊 Quality control:', relevantArticles.length, '→', finalArticles.length, 'final articles')
 
         // STEP 3.5: target-intelligence-collector (NEW: Save mentions to intelligence repository)
-        if (relevantArticles.length > 0) {
+        if (finalArticles.length > 0) {
           console.log('Starting target-intelligence-collector')
           onProgress?.('target-intelligence-collector', 'running')
 
           const collectorResponse = await supabase.functions.invoke('target-intelligence-collector', {
             body: {
-              articles: relevantArticles,
+              articles: finalArticles,
               organization_id: organizationId,
               organization_name: organizationName
             }
@@ -453,13 +553,13 @@ export class IntelligenceService {
         }
 
         // STEP 4: monitoring-stage-2-enrichment
-        if (relevantArticles.length > 0) {
-          console.log('Starting monitoring-stage-2-enrichment with', relevantArticles.length, 'articles')
+        if (finalArticles.length > 0) {
+          console.log('Starting monitoring-stage-2-enrichment with', finalArticles.length, 'final articles')
           onProgress?.('monitoring-stage-2-enrichment', 'running')
 
           const enrichmentResponse = await supabase.functions.invoke('monitoring-stage-2-enrichment', {
             body: {
-              articles: relevantArticles,
+              articles: finalArticles,
               profile: profile,
               organization_name: organizationName,
               organization: { name: organizationName },
