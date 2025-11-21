@@ -9,7 +9,7 @@ const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-const CODE_VERSION = 'v2025-11-21-limit-sources';
+const CODE_VERSION = 'v2025-11-21-no-date-filter';
 
 // Extract HTML sources from company profile sources (selected by mcp-discovery)
 function getHTMLSourcesFromProfile(companyProfile: any) {
@@ -399,40 +399,12 @@ serve(async (req) => {
     });
     console.log(`   ✅ Deduplication: ${allArticles.length} → ${dedupedArticles.length} unique articles`);
 
-    // 3b. Date filtering (remove old articles)
-    const recencyLimits: Record<string, number> = {
-      '1hour': 1,
-      '6hours': 6,
-      '24hours': 24,
-      '48hours': 48 // Default for batch monitoring
-    };
-    const maxHoursOld = recencyLimits['48hours']; // Use 48h for batch monitoring
-    const cutoffTime = new Date(Date.now() - maxHoursOld * 60 * 60 * 1000);
-
-    let filteredOldCount = 0;
-    const recentArticles = dedupedArticles.filter(a => {
-      const publishedDate = new Date(a.published_at || a.date || 0);
-      const isRecent = publishedDate >= cutoffTime;
-
-      if (!isRecent) {
-        filteredOldCount++;
-        // Only log first 5 filtered articles to avoid timeout
-        if (filteredOldCount <= 5) {
-          const hoursAgo = Math.floor((Date.now() - publishedDate.getTime()) / (1000 * 60 * 60));
-          console.log(`   🚫 Filtered old article (${hoursAgo}h ago, limit ${maxHoursOld}h): "${a.title?.substring(0, 60)}..."`);
-        }
-      }
-
-      return isRecent;
-    });
-
-    console.log(`   ✅ Date filtering: ${dedupedArticles.length} → ${recentArticles.length} recent articles (last ${maxHoursOld}h)`);
-    if (filteredOldCount > 5) {
-      console.log(`   🗑️ Filtered ${filteredOldCount} old articles total (showing first 5 only)`);
-    }
+    // 3b. Skip date filtering at listing stage (dates not available from listing pages)
+    // Date filtering will happen in monitor-stage-2-relevance when full articles are scraped
+    console.log(`   ⏭️  Skipping date filter (publish dates not available from listing pages)`);
 
     // 3c. Score by source priority (from HTML source metadata)
-    const scoredArticles = recentArticles.map(a => ({
+    const scoredArticles = dedupedArticles.map(a => ({
       ...a,
       relevance_score: a.source_priority || 2, // 1=critical, 2=high, 3=medium
       filter_stage: 'mechanical'
