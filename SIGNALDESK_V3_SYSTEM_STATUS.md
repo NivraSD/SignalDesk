@@ -1,11 +1,12 @@
 # SignalDesk V3 - Comprehensive System Status
-*Last Updated: November 7, 2025 - GEO-VECTOR Campaigns + Strategic Planning Module*
+*Last Updated: November 21, 2025 - Industry-Aware Connection Intelligence System*
 
 ## Executive Summary
 
 SignalDesk V3 is a fully operational AI-powered strategic communications platform that transforms how organizations discover opportunities, generate strategies, and create content. The system leverages multiple AI providers (Claude, Google Vertex AI, Gamma) through a sophisticated orchestration layer to deliver end-to-end strategic communications capabilities.
 
 **Major November 2025 Updates:**
+- ✅ **Connection Intelligence System** - Industry-aware detection of entity relationships and cross-entity patterns with 3 connection types, industry-specific templates (commodities, PR, tech), and complete UI dashboard (Nov 21, 2025)
 - ✅ **GEO-VECTOR Campaigns** - Complete campaign generation with AI query ownership + schema updates (Nov 7, 2025)
 - ✅ **Strategic Planning Module V3** - Campaign-specific execution with dedicated strategic_planning_items database (Nov 7, 2025)
 - ✅ **GEO Schema Pipeline** - Intelligent schema updates targeting Organization schema with proper field addition logic (Nov 7, 2025)
@@ -30,6 +31,7 @@ SignalDesk V3 is a fully operational AI-powered strategic communications platfor
 - ✅ **GEO Intelligence Monitor** - AI visibility testing across Claude, Gemini, Perplexity, and ChatGPT with intelligent query generation and citation tracking (Oct 27, 2025)
 
 ### Core Capabilities Status
+- ✅ **Connection Intelligence System** - Industry-aware cross-entity pattern detection with co-occurrence, temporal correlation, and thematic overlap analysis. Generates industry-specific signals (supply chain disruption, competitive coordination, reputational cascade for commodities; client reputation threat, media narrative shift for PR). Complete UI dashboard with signal filtering and entity network visualization (Nov 21, 2025)
 - ✅ **GEO-VECTOR Campaigns** - Complete AI query ownership campaigns with schema updates and content recommendations (Nov 7, 2025)
 - ✅ **Strategic Planning Module V3** - Campaign execution with 91+ tactical items, database persistence, and GEO integration (Nov 7, 2025)
 - ✅ **Schema.org Generation** - Complete pipeline with Firecrawl Map discovery, AI entity extraction, and GEO enhancements (Oct 31, 2025)
@@ -39,7 +41,7 @@ SignalDesk V3 is a fully operational AI-powered strategic communications platfor
 - ✅ **NIV Advisor** - 25-year veteran conversational AI advisor with intelligent routing (Oct 24, 2025)
 - ✅ **Command Center V2** - NIV Panel with real-time streaming responses and organization context
 - ✅ **NIV Strategic Framework Generation** - Using niv-fireplexity for research, 140s timeout
-- ✅ **Intelligence Pipeline** - Discovery → Monitor → Enrichment → Synthesis → Opportunities
+- ✅ **Intelligence Pipeline** - Discovery → Monitor → Enrichment → Synthesis → Opportunities → Pattern Detection → Connection Detection
 - ✅ **Real-Time Intelligence** - Frontend-orchestrated monitoring (Oct 3, 2025 - PRODUCTION READY)
 - ✅ **GEO Intelligence Monitor** - AI visibility testing across Claude, Gemini, Perplexity, and ChatGPT (Production Ready - Oct 27, 2025)
 - ✅ **Stakeholder Predictions** - AI-powered prediction tracking with validation and accuracy metrics (Production Ready - Oct 27, 2025)
@@ -1329,6 +1331,233 @@ This shifts organizations from **reactive crisis management** to **proactive str
   - Committed all code and documentation to git (commit 2a8cbb732)
 
 **Status:** Production Ready - Full prediction tracking system operational (pending migration)
+
+---
+
+### 4.6 Connection Intelligence System ✅
+
+**Status: Production Ready - November 21, 2025**
+**Latest Update: Industry-Aware Cross-Entity Pattern Detection with Complete UI Dashboard**
+
+The Connection Intelligence System detects relationships and patterns between entities (competitors, stakeholders, topics) based on industry-specific contexts. Unlike individual entity pattern detection, this system finds connections between multiple entities to surface coordinated behaviors, supply chain impacts, and industry-wide trends.
+
+#### What It Does:
+
+Instead of analyzing entities in isolation, the Connection Intelligence System:
+- **Detects Entity Relationships**: Finds when entities appear together, act in similar timeframes, or share thematic connections
+- **Industry-Aware Analysis**: Applies connection patterns specific to each industry (commodities trading, public relations, technology, etc.)
+- **Cross-Entity Signals**: Generates signals when multiple entities show coordinated patterns
+- **Network Intelligence**: Maps entity networks and tracks centrality scores
+
+#### Architecture:
+
+```
+Monitoring Pipeline
+    ↓ (collects articles)
+target-intelligence-collector
+    ↓ (saves entity mentions)
+target_intelligence table
+    ↓
+pattern-detector
+    ↓ (entity-level patterns)
+prediction_signals table
+    ↓
+connection-detector (NEW)
+    ├─→ Loads organization industry
+    ├─→ Applies industry-specific patterns
+    ├─→ Detects 3 connection types:
+    │   • Co-occurrence (same articles)
+    │   • Temporal correlation (similar timing)
+    │   • Thematic overlap (shared topics/categories)
+    └─→ Generates connection signals
+        ↓
+entity_connections table
+connection_signals table
+    ↓
+UI: Connections Dashboard (Intelligence Tab)
+```
+
+#### Core Components:
+
+**1. Database Tables:**
+- `entity_connections` - Tracks entity relationships (co-occurrence, temporal, thematic)
+- `connection_signals` - Industry-specific pattern signals
+- `industry_intelligence_profiles` - Connection patterns by industry with seed data
+- `intelligence_graph` - Knowledge graph of entity relationships
+- Views: `strong_connections_summary`, `signals_needing_attention`, `entity_network_activity`
+
+**2. Edge Function:**
+- `connection-detector` - Industry-aware connection analysis:
+  - Loads organization's industry from database
+  - Applies industry-specific connection patterns
+  - Calculates connection strength (0-100) based on evidence
+  - Generates signals when patterns detected
+  - Adjusts signal priority based on organization type
+
+**3. Industry Templates (Pre-Loaded):**
+
+**Commodities Trading Industry:**
+- Supply Chain Disruption: Production issues, logistics delays, regulatory blocks
+- Competitive Coordination: Multiple competitors changing pricing/supply
+- Reputational Cascade: One company's scandal triggering industry scrutiny
+- Geopolitical Impact: Trade wars, sanctions affecting multiple entities
+- Market Consolidation: M&A activity reshaping competitive landscape
+
+**Public Relations Industry:**
+- Client Reputation Threat: Negative events affecting client perception
+- Media Narrative Shift: Changes in coverage themes across outlets
+- Competitive PR Activity: Competitor campaigns and announcements
+- Industry Crisis: Industry-wide issues creating risks or opportunities
+
+**Technology Industry:**
+- Competitive Product Response: Product launches triggering responses
+- Ecosystem Shift: Platform changes, partnerships affecting ecosystem
+- Talent Movement: Executive and team moves between companies
+
+**4. Connection Types:**
+
+**Co-Occurrence (Weight: 50):**
+- Entities appearing in same articles
+- Strength = (shared articles / total articles) × weight
+- Example: "Total Energies, BP, Shell all mentioned in lawsuit article"
+
+**Temporal Correlation (Weight: 80):**
+- Entities active in similar time windows
+- Strength = (14 - days_between) / 14 × weight
+- Example: "Mitsubishi, Sumitomo, Marubeni all announce Q3 results within 3 days"
+
+**Thematic Overlap (Weight: 60):**
+- Entities sharing topics/categories
+- Strength = (overlap / total) × weight
+- Example: "Glencore, Rio Tinto, BHP all tagged with 'supply_chain' and 'pricing'"
+
+#### UI Components:
+
+**Connections Dashboard (Intelligence Tab):**
+- **Stats Overview:**
+  - Total connection signals
+  - Entity connections detected
+  - Average signal strength
+  - High impact signals count
+
+- **Signal Filtering:**
+  - All signals
+  - High impact only (critical/high)
+  - Emerging signals only
+
+- **Signal Cards Display:**
+  - Signal type (supply_chain_disruption, competitive_coordination, etc.)
+  - Entities involved (primary + related)
+  - Strength & confidence scores (0-100)
+  - Impact level (critical/high/medium/low)
+  - Signal maturity (emerging/developing/mature)
+  - Mention count and evidence
+
+- **Entity Network Activity:**
+  - Total connections per entity
+  - Average connection strength
+  - Strong connections count (strength >= 70)
+  - Connection types breakdown
+
+- **Signal Detail Modal:**
+  - Full pattern description
+  - Evidence articles
+  - Triggers matched
+  - Timeline visualization
+
+#### Example Signals:
+
+**Commodities Trading (Mitsui):**
+```
+COMPETITIVE_COORDINATION: Mitsubishi, Sumitomo, Marubeni
+- Strength: 85/100
+- Confidence: 78/100
+- Pattern: All three announced financial restructuring within 7 days
+- Impact: High - May indicate industry-wide market response
+- Evidence: 13 articles mentioning multiple entities
+```
+
+**Public Relations (KARV):**
+```
+REPUTATIONAL_CASCADE: Total Energies, BP, Shell
+- Strength: 92/100
+- Confidence: 85/100
+- Pattern: Lawsuit at Total Energies triggering scrutiny of all oil majors
+- Impact: Critical - Client exposure to industry-wide reputation risk
+- Evidence: 8 articles, sentiment shift detected across all entities
+```
+
+**Technology:**
+```
+ECOSYSTEM_SHIFT: OpenAI, Anthropic, Google
+- Strength: 76/100
+- Confidence: 71/100
+- Pattern: All announcing new AI safety partnerships within 14 days
+- Impact: High - Industry coordination on regulation
+- Evidence: 11 articles, shared topics: "AI safety", "regulation", "partnership"
+```
+
+#### Integration Points:
+
+**1. Pipeline Integration:**
+- Runs after `pattern-detector` in both pipelines
+- Non-blocking: Pipeline continues even if connection detection fails
+- Triggered automatically when monitoring runs
+
+**2. Frontend Integration:**
+- New "Connections" tab in Intelligence Module
+- Reads organization industry automatically
+- Real-time data loading and refresh
+- Responsive design with filters
+
+**3. Service Layer:**
+- `ConnectionService`: CRUD operations for connections and signals
+- Methods for filtering by strength, confidence, impact
+- Statistics and aggregation functions
+- Entity-specific connection queries
+
+#### Technical Details:
+
+**Migration:** `20251120_connection_intelligence.sql`
+- Complete schema with indexes, triggers, views
+- Seed data for 3 industries
+- Safe IF NOT EXISTS for idempotent application
+
+**Frontend Components:**
+- `ConnectionsDashboard.tsx` - Main UI component
+- `connectionService.ts` - Service layer
+- `connections.ts` - TypeScript types
+
+**Edge Function:**
+- `connection-detector/index.ts` - Industry-aware detection logic
+- Reads from `target_intelligence` table (last 30 days)
+- Applies industry-specific relevance weights
+- Generates signals when minimum thresholds met
+
+#### Benefits:
+
+**Shift from Reactive to Proactive:**
+- **Before**: "Mitsubishi has 13x financial mentions" (single entity)
+- **After**: "Mitsubishi, Sumitomo, Marubeni all showing financial clustering" (pattern across entities)
+
+**Industry Intelligence:**
+- Commodities: Detect supply chain disruptions before they cascade
+- PR: Identify reputational risks spreading across industry
+- Tech: Spot ecosystem shifts and competitive coordination
+
+**Learning Over Time:**
+- System improves as it accumulates more mentions
+- Connection strengths increase with more evidence
+- Pattern detection becomes more accurate
+
+**Deployment Status:**
+- ✅ Database migration applied (Nov 21, 2025)
+- ✅ Edge function deployed
+- ✅ Frontend built and deployed
+- ✅ Pipeline integration complete
+- ✅ Industry profiles seeded (commodities, PR, tech)
+
+**Status:** Production Ready - Full industry-aware connection detection operational
 
 ---
 
