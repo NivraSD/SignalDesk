@@ -237,6 +237,20 @@ async function createOrganizationProfile(args: any) {
       gap_context
     );
 
+    // GAP-FILLING MODE: Return simplified profile immediately, skip validation
+    if (gap_filling_mode) {
+      console.log('✅ Gap-filling profile created!');
+      console.log(`   Search queries: ${enhancedProfile.monitoring_config?.search_queries?.competitor_queries?.length || 0} competitor, ${enhancedProfile.monitoring_config?.search_queries?.stakeholder_queries?.length || 0} stakeholder`);
+      console.log(`   Focus: ${enhancedProfile.monitoring_config?.monitoring_focus || 'N/A'}`);
+
+      return {
+        success: true,
+        profile: enhancedProfile,
+        gap_filling_mode: true
+      };
+    }
+
+    // NORMAL MODE: Continue with full validation
     // STEP 2b: Validate and supplement Claude's competitors with registry
     console.log('🔍 Step 2b: Validating competitors against registry...');
     enhancedProfile.competition.direct_competitors = mergeAndValidateCompetitors(
