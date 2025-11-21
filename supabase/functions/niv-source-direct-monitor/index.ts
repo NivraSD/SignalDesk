@@ -9,7 +9,7 @@ const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-const CODE_VERSION = 'v2025-11-21-mechanical-filter';
+const CODE_VERSION = 'v2025-11-21-listing-only';
 
 // Extract HTML sources from company profile sources (selected by mcp-discovery)
 function getHTMLSourcesFromProfile(companyProfile: any) {
@@ -432,79 +432,34 @@ serve(async (req) => {
       });
     }
 
-    // Step 4: Batch scrape relevant articles with structured extraction
-    console.log('\n🔥 Step 4: Batch scraping relevant articles...');
+    // Step 4: Format monitoring report (no full article scraping - that happens in enrichment)
+    console.log('\n📋 Step 4: Formatting monitoring report...');
+    console.log(`   Compiling ${articlesToScrape.length} article references for downstream stages`);
 
-    const extractionSchema = {
-      companies_mentioned: {
-        type: 'array',
-        items: { type: 'string' },
-        description: 'All companies mentioned in the article'
-      },
-      commodities_mentioned: {
-        type: 'array',
-        items: { type: 'string' },
-        description: 'Commodities, products, or materials mentioned'
-      },
-      key_quotes: {
-        type: 'array',
-        items: { type: 'string' },
-        description: 'Important quotes from executives or analysts'
-      },
-      financial_metrics: {
-        type: 'array',
-        items: { type: 'string' },
-        description: 'Numbers, percentages, financial data mentioned'
-      },
-      geographic_regions: {
-        type: 'array',
-        items: { type: 'string' },
-        description: 'Countries, regions, or cities mentioned'
-      },
-      summary: {
-        type: 'string',
-        description: 'One sentence summary of the key news'
+    // Return article metadata from listing pages
+    // Relevance/enrichment stages will handle deeper content extraction if needed
+    const finalArticles = articlesToScrape.map((a: any) => ({
+      url: a.url,
+      title: a.title,
+      description: a.snippet || a.description || '',
+      source: a.source,
+      source_tier: a.source_tier || 'high',
+      source_priority: a.source_priority || 2,
+      published_at: a.published_at || new Date().toISOString(),
+      relevance_score: a.relevance_score || 0.75,
+      filter_stage: 'mechanical',
+      from_source_direct: true,
+      // Metadata from listing page scrape
+      listing_metadata: {
+        scraped_from: a.scraped_from || a.source,
+        has_snippet: !!a.snippet
       }
-    };
-
-    const scrapeResult = await callMCP('batch_scrape_articles', {
-      articles: articlesToScrape.map((a: any) => ({
-        url: a.url,
-        priority: a.relevance_score,
-        metadata: {
-          source: a.source,
-          title: a.title,
-          relevance_score: a.relevance_score,
-          relevance_reason: a.relevance_reason
-        }
-      })),
-      formats: ['markdown'],
-      extractSchema: extractionSchema,
-      maxTimeout: 15000
-    });
-
-    console.log(`   ✅ Scraped ${scrapeResult.stats.successful} articles successfully`);
-
-    // Step 5: Format results
-    const finalArticles = scrapeResult.results
-      .filter((r: any) => r.success)
-      .map((r: any) => ({
-        url: r.url,
-        title: r.metadata.title,
-        source: r.metadata.source,
-        content: r.data?.markdown || '',
-        published_at: new Date().toISOString(), // Default to now for scraped articles
-        relevance_score: r.metadata.relevance_score,
-        relevance_reason: r.metadata.relevance_reason,
-        extracted_data: r.extracted || null,
-        search_tier: 'TRUSTED_SOURCE',
-        from_source_direct: true
-      }));
+    }));
 
     console.log(`\n${'='.repeat(80)}`);
     console.log(`✅ MONITORING COMPLETE`);
     console.log(`   Total articles: ${finalArticles.length}`);
-    console.log(`   Average relevance: ${(finalArticles.reduce((sum: number, a: any) => sum + a.relevance_score, 0) / finalArticles.length).toFixed(2)}`);
+    console.log(`   Average source priority: ${(finalArticles.reduce((sum: number, a: any) => sum + a.source_priority, 0) / finalArticles.length).toFixed(2)}`);
     console.log(`${'='.repeat(80)}\n`);
 
     return new Response(JSON.stringify({
@@ -516,10 +471,8 @@ serve(async (req) => {
         sources_scraped: htmlSources.length,
         articles_scanned: allArticles.length,
         articles_after_dedup: dedupedArticles.length,
-        articles_capped_at: articlesToScrape.length,
-        articles_scraped: finalArticles.length,
-        scrape_stats: scrapeResult.stats,
-        note: 'Mechanical filtering only - semantic relevance filtering happens in monitor-stage-2-relevance'
+        articles_returned: finalArticles.length,
+        note: 'Returns article metadata only - full content scraping happens in enrichment stage'
       }
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
