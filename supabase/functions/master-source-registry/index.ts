@@ -178,7 +178,20 @@ function mapIndustryToCategory(industryInput: string): string | null {
 
 // TIER 1 SOURCES - Always included regardless of industry
 const TIER1_SOURCES = {
-  mainstream_media: [
+  // HTML LISTING PAGES - These are scraped for article links
+  html: [
+    { name: 'WSJ Markets', url: 'https://www.wsj.com/news/markets', type: 'html', priority: 'critical' },
+    { name: 'Bloomberg Business', url: 'https://www.bloomberg.com/businessweek', type: 'html', priority: 'critical' },
+    { name: 'Reuters Business', url: 'https://www.reuters.com/business/', type: 'html', priority: 'critical' },
+    { name: 'FT Companies', url: 'https://www.ft.com/companies', type: 'html', priority: 'critical' },
+    { name: 'CNBC Latest', url: 'https://www.cnbc.com/business/', type: 'html', priority: 'critical' },
+    { name: 'Forbes Latest', url: 'https://www.forbes.com/', type: 'html', priority: 'high' },
+    { name: 'Business Insider Latest', url: 'https://www.businessinsider.com/latest', type: 'html', priority: 'high' },
+    { name: 'Axios Business', url: 'https://www.axios.com/business', type: 'html', priority: 'critical' },
+    { name: 'Guardian Business', url: 'https://www.theguardian.com/business', type: 'html', priority: 'critical' }
+  ],
+  // RSS FEEDS - These provide structured data
+  rss: [
     { name: 'Wall Street Journal', url: 'https://feeds.wsj.com/wsj/xml/rss/3_7014.xml', type: 'rss', priority: 'critical' },
     { name: 'New York Times', url: 'https://rss.nytimes.com/services/xml/rss/nyt/Business.xml', type: 'rss', priority: 'critical' },
     { name: 'Reuters', url: 'https://feeds.reuters.com/reuters/businessNews', type: 'rss', priority: 'critical' },
@@ -648,6 +661,18 @@ const INDUSTRY_SOURCES = {
   // PUBLIC RELATIONS INDUSTRY
   public_relations: {
     competitive: {
+      html: [
+        { name: 'PRWeek US News', url: 'https://www.prweek.com/us/', type: 'html', priority: 'critical' },
+        { name: 'PRovoke Media Latest', url: 'https://www.provokemedia.com/latest/article', type: 'html', priority: 'critical' },
+        { name: 'PR Daily News', url: 'https://www.prdaily.com/news/', type: 'html', priority: 'critical' },
+        { name: 'PRNews Online Latest', url: 'https://www.prnewsonline.com/topics/pr-news/', type: 'html', priority: 'high' },
+        { name: 'Ragan Latest', url: 'https://www.ragan.com/', type: 'html', priority: 'high' },
+        { name: 'CommPRO News', url: 'https://www.commpro.biz/category/news/', type: 'html', priority: 'high' },
+        { name: 'Everything PR Latest', url: 'https://everything-pr.com/category/pr-news/', type: 'html', priority: 'medium' },
+        { name: 'Spin Sucks Blog', url: 'https://spinsucks.com/communication/', type: 'html', priority: 'medium' },
+        { name: 'O\'Dwyers PR News', url: 'https://www.odwyerpr.com/', type: 'html', priority: 'high' },
+        { name: 'Bulldog Reporter', url: 'https://www.bulldogreporter.com/category/news/', type: 'html', priority: 'medium' }
+      ],
       rss: [
         { name: 'PR Week', url: 'https://www.prweek.com/rss', type: 'rss', priority: 'critical' },
         { name: 'PR Daily', url: 'https://www.prdaily.com/Main/RSS.aspx', type: 'rss', priority: 'critical' },
@@ -886,7 +911,10 @@ serve(async (req) => {
     }
     
     // Add tier-1 sources to appropriate categories
-    sources.media.push(...TIER1_SOURCES.mainstream_media)
+    // CRITICAL: HTML tier 1 sources for niv-source-direct-monitor
+    sources.media.push(...TIER1_SOURCES.html)
+    // RSS tier 1 sources
+    sources.media.push(...TIER1_SOURCES.rss)
     sources.media.push(...TIER1_SOURCES.pr_sources)
     sources.regulatory.push(...TIER1_SOURCES.regulatory_sources)
     sources.market.push(...TIER1_SOURCES.market_sources)

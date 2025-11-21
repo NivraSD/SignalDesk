@@ -2,801 +2,801 @@
 {
 "event_message": "shutdown",
 "event_type": "Shutdown",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "ca18a0df-9134-4331-92f7-f0138657170d",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "b49a3a54-bf79-4028-bf21-fbe666805c1b",
 "level": "log",
-"timestamp": 1763696937475000
+"timestamp": 1763738754511000
 },
 {
-"event_message": "⚠️ Error saving to content_library (non-blocking): TypeError: Cannot read properties of undefined (reading 'join')\n at synthesizeExecutiveIntelligence (file:///var/tmp/sb-compile-edge-runtime/functions/mcp-executive-synthesis/index.ts:1231:128)\n at eventLoopTick (ext:core/01_core.js:175:7)\n at async Server.<anonymous> (file:///var/tmp/sb-compile-edge-runtime/functions/mcp-executive-synthesis/index.ts:1403:24)\n at async Server.#respond (https://deno.land/std@0.168.0/http/server.ts:221:18)\n",
+"event_message": "\n================================================================================\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "d58bfd59-2597-4b69-9594-6ef090d94398",
-"level": "error",
-"timestamp": 1763696772384000
-},
-{
-"event_message": "✅ Synthesis saved to database with ID: 3a186b0d-9e04-4019-b7b0-6f3cb027d7e5\n",
-"event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "188d1247-f9ca-4ffa-8823-8ea281e19db3",
-"level": "info",
-"timestamp": 1763696772381000
-},
-{
-"event_message": "💾 Saving synthesis to database... {\n organization_id: \"4f9504ea-9ba3-4696-9e75-8f226f23f4ad\",\n organization_name: \"Mitsui & Co.\"\n}\n",
-"event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "24e103fe-3462-4e8f-801b-5ae941ff475a",
-"level": "info",
-"timestamp": 1763696772323000
-},
-{
-"event_message": "📊 Discovery Coverage Analysis: {\n competitors: \"4/9\",\n stakeholders: \"0/5\",\n topics: \"0/0\",\n percentage: \"29%\",\n event_entities_used: \"7/14\",\n missing_from_synthesis: [\n \"Itochu Corporation\",\n \"Error\",\n \"Monte Cristo\",\n \"European Centre\",\n \"mitsubishi corporation\",\n \"The Material Solutions\",\n \"After Record Profit Guidance\"\n ]\n}\n",
-"event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "f052d358-1d7c-48c7-b00b-dbc7be606d39",
-"level": "info",
-"timestamp": 1763696772322000
-},
-{
-"event_message": "✅ Synthesis response structured and complete\n",
-"event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "57cd44de-1787-44f0-8633-8b596f89ed85",
-"level": "info",
-"timestamp": 1763696772322000
-},
-{
-"event_message": "📊 Parsed structured synthesis\n",
-"event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "4ed335db-ddbb-47b7-b576-d22c5d4ad0ee",
-"level": "info",
-"timestamp": 1763696772321000
-},
-{
-"event_message": "🔍 First 500 chars of Claude response: `json\n{\n  \"synthesis\": {\n    \"executive_summary\": \"Today's monitoring reveals significant strategic moves across Mitsui & Co.'s key competitor landscape, with major developments in metals, energy, and technology partnerships. Glencore reduced its Century Aluminum stake to 33% following an 80% share rally driven by tariffs, while Rio Tinto announced a 40% production cut at its Yarwun Alumina refinery starting October 2026, affecting 180 jobs but maintaining customer commitments. Simultaneously,\n",
-    "event_type": "Log",
-    "function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-    "id": "45ffdd3a-37af-4845-8abe-8c021fbcbad1",
-    "level": "info",
-    "timestamp": 1763696772321000
-  },
-  {
-    "event_message": "🔍 Synthesis structure (direct format): {\n  hasWhatHappened: false,\n  hasCompetitiveMoves: true,\n  hasExecutiveSummary: true,\n  hasBreakingDevelopments: false,\n  hasDiscoveryCoverage: false,\n  keys: [\n    \"executive_summary\",\n    \"competitive_moves\",\n    \"stakeholder_dynamics\",\n    \"media_landscape\",\n    \"pr_actions\",\n    \"risk_alerts\"\n  ]\n}\n",
-    "event_type": "Log",
-    "function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-    "id": "bb6db54b-46e5-43ee-82af-121ff6c7c124",
-    "level": "info",
-    "timestamp": 1763696772321000
-  },
-  {
-    "event_message": "🔍 Last 100 chars of Claude response: communicate automation and efficiency improvements across Mitsui operations\"\n      ]\n    }\n  }\n}\n`\n",
-"event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "96a585e2-50be-4503-83e8-ada5df36a2c5",
-"level": "info",
-"timestamp": 1763696772321000
-},
-{
-"event_message": "🔍 Pre-check synthesis keys: [\n \"executive_summary\",\n \"competitive_moves\",\n \"stakeholder_dynamics\",\n \"media_landscape\",\n \"pr_actions\",\n \"risk_alerts\"\n]\n",
-"event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "0062cce2-773a-4359-8700-06750939bd5e",
-"level": "info",
-"timestamp": 1763696772321000
-},
-{
-"event_message": "🔍 Response completeness check: {\n hasExecutiveSynthesis: false,\n hasContent: true,\n looksLikeJSON: false,\n responseLength: 8201\n}\n",
-"event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "900b12a6-bbb1-477e-a838-d91067c3d4ca",
-"level": "info",
-"timestamp": 1763696772321000
-},
-{
-"event_message": "🔍 Pre-check synthesis_focus was: all_consolidated\n",
-"event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "ace3b603-5317-4b14-88e0-7aa5994d2cf9",
-"level": "info",
-"timestamp": 1763696772321000
-},
-{
-"event_message": "✅ Claude response received, length: 8201\n",
-"event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "fc1758ef-d359-44d4-bad4-0209045054e7",
-"level": "info",
-"timestamp": 1763696772321000
-},
-{
-"event_message": "🔑 Synthesis keys: [\n \"executive_summary\",\n \"competitive_moves\",\n \"stakeholder_dynamics\",\n \"media_landscape\",\n \"pr_actions\",\n \"risk_alerts\"\n]\n",
-"event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "bb848b0f-fc5f-4c7e-89c4-693681761093",
-"level": "info",
-"timestamp": 1763696772321000
-},
-{
-"event_message": "✅ Processing structured synthesis response\n",
-"event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "a64b913c-ac2b-4c7e-abb2-5a5093e303f8",
-"level": "info",
-"timestamp": 1763696772321000
-},
-{
-"event_message": "🔍 Pre-check competitive_dynamics exists: false\n",
-"event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "cf84acef-d056-4947-a518-6de72f7ebe69",
-"level": "info",
-"timestamp": 1763696772321000
-},
-{
-"event_message": "🔍 Pre-check synthesis type: object\n",
-"event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "0fecae61-01d9-427c-99a5-0d41a8a79ff6",
-"level": "info",
-"timestamp": 1763696772321000
-},
-{
-"event_message": "📝 FULL CLAUDE RESPONSE: `json\n{\n  \"synthesis\": {\n    \"executive_summary\": \"Today's monitoring reveals significant strategic moves across Mitsui & Co.'s key competitor landscape, with major developments in metals, energy, and technology partnerships. Glencore reduced its Century Aluminum stake to 33% following an 80% share rally driven by tariffs, while Rio Tinto announced a 40% production cut at its Yarwun Alumina refinery starting October 2026, affecting 180 jobs but maintaining customer commitments. Simultaneously, Rio Tinto expanded its renewable energy footprint through a 15-year virtual power purchase agreement with TerraGen for 78.5 MW from Texas wind projects and invested $23 million in green iron technology through a Joint Development Agreement with Calix.\\n\\nThe Japanese trading houses showed active expansion today, with Sumitomo Corporation entering joint ventures in bioenergy with TruAlt Bioenergy and energy development with Energy Development Oman, while ITOCHU secured strategic positioning through a $54 million investment in Nanoramic's advanced battery technology and proposed a tender offer to fully acquire Itochu-Shokuhin. Technology adoption accelerated as Cargill deployed Boston Dynamics' AI-powered robot dog 'Spot' for facility inspections at its Amsterdam plant, signaling broader automation trends in commodity processing operations.\\n\\nThese developments highlight intensifying competition in energy transition technologies, supply chain automation, and strategic consolidation across Mitsui & Co.'s core markets, particularly in metals, energy, and food processing sectors where margin pressures and technological disruption are driving operational restructuring.\",\n\n    \"competitive_moves\": {\n      \"immediate_threats\": [\n        \"Glencore's strategic divestment of Century Aluminum stake demonstrates agile capital allocation in volatile metals markets, potentially creating competitive pressure on aluminum trading positions\",\n        \"Rio Tinto's renewable energy expansion through 78.5 MW Texas wind agreement and $23 million green iron investment positions them ahead in energy transition metals\",\n        \"ITOCHU's $54 million strategic investment in Nanoramic's battery technology secures early access to next-generation energy storage solutions\",\n        \"Sumitomo Corporation's dual energy joint ventures with TruAlt Bioenergy and Energy Development Oman expand their renewable energy trading capabilities\"\n      ],\n      \"opportunities\": [\n        \"Rio Tinto's 40% production cut at Yarwun Alumina creates potential supply gap opportunities in Australian alumina markets\",\n        \"Cargill's automation deployment suggests commodity processors are prioritizing operational efficiency over expansion, creating partnership opportunities\",\n        \"Multiple competitors focusing on energy transition creates openings in traditional commodity trading where margins may be less compressed\"\n      ],\n      \"narrative_gaps\": [\n        \"While competitors invest heavily in green technology, there's limited focus on supply chain resilience in traditional commodity flows\",\n        \"Automation adoption appears fragmented across the industry, suggesting opportunities for integrated digital trading platforms\",\n        \"Energy transition investments lack coordination with existing commodity infrastructure optimization\"\n      ]\n    },\n\n    \"stakeholder_dynamics\": {\n      \"key_movements\": [\n        \"TerraGen's 15-year renewable energy agreement with Rio Tinto demonstrates long-term commitment to corporate renewable energy procurement\",\n        \"Boston Dynamics' industrial deployment at Cargill facilities signals broader acceptance of AI-powered automation in commodity processing\",\n        \"Herbert Smith Freehills Kramer's advisory role in Sumitomo's energy ventures indicates increased legal complexity in cross-border energy partnerships\"\n      ],\n      \"influence_shifts\": [\n        \"Technology providers like Boston Dynamics and Nanoramic gaining strategic importance as commodity companies prioritize operational efficiency\",\n        \"Renewable energy developers securing long-term corporate contracts, shifting power dynamics in energy procurement\"\n      ],\n      \"engagement_opportunities\": [\n        \"Engage with TerraGen and similar renewable energy developers to explore virtual power purchase agreements for Mitsui operations\",\n        \"Connect with Boston Dynamics and automation providers to assess digital transformation opportunities across commodity facilities\",\n        \"Build relationships with Calix and other green technology companies for potential joint development agreements\"\n      ]\n    },\n\n    \"media_landscape\": {\n      \"trending_narratives\": [\n        \"Energy transition investments dominating commodity company coverage, with focus on practical implementation rather than announcements\",\n        \"Operational efficiency and cost reduction becoming central themes as companies balance growth with margin pressure\",\n        \"Technology adoption in traditional industries gaining attention as competitive differentiator\"\n      ],\n      \"sentiment_shifts\": [\n        \"Positive coverage for companies demonstrating concrete energy transition progress rather than just commitments\",\n        \"Neutral to cautious sentiment around production cuts and workforce impacts, but understanding of market realities\",\n        \"Growing interest in automation success stories across commodity sectors\"\n      ],\n      \"journalist_interests\": [\n        \"Reporters focusing on measurable outcomes from energy transition investments rather than just funding announcements\",\n        \"Interest in how traditional commodity companies balance operational efficiency with workforce considerations\",\n        \"Coverage of technology adoption showing practical benefits in industrial settings\"\n      ]\n    },\n\n    \"pr_actions\": {\n      \"immediate\": [\n        \"Monitor Rio Tinto's Yarwun production cut impact on alumina pricing and supply chain implications for Mitsui's metals trading\",\n        \"Assess competitive positioning against ITOCHU's battery technology investment and Sumitomo's energy ventures\",\n        \"Evaluate automation opportunities following Cargill's successful Boston Dynamics deployment\"\n      ],\n      \"this_week\": [\n        \"Develop messaging around Mitsui's energy transition strategy in response to competitors' renewable energy investments\",\n        \"Engage with technology providers similar to those chosen by competitors to explore partnership opportunities\",\n        \"Prepare market analysis on alumina supply disruption opportunities from Rio Tinto's production cuts\"\n      ],\n      \"strategic\": [\n        \"Position Mitsui as the integrated solution provider combining traditional commodity expertise with energy transition capabilities\",\n        \"Develop thought leadership on supply chain resilience while competitors focus primarily on green technology\",\n        \"Build narrative around balanced approach to operational efficiency and workforce development\"\n      ]\n    },\n\n    \"risk_alerts\": {\n      \"crisis_signals\": [\n        \"Rio Tinto's workforce reduction at Yarwun could signal broader industry consolidation pressures affecting Mitsui's operations\",\n        \"Rapid technology adoption by competitors may create operational gaps if Mitsui doesn't accelerate digital transformation\",\n        \"Energy transition investments by competitors could shift market dynamics faster than anticipated\"\n      ],\n      \"reputation_threats\": [\n        \"Risk of appearing behind competitors in energy transition if green technology investments aren't visible\",\n        \"Potential perception of lagging in operational efficiency compared to automation-adopting competitors\",\n        \"Supply chain disruption risks if alumina market tightens due to Rio Tinto production cuts\"\n      ],\n      \"mitigation_steps\": [\n        \"Accelerate communication of existing energy transition initiatives to match competitor visibility\",\n        \"Prepare contingency plans for alumina supply chain disruption from Rio Tinto's production cuts\",\n        \"Evaluate and communicate automation and efficiency improvements across Mitsui operations\"\n      ]\n    }\n  }\n}\n`\n",
-"event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "c9b630ad-4fc9-45ac-b294-fe899dfdb076",
-"level": "info",
-"timestamp": 1763696772321000
-},
-{
-"event_message": "Prompt length: 17535 characters\n",
-"event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "8d7bff73-8c07-4074-a84d-38d6a7bf2784",
-"level": "info",
-"timestamp": 1763696737568000
-},
-{
-"event_message": "📝 PROMPT SAMPLE (first 2000 chars): YOU ARE RECEIVING ENRICHED INTELLIGENCE DATA\nThis is the complete output from our monitoring and enrichment pipeline.\nThe events below are ALL from TODAY'S news monitoring - they are NOT hypothetical.\n\n═══════════════════════════════════════════════════════════\n🎯 CRITICAL: UNDERSTAND THE MONITORING CONTEXT\n═══════════════════════════════════════════════════════════\n\n🎯 CRITICAL: UNDERSTAND YOUR ROLE\nMitsui & Co. is YOUR CLIENT. You are writing TO them, not ABOUT them.\n\nABOUT YOUR CLIENT:\n- Company: Mitsui & Co.\n- Business: Diversified trading and investment company earning through trading margins, investment returns, and fee-based services across multiple commodity and industrial sectors\n- Markets: Japan domestic market, Southeast Asia, Australia and Oceania, Americas, Middle East and Africa\n- Industry: Trading\n\nYOUR JOB: Tell Mitsui & Co. what their COMPETITORS and STAKEHOLDERS are doing.\n\nDO NOT write about Mitsui & Co. - they know their own news.\nDO NOT say \"limited intelligence for Mitsui & Co.\" - you're writing TO them, not monitoring them.\n\nCOMPETITORS TO REPORT ON (companies Mitsui & Co. competes with):\n\n\nSTAKEHOLDERS TO REPORT ON (entities that impact Mitsui & Co.'s business):\n\n\n⚠️ CRITICAL:\n- Report on what COMPETITORS are doing (launches, deals, expansions)\n- Report on what STAKEHOLDERS are doing (regulations, policy changes)\n- DO NOT report on what Mitsui & Co. is doing - that's not intelligence, that's their own activity\n\n**TODAY'S DATE:** 2025-11-21\n\nPRE-ANALYZED ARTICLES (62 articles processed - ~10 with full content, ~52 with enhanced summaries):\n\n1. [◆ SUMMARY] Glencore cuts Century Aluminum stake to 33% after tariff-driven rally\n Category: industry_news | Relevance: 100/100 | Sentiment: neutral\n Key Insight: [Skip to main content](https://www.reuters.com/business/glencore-cuts-century-aluminum-stake-33-after-tariff-driven-rally-2025-11-18/#main-content)\n\nT\n Entities: None identified\n2. [◆ SUMMARY] Rio Tinto Trims Output at Australian Alumina \n",
-"event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "34460b21-9632-45e5-a13c-c6472a61cd0d",
-"level": "info",
-"timestamp": 1763696737568000
-},
-{
-"event_message": "🔍 PROMPT CONTAINS REAL DATA: {\n hasRealCompanies: true,\n hasRealEvents: true,\n eventCount: 24,\n uniqueEntities: 14,\n sampleEntities: [\n \"Glencore\",\n \"Rio Tinto\",\n \"Cargill\",\n \"Sumitomo Corporation\",\n \"Itochu Corporation\",\n \"glencore\",\n \"Yarwun Alumina Refinery\",\n \"Error\",\n \"Texas\",\n \"Monte Cristo\"\n ],\n eventTypes: [\n \"other\",\n \"workforce\",\n \"partnership\",\n \"funding\",\n \"acquisition\",\n \"competitive\",\n \"restructuring\",\n \"legal\",\n \"strategic_topic\",\n \"investment\"\n ]\n}\n",
-"event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "cd19d841-b23b-422f-b816-c3338dadcf8b",
-"level": "info",
-"timestamp": 1763696737568000
-},
-{
-"event_message": "🚀 Calling Claude for synthesis...\n",
-"event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "d567be7b-0424-4a99-a572-9288f4d97e81",
-"level": "info",
-"timestamp": 1763696737568000
-},
-{
-"event_message": "🔍 ENRICHMENT DATA USAGE CHECK: {\n enriched_articles_count: 62,\n organized_intelligence_exists: true,\n extracted_data_exists: true,\n knowledge_graph_exists: true,\n executive_summary_exists: true,\n article_summaries_in_context: 10,\n deep_analysis_count: 62\n}\n",
-"event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "e3276b6a-c13e-43fc-8ebb-37fd31a0e862",
-"level": "info",
-"timestamp": 1763696737567000
-},
-{
-"event_message": " - 5 org events (0 available)\n",
-"event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "d0a116b4-7570-4444-8910-8a3d1aa7bf84",
-"level": "info",
-"timestamp": 1763696737567000
-},
-{
-"event_message": "✅ FINAL prepareSynthesisContext CHECK: {\n events_count: 24,\n quotes_count: 1,\n entities_count: 15,\n first_event: \"Glencore sold 9 million Century Aluminum shares on November 10, reducing its stake to 33% after an 8\"\n}\n",
-"event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "53fb844e-53d1-4afd-8c13-1682bc72a5a1",
-"level": "info",
-"timestamp": 1763696737567000
-},
-{
-"event_message": "Event 1: [other] Glencore - Glencore sold 9 million Century Aluminum shares on November 10, reducing its stake to 33% after an 8\n",
-"event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "5ffbc528-58b0-47ca-a1e5-1dcbb3f19a9b",
-"level": "info",
-"timestamp": 1763696737567000
-},
-{
-"event_message": " - 5 stakeholder events (0 available)\n",
-"event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "40cae725-e456-47e5-8cb6-a52f7a8761dc",
-"level": "info",
-"timestamp": 1763696737567000
-},
-{
-"event_message": "📊 Synthesis Context Prepared: {\n totalEvents: 24,\n eventsByType: \"crisis:0, partnerships:5, product:0, funding:2, workforce:1, regulatory:0, other:16\",\n companies: 0,\n relationships: 0,\n immediateActions: 6,\n opportunities: 0,\n threats: 4,\n quotes: 1,\n metrics: 0\n}\n",
-"event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "db96f70f-9335-4bb6-b1ea-4da6fc6d2286",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "2f41806f-5932-4ce4-84cd-f54908dcbd25",
 "level": "info",
-"timestamp": 1763696737567000
+"timestamp": 1763738641429000
 },
 {
-"event_message": " - 10 competitor events (0 available)\n",
+"event_message": "================================================================================\n\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "cd0a7d34-983b-4135-b87d-cf075c0d16ac",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "52c8dc85-b72d-4028-9a0b-1ed03702ec03",
 "level": "info",
-"timestamp": 1763696737567000
+"timestamp": 1763738641429000
 },
 {
-"event_message": "Events about Mitsui & Co.: 0\n",
+"event_message": " ✅ Scraped 6 articles successfully\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "fc9d9456-2776-47d9-a64a-1824bdad7579",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "c1003817-333e-476b-babc-c75fbc356e3d",
 "level": "info",
-"timestamp": 1763696737567000
+"timestamp": 1763738641429000
 },
 {
-"event_message": "Events about direct competitors: 0\n",
+"event_message": " Average relevance: 0.90\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "0badcbdb-f6e2-418d-b801-a2fc3996b6d9",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "ad7df8c0-e14a-45f0-9136-9a69b17fa3fb",
 "level": "info",
-"timestamp": 1763696737567000
+"timestamp": 1763738641429000
 },
 {
-"event_message": "Events about stakeholders (regulators/investors/analysts): 0\n",
+"event_message": "✅ MONITORING COMPLETE\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "f5ad27ef-1df5-47ee-b949-18f234008a41",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "ba81c541-9c88-4a12-a8c4-7a9a45b83607",
 "level": "info",
-"timestamp": 1763696737567000
+"timestamp": 1763738641429000
 },
 {
-"event_message": " - 10 industry/regulatory/other events (24 available)\n",
+"event_message": " Total articles: 6\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "8959fb73-8bbd-4440-97ef-354a8cb94af9",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "c597796b-659d-45ae-bb28-0b9ce44f2420",
 "level": "info",
-"timestamp": 1763696737567000
+"timestamp": 1763738641429000
 },
 {
-"event_message": "Event 4: [partnership] Rio Tinto - Rio Tinto signed 15-year virtual power purchase agreement with TerraGen for 78.5 MW renewable energy\n",
+"event_message": "\n🔥 Step 4: Batch scraping relevant articles...\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "32a7dbb4-7795-4422-b173-3b98a8fce746",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "fcbecb1e-c75e-4d1e-aa07-161bbac88e2c",
 "level": "info",
-"timestamp": 1763696737567000
+"timestamp": 1763738579793000
 },
 {
-"event_message": "📰 ENRICHED ARTICLES ANALYSIS: {\n total_articles: 62,\n with_deep_analysis: 62,\n with_pr_category: 62,\n with_entities: 0,\n sample_categories: [\n \"industry_news\",\n \"industry_news\",\n \"industry_news\",\n \"industry_news\",\n \"industry_news\"\n ],\n sample_relevance_scores: [ 100, 100, 100, 100, 100 ]\n}\n",
+"event_message": " ✅ 16 relevant articles identified\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "635c14b2-4ede-4748-becd-d3d4ba67c94f",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "542db074-8c35-45df-a1e7-609eb77f0ad4",
 "level": "info",
-"timestamp": 1763696737567000
+"timestamp": 1763738579793000
 },
 {
-"event_message": "Total events from enrichment: 24\n",
+"event_message": "\n🤖 Step 3: Filtering with Claude for relevance...\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "8a148512-ae68-4cc3-8fd2-d10b8ab90b6f",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "e1d88038-738e-401f-9e78-f0f04ac9a256",
 "level": "info",
-"timestamp": 1763696737567000
+"timestamp": 1763738566635000
 },
 {
-"event_message": "📊 Article summaries prepared: 20\n",
+"event_message": " ✅ 0 article links extracted\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "d5170d17-0c02-4082-b590-245ebba89198",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "a0b2c17b-9501-49df-860e-d02970bfd54c",
 "level": "info",
-"timestamp": 1763696737567000
+"timestamp": 1763738566635000
 },
 {
-"event_message": "Event 2: [other] Rio Tinto - Rio Tinto will almost halve production at its Yarwun Alumina refinery in Australia by 40% from Octob\n",
+"event_message": " 🔗 Found 16 links\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "9b2e13a3-1814-4cec-8b94-839fb7e17172",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "dadef34b-a5dd-4ebd-b92f-065bb1e233c2",
 "level": "info",
-"timestamp": 1763696737567000
+"timestamp": 1763738566635000
 },
 {
-"event_message": "Industry/regulatory/other events: 24\n",
+"event_message": " 📄 Scraped 1134 chars of content\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "4af8f19d-1a7f-4040-bd38-754945f55318",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "62ca3df6-6f08-4d4c-b8c6-dee6b660751e",
 "level": "info",
-"timestamp": 1763696737567000
+"timestamp": 1763738566635000
 },
 {
-"event_message": "Top competitor events: \n",
+"event_message": "\n📊 Total articles collected: 487\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "b8f520c1-3278-4af4-93f6-c16156e08f19",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "86da3291-cae5-452c-97b6-a9f2f58e3710",
 "level": "info",
-"timestamp": 1763696737567000
+"timestamp": 1763738566635000
 },
 {
-"event_message": "🚨🚨🚨 BALANCED EVENT ANALYSIS:\n",
+"event_message": " ✅ 0 article links extracted\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "7186a31a-7983-4a6e-88e4-d02a50e7169a",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "50564bf2-08e6-44cd-8705-b9161b0b24f0",
 "level": "info",
-"timestamp": 1763696737567000
+"timestamp": 1763738566050000
 },
 {
-"event_message": "Event 5: [funding] Rio Tinto - Rio Tinto invests $23 million in green iron plant through Joint Development Agreement with Calix whi\n",
+"event_message": " 🔗 Found 28 links\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "6a32215f-319b-4c0c-9a93-e7cbe0aa3cae",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "75d7e461-3b8c-45f8-be3b-3b971e19822d",
 "level": "info",
-"timestamp": 1763696737567000
+"timestamp": 1763738566049000
 },
 {
-"event_message": "⚠️ No executive intelligence summary from enrichment - falling back to raw events processing\n",
+"event_message": " 📄 Scraped 4813 chars of content\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "da1858cb-249f-4a2c-9108-0232a35947a8",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "af3fe744-39ff-4db2-a00f-ec1b74993d76",
 "level": "info",
-"timestamp": 1763696737567000
+"timestamp": 1763738566049000
 },
 {
-"event_message": "🎯 Selected 10 events for synthesis (BALANCED APPROACH):\n",
+"event_message": " ✅ 0 article links extracted\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "29e1bfd9-5309-4fe5-a5b7-16272e842055",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "2dd05a1a-550c-45f7-a609-7918414d495e",
 "level": "info",
-"timestamp": 1763696737567000
+"timestamp": 1763738558710000
 },
 {
-"event_message": "Event 3: [workforce] Rio Tinto - Rio Tinto decision to cut Yarwun production affects 180 jobs while maintaining customer supply commi\n",
+"event_message": " 🔗 Found 49 links\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "638191f0-feb8-4bad-b388-ec2d577b057c",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "793168a8-df6d-496b-a6b1-a10ed4f718e3",
 "level": "info",
-"timestamp": 1763696737567000
+"timestamp": 1763738558710000
 },
 {
-"event_message": " Entity: Rio Tinto\n",
+"event_message": " 📄 Scraped 10789 chars of content\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "f56becdd-372b-41ae-a711-ab0e77fc245d",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "f36d483e-dad6-4bd5-af68-35c3b1187dc4",
 "level": "info",
-"timestamp": 1763696737566000
+"timestamp": 1763738558710000
 },
 {
-"event_message": "Event 4:\n",
+"event_message": " ⚠️ Failed to scrape Bulldog Reporter\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "d2812a3a-9e71-441f-b999-6e3df7600a58",
-"level": "info",
-"timestamp": 1763696737566000
-},
-{
-"event_message": " After Record Profit Guidance: 1 events\n",
-"event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "ee528171-fc71-4686-b677-a1d7123f28e6",
-"level": "info",
-"timestamp": 1763696737566000
-},
-{
-"event_message": " Events by type: crisis:0, partnerships:5, product:0, funding:2, workforce:1, regulatory:0, other:16\n",
-"event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "89f82c4f-eafb-401b-94c0-c7acdfde94ba",
-"level": "info",
-"timestamp": 1763696737566000
-},
-{
-"event_message": " Sumitomo Corporation: 2 events\n",
-"event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "a13a5fc1-f72a-48f5-9517-6a2dd62f77bb",
-"level": "info",
-"timestamp": 1763696737566000
-},
-{
-"event_message": " Entity: Rio Tinto\n",
-"event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "2bb32ac0-1090-41ee-b210-1742a6305306",
-"level": "info",
-"timestamp": 1763696737566000
-},
-{
-"event_message": " Error: 1 events\n",
-"event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "19910851-abdb-436c-9b92-8a43fbb44418",
-"level": "info",
-"timestamp": 1763696737566000
-},
-{
-"event_message": " Entity: Rio Tinto\n",
-"event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "d9a80187-05d3-4748-b633-2806912e76cf",
-"level": "info",
-"timestamp": 1763696737566000
-},
-{
-"event_message": "Event 5:\n",
-"event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "9d30b917-1c17-4302-a22c-3fff6f570d59",
-"level": "info",
-"timestamp": 1763696737566000
-},
-{
-"event_message": " Cargill: 1 events\n",
-"event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "d3f314c9-6c70-4a4d-91e4-a183e3aa17b4",
-"level": "info",
-"timestamp": 1763696737566000
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "aa4755be-ec4d-46b4-b8af-010af288cc6c",
+"level": "warning",
+"timestamp": 1763738557738000
 },
 {
-"event_message": "Event 3:\n",
+"event_message": " 🔗 Found 319 links\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "64fe2b28-d5ee-4717-b20a-a82ddad89876",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "f7d8dbe7-fb5f-4f0e-816c-35395f87d2f1",
 "level": "info",
-"timestamp": 1763696737566000
+"timestamp": 1763738555652000
 },
 {
-"event_message": " Type: funding\n",
+"event_message": " 📄 Scraped 46454 chars of content\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "abd22895-43a0-4722-ae42-50973eff17e0",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "45cb0daf-630e-4f00-90fb-4f30766f5184",
 "level": "info",
-"timestamp": 1763696737566000
+"timestamp": 1763738555652000
 },
 {
-"event_message": " Description: Rio Tinto will almost halve production at its Yarwun Alumina refinery in Australia by 40% from Octob...\n",
+"event_message": " ✅ 272 article links extracted\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "7e1db41b-739a-4dc3-9db5-ea2ba87cf1dd",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "a87883fa-d15f-45bc-92e2-27f31e44379f",
 "level": "info",
-"timestamp": 1763696737566000
+"timestamp": 1763738555652000
 },
 {
-"event_message": " Type: other\n",
+"event_message": " ✅ 183 article links extracted\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "4734b63e-fadf-40c7-a3cc-95faf30f5fc6",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "ac8e33df-ca47-4159-af7d-18280c23f3f6",
 "level": "info",
-"timestamp": 1763696737566000
+"timestamp": 1763738555514000
 },
 {
-"event_message": " Itochu Corporation: 2 events\n",
+"event_message": " 📄 Scraped 55295 chars of content\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "083345b4-1125-4e9a-b91d-19f367c182b7",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "4addd8cd-2ae2-497f-a86e-8f234f39b6c3",
 "level": "info",
-"timestamp": 1763696737566000
+"timestamp": 1763738555514000
 },
 {
-"event_message": " mitsubishi corporation: 4 events\n",
+"event_message": " 🔗 Found 195 links\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "87edaf93-7696-4a01-a3f9-743338aedbd3",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "d6b4ebd4-b3d9-45eb-bc50-7b9eeb0da1bc",
 "level": "info",
-"timestamp": 1763696737566000
+"timestamp": 1763738555514000
 },
 {
-"event_message": "🎯 Using Intelligence Context from Discovery: {\n hasMonitoringPrompt: true,\n hasKeyQuestions: 0,\n analysisPerspective: undefined,\n extractionFocus: 9\n}\n",
+"event_message": " ✅ 1 article links extracted\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "273b00e2-329e-4b25-8686-a3f468056b85",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "b31b695f-2adf-4d6e-85e9-85a732cc374d",
 "level": "info",
-"timestamp": 1763696737566000
+"timestamp": 1763738555470000
 },
 {
-"event_message": "🎯 Executive Synthesis Starting: {\n timestamp: \"2025-11-21T03:45:37.566Z\",\n version: \"v3.0-synthesis-only\",\n hasOrg: true,\n hasEnrichedData: true,\n articlesAnalyzed: 62,\n deepAnalysisCount: 62,\n hasKnowledgeGraph: true,\n hasExecutiveSummary: true,\n hasIntelligenceContext: true,\n analysisDepth: \"comprehensive\",\n synthesisFocus: \"all_consolidated\"\n}\n",
+"event_message": " 📄 Scraped 3425 chars of content\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "50f7d003-dc0c-436c-807d-c0313343c837",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "cf7176b1-caf8-4010-8f84-737da9c96313",
 "level": "info",
-"timestamp": 1763696737566000
+"timestamp": 1763738555470000
 },
 {
-"event_message": " Type: other\n",
+"event_message": " 🔗 Found 21 links\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "51c6c475-6bfa-4c8e-90f1-aacf993ed7cd",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "ad20d8ea-dd41-4f2c-a7f2-06b5c9b126b3",
 "level": "info",
-"timestamp": 1763696737566000
+"timestamp": 1763738555470000
 },
 {
-"event_message": "📊 prepareSynthesisContext - Data Available: {\n organized_events: 24,\n extracted_events: 24,\n organized_entities: 15,\n extracted_entities: 15\n}\n",
+"event_message": " ✅ 0 article links extracted\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "a4c9b57c-1c3f-4bdd-af42-703ad2f7ecb9",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "ebca067e-e4da-430a-8d90-9ae52df0b425",
 "level": "info",
-"timestamp": 1763696737566000
+"timestamp": 1763738555400000
 },
 {
-"event_message": " Texas: 2 events\n",
+"event_message": " 🔗 Found 0 links\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "576a155d-488b-4742-a346-ab7ab31bf895",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "12793214-ea1b-4f19-acec-2015fb7d4c35",
 "level": "info",
-"timestamp": 1763696737566000
+"timestamp": 1763738555400000
 },
 {
-"event_message": " The Material Solutions: 1 events\n",
+"event_message": " ✅ 0 article links extracted\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "229166ff-6379-4060-a305-c9069fd45b13",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "0cc3fda9-fae7-443c-be9e-c9d6da02483f",
 "level": "info",
-"timestamp": 1763696737566000
+"timestamp": 1763738555400000
 },
 {
-"event_message": " Description: Glencore sold 9 million Century Aluminum shares on November 10, reducing its stake to 33% after an 8...\n",
+"event_message": " 🔗 Found 21 links\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "38a2774c-bfe6-4649-8e8a-f336c319f975",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "9f8f2d53-fe04-4f87-a0ef-1fc91633ac2d",
 "level": "info",
-"timestamp": 1763696737566000
+"timestamp": 1763738555400000
 },
 {
-"event_message": " Type: partnership\n",
+"event_message": " 📄 Scraped 19 chars of content\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "2dae79f5-e7be-4627-9603-9d92905977cf",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "8048cec5-c1f4-4fb9-a00a-2f802cb23955",
 "level": "info",
-"timestamp": 1763696737566000
+"timestamp": 1763738555400000
 },
 {
-"event_message": "📊 Structured Context Prepared:\n",
+"event_message": " 📄 Scraped 2277 chars of content\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "0a04906b-f807-497a-b0f0-5e23c0e45746",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "3b751256-3fbb-4d2d-a1f9-72b7b56d0e4b",
 "level": "info",
-"timestamp": 1763696737566000
+"timestamp": 1763738555400000
 },
 {
-"event_message": " glencore: 2 events\n",
+"event_message": " 🔗 Found 90 links\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "551e0ebd-6642-4fc7-866a-edcbe1f31ad7",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "e29ef979-80fd-4d30-a8df-4ee2b13fcaf0",
 "level": "info",
-"timestamp": 1763696737566000
+"timestamp": 1763738555397000
 },
 {
-"event_message": "\nFIRST 5 EVENTS IN DETAIL:\n",
+"event_message": " 📄 Scraped 19873 chars of content\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "e2522473-e547-4da7-a370-4272d6547782",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "6cf3ec02-b8d6-46d8-be0f-bb9c7881d1e6",
 "level": "info",
-"timestamp": 1763696737566000
+"timestamp": 1763738555397000
 },
 {
-"event_message": " Entity: Glencore\n",
+"event_message": " ✅ 31 article links extracted\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "84203e06-aa0b-42bd-9389-d2a87add7b0b",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "b96895ba-abe1-4cc0-b81b-bd174a22e0eb",
 "level": "info",
-"timestamp": 1763696737566000
+"timestamp": 1763738555397000
 },
 {
-"event_message": " Glencore: 1 events\n",
+"event_message": "\n📰 Scraping Spin Sucks Blog...\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "8d47b898-bef5-438a-a281-b802b539145f",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "8d0bf99d-6873-4bc6-b272-531eb0068faa",
 "level": "info",
-"timestamp": 1763696737566000
+"timestamp": 1763738554636000
 },
 {
-"event_message": " Description: Rio Tinto invests $23 million in green iron plant through Joint Development Agreement with Calix whi...\n",
+"event_message": "\n📰 Scraping O'Dwyers PR News...\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "9eb54fc5-0b7f-4416-a22d-4e8e90c52281",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "2cf64928-6331-4d8c-a7bb-d08f424c9742",
 "level": "info",
-"timestamp": 1763696737566000
+"timestamp": 1763738554636000
 },
 {
-"event_message": " European Centre: 1 events\n",
+"event_message": "\n📰 Scraping CommPRO News...\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "6efcfcec-8261-467f-8a36-0ecc9b449b53",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "2924dfe5-3c3c-4b3d-9439-703411a95042",
 "level": "info",
-"timestamp": 1763696737566000
+"timestamp": 1763738554636000
 },
 {
-"event_message": " Rio Tinto: 4 events\n",
+"event_message": "\n📰 Scraping Bulldog Reporter...\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "1a9feb3e-eeea-437f-a903-2dad09e1d5c5",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "0c8c25c3-fe6c-4068-a5d7-c1622625e107",
 "level": "info",
-"timestamp": 1763696737566000
+"timestamp": 1763738554636000
 },
 {
-"event_message": " Monte Cristo: 1 events\n",
+"event_message": "\n📰 Scraping Everything PR Latest...\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "b08984db-07bd-4b1e-b6b0-b1a5b66af0e9",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "3cca343a-6918-4353-9234-83432f6cd085",
 "level": "info",
-"timestamp": 1763696737566000
+"timestamp": 1763738554636000
 },
 {
-"event_message": " Yarwun Alumina Refinery: 1 events\n",
+"event_message": "\n📰 Scraping PR Daily News...\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "650a3604-7bae-4f44-a47e-1886886a5eae",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "b96f0c2b-6c74-4607-85ce-98207501096f",
 "level": "info",
-"timestamp": 1763696737566000
+"timestamp": 1763738554635000
 },
 {
-"event_message": "ENTITY FREQUENCY IN EVENTS:\n",
+"event_message": "\n📰 Scraping PRovoke Media Latest...\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "3af16223-5333-4635-8d5f-caf178250f1a",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "a40e8114-8331-4032-8644-3327777ba5bd",
 "level": "info",
-"timestamp": 1763696737566000
+"timestamp": 1763738554635000
 },
 {
-"event_message": "Event 2:\n",
+"event_message": "\n📰 Scraping Ragan Latest...\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "a2fe87e7-d916-46a9-b4a2-c843f3ba0a47",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "6b9b51fd-28f7-4094-aa10-7e55a8dd3f4a",
 "level": "info",
-"timestamp": 1763696737566000
+"timestamp": 1763738554635000
 },
 {
-"event_message": " Entity: Rio Tinto\n",
+"event_message": "\n📰 Scraping PRNews Online Latest...\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "13f601b3-f725-4f45-858d-3b3f84347173",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "be7bde00-2b88-4e69-92f8-1fa85fa8852a",
 "level": "info",
-"timestamp": 1763696737566000
+"timestamp": 1763738554635000
 },
 {
-"event_message": " Type: workforce\n",
+"event_message": " ✅ Using 10 HTML sources from company profile\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "639e1120-3b6a-4276-b862-5e70309a29aa",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "a4900485-0d21-48d1-873d-950ce1ec6533",
 "level": "info",
-"timestamp": 1763696737566000
+"timestamp": 1763738554634000
 },
 {
-"event_message": "Event 1:\n",
+"event_message": "\n📡 Step 2: Scraping trusted sources...\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "689689ee-ea67-4352-ad7e-9134da8af032",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "838930b4-3d66-4dd0-87cb-6d04bf575a42",
 "level": "info",
-"timestamp": 1763696737566000
+"timestamp": 1763738554634000
 },
 {
-"event_message": " Description: Rio Tinto decision to cut Yarwun production affects 180 jobs while maintaining customer supply commi...\n",
+"event_message": " 👥 Stakeholders: Paul Holmes - The Holmes Report, Richard Edelman - Edelman Trust Barometer, Steve Barrett - PRWeek, Arun Sudhaman - PRovoke Media\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "7a0730bb-04ff-45c1-b79e-cb95c52ca77e",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "c1e78f93-3267-4329-aeff-613f45414828",
 "level": "info",
-"timestamp": 1763696737566000
+"timestamp": 1763738554634000
 },
 {
-"event_message": " Entity network: 0 companies, 0 relationships\n",
+"event_message": " ✅ Loaded targets: 10 competitors, 4 stakeholders, 5 products\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "352683bd-2b42-4db7-ae60-74832061bb17",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "707364fc-952d-4338-9aba-0a360bdb64b6",
 "level": "info",
-"timestamp": 1763696737566000
+"timestamp": 1763738554634000
 },
 {
-"event_message": " Priorities: 6 immediate, 0 opportunities\n",
+"event_message": " ✅ Found 10 HTML sources from company profile\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "d9bb6aa2-7e83-4580-b702-c0efa8b4265d",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "48bab616-9f80-4f21-b78d-4d0a4bdf386d",
 "level": "info",
-"timestamp": 1763696737566000
+"timestamp": 1763738554634000
 },
 {
-"event_message": " Description: Rio Tinto signed 15-year virtual power purchase agreement with TerraGen for 78.5 MW renewable energy...\n",
+"event_message": "\n📚 Step 1b: Loading HTML sources...\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "7ae98fea-4ac0-4163-8529-4021ca246a4e",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "0f888e34-ca56-4af5-8a3e-57b5ecb4fbed",
 "level": "info",
-"timestamp": 1763696737566000
+"timestamp": 1763738554634000
 },
 {
-"event_message": "🔍 SYNTHESIS RECEIVED DATA STRUCTURE: {\n topLevelKeys: [\n \"enriched_articles\",\n \"knowledge_graph\",\n \"executive_summary\",\n \"organized_intelligence\",\n \"extracted_data\",\n \"statistics\",\n \"profile\",\n \"monitoring_data\"\n ],\n hasExtractedData: true,\n extractedEventsCount: 24,\n firstEvent: {\n type: \"other\",\n entity: \"Glencore\",\n description: \"Glencore sold 9 million Century Aluminum shares on November 10, reducing its stake to 33% after an 80% share rally since June driven by tariffs\",\n category: \"strategic\",\n date: \"2025-11-21T03:43:24.597Z\"\n },\n hasOrganizedIntelligence: true,\n organizedIntelligenceKeys: [\n \"events\",\n \"entities\",\n \"quotes\",\n \"metrics\",\n \"topic_clusters\",\n \"article_summaries\"\n ],\n organizedEvents: 24,\n organizedQuotes: 1,\n organizedMetrics: 0,\n extractedDataEvents: 24,\n extractedDataQuotes: 1,\n extractedDataMetrics: 0\n}\n",
+"event_message": " 📦 Products/Services: Crisis Communications & Reputation Management, Strategic Communications Planning, Media Relations & Earned Media...\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "f624d0db-24fe-4aa9-9dd6-f4143054f410",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "1b8e6f5c-5657-45be-ba5b-74a7c222e757",
 "level": "info",
-"timestamp": 1763696737565000
+"timestamp": 1763738554634000
 },
 {
-"event_message": "✅ Loaded from intelligence_targets: {\n competitors: 9,\n stakeholders: 5,\n topics: 0,\n stakeholder_names: [\n \"Jeff Currie - Goldman Sachs Global Head of Commodities\",\n \"Greenpeace (fossil fuel investments)\",\n \"Global Witness (resource extraction transparency)\",\n \"EXIM\",\n \"Mozambique LNG\"\n ]\n}\n",
+"event_message": "\n📰 Scraping PRWeek US News...\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "85f7401f-ccb5-4e71-8225-304cb0410b3b",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "f109b075-d4c4-4b7c-9f13-6491c2af36df",
 "level": "info",
-"timestamp": 1763696737565000
+"timestamp": 1763738554634000
 },
 {
-"event_message": "✅ Using company profile from discovery: {\n has_business_model: true,\n product_lines: 5,\n key_markets: 5,\n strategic_goals: 3\n}\n",
+"event_message": " 📊 Competitors: Edelman, Weber Shandwick, FleishmanHillard, Ketchum, BCW (Burson Cohn & Wolfe)...\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "bb82add1-9f41-472d-9df4-13a27cc2ed0e",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "ab39a348-f16a-4822-8890-ff2e2edd1755",
 "level": "info",
-"timestamp": 1763696737565000
+"timestamp": 1763738554634000
 },
 {
-"event_message": "🚨🚨🚨 ACTUAL EVENTS RECEIVED BY SYNTHESIS:\n",
+"event_message": " Time: 2025-11-21T15:22:34.493Z\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "1771c409-78c1-400f-a4fe-a226a6de4c3c",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "207ddb23-0353-4d4b-9d7c-f65893ea918d",
 "level": "info",
-"timestamp": 1763696737565000
+"timestamp": 1763738554493000
 },
 {
-"event_message": "Total events: 24\n",
+"event_message": "================================================================================\n\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "4c512089-ef77-4e08-8201-7c1243b2df68",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "f93ce8ad-cb3d-4e7d-9483-1823a4dc340e",
 "level": "info",
-"timestamp": 1763696737565000
+"timestamp": 1763738554493000
 },
 {
-"event_message": "🎯 Final Discovery Targets to Track: {\n competitors: 9,\n stakeholders: 5,\n topics: 0,\n sampleCompetitors: [\n \"Mitsubishi Corporation\",\n \"Sumitomo Corporation\",\n \"Itochu Corporation\",\n \"Marubeni Corporation\",\n \"Glencore\"\n ],\n sampleStakeholders: [\n \"Jeff Currie - Goldman Sachs Global Head of Commodities\",\n \"Greenpeace (fossil fuel investments)\",\n \"Global Witness (resource extraction transparency)\",\n \"EXIM\",\n \"Mozambique LNG\"\n ],\n sampleTopics: []\n}\n",
+"event_message": "🎯 SOURCE-DIRECT MONITORING: KARV\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "e7a04d81-03b0-4970-a839-e02a69b5ebc5",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "4a31513a-f1fa-4b21-8e00-673ecf7b654c",
 "level": "info",
-"timestamp": 1763696737565000
+"timestamp": 1763738554493000
 },
 {
-"event_message": "🎯 Loading intelligence targets from database for org: 4f9504ea-9ba3-4696-9e75-8f226f23f4ad\n",
+"event_message": "\n================================================================================\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "50ddaeca-2f4d-4fa9-96c2-d704e8eb05f0",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "d172017d-9228-4e25-aafb-a0e3c88ba752",
 "level": "info",
-"timestamp": 1763696737485000
+"timestamp": 1763738554493000
 },
 {
-"event_message": "🔧 Tool Call: {\n name: \"synthesize_executive_intelligence\",\n hasArgs: true,\n argsKeys: [\n \"organization_id\",\n \"organization\",\n \"organization_name\",\n \"profile\",\n \"enriched_data\",\n \"synthesis_focus\"\n ],\n enriched_data_keys: [\n \"enriched_articles\",\n \"knowledge_graph\",\n \"executive_summary\",\n \"organized_intelligence\",\n \"extracted_data\",\n \"statistics\",\n \"profile\",\n \"monitoring_data\"\n ],\n has_organized_intelligence: true,\n organized_events_count: 24,\n has_extracted_data: true,\n extracted_events_count: 24\n}\n",
+"event_message": " Version: v2025-11-21-registry-html\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "d418cea8-887e-45b4-8b34-c74614d56072",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "3c2df80c-cd27-4822-9c1f-db1cead99f72",
 "level": "info",
-"timestamp": 1763696737484000
+"timestamp": 1763738554493000
 },
 {
-"event_message": "📥 MCP Request: {\n method: \"tools/call\",\n hasParams: true,\n paramsKeys: [ \"name\", \"arguments\" ],\n timestamp: \"2025-11-21T03:45:37.480Z\"\n}\n",
+"event_message": "📋 Step 1: Loading discovery targets and industry...\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "7695020b-fb37-49d2-a05c-9deb40819e16",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "f3a7fe63-9613-4a7e-a83e-07de58c74464",
 "level": "info",
-"timestamp": 1763696737482000
+"timestamp": 1763738554493000
 },
 {
 "event_message": "Listening on http://localhost:9999/\n",
 "event_type": "Log",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "65af3a00-5c61-4dbc-adc4-dc56ca009b97",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "59c0de35-6367-46b2-b571-a092b6b7887a",
 "level": "info",
-"timestamp": 1763696737473000
+"timestamp": 1763738554490000
 },
 {
-"event_message": "booted (time: 35ms)",
+"event_message": "booted (time: 22ms)",
 "event_type": "Boot",
-"function_id": "a01b9b19-320d-4d77-ac42-8c3e73988e40",
-"id": "629648ad-8fc4-4dcb-882c-f2d73bdb3ba2",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "951f9b9e-01f5-48c1-86fe-9d40f409dadd",
 "level": "log",
-"timestamp": 1763696737459000
+"timestamp": 1763738554489000
+},
+{
+"event_message": "shutdown",
+"event_type": "Shutdown",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "393f0f89-c77c-4266-a058-80b0a15dfc24",
+"level": "log",
+"timestamp": 1763737715399000
+},
+{
+"event_message": " Total articles: 3\n",
+"event_type": "Log",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "8609fae8-0d12-41e8-9bbc-e54b9612cb55",
+"level": "info",
+"timestamp": 1763737608283000
+},
+{
+"event_message": " ✅ Scraped 3 articles successfully\n",
+"event_type": "Log",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "d2037489-81d7-4719-a4a6-032242c4daff",
+"level": "info",
+"timestamp": 1763737608283000
+},
+{
+"event_message": " Average relevance: 0.88\n",
+"event_type": "Log",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "98ef12c2-84a5-4dfe-9ec6-131ad295b836",
+"level": "info",
+"timestamp": 1763737608283000
+},
+{
+"event_message": "\n================================================================================\n",
+"event_type": "Log",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "eca07f97-62ca-42ac-a56a-cfb47dd49534",
+"level": "info",
+"timestamp": 1763737608283000
+},
+{
+"event_message": "✅ MONITORING COMPLETE\n",
+"event_type": "Log",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "bd0629ad-9b36-408e-85aa-6b22dbee0cfa",
+"level": "info",
+"timestamp": 1763737608283000
+},
+{
+"event_message": "================================================================================\n\n",
+"event_type": "Log",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "7f1c5746-84ed-4a75-8df7-956ee7d7cecd",
+"level": "info",
+"timestamp": 1763737608283000
+},
+{
+"event_message": " ✅ 20 relevant articles identified\n",
+"event_type": "Log",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "7cd2afd3-a6c2-4f2a-bcb8-e1c6f2fd3e7b",
+"level": "info",
+"timestamp": 1763737542353000
+},
+{
+"event_message": "\n🔥 Step 4: Batch scraping relevant articles...\n",
+"event_type": "Log",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "2516da10-50b4-4649-8d52-2caee29904ac",
+"level": "info",
+"timestamp": 1763737542353000
+},
+{
+"event_message": " ⚠️ Failed to scrape Everything PR Latest\n",
+"event_type": "Log",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "d3f8fa87-f71a-4009-92dc-bafa41146041",
+"level": "warning",
+"timestamp": 1763737525676000
+},
+{
+"event_message": "\n🤖 Step 3: Filtering with Claude for relevance...\n",
+"event_type": "Log",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "3967d01b-a957-4479-b3dc-6258cd49eb37",
+"level": "info",
+"timestamp": 1763737525676000
+},
+{
+"event_message": "\n📊 Total articles collected: 487\n",
+"event_type": "Log",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "c4459839-06cf-4c12-8afb-236781918fe6",
+"level": "info",
+"timestamp": 1763737525676000
+},
+{
+"event_message": " ✅ 272 article links extracted\n",
+"event_type": "Log",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "845a4757-1b4a-465f-912b-38907a6ef27a",
+"level": "info",
+"timestamp": 1763737521794000
+},
+{
+"event_message": " 📄 Scraped 46454 chars of content\n",
+"event_type": "Log",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "acde2041-4535-4f14-b6aa-73c165f4203a",
+"level": "info",
+"timestamp": 1763737521793000
+},
+{
+"event_message": " 🔗 Found 319 links\n",
+"event_type": "Log",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "37725010-9625-492f-a9c0-9b5d3b438b00",
+"level": "info",
+"timestamp": 1763737521793000
+},
+{
+"event_message": " 📄 Scraped 55295 chars of content\n",
+"event_type": "Log",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "fe015311-de0e-4736-95e9-0029ca5dbb4a",
+"level": "info",
+"timestamp": 1763737520657000
+},
+{
+"event_message": " ✅ 183 article links extracted\n",
+"event_type": "Log",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "4e513efa-ede7-49fa-9908-e502ebb45fcb",
+"level": "info",
+"timestamp": 1763737520657000
+},
+{
+"event_message": " 🔗 Found 195 links\n",
+"event_type": "Log",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "f0773c39-7745-419e-a0fa-d6e8c7c19fb8",
+"level": "info",
+"timestamp": 1763737520657000
+},
+{
+"event_message": " 📄 Scraped 2277 chars of content\n",
+"event_type": "Log",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "f482a978-d4ee-4060-a433-d67ad893c963",
+"level": "info",
+"timestamp": 1763737520318000
+},
+{
+"event_message": " 🔗 Found 21 links\n",
+"event_type": "Log",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "79af563a-345a-4f88-8e47-a1446eb38ea3",
+"level": "info",
+"timestamp": 1763737520318000
+},
+{
+"event_message": " ✅ 0 article links extracted\n",
+"event_type": "Log",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "4816c755-9232-41be-a5b5-a74c7d755419",
+"level": "info",
+"timestamp": 1763737520318000
+},
+{
+"event_message": " ⚠️ Failed to scrape PRNews Online Latest\n",
+"event_type": "Log",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "c4b8fc48-6bcf-4d16-858a-66f36d9dfb51",
+"level": "warning",
+"timestamp": 1763737520296000
+},
+{
+"event_message": " 📄 Scraped 19 chars of content\n",
+"event_type": "Log",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "48f0260a-0f54-458e-b416-4127f6fa08e2",
+"level": "info",
+"timestamp": 1763737520097000
+},
+{
+"event_message": " 🔗 Found 0 links\n",
+"event_type": "Log",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "a3567a3c-9e9d-4a80-ae27-b481d252b518",
+"level": "info",
+"timestamp": 1763737520097000
+},
+{
+"event_message": " ✅ 0 article links extracted\n",
+"event_type": "Log",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "2ddfc17b-628d-46bb-9ecf-1d2c9dbc1506",
+"level": "info",
+"timestamp": 1763737520097000
+},
+{
+"event_message": " 📄 Scraped 3425 chars of content\n",
+"event_type": "Log",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "938d1976-0672-4e41-98c1-fceb0adfc993",
+"level": "info",
+"timestamp": 1763737519400000
+},
+{
+"event_message": " 🔗 Found 21 links\n",
+"event_type": "Log",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "493dd10d-e2d9-491e-a209-3ee210bf0861",
+"level": "info",
+"timestamp": 1763737519400000
+},
+{
+"event_message": " ✅ 1 article links extracted\n",
+"event_type": "Log",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "ea3c0203-b18f-4aac-a3e5-383f6be094ec",
+"level": "info",
+"timestamp": 1763737519400000
+},
+{
+"event_message": " ⚠️ Failed to scrape Bulldog Reporter\n",
+"event_type": "Log",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "6605c69e-8363-49e0-b459-7bc28c459ec0",
+"level": "warning",
+"timestamp": 1763737518501000
+},
+{
+"event_message": " 📄 Scraped 19873 chars of content\n",
+"event_type": "Log",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "1c8f6d8a-06ef-4816-a357-4e19e996f73f",
+"level": "info",
+"timestamp": 1763737516402000
+},
+{
+"event_message": " 🔗 Found 90 links\n",
+"event_type": "Log",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "0252641e-d688-4d5e-92ff-451d5af85039",
+"level": "info",
+"timestamp": 1763737516402000
+},
+{
+"event_message": " ✅ 31 article links extracted\n",
+"event_type": "Log",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "404e82b7-96ff-47c7-a642-e4af2d140d26",
+"level": "info",
+"timestamp": 1763737516402000
+},
+{
+"event_message": " 🔗 Found 28 links\n",
+"event_type": "Log",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "d3b54cc0-eeda-4d67-8e33-36073a663ec4",
+"level": "info",
+"timestamp": 1763737516287000
+},
+{
+"event_message": " ✅ 0 article links extracted\n",
+"event_type": "Log",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "83995742-4a11-41b0-8597-701808f49c1b",
+"level": "info",
+"timestamp": 1763737516287000
+},
+{
+"event_message": " 📄 Scraped 4813 chars of content\n",
+"event_type": "Log",
+"function_id": "ad2a44c8-6992-4c04-adcd-49d27c749ba8",
+"id": "c744b456-8d36-4fda-a67b-7b5b5614d8df",
+"level": "info",
+"timestamp": 1763737516287000
 }
 ]

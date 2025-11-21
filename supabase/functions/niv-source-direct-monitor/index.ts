@@ -9,7 +9,7 @@ const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-const CODE_VERSION = 'v2025-11-21-registry-html';
+const CODE_VERSION = 'v2025-11-21-mechanical-filter';
 
 // Extract HTML sources from company profile sources (selected by mcp-discovery)
 function getHTMLSourcesFromProfile(companyProfile: any) {
@@ -161,20 +161,23 @@ KEY PRODUCTS/SERVICES: ${Array.from(discoveryTargets.products || []).slice(0, 10
 ARTICLES TO FILTER (${articles.length} total):
 ${articles.map((a, i) => `${i + 1}. [${a.source}] ${a.title}\n   URL: ${a.url}\n   Published: ${a.published_date || 'unknown'}`).join('\n\n')}
 
-TASK: Return ONLY the article numbers (1-${articles.length}) that are relevant to this organization's competitive intelligence. An article is relevant if it:
-1. Mentions the organization or its competitors
-2. Discusses markets/industries where they operate
-3. Reports on stakeholders, partners, or suppliers
-4. Covers relevant products, commodities, or services
-5. Contains breaking news that could impact their business
+TASK: Return the article numbers (1-${articles.length}) that are relevant to this organization's competitive intelligence.
 
-CRITICAL:
-- Focus on RECENT breaking news, not historical analysis
-- Skip generic market reports unless they mention specific companies
-- Skip opinion pieces and analysis of old events
-- Prioritize articles with specific company mentions or market-moving news
+An article is relevant if it mentions:
+- The organization's competitors (${Array.from(discoveryTargets.competitors || []).slice(0, 10).join(', ')})
+- Key stakeholders (${Array.from(discoveryTargets.stakeholders || []).slice(0, 10).join(', ')})
+- Industry topics: ${Array.from(discoveryTargets.products || []).slice(0, 5).join(', ')}
+- ${context} industry news and trends
 
-Return ONLY a JSON array of relevant article numbers with scores:
+PRIORITIZATION:
+1. Direct competitor mentions = HIGH relevance (score: 0.8-1.0)
+2. Industry trends affecting this sector = MEDIUM relevance (score: 0.6-0.8)
+3. Stakeholder activity = MEDIUM relevance (score: 0.6-0.8)
+4. Tangentially related = LOW relevance (score: 0.4-0.6)
+
+BE INCLUSIVE: When in doubt, include it (better to have more context than miss important developments).
+
+Return JSON array of relevant article numbers with scores:
 [{"index": 1, "score": 0.95, "reason": "Brief reason"}, ...]`
       }]
     })
@@ -244,18 +247,28 @@ async function scrapeSouceListing(source: any) {
         source_priority: source.priority
       }))
       .filter((a: any) => {
-        // Filter out navigation links, social links, etc.
+        // INDUSTRY-AGNOSTIC filtering: Remove obvious non-content, keep everything else
         const url = a.url.toLowerCase();
-        const isArticle = (
-          (url.includes('/article') || url.includes('/news') || url.includes('/story') ||
-           url.includes('/markets') || url.includes('/business') || url.includes('/commodities')) &&
-          !url.includes('facebook.com') &&
-          !url.includes('twitter.com') &&
-          !url.includes('linkedin.com') &&
-          !url.includes('/newsletter') &&
-          !url.includes('/subscribe')
+        const title = a.title.toLowerCase();
+
+        // Reject navigation, social, and utility pages
+        const isNonContent = (
+          // Social/sharing
+          url.includes('facebook.com') || url.includes('twitter.com') || url.includes('linkedin.com') ||
+          url.includes('instagram.com') || url.includes('youtube.com') ||
+          // Utility pages
+          url.includes('/newsletter') || url.includes('/subscribe') || url.includes('/login') ||
+          url.includes('/signup') || url.includes('/register') || url.includes('/contact') ||
+          url.includes('/about') || url.includes('/privacy') || url.includes('/terms') ||
+          // Navigation elements
+          title.includes('search') || title.includes('menu') || title.includes('home page') ||
+          title.includes('sign in') || title.includes('log in') ||
+          // Generic non-article patterns
+          url.endsWith('/') && url.split('/').length <= 4 // Homepage or section page
         );
-        return isArticle && a.title.length > 10; // Title should be substantial
+
+        // Accept if has substantial title and doesn't match exclusions
+        return !isNonContent && a.title.length > 15;
       });
 
     console.log(`   ✅ ${articles.length} article links extracted`);
@@ -303,13 +316,35 @@ serve(async (req) => {
 
     const [org] = await orgResponse.json();
     const companyProfile = org?.company_profile || {};
-    const discoveryTargets = companyProfile?.discovery_targets || {
-      competitors: [],
-      stakeholders: [],
-      products: []
+
+    // Extract competitors and stakeholders from company_profile structure
+    const competitors = companyProfile?.competition?.direct_competitors || [];
+    const stakeholders = [
+      ...(companyProfile?.stakeholders?.regulators || []),
+      ...(companyProfile?.stakeholders?.key_analysts || []),
+      ...(companyProfile?.stakeholders?.activists || []),
+      ...(companyProfile?.stakeholders?.major_investors || []),
+      ...(companyProfile?.stakeholders?.major_customers || []),
+      ...(companyProfile?.stakeholders?.key_partners || [])
+    ];
+    const products = companyProfile?.service_lines || companyProfile?.product_lines || [];
+
+    const discoveryTargets = {
+      competitors,
+      stakeholders,
+      products
     };
 
-    console.log(`   ✅ Loaded targets: ${discoveryTargets.competitors?.length || 0} competitors, ${discoveryTargets.stakeholders?.length || 0} stakeholders`);
+    console.log(`   ✅ Loaded targets: ${competitors.length} competitors, ${stakeholders.length} stakeholders, ${products.length} products`);
+    if (competitors.length > 0) {
+      console.log(`   📊 Competitors: ${competitors.slice(0, 5).join(', ')}${competitors.length > 5 ? '...' : ''}`);
+    }
+    if (stakeholders.length > 0) {
+      console.log(`   👥 Stakeholders: ${stakeholders.slice(0, 5).join(', ')}${stakeholders.length > 5 ? '...' : ''}`);
+    }
+    if (products.length > 0) {
+      console.log(`   📦 Products/Services: ${products.slice(0, 3).join(', ')}${products.length > 3 ? '...' : ''}`);
+    }
 
     // Step 1b: Get HTML sources - prefer profile, fallback to registry
     console.log('\n📚 Step 1b: Loading HTML sources...');
@@ -344,17 +379,43 @@ serve(async (req) => {
       });
     }
 
-    // Step 3: Claude-guided filtering
-    console.log('\n🤖 Step 3: Filtering with Claude for relevance...');
-    const filteredArticles = await filterWithClaude(
-      allArticles,
-      organization_name,
-      discoveryTargets
-    );
+    // Step 3: Mechanical filtering (recency, source quality, dedup) - NO semantic filtering yet
+    console.log('\n🔧 Step 3: Applying mechanical filtering (recency, source quality, dedup)...');
 
-    console.log(`   ✅ ${filteredArticles.length} relevant articles identified`);
+    // 3a. Deduplicate by URL
+    const seenUrls = new Set<string>();
+    const dedupedArticles = allArticles.filter(a => {
+      if (!a.url || seenUrls.has(a.url)) return false;
+      seenUrls.add(a.url);
+      return true;
+    });
+    console.log(`   ✅ Deduplication: ${allArticles.length} → ${dedupedArticles.length} unique articles`);
 
-    if (filteredArticles.length === 0) {
+    // 3b. Score by source priority (from HTML source metadata)
+    const scoredArticles = dedupedArticles.map(a => ({
+      ...a,
+      relevance_score: a.source_priority || 2, // 1=critical, 2=high, 3=medium
+      filter_stage: 'mechanical'
+    }));
+
+    // 3c. Sort by source priority (lower number = higher priority)
+    scoredArticles.sort((a, b) => a.relevance_score - b.relevance_score);
+
+    // 3d. Cap at ~100 articles for timeout safety (scraping + relevance filtering downstream)
+    // 100 articles = ~2-3 min scraping + stage-2 relevance has time to filter intelligently
+    const MAX_ARTICLES_TO_SCRAPE = 100;
+    const articlesToScrape = scoredArticles.slice(0, MAX_ARTICLES_TO_SCRAPE);
+
+    console.log(`   📊 Mechanical filtering complete:`);
+    console.log(`      - Deduped: ${allArticles.length} → ${dedupedArticles.length}`);
+    console.log(`      - Capped at: ${MAX_ARTICLES_TO_SCRAPE} articles`);
+    console.log(`      - Ready to scrape: ${articlesToScrape.length} articles`);
+
+    if (scoredArticles.length > MAX_ARTICLES_TO_SCRAPE) {
+      console.log(`   ⚠️ Capped from ${scoredArticles.length} to ${MAX_ARTICLES_TO_SCRAPE} highest-priority articles`);
+    }
+
+    if (articlesToScrape.length === 0) {
       return new Response(JSON.stringify({
         success: true,
         total_articles: 0,
@@ -363,7 +424,8 @@ serve(async (req) => {
           code_version: CODE_VERSION,
           sources_scraped: htmlSources.length,
           articles_scanned: allArticles.length,
-          articles_filtered: 0
+          articles_after_dedup: dedupedArticles.length,
+          articles_to_scrape: 0
         }
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -406,7 +468,7 @@ serve(async (req) => {
     };
 
     const scrapeResult = await callMCP('batch_scrape_articles', {
-      articles: filteredArticles.map((a: any) => ({
+      articles: articlesToScrape.map((a: any) => ({
         url: a.url,
         priority: a.relevance_score,
         metadata: {
@@ -453,9 +515,11 @@ serve(async (req) => {
         code_version: CODE_VERSION,
         sources_scraped: htmlSources.length,
         articles_scanned: allArticles.length,
-        articles_filtered: filteredArticles.length,
+        articles_after_dedup: dedupedArticles.length,
+        articles_capped_at: articlesToScrape.length,
         articles_scraped: finalArticles.length,
-        scrape_stats: scrapeResult.stats
+        scrape_stats: scrapeResult.stats,
+        note: 'Mechanical filtering only - semantic relevance filtering happens in monitor-stage-2-relevance'
       }
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
