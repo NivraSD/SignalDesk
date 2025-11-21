@@ -1,836 +1,410 @@
--- Comprehensive industry intelligence profiles for all major industries
--- Provides connection detection patterns for any industry type
-
--- ============================================================================
--- PROFESSIONAL SERVICES INDUSTRIES
--- ============================================================================
-
--- Management Consulting
-INSERT INTO industry_intelligence_profiles (industry, industry_category, connection_patterns, relevance_weights, prediction_contexts, org_type_modifiers)
-VALUES (
-  'Management Consulting',
-  'Professional Services',
-  '[
-    {
-      "type": "client_competitive_threat",
-      "description": "Client facing competitive pressure or market disruption",
-      "triggers": ["market_entry", "pricing_pressure", "innovation", "regulation"],
-      "entity_types_to_correlate": ["client", "competitor", "industry_body"],
-      "detection_window_days": 30,
-      "minimum_strength": 65,
-      "prediction_window_days": 21,
-      "relevance_for_pr_agency": 85
-    },
-    {
-      "type": "industry_expertise_demand",
-      "description": "Emerging demand for specific consulting expertise",
-      "triggers": ["regulatory_change", "technology_shift", "market_disruption"],
-      "entity_types_to_correlate": ["industry_body", "competitor", "media_outlet"],
-      "detection_window_days": 60,
-      "minimum_strength": 60,
-      "prediction_window_days": 45,
-      "relevance_for_pr_agency": 75
-    }
-  ]'::jsonb,
-  '{
-    "co_occurrence": 55,
-    "temporal_correlation": 70,
-    "thematic_overlap": 65,
-    "sentiment_correlation": 60
-  }'::jsonb,
-  '[]'::jsonb,
-  '{}'::jsonb
-)
-ON CONFLICT (industry) DO NOTHING;
-
--- Legal Services
-INSERT INTO industry_intelligence_profiles (industry, industry_category, connection_patterns, relevance_weights, prediction_contexts, org_type_modifiers)
-VALUES (
-  'Legal Services',
-  'Professional Services',
-  '[
-    {
-      "type": "regulatory_change_impact",
-      "description": "New regulations affecting client industries",
-      "triggers": ["law_change", "court_ruling", "regulatory_announcement"],
-      "entity_types_to_correlate": ["regulatory_body", "client", "industry_body"],
-      "detection_window_days": 30,
-      "minimum_strength": 70,
-      "prediction_window_days": 14,
-      "relevance_for_pr_agency": 90
-    },
-    {
-      "type": "litigation_trend",
-      "description": "Patterns in lawsuits or legal actions",
-      "triggers": ["lawsuit", "settlement", "class_action"],
-      "entity_types_to_correlate": ["competitor", "client", "industry_body"],
-      "detection_window_days": 90,
-      "minimum_strength": 65,
-      "prediction_window_days": 60,
-      "relevance_for_pr_agency": 85
-    }
-  ]'::jsonb,
-  '{
-    "co_occurrence": 60,
-    "temporal_correlation": 80,
-    "thematic_overlap": 70,
-    "sentiment_correlation": 75
-  }'::jsonb,
-  '[]'::jsonb,
-  '{}'::jsonb
-)
-ON CONFLICT (industry) DO NOTHING;
-
--- Accounting & Financial Services
-INSERT INTO industry_intelligence_profiles (industry, industry_category, connection_patterns, relevance_weights, prediction_contexts, org_type_modifiers)
-VALUES (
-  'Accounting',
-  'Professional Services',
-  '[
-    {
-      "type": "compliance_change",
-      "description": "Accounting standards or tax law changes",
-      "triggers": ["standard_change", "tax_law", "reporting_requirement"],
-      "entity_types_to_correlate": ["regulatory_body", "client", "industry_body"],
-      "detection_window_days": 60,
-      "minimum_strength": 70,
-      "prediction_window_days": 30,
-      "relevance_for_pr_agency": 85
-    }
-  ]'::jsonb,
-  '{
-    "co_occurrence": 55,
-    "temporal_correlation": 75,
-    "thematic_overlap": 65,
-    "sentiment_correlation": 70
-  }'::jsonb,
-  '[]'::jsonb,
-  '{}'::jsonb
-)
-ON CONFLICT (industry) DO NOTHING;
-
--- ============================================================================
--- FINANCIAL SERVICES
--- ============================================================================
-
--- Banking
-INSERT INTO industry_intelligence_profiles (industry, industry_category, connection_patterns, relevance_weights, prediction_contexts, org_type_modifiers)
-VALUES (
-  'Banking',
-  'Financial Services',
-  '[
-    {
-      "type": "regulatory_enforcement",
-      "description": "Banking regulations and enforcement actions",
-      "triggers": ["fine", "investigation", "regulation_change", "compliance_failure"],
-      "entity_types_to_correlate": ["competitor", "regulatory_body"],
-      "detection_window_days": 30,
-      "minimum_strength": 75,
-      "prediction_window_days": 21,
-      "relevance_for_pr_agency": 90
-    },
-    {
-      "type": "fintech_disruption",
-      "description": "Technology disruption in banking services",
-      "triggers": ["fintech_launch", "digital_banking", "blockchain", "payment_innovation"],
-      "entity_types_to_correlate": ["competitor", "technology_partner"],
-      "detection_window_days": 90,
-      "minimum_strength": 60,
-      "prediction_window_days": 60,
-      "relevance_for_pr_agency": 75
-    }
-  ]'::jsonb,
-  '{
-    "co_occurrence": 60,
-    "temporal_correlation": 80,
-    "thematic_overlap": 70,
-    "sentiment_correlation": 85
-  }'::jsonb,
-  '[]'::jsonb,
-  '{}'::jsonb
-)
-ON CONFLICT (industry) DO NOTHING;
-
--- Investment Management
-INSERT INTO industry_intelligence_profiles (industry, industry_category, connection_patterns, relevance_weights, prediction_contexts, org_type_modifiers)
-VALUES (
-  'Investment Management',
-  'Financial Services',
-  '[
-    {
-      "type": "market_volatility_response",
-      "description": "Fund performance and strategy changes during market volatility",
-      "triggers": ["market_crash", "volatility_spike", "strategy_shift"],
-      "entity_types_to_correlate": ["competitor", "market_indicator"],
-      "detection_window_days": 14,
-      "minimum_strength": 65,
-      "prediction_window_days": 7,
-      "relevance_for_pr_agency": 80
-    }
-  ]'::jsonb,
-  '{
-    "co_occurrence": 55,
-    "temporal_correlation": 75,
-    "thematic_overlap": 65,
-    "sentiment_correlation": 80
-  }'::jsonb,
-  '[]'::jsonb,
-  '{}'::jsonb
-)
-ON CONFLICT (industry) DO NOTHING;
-
--- ============================================================================
--- HEALTHCARE
--- ============================================================================
-
--- Pharmaceuticals
-INSERT INTO industry_intelligence_profiles (industry, industry_category, connection_patterns, relevance_weights, prediction_contexts, org_type_modifiers)
-VALUES (
-  'Pharmaceuticals',
-  'Healthcare',
-  '[
-    {
-      "type": "drug_approval_cascade",
-      "description": "FDA approvals or rejections affecting competitive landscape",
-      "triggers": ["fda_approval", "fda_rejection", "clinical_trial_result"],
-      "entity_types_to_correlate": ["competitor", "regulatory_body"],
-      "detection_window_days": 30,
-      "minimum_strength": 75,
-      "prediction_window_days": 21,
-      "relevance_for_pr_agency": 90
-    },
-    {
-      "type": "patent_expiry_impact",
-      "description": "Patent expirations creating generic competition",
-      "triggers": ["patent_expiry", "generic_launch", "exclusivity_loss"],
-      "entity_types_to_correlate": ["competitor", "product"],
-      "detection_window_days": 180,
-      "minimum_strength": 70,
-      "prediction_window_days": 90,
-      "relevance_for_pr_agency": 85
-    }
-  ]'::jsonb,
-  '{
-    "co_occurrence": 60,
-    "temporal_correlation": 80,
-    "thematic_overlap": 70,
-    "sentiment_correlation": 75
-  }'::jsonb,
-  '[]'::jsonb,
-  '{}'::jsonb
-)
-ON CONFLICT (industry) DO NOTHING;
-
--- Healthcare Services
-INSERT INTO industry_intelligence_profiles (industry, industry_category, connection_patterns, relevance_weights, prediction_contexts, org_type_modifiers)
-VALUES (
-  'Healthcare Services',
-  'Healthcare',
-  '[
-    {
-      "type": "reimbursement_change",
-      "description": "Insurance and Medicare reimbursement policy changes",
-      "triggers": ["policy_change", "rate_change", "coverage_decision"],
-      "entity_types_to_correlate": ["regulatory_body", "payer", "competitor"],
-      "detection_window_days": 60,
-      "minimum_strength": 70,
-      "prediction_window_days": 30,
-      "relevance_for_pr_agency": 85
-    }
-  ]'::jsonb,
-  '{
-    "co_occurrence": 55,
-    "temporal_correlation": 75,
-    "thematic_overlap": 65,
-    "sentiment_correlation": 70
-  }'::jsonb,
-  '[]'::jsonb,
-  '{}'::jsonb
-)
-ON CONFLICT (industry) DO NOTHING;
-
--- ============================================================================
--- TECHNOLOGY (Additional sectors)
--- ============================================================================
-
--- Software & SaaS
-INSERT INTO industry_intelligence_profiles (industry, industry_category, connection_patterns, relevance_weights, prediction_contexts, org_type_modifiers)
-VALUES (
-  'Software',
-  'Technology',
-  '[
-    {
-      "type": "feature_parity_race",
-      "description": "Competitors copying features or rushing to market",
-      "triggers": ["feature_launch", "product_update", "acquisition_for_features"],
-      "entity_types_to_correlate": ["competitor", "technology_partner"],
-      "detection_window_days": 60,
-      "minimum_strength": 65,
-      "prediction_window_days": 45,
-      "relevance_for_pr_agency": 75
-    }
-  ]'::jsonb,
-  '{
-    "co_occurrence": 55,
-    "temporal_correlation": 70,
-    "thematic_overlap": 65,
-    "sentiment_correlation": 60
-  }'::jsonb,
-  '[]'::jsonb,
-  '{}'::jsonb
-)
-ON CONFLICT (industry) DO NOTHING;
-
--- Cybersecurity
-INSERT INTO industry_intelligence_profiles (industry, industry_category, connection_patterns, relevance_weights, prediction_contexts, org_type_modifiers)
-VALUES (
-  'Cybersecurity',
-  'Technology',
-  '[
-    {
-      "type": "breach_cascade",
-      "description": "Security breaches creating industry-wide scrutiny",
-      "triggers": ["data_breach", "ransomware", "vulnerability_disclosure"],
-      "entity_types_to_correlate": ["competitor", "client", "regulatory_body"],
-      "detection_window_days": 14,
-      "minimum_strength": 75,
-      "prediction_window_days": 7,
-      "relevance_for_pr_agency": 95
-    }
-  ]'::jsonb,
-  '{
-    "co_occurrence": 60,
-    "temporal_correlation": 85,
-    "thematic_overlap": 70,
-    "sentiment_correlation": 80
-  }'::jsonb,
-  '[]'::jsonb,
-  '{}'::jsonb
-)
-ON CONFLICT (industry) DO NOTHING;
-
--- ============================================================================
--- RETAIL & CONSUMER
--- ============================================================================
-
--- Retail
-INSERT INTO industry_intelligence_profiles (industry, industry_category, connection_patterns, relevance_weights, prediction_contexts, org_type_modifiers)
-VALUES (
-  'Retail',
-  'Consumer',
-  '[
-    {
-      "type": "consumer_trend_shift",
-      "description": "Changing consumer preferences affecting multiple retailers",
-      "triggers": ["trend_change", "buying_pattern_shift", "channel_shift"],
-      "entity_types_to_correlate": ["competitor", "brand", "market_research"],
-      "detection_window_days": 90,
-      "minimum_strength": 60,
-      "prediction_window_days": 60,
-      "relevance_for_pr_agency": 75
-    }
-  ]'::jsonb,
-  '{
-    "co_occurrence": 55,
-    "temporal_correlation": 70,
-    "thematic_overlap": 65,
-    "sentiment_correlation": 75
-  }'::jsonb,
-  '[]'::jsonb,
-  '{}'::jsonb
-)
-ON CONFLICT (industry) DO NOTHING;
-
--- Consumer Goods
-INSERT INTO industry_intelligence_profiles (industry, industry_category, connection_patterns, relevance_weights, prediction_contexts, org_type_modifiers)
-VALUES (
-  'Consumer Goods',
-  'Consumer',
-  '[
-    {
-      "type": "product_recall_cascade",
-      "description": "Product recalls triggering industry scrutiny",
-      "triggers": ["recall", "safety_issue", "quality_problem"],
-      "entity_types_to_correlate": ["competitor", "regulatory_body"],
-      "detection_window_days": 30,
-      "minimum_strength": 75,
-      "prediction_window_days": 21,
-      "relevance_for_pr_agency": 90
-    }
-  ]'::jsonb,
-  '{
-    "co_occurrence": 60,
-    "temporal_correlation": 80,
-    "thematic_overlap": 70,
-    "sentiment_correlation": 85
-  }'::jsonb,
-  '[]'::jsonb,
-  '{}'::jsonb
-)
-ON CONFLICT (industry) DO NOTHING;
-
--- ============================================================================
--- ENERGY & UTILITIES
--- ============================================================================
-
--- Oil & Gas
-INSERT INTO industry_intelligence_profiles (industry, industry_category, connection_patterns, relevance_weights, prediction_contexts, org_type_modifiers)
-VALUES (
-  'Oil & Gas',
-  'Energy',
-  '[
-    {
-      "type": "commodity_price_shock",
-      "description": "Oil price volatility affecting operations and investments",
-      "triggers": ["price_spike", "price_crash", "opec_decision", "geopolitical_event"],
-      "entity_types_to_correlate": ["competitor", "supplier", "geopolitical"],
-      "detection_window_days": 30,
-      "minimum_strength": 70,
-      "prediction_window_days": 21,
-      "relevance_for_pr_agency": 85
-    },
-    {
-      "type": "environmental_scrutiny",
-      "description": "ESG pressures and environmental regulations",
-      "triggers": ["environmental_violation", "climate_activism", "regulation"],
-      "entity_types_to_correlate": ["competitor", "regulatory_body", "activist"],
-      "detection_window_days": 60,
-      "minimum_strength": 75,
-      "prediction_window_days": 45,
-      "relevance_for_pr_agency": 90
-    }
-  ]'::jsonb,
-  '{
-    "co_occurrence": 60,
-    "temporal_correlation": 80,
-    "thematic_overlap": 70,
-    "sentiment_correlation": 75
-  }'::jsonb,
-  '[]'::jsonb,
-  '{}'::jsonb
-)
-ON CONFLICT (industry) DO NOTHING;
-
--- Renewable Energy
-INSERT INTO industry_intelligence_profiles (industry, industry_category, connection_patterns, relevance_weights, prediction_contexts, org_type_modifiers)
-VALUES (
-  'Renewable Energy',
-  'Energy',
-  '[
-    {
-      "type": "policy_incentive_change",
-      "description": "Changes in government renewable energy incentives",
-      "triggers": ["subsidy_change", "tax_credit", "mandate", "policy_shift"],
-      "entity_types_to_correlate": ["regulatory_body", "competitor"],
-      "detection_window_days": 60,
-      "minimum_strength": 70,
-      "prediction_window_days": 30,
-      "relevance_for_pr_agency": 85
-    }
-  ]'::jsonb,
-  '{
-    "co_occurrence": 55,
-    "temporal_correlation": 75,
-    "thematic_overlap": 65,
-    "sentiment_correlation": 70
-  }'::jsonb,
-  '[]'::jsonb,
-  '{}'::jsonb
-)
-ON CONFLICT (industry) DO NOTHING;
-
--- ============================================================================
--- MANUFACTURING & INDUSTRIAL
--- ============================================================================
-
--- Automotive
-INSERT INTO industry_intelligence_profiles (industry, industry_category, connection_patterns, relevance_weights, prediction_contexts, org_type_modifiers)
-VALUES (
-  'Automotive',
-  'Manufacturing',
-  '[
-    {
-      "type": "supply_chain_disruption",
-      "description": "Chip shortages, parts delays, factory shutdowns",
-      "triggers": ["supply_shortage", "factory_closure", "logistics_delay"],
-      "entity_types_to_correlate": ["competitor", "supplier"],
-      "detection_window_days": 30,
-      "minimum_strength": 70,
-      "prediction_window_days": 21,
-      "relevance_for_pr_agency": 85
-    },
-    {
-      "type": "ev_transition",
-      "description": "Electric vehicle announcements and competition",
-      "triggers": ["ev_launch", "battery_tech", "charging_network"],
-      "entity_types_to_correlate": ["competitor", "technology_partner"],
-      "detection_window_days": 90,
-      "minimum_strength": 65,
-      "prediction_window_days": 60,
-      "relevance_for_pr_agency": 80
-    }
-  ]'::jsonb,
-  '{
-    "co_occurrence": 60,
-    "temporal_correlation": 75,
-    "thematic_overlap": 65,
-    "sentiment_correlation": 70
-  }'::jsonb,
-  '[]'::jsonb,
-  '{}'::jsonb
-)
-ON CONFLICT (industry) DO NOTHING;
-
--- Aerospace & Defense
-INSERT INTO industry_intelligence_profiles (industry, industry_category, connection_patterns, relevance_weights, prediction_contexts, org_type_modifiers)
-VALUES (
-  'Aerospace',
-  'Manufacturing',
-  '[
-    {
-      "type": "defense_contract_award",
-      "description": "Major defense contract wins and losses",
-      "triggers": ["contract_win", "contract_loss", "program_cancellation"],
-      "entity_types_to_correlate": ["competitor", "government"],
-      "detection_window_days": 60,
-      "minimum_strength": 70,
-      "prediction_window_days": 30,
-      "relevance_for_pr_agency": 80
-    }
-  ]'::jsonb,
-  '{
-    "co_occurrence": 55,
-    "temporal_correlation": 75,
-    "thematic_overlap": 65,
-    "sentiment_correlation": 70
-  }'::jsonb,
-  '[]'::jsonb,
-  '{}'::jsonb
-)
-ON CONFLICT (industry) DO NOTHING;
-
--- ============================================================================
--- TELECOMMUNICATIONS & MEDIA
--- ============================================================================
-
--- Telecommunications
-INSERT INTO industry_intelligence_profiles (industry, industry_category, connection_patterns, relevance_weights, prediction_contexts, org_type_modifiers)
-VALUES (
-  'Telecommunications',
-  'Technology',
-  '[
-    {
-      "type": "network_rollout_competition",
-      "description": "5G, fiber, infrastructure deployment competition",
-      "triggers": ["network_launch", "coverage_expansion", "infrastructure_investment"],
-      "entity_types_to_correlate": ["competitor", "technology_vendor"],
-      "detection_window_days": 90,
-      "minimum_strength": 65,
-      "prediction_window_days": 60,
-      "relevance_for_pr_agency": 75
-    }
-  ]'::jsonb,
-  '{
-    "co_occurrence": 55,
-    "temporal_correlation": 70,
-    "thematic_overlap": 65,
-    "sentiment_correlation": 60
-  }'::jsonb,
-  '[]'::jsonb,
-  '{}'::jsonb
-)
-ON CONFLICT (industry) DO NOTHING;
-
--- Media & Entertainment
-INSERT INTO industry_intelligence_profiles (industry, industry_category, connection_patterns, relevance_weights, prediction_contexts, org_type_modifiers)
-VALUES (
-  'Media',
-  'Entertainment',
-  '[
-    {
-      "type": "streaming_competition",
-      "description": "Content wars, pricing changes, platform features",
-      "triggers": ["content_deal", "price_change", "feature_launch", "exclusive_content"],
-      "entity_types_to_correlate": ["competitor", "content_provider"],
-      "detection_window_days": 60,
-      "minimum_strength": 65,
-      "prediction_window_days": 45,
-      "relevance_for_pr_agency": 75
-    }
-  ]'::jsonb,
-  '{
-    "co_occurrence": 60,
-    "temporal_correlation": 70,
-    "thematic_overlap": 70,
-    "sentiment_correlation": 75
-  }'::jsonb,
-  '[]'::jsonb,
-  '{}'::jsonb
-)
-ON CONFLICT (industry) DO NOTHING;
-
--- ============================================================================
--- REAL ESTATE & CONSTRUCTION
--- ============================================================================
-
--- Real Estate
-INSERT INTO industry_intelligence_profiles (industry, industry_category, connection_patterns, relevance_weights, prediction_contexts, org_type_modifiers)
-VALUES (
-  'Real Estate',
-  'Real Estate',
-  '[
-    {
-      "type": "market_cycle_shift",
-      "description": "Interest rate changes affecting property markets",
-      "triggers": ["rate_change", "lending_restriction", "market_correction"],
-      "entity_types_to_correlate": ["competitor", "financial_institution", "regulatory_body"],
-      "detection_window_days": 90,
-      "minimum_strength": 65,
-      "prediction_window_days": 60,
-      "relevance_for_pr_agency": 75
-    }
-  ]'::jsonb,
-  '{
-    "co_occurrence": 55,
-    "temporal_correlation": 75,
-    "thematic_overlap": 60,
-    "sentiment_correlation": 70
-  }'::jsonb,
-  '[]'::jsonb,
-  '{}'::jsonb
-)
-ON CONFLICT (industry) DO NOTHING;
-
--- ============================================================================
--- TRANSPORTATION & LOGISTICS
--- ============================================================================
-
--- Logistics
-INSERT INTO industry_intelligence_profiles (industry, industry_category, connection_patterns, relevance_weights, prediction_contexts, org_type_modifiers)
-VALUES (
-  'Logistics',
-  'Transportation',
-  '[
-    {
-      "type": "supply_chain_bottleneck",
-      "description": "Port congestion, driver shortages, capacity constraints",
-      "triggers": ["port_congestion", "capacity_shortage", "fuel_price_spike"],
-      "entity_types_to_correlate": ["competitor", "supplier", "infrastructure"],
-      "detection_window_days": 30,
-      "minimum_strength": 70,
-      "prediction_window_days": 21,
-      "relevance_for_pr_agency": 80
-    }
-  ]'::jsonb,
-  '{
-    "co_occurrence": 60,
-    "temporal_correlation": 75,
-    "thematic_overlap": 65,
-    "sentiment_correlation": 70
-  }'::jsonb,
-  '[]'::jsonb,
-  '{}'::jsonb
-)
-ON CONFLICT (industry) DO NOTHING;
-
--- Airlines
-INSERT INTO industry_intelligence_profiles (industry, industry_category, connection_patterns, relevance_weights, prediction_contexts, org_type_modifiers)
-VALUES (
-  'Airlines',
-  'Transportation',
-  '[
-    {
-      "type": "operational_disruption",
-      "description": "Flight cancellations, operational issues spreading across industry",
-      "triggers": ["mass_cancellation", "system_outage", "weather_disruption", "staff_shortage"],
-      "entity_types_to_correlate": ["competitor", "regulatory_body"],
-      "detection_window_days": 14,
-      "minimum_strength": 70,
-      "prediction_window_days": 7,
-      "relevance_for_pr_agency": 85
-    }
-  ]'::jsonb,
-  '{
-    "co_occurrence": 60,
-    "temporal_correlation": 80,
-    "thematic_overlap": 65,
-    "sentiment_correlation": 75
-  }'::jsonb,
-  '[]'::jsonb,
-  '{}'::jsonb
-)
-ON CONFLICT (industry) DO NOTHING;
-
--- ============================================================================
--- FOOD & BEVERAGE
--- ============================================================================
-
--- Food & Beverage
-INSERT INTO industry_intelligence_profiles (industry, industry_category, connection_patterns, relevance_weights, prediction_contexts, org_type_modifiers)
-VALUES (
-  'Food & Beverage',
-  'Consumer',
-  '[
-    {
-      "type": "food_safety_incident",
-      "description": "Contamination, recalls, or safety issues",
-      "triggers": ["recall", "contamination", "fda_warning", "illness_outbreak"],
-      "entity_types_to_correlate": ["competitor", "supplier", "regulatory_body"],
-      "detection_window_days": 21,
-      "minimum_strength": 75,
-      "prediction_window_days": 14,
-      "relevance_for_pr_agency": 95
-    }
-  ]'::jsonb,
-  '{
-    "co_occurrence": 60,
-    "temporal_correlation": 85,
-    "thematic_overlap": 70,
-    "sentiment_correlation": 80
-  }'::jsonb,
-  '[]'::jsonb,
-  '{}'::jsonb
-)
-ON CONFLICT (industry) DO NOTHING;
-
--- ============================================================================
--- HOSPITALITY & TOURISM
--- ============================================================================
-
--- Hospitality
-INSERT INTO industry_intelligence_profiles (industry, industry_category, connection_patterns, relevance_weights, prediction_contexts, org_type_modifiers)
-VALUES (
-  'Hospitality',
-  'Services',
-  '[
-    {
-      "type": "reputation_incident",
-      "description": "Service failures, guest safety, or reputation issues",
-      "triggers": ["incident", "negative_review_spike", "safety_issue"],
-      "entity_types_to_correlate": ["competitor", "brand", "location"],
-      "detection_window_days": 21,
-      "minimum_strength": 70,
-      "prediction_window_days": 14,
-      "relevance_for_pr_agency": 85
-    }
-  ]'::jsonb,
-  '{
-    "co_occurrence": 55,
-    "temporal_correlation": 75,
-    "thematic_overlap": 65,
-    "sentiment_correlation": 80
-  }'::jsonb,
-  '[]'::jsonb,
-  '{}'::jsonb
-)
-ON CONFLICT (industry) DO NOTHING;
-
--- ============================================================================
--- EDUCATION
--- ============================================================================
-
--- Education
-INSERT INTO industry_intelligence_profiles (industry, industry_category, connection_patterns, relevance_weights, prediction_contexts, org_type_modifiers)
-VALUES (
-  'Education',
-  'Services',
-  '[
-    {
-      "type": "accreditation_regulatory",
-      "description": "Accreditation issues or regulatory changes",
-      "triggers": ["accreditation_loss", "regulatory_change", "policy_shift"],
-      "entity_types_to_correlate": ["competitor", "regulatory_body", "accreditor"],
-      "detection_window_days": 60,
-      "minimum_strength": 70,
-      "prediction_window_days": 30,
-      "relevance_for_pr_agency": 85
-    }
-  ]'::jsonb,
-  '{
-    "co_occurrence": 55,
-    "temporal_correlation": 75,
-    "thematic_overlap": 65,
-    "sentiment_correlation": 70
-  }'::jsonb,
-  '[]'::jsonb,
-  '{}'::jsonb
-)
-ON CONFLICT (industry) DO NOTHING;
-
--- ============================================================================
--- DEFAULT / FALLBACK PROFILE
--- Used by connection-detector for any industry without a specific profile
--- ============================================================================
-
-INSERT INTO industry_intelligence_profiles (industry, industry_category, connection_patterns, relevance_weights, prediction_contexts, org_type_modifiers)
-VALUES (
-  'DEFAULT',
-  'General',
-  '[
-    {
-      "type": "competitive_activity",
-      "description": "Significant competitive moves or announcements",
-      "triggers": ["announcement", "launch", "partnership", "acquisition", "expansion"],
-      "entity_types_to_correlate": ["competitor", "partner"],
-      "detection_window_days": 60,
-      "minimum_strength": 65,
-      "prediction_window_days": 30,
-      "relevance_for_pr_agency": 75
-    },
-    {
-      "type": "regulatory_change",
-      "description": "Regulatory or policy changes affecting the industry",
-      "triggers": ["regulation", "policy_change", "compliance", "legal_action"],
-      "entity_types_to_correlate": ["regulatory_body", "competitor", "industry_body"],
-      "detection_window_days": 60,
-      "minimum_strength": 70,
-      "prediction_window_days": 30,
-      "relevance_for_pr_agency": 85
-    },
-    {
-      "type": "reputation_event",
-      "description": "Reputation-impacting events in the industry",
-      "triggers": ["scandal", "crisis", "controversy", "lawsuit", "investigation"],
-      "entity_types_to_correlate": ["competitor", "media_outlet", "regulatory_body"],
-      "detection_window_days": 30,
-      "minimum_strength": 70,
-      "prediction_window_days": 21,
-      "relevance_for_pr_agency": 90
-    },
-    {
-      "type": "market_shift",
-      "description": "Market trends or disruptions",
-      "triggers": ["market_change", "trend_shift", "disruption", "innovation"],
-      "entity_types_to_correlate": ["competitor", "technology_partner", "industry_body"],
-      "detection_window_days": 90,
-      "minimum_strength": 60,
-      "prediction_window_days": 45,
-      "relevance_for_pr_agency": 75
-    }
-  ]'::jsonb,
-  '{
-    "co_occurrence": 55,
-    "temporal_correlation": 75,
-    "thematic_overlap": 65,
-    "sentiment_correlation": 70
-  }'::jsonb,
-  '[
-    {
-      "context": "When competitor faces negative publicity",
-      "prediction_type": "industry_scrutiny_increase",
-      "confidence_modifier": 0.75,
-      "timeframe_days": 30
-    }
-  ]'::jsonb,
-  '{
-    "public_relations": {
-      "focus_areas": ["reputation_management", "competitive_positioning", "crisis_prevention"],
-      "signal_priority_multipliers": {
-        "reputation_event": 1.5,
-        "regulatory_change": 1.3,
-        "competitive_activity": 1.2
-      }
-    }
-  }'::jsonb
-)
-ON CONFLICT (industry) DO NOTHING;
+[
+  {
+    "event_message": "shutdown",
+    "event_type": "Shutdown",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "678ca249-79a1-439c-8603-d603028dcd9f",
+    "level": "log",
+    "timestamp": 1763747929778000
+  },
+  {
+    "event_message": "\n⚠️ MINOR GAPS (acceptable, will proceed):\n",
+    "event_type": "Log",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "00722f63-1493-44b5-a869-93a97bd83b4b",
+    "level": "info",
+    "timestamp": 1763747729903000
+  },
+  {
+    "event_message": "   1. low_competitor_coverage: Competitor coverage at 20% (threshold: 40%)\n",
+    "event_type": "Log",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "feefc7a6-ebf3-4836-b927-1117304ad131",
+    "level": "info",
+    "timestamp": 1763747729903000
+  },
+  {
+    "event_message": "\n✅ QUALITY ASSESSMENT: GOOD ENOUGH - PROCEEDING\n",
+    "event_type": "Log",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "b390fed3-7a4f-46d8-b43b-c0de9baddd96",
+    "level": "info",
+    "timestamp": 1763747729903000
+  },
+  {
+    "event_message": "      - Stakeholder coverage: 0% (threshold: 30%)\n",
+    "event_type": "Log",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "2212ff86-5c19-4e10-8ce2-385331554818",
+    "level": "info",
+    "timestamp": 1763747729903000
+  },
+  {
+    "event_message": "      - Competitor coverage: 20% (threshold: 40%)\n",
+    "event_type": "Log",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "67f263fb-0005-4881-8e45-fcec03f131fe",
+    "level": "info",
+    "timestamp": 1763747729903000
+  },
+  {
+    "event_message": "   📊 Assessment Results:\n",
+    "event_type": "Log",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "86eea6ed-b845-43bc-8005-192a9d6dd1fa",
+    "level": "info",
+    "timestamp": 1763747729903000
+  },
+  {
+    "event_message": "      - CRITICAL gaps: 0\n",
+    "event_type": "Log",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "8d4ee40e-8171-4384-9c17-7cee67b996e7",
+    "level": "info",
+    "timestamp": 1763747729903000
+  },
+  {
+    "event_message": "      - Total articles: 45\n",
+    "event_type": "Log",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "94ac1cdc-a848-4539-901e-91b154364284",
+    "level": "info",
+    "timestamp": 1763747729903000
+  },
+  {
+    "event_message": "      - MINOR gaps: 2\n",
+    "event_type": "Log",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "b464f43c-d392-4cf4-9b61-e1d6a4c4ad1a",
+    "level": "info",
+    "timestamp": 1763747729903000
+  },
+  {
+    "event_message": "   2. low_stakeholder_coverage: Stakeholder coverage at 0%\n",
+    "event_type": "Log",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "ce2aa38c-5edb-45c6-9727-e2689e22a942",
+    "level": "info",
+    "timestamp": 1763747729903000
+  },
+  {
+    "event_message": "   Quality is acceptable for downstream processing\n",
+    "event_type": "Log",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "e5a9c5df-4a57-40bb-a72b-217252f53e87",
+    "level": "info",
+    "timestamp": 1763747729903000
+  },
+  {
+    "event_message": "      - Recent articles (48h): YES\n",
+    "event_type": "Log",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "b04936ee-dd32-4793-8f0d-d27db2a22233",
+    "level": "info",
+    "timestamp": 1763747729903000
+  },
+  {
+    "event_message": "\n🔬 Step 3: Assessing intelligence quality...\n",
+    "event_type": "Log",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "dc71e6bb-c4b8-4c77-964f-5c49cd2b1f21",
+    "level": "info",
+    "timestamp": 1763747729902000
+  },
+  {
+    "event_message": "   ✅ Loaded 10 competitors, 3 stakeholders, 0 topics\n",
+    "event_type": "Log",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "e1b11227-2b6e-43a9-98e3-2f5173e81289",
+    "level": "info",
+    "timestamp": 1763747729902000
+  },
+  {
+    "event_message": "🎯 Step 2: Loading intelligence targets...\n",
+    "event_type": "Log",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "0a98dfde-333e-4e74-8bde-a8cd7d9a6611",
+    "level": "info",
+    "timestamp": 1763747729858000
+  },
+  {
+    "event_message": "📋 Step 1: Loading strategic context...\n",
+    "event_type": "Log",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "336c0823-49bb-45a3-83de-9127e03cd4bb",
+    "level": "info",
+    "timestamp": 1763747729772000
+  },
+  {
+    "event_message": "   Articles to assess: 45\n",
+    "event_type": "Log",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "3b4521b0-b162-452f-9aa7-c976c5b18bc8",
+    "level": "info",
+    "timestamp": 1763747729772000
+  },
+  {
+    "event_message": "\n================================================================================\n",
+    "event_type": "Log",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "0a18e3ff-f559-4704-9083-35bf9aa0f236",
+    "level": "info",
+    "timestamp": 1763747729772000
+  },
+  {
+    "event_message": "   Iteration: 0 (max: 1)\n",
+    "event_type": "Log",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "76ce8011-38f7-4985-bb1b-4c9ac8b25009",
+    "level": "info",
+    "timestamp": 1763747729772000
+  },
+  {
+    "event_message": "================================================================================\n\n",
+    "event_type": "Log",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "f344636a-e830-4ff4-a90d-22aac5a83e53",
+    "level": "info",
+    "timestamp": 1763747729772000
+  },
+  {
+    "event_message": "🔍 QUALITY CONTROL: KARV\n",
+    "event_type": "Log",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "417b2270-8d63-4ece-bb2d-7201f2fa9d10",
+    "level": "info",
+    "timestamp": 1763747729772000
+  },
+  {
+    "event_message": "Listening on http://localhost:9999/\n",
+    "event_type": "Log",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "e244e237-e9b8-464a-9492-e4528f6c8562",
+    "level": "info",
+    "timestamp": 1763747729767000
+  },
+  {
+    "event_message": "booted (time: 40ms)",
+    "event_type": "Boot",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "9cec10e5-9232-4781-b58e-6aa978c6d3ae",
+    "level": "log",
+    "timestamp": 1763747729763000
+  },
+  {
+    "event_message": "shutdown",
+    "event_type": "Shutdown",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "af5cb000-dc79-4ac8-b12f-6a175ec968aa",
+    "level": "log",
+    "timestamp": 1763747031794000
+  },
+  {
+    "event_message": "shutdown",
+    "event_type": "Shutdown",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "49218b52-260e-4d43-8988-a9e410cc905c",
+    "level": "log",
+    "timestamp": 1763747031661000
+  },
+  {
+    "event_message": "\n✅ QUALITY ASSESSMENT: GOOD ENOUGH - PROCEEDING\n",
+    "event_type": "Log",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "05c9c141-f9a2-4a6f-a74e-d4d2a5c0d783",
+    "level": "info",
+    "timestamp": 1763746832073000
+  },
+  {
+    "event_message": "\n⚠️ MINOR GAPS (acceptable, will proceed):\n",
+    "event_type": "Log",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "41d4a827-b64d-419f-8424-514e5932485f",
+    "level": "info",
+    "timestamp": 1763746832073000
+  },
+  {
+    "event_message": "      - Total articles: 46\n",
+    "event_type": "Log",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "b132c476-26f6-4e0f-a64e-fcf1775a2e96",
+    "level": "info",
+    "timestamp": 1763746832073000
+  },
+  {
+    "event_message": "      - Recent articles (48h): YES\n",
+    "event_type": "Log",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "4885c4cf-9904-4a53-991a-f669f1982956",
+    "level": "info",
+    "timestamp": 1763746832073000
+  },
+  {
+    "event_message": "   Quality is acceptable for downstream processing\n",
+    "event_type": "Log",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "3b493058-0cfc-4c96-8e1e-6c3a6a35fd7a",
+    "level": "info",
+    "timestamp": 1763746832073000
+  },
+  {
+    "event_message": "      - CRITICAL gaps: 0\n",
+    "event_type": "Log",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "3916077e-ab47-448f-bfb3-f960b1fbd9b6",
+    "level": "info",
+    "timestamp": 1763746832073000
+  },
+  {
+    "event_message": "   2. low_stakeholder_coverage: Stakeholder coverage at 0%\n",
+    "event_type": "Log",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "222885e2-1e63-4044-a1b0-47ab3b416aa4",
+    "level": "info",
+    "timestamp": 1763746832073000
+  },
+  {
+    "event_message": "      - MINOR gaps: 2\n",
+    "event_type": "Log",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "66fad6f7-c091-40b3-a0b1-b706a94dfd69",
+    "level": "info",
+    "timestamp": 1763746832073000
+  },
+  {
+    "event_message": "   📊 Assessment Results:\n",
+    "event_type": "Log",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "7a73bbc3-9dcf-468b-95ae-4f75086f4da7",
+    "level": "info",
+    "timestamp": 1763746832073000
+  },
+  {
+    "event_message": "      - Stakeholder coverage: 0% (threshold: 30%)\n",
+    "event_type": "Log",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "6085c8f6-ece9-4e49-9f8e-6eed43ce729c",
+    "level": "info",
+    "timestamp": 1763746832073000
+  },
+  {
+    "event_message": "   1. low_competitor_coverage: Competitor coverage at 20% (threshold: 40%)\n",
+    "event_type": "Log",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "c9d39c74-4bbd-46fd-8a84-07b96c1aa0e2",
+    "level": "info",
+    "timestamp": 1763746832073000
+  },
+  {
+    "event_message": "      - Competitor coverage: 20% (threshold: 40%)\n",
+    "event_type": "Log",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "7553ee1a-42f1-4666-822b-9fc667571b20",
+    "level": "info",
+    "timestamp": 1763746832073000
+  },
+  {
+    "event_message": "\n🔬 Step 3: Assessing intelligence quality...\n",
+    "event_type": "Log",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "2ad230d1-992e-4054-b6c3-63a26ad7482e",
+    "level": "info",
+    "timestamp": 1763746832072000
+  },
+  {
+    "event_message": "   ✅ Loaded 10 competitors, 3 stakeholders, 0 topics\n",
+    "event_type": "Log",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "8e920e7f-e273-4999-9e23-b097673fac56",
+    "level": "info",
+    "timestamp": 1763746832072000
+  },
+  {
+    "event_message": "🎯 Step 2: Loading intelligence targets...\n",
+    "event_type": "Log",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "c11712ae-e880-4c6a-8d63-bed34f087c12",
+    "level": "info",
+    "timestamp": 1763746832000000
+  },
+  {
+    "event_message": "   Iteration: 0 (max: 1)\n",
+    "event_type": "Log",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "879f927c-41f0-4cc1-93ca-d866d40c455a",
+    "level": "info",
+    "timestamp": 1763746831787000
+  },
+  {
+    "event_message": "================================================================================\n\n",
+    "event_type": "Log",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "d2b193b8-e83d-4542-bc1f-aef15746daca",
+    "level": "info",
+    "timestamp": 1763746831787000
+  },
+  {
+    "event_message": "\n================================================================================\n",
+    "event_type": "Log",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "2fc6dcad-3908-4c4e-8547-2066ec082d7d",
+    "level": "info",
+    "timestamp": 1763746831787000
+  },
+  {
+    "event_message": "   Articles to assess: 46\n",
+    "event_type": "Log",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "36639e31-7ab0-424d-948a-c23cf09364e6",
+    "level": "info",
+    "timestamp": 1763746831787000
+  },
+  {
+    "event_message": "📋 Step 1: Loading strategic context...\n",
+    "event_type": "Log",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "19ca79fd-dea0-41bd-a92e-ce6d178c95e6",
+    "level": "info",
+    "timestamp": 1763746831787000
+  },
+  {
+    "event_message": "🔍 QUALITY CONTROL: KARV\n",
+    "event_type": "Log",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "72874e89-a365-4882-b617-2b094c7f0052",
+    "level": "info",
+    "timestamp": 1763746831787000
+  },
+  {
+    "event_message": "Listening on http://localhost:9999/\n",
+    "event_type": "Log",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "8b6024bd-94f8-4e84-b17c-e54783c35420",
+    "level": "info",
+    "timestamp": 1763746831783000
+  },
+  {
+    "event_message": "booted (time: 31ms)",
+    "event_type": "Boot",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "ca54eab0-68f4-4260-9d74-e0c1befaf556",
+    "level": "log",
+    "timestamp": 1763746831780000
+  },
+  {
+    "event_message": "Listening on http://localhost:9999/\n",
+    "event_type": "Log",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "67fc8973-24e6-4d81-8e65-1752c9e01113",
+    "level": "info",
+    "timestamp": 1763746831648000
+  },
+  {
+    "event_message": "booted (time: 30ms)",
+    "event_type": "Boot",
+    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
+    "id": "28b2f83b-d61b-4765-9e9a-c41043319f67",
+    "level": "log",
+    "timestamp": 1763746831645000
+  }
+]

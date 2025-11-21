@@ -8,6 +8,7 @@ import { corsHeaders } from '../_shared/cors.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')!;
 
 // "GOOD ENOUGH" QUALITY THRESHOLDS
 const QUALITY_THRESHOLDS = {
@@ -151,8 +152,37 @@ serve(async (req) => {
       });
     }
 
+    // Step 4.5: Use Claude to evaluate quality if assessment is borderline
+    let decision = assessment.decision;
+
+    if (assessment.needs_claude_evaluation && decision === 'PROCEED') {
+      console.log(`\n🤖 Step 4.5: Using Claude to evaluate quality...`);
+      const claudeEvaluation = await evaluateIntelligenceQuality(articles, assessment, targets, companyProfile);
+
+      console.log(`   Claude says: ${claudeEvaluation.is_sufficient ? 'SUFFICIENT' : 'INSUFFICIENT'}`);
+      console.log(`   Reasoning: ${claudeEvaluation.reasoning}`);
+
+      if (!claudeEvaluation.is_sufficient) {
+        console.log(`   🔄 Claude override: Changing decision from PROCEED to SEARCH_GAPS`);
+        decision = 'SEARCH_GAPS';
+
+        // Add Claude's gaps to critical gaps
+        claudeEvaluation.critical_gaps.forEach(gap => {
+          assessment.criticalGaps.push({
+            type: 'claude_identified_gap',
+            severity: GapSeverity.CRITICAL,
+            message: gap,
+            source: 'claude_evaluation'
+          });
+        });
+      }
+
+      // Add Claude evaluation to assessment
+      assessment.claude_evaluation = claudeEvaluation;
+    }
+
     // Step 5: Decision
-    if (assessment.decision === 'PROCEED') {
+    if (decision === 'PROCEED') {
       console.log(`\n✅ QUALITY ASSESSMENT: GOOD ENOUGH - PROCEEDING`);
       console.log(`   Quality is acceptable for downstream processing`);
 
@@ -435,15 +465,150 @@ function assessQuality(articles: any[], companyProfile: any, targets: any) {
     });
   }
 
-  // Decision: PROCEED if no critical gaps, SEARCH_GAPS if critical gaps found
-  const decision = criticalGaps.length === 0 ? 'PROCEED' : 'SEARCH_GAPS';
+  // Decision logic: Use both rule-based and qualitative assessment
+  let decision = criticalGaps.length === 0 ? 'PROCEED' : 'SEARCH_GAPS';
+
+  // OVERRIDE: If coverage is extremely poor (< 25% competitors AND 0% stakeholders), escalate to SEARCH_GAPS
+  const extremelyPoorCoverage = (
+    assessment.competitor_coverage_rate < 0.25 &&
+    assessment.stakeholder_coverage_rate === 0 &&
+    targets.competitors.length > 0 &&
+    targets.stakeholders.length > 0
+  );
+
+  if (extremelyPoorCoverage) {
+    console.log(`⚠️ OVERRIDING: Extremely poor coverage detected (${(assessment.competitor_coverage_rate * 100).toFixed(0)}% competitors, 0% stakeholders)`);
+    decision = 'SEARCH_GAPS';
+    criticalGaps.push({
+      type: 'extremely_poor_coverage',
+      severity: GapSeverity.CRITICAL,
+      message: `Coverage is insufficient for meaningful analysis: ${(assessment.competitor_coverage_rate * 100).toFixed(0)}% competitors, 0% stakeholders`,
+      coverage: {
+        competitors: assessment.competitor_coverage_rate,
+        stakeholders: assessment.stakeholder_coverage_rate
+      }
+    });
+  }
 
   return {
     ...assessment,
     criticalGaps,
     minorGaps,
-    decision
+    decision,
+    needs_claude_evaluation: extremelyPoorCoverage || minorGaps.length > 2
   };
+}
+
+/**
+ * Use Claude to evaluate if intelligence quality is sufficient for an executive report
+ */
+async function evaluateIntelligenceQuality(
+  articles: any[],
+  assessment: any,
+  targets: any,
+  companyProfile: any
+): Promise<{ is_sufficient: boolean, reasoning: string, critical_gaps: string[] }> {
+
+  if (!ANTHROPIC_API_KEY) {
+    console.log('⚠️ Claude evaluation skipped - no API key');
+    return { is_sufficient: true, reasoning: 'Evaluation skipped', critical_gaps: [] };
+  }
+
+  try {
+    // Sample articles for evaluation (first 10)
+    const sampleArticles = articles.slice(0, 10).map(a => ({
+      title: a.title,
+      description: a.description || a.content?.substring(0, 200),
+      source: a.source
+    }));
+
+    const prompt = `You are a QUALITY CONTROL ANALYST evaluating intelligence gathered for an executive report.
+
+ORGANIZATION: ${companyProfile?.business_model || 'A company'}
+INDUSTRY: ${companyProfile?.industry || 'Unknown'}
+
+INTELLIGENCE TARGETS:
+- ${targets.competitors.length} Competitors: ${targets.competitors.slice(0, 5).map((c: any) => c.name).join(', ')}${targets.competitors.length > 5 ? '...' : ''}
+- ${targets.stakeholders.length} Stakeholders: ${targets.stakeholders.slice(0, 3).map((s: any) => s.name).join(', ')}${targets.stakeholders.length > 3 ? '...' : ''}
+
+COVERAGE ACHIEVED:
+- Total articles: ${assessment.total_articles}
+- Competitor coverage: ${(assessment.competitor_coverage_rate * 100).toFixed(0)}% (${Math.floor(assessment.competitor_coverage_rate * targets.competitors.length)}/${targets.competitors.length})
+- Stakeholder coverage: ${(assessment.stakeholder_coverage_rate * 100).toFixed(0)}% (${Math.floor(assessment.stakeholder_coverage_rate * targets.stakeholders.length)}/${targets.stakeholders.length})
+- Recent articles: ${assessment.has_recent_articles ? 'YES' : 'NO'}
+
+SAMPLE ARTICLES (first 10):
+${sampleArticles.map((a, i) => `${i + 1}. ${a.title}\n   Source: ${a.source}\n   ${a.description}`).join('\n\n')}
+
+YOUR TASK:
+Evaluate if this intelligence is sufficient to write a MEANINGFUL executive report. Consider:
+
+1. **Coverage Quality**: Do we have actual intelligence about key competitors/stakeholders, or just generic industry news?
+2. **Actionability**: Can an executive make strategic decisions from this, or is it too sparse?
+3. **Balance**: Is there enough breadth to understand the competitive landscape?
+4. **Substance**: Are there real events/developments, or just filler?
+
+CRITICAL STANDARDS:
+- An executive report with 0% stakeholder coverage is NOT acceptable
+- 20% competitor coverage means we're missing 80% of the competitive landscape
+- Generic industry news without specific competitor intel is insufficient
+
+Return ONLY this JSON format:
+{
+  "is_sufficient": true/false,
+  "reasoning": "1-2 sentence explanation of why this is or isn't enough",
+  "critical_gaps": ["gap 1", "gap 2"],
+  "quality_score": 0-100
+}
+
+Be STRICT. If you wouldn't want to present this to an executive, mark it insufficient.`;
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        temperature: 0.3,
+        messages: [{
+          role: 'user',
+          content: prompt
+        }]
+      })
+    });
+
+    if (!response.ok) {
+      console.error('❌ Claude evaluation failed:', response.statusText);
+      return { is_sufficient: true, reasoning: 'Evaluation error', critical_gaps: [] };
+    }
+
+    const data = await response.json();
+    const content = data.content?.[0]?.text || '{}';
+
+    // Parse JSON response
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      console.error('❌ Failed to parse Claude evaluation');
+      return { is_sufficient: true, reasoning: 'Parse error', critical_gaps: [] };
+    }
+
+    const evaluation = JSON.parse(jsonMatch[0]);
+    console.log('🤖 Claude Quality Evaluation:', evaluation);
+
+    return {
+      is_sufficient: evaluation.is_sufficient || false,
+      reasoning: evaluation.reasoning || 'No reasoning provided',
+      critical_gaps: evaluation.critical_gaps || []
+    };
+
+  } catch (error: any) {
+    console.error('❌ Claude evaluation error:', error.message);
+    return { is_sufficient: true, reasoning: 'Evaluation error', critical_gaps: [] };
+  }
 }
 
 /**

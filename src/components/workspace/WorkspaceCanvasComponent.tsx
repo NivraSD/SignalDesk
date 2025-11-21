@@ -168,19 +168,37 @@ export default function WorkspaceCanvasComponent({
       let userMessage = '';
 
       if (isSchema) {
-        systemPrompt = `You are NIV, an expert Schema.org consultant. You help improve Schema.org JSON-LD markup for GEO (Generative Engine Optimization).
+        systemPrompt = `You are NIV, an expert Schema.org consultant and strategic advisor. You help improve Schema.org JSON-LD markup for GEO (Generative Engine Optimization).
 
 CRITICAL RULES:
-1. ONLY return valid JSON - no explanations, no markdown, no text
-2. If the user wants to ADD something (award, FAQ, person, service, etc), return ONLY the new entity/entities as JSON
-3. If the user wants to MODIFY something, return the COMPLETE updated schema
-4. Always use proper Schema.org types (@type, @id, etc)
-5. Use proper Schema.org properties (name, description, url, etc)
-6. Generate proper @id values using the organization URL as base
+1. NEVER make up factual information (awards, certifications, people, etc.)
+2. If the user's request is vague or missing details, ask clarifying questions in natural language
+3. ONLY generate JSON when the user has provided specific, factual information
+4. Be conversational and helpful - guide the user through the editing process
+5. If you DO generate JSON:
+   - Return ONLY valid JSON (no markdown, no explanations outside the JSON)
+   - Use proper Schema.org types (@type, @id, etc)
+   - Generate proper @id values using the organization URL as base
+
+WHEN TO ASK QUESTIONS (respond in natural language):
+- User says "add awards" but doesn't specify which awards → Ask: "Which specific awards has the organization won? I need the award names, years, and awarding organizations to add them accurately."
+- User says "add a FAQ" without details → Ask: "What question would you like to add to the FAQ? Please provide both the question and answer."
+- User provides incomplete information → Ask for the missing details
+
+WHEN TO GENERATE JSON (respond with ONLY JSON):
+- User provides specific factual details like: "Add that we won the PR News Platinum award in 2024"
 
 Examples:
+
+User: "add awards"
+You: "I'd be happy to add awards to the schema! Which specific awards has the organization won? Please provide:
+- Award name
+- Year awarded
+- Awarding organization
+This ensures I add accurate, factual information to your schema."
+
 User: "Add that we won the PR News Platinum award in 2024"
-You return: {
+You: {
   "@type": "Award",
   "@id": "https://www.company.com/#award-prnews-2024",
   "name": "PR News Platinum Award",
@@ -189,23 +207,13 @@ You return: {
     "@type": "Organization",
     "name": "PR News"
   }
-}
-
-User: "Add a FAQ about our pricing"
-You return: {
-  "@type": "Question",
-  "name": "What are your pricing options?",
-  "acceptedAnswer": {
-    "@type": "Answer",
-    "text": "We offer custom pricing based on..."
-  }
 }`;
         userMessage = `User request: ${aiPrompt}
 
 Current Schema:
 ${contextText}
 
-Return ONLY valid JSON with no explanations or markdown.`;
+Remember: Ask clarifying questions if details are missing. Only generate JSON when you have specific factual information.`;
       } else {
         systemPrompt = 'You are NIV, an expert PR and communications content strategist. Help improve content to be more compelling, clear, and effective. Focus on what will resonate with the target audience.';
         userMessage = `${aiPrompt}
@@ -259,6 +267,9 @@ ${contextText}`;
       if (selectedText) {
         // Replace selected text with AI response
         setEditorContent(editorContent.replace(selectedText, aiResponse));
+        setAiResponse('');
+        setSelectedText('');
+        setAiPrompt('');
       } else {
         // No text selected - intelligently merge based on content type
         const isSchema = currentContent?.content_type === 'schema' ||
@@ -266,7 +277,7 @@ ${contextText}`;
                         editorContent.trim().startsWith('[');
 
         if (isSchema) {
-          // For schemas: Try to merge AI recommendations
+          // For schemas: Check if response is JSON or conversational
           try {
             // Clean AI response - remove ALL markdown artifacts
             let cleanedResponse = aiResponse.trim();
@@ -317,6 +328,14 @@ ${contextText}`;
             };
 
             cleanedResponse = extractJSON(cleanedResponse).trim();
+
+            // If there's no JSON structure, it's likely a conversational response
+            if (!cleanedResponse.startsWith('{')) {
+              console.log('💬 NIV is asking for clarification - this is a conversational response');
+              // Don't auto-apply conversational responses - keep them visible for user to read
+              return;
+            }
+
             console.log('🔍 After JSON extraction:', cleanedResponse.substring(0, 300));
             console.log('🔍 Attempting to parse as JSON...');
 
@@ -401,6 +420,9 @@ ${contextText}`;
             const mergedJSON = JSON.stringify(mergedSchema, null, 2);
             console.log('✅ Schema merge successful, setting editor content');
             setEditorContent(mergedJSON);
+            setAiResponse('');
+            setSelectedText('');
+            setAiPrompt('');
           } catch (e) {
             console.error('Schema merge error:', e);
             console.error('Error details:', {
@@ -408,8 +430,9 @@ ${contextText}`;
               cleanedResponse: cleanedResponse?.substring(0, 200),
               aiResponsePreview: aiResponse?.substring(0, 200)
             });
-            // If parsing fails, append AI response as comment
-            setEditorContent(editorContent + '\n\n/* AI Suggestion (failed to parse):\n' + aiResponse + '\n*/');
+            // If parsing fails, it's likely a conversational response - don't auto-apply
+            console.log('💬 Response is not valid JSON - likely a conversational message from NIV');
+            return;
           }
         } else {
           // For non-schema content: Intelligently determine if we should replace or append
@@ -434,11 +457,11 @@ ${contextText}`;
             // Default: Append for shorter responses or unclear intent
             setEditorContent(editorContent + '\n\n' + aiResponse);
           }
+          setAiResponse('');
+          setSelectedText('');
+          setAiPrompt('');
         }
       }
-      setAiResponse('');
-      setSelectedText('');
-      setAiPrompt(''); // Clear the prompt after applying
     }
   };
 
@@ -676,12 +699,45 @@ ${contextText}`;
                         </div>
                       </div>
 
-                      <button
-                        onClick={applyAIEdit}
-                        className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
-                      >
-                        Apply This Edit
-                      </button>
+                      {(() => {
+                        // Determine if this is a JSON edit or conversational response
+                        const isSchema = currentContent?.content_type === 'schema' ||
+                                        editorContent.trim().startsWith('{') ||
+                                        editorContent.trim().startsWith('[');
+
+                        let cleanedResponse = aiResponse.trim();
+                        cleanedResponse = cleanedResponse.replace(/```json\n?/gi, '').replace(/```\n?/g, '');
+                        const firstBrace = cleanedResponse.indexOf('{');
+                        const looksLikeJSON = firstBrace !== -1 && firstBrace < 50;
+
+                        // If it's a schema and response looks like JSON, show Apply button
+                        // Otherwise, show a "Continue conversation" button
+                        if (isSchema && looksLikeJSON) {
+                          return (
+                            <button
+                              onClick={applyAIEdit}
+                              className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
+                            >
+                              Apply This Edit
+                            </button>
+                          );
+                        } else if (isSchema && !looksLikeJSON) {
+                          return (
+                            <div className="text-xs text-purple-400 p-2 bg-purple-900/20 rounded-lg border border-purple-500/30">
+                              💬 NIV is asking for more information. Respond above with the details requested.
+                            </div>
+                          );
+                        } else {
+                          return (
+                            <button
+                              onClick={applyAIEdit}
+                              className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
+                            >
+                              Apply This Edit
+                            </button>
+                          );
+                        }
+                      })()}
                     </div>
                   )}
                 </div>

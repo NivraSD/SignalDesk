@@ -83,16 +83,48 @@ serve(async (req) => {
       });
     }
 
+    // Filter out old articles (keep last 7 days)
+    const RECENCY_DAYS = 7;
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - RECENCY_DAYS);
+
+    const recentArticles = articles.filter(article => {
+      const publishedDate = new Date(article.published_at || article.publishDate || 0);
+      const isRecent = publishedDate >= cutoffDate;
+
+      if (!isRecent) {
+        console.log(`   ⏭️  Filtering out old article: "${article.title?.substring(0, 60)}..." (${publishedDate.toDateString()})`);
+      }
+
+      return isRecent;
+    });
+
+    const filteredByAge = articles.length - recentArticles.length;
+    console.log(`📅 Date filtering: ${articles.length} → ${recentArticles.length} articles (removed ${filteredByAge} older than ${RECENCY_DAYS} days)`);
+
+    if (recentArticles.length === 0) {
+      console.log('⚠️ No recent articles after date filtering');
+      return new Response(JSON.stringify({
+        relevant_articles: [],
+        filtered_out: articles.length,
+        filtered_by_age: filteredByAge,
+        total: articles.length,
+        message: `All ${articles.length} articles were older than ${RECENCY_DAYS} days`
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     // Use Claude to intelligently filter articles in batches
-    console.log(`🤖 Using Claude to intelligently filter ${articles.length} articles...`);
+    console.log(`🤖 Using Claude to intelligently filter ${recentArticles.length} recent articles...`);
 
     const batchSize = 20; // Process 20 articles at a time
     const relevantArticles: any[] = [];
 
-    for (let i = 0; i < articles.length; i += batchSize) {
-      const batch = articles.slice(i, i + batchSize);
+    for (let i = 0; i < recentArticles.length; i += batchSize) {
+      const batch = recentArticles.slice(i, i + batchSize);
 
-      console.log(`   Processing batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(articles.length/batchSize)} (${batch.length} articles)...`);
+      console.log(`   Processing batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(recentArticles.length/batchSize)} (${batch.length} articles)...`);
 
       const prompt = `You are an INTELLIGENCE ANALYST filtering news for ${organization_name}, a ${profile?.industry || 'trading'} company.
 
@@ -232,17 +264,21 @@ Be INCLUSIVE - when in doubt, include it. Better to have too many than miss crit
       }
     }
 
-    const filteredOut = articles.length - relevantArticles.length;
+    const filteredByRelevance = recentArticles.length - relevantArticles.length;
+    const totalFilteredOut = articles.length - relevantArticles.length;
 
     console.log(`✅ Relevance filtering complete:`);
-    console.log(`   Total articles: ${articles.length}`);
-    console.log(`   Relevant: ${relevantArticles.length}`);
-    console.log(`   Filtered out: ${filteredOut}`);
+    console.log(`   Original articles: ${articles.length}`);
+    console.log(`   After date filter: ${recentArticles.length} (removed ${filteredByAge})`);
+    console.log(`   After relevance filter: ${relevantArticles.length} (removed ${filteredByRelevance})`);
+    console.log(`   Total filtered out: ${totalFilteredOut}`);
     console.log(`   Keep rate: ${((relevantArticles.length / articles.length) * 100).toFixed(1)}%`);
 
     return new Response(JSON.stringify({
       relevant_articles: relevantArticles,
-      filtered_out: filteredOut,
+      filtered_out: totalFilteredOut,
+      filtered_by_age: filteredByAge,
+      filtered_by_relevance: filteredByRelevance,
       total: articles.length,
       keep_rate: ((relevantArticles.length / articles.length) * 100).toFixed(1) + '%',
       targets_loaded: {

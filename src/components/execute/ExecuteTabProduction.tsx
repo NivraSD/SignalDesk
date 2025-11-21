@@ -28,19 +28,46 @@ import {
   Library,
   ListOrdered,
   X,
-  Maximize2,
-  Minimize2,
   Sparkles
 } from 'lucide-react'
 import NIVContentOrchestrator from './NIVContentOrchestratorProduction'
 import ContentQueue from './ContentQueue'
-import ContentWorkspace from './ContentWorkspace'
+// ContentWorkspace removed - now using AI-powered WorkspaceCanvasComponent from canvas
 import ContentLibraryWithFolders from './ContentLibraryWithFolders'
 import ContentPrompts from './ContentPrompts'
 import type { NivStrategicFramework } from '@/types/niv-strategic-framework'
 import type { QueueItem } from './ContentQueue'
-import type { ContentItem } from './ContentWorkspace'
 import { useAppStore } from '@/stores/useAppStore'
+
+// ContentItem type (formerly from ContentWorkspace)
+export interface ContentItem {
+  id: string
+  type: string
+  content: any
+  title?: string
+  folder?: string
+  savedPath?: string
+  createdAt?: Date
+  status?: 'draft' | 'completed' | 'published'
+  source?: string
+  metadata?: {
+    platform?: string
+    audience?: string[]
+    generatedAt?: string
+    framework?: any
+    opportunity?: any
+    keyMessages?: string[]
+    [key: string]: any
+  }
+  versions?: Array<{
+    platform: string
+    content: string
+    characterCount?: number
+    limits?: { min: number, max: number }
+  }>
+  saved: boolean
+  timestamp: number
+}
 
 // ALL content types - properly organized
 const CONTENT_TYPES = [
@@ -106,16 +133,14 @@ export default function ExecuteTabProduction({
   const { organization } = useAppStore()
   const [selectedContentType, setSelectedContentType] = useState<string>('')
   const [generatedContent, setGeneratedContent] = useState<ContentItem[]>([])
-  const [showWorkspace, setShowWorkspace] = useState(false)
-  const [currentContent, setCurrentContent] = useState<ContentItem | null>(null)
+  // showWorkspace and currentContent removed - now using AI workspace on canvas
   const [queueItems, setQueueItems] = useState<QueueItem[]>([])
   const [showQueue, setShowQueue] = useState(false)
   const [showLibrary, setShowLibrary] = useState(false)
   const [showPrompts, setShowPrompts] = useState(false)
   const [expandedCategories, setExpandedCategories] = useState(new Set<string>())
 
-  // Use ref to maintain content across re-renders
-  const currentContentRef = useRef<ContentItem | null>(null)
+  // currentContentRef removed - not needed with AI workspace on canvas
 
   // Clear state when organization changes
   useEffect(() => {
@@ -123,9 +148,6 @@ export default function ExecuteTabProduction({
       console.log(`🔄 ExecuteTabProduction: Organization changed to ${organization.name}, clearing state`)
       setSelectedContentType('')
       setGeneratedContent([])
-      setShowWorkspace(false)
-      setCurrentContent(null)
-      currentContentRef.current = null
       setQueueItems([])
       setShowQueue(false)
       setShowLibrary(false)
@@ -138,16 +160,62 @@ export default function ExecuteTabProduction({
   useEffect(() => {
     const handleOpenInExecute = (event: CustomEvent) => {
       const content = event.detail as ContentItem
-      console.log('📥 Opening content from Memory Vault:', content)
+      console.log('📥 Opening content from Memory Vault in AI workspace:', content)
 
-      setCurrentContent(content)
-      currentContentRef.current = content
-      setShowWorkspace(true)
+      // Open in AI-powered workspace on canvas
+      const canvasEvent = new CustomEvent('addComponentToCanvas', {
+        detail: { moduleId: 'workspace', action: 'window' }
+      })
+      window.dispatchEvent(canvasEvent)
+
+      setTimeout(() => {
+        const contentEvent = new CustomEvent('openInWorkspace', {
+          detail: {
+            id: content.id,
+            type: content.type,
+            title: content.title || 'Untitled Content',
+            content: typeof content.content === 'string' ? content.content : JSON.stringify(content.content, null, 2),
+            metadata: content.metadata || {}
+          }
+        })
+        window.dispatchEvent(contentEvent)
+      }, 300)
     }
 
     window.addEventListener('openInExecute' as any, handleOpenInExecute)
     return () => window.removeEventListener('openInExecute' as any, handleOpenInExecute)
   }, [])
+
+  // Helper: Open content in AI-powered workspace (on canvas, like Memory Vault)
+  const openInAIWorkspace = async (content: ContentItem) => {
+    console.log('🤖 Opening content in AI workspace:', content)
+
+    // Ensure content is saved to Memory Vault first
+    if (!content.saved) {
+      await handleContentSave(content)
+    }
+
+    // Open the AI-powered workspace on canvas
+    const event = new CustomEvent('addComponentToCanvas', {
+      detail: { moduleId: 'workspace', action: 'window' }
+    })
+    window.dispatchEvent(event)
+
+    // Send content to workspace after brief delay
+    setTimeout(() => {
+      const contentEvent = new CustomEvent('openInWorkspace', {
+        detail: {
+          id: content.id,
+          type: content.type,
+          title: content.title || 'Untitled Content',
+          content: typeof content.content === 'string' ? content.content : JSON.stringify(content.content, null, 2),
+          metadata: content.metadata || {}
+        }
+      })
+      window.dispatchEvent(contentEvent)
+      console.log('✅ Content sent to AI workspace with NIV assistant')
+    }, 300)
+  }
 
   // Handle content type selection
   const handleContentTypeSelect = (typeId: string) => {
@@ -176,14 +244,8 @@ export default function ExecuteTabProduction({
     // Add to generated content list
     setGeneratedContent(prev => [...prev, completeContent])
 
-    // Set as current content and store in ref
-    currentContentRef.current = completeContent
-    setCurrentContent(completeContent)
-
-    // Open workspace immediately with the content
-    setShowWorkspace(true)
-
-    console.log('✅ Content opened in workspace:', completeContent)
+    // Open in AI workspace with NIV assistant
+    openInAIWorkspace(completeContent)
   }
 
   // Handle content save
@@ -220,12 +282,9 @@ export default function ExecuteTabProduction({
           )
         )
 
-        setCurrentContent(updatedContent)
-        currentContentRef.current = updatedContent
-
-        alert(`✅ Content saved to ${data.location}`)
+        console.log(`✅ Content saved to ${data.location}`)
       } else {
-        alert(`❌ Failed to save: ${data.error || 'Unknown error'}`)
+        console.error(`❌ Failed to save: ${data.error || 'Unknown error'}`)
       }
     } catch (error) {
       console.error('Save error:', error)
@@ -390,9 +449,7 @@ export default function ExecuteTabProduction({
                 organization={organization}
                 onContentSelect={(item: any) => {
                   const contentItem = item as ContentItem
-                  setCurrentContent(contentItem)
-                  currentContentRef.current = contentItem
-                  setShowWorkspace(true)
+                  openInAIWorkspace(contentItem)
                   setShowLibrary(false)
                 }}
                 className="h-full"
@@ -423,59 +480,8 @@ export default function ExecuteTabProduction({
         )}
       </div>
 
-      {/* RIGHT SIDE WORKSPACE - Shows when user opens content */}
-      {currentContent && showWorkspace && (
-        <div className="fixed right-0 top-0 bottom-0 w-96 bg-gray-900 border-l border-gray-800 shadow-2xl z-40">
-          {/* Workspace Header */}
-          <div className="px-4 py-3 border-b border-gray-800 flex items-center justify-between">
-            <h3 className="text-sm font-medium text-white">Content Workspace</h3>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setShowWorkspace(false)}
-                className="p-1 hover:bg-gray-800 rounded transition-colors"
-                title="Minimize"
-              >
-                <Minimize2 className="w-4 h-4 text-gray-400" />
-              </button>
-              <button
-                onClick={() => {
-                  setShowWorkspace(false)
-                  setCurrentContent(null)
-                  currentContentRef.current = null
-                }}
-                className="p-1 hover:bg-gray-800 rounded transition-colors"
-                title="Close"
-              >
-                <X className="w-4 h-4 text-gray-400" />
-              </button>
-            </div>
-          </div>
-
-          {/* Workspace Content */}
-          <div className="h-full overflow-hidden">
-            <ContentWorkspace
-              content={currentContent}
-              onEdit={(content) => {
-                setCurrentContent(content)
-                currentContentRef.current = content
-              }}
-              onSave={handleContentSave}
-              className="h-full"
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Reopen workspace button - shows when content exists but workspace is closed */}
-      {currentContent && !showWorkspace && (
-        <button
-          onClick={() => setShowWorkspace(true)}
-          className="fixed bottom-4 right-4 bg-yellow-500 text-black px-4 py-2 rounded-lg shadow-lg hover:bg-yellow-400 transition-colors flex items-center gap-2 z-40 animate-pulse"
-        >
-          <Maximize2 className="w-4 h-4" />
-          Open Workspace ({currentContent.type})
-        </button>
-      )}
+      {/* OLD INLINE WORKSPACE REMOVED - Now using AI-powered WorkspaceCanvasComponent on canvas */}
+      {/* Content opens automatically in the canvas workspace with NIV AI assistant */}
     </div>
   )
 }
