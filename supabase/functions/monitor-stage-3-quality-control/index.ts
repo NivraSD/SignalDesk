@@ -199,7 +199,7 @@ serve(async (req) => {
 
     // Step 6: Generate gap context for mcp-discovery
     console.log(`\n🔧 Step 6: Creating gap context for mcp-discovery...`);
-    const gapContext = generateGapContext(assessment.criticalGaps, companyProfile, targets, organizationName);
+    const gapContext = generateGapContext(assessment.criticalGaps, companyProfile, targets, organization_name);
 
     console.log(`   Gap type: ${gapContext.gap_type}`);
     console.log(`   Missing entities: ${gapContext.missing_entities?.length || 0}`);
@@ -232,7 +232,7 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           organization_id,
-          organization_name: organizationName,
+          organization_name: organization_name,
           industry_hint: companyProfile.industry,
           gap_filling_mode: true,
           gap_context: gapContext,
