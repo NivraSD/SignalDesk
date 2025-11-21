@@ -281,7 +281,52 @@ serve(async (req) => {
           console.warn('⚠️ Relevance filtering failed, using all articles');
         }
       }
-      
+
+      // STEP 1.5: Quality Control (gap detection and optional gap-filling)
+      if (!skip_enrichment && filteredMonitoringData?.findings?.length > 0) {
+        console.log('🔬 Step 1.5: Quality control assessment...');
+        const qcStart = Date.now();
+
+        const qcResponse = await fetch(
+          'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/monitor-stage-3-quality-control',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${SUPABASE_KEY}`
+            },
+            body: JSON.stringify({
+              articles: filteredMonitoringData.findings || [],
+              organization_id,  // Pass the UUID for company_profile lookup
+              organization_name: orgData.name || organization_name,
+              iteration: 0
+            })
+          }
+        );
+
+        if (qcResponse.ok) {
+          const qcResult = await qcResponse.json();
+          console.log(`✅ Quality control complete in ${Date.now() - qcStart}ms:`, {
+            decision: qcResult.decision,
+            input_articles: filteredMonitoringData.findings.length,
+            output_articles: qcResult.articles?.length || 0,
+            gaps_filled: qcResult.gap_fill_results?.articles_added || 0,
+            critical_gaps: qcResult.assessment?.criticalGaps?.length || 0,
+            minor_gaps: qcResult.assessment?.minorGaps?.length || 0
+          });
+
+          // Update filtered data with QC results (may include gap-filled articles)
+          if (qcResult.articles && qcResult.articles.length > 0) {
+            filteredMonitoringData = {
+              ...filteredMonitoringData,
+              findings: qcResult.articles
+            };
+          }
+        } else {
+          console.warn('⚠️ Quality control failed, proceeding with filtered articles');
+        }
+      }
+
       // STEP 2: Data Enrichment (extract events, entities, topics from RELEVANT articles)
       if (!skip_enrichment && filteredMonitoringData?.findings?.length > 0) {
         // DEBUG: Check what we're about to send to enrichment

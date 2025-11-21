@@ -25,12 +25,13 @@ const SimpleIntelligence = () => {
 
   const pipelineStages: PipelineStage[] = [
     { id: 'mcp-discovery', name: 'Discovery', status: 'pending', icon: Brain },
-    { id: 'monitor-stage-1', name: 'PR Filtering', status: 'pending', icon: Activity },
-    { id: 'monitor-stage-2-relevance', name: 'Relevance Scoring', status: 'pending', icon: Target },
+    { id: 'monitor-stage-1', name: 'Monitoring', status: 'pending', icon: Activity },
+    { id: 'monitor-stage-2-relevance', name: 'Relevance Filter', status: 'pending', icon: Target },
+    { id: 'monitor-stage-3-quality-control', name: 'Quality Control', status: 'pending', icon: AlertCircle },
     { id: 'monitoring-stage-2-enrichment', name: 'Entity Extraction', status: 'pending', icon: Users },
     { id: 'intelligence-orchestrator-v2', name: 'Intelligence Orchestrator', status: 'pending', icon: TrendingUp },
     { id: 'mcp-executive-synthesis', name: 'Executive Synthesis', status: 'pending', icon: Zap },
-    { id: 'opportunity-orchestrator', name: 'Opportunity Engine', status: 'pending', icon: AlertCircle }
+    { id: 'opportunity-orchestrator', name: 'Opportunity Engine', status: 'pending', icon: Zap }
   ]
 
   const [stages, setStages] = useState(pipelineStages)
