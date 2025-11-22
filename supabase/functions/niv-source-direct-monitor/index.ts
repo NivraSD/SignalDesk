@@ -9,7 +9,17 @@ const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-const CODE_VERSION = 'v2025-11-21-no-date-filter';
+const CODE_VERSION = 'v2025-11-21-intelligent-queries-v3';
+
+// Helper: Extract domain from URL
+function extractDomain(url: string): string {
+  try {
+    const urlObj = new URL(url);
+    return urlObj.hostname.replace('www.', '');
+  } catch {
+    return 'unknown';
+  }
+}
 
 // Extract HTML sources from company profile sources (selected by mcp-discovery)
 function getHTMLSourcesFromProfile(companyProfile: any) {
@@ -346,145 +356,149 @@ serve(async (req) => {
       console.log(`   📦 Products/Services: ${products.slice(0, 3).join(', ')}${products.length > 3 ? '...' : ''}`);
     }
 
-    // Step 1b: Get HTML sources - prefer profile, fallback to registry
-    console.log('\n📚 Step 1b: Loading HTML sources...');
-    let htmlSources = getHTMLSourcesFromProfile(companyProfile);
+    // Step 2: Build INTELLIGENT Google CSE queries from key questions
+    console.log('\n🔍 Step 2: Building intelligent Google CSE queries from key questions...');
 
-    if (htmlSources.length === 0) {
-      console.log('   ⚠️ No HTML sources in profile, loading from master-source-registry...');
-      htmlSources = await loadHTMLSourcesFromRegistry(companyProfile, organization_name);
-    } else {
-      console.log(`   ✅ Using ${htmlSources.length} HTML sources from company profile`);
+    const searchQueries: string[] = [];
+    const intelligenceContext = companyProfile.intelligence_context || {};
+    const keyQuestions = intelligenceContext.key_questions || [];
+    const industry = companyProfile.industry || '';
+
+    // Query 1: Top competitors (from first key question)
+    if (competitors.length > 0) {
+      const competitorQuery = competitors.slice(0, 5).map(c => `"${c}"`).join(' OR ');
+      searchQueries.push(competitorQuery);
+      console.log(`   Query 1: Competitors - ${keyQuestions[0] || 'Top 5 competitors'}`);
     }
 
-    if (htmlSources.length === 0) {
-      throw new Error('No HTML sources available - check master-source-registry configuration');
+    // Query 2: Regulatory/stakeholder developments (from key questions)
+    if (stakeholders.length > 0) {
+      const regulatorQuery = stakeholders.slice(0, 5).map(s => `"${s}"`).join(' OR ');
+      searchQueries.push(regulatorQuery);
+      console.log(`   Query 2: Stakeholders - ${keyQuestions[2] || 'Regulatory/stakeholder actions'}`);
     }
 
-    // Step 2: Scrape trusted sources in parallel (limit to prevent timeout)
-    const MAX_SOURCES_TO_SCRAPE = 10; // Limit sources to prevent timeout
-    const sourcesToScrape = htmlSources.slice(0, MAX_SOURCES_TO_SCRAPE);
-
-    console.log('\n📡 Step 2: Scraping trusted sources...');
-    console.log(`   Scraping ${sourcesToScrape.length} sources (available: ${htmlSources.length})`);
-    if (htmlSources.length > MAX_SOURCES_TO_SCRAPE) {
-      console.log(`   ⚠️ Capping at ${MAX_SOURCES_TO_SCRAPE} sources to prevent timeout`);
+    // Query 3: Industry trends (from key questions about market opportunities)
+    if (industry) {
+      const trendQuery = `"${industry}" (trends OR developments OR opportunities OR innovations)`;
+      searchQueries.push(trendQuery);
+      console.log(`   Query 3: Industry trends - ${keyQuestions[3] || 'Market opportunities'}`);
     }
 
-    const sourcePromises = sourcesToScrape.map(source => scrapeSouceListing(source));
-    const sourceResults = await Promise.all(sourcePromises);
+    // Query 4: Risk/threat monitoring (from key questions)
+    if (industry) {
+      const riskQuery = `"${industry}" (risks OR threats OR challenges OR disruption)`;
+      searchQueries.push(riskQuery);
+      console.log(`   Query 4: Risks/threats - ${keyQuestions[4] || 'Risk monitoring'}`);
+    }
 
-    const allArticles = sourceResults.flat();
-    console.log(`\n📊 Total articles collected: ${allArticles.length}`);
+    console.log(`   Total queries: ${searchQueries.length}`);
+
+    // Step 3: Execute Google CSE queries with 24-hour filter
+    console.log('\n🔍 Step 3: Executing Google CSE (last 24 hours)...');
+
+    const allArticles: any[] = [];
+
+    for (let i = 0; i < searchQueries.length; i++) {
+      const query = searchQueries[i];
+      console.log(`   Query ${i + 1}/${searchQueries.length}: Searching...`);
+
+      try {
+        // Call Google CSE function
+        const response = await fetch(`${SUPABASE_URL}/functions/v1/niv-google-cse`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            query,
+            date_restrict: 'd1', // Last 24 hours
+            max_results: 20
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Google CSE failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const articles = (data.results || []).map((r: any) => ({
+          url: r.url,
+          title: r.title,
+          description: r.snippet || '',
+          source: r.source
+        }));
+
+        console.log(`   Query ${i + 1}: Found ${articles.length} articles`);
+        allArticles.push(...articles);
+      } catch (error: any) {
+        console.error(`   Query ${i + 1}: Failed - ${error.message}`);
+      }
+    }
+
+    console.log(`\n📊 Total articles from Google CSE: ${allArticles.length}`);
 
     if (allArticles.length === 0) {
       return new Response(JSON.stringify({
         success: false,
-        error: 'No articles found from any source',
+        error: 'No articles found from Google CSE',
         metadata: { code_version: CODE_VERSION }
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    // Step 3: Mechanical filtering (recency, source quality, dedup) - NO semantic filtering yet
-    console.log('\n🔧 Step 3: Applying mechanical filtering (recency, source quality, dedup)...');
+    // Step 4: Deduplicate articles (skip date filtering - Google CSE d1 is reliable)
+    console.log('\n🔧 Step 4: Deduplication and formatting...');
 
-    // 3a. Deduplicate by URL
     const seenUrls = new Set<string>();
     const dedupedArticles = allArticles.filter(a => {
       if (!a.url || seenUrls.has(a.url)) return false;
       seenUrls.add(a.url);
       return true;
     });
+
     console.log(`   ✅ Deduplication: ${allArticles.length} → ${dedupedArticles.length} unique articles`);
 
-    // 3b. Skip date filtering at listing stage (dates not available from listing pages)
-    // Date filtering will happen in monitor-stage-2-relevance when full articles are scraped
-    console.log(`   ⏭️  Skipping date filter (publish dates not available from listing pages)`);
+    // Step 5: Format for downstream processing
+    console.log('\n📦 Step 5: Formatting for downstream processing...');
 
-    // 3c. Score by source priority (from HTML source metadata)
-    const scoredArticles = dedupedArticles.map(a => ({
-      ...a,
-      relevance_score: a.source_priority || 2, // 1=critical, 2=high, 3=medium
-      filter_stage: 'mechanical'
-    }));
-
-    // 3d. Sort by source priority (lower number = higher priority)
-    scoredArticles.sort((a, b) => a.relevance_score - b.relevance_score);
-
-    // 3e. Cap at ~100 articles for timeout safety (scraping + relevance filtering downstream)
-    // 100 articles = ~2-3 min scraping + stage-2 relevance has time to filter intelligently
-    const MAX_ARTICLES_TO_SCRAPE = 100;
-    const articlesToScrape = scoredArticles.slice(0, MAX_ARTICLES_TO_SCRAPE);
-
-    console.log(`   📊 Mechanical filtering complete:`);
-    console.log(`      - Deduped: ${allArticles.length} → ${dedupedArticles.length}`);
-    console.log(`      - Capped at: ${MAX_ARTICLES_TO_SCRAPE} articles`);
-    console.log(`      - Ready to scrape: ${articlesToScrape.length} articles`);
-
-    if (scoredArticles.length > MAX_ARTICLES_TO_SCRAPE) {
-      console.log(`   ⚠️ Capped from ${scoredArticles.length} to ${MAX_ARTICLES_TO_SCRAPE} highest-priority articles`);
-    }
-
-    if (articlesToScrape.length === 0) {
-      return new Response(JSON.stringify({
-        success: true,
-        total_articles: 0,
-        articles: [],
-        metadata: {
-          code_version: CODE_VERSION,
-          sources_scraped: htmlSources.length,
-          articles_scanned: allArticles.length,
-          articles_after_dedup: dedupedArticles.length,
-          articles_to_scrape: 0
-        }
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    // Step 4: Format monitoring report (no full article scraping - that happens in enrichment)
-    console.log('\n📋 Step 4: Formatting monitoring report...');
-    console.log(`   Compiling ${articlesToScrape.length} article references for downstream stages`);
-
-    // Return article metadata from listing pages
-    // Relevance/enrichment stages will handle deeper content extraction if needed
-    const finalArticles = articlesToScrape.map((a: any) => ({
+    const processedArticles = dedupedArticles.map(a => ({
       url: a.url,
       title: a.title,
-      description: a.snippet || a.description || '',
-      source: a.source,
-      source_tier: a.source_tier || 'high',
-      source_priority: a.source_priority || 2,
-      published_at: a.published_at || new Date().toISOString(),
-      relevance_score: a.relevance_score || 0.75,
-      filter_stage: 'mechanical',
-      from_source_direct: true,
-      // Metadata from listing page scrape
-      listing_metadata: {
-        scraped_from: a.scraped_from || a.source,
-        has_snippet: !!a.snippet
-      }
+      description: a.description || '',
+      source: extractDomain(a.url),
+      source_tier: 'high',
+      source_priority: 1,
+      published_at: null, // Will be extracted during scraping in monitor-stage-2
+      relevance_score: 0.8,
+      filter_stage: 'google_cse_24h',
+      from_google_cse: true
     }));
 
-    console.log(`\n${'='.repeat(80)}`);
-    console.log(`✅ MONITORING COMPLETE`);
-    console.log(`   Total articles: ${finalArticles.length}`);
-    console.log(`   Average source priority: ${(finalArticles.reduce((sum: number, a: any) => sum + a.source_priority, 0) / finalArticles.length).toFixed(2)}`);
-    console.log(`${'='.repeat(80)}\n`);
+    const MAX_ARTICLES = 100;
+    const finalArticles = processedArticles.slice(0, MAX_ARTICLES);
 
+    console.log(`\n✅ GOOGLE CSE SEARCH COMPLETE`);
+    console.log(`${'='.repeat(80)}\n`);
+    console.log(` 📊 Summary:`);
+    console.log(`    - Google CSE queries: ${searchQueries.length}`);
+    console.log(`    - Articles found: ${allArticles.length}`);
+    console.log(`    - After dedup: ${dedupedArticles.length}`);
+    console.log(`    - Final count: ${finalArticles.length}`);
     return new Response(JSON.stringify({
       success: true,
       total_articles: finalArticles.length,
       articles: finalArticles,
       metadata: {
         code_version: CODE_VERSION,
-        sources_scraped: htmlSources.length,
-        articles_scanned: allArticles.length,
+        source: 'google_cse',
+        search_queries: searchQueries.length,
+        articles_found: allArticles.length,
         articles_after_dedup: dedupedArticles.length,
         articles_returned: finalArticles.length,
-        note: 'Returns article metadata only - full content scraping happens in enrichment stage'
+        date_filter: 'd1 (Google CSE 24-hour filter)'
       }
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
