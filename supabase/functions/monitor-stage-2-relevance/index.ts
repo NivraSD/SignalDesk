@@ -9,6 +9,36 @@ const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')!;
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
+// Helper: Extract date from URL patterns
+function extractDateFromUrl(url: string): string | null {
+  try {
+    const patterns = [
+      /\/(\d{4})\/(\d{2})\/(\d{2})/,           // /2025/11/21/
+      /\/(\d{4})-(\d{2})-(\d{2})/,             // /2025-11-21/
+      /-(\d{4})-(\d{2})-(\d{2})-/,             // -2025-11-21-
+      /\/(\d{4})(\d{2})(\d{2})\//,             // /20251121/
+      /news-(\d{4})-(\d{2})-(\d{2})/,          // news-2025-11-21
+      /article-(\d{4})-(\d{2})-(\d{2})/,       // article-2025-11-21
+    ];
+
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match) {
+        const year = match[1];
+        const month = match[2].padStart(2, '0');
+        const day = match[3].padStart(2, '0');
+        const date = new Date(`${year}-${month}-${day}`);
+        if (!isNaN(date.getTime())) {
+          return date.toISOString();
+        }
+      }
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 interface Article {
   id?: number;
   title: string;
@@ -84,12 +114,48 @@ serve(async (req) => {
     }
 
     // Filter out old articles (keep last 7 days)
+    // Extract dates from URLs as fallback before filtering
     const RECENCY_DAYS = 7;
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - RECENCY_DAYS);
 
     const recentArticles = articles.filter(article => {
-      const publishedDate = new Date(article.published_at || article.publishDate || 0);
+      let publishedDate: Date | null = null;
+
+      // Try explicit date fields first
+      if (article.published_at || article.publishDate) {
+        publishedDate = new Date(article.published_at || article.publishDate);
+      }
+
+      // Fallback: Extract date from URL (common patterns: /2024/05/15/ or /2024-05-15-)
+      if (!publishedDate || isNaN(publishedDate.getTime())) {
+        const urlDatePatterns = [
+          /\/(\d{4})\/(\d{1,2})\/(\d{1,2})\//,  // /2024/05/15/
+          /\/(\d{4})-(\d{1,2})-(\d{1,2})-/,     // /2024-05-15-
+          /\/(\d{4})(\d{2})(\d{2})\//           // /20240515/
+        ];
+
+        for (const pattern of urlDatePatterns) {
+          const match = article.url?.match(pattern);
+          if (match) {
+            const year = parseInt(match[1]);
+            const month = parseInt(match[2]) - 1; // JS months are 0-indexed
+            const day = parseInt(match[3]);
+            publishedDate = new Date(year, month, day);
+            if (!isNaN(publishedDate.getTime())) {
+              console.log(`   📅 Extracted date from URL for "${article.title?.substring(0, 40)}...": ${publishedDate.toDateString()}`);
+              break;
+            }
+          }
+        }
+      }
+
+      // If still no date after URL extraction, REJECT (can't verify recency)
+      if (!publishedDate || isNaN(publishedDate.getTime())) {
+        console.log(`   ⏭️  Filtering out undated article: "${article.title?.substring(0, 60)}..." (no date available)`);
+        return false;
+      }
+
       const isRecent = publishedDate >= cutoffDate;
 
       if (!isRecent) {
@@ -274,6 +340,129 @@ Be INCLUSIVE - when in doubt, include it. Better to have too many than miss crit
     console.log(`   Total filtered out: ${totalFilteredOut}`);
     console.log(`   Keep rate: ${((relevantArticles.length / articles.length) * 100).toFixed(1)}%`);
 
+    // SCRAPE TOP ARTICLES: Get full content and extract dates
+    console.log('\n🔥 Scraping top articles for full content and date extraction...');
+
+    const articlesToScrape = relevantArticles
+      .filter(a => a.pr_relevance_score >= 60)
+      .slice(0, 15); // Limit to 15 high-value articles
+
+    console.log(`   Scraping ${articlesToScrape.length} top articles (score 60+)`);
+
+    if (articlesToScrape.length > 0) {
+      try {
+        const firecrawlResponse = await fetch(`${SUPABASE_URL}/functions/v1/mcp-firecrawl`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
+          },
+          body: JSON.stringify({
+            method: 'tools/call',
+            params: {
+              name: 'batch_scrape_articles',
+              arguments: {
+                articles: articlesToScrape.map(article => ({
+                  url: article.url,
+                  priority: article.pr_relevance_score,
+                  metadata: {
+                    title: article.title,
+                    category: article.pr_category
+                  }
+                })),
+                formats: ['markdown'],
+                maxTimeout: 10000
+              }
+            }
+          })
+        });
+
+        if (firecrawlResponse.ok) {
+          const firecrawlData = await firecrawlResponse.json();
+          const scrapeResults = JSON.parse(firecrawlData.content[0].text);
+
+          console.log(`   ✅ Scraped ${scrapeResults.results?.length || 0} articles`);
+
+          // Merge scraped content and extract dates
+          for (const result of scrapeResults.results || []) {
+            if (result.success && result.data) {
+              const article = relevantArticles.find(a => a.url === result.url);
+              if (article) {
+                const markdown = result.data.markdown || result.data.content || '';
+                const metadata = result.data.metadata || {};
+
+                if (markdown && markdown.length > 500) {
+                  article.full_content = markdown;
+                  article.content_length = markdown.length;
+                  article.has_full_content = true;
+
+                  // Priority 1: Check Firecrawl metadata for publish date
+                  const metadataDate = metadata.publishDate ||
+                                      metadata.publishedTime ||
+                                      metadata.datePublished ||
+                                      metadata.article?.publishedTime ||
+                                      metadata.ogArticlePublishedTime;
+
+                  if (metadataDate) {
+                    try {
+                      const parsedDate = new Date(metadataDate);
+                      if (!isNaN(parsedDate.getTime())) {
+                        article.published_at = parsedDate.toISOString();
+                        console.log(`      ✅ Extracted date from metadata for "${article.title?.substring(0, 40)}...": ${parsedDate.toDateString()}`);
+                        continue; // Skip content regex if we found metadata date
+                      }
+                    } catch (e) {
+                      // Fall through to content extraction
+                    }
+                  }
+
+                  // Priority 2: Try extracting date from URL
+                  const urlDate = extractDateFromUrl(article.url);
+                  if (urlDate) {
+                    article.published_at = urlDate;
+                    console.log(`      ✅ Extracted date from URL for "${article.title?.substring(0, 40)}...": ${new Date(urlDate).toDateString()}`);
+                    continue;
+                  }
+
+                  // Priority 3: Extract publish date from content using patterns
+                  const datePatterns = [
+                    /published[:\s]+([A-Za-z]+\s+\d{1,2},?\s+\d{4})/i,
+                    /(\d{1,2}\s+[A-Za-z]+\s+\d{4})/,
+                    /(\d{4}-\d{2}-\d{2})/,
+                    /([A-Za-z]+\s+\d{1,2},?\s+\d{4})/
+                  ];
+
+                  for (const pattern of datePatterns) {
+                    const match = markdown.match(pattern);
+                    if (match) {
+                      try {
+                        const parsedDate = new Date(match[1]);
+                        if (!isNaN(parsedDate.getTime())) {
+                          article.published_at = parsedDate.toISOString();
+                          console.log(`      ✅ Extracted date from content for "${article.title?.substring(0, 40)}...": ${parsedDate.toDateString()}`);
+                          break;
+                        }
+                      } catch (e) {
+                        // Continue to next pattern
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+
+          const enhancedCount = relevantArticles.filter(a => a.has_full_content).length;
+          const datesExtracted = relevantArticles.filter(a => a.has_full_content && a.published_at).length;
+          console.log(`   ✅ Enhanced ${enhancedCount} articles with full content`);
+          console.log(`   📅 Extracted dates for ${datesExtracted} articles`);
+        }
+      } catch (error: any) {
+        console.error(`   ❌ Scraping error: ${error.message}`);
+        // Continue without scraping
+      }
+    }
+
     return new Response(JSON.stringify({
       relevant_articles: relevantArticles,
       filtered_out: totalFilteredOut,
@@ -281,6 +470,7 @@ Be INCLUSIVE - when in doubt, include it. Better to have too many than miss crit
       filtered_by_relevance: filteredByRelevance,
       total: articles.length,
       keep_rate: ((relevantArticles.length / articles.length) * 100).toFixed(1) + '%',
+      scraped_articles: relevantArticles.filter(a => a.has_full_content).length,
       targets_loaded: {
         competitors: competitors.length,
         stakeholders: stakeholders.length
