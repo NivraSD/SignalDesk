@@ -364,38 +364,45 @@ serve(async (req) => {
     const keyQuestions = intelligenceContext.key_questions || [];
     const industry = companyProfile.industry || '';
 
+    // Calculate date for after: operator (7 days ago)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const afterDate = sevenDaysAgo.toISOString().split('T')[0]; // YYYY-MM-DD format
+
+    console.log(`   Using after:${afterDate} for all queries (last 7 days)`);
+
     // Query 1: Top competitors (from first key question)
     if (competitors.length > 0) {
-      const competitorQuery = competitors.slice(0, 5).map(c => `"${c}"`).join(' OR ');
+      const competitorQuery = `(${competitors.slice(0, 5).map(c => `"${c}"`).join(' OR ')}) after:${afterDate}`;
       searchQueries.push(competitorQuery);
       console.log(`   Query 1: Competitors - ${keyQuestions[0] || 'Top 5 competitors'}`);
     }
 
     // Query 2: Regulatory/stakeholder developments (from key questions)
     if (stakeholders.length > 0) {
-      const regulatorQuery = stakeholders.slice(0, 5).map(s => `"${s}"`).join(' OR ');
+      const regulatorQuery = `(${stakeholders.slice(0, 5).map(s => `"${s}"`).join(' OR ')}) after:${afterDate}`;
       searchQueries.push(regulatorQuery);
       console.log(`   Query 2: Stakeholders - ${keyQuestions[2] || 'Regulatory/stakeholder actions'}`);
     }
 
     // Query 3: Industry trends (from key questions about market opportunities)
     if (industry) {
-      const trendQuery = `"${industry}" (trends OR developments OR opportunities OR innovations)`;
+      const trendQuery = `"${industry}" (trends OR developments OR opportunities OR innovations) after:${afterDate}`;
       searchQueries.push(trendQuery);
       console.log(`   Query 3: Industry trends - ${keyQuestions[3] || 'Market opportunities'}`);
     }
 
     // Query 4: Risk/threat monitoring (from key questions)
     if (industry) {
-      const riskQuery = `"${industry}" (risks OR threats OR challenges OR disruption)`;
+      const riskQuery = `"${industry}" (risks OR threats OR challenges OR disruption) after:${afterDate}`;
       searchQueries.push(riskQuery);
       console.log(`   Query 4: Risks/threats - ${keyQuestions[4] || 'Risk monitoring'}`);
     }
 
     console.log(`   Total queries: ${searchQueries.length}`);
 
-    // Step 3: Execute Google CSE queries with 24-hour filter
-    console.log('\n🔍 Step 3: Executing Google CSE (last 24 hours)...');
+    // Step 3: Execute Google CSE queries with after: operator (last 7 days)
+    console.log('\n🔍 Step 3: Executing Google CSE with after: date filter...');
 
     const allArticles: any[] = [];
 
@@ -412,8 +419,7 @@ serve(async (req) => {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            query,
-            date_restrict: 'd7', // Last 7 days - filter to recent in stage 2
+            query, // Already includes after:YYYY-MM-DD operator
             max_results: 20
           })
         });
@@ -498,7 +504,7 @@ serve(async (req) => {
         articles_found: allArticles.length,
         articles_after_dedup: dedupedArticles.length,
         articles_returned: finalArticles.length,
-        date_filter: 'd7 (Google CSE 7-day window, filtered to recent in stage 2)'
+        date_filter: 'after:YYYY-MM-DD operator in query (last 7 days by publication date)'
       }
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

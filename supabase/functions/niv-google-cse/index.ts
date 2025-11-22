@@ -19,7 +19,7 @@ interface SearchResult {
 async function searchGoogleCSE(
   query: string,
   maxResults: number = 20,
-  dateRestrict: string = 'd1' // d1 = last 24 hours, d7 = last week, etc.
+  dateRestrict?: string // Optional: d1 = last 24 hours, d7 = last week, etc.
 ): Promise<SearchResult[]> {
   const results: SearchResult[] = [];
 
@@ -38,9 +38,11 @@ async function searchGoogleCSE(
     url.searchParams.set('key', GOOGLE_API_KEY);
     url.searchParams.set('cx', GOOGLE_CSE_ID);
     url.searchParams.set('q', query);
-    url.searchParams.set('dateRestrict', dateRestrict);
-    // NOTE: sort=date removed - it filters out articles without date metadata, reducing results from 42 to 7
-    // We rely on monitor-stage-2-relevance date filtering instead (rejects undated articles)
+    if (dateRestrict) {
+      url.searchParams.set('dateRestrict', dateRestrict);
+    }
+    // NOTE: sort=date removed - it filters out articles without date metadata
+    // NOTE: dateRestrict now optional - using after:YYYY-MM-DD in query is more reliable
     url.searchParams.set('num', '10');
     url.searchParams.set('start', start.toString());
 
@@ -167,7 +169,7 @@ serve(async (req) => {
   }
 
   try {
-    const { query, max_results = 20, date_restrict = 'd1' } = await req.json();
+    const { query, max_results = 20, date_restrict } = await req.json();
 
     if (!query) {
       return new Response(JSON.stringify({
@@ -180,7 +182,9 @@ serve(async (req) => {
 
     console.log('\n🎯 Google CSE Search');
     console.log(`   Query: "${query}"`);
-    console.log(`   Date restrict: ${date_restrict}`);
+    if (date_restrict) {
+      console.log(`   Date restrict: ${date_restrict}`);
+    }
     console.log(`   Max results: ${max_results}`);
     console.log('');
 
