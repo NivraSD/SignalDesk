@@ -413,7 +413,7 @@ serve(async (req) => {
           },
           body: JSON.stringify({
             query,
-            date_restrict: 'd1', // Last 24 hours
+            date_restrict: 'd7', // Last 7 days - filter to recent in stage 2
             max_results: 20
           })
         });
@@ -498,7 +498,7 @@ serve(async (req) => {
         articles_found: allArticles.length,
         articles_after_dedup: dedupedArticles.length,
         articles_returned: finalArticles.length,
-        date_filter: 'd1 (Google CSE 24-hour filter)'
+        date_filter: 'd7 (Google CSE 7-day window, filtered to recent in stage 2)'
       }
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
