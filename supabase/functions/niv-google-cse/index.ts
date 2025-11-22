@@ -29,6 +29,7 @@ async function searchGoogleCSE(
 
   console.log(`🔍 Google CSE Search: "${query.substring(0, 60)}..."`);
   console.log(`   Date restrict: ${dateRestrict}`);
+  console.log(`   Sort: date (most recent first)`);
   console.log(`   Max results: ${maxResults} (${requestsNeeded} requests)`);
 
   for (let i = 0; i < requestsNeeded; i++) {
@@ -39,6 +40,7 @@ async function searchGoogleCSE(
     url.searchParams.set('cx', GOOGLE_CSE_ID);
     url.searchParams.set('q', query);
     url.searchParams.set('dateRestrict', dateRestrict);
+    url.searchParams.set('sort', 'date'); // Sort by date - most recent first
     url.searchParams.set('num', '10');
     url.searchParams.set('start', start.toString());
 
