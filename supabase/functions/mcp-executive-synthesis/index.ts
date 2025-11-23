@@ -620,13 +620,15 @@ Return ONLY valid JSON in this format:
       .map(([entity, count]) => `${entity}:${count}`)
       .join(', '));
 
-    // BALANCED SELECTION - ensure diverse coverage across all categories
-    const maxEvents = 50;
-    // Allocate slots proportionally but ensure minimum coverage of each category
-    const orgSlots = Math.min(Math.max(5, Math.floor(eventsAboutOrg.length * 0.3)), 15);
-    const competitorSlots = Math.min(Math.max(10, Math.floor(eventsAboutCompetitors.length * 0.6)), 20);
-    const stakeholderSlots = Math.min(Math.max(5, Math.floor(eventsAboutStakeholders.length * 0.5)), 10);
-    const otherSlots = Math.min(Math.max(5, Math.floor(eventsOther.length * 0.5)), 10);
+    // COMPREHENSIVE SELECTION - use ALL quality events, don't artificially limit
+    // The enrichment/relevance stages already filtered - we should use what they gave us
+    const maxEvents = 100; // Increased from 50 - if enrichment found them relevant, include them
+
+    // Allocate slots generously - prefer MORE coverage over artificial balance
+    const orgSlots = Math.min(eventsAboutOrg.length, 20);  // All org events up to 20
+    const competitorSlots = Math.min(eventsAboutCompetitors.length, 40); // Prioritize competitor coverage
+    const stakeholderSlots = Math.min(eventsAboutStakeholders.length, 20); // All stakeholder events up to 20
+    const otherSlots = Math.min(eventsOther.length, 40); // Industry/regulatory events are important too
 
     const topEvents = [
       ...eventsAboutOrg.slice(0, orgSlots),
@@ -713,15 +715,32 @@ Return ONLY valid JSON in this format:
       }
     };
 
-    prompt = `YOU ARE RECEIVING ENRICHED INTELLIGENCE DATA
-This is the complete output from our monitoring and enrichment pipeline.
-The events below are ALL from TODAY'S news monitoring - they are NOT hypothetical.
-
-═══════════════════════════════════════════════════════════
-🎯 CRITICAL: UNDERSTAND THE MONITORING CONTEXT
+    prompt = `═══════════════════════════════════════════════════════════
+🎯 YOUR ROLE: DATA-TO-CONTEXT ALIGNMENT SPECIALIST
 ═══════════════════════════════════════════════════════════
 
-🎯 CRITICAL: UNDERSTAND YOUR ROLE
+YOU ARE A SYNTHESIS ENGINE - NOT A CONTENT GENERATOR
+Your ONLY job is to align the enriched article data you receive with the company's intelligence context.
+
+WHAT THIS MEANS:
+✅ You ANALYZE the provided article data through the lens of the company's profile
+✅ You CONNECT events in the data to the company's competitors, stakeholders, and strategic interests
+✅ You IDENTIFY patterns and themes that emerge from the ACTUAL articles provided
+✅ You TRANSLATE article data into actionable intelligence for the company
+
+❌ You DO NOT add information that isn't in the articles
+❌ You DO NOT speculate about events not mentioned in the data
+❌ You DO NOT use general industry knowledge outside the provided articles
+❌ You DO NOT make assumptions - if the data doesn't say it, you don't say it
+
+VERIFICATION RULE:
+Every single statement in your synthesis must be traceable to a specific article or event in the data below.
+If you can't point to where it came from in the provided data, DO NOT include it.
+
+═══════════════════════════════════════════════════════════
+📊 COMPANY INTELLIGENCE CONTEXT (Your Alignment Framework)
+═══════════════════════════════════════════════════════════
+
 ${organization?.name} is YOUR CLIENT. You are writing TO them, not ABOUT them.
 
 ABOUT YOUR CLIENT:
@@ -787,14 +806,14 @@ ${metrics.length > 0 ? `METRICS:\n${metrics.map(m =>
 
 SYNTHESIS REQUIREMENTS:
 
-🚨 PRIORITY #1: SYSTEMATIC COMPETITOR COVERAGE (NOT CHERRY-PICKING)
-You have ${competitorSlots} competitor events. You MUST mention EACH competitor that appears:
-- Competitors to cover: ${discoveryTargets.competitors.slice(0, 15).join(', ')}
-- If ICR has 39 mentions, report on ICR
-- If Edelman has 3 mentions, report on Edelman
-- If Weber Shandwick has 1 mention, report on Weber Shandwick
-- Format: "ICR announced X, Edelman launched Y, Weber Shandwick hired Z"
-- DO NOT say "lack of competitive intelligence" when competitors ARE in the data
+🚨 PRIORITY #1: COMPREHENSIVE COVERAGE (USE ALL THE INTELLIGENCE)
+You have ${topEvents.length} events from enrichment. Your job is to SYNTHESIZE ALL OF THEM into a coherent narrative:
+- Enrichment already filtered for relevance - these ${topEvents.length} events ALL passed quality checks
+- DO NOT cherry-pick 2-3 "big stories" and ignore the rest
+- SYNTHESIZE means: identify patterns, group similar developments, surface the narrative
+- Example: Instead of "Weber Shandwick won Carhartt" (1 event), write "Account mobility accelerated this week, with Weber Shandwick securing Carhartt, FleishmanHillard winning Bay Area Host Committee, and Zeno Group losing a 5-year relationship" (synthesizing 3+ events)
+- Your executive_summary should reflect the VOLUME of intelligence: ${topEvents.length} events is significant activity
+- Competitors to watch: ${discoveryTargets.competitors.slice(0, 15).join(', ')}
 
 ⚠️ PRIORITY #2: RECENCY (TODAY > THIS WEEK > OLD NEWS)
 - Events from TODAY or THIS WEEK go in executive_summary
@@ -817,14 +836,15 @@ You have ${competitorSlots} competitor events. You MUST mention EACH competitor 
 - NO academic language, NO generic trends, NO excuses for "quiet periods"
 
 STANDARD REQUIREMENTS:
-1. Your executive_summary MUST provide BALANCED coverage of ALL event categories:
+1. Your executive_summary should COMPREHENSIVELY synthesize the ${topEvents.length} events:
    - Organization news (${orgSlots} events provided)
-   - Competitor developments (${competitorSlots} events provided)
-   - Stakeholder actions/regulatory news (${stakeholderSlots} events provided)
-   - Industry trends/other relevant news (${otherSlots} events provided)
-2. DO NOT over-emphasize any single category - ensure the summary reflects the diversity of today's developments
-3. Reference events by describing them, not by number
-4. Every claim must come from the events above - no external knowledge
+   - Competitor developments (${competitorSlots} events provided) ← CRITICAL CATEGORY
+   - Stakeholder/regulatory news (${stakeholderSlots} events provided)
+   - Industry trends (${otherSlots} events provided)
+2. SYNTHESIZE don't summarize: Group related events, identify patterns, surface themes
+3. Coverage should be PROPORTIONAL to event volume: if ${otherSlots} industry events, that category should be substantive
+4. Reference events by describing them, not by number
+5. Every claim must come from the events above - no external knowledge
 
 ⚠️ CRITICAL SYNTHESIS RULES:
 - "competitive_moves" = Actions by ${organization?.name}'s INDUSTRY COMPETITORS (other ${organization?.industry} companies)
@@ -837,7 +857,7 @@ Generate comprehensive PR intelligence synthesis as valid JSON:
 
 {
   "synthesis": {
-    "executive_summary": "A single string containing 2-3 paragraphs providing BALANCED coverage of today's monitoring across ALL categories: competitor moves, stakeholder/regulatory developments, industry trends, and ${organization?.name} news. Accurately convey the VOLUME and VARIETY of developments - if there were many events, the summary should reflect that activity level. Each category with significant developments MUST be represented. Use \\n\\n to separate paragraphs.",
+    "executive_summary": "A single string containing 3-5 paragraphs that COMPREHENSIVELY synthesizes the ${topEvents.length} events. This should read like a well-researched intelligence briefing that surfaces patterns and themes across ALL the intelligence, not just 2-3 cherry-picked stories. If enrichment found ${topEvents.length} relevant events, the summary should reflect that richness. Group related developments (e.g., 'account mobility', 'AI backlash', 'consolidation trends') rather than listing individual events. Use \\n\\n to separate paragraphs.",
 
     "competitive_moves": {
       "immediate_threats": ["Actions by OTHER ${organization?.industry} COMPANIES that threaten ${organization?.name}'s position - NOT regulatory news"],
@@ -871,9 +891,31 @@ Generate comprehensive PR intelligence synthesis as valid JSON:
   }
 }
 
-CRITICAL: Base your analysis ONLY on the articles and events listed above. Reference specific companies, quotes, and events from the monitoring data.
-Every insight should be traceable back to a specific article or event we collected.
-If you're not sure about something from the articles, say so rather than speculating.`;
+═══════════════════════════════════════════════════════════
+🚨 FINAL VERIFICATION CHECKLIST (Review Before Responding)
+═══════════════════════════════════════════════════════════
+
+Before you generate your synthesis, verify:
+
+✅ GROUNDING CHECK: Can you point to the specific article/event for EVERY claim?
+   - If YES: Include it in your synthesis
+   - If NO: Remove it - you're speculating
+
+✅ CONTEXT ALIGNMENT: Does each insight relate to the company's:
+   - Competitors listed above?
+   - Stakeholders listed above?
+   - Strategic interests in their profile?
+   - If NOT: It's not relevant intelligence for them
+
+✅ DATA FIDELITY: Are you:
+   - Synthesizing what the articles actually say?
+   - Or adding your own interpretation/assumptions?
+   - ONLY the articles' content should inform your synthesis
+
+REMEMBER: You are aligning DATA (the articles) with CONTEXT (the company profile).
+Your value is in making connections the company might miss - NOT in adding information they don't have.
+
+If the articles don't provide enough information about a topic, say "Limited intelligence on X in current monitoring data" rather than filling gaps with assumptions.`;
     
   } else {
     // Standard synthesis of pre-analyzed data
