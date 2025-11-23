@@ -313,22 +313,9 @@ export class IntelligenceService {
               }
             }
           }
-          
-          // Return partial results if pipeline doesn't complete
-          return {
-            pipelineRunId: `pipeline-${Date.now()}`,
-            discoveryData: data,
-            articleSelectionData: articleResponse.data
-          }
         }
 
-        return {
-          pipelineRunId: `pipeline-${Date.now()}`,
-          discoveryData: data,
-          articleSelectionData: articleResponse.data
-        }
-      }
-      
+      // Return discovery data if profile check completes
       return data
     } catch (error: any) {
       console.error('Failed to start pipeline:', error)
@@ -589,14 +576,7 @@ export class IntelligenceService {
           }
         }
 
-        // Return partial results if pipeline doesn't complete
-        return {
-          pipelineRunId: `pipeline-${Date.now()}`,
-          profile: profile,
-          articleSelectionData: articleResponse.data
-        }
-      }
-
+      // Return minimal results if enrichment didn't run
       return {
         pipelineRunId: `pipeline-${Date.now()}`,
         profile: profile,
