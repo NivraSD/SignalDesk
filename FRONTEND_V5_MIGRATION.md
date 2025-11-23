@@ -122,6 +122,8 @@ Starting article-selector (V5 batch scraper with AI relevance scoring)
 - ✅ Updated return data structures
 - ✅ Updated pipeline flow documentation
 - ✅ Confirmed `mcp-opportunity-detector-v2` is being called (lines 310, 636)
+- ✅ Fixed syntax errors in intelligenceService.ts (commit 0e1454efb)
+- ✅ Build passes successfully (verified with `npm run build`)
 - ⏳ Test in platform with "Generate New Report" button
 - ⏳ Verify articles are selected correctly
 - ⏳ Verify synthesis and opportunities are generated
