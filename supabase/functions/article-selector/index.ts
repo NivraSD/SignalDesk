@@ -265,7 +265,9 @@ Respond with ONLY a valid JSON array of scores:
       });
 
       if (!response.ok) {
-        throw new Error(`Claude API error: ${response.statusText}`);
+        const errorBody = await response.text();
+        console.error(`Claude API error (${response.status}):`, errorBody);
+        throw new Error(`Claude API error: ${response.status} - ${errorBody}`);
       }
 
       const data = await response.json();
@@ -285,13 +287,34 @@ Respond with ONLY a valid JSON array of scores:
       }
 
     } catch (error) {
-      console.error(`Failed to score batch ${i}-${i + batch.length}:`, error);
-      // Fallback: assign medium score if AI fails
+      console.error(`⚠️ Failed to score batch ${i}-${i + BATCH_SIZE}:`, error);
+      console.log('   Using rule-based fallback scoring for this batch');
+
+      // Fallback: Use simple keyword matching for industry relevance
       batch.forEach(article => {
+        const articleText = `${article.title} ${article.description}`.toLowerCase();
+        const industryLower = industry.toLowerCase();
+        const sourceIndustries = article.source_registry?.industries || [];
+
+        let score = 50; // Default medium relevance
+        let reasoning = 'AI scoring unavailable, used keyword matching';
+
+        // Boost score if source is tagged with matching industry
+        if (sourceIndustries.some((ind: string) => ind.toLowerCase().includes(industryLower))) {
+          score = 75;
+          reasoning = `Source covers ${industry} industry`;
+        }
+
+        // Boost score if article text mentions industry
+        if (articleText.includes(industryLower)) {
+          score = Math.min(score + 15, 90);
+          reasoning = `Article mentions ${industry}`;
+        }
+
         scoredArticles.push({
           ...article,
-          relevance_score: 50,
-          relevance_reasoning: 'AI scoring failed, using fallback score'
+          relevance_score: score,
+          relevance_reasoning: reasoning
         });
       });
     }
