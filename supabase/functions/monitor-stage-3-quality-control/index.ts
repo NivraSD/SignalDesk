@@ -380,7 +380,8 @@ serve(async (req) => {
         decision: 'GAPS_FILLED',
         assessment,
         gap_fill_results: {
-          queries_used: gapQueries,
+          gap_context: gapContext,
+          search_queries: enhancedProfile.monitoring_config?.search_queries || null,
           articles_found: gapArticles.length,
           articles_added: newArticles.length,
           iteration: iteration + 1

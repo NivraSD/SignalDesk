@@ -145,10 +145,9 @@ async function analyzeWithClaude(articlesWithContent: any[], profile: any, orgNa
       topics: targets.topics.slice(0, 5)
     });
 
-    // Process articles in larger batches since we're using title + description
-    // Was: batchSize = 5 (too slow), then 30
-    // Now: 100 - we can handle more since we're not processing full article content
-    const batchSize = 100;
+    // Process articles in batches optimized for full content summarization
+    // Smaller batches = more content per article for better summaries
+    const batchSize = 15; // 15 articles × ~8K chars = ~120K tokens (fits in Haiku's 200K context)
     const allExtractedData = {
       events: [],
       entities: [],
@@ -156,119 +155,64 @@ async function analyzeWithClaude(articlesWithContent: any[], profile: any, orgNa
       metrics: [],
       insights: [],
       gaps: [],
-      recommendations: []
+      recommendations: [],
+      summaries: [] // NEW: Article summaries from Claude
     };
     
     for (let i = 0; i < articlesWithContent.length; i += batchSize) {
       const batch = articlesWithContent.slice(i, i + batchSize);
       
-      const prompt = `You are extracting PR intelligence from news articles FOR ${targets.organization}.
+      const prompt = `You are summarizing articles for ${targets.organization}'s intelligence synthesis.
 
-🎯 YOUR CLIENT:
-${targets.organization} is a ${companyProfile?.business_model || 'company'} operating in ${companyProfile?.key_markets?.join(', ') || 'their markets'}.
-${companyProfile?.product_lines?.length > 0 ? `Product Lines: ${companyProfile.product_lines.join(', ')}` : ''}
+🎯 CONTEXT:
+${targets.organization} monitors these competitors: ${targets.competitors.slice(0, 10).join(', ')}
+${targets.stakeholders.length > 0 ? `Key stakeholders: ${targets.stakeholders.slice(0, 5).join(', ')}` : ''}
+${intelligenceContext?.monitoring_prompt || ''}
 
-INTELLIGENCE TARGETS (companies/people to monitor):
-- Competitors: ${targets.competitors.join(', ')}
-- Stakeholders: ${targets.stakeholders.join(', ')}
-- Priority Topics: ${targets.topics.join(', ')}
+YOUR JOB: Create concise, actionable summaries that help executive synthesis understand what's relevant.
 
-${intelligenceContext?.monitoring_prompt ? `
-INTELLIGENCE CONTEXT:
-${intelligenceContext.monitoring_prompt}
-` : ''}
-
-ARTICLES TO ANALYZE:
+ARTICLES TO SUMMARIZE:
 ${batch.map((a, idx) => `
-[Article ${idx + 1}]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ARTICLE ${idx + 1}
 Title: ${a.title}
 Source: ${a.source}
-Content: ${a.full_content?.substring(0, 3000) || a.content?.substring(0, 1500) || a.description}`).join('\n\n')}
+Content: ${a.full_content?.substring(0, 8000) || a.description}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`).join('\n\n')}
 
-IMPORTANT CONTEXT: ${coverageContext?.message_for_synthesis || 'Focus on extracting value from available content.'}
-${coverageContext?.context ? `Coverage note: ${coverageContext.context}` : ''}
+For EACH article, provide:
+1. **Summary** (2-3 sentences): What happened and why it matters
+2. **Relevance** tags: competitor_move | regulatory_change | market_shift | crisis_signal | opportunity
+3. **Key points** (3-5 bullets): Specific facts, quotes, or data points
+4. **Entities mentioned**: Any competitors or stakeholders from the monitoring list
 
-Extract the following intelligence in EXACT JSON format:
-
-1. EVENTS: Key developments as structured objects
-   FORMAT for each event:
-   {
-     "type": "crisis|product|partnership|funding|regulatory|workforce|acquisition|other",
-     "entity": "Company or Person name (who this event is about)",
-     "description": "Clear description of what happened",
-     "category": "competitive|strategic|market|regulatory",
-     "date": "Date if mentioned"
-   }
-
-2. ENTITIES: Important people, companies, organizations
-   FORMAT: Array of strings - just the names
-
-3. QUOTES: Significant statements from executives or officials
-   FORMAT for each quote:
-   {
-     "text": "The actual quote",
-     "source": "Person who said it",
-     "context": "Brief context"
-   }
-
-4. METRICS: Financial figures, percentages, growth rates
-   FORMAT for each metric:
-   {
-     "type": "financial|percentage|growth|other",
-     "value": "The actual number/metric",
-     "context": "What it refers to"
-   }
-
-5. INSIGHTS: Strategic implications
-   FORMAT: Array of strings - key insights
-
-6. DISCOVERY_MATCHES: Which competitors/stakeholders/topics found
-   FORMAT: Object with arrays: { "competitors": [], "stakeholders": [], "topics": [] }
-
-${targets.extraction_focus?.length > 0 ? `
-EXTRACTION FOCUS:
-${targets.extraction_focus.map(f => `- ${f}`).join('\n')}
-` : ''}
-
-Focus on:
-- Competitor activities and vulnerabilities (mark entity clearly!)
-- Regulatory changes and stakeholder positions
-- Market shifts and opportunities
-- Crisis indicators and reputation risks
-- Strategic positioning opportunities
-
-CRITICAL ENTITY EXTRACTION RULES:
-
-1. PRIORITIZE INTELLIGENCE TARGETS: If the article mentions ANY of these configured targets, use them as entities:
-   - Competitors: ${targets.competitors.join(', ')}
-   - Stakeholders: ${targets.stakeholders.slice(0, 10).join(', ')}
-
-2. For each event, check if ANY intelligence target is mentioned in the article
-   - If article mentions ANY of these competitors, extract that as the entity
-   - If article mentions multiple targets, create separate events for each
-
-3. **ENTITY EXTRACTION PRIORITY:**
-   a) FIRST: Check if article mentions any competitor from the list above
-   b) SECOND: Check if article mentions any stakeholder from the list above
-   c) LAST: Only if NO targets are mentioned, extract the primary company/person
-
-4. Examples:
-   - Article: "Edelman wins Toyota account" → entity="Edelman", type="partnership"
-   - Article: "Weber Shandwick hires new CEO" → entity="Weber Shandwick", type="workforce"
-   - Article about "Market trends" but mentions "FleishmanHillard expanding" → entity="FleishmanHillard", type="other"
-
-**VERY IMPORTANT**: Do NOT extract generic words like "Market", "Sports", "Include" as entities.
-Only extract actual company names or person names. When in doubt, check the competitors list above.
-
-Return ONLY valid JSON matching this structure:
+Return ONLY valid JSON in this EXACT format:
 {
-  "events": [array of event objects with type, entity, description, category, date],
-  "entities": [array of name strings],
-  "quotes": [array of quote objects],
-  "metrics": [array of metric objects],
-  "insights": [array of insight strings],
-  "discovery_matches": {"competitors": [], "stakeholders": [], "topics": []}
-}`;
+  "summaries": [
+    {
+      "article_id": 1,
+      "title": "Article title",
+      "summary": "2-3 sentence summary focusing on what matters to ${targets.organization}",
+      "relevance_tags": ["competitor_move", "market_shift"],
+      "key_points": [
+        "Specific fact or quote",
+        "Important data point",
+        "Strategic implication"
+      ],
+      "entities_mentioned": {
+        "competitors": ["Name if mentioned"],
+        "stakeholders": ["Name if mentioned"]
+      }
+    }
+  ]
+}
+
+RULES:
+- Be concise but informative - synthesis will use these summaries
+- Focus on facts, not speculation
+- Tag relevance accurately (helps synthesis prioritize)
+- Only list competitors/stakeholders actually mentioned in the article
+- If article isn't relevant to ${targets.organization}, say so in summary`;
 
       // DEBUG: Log entity extraction rules being sent to Claude
       const entityRulesStart = prompt.indexOf('CRITICAL ENTITY EXTRACTION RULES:');
@@ -385,6 +329,21 @@ Return ONLY valid JSON matching this structure:
           if (extracted.discovery_matches) {
             allExtractedData.recommendations.push(`Coverage found: ${JSON.stringify(extracted.discovery_matches)}`);
           }
+
+          // NEW: Extract summaries from Claude's response
+          if (extracted.summaries && Array.isArray(extracted.summaries)) {
+            // Map summaries to include article data from batch
+            const enrichedSummaries = extracted.summaries.map((summary: any) => {
+              const article = batch[summary.article_id - 1]; // article_id is 1-indexed
+              return {
+                ...summary,
+                url: article?.url,
+                source: article?.source,
+                published_at: article?.published_at || article?.created_at
+              };
+            });
+            allExtractedData.summaries.push(...enrichedSummaries);
+          }
         } catch (parseError) {
           console.log('⚠️ Could not parse Claude extraction for batch, skipping');
         }
@@ -394,6 +353,7 @@ Return ONLY valid JSON matching this structure:
     }
     
     console.log(`✅ Claude analysis complete:`);
+    console.log(`   - Summaries created: ${allExtractedData.summaries.length}`);
     console.log(`   - Events extracted: ${allExtractedData.events.length}`);
     console.log(`   - Entities found: ${allExtractedData.entities.length}`);
     console.log(`   - Quotes captured: ${allExtractedData.quotes.length}`);
@@ -1161,6 +1121,24 @@ serve(async (req) => {
       }
       if (claudeAnalysis.insights && claudeAnalysis.insights.length > 0) {
         extractedData.strategic_insights = claudeAnalysis.insights;
+      }
+      // NEW: Replace rule-based article summaries with Claude's AI summaries
+      if (claudeAnalysis.summaries && claudeAnalysis.summaries.length > 0) {
+        extractedData.article_summaries = claudeAnalysis.summaries.map((summary: any) => ({
+          id: summary.article_id - 1,
+          title: summary.title,
+          url: summary.url,
+          source: summary.source,
+          published: summary.published_at,
+          summary: summary.summary,
+          relevance_tags: summary.relevance_tags,
+          key_points: summary.key_points,
+          entities_mentioned: summary.entities_mentioned,
+          relevance_score: 75, // Default score for AI-selected articles
+          has_full_content: true,
+          content_quality: 'full'
+        }));
+        console.log(`   ✨ Using ${claudeAnalysis.summaries.length} AI-generated article summaries`);
       }
       extractedData.claude_enhanced = true;
       extractedData.intelligence_gaps = claudeAnalysis.gaps || [];

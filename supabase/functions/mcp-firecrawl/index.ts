@@ -352,10 +352,29 @@ async function extractIntelligence(args: any) {
 
 // Search and scrape implementation
 async function searchAndScrape(args: any) {
-  const { query, limit = 10, scrapeResults = true } = args;
-  
-  console.log(`🔍 Searching and scraping: "${query}"`);
-  
+  const { query, limit = 10, scrapeResults = true, tbs } = args;
+
+  console.log(`🔍 Searching and scraping: "${query}"${tbs ? ` (timeRange: ${tbs})` : ''}`);
+
+  // Build search request body with only valid Firecrawl v2 search parameters
+  const searchBody: any = {
+    query,
+    limit
+  };
+
+  // Add time-based search filter if provided (e.g., "qdr:d" for last 24 hours)
+  if (tbs) {
+    searchBody.tbs = tbs;
+  }
+
+  // Add scrapeOptions only if we want to scrape the results
+  if (scrapeResults) {
+    searchBody.scrapeOptions = {
+      formats: ['markdown'],
+      onlyMainContent: true
+    };
+  }
+
   // First, perform search
   const searchResponse = await fetch(`${FIRECRAWL_BASE_URL}/search`, {
     method: 'POST',
@@ -363,11 +382,7 @@ async function searchAndScrape(args: any) {
       'Authorization': `Bearer ${FIRECRAWL_API_KEY}`,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({
-      query,
-      limit,
-      onlyMainContent: scrapeResults  // For search, this goes at root level
-    })
+    body: JSON.stringify(searchBody)
   });
   
   if (!searchResponse.ok) {
@@ -375,12 +390,16 @@ async function searchAndScrape(args: any) {
   }
   
   const searchData = await searchResponse.json();
-  
+
+  // Firecrawl v2 returns results under searchData.data.web (or .images, .news)
+  // Extract web results which is what we're searching
+  const webResults = searchData.data?.web || [];
+
   return {
     query,
     success: searchData.success,
-    results: searchData.data,
-    count: searchData.data?.length || 0
+    results: webResults,
+    count: webResults.length
   };
 }
 

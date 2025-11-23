@@ -2,753 +2,801 @@
   {
     "event_message": "shutdown",
     "event_type": "Shutdown",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "14fa3a17-c2dd-4a78-a211-9118fd789f81",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "7a3e87e4-e33b-4a48-a736-5ec7f58457e8",
     "level": "log",
-    "timestamp": 1763751013355000
+    "timestamp": 1763755279195000
   },
   {
-    "event_message": "   ✅ Relevance filter: 100 → 46 relevant gap articles\n",
+    "event_message": "  - structured_data: ✅ (events_by_type, top_entities, key_quotes)\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "336fc2fd-e2b7-4178-afae-47ec6ff7dd44",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "05194a20-0a6f-4d86-ac4b-613c1c60001c",
     "level": "info",
-    "timestamp": 1763750903682000
+    "timestamp": 1763755171399000
   },
   {
-    "event_message": "   - Original articles: 45\n",
+    "event_message": "📦 COMPLETE ENRICHMENT PAYLOAD STRUCTURE:\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "a21c0bb5-41a8-4981-b40c-a9e7cd1d4763",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "35a36337-8a83-4108-9459-84a564c85930",
     "level": "info",
-    "timestamp": 1763750903682000
+    "timestamp": 1763755171399000
   },
   {
-    "event_message": "\n✅ GAP-FILLING COMPLETE:\n",
+    "event_message": "  - executive_summary: ✅ (immediate_actions, threats, trends)\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "983dfc05-9080-4246-97c4-31ec48b8ed42",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "0fd04619-44a5-4385-b614-016ed4eb0599",
     "level": "info",
-    "timestamp": 1763750903682000
+    "timestamp": 1763755171399000
   },
   {
-    "event_message": "   - Combined total: 46\n",
+    "event_message": "  - organized_intelligence: ✅ (events, entities, quotes, metrics, clusters)\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "b06d5d31-54df-46c6-930d-916764c42cb5",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "cbabb17b-6c3b-4664-9774-59ac8386fb13",
     "level": "info",
-    "timestamp": 1763750903682000
+    "timestamp": 1763755171399000
   },
   {
-    "event_message": "   - New gap articles: 1\n",
+    "event_message": "First 5 entities: [\n  \"Weber Shandwick\",\n  \"FleishmanHillard\",\n  \"DNA Communications\",\n  \"Attention Comms\",\n  \"Paul Cohen\"\n]\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "6c07a63d-3a2b-470e-b438-c50cebe647a6",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "d85f116e-6919-4876-bfb6-cf81f915ad45",
     "level": "info",
-    "timestamp": 1763750903682000
+    "timestamp": 1763755171399000
   },
   {
-    "event_message": "   📊 Gap-fill search returned: 100 articles\n",
+    "event_message": "  - enriched_articles: ✅ ( 46 articles)\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "388fec84-de27-4788-9cf5-90f8a79182ee",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "2fc684a0-9351-4150-bbd5-443bb9d6de53",
     "level": "info",
-    "timestamp": 1763750832926000
+    "timestamp": 1763755171399000
   },
   {
-    "event_message": "\n🤖 Step 8: Running relevance filter on gap articles...\n",
+    "event_message": "First 2 quotes: []\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "99e02999-d455-4b44-9422-c8aecaed2756",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "2d5204e0-0d2f-44e1-8287-9bf4c347bcce",
     "level": "info",
-    "timestamp": 1763750832926000
+    "timestamp": 1763755171399000
   },
   {
-    "event_message": "   5. \"FleishmanHillard news\"\n",
+    "event_message": "First 3 events: [\n  {\n    \"type\": \"partnership\",\n    \"entity\": \"Weber Shandwick\",\n    \"description\": \"Weber Shandwick named as agency of record (AOR) for Carhartt\",\n    \"category\": \"competitive\",\n    \"date\": \"2025-11-21T19:56:22.705Z\"\n  },\n  {\n    \"type\": \"partnership\",\n    \"entity\": \"FleishmanHillard\",\n    \"description\": \"FleishmanHillard hired by Bay Area Host Committee for strategic communications support\",\n    \"category\": \"competitive\",\n    \"date\": \"2025-11-21T19:56:22.705Z\"\n  },\n  {\n    \"type\": \"product\",\n    \"entity\": \"DNA Communications\",\n    \"description\": \"DNA Communications launches dnaHelix, global strategic communications support for biotechs\",\n    \"category\": \"competitive\",\n    \"date\": \"2025-11-21T19:56:22.705Z\"\n  }\n]\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "282d4f0f-0931-42ee-a738-1f3558677a72",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "0c36d6b0-c4bb-4f36-913b-bbcc9daab238",
     "level": "info",
-    "timestamp": 1763750813562000
+    "timestamp": 1763755171399000
   },
   {
-    "event_message": "   3. \"Weber Shandwick news\"\n",
+    "event_message": "  - statistics: ✅ (processing stats)\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "a6e998a9-86cd-43c6-91b7-a4d53762c74e",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "33a66414-b578-4d89-ae6f-ab7aad1a02bd",
     "level": "info",
-    "timestamp": 1763750813562000
+    "timestamp": 1763755171399000
   },
   {
-    "event_message": "\n🔄 Step 7: Triggering gap-filling search (iteration 1)...\n",
+    "event_message": "🔍 SAMPLE OF ACTUAL DATA BEING SENT:\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "fbdfa5ed-82bc-4703-a6a6-e88eef4f24e1",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "f12a2e02-16b4-4b34-9f71-ea3e3e6dea25",
     "level": "info",
-    "timestamp": 1763750813562000
+    "timestamp": 1763755171399000
   },
   {
-    "event_message": "   1. \"Edelman news\"\n",
+    "event_message": "  - knowledge_graph: ✅ (entities and relationships)\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "5a4cd706-f1da-42a6-bca5-7d3d8d9bafe6",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "e21262f3-100f-4f49-b9b6-65f4541c6b31",
     "level": "info",
-    "timestamp": 1763750813562000
+    "timestamp": 1763755171399000
   },
   {
-    "event_message": "   Generated 5 targeted queries for critical gaps\n",
+    "event_message": "  - extracted_data: ✅ (full extracted data)\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "a97ed87c-942f-49d4-91ac-553787a17d05",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "4fcbad2e-700d-44da-9243-484d4d072456",
     "level": "info",
-    "timestamp": 1763750813562000
+    "timestamp": 1763755171399000
   },
   {
-    "event_message": "   4. \"Weber Shandwick Public Relations & Strategic Communications\"\n",
+    "event_message": "🎯 Sample events: [\n  {\n    type: \"partnership\",\n    description: \"Weber Shandwick named as agency of record (AOR) for Carhartt...\",\n    entities: undefined,\n    impact: undefined\n  },\n  {\n    type: \"partnership\",\n    description: \"FleishmanHillard hired by Bay Area Host Committee for strategic communications support...\",\n    entities: undefined,\n    impact: undefined\n  },\n  {\n    type: \"product\",\n    description: \"DNA Communications launches dnaHelix, global strategic communications support for biotechs...\",\n    entities: undefined,\n    impact: undefined\n  }\n]\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "841bbbd5-3ce3-40f2-a413-00efbbddee78",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "43beb1b2-84b1-42b1-a0db-0b78bb18676a",
     "level": "info",
-    "timestamp": 1763750813562000
+    "timestamp": 1763755171398000
   },
   {
-    "event_message": "   Generated 5 gap-filling queries: [\n  \"Edelman news\",\n  \"Edelman Public Relations & Strategic Communications\",\n  \"Weber Shandwick news\",\n  \"Weber Shandwick Public Relations & Strategic Communications\",\n  \"FleishmanHillard news\"\n]\n",
+    "event_message": "📈 Metrics being sent: 0 metrics\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "6df194ed-4003-4f9b-98de-9b822e0b2016",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "3ac372f0-cc60-47b1-9631-5d14ee47c9b3",
     "level": "info",
-    "timestamp": 1763750813562000
+    "timestamp": 1763755171398000
   },
   {
-    "event_message": "   2. \"Edelman Public Relations & Strategic Communications\"\n",
+    "event_message": "✅ Extraction complete: {\n  articles_with_full_content: 0,\n  articles_with_partial_content: 46,\n  total_processed: 46,\n  events_extracted: 2,\n  entities_found: 0,\n  quotes_extracted: 0,\n  metrics_found: 0,\n  quality_score: \"HIGH\",\n  warnings: [ \"NO_QUOTES_FOUND\" ],\n  extraction_success_rate: \"100.0%\"\n}\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "222286a7-00af-4bc1-84d5-6d049960ad08",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "4e132d98-4031-407a-bdc6-1fb8e75d9410",
     "level": "info",
-    "timestamp": 1763750813562000
+    "timestamp": 1763755171398000
   },
   {
-    "event_message": "      - Competitor coverage: 20% (threshold: 40%)\n",
+    "event_message": "📰 Article summaries being sent: 46 summaries\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "c95e7f86-84e4-4f29-8ac3-8a727ec4085d",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "3fc5de6a-f1e5-4cef-b089-fcd1b0d975d3",
     "level": "info",
-    "timestamp": 1763750813560000
+    "timestamp": 1763755171398000
   },
   {
-    "event_message": "      - Total articles: 45\n",
+    "event_message": "🚀🚀🚀 ENRICHMENT SENDING TO SYNTHESIS:\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "16f96097-f529-4b3a-ba81-da3251a4aa17",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "3a3ae239-7672-4acd-a53a-ca0d2e40291e",
     "level": "info",
-    "timestamp": 1763750813560000
+    "timestamp": 1763755171398000
   },
   {
-    "event_message": "\n❌ CRITICAL GAPS DETECTED:\n",
+    "event_message": "💬 Quotes being sent: 0 quotes\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "fa571539-86d3-4118-b779-d6d7c2317dab",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "d77d87ef-8fee-42db-9910-3f93ac44d419",
     "level": "info",
-    "timestamp": 1763750813560000
+    "timestamp": 1763755171398000
   },
   {
-    "event_message": "      - Stakeholder coverage: 0% (threshold: 30%)\n",
+    "event_message": "📊 Events being sent: 7 events\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "3093a94a-70a9-4825-b34a-d7289648ba55",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "5ff0c830-1f9a-44b2-9411-63b4cef3cd5d",
     "level": "info",
-    "timestamp": 1763750813560000
+    "timestamp": 1763755171398000
   },
   {
-    "event_message": "   2. low_stakeholder_coverage: Stakeholder coverage at 0%\n",
+    "event_message": "👥 Entities being sent: 13 entities\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "eaa1b7f4-afa4-43e2-aa24-cb4c18121c55",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "29b9bb02-9465-4ea9-9c1d-dbc061d94a7b",
     "level": "info",
-    "timestamp": 1763750813560000
+    "timestamp": 1763755171398000
   },
   {
-    "event_message": "⚠️ OVERRIDING: Extremely poor coverage detected (20% competitors, 0% stakeholders)\n",
+    "event_message": "✅ Extraction complete in 12208ms: {\n  events: 7,\n  entities: 13,\n  quotes: 0,\n  clusters: 2,\n  claude_enhanced: true,\n  gaps_filled: 0\n}\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "85c41e39-8e73-4c3b-b30f-9a5bfb800414",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "80d5028f-f97a-43d7-8dba-61558f54c166",
     "level": "info",
-    "timestamp": 1763750813560000
+    "timestamp": 1763755171398000
   },
   {
-    "event_message": "      - MINOR gaps: 2\n",
+    "event_message": "📊 Article content breakdown: {\n  total: 46,\n  with_full_content: 0,\n  with_partial_content: 46,\n  with_any_content: 46,\n  with_firecrawl: 0,\n  has_full_content_true: 0,\n  has_full_content_field: 0\n}\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "8eb72eb8-3372-4b51-810b-e373dda0407a",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "f4f591e2-2a26-4ded-a121-7f78977d4937",
     "level": "info",
-    "timestamp": 1763750813560000
+    "timestamp": 1763755171394000
   },
   {
-    "event_message": "      - Recent articles (48h): YES\n",
+    "event_message": "🎯 Intelligence targets: { competitors: 19, stakeholders: 4, keywords: 30 }\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "366c097f-9300-4e92-a965-35b66b4f76db",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "62879c14-7914-4d47-926d-c4b1ccf281c6",
     "level": "info",
-    "timestamp": 1763750813560000
+    "timestamp": 1763755171394000
   },
   {
-    "event_message": "\n⚠️ MINOR GAPS (acceptable, will proceed):\n",
+    "event_message": "   - Entities found: 13\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "6285d0a9-b121-424e-8582-2b8b4f5b3e15",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "9f1435e6-5d84-42d6-b616-ecc37860b4aa",
     "level": "info",
-    "timestamp": 1763750813560000
+    "timestamp": 1763755171393000
   },
   {
-    "event_message": "      - CRITICAL gaps: 1\n",
+    "event_message": "📊 Organizing data from 46 articles (Claude-enhanced: true)\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "2c1ec9c3-d7b4-4853-96ce-1b0ae1a1baaa",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "d9b59a6b-3f90-4e8b-96da-c063ad7a8047",
     "level": "info",
-    "timestamp": 1763750813560000
+    "timestamp": 1763755171393000
   },
   {
-    "event_message": "   1. extremely_poor_coverage: Coverage is insufficient for meaningful analysis: 20% competitors, 0% stakeholders\n",
+    "event_message": "🔍 DEBUG - Sample article structure: {\n  has_full_content: undefined,\n  full_content_exists: false,\n  full_content_length: 0,\n  content_length_field: undefined,\n  keys: [\n    \"url\",\n    \"title\",\n    \"description\",\n    \"source\",\n    \"source_tier\",\n    \"source_priority\",\n    \"published_at\",\n    \"relevance_score\",\n    \"filter_stage\",\n    \"from_source_direct\",\n    \"listing_metadata\",\n    \"pr_relevance_score\",\n    \"pr_category\",\n    \"relevance_metadata\"\n  ]\n}\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "7062d1d4-20b0-49ff-9c15-7985fa236648",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "fdaf9635-6099-4927-930e-c28929cdad0b",
     "level": "info",
-    "timestamp": 1763750813560000
+    "timestamp": 1763755171393000
   },
   {
-    "event_message": "   📊 Assessment Results:\n",
+    "event_message": "   - Quotes captured: 0\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "4050ed8c-406f-45a9-aadd-887fdf2b34a0",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "7489f1d6-481d-4d5d-b5f6-753c2e99643a",
     "level": "info",
-    "timestamp": 1763750813560000
+    "timestamp": 1763755171393000
   },
   {
-    "event_message": "   1. low_competitor_coverage: Competitor coverage at 20% (threshold: 40%)\n",
+    "event_message": "✅ Claude analysis complete:\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "90f61424-66a2-4030-85d4-0127fac2f15b",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "9f2e58d7-84c6-4e9a-860d-6979f7a77361",
     "level": "info",
-    "timestamp": 1763750813560000
+    "timestamp": 1763755171393000
   },
   {
-    "event_message": "\n🔧 Step 6: Generating gap-filling queries...\n",
+    "event_message": "   - Events extracted: 5\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "0d83ae91-5515-4f33-9120-9e3c2e014dd5",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "5ed66c0a-5bc9-40cd-b189-8d955428d864",
     "level": "info",
-    "timestamp": 1763750813560000
+    "timestamp": 1763755171393000
   },
   {
-    "event_message": "   Handling extremely_poor_coverage gap\n",
+    "event_message": "   - Insights generated: 5\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "ac7438b5-b64c-46fe-b737-b982a3d8b0d3",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "efd828b2-6c67-44f1-b481-5e196687a90f",
     "level": "info",
-    "timestamp": 1763750813560000
+    "timestamp": 1763755171393000
   },
   {
-    "event_message": "   ✅ Loaded 10 competitors, 3 stakeholders, 0 topics\n",
+    "event_message": "🔍 Claude extracted 5 events with entities: [\n  \"Weber Shandwick\",\n  \"FleishmanHillard\",\n  \"DNA Communications\",\n  \"Attention Comms\",\n  \"Acrisure\"\n]\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "4b8b3cee-1b0e-4c40-964a-76dac10ea436",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "d582895c-b9a7-4cda-86e6-e401deee858e",
     "level": "info",
-    "timestamp": 1763750813559000
+    "timestamp": 1763755171392000
   },
   {
-    "event_message": "\n🔬 Step 3: Assessing intelligence quality...\n",
+    "event_message": "🎯 Intelligence targets loaded: {\n  organization: \"KARV\",\n  competitors: [\n    \"Edelman\",\n    \"Weber Shandwick\",\n    \"FleishmanHillard\",\n    \"Ketchum\",\n    \"BCW (Burson Cohn & Wolfe)\",\n    \"Golin\",\n    \"Porter Novelli\",\n    \"Zeno Group\",\n    \"5WPR\",\n    \"ICR\",\n    \"McKinsey Communications Practice\",\n    \"Deloitte Brand & Communications\",\n    \"PwC Communications\",\n    \"Large advertising agencies expanding into PR\",\n    \"Independent boutique PR firms\",\n    \"AI-powered communications platforms\",\n    \"In-house communications teams expanding capabilities\",\n    \"Digital-first PR startups\",\n    \"Consulting firms entering communications space\"\n  ],\n  stakeholders: [],\n  topics: [\n    \"KARV wins account\",\n    \"KARV appoints\",\n    \"KARV launches\",\n    \"PR agency rankings\",\n    \"communications firm\"\n  ]\n}\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "f2ab821c-0ded-454b-bbc7-571998d0d53b",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "4370c099-cede-41ff-b766-2488cd087821",
     "level": "info",
-    "timestamp": 1763750813559000
+    "timestamp": 1763755159198000
   },
   {
-    "event_message": "🎯 Step 2: Loading intelligence targets...\n",
+    "event_message": "📋 Entity extraction rules sent to Claude:\nCRITICAL ENTITY EXTRACTION RULES:\n\n1. PRIORITIZE INTELLIGENCE TARGETS: If the article mentions ANY of these configured targets, use them as entities:\n   - Competitors: Edelman, Weber Shandwick, FleishmanHillard, Ketchum, BCW (Burson Cohn & Wolfe), Golin, Porter Novelli, Zeno Group, 5WPR, ICR, McKinsey Communications Practice, Deloitte Brand & Communications, PwC Communications, Large advertising agencies expanding into PR, Independent boutique PR firms, AI-powered communications platforms, In-house communications teams expanding capabilities, Digital-first PR startups, Consulting firms entering communications space\n   - Stakeholders: \n\n2. For each event, check if ANY intelligence target is mentioned in the article\n   - If article mentions ANY of these competitors, extract that as the entit\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "fa3739b8-ea44-4635-b701-03981819e88f",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "f5fd8541-70e9-4bf4-b169-c48ac78cf93e",
     "level": "info",
-    "timestamp": 1763750813512000
+    "timestamp": 1763755159198000
   },
   {
-    "event_message": "🔍 QUALITY CONTROL: KARV\n",
+    "event_message": "🔍 analyzeWithClaude called with 46 articles, API key exists: true\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "bafcfe9b-10cb-45ce-8bcb-13f81eb9fbfe",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "666d2ee2-8d69-4f28-9fe1-1effb5947f73",
     "level": "info",
-    "timestamp": 1763750813348000
+    "timestamp": 1763755159196000
   },
   {
-    "event_message": "\n================================================================================\n",
+    "event_message": "🤖 Using Claude to deeply analyze 46 full-content articles...\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "a21a1480-4478-4cd1-8a0d-9b83cb78c344",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "a95cb366-4472-48bc-9d9d-5e5de590581c",
     "level": "info",
-    "timestamp": 1763750813348000
+    "timestamp": 1763755159196000
   },
   {
-    "event_message": "================================================================================\n\n",
+    "event_message": "🚀 Data Extraction Starting: {\n  organization: \"KARV\",\n  articles: 46,\n  timestamp: \"2025-11-21T19:59:19.194Z\"\n}\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "cad910f2-1a65-4a1a-9777-8502cca384fa",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "25649b69-e32a-4e11-8f8c-cac990508dd9",
     "level": "info",
-    "timestamp": 1763750813348000
+    "timestamp": 1763755159195000
   },
   {
-    "event_message": "   Iteration: 0 (max: 1)\n",
+    "event_message": "📄 Analyzing ALL 46 articles with Claude (title + description + any content)\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "c1f9abac-30c5-4efc-a3a2-08cd2e97a81b",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "c9257193-7407-4bd9-9cf6-76c675898dbd",
     "level": "info",
-    "timestamp": 1763750813348000
+    "timestamp": 1763755159195000
   },
   {
-    "event_message": "📋 Step 1: Loading strategic context...\n",
+    "event_message": "  - Last 7 days: 46 articles\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "3456ed71-f564-4795-9384-4a991cf88424",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "b312d55d-a95b-4c22-af11-4a926d80a78e",
     "level": "info",
-    "timestamp": 1763750813348000
+    "timestamp": 1763755159194000
   },
   {
-    "event_message": "   Articles to assess: 45\n",
+    "event_message": "  - Last 3 days: 46 articles\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "3d9657f6-8093-4dc3-8178-2296becba66f",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "4b36dd10-b6fd-4500-b9fe-0b10d6a3074b",
     "level": "info",
-    "timestamp": 1763750813348000
+    "timestamp": 1763755159194000
+  },
+  {
+    "event_message": "  - Last 24 hours: 46 articles\n",
+    "event_type": "Log",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "f0106a82-8eeb-49a7-b941-2e5c67b6fcf0",
+    "level": "info",
+    "timestamp": 1763755159194000
+  },
+  {
+    "event_message": "  - Older than 7 days: 0 articles\n",
+    "event_type": "Log",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "312170c4-f9c3-4aca-a2d9-9146b8bb63e3",
+    "level": "info",
+    "timestamp": 1763755159194000
+  },
+  {
+    "event_message": "📊 ARTICLE AGE DISTRIBUTION:\n",
+    "event_type": "Log",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "16c38678-5368-4cbb-adaf-79e30e83a6ce",
+    "level": "info",
+    "timestamp": 1763755159194000
+  },
+  {
+    "event_message": "📅 ARTICLE TIMEFRAME IN ENRICHMENT:\n",
+    "event_type": "Log",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "cb7d52dc-dc6a-4922-82da-ca7e96d8dc7d",
+    "level": "info",
+    "timestamp": 1763755159193000
+  },
+  {
+    "event_message": "  - Newest article: 2025-11-21T19:56:22.705Z - \"The 2025 PRWeek Hall of Fame inductees...\"\n",
+    "event_type": "Log",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "0e92b548-dca7-4a90-8877-da8d0cb4bcf1",
+    "level": "info",
+    "timestamp": 1763755159193000
+  },
+  {
+    "event_message": "  - Oldest article: 2025-11-21T19:56:22.705Z - \"Salary Survey 2025: Employees hold the line...\"\n",
+    "event_type": "Log",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "fd236f35-6491-4d52-8fa7-fe20a8f2fe28",
+    "level": "info",
+    "timestamp": 1763755159193000
+  },
+  {
+    "event_message": "📊 Enrichment received 46 articles\n",
+    "event_type": "Log",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "73d888cc-aedc-484e-9630-1e35777e0151",
+    "level": "info",
+    "timestamp": 1763755159192000
   },
   {
     "event_message": "Listening on http://localhost:9999/\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "1b2d10c3-43ad-4805-8ae9-e207865b7498",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "7e4e0f09-e61c-4264-a98d-4916bb3bc013",
     "level": "info",
-    "timestamp": 1763750813345000
+    "timestamp": 1763755159188000
   },
   {
-    "event_message": "booted (time: 28ms)",
+    "event_message": "booted (time: 23ms)",
     "event_type": "Boot",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "13bba2c7-8fd9-49f0-b722-83d4bdccadfa",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "30218513-3c67-474e-a4be-77674dc0deed",
     "level": "log",
-    "timestamp": 1763750813342000
+    "timestamp": 1763755159187000
   },
   {
     "event_message": "shutdown",
     "event_type": "Shutdown",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "ef7f9cea-1271-4db7-bded-50c9e7513d52",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "8bfce8fe-2a61-4e24-bea0-6633e7c2aebb",
     "level": "log",
-    "timestamp": 1763749834974000
+    "timestamp": 1763754775276000
   },
   {
-    "event_message": "\n❌ CRITICAL GAPS DETECTED:\n",
+    "event_message": "📈 Metrics being sent: 0 metrics\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "cae65eb7-99f2-455d-b575-58910370cc5f",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "822efb15-9e61-4818-a638-5e41e8d06601",
     "level": "info",
-    "timestamp": 1763749635209000
+    "timestamp": 1763754587498000
   },
   {
-    "event_message": "\n🔧 Step 6: Generating gap-filling queries...\n",
+    "event_message": "💬 Quotes being sent: 0 quotes\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "d9a6e61d-e85d-494e-88b9-40ec7f60b560",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "64f53604-ac2b-4866-9523-56a843999dd0",
     "level": "info",
-    "timestamp": 1763749635209000
+    "timestamp": 1763754587498000
   },
   {
-    "event_message": "      - CRITICAL gaps: 1\n",
+    "event_message": "🎯 Sample events: [\n  {\n    type: \"partnership\",\n    description: \"Weber Shandwick named as agency of record (AOR) for Carhartt...\",\n    entities: undefined,\n    impact: undefined\n  },\n  {\n    type: \"partnership\",\n    description: \"Bay Area Host Committee hires FleishmanHillard for strategic communications support...\",\n    entities: undefined,\n    impact: undefined\n  },\n  {\n    type: \"product\",\n    description: \"DNA Communications launches dnaHelix, global strategic communications support for biotechs...\",\n    entities: undefined,\n    impact: undefined\n  }\n]\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "97b58c69-a027-45f4-89f7-6586aa06952f",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "ead589b1-d298-4f8c-b2f3-34dfcf66e06b",
     "level": "info",
-    "timestamp": 1763749635209000
+    "timestamp": 1763754587498000
   },
   {
-    "event_message": "   1. extremely_poor_coverage: Coverage is insufficient for meaningful analysis: 20% competitors, 0% stakeholders\n",
+    "event_message": "  - extracted_data: ✅ (full extracted data)\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "db192d58-f901-4208-938a-f61b7d225884",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "d4041ebc-24e1-47dc-9c9c-fb4971fb9537",
     "level": "info",
-    "timestamp": 1763749635209000
+    "timestamp": 1763754587498000
   },
   {
-    "event_message": "   ⚠️ Could not generate gap-filling queries - PROCEEDING anyway\n",
+    "event_message": "First 3 events: [\n  {\n    \"type\": \"partnership\",\n    \"entity\": \"Weber Shandwick\",\n    \"description\": \"Weber Shandwick named as agency of record (AOR) for Carhartt\",\n    \"category\": \"competitive\",\n    \"date\": \"2025-11-21T19:48:05.499Z\"\n  },\n  {\n    \"type\": \"partnership\",\n    \"entity\": \"FleishmanHillard\",\n    \"description\": \"Bay Area Host Committee hires FleishmanHillard for strategic communications support\",\n    \"category\": \"competitive\",\n    \"date\": \"2025-11-21T19:48:05.499Z\"\n  },\n  {\n    \"type\": \"product\",\n    \"entity\": \"DNA Communications\",\n    \"description\": \"DNA Communications launches dnaHelix, global strategic communications support for biotechs\",\n    \"category\": \"competitive\",\n    \"date\": \"2025-11-21T19:48:05.499Z\"\n  }\n]\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "41db1d0d-06f3-4108-b93b-6a5f85adae72",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "a65b1393-54b5-4fd9-9b21-506c61a61b37",
     "level": "info",
-    "timestamp": 1763749635209000
+    "timestamp": 1763754587498000
   },
   {
-    "event_message": "⚠️ OVERRIDING: Extremely poor coverage detected (20% competitors, 0% stakeholders)\n",
+    "event_message": "🔍 SAMPLE OF ACTUAL DATA BEING SENT:\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "e1b223dd-1d20-4f63-a11c-f94541a12f48",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "99c7f70b-0a2d-4c4c-8df8-a5436af91908",
     "level": "info",
-    "timestamp": 1763749635209000
+    "timestamp": 1763754587498000
   },
   {
-    "event_message": "   Generated 0 targeted queries for critical gaps\n",
+    "event_message": "📦 COMPLETE ENRICHMENT PAYLOAD STRUCTURE:\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "50fae6f8-63a8-4ac4-b14b-bd81a1ecd517",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "a9891702-4df0-4344-a834-096e71eb7f04",
     "level": "info",
-    "timestamp": 1763749635209000
+    "timestamp": 1763754587498000
   },
   {
-    "event_message": "   1. low_competitor_coverage: Competitor coverage at 20% (threshold: 40%)\n",
+    "event_message": "  - structured_data: ✅ (events_by_type, top_entities, key_quotes)\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "99c7dd82-04c4-4d43-bedb-6830ff0f5e52",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "aba802bf-1f41-4989-942d-5a0434389146",
     "level": "info",
-    "timestamp": 1763749635209000
+    "timestamp": 1763754587498000
   },
   {
-    "event_message": "      - Recent articles (48h): YES\n",
+    "event_message": "📊 Events being sent: 8 events\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "65e82c47-8bfd-49c4-8ebb-81f1f4ae84ed",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "0cf1b764-a408-4706-a4f4-c9d9b4d944c2",
     "level": "info",
-    "timestamp": 1763749635209000
+    "timestamp": 1763754587498000
   },
   {
-    "event_message": "      - MINOR gaps: 2\n",
+    "event_message": "  - knowledge_graph: ✅ (entities and relationships)\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "e3cfaf7d-f654-4931-83a9-cf0981981595",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "57c9ce52-f588-4508-bacd-74678c7e03d0",
     "level": "info",
-    "timestamp": 1763749635209000
+    "timestamp": 1763754587498000
   },
   {
-    "event_message": "      - Competitor coverage: 20% (threshold: 40%)\n",
+    "event_message": "📰 Article summaries being sent: 45 summaries\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "201df8b4-6b6c-4172-9d4a-105ccce7158e",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "7dfcc2c0-995c-46e3-b019-0f877b43595b",
     "level": "info",
-    "timestamp": 1763749635209000
+    "timestamp": 1763754587498000
   },
   {
-    "event_message": "   2. low_stakeholder_coverage: Stakeholder coverage at 0%\n",
+    "event_message": "First 5 entities: [\n  \"Weber Shandwick\",\n  \"FleishmanHillard\",\n  \"Carhartt\",\n  \"Bay Area Host Committee\",\n  \"DNA Communications\"\n]\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "8bcb8175-ecce-4f88-8030-4d4c57a48bea",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "3741cf81-8b0e-4d21-b1ca-88af1145b5a8",
     "level": "info",
-    "timestamp": 1763749635209000
+    "timestamp": 1763754587498000
   },
   {
-    "event_message": "\n⚠️ MINOR GAPS (acceptable, will proceed):\n",
+    "event_message": "  - enriched_articles: ✅ ( 45 articles)\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "e6533c5e-06b7-453d-8375-012c9d092197",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "939f4e04-027c-4d20-a228-a5c3d3db178a",
     "level": "info",
-    "timestamp": 1763749635209000
+    "timestamp": 1763754587498000
   },
   {
-    "event_message": "      - Stakeholder coverage: 0% (threshold: 30%)\n",
+    "event_message": "🚀🚀🚀 ENRICHMENT SENDING TO SYNTHESIS:\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "c5841400-9a9d-4b9e-839e-79d61c490faa",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "7cc3b9d1-49d5-435f-b1a6-83f76af0e793",
     "level": "info",
-    "timestamp": 1763749635209000
+    "timestamp": 1763754587498000
   },
   {
-    "event_message": "      - Total articles: 45\n",
+    "event_message": "  - organized_intelligence: ✅ (events, entities, quotes, metrics, clusters)\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "9e14c298-dbe3-49ab-80be-a4331767ff49",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "b7121c28-69b8-4de8-9423-d49065a344da",
     "level": "info",
-    "timestamp": 1763749635209000
+    "timestamp": 1763754587498000
   },
   {
-    "event_message": "   📊 Assessment Results:\n",
+    "event_message": "  - statistics: ✅ (processing stats)\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "877c3cb4-784f-4816-99a5-4c5eadcb2a68",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "b6a3ada7-85c8-42c5-b957-a1c7e401122e",
     "level": "info",
-    "timestamp": 1763749635209000
+    "timestamp": 1763754587498000
   },
   {
-    "event_message": "\n🔬 Step 3: Assessing intelligence quality...\n",
+    "event_message": "👥 Entities being sent: 15 entities\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "d814c7db-4229-44bf-94bb-0ad3390952c1",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "8a98d92c-648c-4bc1-b7d5-db7218fb2dda",
     "level": "info",
-    "timestamp": 1763749635208000
+    "timestamp": 1763754587498000
   },
   {
-    "event_message": "   ✅ Loaded 10 competitors, 3 stakeholders, 0 topics\n",
+    "event_message": "  - executive_summary: ✅ (immediate_actions, threats, trends)\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "20507840-8f61-4324-b0a5-50d4b64d03c3",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "fdf55206-b120-40f0-badd-43ef88c27e28",
     "level": "info",
-    "timestamp": 1763749635208000
+    "timestamp": 1763754587498000
   },
   {
-    "event_message": "🎯 Step 2: Loading intelligence targets...\n",
+    "event_message": "First 2 quotes: []\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "ba4eb122-0a73-4db9-9830-045738977857",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "7663b4ad-9b61-493f-8019-91a148dba716",
     "level": "info",
-    "timestamp": 1763749635141000
+    "timestamp": 1763754587498000
   },
   {
-    "event_message": "\n================================================================================\n",
+    "event_message": "✅ Extraction complete in 12235ms: {\n  events: 8,\n  entities: 15,\n  quotes: 0,\n  clusters: 3,\n  claude_enhanced: true,\n  gaps_filled: 0\n}\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "9c49429f-36bf-45d7-805e-a1bad7a88e58",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "6ddd1267-5573-403d-8fa8-cf2e973f1a91",
     "level": "info",
-    "timestamp": 1763749634968000
+    "timestamp": 1763754587497000
   },
   {
-    "event_message": "================================================================================\n\n",
+    "event_message": "✅ Extraction complete: {\n  articles_with_full_content: 0,\n  articles_with_partial_content: 45,\n  total_processed: 45,\n  events_extracted: 3,\n  entities_found: 0,\n  quotes_extracted: 0,\n  metrics_found: 0,\n  quality_score: \"HIGH\",\n  warnings: [ \"NO_QUOTES_FOUND\" ],\n  extraction_success_rate: \"100.0%\"\n}\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "2b2f2064-55ce-42b4-bf37-ad18fc3c3bc5",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "fd18c9c5-207c-4a55-b7a7-d54966a1e71c",
     "level": "info",
-    "timestamp": 1763749634968000
+    "timestamp": 1763754587497000
   },
   {
-    "event_message": "   Articles to assess: 45\n",
+    "event_message": "🔍 DEBUG - Sample article structure: {\n  has_full_content: undefined,\n  full_content_exists: false,\n  full_content_length: 0,\n  content_length_field: undefined,\n  keys: [\n    \"url\",\n    \"title\",\n    \"description\",\n    \"source\",\n    \"source_tier\",\n    \"source_priority\",\n    \"published_at\",\n    \"relevance_score\",\n    \"filter_stage\",\n    \"from_source_direct\",\n    \"listing_metadata\",\n    \"pr_relevance_score\",\n    \"pr_category\",\n    \"relevance_metadata\"\n  ]\n}\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "d746918f-2d74-42eb-971c-42c5a0482998",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "070781da-ebd2-4079-ba91-b412d09074aa",
     "level": "info",
-    "timestamp": 1763749634968000
+    "timestamp": 1763754587493000
   },
   {
-    "event_message": "📋 Step 1: Loading strategic context...\n",
+    "event_message": "📊 Organizing data from 45 articles (Claude-enhanced: true)\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "4afcc20a-8186-4313-ade3-246e2b754348",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "157dd18b-e58f-4fa6-8ff0-dbd2fcf307b7",
     "level": "info",
-    "timestamp": 1763749634968000
+    "timestamp": 1763754587493000
   },
   {
-    "event_message": "🔍 QUALITY CONTROL: KARV\n",
+    "event_message": "📊 Article content breakdown: {\n  total: 45,\n  with_full_content: 0,\n  with_partial_content: 45,\n  with_any_content: 45,\n  with_firecrawl: 0,\n  has_full_content_true: 0,\n  has_full_content_field: 0\n}\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "1fd0cadf-3aca-4065-a3d6-e9cc07646f4e",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "4b32c2b8-50ab-40c1-b5c1-3d80c8a07c85",
     "level": "info",
-    "timestamp": 1763749634968000
+    "timestamp": 1763754587493000
   },
   {
-    "event_message": "   Iteration: 0 (max: 1)\n",
+    "event_message": "🎯 Intelligence targets: { competitors: 19, stakeholders: 4, keywords: 30 }\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "a4e18248-b6d6-492b-9293-407f08fa2ba8",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "4f5a1a1d-4106-4574-b557-12c071c51aa0",
     "level": "info",
-    "timestamp": 1763749634968000
+    "timestamp": 1763754587493000
+  },
+  {
+    "event_message": "   - Insights generated: 5\n",
+    "event_type": "Log",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "26027d14-eef8-4e4f-94cb-f2b88039ab7a",
+    "level": "info",
+    "timestamp": 1763754587492000
+  },
+  {
+    "event_message": "🔍 Claude extracted 5 events with entities: [\n  \"Weber Shandwick\",\n  \"FleishmanHillard\",\n  \"DNA Communications\",\n  \"Attention Comms\",\n  \"Acrisure\"\n]\n",
+    "event_type": "Log",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "bb8dfa7f-063f-430f-9ca8-6019b36d15b5",
+    "level": "info",
+    "timestamp": 1763754587492000
+  },
+  {
+    "event_message": "   - Quotes captured: 0\n",
+    "event_type": "Log",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "043dd581-9b45-4227-a089-13fce722b5a7",
+    "level": "info",
+    "timestamp": 1763754587492000
+  },
+  {
+    "event_message": "✅ Claude analysis complete:\n",
+    "event_type": "Log",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "8c85bb14-bdc3-4083-8fb4-c549a6523e32",
+    "level": "info",
+    "timestamp": 1763754587492000
+  },
+  {
+    "event_message": "   - Entities found: 15\n",
+    "event_type": "Log",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "31cddbd8-2f1c-48b1-a487-d0346c2ba07f",
+    "level": "info",
+    "timestamp": 1763754587492000
+  },
+  {
+    "event_message": "   - Events extracted: 5\n",
+    "event_type": "Log",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "a2e8ac78-fba2-4c26-8d15-7d69d2e48228",
+    "level": "info",
+    "timestamp": 1763754587492000
+  },
+  {
+    "event_message": "📋 Entity extraction rules sent to Claude:\nCRITICAL ENTITY EXTRACTION RULES:\n\n1. PRIORITIZE INTELLIGENCE TARGETS: If the article mentions ANY of these configured targets, use them as entities:\n   - Competitors: Edelman, Weber Shandwick, FleishmanHillard, Ketchum, BCW, Golin, Porter Novelli, Zeno Group, 5WPR, ICR, McKinsey Communications Practice, Deloitte Digital, Accenture Interactive, Internal corporate communications teams, Freelance PR consultants, AI-powered PR platforms, Social media management startups, Influencer marketing agencies expanding into PR, Direct-to-consumer PR tech platforms\n   - Stakeholders: \n\n2. For each event, check if ANY intelligence target is mentioned in the article\n   - If article mentions ANY of these competitors, extract that as the entity\n   - If article mentions multiple targets, create separate eve\n",
+    "event_type": "Log",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "60b77340-d825-4a5f-b16b-7f8f1afd225f",
+    "level": "info",
+    "timestamp": 1763754575280000
+  },
+  {
+    "event_message": "🎯 Intelligence targets loaded: {\n  organization: \"KARV\",\n  competitors: [\n    \"Edelman\",\n    \"Weber Shandwick\",\n    \"FleishmanHillard\",\n    \"Ketchum\",\n    \"BCW\",\n    \"Golin\",\n    \"Porter Novelli\",\n    \"Zeno Group\",\n    \"5WPR\",\n    \"ICR\",\n    \"McKinsey Communications Practice\",\n    \"Deloitte Digital\",\n    \"Accenture Interactive\",\n    \"Internal corporate communications teams\",\n    \"Freelance PR consultants\",\n    \"AI-powered PR platforms\",\n    \"Social media management startups\",\n    \"Influencer marketing agencies expanding into PR\",\n    \"Direct-to-consumer PR tech platforms\"\n  ],\n  stakeholders: [],\n  topics: [\n    \"KARV wins account\",\n    \"KARV appointed\",\n    \"KARV hired\",\n    \"KARV crisis\",\n    \"KARV campaign\"\n  ]\n}\n",
+    "event_type": "Log",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "7077a640-3f3c-4e33-aafd-c0a712f65ff8",
+    "level": "info",
+    "timestamp": 1763754575279000
+  },
+  {
+    "event_message": "🚀 Data Extraction Starting: {\n  organization: \"KARV\",\n  articles: 45,\n  timestamp: \"2025-11-21T19:49:35.276Z\"\n}\n",
+    "event_type": "Log",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "9f48ec8c-7330-40f0-9536-ed14c1d4c6de",
+    "level": "info",
+    "timestamp": 1763754575277000
+  },
+  {
+    "event_message": "🤖 Using Claude to deeply analyze 45 full-content articles...\n",
+    "event_type": "Log",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "06b725c3-8790-4195-b4a8-238965d68608",
+    "level": "info",
+    "timestamp": 1763754575277000
+  },
+  {
+    "event_message": "📄 Analyzing ALL 45 articles with Claude (title + description + any content)\n",
+    "event_type": "Log",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "220f4b77-83e6-45f3-a25d-3b7df4b95aa9",
+    "level": "info",
+    "timestamp": 1763754575277000
+  },
+  {
+    "event_message": "🔍 analyzeWithClaude called with 45 articles, API key exists: true\n",
+    "event_type": "Log",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "6e51810a-a327-4952-a2bc-591c93ab2ba0",
+    "level": "info",
+    "timestamp": 1763754575277000
+  },
+  {
+    "event_message": "  - Last 24 hours: 45 articles\n",
+    "event_type": "Log",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "5a60f018-51a7-4295-b23c-40cb653cb43c",
+    "level": "info",
+    "timestamp": 1763754575276000
+  },
+  {
+    "event_message": "  - Last 3 days: 45 articles\n",
+    "event_type": "Log",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "fce381fb-def0-4786-83d0-619a1ca2e0c7",
+    "level": "info",
+    "timestamp": 1763754575276000
+  },
+  {
+    "event_message": "  - Older than 7 days: 0 articles\n",
+    "event_type": "Log",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "22967193-d486-49fb-a093-51099234058b",
+    "level": "info",
+    "timestamp": 1763754575276000
+  },
+  {
+    "event_message": "  - Last 7 days: 45 articles\n",
+    "event_type": "Log",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "f0fea163-cfb3-4099-ba74-48a52113ba6a",
+    "level": "info",
+    "timestamp": 1763754575276000
+  },
+  {
+    "event_message": "  - Oldest article: 2025-11-21T19:48:05.499Z - \"The Social Skinny: Twitter cofounder funds Vine co...\"\n",
+    "event_type": "Log",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "15fc11ad-de8e-4814-ae69-957e0f9e3418",
+    "level": "info",
+    "timestamp": 1763754575275000
+  },
+  {
+    "event_message": "📊 ARTICLE AGE DISTRIBUTION:\n",
+    "event_type": "Log",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "551a9057-8459-49df-948d-d2f554eced36",
+    "level": "info",
+    "timestamp": 1763754575275000
+  },
+  {
+    "event_message": "📅 ARTICLE TIMEFRAME IN ENRICHMENT:\n",
+    "event_type": "Log",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "2b6ccb6f-43c2-45b9-a9b7-c653dd284877",
+    "level": "info",
+    "timestamp": 1763754575275000
+  },
+  {
+    "event_message": "  - Newest article: 2025-11-21T19:48:05.500Z - \"Hall of Famers achieved greatness in the field of ...\"\n",
+    "event_type": "Log",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "942dac10-5bff-451a-96bc-648d6e8908ae",
+    "level": "info",
+    "timestamp": 1763754575275000
+  },
+  {
+    "event_message": "📊 Enrichment received 45 articles\n",
+    "event_type": "Log",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "7709e446-e702-4444-9a46-2c1a2100a7bd",
+    "level": "info",
+    "timestamp": 1763754575274000
   },
   {
     "event_message": "Listening on http://localhost:9999/\n",
     "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "8e63d35d-d669-402c-b931-052b92332494",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "2d517b21-f276-4a9e-9a3b-cc70d82d326c",
     "level": "info",
-    "timestamp": 1763749634965000
+    "timestamp": 1763754575259000
   },
   {
-    "event_message": "booted (time: 29ms)",
+    "event_message": "booted (time: 24ms)",
     "event_type": "Boot",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "9850c120-969e-4fc4-900f-530dd66d14ce",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "e4393358-3e6a-4059-a221-1f0e7eb194a5",
     "level": "log",
-    "timestamp": 1763749634963000
+    "timestamp": 1763754575258000
   },
   {
     "event_message": "shutdown",
     "event_type": "Shutdown",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "678ca249-79a1-439c-8603-d603028dcd9f",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "d7470f92-aebc-4b22-a919-d3aab757c263",
     "level": "log",
-    "timestamp": 1763747929778000
+    "timestamp": 1763753409554000
   },
   {
-    "event_message": "\n✅ QUALITY ASSESSMENT: GOOD ENOUGH - PROCEEDING\n",
-    "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "b390fed3-7a4f-46d8-b43b-c0de9baddd96",
-    "level": "info",
-    "timestamp": 1763747729903000
-  },
-  {
-    "event_message": "      - Total articles: 45\n",
-    "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "94ac1cdc-a848-4539-901e-91b154364284",
-    "level": "info",
-    "timestamp": 1763747729903000
-  },
-  {
-    "event_message": "      - CRITICAL gaps: 0\n",
-    "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "8d4ee40e-8171-4384-9c17-7cee67b996e7",
-    "level": "info",
-    "timestamp": 1763747729903000
-  },
-  {
-    "event_message": "      - MINOR gaps: 2\n",
-    "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "b464f43c-d392-4cf4-9b61-e1d6a4c4ad1a",
-    "level": "info",
-    "timestamp": 1763747729903000
-  },
-  {
-    "event_message": "   Quality is acceptable for downstream processing\n",
-    "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "e5a9c5df-4a57-40bb-a72b-217252f53e87",
-    "level": "info",
-    "timestamp": 1763747729903000
-  },
-  {
-    "event_message": "   1. low_competitor_coverage: Competitor coverage at 20% (threshold: 40%)\n",
-    "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "feefc7a6-ebf3-4836-b927-1117304ad131",
-    "level": "info",
-    "timestamp": 1763747729903000
-  },
-  {
-    "event_message": "\n⚠️ MINOR GAPS (acceptable, will proceed):\n",
-    "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "00722f63-1493-44b5-a869-93a97bd83b4b",
-    "level": "info",
-    "timestamp": 1763747729903000
-  },
-  {
-    "event_message": "      - Stakeholder coverage: 0% (threshold: 30%)\n",
-    "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "2212ff86-5c19-4e10-8ce2-385331554818",
-    "level": "info",
-    "timestamp": 1763747729903000
-  },
-  {
-    "event_message": "      - Recent articles (48h): YES\n",
-    "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "b04936ee-dd32-4793-8f0d-d27db2a22233",
-    "level": "info",
-    "timestamp": 1763747729903000
-  },
-  {
-    "event_message": "   2. low_stakeholder_coverage: Stakeholder coverage at 0%\n",
-    "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "ce2aa38c-5edb-45c6-9727-e2689e22a942",
-    "level": "info",
-    "timestamp": 1763747729903000
-  },
-  {
-    "event_message": "   📊 Assessment Results:\n",
-    "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "86eea6ed-b845-43bc-8005-192a9d6dd1fa",
-    "level": "info",
-    "timestamp": 1763747729903000
-  },
-  {
-    "event_message": "      - Competitor coverage: 20% (threshold: 40%)\n",
-    "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "67f263fb-0005-4881-8e45-fcec03f131fe",
-    "level": "info",
-    "timestamp": 1763747729903000
-  },
-  {
-    "event_message": "\n🔬 Step 3: Assessing intelligence quality...\n",
-    "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "dc71e6bb-c4b8-4c77-964f-5c49cd2b1f21",
-    "level": "info",
-    "timestamp": 1763747729902000
-  },
-  {
-    "event_message": "   ✅ Loaded 10 competitors, 3 stakeholders, 0 topics\n",
-    "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "e1b11227-2b6e-43a9-98e3-2f5173e81289",
-    "level": "info",
-    "timestamp": 1763747729902000
-  },
-  {
-    "event_message": "🎯 Step 2: Loading intelligence targets...\n",
-    "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "0a98dfde-333e-4e74-8bde-a8cd7d9a6611",
-    "level": "info",
-    "timestamp": 1763747729858000
-  },
-  {
-    "event_message": "\n================================================================================\n",
-    "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "0a18e3ff-f559-4704-9083-35bf9aa0f236",
-    "level": "info",
-    "timestamp": 1763747729772000
-  },
-  {
-    "event_message": "📋 Step 1: Loading strategic context...\n",
-    "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "336c0823-49bb-45a3-83de-9127e03cd4bb",
-    "level": "info",
-    "timestamp": 1763747729772000
-  },
-  {
-    "event_message": "================================================================================\n\n",
-    "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "f344636a-e830-4ff4-a90d-22aac5a83e53",
-    "level": "info",
-    "timestamp": 1763747729772000
-  },
-  {
-    "event_message": "🔍 QUALITY CONTROL: KARV\n",
-    "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "417b2270-8d63-4ece-bb2d-7201f2fa9d10",
-    "level": "info",
-    "timestamp": 1763747729772000
-  },
-  {
-    "event_message": "   Articles to assess: 45\n",
-    "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "3b4521b0-b162-452f-9aa7-c976c5b18bc8",
-    "level": "info",
-    "timestamp": 1763747729772000
-  },
-  {
-    "event_message": "   Iteration: 0 (max: 1)\n",
-    "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "76ce8011-38f7-4985-bb1b-4c9ac8b25009",
-    "level": "info",
-    "timestamp": 1763747729772000
-  },
-  {
-    "event_message": "Listening on http://localhost:9999/\n",
-    "event_type": "Log",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "e244e237-e9b8-464a-9492-e4528f6c8562",
-    "level": "info",
-    "timestamp": 1763747729767000
-  },
-  {
-    "event_message": "booted (time: 40ms)",
-    "event_type": "Boot",
-    "function_id": "5c77d1d0-af99-47d1-a1c0-25f2eda446c7",
-    "id": "9cec10e5-9232-4781-b58e-6aa978c6d3ae",
+    "event_message": "shutdown",
+    "event_type": "Shutdown",
+    "function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+    "id": "7f4c61d9-5c6b-4367-93e3-593dca44699c",
     "level": "log",
-    "timestamp": 1763747729763000
+    "timestamp": 1763753409443000
   }
 ]
