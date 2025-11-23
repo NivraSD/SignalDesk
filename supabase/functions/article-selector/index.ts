@@ -55,7 +55,8 @@ serve(async (req) => {
     timeThreshold.setDate(timeThreshold.getDate() - TIME_WINDOW_DAYS);
 
     // Get recent completed articles from ALL sources
-    // Filter by published_at (when article was published) not created_at (when we scraped it)
+    // Use created_at (scrape date) as fallback when published_at is NULL
+    // NOTE: Many sources don't provide reliable publication dates in RSS/CSE
     const { data: candidateArticles } = await supabase
       .from('raw_articles')
       .select(`
@@ -66,14 +67,15 @@ serve(async (req) => {
         title,
         description,
         published_at,
+        created_at,
         full_content,
         raw_metadata,
         source_registry!inner(tier, industries)
       `)
       .eq('scrape_status', 'completed')
-      .gte('published_at', timeThreshold.toISOString())
+      .gte('created_at', timeThreshold.toISOString())  // Use scrape date for recency
       .not('full_content', 'is', null)
-      .order('published_at', { ascending: false })
+      .order('created_at', { ascending: false })
       .limit(CANDIDATE_POOL_SIZE);
 
     console.log(`   Fetched ${candidateArticles?.length || 0} candidate articles`);
@@ -122,7 +124,7 @@ serve(async (req) => {
       title: article.title,
       description: article.description || '',
       source: article.source_name,
-      published_at: article.published_at,
+      published_at: article.published_at || article.created_at, // Fallback to scrape date if no pub date
       full_content: article.full_content,
       pr_score: article.relevance_score, // Use AI score as relevance
       source_tier: article.source_registry?.tier || 2,
