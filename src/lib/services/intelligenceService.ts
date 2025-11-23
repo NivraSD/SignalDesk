@@ -3,15 +3,16 @@ import type { IntelligenceReport, Opportunity, PipelineRun, ExecutiveSynthesis }
 
 export class IntelligenceService {
   /**
-   * Start a new intelligence pipeline run
+   * Start a new intelligence pipeline run (V5)
    * Pipeline flow:
-   * 1. mcp-discovery
-   * 2. monitoring-stage-1
-   * 3. monitor-stage-2-relevance
-   * 4. monitoring-stage-2-enrichment
-   * 5. intelligence-orchestrator-v2
-   * 6. mcp-executive-synthesis
-   * 7. opportunity-orchestrator
+   * 1. mcp-discovery (create company profile)
+   * 2. article-selector (AI-powered relevance scoring from V5 batch scraper)
+   * 3. target-intelligence-collector (save mentions)
+   * 4. pattern-detector (detect patterns)
+   * 5. connection-detector (find connections)
+   * 6. monitoring-stage-2-enrichment (extract events/entities)
+   * 7. mcp-executive-synthesis (generate executive summary)
+   * 8. mcp-opportunity-detector-v2 (detect opportunities)
    */
   static async startPipeline(
     organizationId: string,
@@ -99,75 +100,29 @@ export class IntelligenceService {
 
       console.log('✅ Profile extracted:', profile ? 'Yes' : 'No')
 
-      // Use niv-source-direct-monitor for HTML scraping with Claude filtering
+      // Use article-selector to query V5 batch scraper articles
       if (profile) {
-        console.log('Starting niv-source-direct-monitor (HTML scraping with pre-filtering)')
-        onProgress?.('niv-source-direct-monitor', 'running')
+        console.log('Starting article-selector (V5 batch scraper with AI relevance scoring)')
+        onProgress?.('article-selector', 'running')
 
-        const monitoringResponse = await supabase.functions.invoke('niv-source-direct-monitor', {
+        const articleResponse = await supabase.functions.invoke('article-selector', {
           body: {
             organization_id: organizationId,
             organization_name: orgName
           }
         })
 
-        console.log('niv-source-direct-monitor response:', monitoringResponse)
-        onProgress?.('niv-source-direct-monitor', 'completed', monitoringResponse.data)
+        if (articleResponse.error) {
+          console.error('Article selection error:', articleResponse.error)
+          onProgress?.('article-selector', 'failed', articleResponse.error)
+          throw new Error(`Article selection failed: ${articleResponse.error.message || 'Unknown error'}`)
+        }
 
-        // STEP 2: Run relevance filtering on collected articles
-        if (monitoringResponse.data?.articles) {
-          const collectedArticles = monitoringResponse.data.articles
-          console.log('📊 Monitoring collected', collectedArticles.length, 'articles')
+        console.log('✅ article-selector completed')
+        onProgress?.('article-selector', 'completed', articleResponse.data)
 
-          console.log('Starting monitor-stage-2-relevance')
-          onProgress?.('monitor-stage-2-relevance', 'running')
-
-          const relevanceResponse = await supabase.functions.invoke('monitor-stage-2-relevance', {
-            body: {
-              articles: collectedArticles,
-              organization_name: orgName,
-              organization_id: organizationId,
-              profile: profile
-            }
-          })
-
-          if (relevanceResponse.error) {
-            console.error('Relevance filtering error:', relevanceResponse.error)
-            onProgress?.('monitor-stage-2-relevance', 'failed', relevanceResponse.error)
-            throw new Error(`Relevance filtering failed: ${relevanceResponse.error.message || 'Unknown error'}`)
-          }
-
-          console.log('✅ monitor-stage-2-relevance completed')
-          onProgress?.('monitor-stage-2-relevance', 'completed', relevanceResponse.data)
-
-          const relevantArticles = relevanceResponse.data?.relevant_articles || []
-          console.log('📊 Relevance filtering:', collectedArticles.length, '→', relevantArticles.length, 'relevant articles')
-
-          // STEP 3: Run quality control check
-          console.log('Starting monitor-stage-3-quality-control')
-          onProgress?.('monitor-stage-3-quality-control', 'running')
-
-          const qualityControlResponse = await supabase.functions.invoke('monitor-stage-3-quality-control', {
-            body: {
-              articles: relevantArticles,
-              organization_id: organizationId,
-              organization_name: orgName,
-              iteration: 0
-            }
-          })
-
-          if (qualityControlResponse.error) {
-            console.warn('⚠️ Quality control failed (non-blocking):', qualityControlResponse.error)
-            // Non-blocking - continue with existing articles
-            onProgress?.('monitor-stage-3-quality-control', 'completed', { warning: 'QC skipped due to error' })
-          } else {
-            console.log('✅ monitor-stage-3-quality-control completed')
-            onProgress?.('monitor-stage-3-quality-control', 'completed', qualityControlResponse.data)
-          }
-
-          // Use QC-approved articles (may include gap-filled articles)
-          const finalArticles = qualityControlResponse.data?.articles || relevantArticles
-          console.log('📊 Quality control:', relevantArticles.length, '→', finalArticles.length, 'final articles')
+        const finalArticles = articleResponse.data?.articles || []
+        console.log('📊 Article selector:', finalArticles.length, 'relevant articles selected (AI-scored)')
 
           // STEP 3.5: target-intelligence-collector (NEW: Save mentions to intelligence repository)
           if (finalArticles.length > 0) {
@@ -345,14 +300,14 @@ export class IntelligenceService {
               pipelineRunId: `pipeline-${Date.now()}`,
               success: true,
               discoveryData: data,
-              monitoringData: monitoringResponse.data,
+              articleSelectionData: articleResponse.data,
               enrichmentData: enrichmentResponse.data,
               executiveSynthesis: synthesisData,  // FIXED: Pass full object with nested .synthesis
               synthesis: synthesisData,  // FIXED: Pass full object with nested .synthesis
               opportunities: opportunities,
               statistics: {
-                articlesCollected: monitoringResponse.data?.metadata?.total_collected || 0,
-                articlesRelevant: monitoringResponse.data?.articles?.length || 0,
+                articlesSelected: articleResponse.data?.total_articles || 0,
+                avgRelevanceScore: articleResponse.data?.avg_score || 0,
                 eventsExtracted: enrichmentResponse.data?.extracted_data?.events?.length || 0,
                 opportunitiesIdentified: opportunities.length || 0
               }
@@ -363,14 +318,14 @@ export class IntelligenceService {
           return {
             pipelineRunId: `pipeline-${Date.now()}`,
             discoveryData: data,
-            monitoringData: monitoringResponse.data
+            articleSelectionData: articleResponse.data
           }
         }
-        
+
         return {
           pipelineRunId: `pipeline-${Date.now()}`,
           discoveryData: data,
-          monitoringData: monitoringResponse.data
+          articleSelectionData: articleResponse.data
         }
       }
       
@@ -382,15 +337,17 @@ export class IntelligenceService {
   }
 
   /**
-   * Run monitoring pipeline for an organization that has already completed onboarding
-   * Skips mcp-discovery and starts directly with monitoring using saved intelligence targets
+   * Run monitoring pipeline for an organization that has already completed onboarding (V5)
+   * Skips mcp-discovery and starts directly with article selection from V5 batch scraper
    * Pipeline flow:
    * 1. Load existing profile from database
-   * 2. niv-fireplexity-monitor-v2 (uses saved intelligence targets)
-   * 3. monitor-stage-2-relevance
-   * 4. monitoring-stage-2-enrichment
-   * 5. mcp-executive-synthesis
-   * 6. mcp-opportunity-detector-v2
+   * 2. article-selector (AI-powered relevance scoring from V5 batch scraper)
+   * 3. target-intelligence-collector (save mentions)
+   * 4. pattern-detector (detect patterns)
+   * 5. connection-detector (find connections)
+   * 6. monitoring-stage-2-enrichment (extract events/entities)
+   * 7. mcp-executive-synthesis (generate executive summary)
+   * 8. mcp-opportunity-detector-v2 (detect opportunities)
    */
   static async runMonitoringPipeline(
     organizationId: string,
@@ -421,80 +378,28 @@ export class IntelligenceService {
       console.log('✅ Profile loaded successfully')
       onProgress?.('load-profile', 'completed', { profile })
 
-      // STEP 2: Start with niv-source-direct-monitor (HTML scraping with pre-filtering)
-      console.log('Starting niv-source-direct-monitor (HTML scraping with pre-filtering)')
-      onProgress?.('niv-source-direct-monitor', 'running')
+      // STEP 2: Use article-selector to query V5 batch scraper articles
+      console.log('Starting article-selector (V5 batch scraper with AI relevance scoring)')
+      onProgress?.('article-selector', 'running')
 
-      const monitoringResponse = await supabase.functions.invoke('niv-source-direct-monitor', {
+      const articleResponse = await supabase.functions.invoke('article-selector', {
         body: {
           organization_id: organizationId,
           organization_name: organizationName
         }
       })
 
-      if (monitoringResponse.error) {
-        console.error('❌ Monitoring error:', monitoringResponse.error)
-        onProgress?.('niv-source-direct-monitor', 'failed', monitoringResponse.error)
-        throw new Error(`Monitoring failed: ${monitoringResponse.error.message || 'Unknown error'}`)
+      if (articleResponse.error) {
+        console.error('❌ Article selection error:', articleResponse.error)
+        onProgress?.('article-selector', 'failed', articleResponse.error)
+        throw new Error(`Article selection failed: ${articleResponse.error.message || 'Unknown error'}`)
       }
 
-      console.log('✅ niv-source-direct-monitor completed')
-      onProgress?.('niv-source-direct-monitor', 'completed', monitoringResponse.data)
+      console.log('✅ article-selector completed')
+      onProgress?.('article-selector', 'completed', articleResponse.data)
 
-      // STEP 2: Run relevance filtering on collected articles
-      if (monitoringResponse.data?.articles) {
-        const collectedArticles = monitoringResponse.data.articles
-        console.log('📊 Monitoring collected', collectedArticles.length, 'articles')
-
-        console.log('Starting monitor-stage-2-relevance')
-        onProgress?.('monitor-stage-2-relevance', 'running')
-
-        const relevanceResponse = await supabase.functions.invoke('monitor-stage-2-relevance', {
-          body: {
-            articles: collectedArticles,
-            organization_name: organizationName,
-            organization_id: organizationId,
-            profile: profile
-          }
-        })
-
-        if (relevanceResponse.error) {
-          console.error('Relevance filtering error:', relevanceResponse.error)
-          onProgress?.('monitor-stage-2-relevance', 'failed', relevanceResponse.error)
-          throw new Error(`Relevance filtering failed: ${relevanceResponse.error.message || 'Unknown error'}`)
-        }
-
-        console.log('✅ monitor-stage-2-relevance completed')
-        onProgress?.('monitor-stage-2-relevance', 'completed', relevanceResponse.data)
-
-        const relevantArticles = relevanceResponse.data?.relevant_articles || []
-        console.log('📊 Relevance filtering:', collectedArticles.length, '→', relevantArticles.length, 'relevant articles')
-
-        // STEP 3: Run quality control check
-        console.log('Starting monitor-stage-3-quality-control')
-        onProgress?.('monitor-stage-3-quality-control', 'running')
-
-        const qualityControlResponse = await supabase.functions.invoke('monitor-stage-3-quality-control', {
-          body: {
-            articles: relevantArticles,
-            organization_id: organizationId,
-            organization_name: organizationName,
-            iteration: 0
-          }
-        })
-
-        if (qualityControlResponse.error) {
-          console.warn('⚠️ Quality control failed (non-blocking):', qualityControlResponse.error)
-          // Non-blocking - continue with existing articles
-          onProgress?.('monitor-stage-3-quality-control', 'completed', { warning: 'QC skipped due to error' })
-        } else {
-          console.log('✅ monitor-stage-3-quality-control completed')
-          onProgress?.('monitor-stage-3-quality-control', 'completed', qualityControlResponse.data)
-        }
-
-        // Use QC-approved articles (may include gap-filled articles)
-        const finalArticles = qualityControlResponse.data?.articles || relevantArticles
-        console.log('📊 Quality control:', relevantArticles.length, '→', finalArticles.length, 'final articles')
+      const finalArticles = articleResponse.data?.articles || []
+      console.log('📊 Article selector:', finalArticles.length, 'relevant articles selected (AI-scored)')
 
         // STEP 3.5: target-intelligence-collector (NEW: Save mentions to intelligence repository)
         if (finalArticles.length > 0) {
@@ -670,15 +575,14 @@ export class IntelligenceService {
             pipelineRunId: `pipeline-${Date.now()}`,
             success: true,
             profile: profile,
-            monitoringData: monitoringResponse.data,
-            relevanceData: relevanceResponse.data,
+            articleSelectionData: articleResponse.data,
             enrichmentData: enrichmentResponse.data,
             executiveSynthesis: synthesisData,
             synthesis: synthesisData,
             opportunities: opportunities,
             statistics: {
-              articlesCollected: monitoringResponse.data?.metadata?.total_collected || 0,
-              articlesRelevant: relevanceResponse.data?.statistics?.output_count || 0,
+              articlesSelected: articleResponse.data?.total_articles || 0,
+              avgRelevanceScore: articleResponse.data?.avg_score || 0,
               eventsExtracted: enrichmentResponse.data?.extracted_data?.events?.length || 0,
               opportunitiesIdentified: opportunities.length || 0
             }
@@ -689,15 +593,14 @@ export class IntelligenceService {
         return {
           pipelineRunId: `pipeline-${Date.now()}`,
           profile: profile,
-          monitoringData: monitoringResponse.data,
-          relevanceData: relevanceResponse.data
+          articleSelectionData: articleResponse.data
         }
       }
 
       return {
         pipelineRunId: `pipeline-${Date.now()}`,
         profile: profile,
-        monitoringData: monitoringResponse.data
+        articleSelectionData: articleResponse.data
       }
     } catch (error: any) {
       console.error('❌ Monitoring pipeline failed:', error)
