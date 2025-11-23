@@ -128,7 +128,32 @@ serve(async (req) => {
       if (!articleId) continue;
 
       if (result.success && result.data?.markdown) {
-        // Successfully scraped - update with content
+        // Check content quality before storing
+        const qualityCheck = validateArticleContent(
+          result.data.markdown,
+          result.metadata?.title || '',
+          result.url
+        );
+
+        if (!qualityCheck.is_valid) {
+          // Content failed quality check - mark as failed with reason
+          const { error: updateError } = await supabase
+            .from('raw_articles')
+            .update({
+              scrape_status: 'failed',
+              scrape_attempts: 3, // Max out attempts to prevent retrying
+              processing_error: `Quality check failed: ${qualityCheck.reason}`
+            })
+            .eq('id', articleId);
+
+          if (!updateError) {
+            failedCount++;
+            console.log(`   ⚠️  ${result.metadata?.title?.substring(0, 50) || result.url.substring(0, 50)}: ${qualityCheck.reason}`);
+          }
+          continue;
+        }
+
+        // Successfully scraped with valid content - update with content
         const { error: updateError } = await supabase
           .from('raw_articles')
           .update({
@@ -139,7 +164,8 @@ serve(async (req) => {
             raw_metadata: {
               ...(result.data.metadata || {}),
               scraping_method: 'mcp_firecrawl',
-              cached: result.cached || false
+              cached: result.cached || false,
+              quality_check: qualityCheck
             }
           })
           .eq('id', articleId);
@@ -204,3 +230,142 @@ serve(async (req) => {
     });
   }
 });
+
+// ============================================================================
+// Article Content Quality Validation
+// ============================================================================
+interface QualityCheckResult {
+  is_valid: boolean;
+  reason?: string;
+  confidence: number;
+}
+
+function validateArticleContent(
+  content: string,
+  title: string,
+  url: string
+): QualityCheckResult {
+  const contentSample = content.substring(0, 2000).toLowerCase();
+  const titleLower = title.toLowerCase();
+  const urlLower = url.toLowerCase();
+
+  // 1. Check for category/landing page patterns in URL
+  const categoryUrlPatterns = [
+    '/insights',
+    '/our-insights',
+    '/category',
+    '/categories',
+    '/tag/',
+    '/tags/',
+    '/topics/',
+    '/section/',
+    '/industry/',
+    '/industries/',
+    '/market-data',
+    '/latest-news',
+    '/press-releases',
+    '/news-releases',
+  ];
+
+  for (const pattern of categoryUrlPatterns) {
+    if (urlLower.includes(pattern) && !urlLower.match(/\/\d{4}\/\d{2}/)) {
+      // URL has category pattern and NO date pattern (YYYY/MM)
+      return {
+        is_valid: false,
+        reason: `Category page URL pattern: ${pattern}`,
+        confidence: 0.9
+      };
+    }
+  }
+
+  // 2. Check for generic category titles
+  const categoryTitlePatterns = [
+    /^(latest|recent|all|top)\s+(news|articles|stories|posts|updates)/i,
+    /^(technology|business|finance|markets?|industry|industries)\s*\|\s*/i,
+    /^(our|featured)\s+(insights?|articles?|content)/i,
+    /\|\s*press releases?\s*$/i,
+    /^press releases?\s*$/i,
+    /^news\s+(center|room|hub)\s*$/i,
+  ];
+
+  for (const pattern of categoryTitlePatterns) {
+    if (pattern.test(title)) {
+      return {
+        is_valid: false,
+        reason: 'Generic category page title',
+        confidence: 0.85
+      };
+    }
+  }
+
+  // 3. Check content for article listing patterns
+  const listingIndicators = [
+    // Multiple article links/titles in short succession
+    (contentSample.match(/\n\s*[-*]\s*\[.*?\]\(/g) || []).length > 10,
+    // "View all" / "See more" / "Load more" patterns
+    /view all (articles|news|posts|stories)|see more|load more|show more/i.test(contentSample),
+    // Navigation breadcrumbs
+    /home\s*[>\/]\s*(news|insights|articles)/i.test(contentSample),
+    // Multiple repeated date patterns (article listings)
+    (contentSample.match(/\d{1,2}\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/gi) || []).length > 5,
+  ];
+
+  const listingCount = listingIndicators.filter(Boolean).length;
+  if (listingCount >= 2) {
+    return {
+      is_valid: false,
+      reason: 'Content appears to be an article listing page',
+      confidence: 0.8
+    };
+  }
+
+  // 4. Check for insufficient article content
+  if (content.length < 300) {
+    return {
+      is_valid: false,
+      reason: 'Content too short to be a full article',
+      confidence: 0.95
+    };
+  }
+
+  // 5. Check for excessive navigation/UI elements
+  const navigationPatterns = [
+    /skip to (main )?content/i,
+    /cookie (policy|consent|preferences)/i,
+    /sign up|log in|subscribe now/i,
+    /share this article/i,
+    /related articles?/i,
+  ];
+
+  const navCount = navigationPatterns.filter(pattern => pattern.test(contentSample)).length;
+  const navDensity = navCount / (content.length / 1000); // Navigation patterns per 1000 chars
+
+  if (navDensity > 2) {
+    return {
+      is_valid: false,
+      reason: 'Excessive navigation/UI elements (likely not article content)',
+      confidence: 0.7
+    };
+  }
+
+  // 6. Check for lack of article structure
+  const hasArticleStructure =
+    // Has paragraphs (multiple newlines)
+    (content.match(/\n\n/g) || []).length >= 3 ||
+    // Has sentences (periods followed by capital letters)
+    (content.match(/\.\s+[A-Z]/g) || []).length >= 5;
+
+  if (!hasArticleStructure) {
+    return {
+      is_valid: false,
+      reason: 'Lacks article structure (paragraphs/sentences)',
+      confidence: 0.75
+    };
+  }
+
+  // Content passed all checks
+  return {
+    is_valid: true,
+    confidence: 1.0
+  };
+}
