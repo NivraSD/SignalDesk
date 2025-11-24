@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
 
     // Step 2: Entity extraction
     console.log('🔍 Step 2: Extracting entities...')
-    const extractResponse = await fetch(`${SUPABASE_URL}/functions/v1/entity-extractor-v2`, {
+    const extractResponse = await fetch(`${SUPABASE_URL}/functions/v1/entity-extractor`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         organization_id: organizationId,
         organization_name,
-        scraped_content: scrapeData.content || scrapeData.total_content
+        scraped_pages: scrapeData.pages || []
       })
     })
 
