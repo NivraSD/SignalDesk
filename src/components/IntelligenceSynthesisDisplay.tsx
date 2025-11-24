@@ -670,7 +670,7 @@ const IntelligenceSynthesisDisplay: React.FC<IntelligenceSynthesisDisplayProps> 
   }
 
   // Handle PR-focused format
-  if (data.executive_summary || data.competitive_moves) {
+  if (data.executive_summary || data.competitive_moves || data.key_developments) {
     return (
       <div className="space-y-7">
         {/* Include noise filters globally */}
@@ -685,7 +685,66 @@ const IntelligenceSynthesisDisplay: React.FC<IntelligenceSynthesisDisplayProps> 
           </Section>
         )}
 
-        {/* Competitive Intelligence - Asymmetric masonry */}
+        {/* Key Developments - NEW EVENT-FOCUSED FORMAT */}
+        {data.key_developments && data.key_developments.length > 0 && (
+          <Section variant="minimal">
+            <Typography.SectionHeader icon={Target}>Key Developments</Typography.SectionHeader>
+            <Layout.Masonry className="mt-6">
+              {data.key_developments.map((dev: any, i: number) => (
+                <Card.Container key={i} variant="default" elevation="medium" className="p-5">
+                  <div className="flex items-start gap-3 mb-3">
+                    <span className="px-2 py-1 text-xs font-medium rounded bg-cyan-500/20 text-cyan-400">
+                      {dev.category?.replace(/_/g, ' ')}
+                    </span>
+                    {dev.recency && (
+                      <span className="px-2 py-1 text-xs font-medium rounded bg-gray-700 text-gray-300">
+                        {dev.recency}
+                      </span>
+                    )}
+                  </div>
+                  <Typography.SubsectionHeader>{dev.event}</Typography.SubsectionHeader>
+                  <Typography.BodySecondary className="mt-2">{dev.impact}</Typography.BodySecondary>
+                  {dev.entity && (
+                    <div className="mt-2 text-xs text-gray-500">Entity: {dev.entity}</div>
+                  )}
+                  {dev.source && (
+                    <div className="mt-2">
+                      <a href={dev.url} target="_blank" rel="noopener noreferrer" className="text-xs text-cyan-400 hover:text-cyan-300">
+                        Source: {dev.source}
+                      </a>
+                    </div>
+                  )}
+                </Card.Container>
+              ))}
+            </Layout.Masonry>
+          </Section>
+        )}
+
+        {/* Strategic Implications - NEW FORMAT */}
+        {data.strategic_implications && (
+          <Section variant="elevated">
+            <Typography.SectionHeader icon={Lightbulb}>Strategic Implications</Typography.SectionHeader>
+            <Typography.BodyPrimary className="whitespace-pre-wrap">
+              {data.strategic_implications}
+            </Typography.BodyPrimary>
+          </Section>
+        )}
+
+        {/* Watching Closely - NEW FORMAT */}
+        {data.watching_closely && data.watching_closely.length > 0 && (
+          <Section variant="minimal">
+            <Typography.SectionHeader icon={Eye}>Watching Closely</Typography.SectionHeader>
+            <ul className="space-y-2 mt-4">
+              {data.watching_closely.map((item: string, i: number) => (
+                <Card.ListItem key={i} icon={AlertTriangle} iconColor="#fbbf24">
+                  {item}
+                </Card.ListItem>
+              ))}
+            </ul>
+          </Section>
+        )}
+
+        {/* Competitive Intelligence - Asymmetric masonry (OLD FORMAT - keep for backward compat) */}
         {data.competitive_moves && (
           <Section variant="minimal">
             <Typography.SectionHeader icon={Target}>Competitive Intelligence</Typography.SectionHeader>
