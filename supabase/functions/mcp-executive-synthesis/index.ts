@@ -1424,7 +1424,13 @@ Remember: You're not gathering intelligence - you're SYNTHESIZING already-gather
           // ALSO save to content_library for Memory Vault searchability
           try {
             const title = `Executive Synthesis - ${new Date().toLocaleDateString()}`;
-            const contentForLibrary = `${result.synthesis.executive_summary}\n\nKey Insights:\n${result.synthesis.top_insights.join('\n')}\n\nImmediate Actions:\n${result.synthesis.immediate_actions.join('\n')}`;
+            // Updated for new event-focused format
+            const keyDevelopmentsSummary = result.synthesis.key_developments
+              ?.slice(0, 10)
+              .map((d: any) => `• ${d.category}: ${d.event}`)
+              .join('\n') || 'No key developments';
+
+            const contentForLibrary = `${result.synthesis.executive_summary}\n\nKey Developments:\n${keyDevelopmentsSummary}\n\nStrategic Implications:\n${result.synthesis.strategic_implications || 'None'}`;
 
             // Generate embedding for semantic search
             const textForEmbedding = `${title}\n\n${contentForLibrary}`.substring(0, 8000);
