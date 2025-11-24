@@ -52,7 +52,7 @@ export default function WorkspaceCanvasComponent({
     {
       id: '1',
       role: 'assistant',
-      content: "Hi! I'm NIV, your content strategist. I can help you refine, expand, or restructure your content. I have full access to your Memory Vault and remember our entire conversation. What would you like to work on?",
+      content: "Hi! I'm NIV, your content strategist. I can see your entire document and will help you refine, expand, or restructure it. I have full access to your Memory Vault and remember our entire conversation. Just ask me anything about the content!",
       timestamp: new Date()
     }
   ]);
@@ -208,16 +208,25 @@ export default function WorkspaceCanvasComponent({
       }));
 
       console.log('🔄 Sending to NIV Content Intelligent with conversation history:', recentHistory.length, 'messages');
+      console.log('📄 Document length:', editorContent.length, 'characters');
 
-      // Build context-aware message
+      // Build context-aware message with FULL document content
       let contextMessage = currentPrompt;
+
+      // ALWAYS include full document content in the context
+      const fullDocumentContext = editorContent ?
+        `\n\n---CURRENT DOCUMENT---\nTitle: ${contentTitle || 'Untitled'}\nType: ${currentContent?.content_type || 'general'}\nContent:\n${editorContent}\n---END DOCUMENT---\n\n`
+        : '';
+
       if (selectedText) {
-        contextMessage = `[User has selected this text: "${selectedText.substring(0, 200)}${selectedText.length > 200 ? '...' : ''}"]\n\n${currentPrompt}`;
-      } else if (editorContent) {
-        contextMessage = `[Current document content (${editorContent.length} chars):\n${editorContent.substring(0, 500)}${editorContent.length > 500 ? '...' : ''}]\n\n${currentPrompt}`;
+        // User has selected specific text - highlight it but still show full document
+        contextMessage = `${fullDocumentContext}[User has selected this specific text for editing: "${selectedText}"]\n\nUser request: ${currentPrompt}`;
+      } else {
+        // No selection - just show the full document
+        contextMessage = `${fullDocumentContext}User request: ${currentPrompt}`;
       }
 
-      // Call NIV Content Intelligent with full conversation context
+      // Call NIV Content Intelligent with full conversation context AND full document
       const response = await fetch('/api/supabase/functions/niv-content-intelligent-v2', {
         method: 'POST',
         headers: {
@@ -230,9 +239,12 @@ export default function WorkspaceCanvasComponent({
           contentType: isSchema ? 'schema' : currentContent?.content_type || 'general',
           context: {
             documentTitle: contentTitle,
+            documentContent: editorContent, // Send full content in context too
             contentType: currentContent?.content_type,
             isSchema: isSchema,
             hasSelectedText: !!selectedText,
+            selectedText: selectedText || null,
+            documentLength: editorContent.length,
             organizationName: organization?.name
           }
         }),
