@@ -546,13 +546,27 @@ CRITICAL RULES:
 
 Return ONLY valid JSON in this format:
 {
-  "executive_summary": ["Bullet 1", "Bullet 2", "Bullet 3"],
-  "competitive_landscape": "Detailed write-up of ALL competitor moves",
-  "regulatory_developments": "Detailed write-up of regulatory news (or null if none)",
-  "market_dynamics": "Detailed write-up of market trends (or null if none)",
-  "stakeholder_activity": "Detailed write-up of stakeholder activity (or null if none)",
-  "strategic_implications": "What ${organization?.name} should know/do based on key insights"
-}`;
+  "executive_summary": "2-3 paragraph narrative overview of key developments [with source citations]",
+  "key_developments": [
+    {
+      "category": "competitor_move|stakeholder_action|market_trend|regulatory_change",
+      "event": "What happened (be specific)",
+      "impact": "Why this matters to ${organization?.name}",
+      "source": "Article title",
+      "url": "Article URL",
+      "recency": "today|this_week|older",
+      "entity": "Primary company/entity involved"
+    }
+  ],
+  "strategic_implications": "What ${organization?.name} should do based on these developments",
+  "watching_closely": ["Entities, trends, or topics to monitor based on the intelligence"]
+}
+
+CRITICAL:
+- key_developments should include ALL significant events from the data (aim for 15-25 entries)
+- Each development MUST have source attribution (source + url fields)
+- Sort by recency (today first, then this week, then older)
+- Be specific in "event" field - include names, numbers, details from the actual events`;
 
   } else if (synthesis_focus === 'all_consolidated') {
     // Extract the structured data properly
@@ -785,8 +799,9 @@ ${i+1}. [${contentQuality}] ${article.headline}
 
 PRE-EXTRACTED EVENTS (These ${topEvents.length} events include ${orgSlots} org, ${competitorSlots} competitor, ${stakeholderSlots} stakeholder, ${otherSlots} industry/regulatory - **SORTED BY RECENCY**):
 ${topEvents.map((e, i) =>
-  `${i+1}. [${e.type?.toUpperCase()}] ${e.entity}: ${e.description} (${formatEventDate(e.date)})`
-).join('\n')}
+  `${i+1}. [${e.type?.toUpperCase()}] ${e.entity}: ${e.description} (${formatEventDate(e.date)})
+   Source: ${e.source || 'Unknown'} | URL: ${e.url || 'N/A'} | Article: "${e.article_title || 'N/A'}"`
+).join('\n\n')}
 
 ⚠️ **CRITICAL RECENCY RULES:**
 - PRIORITIZE events from last 7 days (Today, Yesterday, X days ago) in your executive_summary
@@ -806,12 +821,20 @@ ${metrics.length > 0 ? `METRICS:\n${metrics.map(m =>
 
 SYNTHESIS REQUIREMENTS:
 
+🚨 PRIORITY #0: CITE YOUR SOURCES (MANDATORY)
+Every claim in your synthesis MUST reference the source article:
+- When mentioning an event, include: [Source: {source name}, "{article title}"]
+- Example: "Account mobility accelerated with Weber Shandwick securing Carhartt [Source: PRWeek, "Weber Shandwick Wins Carhartt Account"]"
+- The source information is provided with each event above (Source, URL, Article fields)
+- If you cannot cite a source for a claim, DO NOT include that claim
+- Synthesis without citations will be rejected
+
 🚨 PRIORITY #1: COMPREHENSIVE COVERAGE (USE ALL THE INTELLIGENCE)
 You have ${topEvents.length} events from enrichment. Your job is to SYNTHESIZE ALL OF THEM into a coherent narrative:
 - Enrichment already filtered for relevance - these ${topEvents.length} events ALL passed quality checks
 - DO NOT cherry-pick 2-3 "big stories" and ignore the rest
 - SYNTHESIZE means: identify patterns, group similar developments, surface the narrative
-- Example: Instead of "Weber Shandwick won Carhartt" (1 event), write "Account mobility accelerated this week, with Weber Shandwick securing Carhartt, FleishmanHillard winning Bay Area Host Committee, and Zeno Group losing a 5-year relationship" (synthesizing 3+ events)
+- Example: Instead of "Weber Shandwick won Carhartt" (1 event), write "Account mobility accelerated this week, with Weber Shandwick securing Carhartt [Source: PRWeek, "Agency Wins"], FleishmanHillard winning Bay Area Host Committee [Source: PR Daily, "Host Committee News"], and Zeno Group losing a 5-year relationship [Source: AdAge, "Account Review"]" (synthesizing 3+ events WITH CITATIONS)
 - Your executive_summary should reflect the VOLUME of intelligence: ${topEvents.length} events is significant activity
 - Competitors to watch: ${discoveryTargets.competitors.slice(0, 15).join(', ')}
 
@@ -853,43 +876,37 @@ STANDARD REQUIREMENTS:
 - Example: For a PR firm, SEC enforcement on broker-dealers goes in "stakeholder_dynamics", NOT "competitive_moves"
 - Example: For a PR firm, Edelman winning a client is a "competitive_move", SEC updating disclosure rules is "stakeholder_dynamics"
 
-Generate comprehensive PR intelligence synthesis as valid JSON:
+Generate comprehensive intelligence synthesis as valid JSON:
 
 {
   "synthesis": {
-    "executive_summary": "A single string containing 3-5 paragraphs that COMPREHENSIVELY synthesizes the ${topEvents.length} events. This should read like a well-researched intelligence briefing that surfaces patterns and themes across ALL the intelligence, not just 2-3 cherry-picked stories. If enrichment found ${topEvents.length} relevant events, the summary should reflect that richness. Group related developments (e.g., 'account mobility', 'AI backlash', 'consolidation trends') rather than listing individual events. Use \\n\\n to separate paragraphs.",
+    "executive_summary": "A 2-3 paragraph narrative overview that synthesizes the key patterns and themes from today's ${topEvents.length} events. Focus on what matters most to ${organization?.name}. Include source citations like [Source: Article Title]. Group related developments rather than listing individual events. Use \\n\\n to separate paragraphs.",
 
-    "competitive_moves": {
-      "immediate_threats": ["Actions by OTHER ${organization?.industry} COMPANIES that threaten ${organization?.name}'s position - NOT regulatory news"],
-      "opportunities": ["Weaknesses or gaps in OTHER ${organization?.industry} COMPANIES' positioning that ${organization?.name} can exploit"],
-      "narrative_gaps": ["Stories in the ${organization?.industry} industry that competitors aren't telling but ${organization?.name} could own"]
-    },
+    "key_developments": [
+      {
+        "category": "competitor_move",
+        "event": "Specific action taken (include names, numbers, details)",
+        "impact": "Why this matters to ${organization?.name}",
+        "source": "Article title",
+        "url": "Article URL",
+        "recency": "today",
+        "entity": "Company/entity name"
+      }
+    ],
 
-    "stakeholder_dynamics": {
-      "key_movements": ["Actions by regulators, analysts, investors, or other monitoring targets - NOT direct competitors"],
-      "influence_shifts": ["Changes in stakeholder influence that affect ${organization?.industry} landscape"],
-      "engagement_opportunities": ["Specific monitoring targets (regulators, analysts, etc.) to engage and why"]
-    },
+    "strategic_implications": "What ${organization?.name} should know and do based on these developments. Be specific and actionable.",
 
-    "media_landscape": {
-      "trending_narratives": ["What stories are gaining traction in the media"],
-      "sentiment_shifts": ["How coverage tone is changing for key players"],
-      "journalist_interests": ["What reporters care about based on recent coverage"]
-    },
-
-    "pr_actions": {
-      "immediate": ["Do this in next 24-48 hours"],
-      "this_week": ["Actions for this week"],
-      "strategic": ["Longer-term positioning plays"]
-    },
-
-    "risk_alerts": {
-      "crisis_signals": ["Early warning signs of potential PR crises"],
-      "reputation_threats": ["Emerging threats to ${organization?.name}'s reputation"],
-      "mitigation_steps": ["Specific steps to prevent or prepare for risks"]
-    }
+    "watching_closely": ["Entity names, topics, or trends to monitor based on the intelligence"]
   }
 }
+
+CRITICAL INSTRUCTIONS FOR key_developments:
+- Include 15-25 entries covering ALL significant events from the ${topEvents.length} provided
+- Sort by recency: "today" first, then "this_week", then "older"
+- Each entry MUST have source attribution (source + url fields)
+- category options: competitor_move, stakeholder_action, market_trend, regulatory_change
+- Be specific in "event" - use actual names, numbers, quotes from the events
+- "impact" should explain WHY ${organization?.name} cares about this specific event
 
 ═══════════════════════════════════════════════════════════
 🚨 FINAL VERIFICATION CHECKLIST (Review Before Responding)

@@ -80,11 +80,55 @@ function isValidContent(text: string): boolean {
 
 function extractValidText(content: string, maxLength = 200): string {
   if (!content) return '';
-  
+
   const cleaned = stripHtmlTags(content);
   if (!isValidContent(cleaned)) return '';
-  
+
   return cleaned.substring(0, maxLength);
+}
+
+/**
+ * PRAGMATIC content preparation - handle messy HTML gracefully
+ * Returns clean content OR falls back to title+description
+ */
+function prepareArticleContent(article: any): { content: string, contentType: 'full' | 'title_desc' | 'title_only', isClean: boolean } {
+  const title = article.title || '';
+  const description = article.description || '';
+  const fullContent = article.full_content || '';
+
+  // Quick check for navigation garbage patterns
+  const hasSkipLinks = /Skip to (Content|Main|Footer|Navigation)/i.test(fullContent.substring(0, 500));
+  const hasMenuItems = /\]\s*\[.*\]\s*\[/g.test(fullContent.substring(0, 1000)); // Multiple menu links
+  const hasSubscriptionWall = /Subscribe|Sign Up|Log In.*to read/i.test(fullContent.substring(0, 800));
+
+  // Check if full_content is actually useful
+  const cleaned = stripHtmlTags(fullContent);
+  const isCleanContent = !hasSkipLinks && !hasMenuItems && isValidContent(cleaned);
+
+  if (isCleanContent && fullContent.length > 300) {
+    // Full content is good - use it
+    return {
+      content: fullContent.substring(0, 8000),
+      contentType: 'full',
+      isClean: true
+    };
+  } else if (description && description.length > 100) {
+    // Full content is messy - fall back to title + description
+    console.log(`   ⚡ Pragmatic fallback for "${title.substring(0, 50)}..." - using title+description (full_content has navigation garbage)`);
+    return {
+      content: `Title: ${title}\n\nSummary: ${description}`,
+      contentType: 'title_desc',
+      isClean: false
+    };
+  } else {
+    // Only have title - work with what we have
+    console.log(`   ⚡ Minimal content for "${title.substring(0, 50)}..." - using title only`);
+    return {
+      content: `Title: ${title}`,
+      contentType: 'title_only',
+      isClean: false
+    };
+  }
 }
 
 /**
@@ -101,6 +145,12 @@ async function analyzeWithClaude(articlesWithContent: any[], profile: any, orgNa
   if (articlesWithContent.length === 0) {
     console.log('⚠️ Claude analysis skipped - no articles provided');
     return null;
+  }
+
+  // Limit to 30 articles max to prevent timeout (30 articles = 2 batches = ~60s max)
+  if (articlesWithContent.length > 30) {
+    console.log(`⚠️ Limiting from ${articlesWithContent.length} to 30 articles to prevent timeout`);
+    articlesWithContent = articlesWithContent.slice(0, 30);
   }
 
   try {
@@ -147,7 +197,7 @@ async function analyzeWithClaude(articlesWithContent: any[], profile: any, orgNa
 
     // Process articles in batches optimized for full content summarization
     // Smaller batches = more content per article for better summaries
-    const batchSize = 15; // 15 articles × ~8K chars = ~120K tokens (fits in Haiku's 200K context)
+    const batchSize = 20; // Process 20 at once for faster completion (reduce API calls)
     const allExtractedData = {
       events: [],
       entities: [],
@@ -161,8 +211,89 @@ async function analyzeWithClaude(articlesWithContent: any[], profile: any, orgNa
     
     for (let i = 0; i < articlesWithContent.length; i += batchSize) {
       const batch = articlesWithContent.slice(i, i + batchSize);
-      
-      const prompt = `You are summarizing articles for ${targets.organization}'s intelligence synthesis.
+
+      // Pragmatically prepare article content - handle messy HTML gracefully
+      const preparedArticles = batch.map(a => ({
+        ...a,
+        prepared: prepareArticleContent(a)
+      }));
+
+      const cleanCount = preparedArticles.filter(a => a.prepared.isClean).length;
+      const fallbackCount = preparedArticles.filter(a => !a.prepared.isClean).length;
+      console.log(`   📋 Batch ${Math.floor(i/batchSize) + 1}: ${cleanCount} clean articles, ${fallbackCount} using fallback (title+desc)`);
+
+      // Determine if this is industry intelligence (PR industry news) or company monitoring
+      const isIndustryIntelligence = intelligenceContext?.focus === 'industry' ||
+                                      profile?.industry?.toLowerCase().includes('public relations') ||
+                                      profile?.industry?.toLowerCase().includes('pr') ||
+                                      batch.some(a => ['prweek', 'pr daily', 'ragan', 'provoke', 'odwyer'].some(s =>
+                                        a.source?.toLowerCase().includes(s)
+                                      ));
+
+      const prompt = isIndustryIntelligence ?
+        // INDUSTRY INTELLIGENCE MODE - Extract PR industry events, trends, agency moves
+        `You are extracting intelligence from ${profile?.industry || 'industry'} news for ${targets.organization}'s executive team.
+
+🎯 CONTEXT:
+${targets.organization} is a ${profile?.industry || 'public relations'} firm that needs to understand:
+- What's happening in the PR industry (agency mergers, leadership changes, new offerings)
+- How competitors are evolving (${targets.competitors.slice(0, 5).join(', ')}, and other PR firms)
+- Industry trends and market shifts that could impact their business
+
+YOUR JOB: Extract industry intelligence from these articles - even if they don't mention ${targets.organization} directly.
+
+IMPORTANT: Some articles may only have titles/descriptions (no full content) - extract what you can from that.
+
+ARTICLES TO ANALYZE:
+${preparedArticles.map((a, idx) => `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ARTICLE ${idx + 1}
+Title: ${a.title}
+Source: ${a.source}
+Content: ${a.prepared.content}
+${a.prepared.contentType !== 'full' ? `[Note: Full content unavailable, working with ${a.prepared.contentType}]` : ''}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`).join('\n\n')}
+
+For EACH article, extract:
+1. **Summary** (2-3 sentences): What happened and strategic implications for ${targets.organization}
+2. **Event type**: agency_merger | leadership_change | new_offering | client_win | industry_trend | market_shift | thought_leadership | crisis_signal
+3. **Key entities**: PR agencies, executives, clients mentioned (not just from monitoring list)
+4. **Key points** (3-5 bullets): Specific facts, quotes, data points
+5. **Industry relevance**: How this impacts the PR industry and ${targets.organization}
+
+Return ONLY valid JSON in this EXACT format:
+{
+  "summaries": [
+    {
+      "article_id": 1,
+      "title": "Article title",
+      "summary": "What happened and why it matters to a PR firm",
+      "event_type": "agency_merger",
+      "key_entities": {
+        "agencies": ["Agency names mentioned"],
+        "executives": ["People mentioned"],
+        "clients": ["Clients/brands mentioned"]
+      },
+      "key_points": [
+        "Specific fact or quote",
+        "Important data point",
+        "Strategic implication"
+      ],
+      "industry_relevance": "High|Medium|Low - brief explanation of impact on PR firms like ${targets.organization}",
+      "relevance_tags": ["market_shift", "opportunity"]
+    }
+  ]
+}
+
+CRITICAL RULES:
+- Extract ALL PR agencies, executives, and industry entities - not just ${targets.organization}'s known competitors
+- Articles about ANY PR agency (PMK, FleishmanHillard, etc.) are relevant industry intelligence
+- Industry trends (AI adoption, client spending) are HIGH relevance even without specific company mentions
+- Leadership appointments, agency mergers, client wins are all valuable competitive intelligence
+- If an article is PR industry news, it's relevant - explain WHY it matters to a PR firm`
+        :
+        // COMPANY MONITORING MODE - Look for direct mentions of organization and competitors
+        `You are summarizing articles for ${targets.organization}'s intelligence synthesis.
 
 🎯 CONTEXT:
 ${targets.organization} monitors these competitors: ${targets.competitors.slice(0, 10).join(', ')}
@@ -171,13 +302,16 @@ ${intelligenceContext?.monitoring_prompt || ''}
 
 YOUR JOB: Create concise, actionable summaries that help executive synthesis understand what's relevant.
 
+IMPORTANT: Some articles may only have titles/descriptions (no full content) - extract what you can from that.
+
 ARTICLES TO SUMMARIZE:
-${batch.map((a, idx) => `
+${preparedArticles.map((a, idx) => `
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ARTICLE ${idx + 1}
 Title: ${a.title}
 Source: ${a.source}
-Content: ${a.full_content?.substring(0, 8000) || a.description}
+Content: ${a.prepared.content}
+${a.prepared.contentType !== 'full' ? `[Note: Full content unavailable, working with ${a.prepared.contentType}]` : ''}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`).join('\n\n')}
 
 For EACH article, provide:
@@ -208,11 +342,12 @@ Return ONLY valid JSON in this EXACT format:
 }
 
 RULES:
+- IMPORTANT: Create a summary for EVERY article provided, even if not highly relevant
 - Be concise but informative - synthesis will use these summaries
 - Focus on facts, not speculation
 - Tag relevance accurately (helps synthesis prioritize)
 - Only list competitors/stakeholders actually mentioned in the article
-- If article isn't relevant to ${targets.organization}, say so in summary`;
+- If article has low relevance to ${targets.organization}, still summarize it but note limited relevance in the summary`;
 
       // DEBUG: Log entity extraction rules being sent to Claude
       const entityRulesStart = prompt.indexOf('CRITICAL ENTITY EXTRACTION RULES:');
@@ -229,8 +364,8 @@ RULES:
           'anthropic-version': '2023-06-01'
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 3000,
+          model: 'claude-3-5-haiku-20241022',
+          max_tokens: 2000,
           messages: [{
             role: 'user',
             content: prompt
@@ -254,16 +389,22 @@ RULES:
             console.log(`🔍 Claude extracted ${extracted.events.length} events with entities:`, uniqueEntities.slice(0, 10));
           }
 
-          // TRANSFORMATION LAYER: Normalize event structure
+          // TRANSFORMATION LAYER: Normalize event structure AND ATTACH SOURCE ATTRIBUTION
           if (extracted.events) {
-            const normalizedEvents = extracted.events.map((event: any) => {
+            const normalizedEvents = extracted.events.map((event: any, eventIdx: number) => {
+              // Determine which article this event came from
+              // If event has article_id (from new prompt), use it; otherwise distribute evenly
+              const articleIdx = event.article_id ? event.article_id - 1 : Math.floor(eventIdx / Math.ceil(extracted.events.length / batch.length));
+              const sourceArticle = batch[Math.min(articleIdx, batch.length - 1)];
+
               // Handle both new structured format and legacy formats
+              let normalizedEvent;
               if (event.type && event.entity && event.description) {
                 // Already in correct format
-                return event;
+                normalizedEvent = event;
               } else if (event.date && event.event && event.significance) {
                 // Legacy format from previous prompt - transform it
-                return {
+                normalizedEvent = {
                   type: 'general',
                   entity: 'Unknown', // Extract from event text if possible
                   description: event.event,
@@ -272,7 +413,7 @@ RULES:
                 };
               } else {
                 // Unrecognized format - try to salvage it
-                return {
+                normalizedEvent = {
                   type: event.type || 'general',
                   entity: event.entity || event.company || event.person || 'Unknown',
                   description: event.description || event.event || event.text || 'No description',
@@ -280,6 +421,14 @@ RULES:
                   date: event.date || event.timestamp
                 };
               }
+
+              // 🔥 CRITICAL: Attach source attribution for synthesis citations
+              return {
+                ...normalizedEvent,
+                url: sourceArticle?.url,
+                source: sourceArticle?.source || sourceArticle?.source_name,
+                article_title: sourceArticle?.title
+              };
             }).filter(e => e.entity !== 'Unknown' && e.description !== 'No description'); // Filter out garbage
 
             // 🔥 CRITICAL FIX: Use article publish dates, not Claude's extraction
@@ -335,14 +484,68 @@ RULES:
             // Map summaries to include article data from batch
             const enrichedSummaries = extracted.summaries.map((summary: any) => {
               const article = batch[summary.article_id - 1]; // article_id is 1-indexed
-              return {
+
+              // Normalize structure based on mode (industry intelligence vs company monitoring)
+              const normalized = {
                 ...summary,
                 url: article?.url,
                 source: article?.source,
-                published_at: article?.published_at || article?.created_at
+                published_at: article?.published_at || article?.created_at,
+                // Normalize entities structure
+                entities: summary.key_entities || summary.entities_mentioned || {},
+                // Normalize tags - merge event_type with relevance_tags
+                tags: [
+                  ...(summary.relevance_tags || []),
+                  ...(summary.event_type ? [summary.event_type] : [])
+                ],
+                // Add industry context if present
+                industry_relevance: summary.industry_relevance || null
               };
+
+              return normalized;
             });
             allExtractedData.summaries.push(...enrichedSummaries);
+
+            // Extract entities from industry intelligence summaries
+            if (isIndustryIntelligence) {
+              enrichedSummaries.forEach(summary => {
+                // Extract PR agencies as entities
+                const agencies = summary.key_entities?.agencies || [];
+                agencies.forEach(agency => {
+                  if (agency && agency.length > 2) {
+                    allExtractedData.entities.push({
+                      name: agency,
+                      type: 'pr_agency',
+                      context: summary.summary || summary.title
+                    });
+                  }
+                });
+
+                // Extract executives as entities
+                const executives = summary.key_entities?.executives || [];
+                executives.forEach(exec => {
+                  if (exec && exec.length > 2) {
+                    allExtractedData.entities.push({
+                      name: exec,
+                      type: 'executive',
+                      context: summary.summary || summary.title
+                    });
+                  }
+                });
+
+                // Create events from industry summaries
+                if (summary.event_type) {
+                  allExtractedData.events.push({
+                    type: summary.event_type,
+                    entity: agencies[0] || executives[0] || 'Industry',
+                    description: summary.summary,
+                    category: 'industry',
+                    date: summary.published_at,
+                    tags: summary.tags || []
+                  });
+                }
+              });
+            }
           }
         } catch (parseError) {
           console.log('⚠️ Could not parse Claude extraction for batch, skipping');
@@ -1122,23 +1325,45 @@ serve(async (req) => {
       if (claudeAnalysis.insights && claudeAnalysis.insights.length > 0) {
         extractedData.strategic_insights = claudeAnalysis.insights;
       }
-      // NEW: Replace rule-based article summaries with Claude's AI summaries
+      // NEW: MERGE Claude's AI summaries with existing summaries (don't replace!)
       if (claudeAnalysis.summaries && claudeAnalysis.summaries.length > 0) {
-        extractedData.article_summaries = claudeAnalysis.summaries.map((summary: any) => ({
-          id: summary.article_id - 1,
-          title: summary.title,
-          url: summary.url,
-          source: summary.source,
-          published: summary.published_at,
-          summary: summary.summary,
-          relevance_tags: summary.relevance_tags,
-          key_points: summary.key_points,
-          entities_mentioned: summary.entities_mentioned,
-          relevance_score: 75, // Default score for AI-selected articles
-          has_full_content: true,
-          content_quality: 'full'
-        }));
-        console.log(`   ✨ Using ${claudeAnalysis.summaries.length} AI-generated article summaries`);
+        // Create a map of article_id to Claude summary
+        const claudeSummaryMap = new Map();
+        claudeAnalysis.summaries.forEach((summary: any) => {
+          claudeSummaryMap.set(summary.article_id - 1, summary);
+        });
+
+        // Enhance existing summaries with Claude data where available
+        extractedData.article_summaries = extractedData.article_summaries.map((existingSummary: any) => {
+          const claudeSummary = claudeSummaryMap.get(existingSummary.id);
+
+          if (claudeSummary) {
+            // We have Claude enhancement for this article - use it
+            return {
+              id: existingSummary.id,
+              title: claudeSummary.title || existingSummary.title,
+              url: claudeSummary.url || existingSummary.url,
+              source: claudeSummary.source || existingSummary.source,
+              published: claudeSummary.published_at || existingSummary.published,
+              summary: claudeSummary.summary, // Use Claude's summary
+              relevance_tags: claudeSummary.relevance_tags || [],
+              key_points: claudeSummary.key_points || existingSummary.key_points || [],
+              entities_mentioned: claudeSummary.entities_mentioned || {},
+              relevance_score: 75, // Higher score for Claude-analyzed articles
+              has_full_content: existingSummary.has_full_content,
+              content_quality: 'claude_enhanced',
+              claude_analyzed: true
+            };
+          } else {
+            // No Claude summary - keep the rule-based summary
+            return {
+              ...existingSummary,
+              claude_analyzed: false
+            };
+          }
+        });
+
+        console.log(`   ✨ Enhanced ${claudeAnalysis.summaries.length} of ${extractedData.article_summaries.length} articles with Claude AI summaries`);
       }
       extractedData.claude_enhanced = true;
       extractedData.intelligence_gaps = claudeAnalysis.gaps || [];
