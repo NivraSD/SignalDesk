@@ -112,8 +112,10 @@ export async function PUT(req: NextRequest) {
 
     // Merge the new profile fields at the top level, preserving all other fields
     // This updates leadership, headquarters, etc. without touching intelligence_context, monitoring_config, etc.
+    // Store both flat UI fields AND nested intelligence data
     const updatedCompanyProfile = {
       ...(currentOrg?.company_profile || {}),
+      // Flat UI fields for CompanyProfileTab
       leadership: newProfile.leadership,
       headquarters: newProfile.headquarters,
       company_size: newProfile.company_size,
@@ -122,7 +124,14 @@ export async function PUT(req: NextRequest) {
       product_lines: newProfile.product_lines,
       key_markets: newProfile.key_markets,
       business_model: newProfile.business_model,
-      strategic_goals: newProfile.strategic_goals
+      strategic_goals: newProfile.strategic_goals,
+      // Also update nested intelligence fields if they exist (for backward compatibility)
+      ...(currentOrg?.company_profile?.market && {
+        market: {
+          ...currentOrg.company_profile.market,
+          key_markets: newProfile.key_markets?.length ? newProfile.key_markets : currentOrg.company_profile.market.key_markets
+        }
+      })
     }
 
     // Update using service role key to bypass any schema cache issues
