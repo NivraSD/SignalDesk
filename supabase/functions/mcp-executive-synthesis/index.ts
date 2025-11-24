@@ -573,7 +573,58 @@ CRITICAL:
     const { structuredContext, discoveryTargets } = context;
 
     // Get ALL events but PRIORITIZE non-org events
-    const allEvents = context.strategicInsights.events || [];
+    let allEvents = context.strategicInsights.events || [];
+
+    // 🔗 ENRICH EVENTS WITH ARTICLE URLs
+    // Events don't have URLs by default - we need to match them to their source articles
+    const enrichedArticles = enriched_data?.enriched_articles || [];
+    const articleUrlMap = new Map();
+
+    // Build a map of article title/source -> URL
+    enrichedArticles.forEach(article => {
+      if (article.url) {
+        // Create lookup keys from title and source
+        const titleKey = article.title?.toLowerCase().trim();
+        const sourceKey = article.source?.toLowerCase().trim();
+
+        if (titleKey) articleUrlMap.set(titleKey, article.url);
+        if (sourceKey) articleUrlMap.set(sourceKey, article.url);
+        if (titleKey && sourceKey) {
+          articleUrlMap.set(`${sourceKey}:${titleKey}`, article.url);
+        }
+      }
+    });
+
+    // Enrich events with URLs by matching their source/article_title to articles
+    allEvents = allEvents.map(event => {
+      if (!event.url || event.url === 'N/A') {
+        // Try to find URL from article title or source
+        const titleKey = event.article_title?.toLowerCase().trim();
+        const sourceKey = event.source?.toLowerCase().trim();
+
+        let foundUrl = null;
+        if (titleKey && sourceKey) {
+          foundUrl = articleUrlMap.get(`${sourceKey}:${titleKey}`);
+        }
+        if (!foundUrl && titleKey) {
+          foundUrl = articleUrlMap.get(titleKey);
+        }
+        if (!foundUrl && sourceKey) {
+          foundUrl = articleUrlMap.get(sourceKey);
+        }
+
+        if (foundUrl) {
+          return { ...event, url: foundUrl };
+        }
+      }
+      return event;
+    });
+
+    console.log('🔗 Event URL enrichment:', {
+      total_events: allEvents.length,
+      events_with_urls: allEvents.filter(e => e.url && e.url !== 'N/A').length,
+      articles_in_map: articleUrlMap.size
+    });
 
     // CATEGORIZE events by type for balanced coverage
     const orgName = organization?.name?.toLowerCase() || '';
