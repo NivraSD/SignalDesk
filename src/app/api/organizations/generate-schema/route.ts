@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
+        organization_id: organizationId,
         organization_name,
         website_url: website
       })
