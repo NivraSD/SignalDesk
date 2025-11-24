@@ -22,32 +22,49 @@ export async function GET(req: NextRequest) {
       )
     }
 
-    // Use RPC to bypass any schema cache issues
-    const { data, error } = await supabase.rpc('get_company_profile', {
-      org_id: id
-    })
+    // Fetch organization directly with service role key
+    const { data: org, error } = await supabase
+      .from('organizations')
+      .select('id, name, company_profile')
+      .eq('id', id)
+      .single()
 
     if (error) {
-      console.error('Failed to get company profile via RPC:', error)
+      console.error('Failed to get organization:', error)
       return NextResponse.json(
         { success: false, error: error.message },
         { status: 500 }
       )
     }
 
-    // RPC returns array of rows
-    const organization = data && data.length > 0 ? data[0] : null
-
-    if (!organization) {
+    if (!org) {
       return NextResponse.json(
         { success: false, error: 'Organization not found' },
         { status: 404 }
       )
     }
 
+    // Extract simple profile fields from company_profile
+    // These are the fields the UI needs for the Company Profile tab
+    const simpleProfile = {
+      leadership: org.company_profile?.leadership || [],
+      headquarters: org.company_profile?.headquarters || {},
+      company_size: org.company_profile?.company_size || {},
+      founded: org.company_profile?.founded || '',
+      parent_company: org.company_profile?.parent_company || '',
+      product_lines: org.company_profile?.product_lines || [],
+      key_markets: org.company_profile?.key_markets || [],
+      business_model: org.company_profile?.business_model || '',
+      strategic_goals: org.company_profile?.strategic_goals || []
+    }
+
     return NextResponse.json({
       success: true,
-      organization
+      organization: {
+        id: org.id,
+        name: org.name,
+        company_profile: simpleProfile
+      }
     })
   } catch (error: any) {
     console.error('Get company profile error:', error)
@@ -75,9 +92,9 @@ export async function PUT(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { company_profile } = body
+    const { company_profile: newProfile } = body
 
-    if (!company_profile) {
+    if (!newProfile) {
       return NextResponse.json(
         { success: false, error: 'company_profile is required' },
         { status: 400 }
@@ -86,10 +103,32 @@ export async function PUT(req: NextRequest) {
 
     console.log('Updating company profile for org:', id)
 
+    // First fetch the current company_profile to preserve intelligence data
+    const { data: currentOrg } = await supabase
+      .from('organizations')
+      .select('company_profile')
+      .eq('id', id)
+      .single()
+
+    // Merge the new profile fields at the top level, preserving all other fields
+    // This updates leadership, headquarters, etc. without touching intelligence_context, monitoring_config, etc.
+    const updatedCompanyProfile = {
+      ...(currentOrg?.company_profile || {}),
+      leadership: newProfile.leadership,
+      headquarters: newProfile.headquarters,
+      company_size: newProfile.company_size,
+      founded: newProfile.founded,
+      parent_company: newProfile.parent_company,
+      product_lines: newProfile.product_lines,
+      key_markets: newProfile.key_markets,
+      business_model: newProfile.business_model,
+      strategic_goals: newProfile.strategic_goals
+    }
+
     // Update using service role key to bypass any schema cache issues
     const { data, error } = await supabase
       .from('organizations')
-      .update({ company_profile })
+      .update({ company_profile: updatedCompanyProfile })
       .eq('id', id)
       .select()
       .single()
