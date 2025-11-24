@@ -95,7 +95,25 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const schema = schemaData.content
+    // Parse schema if it's a string
+    let schema = schemaData.content
+    if (typeof schema === 'string') {
+      try {
+        schema = JSON.parse(schema)
+        console.log('✅ Parsed schema from string')
+      } catch (e) {
+        console.error('❌ Failed to parse schema string:', e)
+        return NextResponse.json(
+          { error: 'Schema data is corrupted' },
+          { status: 500 }
+        )
+      }
+    }
+
+    console.log('📊 Schema structure:', {
+      hasGraph: !!schema['@graph'],
+      topLevelKeys: Object.keys(schema).slice(0, 10)
+    })
 
     // Extract relevant data from schema
     const extractedData = {
