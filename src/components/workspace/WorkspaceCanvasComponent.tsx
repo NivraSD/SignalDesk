@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, useDragControls } from 'framer-motion';
-import { Save, Folder, Sparkles, FileText, AlertCircle, CheckCircle, Loader2, Edit3, MessageSquare, Move, X } from 'lucide-react';
+import { Save, Folder, Sparkles, FileText, AlertCircle, CheckCircle, Loader2, Edit3, MessageSquare, Move, X, Brain } from 'lucide-react';
 import { useMemoryVault } from '@/hooks/useMemoryVault';
+import { useAppStore } from '@/stores/useAppStore';
 
 interface WorkspaceCanvasComponentProps {
   id: string;
@@ -11,6 +12,13 @@ interface WorkspaceCanvasComponentProps {
   onPositionChange?: (id: string, position: { x: number; y: number }) => void;
   onClose?: () => void;
   initialContentId?: string;
+}
+
+interface AIMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
 }
 
 export default function WorkspaceCanvasComponent({
@@ -21,8 +29,10 @@ export default function WorkspaceCanvasComponent({
   initialContentId
 }: WorkspaceCanvasComponentProps) {
   const { content: memoryVaultContent, loading: memoryLoading, saveContent } = useMemoryVault();
+  const { organization } = useAppStore();
   const dragControls = useDragControls();
   const componentRef = useRef<HTMLDivElement>(null);
+  const conversationEndRef = useRef<HTMLDivElement>(null);
 
   const [currentContent, setCurrentContent] = useState<any>(null);
   const [editorContent, setEditorContent] = useState('');
@@ -36,6 +46,21 @@ export default function WorkspaceCanvasComponent({
   const [aiLoading, setAiLoading] = useState(false);
   const [selectedText, setSelectedText] = useState('');
   const [localPosition, setLocalPosition] = useState(position);
+
+  // NEW: Conversation history tracking
+  const [conversationHistory, setConversationHistory] = useState<AIMessage[]>([
+    {
+      id: '1',
+      role: 'assistant',
+      content: "Hi! I'm NIV, your content strategist. I can help you refine, expand, or restructure your content. I have full access to your Memory Vault and remember our entire conversation. What would you like to work on?",
+      timestamp: new Date()
+    }
+  ]);
+
+  // Auto-scroll conversation to bottom when new messages arrive
+  useEffect(() => {
+    conversationEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [conversationHistory, aiLoading]);
 
   // Load initial content if provided
   useEffect(() => {
@@ -156,6 +181,18 @@ export default function WorkspaceCanvasComponent({
     setAiLoading(true);
     setAiResponse('');
 
+    // Add user message to conversation history
+    const userMessage: AIMessage = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: aiPrompt,
+      timestamp: new Date()
+    };
+    setConversationHistory(prev => [...prev, userMessage]);
+
+    const currentPrompt = aiPrompt;
+    setAiPrompt(''); // Clear input immediately
+
     try {
       const contextText = selectedText || editorContent;
 
@@ -164,92 +201,89 @@ export default function WorkspaceCanvasComponent({
                       editorContent.trim().startsWith('{') ||
                       editorContent.trim().startsWith('[');
 
-      let systemPrompt = '';
-      let userMessage = '';
+      // Prepare conversation history for NIV (last 10 messages for context)
+      const recentHistory = conversationHistory.slice(-10).map(msg => ({
+        role: msg.role === 'assistant' ? 'assistant' : 'user',
+        content: msg.content
+      }));
 
-      if (isSchema) {
-        systemPrompt = `You are NIV, an expert Schema.org consultant and strategic advisor. You help improve Schema.org JSON-LD markup for GEO (Generative Engine Optimization).
+      console.log('🔄 Sending to NIV Content Intelligent with conversation history:', recentHistory.length, 'messages');
 
-CRITICAL RULES:
-1. NEVER make up factual information (awards, certifications, people, etc.)
-2. If the user's request is vague or missing details, ask clarifying questions in natural language
-3. ONLY generate JSON when the user has provided specific, factual information
-4. Be conversational and helpful - guide the user through the editing process
-5. If you DO generate JSON:
-   - Return ONLY valid JSON (no markdown, no explanations outside the JSON)
-   - Use proper Schema.org types (@type, @id, etc)
-   - Generate proper @id values using the organization URL as base
-
-WHEN TO ASK QUESTIONS (respond in natural language):
-- User says "add awards" but doesn't specify which awards → Ask: "Which specific awards has the organization won? I need the award names, years, and awarding organizations to add them accurately."
-- User says "add a FAQ" without details → Ask: "What question would you like to add to the FAQ? Please provide both the question and answer."
-- User provides incomplete information → Ask for the missing details
-
-WHEN TO GENERATE JSON (respond with ONLY JSON):
-- User provides specific factual details like: "Add that we won the PR News Platinum award in 2024"
-
-Examples:
-
-User: "add awards"
-You: "I'd be happy to add awards to the schema! Which specific awards has the organization won? Please provide:
-- Award name
-- Year awarded
-- Awarding organization
-This ensures I add accurate, factual information to your schema."
-
-User: "Add that we won the PR News Platinum award in 2024"
-You: {
-  "@type": "Award",
-  "@id": "https://www.company.com/#award-prnews-2024",
-  "name": "PR News Platinum Award",
-  "dateAwarded": "2024",
-  "awarder": {
-    "@type": "Organization",
-    "name": "PR News"
-  }
-}`;
-        userMessage = `User request: ${aiPrompt}
-
-Current Schema:
-${contextText}
-
-Remember: Ask clarifying questions if details are missing. Only generate JSON when you have specific factual information.`;
-      } else {
-        systemPrompt = 'You are NIV, an expert PR and communications content strategist. Help improve content to be more compelling, clear, and effective. Focus on what will resonate with the target audience.';
-        userMessage = `${aiPrompt}
-
-Current Content:
-${contextText}`;
+      // Build context-aware message
+      let contextMessage = currentPrompt;
+      if (selectedText) {
+        contextMessage = `[User has selected this text: "${selectedText.substring(0, 200)}${selectedText.length > 200 ? '...' : ''}"]\n\n${currentPrompt}`;
+      } else if (editorContent) {
+        contextMessage = `[Current document content (${editorContent.length} chars):\n${editorContent.substring(0, 500)}${editorContent.length > 500 ? '...' : ''}]\n\n${currentPrompt}`;
       }
 
-      const response = await fetch('/api/claude-direct', {
+      // Call NIV Content Intelligent with full conversation context
+      const response = await fetch('/api/supabase/functions/niv-content-intelligent-v2', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          messages: [
-            {
-              role: 'user',
-              content: userMessage
-            }
-          ],
-          system: systemPrompt,
-          max_tokens: isSchema ? 8000 : 2000, // Higher limit for Schema.org JSON to avoid truncation
-          temperature: 0.7
+          message: contextMessage,
+          conversationHistory: recentHistory,
+          organizationId: organization?.id || 'workspace',
+          contentType: isSchema ? 'schema' : currentContent?.content_type || 'general',
+          context: {
+            documentTitle: contentTitle,
+            contentType: currentContent?.content_type,
+            isSchema: isSchema,
+            hasSelectedText: !!selectedText,
+            organizationName: organization?.name
+          }
         }),
       });
 
-      if (!response.ok) throw new Error('AI request failed');
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('NIV API Error:', errorText);
+        throw new Error(`NIV request failed: ${response.status}`);
+      }
 
       const data = await response.json();
+      console.log('✅ NIV Response:', data);
 
-      if (data.content) {
-        setAiResponse(data.content);
+      let assistantContent = '';
+
+      // Handle different response formats
+      if (data.response) {
+        assistantContent = data.response;
+      } else if (data.message) {
+        assistantContent = data.message;
+      } else if (data.content) {
+        assistantContent = data.content;
+      } else {
+        assistantContent = 'I processed your request, but received an unexpected response format.';
       }
+
+      // Add NIV's response to conversation history
+      const assistantMessage: AIMessage = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: assistantContent,
+        timestamp: new Date()
+      };
+      setConversationHistory(prev => [...prev, assistantMessage]);
+
+      setAiResponse(assistantContent);
+
     } catch (error) {
       console.error('AI assist error:', error);
-      setAiResponse('Error: Unable to get AI assistance. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Unable to get AI assistance. Please try again.';
+      setAiResponse(`Error: ${errorMessage}`);
+
+      // Add error to conversation history
+      const errorAssistantMessage: AIMessage = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: `I encountered an error: ${errorMessage}. Please try again or rephrase your request.`,
+        timestamp: new Date()
+      };
+      setConversationHistory(prev => [...prev, errorAssistantMessage]);
     } finally {
       setAiLoading(false);
     }
@@ -640,106 +674,124 @@ ${contextText}`;
               />
             </div>
 
-            {/* AI Assistant Panel */}
+            {/* AI Assistant Panel - NEW: Chat-style interface with full conversation history */}
             {aiAssistantOpen && (
-              <div className="w-80 border-l border-gray-700 flex flex-col bg-gray-800/50">
-                <div className="p-3 border-b border-gray-700 bg-purple-900/30">
-                  <h3 className="font-semibold text-purple-300 flex items-center gap-2 text-sm">
-                    <Sparkles className="w-4 h-4" />
-                    NIV Assistant
-                  </h3>
-                  <p className="text-xs text-purple-400 mt-1">Your AI content strategist</p>
+              <div className="w-96 border-l border-gray-700 flex flex-col bg-gray-800/50">
+                {/* Header */}
+                <div className="p-3 border-b border-gray-700 bg-purple-900/30 flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold text-purple-300 flex items-center gap-2 text-sm">
+                      <Brain className="w-4 h-4" />
+                      NIV Assistant
+                    </h3>
+                    <p className="text-xs text-purple-400 mt-1">Conversational content strategist</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setConversationHistory([{
+                        id: '1',
+                        role: 'assistant',
+                        content: "Conversation cleared. What would you like to work on?",
+                        timestamp: new Date()
+                      }]);
+                      setAiResponse('');
+                    }}
+                    className="text-xs text-purple-400 hover:text-purple-300 px-2 py-1 rounded hover:bg-purple-900/30"
+                    title="Clear conversation"
+                  >
+                    Clear
+                  </button>
                 </div>
 
+                {/* Conversation History */}
                 <div className="flex-1 overflow-y-auto p-3 space-y-3">
                   {selectedText && (
-                    <div className="p-3 bg-yellow-900/20 border border-yellow-600/30 rounded-lg">
-                      <p className="text-xs text-yellow-400 font-medium mb-1">Selected Text:</p>
-                      <p className="text-sm text-gray-300 italic">"{selectedText.substring(0, 100)}..."</p>
+                    <div className="p-2 bg-yellow-900/20 border border-yellow-600/30 rounded-lg">
+                      <p className="text-xs text-yellow-400 font-medium mb-1">📌 Selected Text:</p>
+                      <p className="text-xs text-gray-300 italic">"{selectedText.substring(0, 100)}..."</p>
                     </div>
                   )}
 
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-300">Ask NIV:</label>
-                    <textarea
-                      value={aiPrompt}
-                      onChange={(e) => setAiPrompt(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                          e.preventDefault();
-                          handleAIAssist();
-                        }
-                      }}
-                      placeholder="e.g., 'Add that we won PR News Platinum award in 2024' or 'Make the description more compelling'"
-                      className="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg text-sm resize-none h-24 text-gray-200 outline-none focus:border-purple-500"
-                    />
-                    <p className="text-xs text-gray-500">Tip: Press Cmd/Ctrl+Enter to send</p>
-                  </div>
+                  {conversationHistory.map((message) => (
+                    <div
+                      key={message.id}
+                      className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div
+                        className={`max-w-[85%] p-3 rounded-lg ${
+                          message.role === 'user'
+                            ? 'bg-purple-600 text-white'
+                            : 'bg-gray-900 text-gray-200 border border-purple-500/30'
+                        }`}
+                      >
+                        {message.role === 'assistant' && (
+                          <div className="flex items-center gap-1 mb-1">
+                            <Brain className="w-3 h-3 text-purple-400" />
+                            <span className="text-xs text-purple-400 font-semibold">NIV</span>
+                          </div>
+                        )}
+                        <div className="text-sm whitespace-pre-wrap">{message.content}</div>
+                        <div className="text-xs opacity-60 mt-1">
+                          {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
 
+                  {aiLoading && (
+                    <div className="flex justify-start">
+                      <div className="bg-gray-900 border border-purple-500/30 p-3 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <Brain className="w-3 h-3 text-purple-400" />
+                          <div className="flex gap-1">
+                            <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                            <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                            <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Show Apply button if latest response has editable content */}
+                  {aiResponse && conversationHistory[conversationHistory.length - 1]?.role === 'assistant' && (
+                    <div className="flex justify-center">
+                      <button
+                        onClick={applyAIEdit}
+                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium flex items-center gap-2"
+                      >
+                        <Sparkles className="w-4 h-4" />
+                        Apply to Document
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Scroll anchor */}
+                  <div ref={conversationEndRef} />
+                </div>
+
+                {/* Input Area */}
+                <div className="p-3 border-t border-gray-700 space-y-2">
+                  <textarea
+                    value={aiPrompt}
+                    onChange={(e) => setAiPrompt(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                        e.preventDefault();
+                        handleAIAssist();
+                      }
+                    }}
+                    placeholder="Ask NIV anything... (Cmd/Ctrl+Enter to send)"
+                    className="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg text-sm resize-none h-20 text-gray-200 outline-none focus:border-purple-500"
+                  />
                   <button
                     onClick={handleAIAssist}
                     disabled={aiLoading || !aiPrompt.trim()}
-                    className="w-full px-4 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium flex items-center justify-center gap-2"
+                    className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium flex items-center justify-center gap-2"
                   >
                     <Sparkles className="w-4 h-4" />
-                    Ask NIV
+                    {aiLoading ? 'Thinking...' : 'Send to NIV'}
                   </button>
-
-                  {aiLoading && (
-                    <div className="flex items-center justify-center py-6">
-                      <Loader2 className="w-6 h-6 animate-spin text-purple-400" />
-                    </div>
-                  )}
-
-                  {aiResponse && (
-                    <div className="space-y-2">
-                      <div className="p-4 bg-gray-900 border border-purple-500/30 rounded-lg">
-                        <div className="text-sm text-gray-200 whitespace-pre-wrap">
-                          {aiResponse}
-                        </div>
-                      </div>
-
-                      {(() => {
-                        // Determine if this is a JSON edit or conversational response
-                        const isSchema = currentContent?.content_type === 'schema' ||
-                                        editorContent.trim().startsWith('{') ||
-                                        editorContent.trim().startsWith('[');
-
-                        let cleanedResponse = aiResponse.trim();
-                        cleanedResponse = cleanedResponse.replace(/```json\n?/gi, '').replace(/```\n?/g, '');
-                        const firstBrace = cleanedResponse.indexOf('{');
-                        const looksLikeJSON = firstBrace !== -1 && firstBrace < 50;
-
-                        // If it's a schema and response looks like JSON, show Apply button
-                        // Otherwise, show a "Continue conversation" button
-                        if (isSchema && looksLikeJSON) {
-                          return (
-                            <button
-                              onClick={applyAIEdit}
-                              className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
-                            >
-                              Apply This Edit
-                            </button>
-                          );
-                        } else if (isSchema && !looksLikeJSON) {
-                          return (
-                            <div className="text-xs text-purple-400 p-2 bg-purple-900/20 rounded-lg border border-purple-500/30">
-                              💬 NIV is asking for more information. Respond above with the details requested.
-                            </div>
-                          );
-                        } else {
-                          return (
-                            <button
-                              onClick={applyAIEdit}
-                              className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
-                            >
-                              Apply This Edit
-                            </button>
-                          );
-                        }
-                      })()}
-                    </div>
-                  )}
                 </div>
               </div>
             )}
