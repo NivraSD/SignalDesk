@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nivria Dashboard - Hub Mockup</title>
+  <title>Nivria Dashboard - V2 with NIV Integration</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -181,13 +181,194 @@
 
     .view {
       display: none;
-      padding: 40px;
-      max-width: 1400px;
-      margin: 0 auto;
+      height: calc(100vh - 64px);
     }
 
     .view.active {
-      display: block;
+      display: flex;
+    }
+
+    /* ==================== TWO-PANEL LAYOUT ==================== */
+    .content-panel {
+      flex: 1;
+      padding: 40px;
+      overflow-y: auto;
+    }
+
+    .niv-panel {
+      width: 400px;
+      background: var(--charcoal);
+      display: flex;
+      flex-direction: column;
+      border-left: 1px solid var(--grey-800);
+    }
+
+    .niv-panel-wide {
+      width: 50%;
+    }
+
+    /* ==================== NIV PANEL STYLES ==================== */
+    .niv-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--grey-800);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .niv-avatar {
+      width: 36px;
+      height: 36px;
+      background: var(--burnt-orange);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      clip-path: polygon(0 0, 100% 0, 100% 65%, 65% 100%, 0 100%);
+    }
+
+    .niv-avatar svg {
+      width: 18px;
+      height: 18px;
+      color: var(--white);
+    }
+
+    .niv-title {
+      font-family: var(--font-display);
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--white);
+    }
+
+    .niv-subtitle {
+      font-size: 0.75rem;
+      color: var(--grey-500);
+    }
+
+    .niv-messages {
+      flex: 1;
+      padding: 24px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .niv-message {
+      display: flex;
+      gap: 12px;
+    }
+
+    .niv-message-avatar {
+      width: 28px;
+      height: 28px;
+      background: var(--burnt-orange);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .niv-message-avatar svg {
+      width: 14px;
+      height: 14px;
+      color: var(--white);
+    }
+
+    .niv-message-avatar.user {
+      background: var(--grey-700);
+    }
+
+    .niv-message-content {
+      flex: 1;
+    }
+
+    .niv-message-sender {
+      font-family: var(--font-display);
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--grey-400);
+      margin-bottom: 6px;
+    }
+
+    .niv-message-text {
+      font-size: 0.9rem;
+      line-height: 1.6;
+      color: var(--grey-200);
+    }
+
+    .niv-message-text em {
+      color: var(--burnt-orange);
+      font-style: normal;
+    }
+
+    .niv-suggestions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .niv-suggestion {
+      padding: 8px 14px;
+      background: var(--grey-800);
+      border: 1px solid var(--grey-700);
+      border-radius: 6px;
+      font-size: 0.8rem;
+      color: var(--grey-300);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .niv-suggestion:hover {
+      border-color: var(--burnt-orange);
+      color: var(--white);
+    }
+
+    .niv-input-area {
+      padding: 20px 24px;
+      border-top: 1px solid var(--grey-800);
+    }
+
+    .niv-input-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--grey-800);
+      border-radius: 10px;
+      padding: 8px 8px 8px 16px;
+    }
+
+    .niv-input {
+      flex: 1;
+      background: none;
+      border: none;
+      outline: none;
+      font-family: var(--font-body);
+      font-size: 0.9rem;
+      color: var(--white);
+    }
+
+    .niv-input::placeholder {
+      color: var(--grey-500);
+    }
+
+    .niv-submit {
+      width: 36px;
+      height: 36px;
+      background: var(--burnt-orange);
+      border: none;
+      border-radius: 8px;
+      color: var(--white);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    .niv-submit:hover {
+      background: var(--burnt-orange-light);
     }
 
     /* ==================== HUB VIEW ==================== */
@@ -195,25 +376,20 @@
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      margin-bottom: 40px;
+      margin-bottom: 32px;
       position: relative;
-    }
-
-    .hub-header-left {
-      position: relative;
-      z-index: 1;
     }
 
     .section-number {
       font-family: var(--font-serif);
-      font-size: 8rem;
+      font-size: 7rem;
       font-weight: 400;
       color: var(--burnt-orange);
       opacity: 0.08;
       line-height: 1;
       position: absolute;
-      top: -40px;
-      left: -20px;
+      top: -30px;
+      left: -15px;
       pointer-events: none;
       user-select: none;
     }
@@ -229,7 +405,7 @@
 
     .hub-greeting {
       font-family: var(--font-serif);
-      font-size: 2.4rem;
+      font-size: 2rem;
       font-weight: 400;
       letter-spacing: -0.02em;
       line-height: 1.2;
@@ -240,41 +416,15 @@
       color: var(--burnt-orange);
     }
 
-    .hub-subtext {
-      margin-top: 12px;
-      font-size: 1rem;
-      color: var(--grey-500);
-      max-width: 400px;
-      line-height: 1.6;
-    }
-
-    /* ==================== HUB GRID ==================== */
-    .hub-grid {
-      display: grid;
-      grid-template-columns: 1fr 380px;
-      gap: 32px;
-    }
-
-    .hub-main {
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
-    }
-
-    .hub-sidebar {
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
-    }
-
     /* ==================== CARD STYLES ==================== */
     .card {
       background: var(--white);
       border: 1px solid var(--grey-200);
       border-radius: 12px;
-      padding: 28px;
+      padding: 24px;
       position: relative;
       transition: box-shadow 0.2s, border-color 0.2s;
+      margin-bottom: 20px;
     }
 
     .card:hover {
@@ -287,17 +437,13 @@
       color: var(--white);
     }
 
-    .card-dark:hover {
-      background: var(--charcoal-light);
-    }
-
     .card-label {
       font-family: var(--font-display);
       font-size: 0.65rem;
       text-transform: uppercase;
       letter-spacing: 0.15em;
       color: var(--grey-400);
-      margin-bottom: 16px;
+      margin-bottom: 14px;
       display: flex;
       align-items: center;
       gap: 8px;
@@ -320,24 +466,12 @@
       overflow: hidden;
     }
 
-    .brief-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      right: 0;
-      width: 200px;
-      height: 200px;
-      background: radial-gradient(circle at top right, var(--burnt-orange-muted), transparent 70%);
-      pointer-events: none;
-    }
-
     .brief-summary {
       font-family: var(--font-serif);
-      font-size: 1.35rem;
+      font-size: 1.2rem;
       font-weight: 400;
       line-height: 1.5;
-      margin-bottom: 24px;
-      max-width: 90%;
+      margin-bottom: 20px;
     }
 
     .brief-summary em {
@@ -348,116 +482,45 @@
     .brief-themes {
       display: flex;
       flex-direction: column;
-      gap: 12px;
-      margin-bottom: 24px;
+      gap: 10px;
     }
 
     .brief-theme {
       display: flex;
       align-items: flex-start;
-      gap: 12px;
-      font-size: 0.9rem;
+      gap: 10px;
+      font-size: 0.85rem;
       color: var(--grey-600);
       line-height: 1.5;
     }
 
     .brief-theme-icon {
-      width: 20px;
-      height: 20px;
+      width: 18px;
+      height: 18px;
       flex-shrink: 0;
       color: var(--burnt-orange);
       opacity: 0.7;
       margin-top: 2px;
     }
 
-    .brief-cta {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      font-family: var(--font-display);
-      font-size: 0.85rem;
-      font-weight: 500;
-      color: var(--charcoal);
-      text-decoration: none;
-      padding: 10px 0;
-      border-bottom: 1px solid var(--charcoal);
-      transition: all 0.2s;
-    }
-
-    .brief-cta:hover {
-      color: var(--burnt-orange);
-      border-color: var(--burnt-orange);
-    }
-
-    /* ==================== CAMPAIGNS CARD ==================== */
-    .campaigns-list {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    .campaign-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 16px;
-      background: var(--grey-800);
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-
-    .campaign-item:hover {
-      background: var(--grey-700);
-    }
-
-    .campaign-info {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .campaign-name {
-      font-family: var(--font-display);
-      font-size: 0.95rem;
-      font-weight: 500;
-    }
-
-    .campaign-phase {
-      font-size: 0.8rem;
-      color: var(--grey-400);
-    }
-
-    .campaign-progress {
-      display: flex;
-      gap: 4px;
-    }
-
-    .progress-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--grey-600);
-    }
-
-    .progress-dot.filled {
-      background: var(--burnt-orange);
-    }
-
     /* ==================== OPPORTUNITIES ==================== */
+    .opportunities-section {
+      margin-top: 24px;
+    }
+
     .opportunities-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
     }
 
     .opportunities-title {
       font-family: var(--font-display);
-      font-size: 0.65rem;
+      font-size: 0.7rem;
       text-transform: uppercase;
       letter-spacing: 0.15em;
-      color: var(--grey-400);
+      color: var(--grey-500);
     }
 
     .opportunities-count {
@@ -470,21 +533,16 @@
       border-radius: 12px;
     }
 
-    .opportunities-list {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
     .opportunity-card {
       background: var(--white);
       border: 1px solid var(--grey-200);
       border-radius: 10px;
-      padding: 20px;
+      padding: 18px;
       cursor: pointer;
       transition: all 0.2s;
       position: relative;
       overflow: hidden;
+      margin-bottom: 12px;
     }
 
     .opportunity-card:hover {
@@ -506,12 +564,12 @@
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
 
     .opportunity-score {
       font-family: var(--font-display);
-      font-size: 1.5rem;
+      font-size: 1.3rem;
       font-weight: 700;
       color: var(--burnt-orange);
       line-height: 1;
@@ -530,7 +588,7 @@
     }
 
     .urgency-bar {
-      width: 60px;
+      width: 50px;
       height: 4px;
       background: var(--grey-200);
       border-radius: 2px;
@@ -541,122 +599,74 @@
       height: 100%;
       background: var(--burnt-orange);
       border-radius: 2px;
-      transition: width 0.3s;
     }
 
     .opportunity-title {
       font-family: var(--font-display);
-      font-size: 1rem;
+      font-size: 0.95rem;
       font-weight: 500;
-      margin-bottom: 6px;
+      margin-bottom: 4px;
       color: var(--charcoal);
     }
 
     .opportunity-desc {
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       color: var(--grey-500);
-      line-height: 1.5;
+      line-height: 1.4;
     }
 
-    /* ==================== SUGGESTED ACTIONS ==================== */
-    .actions-section {
-      margin-top: 16px;
+    /* ==================== CAMPAIGNS CARD ==================== */
+    .campaigns-section {
+      margin-top: 24px;
     }
 
-    .actions-label {
-      font-family: var(--font-display);
-      font-size: 0.65rem;
-      text-transform: uppercase;
-      letter-spacing: 0.15em;
-      color: var(--grey-400);
-      margin-bottom: 16px;
-    }
-
-    .actions-list {
+    .campaign-item {
       display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    .action-btn {
-      display: inline-flex;
+      justify-content: space-between;
       align-items: center;
-      gap: 8px;
-      padding: 12px 20px;
-      background: var(--charcoal);
-      color: var(--white);
-      border: none;
+      padding: 14px 16px;
+      background: var(--cream-dark);
       border-radius: 8px;
-      font-family: var(--font-display);
-      font-size: 0.85rem;
-      font-weight: 500;
       cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .action-btn:hover {
-      background: var(--burnt-orange);
-    }
-
-    .action-btn.secondary {
-      background: var(--white);
-      color: var(--charcoal);
-      border: 1px solid var(--grey-200);
-    }
-
-    .action-btn.secondary:hover {
-      border-color: var(--charcoal);
-    }
-
-    /* ==================== NIV FLOATING INPUT ==================== */
-    .niv-float {
-      position: fixed;
-      bottom: 32px;
-      right: 32px;
-      z-index: 90;
-    }
-
-    .niv-input-wrapper {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      background: var(--charcoal);
-      border-radius: 12px;
-      padding: 8px 8px 8px 20px;
-      box-shadow: var(--shadow-lg);
-      min-width: 320px;
-    }
-
-    .niv-input {
-      flex: 1;
-      background: none;
-      border: none;
-      outline: none;
-      font-family: var(--font-body);
-      font-size: 0.9rem;
-      color: var(--white);
-    }
-
-    .niv-input::placeholder {
-      color: var(--grey-500);
-    }
-
-    .niv-submit {
-      width: 40px;
-      height: 40px;
-      background: var(--burnt-orange);
-      border: none;
-      border-radius: 8px;
-      color: var(--white);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
       transition: background 0.2s;
+      margin-bottom: 8px;
     }
 
-    .niv-submit:hover {
-      background: var(--burnt-orange-light);
+    .campaign-item:hover {
+      background: var(--grey-200);
+    }
+
+    .campaign-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .campaign-name {
+      font-family: var(--font-display);
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+
+    .campaign-phase {
+      font-size: 0.75rem;
+      color: var(--grey-500);
+    }
+
+    .campaign-progress {
+      display: flex;
+      gap: 4px;
+    }
+
+    .progress-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--grey-300);
+    }
+
+    .progress-dot.filled {
+      background: var(--burnt-orange);
     }
 
     /* ==================== STRATEGY VIEW ==================== */
@@ -669,7 +679,7 @@
       font-weight: 500;
       color: var(--grey-500);
       text-decoration: none;
-      margin-bottom: 32px;
+      margin-bottom: 24px;
       cursor: pointer;
       transition: color 0.2s;
     }
@@ -679,13 +689,13 @@
     }
 
     .strategy-header {
-      margin-bottom: 40px;
+      margin-bottom: 32px;
       position: relative;
     }
 
     .strategy-score-large {
       font-family: var(--font-serif);
-      font-size: 5rem;
+      font-size: 4rem;
       font-weight: 400;
       color: var(--burnt-orange);
       line-height: 1;
@@ -694,7 +704,7 @@
 
     .strategy-title {
       font-family: var(--font-serif);
-      font-size: 2.2rem;
+      font-size: 1.8rem;
       font-weight: 400;
       letter-spacing: -0.02em;
       margin-bottom: 8px;
@@ -702,8 +712,8 @@
 
     .strategy-meta {
       display: flex;
-      gap: 24px;
-      font-size: 0.9rem;
+      gap: 20px;
+      font-size: 0.85rem;
       color: var(--grey-500);
     }
 
@@ -713,112 +723,272 @@
       gap: 6px;
     }
 
-    .strategy-grid {
-      display: grid;
-      grid-template-columns: 1fr 340px;
-      gap: 32px;
-    }
-
-    .strategy-main {
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
-    }
-
     .strategy-section-title {
       font-family: var(--font-display);
       font-size: 0.65rem;
       text-transform: uppercase;
       letter-spacing: 0.15em;
       color: var(--burnt-orange);
-      margin-bottom: 12px;
+      margin-bottom: 10px;
     }
 
     .strategy-text {
-      font-size: 1rem;
+      font-size: 0.95rem;
       line-height: 1.7;
       color: var(--grey-600);
     }
 
-    .strategy-actions {
+    /* ==================== EXECUTE VIEW ==================== */
+    .execute-sidebar {
+      width: 380px;
+      background: var(--cream);
+      border-right: 1px solid var(--grey-200);
       display: flex;
-      gap: 12px;
-      margin-top: 24px;
-      padding-top: 24px;
-      border-top: 1px solid var(--grey-200);
+      flex-direction: column;
+      overflow-y: auto;
     }
 
-    .btn-primary {
-      padding: 14px 28px;
-      background: var(--charcoal);
-      color: var(--white);
+    .execute-sidebar-header {
+      padding: 24px;
+      border-bottom: 1px solid var(--grey-200);
+    }
+
+    .execute-campaign-name {
+      font-family: var(--font-display);
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--grey-400);
+      margin-bottom: 6px;
+    }
+
+    .execute-title {
+      font-family: var(--font-serif);
+      font-size: 1.4rem;
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+    }
+
+    .execute-meta {
+      font-size: 0.8rem;
+      color: var(--grey-500);
+    }
+
+    .execute-tabs {
+      display: flex;
+      padding: 0 24px;
+      border-bottom: 1px solid var(--grey-200);
+    }
+
+    .execute-tab {
+      padding: 14px 16px;
+      font-family: var(--font-display);
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--grey-500);
+      background: none;
       border: none;
-      font-family: var(--font-display);
-      font-size: 0.9rem;
-      font-weight: 500;
-      border-radius: 8px;
+      border-bottom: 2px solid transparent;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: all 0.2s;
+      margin-bottom: -1px;
     }
 
-    .btn-primary:hover {
-      background: var(--burnt-orange);
-    }
-
-    .btn-secondary {
-      padding: 14px 28px;
-      background: var(--white);
+    .execute-tab:hover {
       color: var(--charcoal);
+    }
+
+    .execute-tab.active {
+      color: var(--charcoal);
+      border-bottom-color: var(--burnt-orange);
+    }
+
+    .execute-content-list {
+      flex: 1;
+      padding: 20px 24px;
+      overflow-y: auto;
+    }
+
+    .content-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px;
+      background: var(--white);
       border: 1px solid var(--grey-200);
-      font-family: var(--font-display);
-      font-size: 0.9rem;
-      font-weight: 500;
       border-radius: 8px;
+      margin-bottom: 10px;
       cursor: pointer;
       transition: all 0.2s;
     }
 
-    .btn-secondary:hover {
-      border-color: var(--charcoal);
+    .content-item:hover {
+      border-color: var(--burnt-orange);
     }
 
-    /* Context Sidebar */
-    .context-sidebar {
+    .content-item.active {
+      border-color: var(--burnt-orange);
+      background: var(--burnt-orange-muted);
+    }
+
+    .content-item-status {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      border: 2px solid var(--grey-300);
+      margin-top: 4px;
+      flex-shrink: 0;
+    }
+
+    .content-item-status.done {
+      background: var(--burnt-orange);
+      border-color: var(--burnt-orange);
+    }
+
+    .content-item-status.generating {
+      background: var(--burnt-orange-muted);
+      border-color: var(--burnt-orange);
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .content-item-info {
+      flex: 1;
+    }
+
+    .content-item-type {
+      font-size: 0.7rem;
+      color: var(--grey-400);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 2px;
+    }
+
+    .content-item-title {
+      font-family: var(--font-display);
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--charcoal);
+    }
+
+    .execute-niv-panel {
+      flex: 1;
+      background: var(--charcoal);
       display: flex;
       flex-direction: column;
-      gap: 20px;
+    }
+
+    /* NIV Content Output Area */
+    .niv-content-output {
+      background: var(--grey-900);
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px;
+      margin-top: 0;
+    }
+
+    .niv-content-label {
+      font-family: var(--font-display);
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--burnt-orange);
+      margin-bottom: 12px;
+    }
+
+    .niv-content-text {
+      font-size: 0.9rem;
+      line-height: 1.7;
+      color: var(--grey-200);
+      white-space: pre-wrap;
+    }
+
+    .niv-content-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--grey-800);
+    }
+
+    .niv-action-btn {
+      padding: 10px 18px;
+      font-family: var(--font-display);
+      font-size: 0.8rem;
+      font-weight: 500;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .niv-action-btn.primary {
+      background: var(--burnt-orange);
+      color: var(--white);
+      border: none;
+    }
+
+    .niv-action-btn.primary:hover {
+      background: var(--burnt-orange-light);
+    }
+
+    .niv-action-btn.secondary {
+      background: transparent;
+      color: var(--grey-300);
+      border: 1px solid var(--grey-600);
+    }
+
+    .niv-action-btn.secondary:hover {
+      border-color: var(--grey-400);
+      color: var(--white);
+    }
+
+    /* Priority indicator */
+    .priority-badge {
+      font-family: var(--font-display);
+      font-size: 0.65rem;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: var(--burnt-orange-muted);
+      color: var(--burnt-orange);
+    }
+
+    /* Context cards in strategy */
+    .context-section {
+      margin-top: 24px;
     }
 
     .context-card {
       background: var(--cream-dark);
       border-radius: 10px;
-      padding: 20px;
+      padding: 18px;
+      margin-bottom: 12px;
     }
 
     .context-title {
       font-family: var(--font-display);
-      font-size: 0.7rem;
+      font-size: 0.65rem;
       text-transform: uppercase;
       letter-spacing: 0.12em;
       color: var(--grey-500);
-      margin-bottom: 14px;
-    }
-
-    .context-list {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
+      margin-bottom: 12px;
     }
 
     .context-item {
       display: flex;
       align-items: flex-start;
       gap: 10px;
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       color: var(--grey-600);
       cursor: pointer;
       padding: 8px;
       margin: -8px;
+      margin-bottom: 8px;
       border-radius: 6px;
       transition: background 0.2s;
     }
@@ -827,284 +997,16 @@
       background: var(--white);
     }
 
+    .context-item:last-child {
+      margin-bottom: -8px;
+    }
+
     .context-item-icon {
-      width: 16px;
-      height: 16px;
+      width: 14px;
+      height: 14px;
       color: var(--burnt-orange);
       flex-shrink: 0;
       margin-top: 2px;
-    }
-
-    /* ==================== EXECUTE VIEW ==================== */
-    .execute-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 32px;
-      position: relative;
-    }
-
-    .execute-campaign-name {
-      font-family: var(--font-display);
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 0.15em;
-      color: var(--grey-400);
-      margin-bottom: 8px;
-    }
-
-    .execute-title {
-      font-family: var(--font-serif);
-      font-size: 2rem;
-      font-weight: 400;
-      letter-spacing: -0.02em;
-      margin-bottom: 8px;
-    }
-
-    .execute-meta {
-      font-size: 0.9rem;
-      color: var(--grey-500);
-    }
-
-    .priority-tabs {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 32px;
-    }
-
-    .priority-tab {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 20px 32px;
-      background: var(--white);
-      border: 1px solid var(--grey-200);
-      border-radius: 10px;
-      cursor: pointer;
-      transition: all 0.2s;
-      min-width: 140px;
-    }
-
-    .priority-tab:hover {
-      border-color: var(--grey-300);
-    }
-
-    .priority-tab.active {
-      border-color: var(--burnt-orange);
-      background: var(--burnt-orange-muted);
-    }
-
-    .priority-tab-label {
-      font-family: var(--font-display);
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--grey-500);
-      margin-bottom: 8px;
-    }
-
-    .priority-tab-progress {
-      width: 100%;
-      height: 4px;
-      background: var(--grey-200);
-      border-radius: 2px;
-      overflow: hidden;
-      margin-bottom: 8px;
-    }
-
-    .priority-tab-progress-fill {
-      height: 100%;
-      background: var(--burnt-orange);
-      border-radius: 2px;
-    }
-
-    .priority-tab-count {
-      font-family: var(--font-display);
-      font-size: 0.8rem;
-      font-weight: 500;
-      color: var(--charcoal);
-    }
-
-    .content-items-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-    }
-
-    .content-items-title {
-      font-family: var(--font-display);
-      font-size: 0.85rem;
-      font-weight: 500;
-      color: var(--charcoal);
-    }
-
-    .generate-all-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 18px;
-      background: var(--burnt-orange);
-      color: var(--white);
-      border: none;
-      border-radius: 6px;
-      font-family: var(--font-display);
-      font-size: 0.8rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-
-    .generate-all-btn:hover {
-      background: var(--burnt-orange-light);
-    }
-
-    .content-items-list {
-      background: var(--white);
-      border: 1px solid var(--grey-200);
-      border-radius: 10px;
-      overflow: hidden;
-    }
-
-    .content-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 18px 24px;
-      border-bottom: 1px solid var(--grey-100);
-      transition: background 0.2s;
-    }
-
-    .content-item:last-child {
-      border-bottom: none;
-    }
-
-    .content-item:hover {
-      background: var(--cream);
-    }
-
-    .content-item-left {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-    }
-
-    .content-item-status {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      border: 2px solid var(--grey-300);
-    }
-
-    .content-item-status.done {
-      background: var(--burnt-orange);
-      border-color: var(--burnt-orange);
-    }
-
-    .content-item-info {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .content-item-type {
-      font-size: 0.75rem;
-      color: var(--grey-400);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
-    .content-item-title {
-      font-family: var(--font-display);
-      font-size: 0.9rem;
-      font-weight: 500;
-      color: var(--charcoal);
-    }
-
-    .content-item-actions {
-      display: flex;
-      gap: 8px;
-    }
-
-    .item-action-btn {
-      padding: 8px 14px;
-      background: var(--cream);
-      border: 1px solid var(--grey-200);
-      border-radius: 6px;
-      font-family: var(--font-display);
-      font-size: 0.8rem;
-      font-weight: 500;
-      color: var(--charcoal);
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .item-action-btn:hover {
-      border-color: var(--charcoal);
-    }
-
-    .item-action-btn.primary {
-      background: var(--charcoal);
-      border-color: var(--charcoal);
-      color: var(--white);
-    }
-
-    .item-action-btn.primary:hover {
-      background: var(--burnt-orange);
-      border-color: var(--burnt-orange);
-    }
-
-    /* View tabs within execute */
-    .execute-tabs {
-      display: flex;
-      gap: 4px;
-      margin-top: 32px;
-      border-top: 1px solid var(--grey-200);
-      padding-top: 24px;
-    }
-
-    .execute-tab {
-      padding: 10px 20px;
-      font-family: var(--font-display);
-      font-size: 0.85rem;
-      font-weight: 500;
-      color: var(--grey-500);
-      background: none;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .execute-tab:hover {
-      color: var(--charcoal);
-      background: var(--cream-dark);
-    }
-
-    .execute-tab.active {
-      color: var(--charcoal);
-      background: var(--white);
-      box-shadow: var(--shadow-sm);
-    }
-
-    /* Asymmetric offset card */
-    .offset-card {
-      position: relative;
-      margin-left: 24px;
-      margin-top: -16px;
-    }
-
-    .offset-card::before {
-      content: '';
-      position: absolute;
-      top: -8px;
-      left: -24px;
-      right: 48px;
-      bottom: 24px;
-      border: 2px solid var(--burnt-orange);
-      border-radius: 12px;
-      pointer-events: none;
-      opacity: 0.15;
     }
   </style>
 </head>
@@ -1140,452 +1042,442 @@
 
   <main class="main">
     <!-- ==================== HUB VIEW ==================== -->
+    <!-- NIV as advisory sidebar - interprets brief, suggests actions -->
     <div class="view active" id="hub-view">
-      <div class="hub-header">
-        <div class="hub-header-left">
-          <div class="section-number">01</div>
-          <div class="hub-date">Monday, November 25, 2024</div>
-          <h1 class="hub-greeting">Good morning. <em>3 opportunities</em> await.</h1>
-          <p class="hub-subtext">Your overnight intelligence synthesis detected strategic windows in the market.</p>
+      <div class="content-panel">
+        <div class="hub-header">
+          <div>
+            <div class="section-number">01</div>
+            <div class="hub-date">Monday, November 25, 2024</div>
+            <h1 class="hub-greeting">Good morning. <em>3 opportunities</em> await.</h1>
+          </div>
         </div>
-      </div>
 
-      <div class="hub-grid">
-        <div class="hub-main">
-          <!-- Intelligence Brief -->
-          <div class="card brief-card">
-            <div class="card-label">
-              <span class="card-label-dot"></span>
-              Intelligence Brief
-            </div>
-            <p class="brief-summary">
-              Market signals indicate a <em>narrowing window</em> for AI narrative positioning. Competitor silence creates opportunity. Q4 earnings season amplifies stakeholder attention.
-            </p>
-            <div class="brief-themes">
-              <div class="brief-theme">
-                <svg class="brief-theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-                </svg>
-                <span><strong>Market Shift:</strong> Tech sector rotation creates messaging opportunity for differentiated positioning</span>
-              </div>
-              <div class="brief-theme">
-                <svg class="brief-theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="12" cy="12" r="10"/>
-                  <path d="M12 6v6l4 2"/>
-                </svg>
-                <span><strong>Timing:</strong> 48-hour window before competitor announcements expected</span>
-              </div>
-              <div class="brief-theme">
-                <svg class="brief-theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                  <circle cx="9" cy="7" r="4"/>
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                </svg>
-                <span><strong>Stakeholders:</strong> Analyst sentiment shifting positive on sustainable tech narratives</span>
-              </div>
-            </div>
-            <a href="#" class="brief-cta">
-              Read full synthesis
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M5 12h14M12 5l7 7-7 7"/>
+        <!-- Intelligence Brief -->
+        <div class="card brief-card">
+          <div class="card-label">
+            <span class="card-label-dot"></span>
+            Intelligence Brief
+          </div>
+          <p class="brief-summary">
+            Market signals indicate a <em>narrowing window</em> for AI narrative positioning. Competitor silence creates opportunity. Q4 earnings season amplifies stakeholder attention.
+          </p>
+          <div class="brief-themes">
+            <div class="brief-theme">
+              <svg class="brief-theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
               </svg>
-            </a>
-          </div>
-
-          <!-- Campaigns Card (Offset) -->
-          <div class="card card-dark offset-card">
-            <div class="card-label">Active Campaigns</div>
-            <div class="campaigns-list">
-              <div class="campaign-item" onclick="showView('execute')">
-                <div class="campaign-info">
-                  <div class="campaign-name">Product Launch 2024</div>
-                  <div class="campaign-phase">Phase 2: Media Outreach</div>
-                </div>
-                <div class="campaign-progress">
-                  <div class="progress-dot filled"></div>
-                  <div class="progress-dot filled"></div>
-                  <div class="progress-dot"></div>
-                  <div class="progress-dot"></div>
-                </div>
-              </div>
-              <div class="campaign-item">
-                <div class="campaign-info">
-                  <div class="campaign-name">Thought Leadership Series</div>
-                  <div class="campaign-phase">Phase 3: Content Execution</div>
-                </div>
-                <div class="campaign-progress">
-                  <div class="progress-dot filled"></div>
-                  <div class="progress-dot filled"></div>
-                  <div class="progress-dot filled"></div>
-                  <div class="progress-dot"></div>
-                </div>
-              </div>
+              <span><strong>Market Shift:</strong> Tech sector rotation creates messaging opportunity</span>
             </div>
-          </div>
-
-          <!-- Suggested Actions -->
-          <div class="actions-section">
-            <div class="actions-label">Suggested Actions</div>
-            <div class="actions-list">
-              <button class="action-btn" onclick="showView('strategy')">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-                </svg>
-                Execute Q4 Opportunity
-              </button>
-              <button class="action-btn secondary" onclick="showView('execute')">
-                Continue Product Launch
-              </button>
-              <button class="action-btn secondary">
-                Review Full Brief
-              </button>
+            <div class="brief-theme">
+              <svg class="brief-theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 6v6l4 2"/>
+              </svg>
+              <span><strong>Timing:</strong> 48-hour window before competitor announcements</span>
+            </div>
+            <div class="brief-theme">
+              <svg class="brief-theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+              </svg>
+              <span><strong>Stakeholders:</strong> Analyst sentiment shifting positive on sustainable tech</span>
             </div>
           </div>
         </div>
 
-        <div class="hub-sidebar">
-          <!-- Opportunities -->
+        <!-- Opportunities -->
+        <div class="opportunities-section">
           <div class="opportunities-header">
             <div class="opportunities-title">Today's Opportunities</div>
             <div class="opportunities-count">3 detected</div>
           </div>
-          <div class="opportunities-list">
-            <div class="opportunity-card high-priority" onclick="showView('strategy')">
-              <div class="opportunity-header">
-                <div class="opportunity-score">92</div>
-                <div class="opportunity-urgency">
-                  <div class="urgency-bar">
-                    <div class="urgency-fill" style="width: 35%"></div>
-                  </div>
-                  <span>48h</span>
+
+          <div class="opportunity-card high-priority" onclick="showView('strategy')">
+            <div class="opportunity-header">
+              <div class="opportunity-score">92</div>
+              <div class="opportunity-urgency">
+                <div class="urgency-bar">
+                  <div class="urgency-fill" style="width: 35%"></div>
                 </div>
+                <span>48h</span>
               </div>
-              <div class="opportunity-title">Q4 Earnings Window</div>
-              <div class="opportunity-desc">Competitor silence on AI investment creates narrative opportunity before earnings season.</div>
             </div>
-            <div class="opportunity-card">
-              <div class="opportunity-header">
-                <div class="opportunity-score">87</div>
-                <div class="opportunity-urgency">
-                  <div class="urgency-bar">
-                    <div class="urgency-fill" style="width: 60%"></div>
-                  </div>
-                  <span>5d</span>
+            <div class="opportunity-title">Q4 Earnings Window</div>
+            <div class="opportunity-desc">Competitor silence on AI investment creates narrative opportunity</div>
+          </div>
+
+          <div class="opportunity-card">
+            <div class="opportunity-header">
+              <div class="opportunity-score">87</div>
+              <div class="opportunity-urgency">
+                <div class="urgency-bar">
+                  <div class="urgency-fill" style="width: 60%"></div>
                 </div>
+                <span>5d</span>
               </div>
-              <div class="opportunity-title">Competitor Gap</div>
-              <div class="opportunity-desc">Market leader silent on sustainability. Positioning window open.</div>
             </div>
-            <div class="opportunity-card">
-              <div class="opportunity-header">
-                <div class="opportunity-score medium">78</div>
-                <div class="opportunity-urgency">
-                  <div class="urgency-bar">
-                    <div class="urgency-fill" style="width: 80%"></div>
-                  </div>
-                  <span>2w</span>
+            <div class="opportunity-title">Competitor Gap</div>
+            <div class="opportunity-desc">Market leader silent on sustainability positioning</div>
+          </div>
+
+          <div class="opportunity-card">
+            <div class="opportunity-header">
+              <div class="opportunity-score medium">78</div>
+              <div class="opportunity-urgency">
+                <div class="urgency-bar">
+                  <div class="urgency-fill" style="width: 80%"></div>
                 </div>
+                <span>2w</span>
               </div>
-              <div class="opportunity-title">Partnership Signal</div>
-              <div class="opportunity-desc">Strategic alliance indicators detected in supply chain movements.</div>
             </div>
+            <div class="opportunity-title">Partnership Signal</div>
+            <div class="opportunity-desc">Strategic alliance indicators in supply chain movements</div>
+          </div>
+        </div>
+
+        <!-- Active Campaigns -->
+        <div class="campaigns-section">
+          <div class="card-label">Active Campaigns</div>
+          <div class="campaign-item" onclick="showView('execute')">
+            <div class="campaign-info">
+              <div class="campaign-name">Product Launch 2024</div>
+              <div class="campaign-phase">Phase 2: Media Outreach</div>
+            </div>
+            <div class="campaign-progress">
+              <div class="progress-dot filled"></div>
+              <div class="progress-dot filled"></div>
+              <div class="progress-dot"></div>
+              <div class="progress-dot"></div>
+            </div>
+          </div>
+          <div class="campaign-item">
+            <div class="campaign-info">
+              <div class="campaign-name">Thought Leadership Series</div>
+              <div class="campaign-phase">Phase 3: Content Execution</div>
+            </div>
+            <div class="campaign-progress">
+              <div class="progress-dot filled"></div>
+              <div class="progress-dot filled"></div>
+              <div class="progress-dot filled"></div>
+              <div class="progress-dot"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- NIV Advisory Panel -->
+      <div class="niv-panel">
+        <div class="niv-header">
+          <div class="niv-avatar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+            </svg>
+          </div>
+          <div>
+            <div class="niv-title">NIV Advisor</div>
+            <div class="niv-subtitle">Strategic Intelligence</div>
+          </div>
+        </div>
+        <div class="niv-messages">
+          <div class="niv-message">
+            <div class="niv-message-avatar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+              </svg>
+            </div>
+            <div class="niv-message-content">
+              <div class="niv-message-sender">NIV</div>
+              <div class="niv-message-text">
+                Good morning. I've analyzed overnight intelligence and detected <em>3 strategic opportunities</em>.
+
+                The Q4 earnings window (score: 92) is particularly urgent—competitors remain silent on AI investment narratives. You have approximately 48 hours before the window closes.
+
+                Would you like me to draft a campaign around this opportunity?
+              </div>
+              <div class="niv-suggestions">
+                <div class="niv-suggestion" onclick="showView('strategy')">Explore Q4 opportunity</div>
+                <div class="niv-suggestion">Explain competitor silence</div>
+                <div class="niv-suggestion">Compare opportunities</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="niv-input-area">
+          <div class="niv-input-wrapper">
+            <input type="text" class="niv-input" placeholder="Ask NIV about the brief...">
+            <button class="niv-submit">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+              </svg>
+            </button>
           </div>
         </div>
       </div>
     </div>
 
     <!-- ==================== STRATEGY VIEW ==================== -->
+    <!-- NIV more prominent - helps create campaigns from opportunities -->
     <div class="view" id="strategy-view">
-      <a class="strategy-back" onclick="showView('hub')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M19 12H5M12 19l-7-7 7-7"/>
-        </svg>
-        Back to Hub
-      </a>
+      <div class="content-panel">
+        <a class="strategy-back" onclick="showView('hub')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+          </svg>
+          Back to Hub
+        </a>
 
-      <div class="strategy-header">
-        <div class="section-number">02</div>
-        <div class="strategy-score-large">92</div>
-        <h1 class="strategy-title">Q4 Earnings Window</h1>
-        <div class="strategy-meta">
-          <div class="strategy-meta-item">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"/>
-              <path d="M12 6v6l4 2"/>
-            </svg>
-            <span>Expires in 48 hours</span>
+        <div class="strategy-header">
+          <div class="section-number">02</div>
+          <div class="strategy-score-large">92</div>
+          <h1 class="strategy-title">Q4 Earnings Window</h1>
+          <div class="strategy-meta">
+            <div class="strategy-meta-item">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 6v6l4 2"/>
+              </svg>
+              <span>Expires in 48 hours</span>
+            </div>
+            <div class="strategy-meta-item">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+              </svg>
+              <span>High confidence</span>
+            </div>
           </div>
-          <div class="strategy-meta-item">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-            </svg>
-            <span>High confidence</span>
+        </div>
+
+        <div class="card">
+          <div class="strategy-section-title">Why Now</div>
+          <p class="strategy-text">
+            Competitors have remained silent on AI investment strategies ahead of Q4 earnings. This creates a 48-hour window to establish narrative leadership before the earnings cycle begins.
+          </p>
+        </div>
+
+        <div class="card">
+          <div class="strategy-section-title">Strategic Context</div>
+          <p class="strategy-text">
+            Market dynamics favor organizations demonstrating concrete AI integration roadmaps. Recent analyst reports indicate a 34% premium on companies with articulated AI strategies.
+          </p>
+        </div>
+
+        <div class="card">
+          <div class="strategy-section-title">Risk if Missed</div>
+          <p class="strategy-text">
+            Window closes when competitors begin pre-earnings communications (estimated Thursday). Missing this means waiting until Q1 for equivalent positioning opportunity.
+          </p>
+        </div>
+
+        <!-- Source Context -->
+        <div class="context-section">
+          <div class="context-card">
+            <div class="context-title">Source Intelligence</div>
+            <div class="context-item">
+              <svg class="context-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              </svg>
+              <span>WSJ: Tech sector positioning shifts ahead of Q4</span>
+            </div>
+            <div class="context-item">
+              <svg class="context-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              </svg>
+              <span>Reuters: AI investment narratives dominate analyst calls</span>
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="strategy-grid">
-        <div class="strategy-main">
-          <div class="card">
-            <div class="strategy-section-title">Why Now</div>
-            <p class="strategy-text">
-              Competitors have remained silent on AI investment strategies ahead of Q4 earnings. This creates a 48-hour window to establish narrative leadership before the earnings cycle begins. Market analysts are actively seeking forward-looking AI commitment signals.
-            </p>
+      <!-- NIV Campaign Builder Panel - More Prominent -->
+      <div class="niv-panel niv-panel-wide">
+        <div class="niv-header">
+          <div class="niv-avatar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+            </svg>
           </div>
-
-          <div class="card">
-            <div class="strategy-section-title">Strategic Context</div>
-            <p class="strategy-text">
-              Market dynamics currently favor organizations demonstrating concrete AI integration roadmaps. Recent analyst reports indicate a 34% premium on companies with articulated AI strategies. First-mover advantage in this cycle could establish lasting perception leadership.
-            </p>
-          </div>
-
-          <div class="card">
-            <div class="strategy-section-title">Risk if Missed</div>
-            <p class="strategy-text">
-              Window closes when competitors begin their pre-earnings communications (estimated Thursday). Missing this window means waiting until Q1 for equivalent positioning opportunity, allowing competitors to establish narrative anchors.
-            </p>
-          </div>
-
-          <div class="strategy-actions">
-            <button class="btn-primary" onclick="showView('execute')">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;">
-                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-              </svg>
-              Create Campaign
-            </button>
-            <button class="btn-secondary">Save to Vault</button>
-            <button class="btn-secondary">Dismiss</button>
+          <div>
+            <div class="niv-title">NIV Campaign Builder</div>
+            <div class="niv-subtitle">Create strategy from opportunity</div>
           </div>
         </div>
+        <div class="niv-messages">
+          <div class="niv-message">
+            <div class="niv-message-avatar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+              </svg>
+            </div>
+            <div class="niv-message-content">
+              <div class="niv-message-sender">NIV</div>
+              <div class="niv-message-text">
+                I've analyzed this opportunity against your organization's capabilities and past campaigns.
 
-        <div class="context-sidebar">
-          <div class="context-card">
-            <div class="context-title">Source Intelligence</div>
-            <div class="context-list">
-              <div class="context-item">
-                <svg class="context-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                  <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
-                </svg>
-                <span>WSJ: Tech sector positioning shifts ahead of Q4</span>
+                <em>Recommended approach:</em> A focused 48-hour media blitz targeting financial analysts and tech journalists. Key message: concrete AI integration milestones with measurable ROI.
+
+                I can generate a full campaign blueprint including:
+                • Stakeholder mapping (analysts, media, investors)
+                • Key messages by audience
+                • Content items (press release, exec talking points, social)
+                • Timing sequence
+
+                Should I build this campaign?
               </div>
-              <div class="context-item">
-                <svg class="context-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                  <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
-                </svg>
-                <span>Reuters: AI investment narratives dominate analyst calls</span>
-              </div>
-              <div class="context-item">
-                <svg class="context-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                  <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
-                </svg>
-                <span>Bloomberg: Competitor earnings preview analysis</span>
+              <div class="niv-suggestions">
+                <div class="niv-suggestion" onclick="showView('execute')">Build campaign now</div>
+                <div class="niv-suggestion">Adjust stakeholders</div>
+                <div class="niv-suggestion">Show similar past campaigns</div>
               </div>
             </div>
           </div>
-
-          <div class="context-card">
-            <div class="context-title">Related Intelligence</div>
-            <div class="context-list">
-              <div class="context-item">
-                <svg class="context-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="12" cy="12" r="10"/>
-                  <path d="M12 6v6l4 2"/>
-                </svg>
-                <span>Nov 23 synthesis: Market sentiment analysis</span>
-              </div>
-              <div class="context-item">
-                <svg class="context-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                  <circle cx="9" cy="7" r="4"/>
-                </svg>
-                <span>Stakeholder map: Analyst relationships</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="context-card">
-            <div class="context-title">From Vault</div>
-            <div class="context-list">
-              <div class="context-item">
-                <svg class="context-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-                </svg>
-                <span>Q3 AI messaging framework</span>
-              </div>
-              <div class="context-item">
-                <svg class="context-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-                </svg>
-                <span>Executive quote library: Innovation</span>
-              </div>
-            </div>
+        </div>
+        <div class="niv-input-area">
+          <div class="niv-input-wrapper">
+            <input type="text" class="niv-input" placeholder="Refine the campaign approach...">
+            <button class="niv-submit">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+              </svg>
+            </button>
           </div>
         </div>
       </div>
     </div>
 
     <!-- ==================== EXECUTE VIEW ==================== -->
+    <!-- NIV IS the main interface - conversation-first, items secondary -->
     <div class="view" id="execute-view">
-      <a class="strategy-back" onclick="showView('hub')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M19 12H5M12 19l-7-7 7-7"/>
-        </svg>
-        Back to Hub
-      </a>
-
-      <div class="execute-header">
-        <div>
-          <div class="section-number">03</div>
+      <!-- Content Items Sidebar -->
+      <div class="execute-sidebar">
+        <div class="execute-sidebar-header">
           <div class="execute-campaign-name">Campaign</div>
-          <h1 class="execute-title">Product Launch 2024</h1>
-          <div class="execute-meta">Phase 2 of 4 · 12 items remaining</div>
+          <h2 class="execute-title">Product Launch 2024</h2>
+          <div class="execute-meta">Phase 2 · 12 items remaining</div>
         </div>
-      </div>
-
-      <div class="priority-tabs">
-        <div class="priority-tab">
-          <div class="priority-tab-label">Priority 1</div>
-          <div class="priority-tab-progress">
-            <div class="priority-tab-progress-fill" style="width: 100%"></div>
+        <div class="execute-tabs">
+          <button class="execute-tab active">Queue</button>
+          <button class="execute-tab">Completed</button>
+          <button class="execute-tab">Library</button>
+        </div>
+        <div class="execute-content-list">
+          <div class="content-item active">
+            <div class="content-item-status generating"></div>
+            <div class="content-item-info">
+              <div class="content-item-type">Media Pitch</div>
+              <div class="content-item-title">TechCrunch: AI Integration</div>
+            </div>
+            <span class="priority-badge">P1</span>
           </div>
-          <div class="priority-tab-count">4/4 done</div>
-        </div>
-        <div class="priority-tab active">
-          <div class="priority-tab-label">Priority 2</div>
-          <div class="priority-tab-progress">
-            <div class="priority-tab-progress-fill" style="width: 40%"></div>
-          </div>
-          <div class="priority-tab-count">2/5 done</div>
-        </div>
-        <div class="priority-tab">
-          <div class="priority-tab-label">Priority 3</div>
-          <div class="priority-tab-progress">
-            <div class="priority-tab-progress-fill" style="width: 0%"></div>
-          </div>
-          <div class="priority-tab-count">0/6 done</div>
-        </div>
-        <div class="priority-tab">
-          <div class="priority-tab-label">Priority 4</div>
-          <div class="priority-tab-progress">
-            <div class="priority-tab-progress-fill" style="width: 0%"></div>
-          </div>
-          <div class="priority-tab-count">0/4 done</div>
-        </div>
-      </div>
-
-      <div class="content-items-header">
-        <div class="content-items-title">Priority 2 Items</div>
-        <button class="generate-all-btn">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-          </svg>
-          Generate All P2
-        </button>
-      </div>
-
-      <div class="content-items-list">
-        <div class="content-item">
-          <div class="content-item-left">
+          <div class="content-item">
             <div class="content-item-status"></div>
             <div class="content-item-info">
               <div class="content-item-type">Media Pitch</div>
-              <div class="content-item-title">TechCrunch: AI Integration Story</div>
+              <div class="content-item-title">Wired: Future of Work</div>
             </div>
+            <span class="priority-badge">P1</span>
           </div>
-          <div class="content-item-actions">
-            <button class="item-action-btn primary">Generate</button>
-            <button class="item-action-btn">Context</button>
-          </div>
-        </div>
-        <div class="content-item">
-          <div class="content-item-left">
-            <div class="content-item-status"></div>
-            <div class="content-item-info">
-              <div class="content-item-type">Media Pitch</div>
-              <div class="content-item-title">Wired: Future of Work Angle</div>
-            </div>
-          </div>
-          <div class="content-item-actions">
-            <button class="item-action-btn primary">Generate</button>
-            <button class="item-action-btn">Context</button>
-          </div>
-        </div>
-        <div class="content-item">
-          <div class="content-item-left">
+          <div class="content-item">
             <div class="content-item-status"></div>
             <div class="content-item-info">
               <div class="content-item-type">Media Pitch</div>
               <div class="content-item-title">Forbes: Enterprise Innovation</div>
             </div>
+            <span class="priority-badge">P2</span>
           </div>
-          <div class="content-item-actions">
-            <button class="item-action-btn primary">Generate</button>
-            <button class="item-action-btn">Context</button>
-          </div>
-        </div>
-        <div class="content-item">
-          <div class="content-item-left">
+          <div class="content-item">
             <div class="content-item-status done"></div>
             <div class="content-item-info">
               <div class="content-item-type">Social Post</div>
-              <div class="content-item-title">LinkedIn: Executive Announcement</div>
+              <div class="content-item-title">LinkedIn: Exec Announcement</div>
             </div>
           </div>
-          <div class="content-item-actions">
-            <button class="item-action-btn">View</button>
-            <button class="item-action-btn">Edit</button>
-          </div>
-        </div>
-        <div class="content-item">
-          <div class="content-item-left">
+          <div class="content-item">
             <div class="content-item-status done"></div>
             <div class="content-item-info">
               <div class="content-item-type">Thought Leadership</div>
               <div class="content-item-title">Blog: Our AI Journey</div>
             </div>
           </div>
-          <div class="content-item-actions">
-            <button class="item-action-btn">View</button>
-            <button class="item-action-btn">Edit</button>
-          </div>
         </div>
       </div>
 
-      <div class="execute-tabs">
-        <button class="execute-tab active">Execution</button>
-        <button class="execute-tab">Blueprint</button>
-        <button class="execute-tab">Progress</button>
+      <!-- NIV Content Generation - Main Interface -->
+      <div class="execute-niv-panel">
+        <div class="niv-header">
+          <div class="niv-avatar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+            </svg>
+          </div>
+          <div>
+            <div class="niv-title">NIV Content Studio</div>
+            <div class="niv-subtitle">Generating: TechCrunch Media Pitch</div>
+          </div>
+        </div>
+
+        <div class="niv-messages" style="flex: 0 0 auto; max-height: 200px;">
+          <div class="niv-message">
+            <div class="niv-message-avatar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+              </svg>
+            </div>
+            <div class="niv-message-content">
+              <div class="niv-message-sender">NIV</div>
+              <div class="niv-message-text">
+                I'm drafting a media pitch for TechCrunch using your brand voice guidelines and the campaign messaging framework. This pitch emphasizes <em>concrete AI milestones</em> with the data-driven angle TechCrunch editors prefer.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Generated Content Output -->
+        <div class="niv-content-output" style="flex: 1; margin: 0 20px 20px 20px; display: flex; flex-direction: column;">
+          <div class="niv-content-label">Generated Content</div>
+          <div class="niv-content-text" style="flex: 1; overflow-y: auto;">Subject: Exclusive: [Company] Reveals AI Integration Roadmap with 40% Efficiency Gains
+
+Hi [Editor],
+
+I wanted to share an exclusive ahead of [Company]'s Q4 earnings: we're releasing concrete data on our AI integration initiative for the first time.
+
+Key highlights:
+• 40% improvement in operational efficiency across 3 business units
+• $12M in cost savings attributed directly to AI automation
+• 18-month roadmap to full AI-augmented workflows
+
+Unlike the vague "AI-first" promises we're seeing from competitors, we have actual metrics. Our CTO [Name] is available for an interview this week to walk through the technical implementation.
+
+This aligns with your recent coverage of enterprise AI adoption—happy to provide exclusive access to our internal data for a deeper story.
+
+Best,
+[Name]</div>
+          <div class="niv-content-actions">
+            <button class="niv-action-btn primary">Save to Library</button>
+            <button class="niv-action-btn secondary">Refine</button>
+            <button class="niv-action-btn secondary">Regenerate</button>
+          </div>
+        </div>
+
+        <div class="niv-input-area">
+          <div class="niv-input-wrapper">
+            <input type="text" class="niv-input" placeholder="Ask NIV to adjust tone, add data, or try a different angle...">
+            <button class="niv-submit">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </main>
 
-  <!-- NIV Floating Input -->
-  <div class="niv-float">
-    <div class="niv-input-wrapper">
-      <input type="text" class="niv-input" placeholder="Ask NIV anything...">
-      <button class="niv-submit">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
-        </svg>
-      </button>
-    </div>
-  </div>
-
   <script>
     // View switching
     function showView(viewName) {
-      // Hide all views
       document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-      // Show target view
       document.getElementById(viewName + '-view').classList.add('active');
-      // Update nav
       document.querySelectorAll('.nav-link').forEach(link => {
         link.classList.remove('active');
         if (link.dataset.view === viewName) {
@@ -1602,11 +1494,19 @@
       });
     });
 
-    // Priority tab switching
-    document.querySelectorAll('.priority-tab').forEach(tab => {
+    // Execute tab switching
+    document.querySelectorAll('.execute-tab').forEach(tab => {
       tab.addEventListener('click', () => {
-        document.querySelectorAll('.priority-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.execute-tab').forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
+      });
+    });
+
+    // Content item selection
+    document.querySelectorAll('.content-item').forEach(item => {
+      item.addEventListener('click', () => {
+        document.querySelectorAll('.content-item').forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
       });
     });
   </script>
