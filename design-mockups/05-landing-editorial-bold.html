@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nivria - Bold Editorial Landing</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&family=Space+Grotesk:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --burnt-orange: #C75D3A;
+      --burnt-orange-light: #E07B5A;
+      --terracotta: #B54D2E;
+      --rust: #8B3A2F;
+
+      --charcoal: #1A1A1A;
+      --grey-900: #212121;
+      --grey-800: #2E2E2E;
+      --grey-600: #555555;
+      --grey-500: #757575;
+      --grey-400: #9E9E9E;
+      --grey-300: #BDBDBD;
+      --grey-200: #E0E0E0;
+      --grey-100: #F0F0F0;
+
+      --white: #FFFFFF;
+      --cream: #FAF9F7;
+
+      --font-display: 'Space Grotesk', sans-serif;
+      --font-serif: 'Playfair Display', serif;
+      --font-body: 'Inter', sans-serif;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--cream);
+      color: var(--charcoal);
+      font-weight: 300;
+      overflow-x: hidden;
+    }
+
+    /* Nav - Minimal, floating */
+    .nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      padding: 32px 60px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      mix-blend-mode: difference;
+    }
+
+    .nav-logo {
+      font-family: var(--font-display);
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--white);
+      text-decoration: none;
+      letter-spacing: -0.02em;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 48px;
+      align-items: center;
+    }
+
+    .nav-link {
+      color: var(--white);
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 400;
+    }
+
+    .nav-cta {
+      color: var(--white);
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 500;
+      padding: 10px 24px;
+      border: 1px solid var(--white);
+      border-radius: 4px;
+    }
+
+    /* Hero - Magazine Editorial Style */
+    .hero {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      position: relative;
+    }
+
+    /* Left side - Typography Statement */
+    .hero-content {
+      padding: 200px 80px 100px 80px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      position: relative;
+    }
+
+    /* Vertical side text */
+    .hero-side-text {
+      position: absolute;
+      left: 30px;
+      top: 50%;
+      transform: translateY(-50%) rotate(-90deg);
+      transform-origin: center center;
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.3em;
+      color: var(--grey-400);
+      white-space: nowrap;
+    }
+
+    /* Massive headline */
+    .hero-headline {
+      font-family: var(--font-serif);
+      font-size: clamp(4rem, 10vw, 8rem);
+      font-weight: 400;
+      line-height: 0.9;
+      letter-spacing: -0.03em;
+      margin-bottom: 60px;
+    }
+
+    .hero-headline .line {
+      display: block;
+      overflow: hidden;
+    }
+
+    .hero-headline .italic {
+      font-style: italic;
+      color: var(--burnt-orange);
+    }
+
+    .hero-headline .small {
+      font-size: 0.4em;
+      font-family: var(--font-display);
+      font-weight: 300;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--grey-500);
+      display: block;
+      margin-top: 20px;
+    }
+
+    .hero-intro {
+      max-width: 400px;
+      font-size: 1.1rem;
+      line-height: 1.7;
+      color: var(--grey-600);
+      margin-bottom: 48px;
+    }
+
+    .hero-cta-row {
+      display: flex;
+      gap: 24px;
+      align-items: center;
+    }
+
+    .btn-primary {
+      padding: 18px 40px;
+      background: var(--charcoal);
+      color: var(--white);
+      border: none;
+      font-family: var(--font-body);
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .btn-primary:hover {
+      background: var(--burnt-orange);
+    }
+
+    .btn-text {
+      color: var(--charcoal);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-text:hover {
+      color: var(--burnt-orange);
+    }
+
+    /* Right side - Visual */
+    .hero-visual {
+      background: var(--charcoal);
+      position: relative;
+      overflow: hidden;
+      clip-path: polygon(20% 0, 100% 0, 100% 100%, 0 100%);
+    }
+
+    .hero-visual-inner {
+      position: absolute;
+      inset: 60px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+    }
+
+    /* Floating stats */
+    .hero-stat {
+      position: absolute;
+      background: var(--white);
+      padding: 24px 32px;
+    }
+
+    .hero-stat.stat-1 {
+      top: 15%;
+      right: 10%;
+      transform: rotate(3deg);
+    }
+
+    .hero-stat.stat-2 {
+      bottom: 30%;
+      left: 5%;
+      transform: rotate(-2deg);
+    }
+
+    .hero-stat-value {
+      font-family: var(--font-display);
+      font-size: 2.5rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: var(--burnt-orange);
+    }
+
+    .hero-stat-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--grey-500);
+      margin-top: 4px;
+    }
+
+    /* Large background number */
+    .hero-bg-text {
+      position: absolute;
+      font-family: var(--font-serif);
+      font-size: 35vw;
+      font-weight: 400;
+      color: var(--burnt-orange);
+      opacity: 0.06;
+      right: -10%;
+      bottom: -15%;
+      line-height: 1;
+      pointer-events: none;
+    }
+
+    /* Marquee Section */
+    .marquee-section {
+      background: var(--charcoal);
+      padding: 24px 0;
+      overflow: hidden;
+    }
+
+    .marquee {
+      display: flex;
+      gap: 80px;
+      animation: marquee 30s linear infinite;
+    }
+
+    @keyframes marquee {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+    }
+
+    .marquee-item {
+      font-family: var(--font-display);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: var(--grey-400);
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 80px;
+    }
+
+    .marquee-item::after {
+      content: '◆';
+      color: var(--burnt-orange);
+      font-size: 0.5rem;
+    }
+
+    /* Statement Section - Magazine Style */
+    .statement-section {
+      padding: 200px 80px;
+      position: relative;
+    }
+
+    .statement-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 120px;
+      align-items: center;
+    }
+
+    .statement-number {
+      font-family: var(--font-serif);
+      font-size: 12rem;
+      font-weight: 400;
+      color: var(--burnt-orange);
+      opacity: 0.15;
+      line-height: 1;
+      position: absolute;
+      top: 100px;
+      left: 60px;
+    }
+
+    .statement-content {
+      position: relative;
+    }
+
+    .statement-eyebrow {
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.25em;
+      color: var(--burnt-orange);
+      font-weight: 600;
+      margin-bottom: 24px;
+    }
+
+    .statement-headline {
+      font-family: var(--font-serif);
+      font-size: 3.5rem;
+      font-weight: 400;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      margin-bottom: 32px;
+    }
+
+    .statement-headline em {
+      font-style: italic;
+      color: var(--burnt-orange);
+    }
+
+    .statement-text {
+      font-size: 1.1rem;
+      line-height: 1.8;
+      color: var(--grey-600);
+      max-width: 500px;
+    }
+
+    .statement-visual {
+      position: relative;
+    }
+
+    .statement-image {
+      background: var(--grey-200);
+      aspect-ratio: 4/5;
+      position: relative;
+    }
+
+    .statement-image::before {
+      content: '';
+      position: absolute;
+      top: -20px;
+      left: -20px;
+      right: 40px;
+      bottom: 40px;
+      border: 2px solid var(--burnt-orange);
+    }
+
+    .statement-card {
+      position: absolute;
+      bottom: -40px;
+      right: -40px;
+      background: var(--charcoal);
+      color: var(--white);
+      padding: 32px;
+      max-width: 280px;
+    }
+
+    .statement-card-label {
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--grey-400);
+      margin-bottom: 12px;
+    }
+
+    .statement-card-text {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+
+    /* Features - Editorial Grid */
+    .features-section {
+      background: var(--white);
+      padding: 160px 80px;
+    }
+
+    .features-header {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: 80px;
+      margin-bottom: 100px;
+      align-items: end;
+    }
+
+    .features-count {
+      font-family: var(--font-serif);
+      font-size: 8rem;
+      font-weight: 400;
+      color: var(--burnt-orange);
+      line-height: 1;
+    }
+
+    .features-intro h2 {
+      font-family: var(--font-serif);
+      font-size: 2.5rem;
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+    }
+
+    .features-intro p {
+      font-size: 1.1rem;
+      color: var(--grey-500);
+      max-width: 500px;
+    }
+
+    /* Asymmetric Feature Layout */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 24px;
+    }
+
+    .feature-item {
+      padding: 48px;
+      position: relative;
+    }
+
+    .feature-item:nth-child(1) {
+      grid-column: span 7;
+      background: var(--charcoal);
+      color: var(--white);
+    }
+
+    .feature-item:nth-child(2) {
+      grid-column: span 5;
+      background: var(--cream);
+      border: 1px solid var(--grey-200);
+    }
+
+    .feature-item:nth-child(3) {
+      grid-column: span 4;
+      background: var(--burnt-orange);
+      color: var(--white);
+    }
+
+    .feature-item:nth-child(4) {
+      grid-column: span 8;
+      background: var(--cream);
+      border: 1px solid var(--grey-200);
+    }
+
+    .feature-item:nth-child(5) {
+      grid-column: span 6;
+      background: var(--grey-900);
+      color: var(--white);
+    }
+
+    .feature-item:nth-child(6) {
+      grid-column: span 6;
+      background: var(--cream);
+      border: 1px solid var(--grey-200);
+    }
+
+    .feature-number {
+      font-family: var(--font-serif);
+      font-size: 3rem;
+      font-weight: 400;
+      opacity: 0.2;
+      position: absolute;
+      top: 24px;
+      right: 32px;
+    }
+
+    .feature-icon {
+      width: 48px;
+      height: 48px;
+      margin-bottom: 24px;
+      opacity: 0.7;
+    }
+
+    .feature-title {
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+      margin-bottom: 16px;
+    }
+
+    .feature-desc {
+      font-size: 0.95rem;
+      line-height: 1.6;
+      opacity: 0.8;
+    }
+
+    /* Quote Section */
+    .quote-section {
+      padding: 200px 80px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .quote-bg {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-family: Georgia, serif;
+      font-size: 50vw;
+      color: var(--burnt-orange);
+      opacity: 0.04;
+      pointer-events: none;
+      line-height: 1;
+    }
+
+    .quote-content {
+      max-width: 900px;
+      margin: 0 auto;
+      text-align: center;
+      position: relative;
+    }
+
+    .quote-text {
+      font-family: var(--font-serif);
+      font-size: 2.5rem;
+      font-weight: 400;
+      line-height: 1.4;
+      letter-spacing: -0.01em;
+      margin-bottom: 48px;
+    }
+
+    .quote-text em {
+      font-style: italic;
+      color: var(--burnt-orange);
+    }
+
+    .quote-author {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .quote-name {
+      font-family: var(--font-display);
+      font-weight: 500;
+    }
+
+    .quote-title {
+      font-size: 0.9rem;
+      color: var(--grey-500);
+    }
+
+    /* CTA Section - Bold */
+    .cta-section {
+      background: var(--charcoal);
+      color: var(--white);
+      padding: 160px 80px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-content {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 80px;
+      align-items: center;
+      position: relative;
+    }
+
+    .cta-headline {
+      font-family: var(--font-serif);
+      font-size: clamp(3rem, 6vw, 5rem);
+      font-weight: 400;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+    }
+
+    .cta-headline em {
+      font-style: italic;
+      color: var(--burnt-orange);
+    }
+
+    .cta-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .cta-btn {
+      padding: 20px 48px;
+      background: var(--burnt-orange);
+      color: var(--white);
+      border: none;
+      font-family: var(--font-body);
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-align: center;
+      text-decoration: none;
+    }
+
+    .cta-btn:hover {
+      background: var(--burnt-orange-light);
+    }
+
+    .cta-btn-outline {
+      background: transparent;
+      border: 1px solid var(--grey-600);
+      color: var(--grey-300);
+    }
+
+    .cta-btn-outline:hover {
+      border-color: var(--white);
+      color: var(--white);
+      background: transparent;
+    }
+
+    .cta-decoration {
+      position: absolute;
+      right: -100px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 400px;
+      height: 400px;
+      border: 1px solid var(--burnt-orange);
+      opacity: 0.2;
+      border-radius: 50%;
+    }
+
+    /* Footer - Minimal */
+    .footer {
+      background: var(--charcoal);
+      color: var(--grey-400);
+      padding: 60px 80px;
+      border-top: 1px solid var(--grey-800);
+    }
+
+    .footer-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .footer-logo {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--white);
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 40px;
+    }
+
+    .footer-link {
+      color: var(--grey-500);
+      text-decoration: none;
+      font-size: 0.85rem;
+    }
+
+    .footer-link:hover {
+      color: var(--white);
+    }
+
+    .footer-copy {
+      font-size: 0.8rem;
+    }
+  </style>
+</head>
+<body>
+  <!-- Nav -->
+  <nav class="nav">
+    <a href="#" class="nav-logo">Nivria</a>
+    <div class="nav-links">
+      <a href="#" class="nav-link">Platform</a>
+      <a href="#" class="nav-link">Solutions</a>
+      <a href="#" class="nav-link">About</a>
+      <a href="#" class="nav-cta">Get Started</a>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-content">
+      <div class="hero-side-text">Strategic Communications Intelligence Platform</div>
+
+      <h1 class="hero-headline">
+        <span class="line">Your</span>
+        <span class="line"><span class="italic">strategist</span></span>
+        <span class="line">never sleeps</span>
+        <span class="small">25 years of expertise. Infinite availability.</span>
+      </h1>
+
+      <p class="hero-intro">
+        NIV is your Neural Intelligence Vehicle — an AI advisor that sees patterns before they surface, crafts campaigns while you sleep, and executes with precision.
+      </p>
+
+      <div class="hero-cta-row">
+        <button class="btn-primary">Start Free Trial</button>
+        <a href="#" class="btn-text">
+          Watch Demo
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <div class="hero-visual">
+      <div class="hero-stat stat-1">
+        <div class="hero-stat-value">847</div>
+        <div class="hero-stat-label">Active Signals</div>
+      </div>
+      <div class="hero-stat stat-2">
+        <div class="hero-stat-value">48h</div>
+        <div class="hero-stat-label">Ahead of Competition</div>
+      </div>
+      <div class="hero-bg-text">N</div>
+    </div>
+  </section>
+
+  <!-- Marquee -->
+  <section class="marquee-section">
+    <div class="marquee">
+      <span class="marquee-item">Intelligence Pipeline</span>
+      <span class="marquee-item">VECTOR Campaigns</span>
+      <span class="marquee-item">Crisis Command</span>
+      <span class="marquee-item">Memory Vault</span>
+      <span class="marquee-item">Content Execution</span>
+      <span class="marquee-item">NIV Advisor</span>
+      <span class="marquee-item">Intelligence Pipeline</span>
+      <span class="marquee-item">VECTOR Campaigns</span>
+      <span class="marquee-item">Crisis Command</span>
+      <span class="marquee-item">Memory Vault</span>
+      <span class="marquee-item">Content Execution</span>
+      <span class="marquee-item">NIV Advisor</span>
+    </div>
+  </section>
+
+  <!-- Statement Section -->
+  <section class="statement-section">
+    <div class="statement-number">01</div>
+    <div class="statement-grid">
+      <div class="statement-content">
+        <div class="statement-eyebrow">The Intelligence Advantage</div>
+        <h2 class="statement-headline">See the signal <em>before</em> it becomes noise</h2>
+        <p class="statement-text">
+          While others react to news, you're already three moves ahead. Our intelligence pipeline processes millions of signals, surfaces what matters, and delivers opportunities with precision timing.
+        </p>
+      </div>
+      <div class="statement-visual">
+        <div class="statement-image"></div>
+        <div class="statement-card">
+          <div class="statement-card-label">Real-Time Detection</div>
+          <div class="statement-card-text">Discovery → Monitor → Enrich → Synthesize → Act</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="features-section">
+    <div class="features-header">
+      <div class="features-count">06</div>
+      <div class="features-intro">
+        <h2>Core capabilities that compound</h2>
+        <p>Each module amplifies the others. Intelligence feeds strategy. Strategy drives execution. Execution generates intelligence.</p>
+      </div>
+    </div>
+
+    <div class="features-grid">
+      <div class="feature-item">
+        <span class="feature-number">01</span>
+        <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"/>
+        </svg>
+        <h3 class="feature-title">NIV Advisor</h3>
+        <p class="feature-desc">25 years of virtual expertise. Trained on Cialdini, Kahneman, and case studies from J&J Tylenol to Boeing 737 MAX. Conversational intelligence that routes to specialized functions.</p>
+      </div>
+
+      <div class="feature-item">
+        <span class="feature-number">02</span>
+        <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+        </svg>
+        <h3 class="feature-title">Intelligence Pipeline</h3>
+        <p class="feature-desc">Five-stage signal processing. Executive-level synthesis. Opportunity detection with confidence scoring.</p>
+      </div>
+
+      <div class="feature-item">
+        <span class="feature-number">03</span>
+        <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
+        </svg>
+        <h3 class="feature-title">VECTOR</h3>
+        <p class="feature-desc">4 phases × 4 pillars. Psychological orchestration across stakeholders.</p>
+      </div>
+
+      <div class="feature-item">
+        <span class="feature-number">04</span>
+        <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M12 20h9M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
+        </svg>
+        <h3 class="feature-title">Content Execution</h3>
+        <p class="feature-desc">40+ content types. Platform-specific formatting. Press releases, presentations, social posts — auto-generated from strategy with perfect brand voice.</p>
+      </div>
+
+      <div class="feature-item">
+        <span class="feature-number">05</span>
+        <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        <h3 class="feature-title">Crisis Command Center</h3>
+        <p class="feature-desc">When seconds count, NIV Crisis Consultant provides real-time guidance and response generation.</p>
+      </div>
+
+      <div class="feature-item">
+        <span class="feature-number">06</span>
+        <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M4 19.5A2.5 2.5 0 016.5 17H20"/>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/>
+        </svg>
+        <h3 class="feature-title">Memory Vault</h3>
+        <p class="feature-desc">Every insight preserved. Every pattern learned. Institutional knowledge that compounds over time.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quote -->
+  <section class="quote-section">
+    <div class="quote-bg">"</div>
+    <div class="quote-content">
+      <p class="quote-text">
+        "We identified the acquisition news 48 hours before competitors. By the time it went public, our client had already <em>owned the narrative.</em>"
+      </p>
+      <div class="quote-author">
+        <span class="quote-name">Alexandra Chen</span>
+        <span class="quote-title">Managing Director, Meridian Partners</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta-section">
+    <div class="cta-decoration"></div>
+    <div class="cta-content">
+      <h2 class="cta-headline">Ready to see <em>around corners?</em></h2>
+      <div class="cta-actions">
+        <a href="#" class="cta-btn">Start Free Trial</a>
+        <a href="#" class="cta-btn cta-btn-outline">Schedule Demo</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-logo">Nivria</div>
+      <div class="footer-links">
+        <a href="#" class="footer-link">Platform</a>
+        <a href="#" class="footer-link">Pricing</a>
+        <a href="#" class="footer-link">About</a>
+        <a href="#" class="footer-link">Contact</a>
+        <a href="#" class="footer-link">Privacy</a>
+      </div>
+      <div class="footer-copy">© 2024 Nivria</div>
+    </div>
+  </footer>
+</body>
+</html>
