@@ -9,7 +9,7 @@ import { corsHeaders } from '../_shared/cors.ts';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-const BATCH_SIZE = 25; // How many articles to process per run (mcp-firecrawl will split into batches of 5)
+const BATCH_SIZE = 10; // Reduced from 25 to avoid timeouts with slow sites (WSJ, etc) - mcp-firecrawl scrapes 5 in parallel
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -19,8 +19,13 @@ serve(async (req) => {
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
   const startTime = Date.now();
 
+  // Read batch_size from request body if provided, otherwise use default
+  const requestBody = await req.json().catch(() => ({}));
+  const batchSize = requestBody.batch_size || BATCH_SIZE;
+
   console.log('🔥 BATCH SCRAPER V5 - WORKER (MCP-Firecrawl Parallel Batch Scraper)');
-  console.log(`   Time: ${new Date().toISOString()}\n`);
+  console.log(`   Time: ${new Date().toISOString()}`);
+  console.log(`   Batch size: ${batchSize}\n`);
 
   try {
     // ========================================================================
@@ -34,7 +39,7 @@ serve(async (req) => {
       .lt('scrape_attempts', 3)
       .order('scrape_priority', { ascending: true })  // High priority first (1=Tier 1)
       .order('created_at', { ascending: false })       // Newest first
-      .limit(BATCH_SIZE);
+      .limit(batchSize);
 
     if (queueError) throw new Error(`Failed to load queue: ${queueError.message}`);
 
@@ -87,7 +92,8 @@ serve(async (req) => {
             }
           })),
           formats: ['markdown'],
-          maxTimeout: 10000
+          onlyMainContent: true,  // Extract only main content, filter out navigation/boilerplate
+          maxTimeout: 30000  // Increased from 10s to 30s for sites with heavy JS/anti-scraping (WSJ, etc)
         }
       }
     };
@@ -135,8 +141,12 @@ serve(async (req) => {
           result.url
         );
 
-        if (!qualityCheck.is_valid) {
-          // Content failed quality check - mark as failed with reason
+        // NEW APPROACH: Store even paywalled content with metadata flag
+        const isPaywall = qualityCheck.reason?.includes('Paywall');
+        const shouldStoreAnyway = isPaywall || qualityCheck.reason?.includes('Cookie consent wall');
+
+        if (!qualityCheck.is_valid && !shouldStoreAnyway) {
+          // Content failed quality check (non-paywall) - mark as failed
           const { error: updateError } = await supabase
             .from('raw_articles')
             .update({
@@ -153,7 +163,7 @@ serve(async (req) => {
           continue;
         }
 
-        // Successfully scraped with valid content - update with content
+        // Successfully scraped - update with content (may include paywall flag)
         const { error: updateError } = await supabase
           .from('raw_articles')
           .update({
@@ -165,14 +175,17 @@ serve(async (req) => {
               ...(result.data.metadata || {}),
               scraping_method: 'mcp_firecrawl',
               cached: result.cached || false,
-              quality_check: qualityCheck
+              quality_check: qualityCheck,
+              paywall: isPaywall || false,
+              limited_content: !qualityCheck.is_valid
             }
           })
           .eq('id', articleId);
 
         if (!updateError) {
           successCount++;
-          console.log(`   ✅ ${result.metadata.title?.substring(0, 50) || result.url.substring(0, 50)} (${result.data.markdown.length} chars${result.cached ? ', cached' : ''})`);
+          const paywallNote = isPaywall ? ' [PAYWALL - headline only]' : '';
+          console.log(`   ✅ ${result.metadata.title?.substring(0, 50) || result.url.substring(0, 50)} (${result.data.markdown.length} chars${result.cached ? ', cached' : ''}${paywallNote})`);
         } else {
           console.error(`   ❌ DB update failed for ${articleId}: ${updateError.message}`);
         }
@@ -360,6 +373,47 @@ function validateArticleContent(
       is_valid: false,
       reason: 'Lacks article structure (paragraphs/sentences)',
       confidence: 0.75
+    };
+  }
+
+  // 7. Check for paywall/subscription wall content
+  const paywallIndicators = [
+    /subscribe to continue reading/i,
+    /this article is for subscribers only/i,
+    /become a (member|subscriber) to (read|access)/i,
+    /sign up to unlock this article/i,
+    /upgrade to premium/i,
+    /register to read/i,
+    /complete your (free )?registration/i,
+    /you have reached your article limit/i,
+  ];
+
+  const paywallCount = paywallIndicators.filter(pattern => pattern.test(contentSample)).length;
+  if (paywallCount >= 2) {
+    return {
+      is_valid: false,
+      reason: 'Paywall/subscription wall detected',
+      confidence: 0.9
+    };
+  }
+
+  // 8. Check for cookie consent walls (entire content is just cookie notice)
+  const cookieWallIndicators = [
+    /we use cookies/i,
+    /cookie (policy|preferences|settings)/i,
+    /accept (all )?cookies/i,
+    /privacy policy/i,
+  ];
+
+  const cookieCount = cookieWallIndicators.filter(pattern => pattern.test(contentSample)).length;
+  const cookieDensity = cookieCount / (content.length / 500); // per 500 chars
+
+  // If content is short and full of cookie/privacy text, it's a cookie wall
+  if (content.length < 2000 && cookieDensity > 0.8) {
+    return {
+      is_valid: false,
+      reason: 'Cookie consent wall (no actual article content)',
+      confidence: 0.85
     };
   }
 

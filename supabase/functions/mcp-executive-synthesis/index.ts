@@ -570,7 +570,8 @@ CRITICAL:
 
   } else if (synthesis_focus === 'all_consolidated') {
     // Extract the structured data properly
-    const { structuredContext, discoveryTargets } = context;
+    const { structuredContext } = context;
+    // discoveryTargets is already declared at function scope (line 215)
 
     // Get ALL events but PRIORITIZE non-org events
     let allEvents = context.strategicInsights.events || [];
@@ -579,10 +580,16 @@ CRITICAL:
     // Events don't have URLs by default - we need to match them to their source articles
     const enrichedArticles = enriched_data?.enriched_articles || [];
     const articleUrlMap = new Map();
+    const articleIdMap = new Map(); // Map by article_id if available
 
-    // Build a map of article title/source -> URL
+    // Build maps of article identifiers -> URL
     enrichedArticles.forEach(article => {
       if (article.url) {
+        // Map by article_id (most reliable)
+        if (article.id) {
+          articleIdMap.set(article.id, article.url);
+        }
+
         // Create lookup keys from title and source
         const titleKey = article.title?.toLowerCase().trim();
         const sourceKey = article.source?.toLowerCase().trim();
@@ -595,29 +602,56 @@ CRITICAL:
       }
     });
 
+    console.log('📊 Article URL mapping:', {
+      total_articles: enrichedArticles.length,
+      articles_with_urls: enrichedArticles.filter(a => a.url).length,
+      articles_with_id: enrichedArticles.filter(a => a.id).length,
+      sample_urls: enrichedArticles.slice(0, 3).map(a => ({ title: a.title?.substring(0, 50), url: a.url }))
+    });
+
     // Enrich events with URLs by matching their source/article_title to articles
+    let enrichedCount = 0;
     allEvents = allEvents.map(event => {
       if (!event.url || event.url === 'N/A') {
-        // Try to find URL from article title or source
-        const titleKey = event.article_title?.toLowerCase().trim();
-        const sourceKey = event.source?.toLowerCase().trim();
-
         let foundUrl = null;
-        if (titleKey && sourceKey) {
-          foundUrl = articleUrlMap.get(`${sourceKey}:${titleKey}`);
+
+        // FIRST: Check if event has articles array with URL (from enrichment)
+        if (event.articles && event.articles.length > 0 && event.articles[0].url) {
+          foundUrl = event.articles[0].url;
         }
-        if (!foundUrl && titleKey) {
-          foundUrl = articleUrlMap.get(titleKey);
+
+        // Try article_id (most reliable for events with article_id field)
+        if (!foundUrl && event.article_id) {
+          foundUrl = articleIdMap.get(event.article_id);
         }
-        if (!foundUrl && sourceKey) {
-          foundUrl = articleUrlMap.get(sourceKey);
+
+        // Fall back to title/source matching
+        if (!foundUrl) {
+          const titleKey = event.article_title?.toLowerCase().trim();
+          const sourceKey = event.source?.toLowerCase().trim();
+
+          if (titleKey && sourceKey) {
+            foundUrl = articleUrlMap.get(`${sourceKey}:${titleKey}`);
+          }
+          if (!foundUrl && titleKey) {
+            foundUrl = articleUrlMap.get(titleKey);
+          }
+          if (!foundUrl && sourceKey) {
+            foundUrl = articleUrlMap.get(sourceKey);
+          }
         }
 
         if (foundUrl) {
+          enrichedCount++;
           return { ...event, url: foundUrl };
         }
       }
       return event;
+    });
+
+    console.log('🔗 Event URL enrichment results:', {
+      events_before_urls: allEvents.filter(e => !e.url || e.url === 'N/A').length,
+      events_enriched: enrichedCount
     });
 
     console.log('🔗 Event URL enrichment:', {
@@ -639,13 +673,9 @@ CRITICAL:
     });
 
     // Get intelligence targets to properly categorize non-org events
-    const competitorNames = discoveryTargets.competitors?.map(c => c.name.toLowerCase()) || [];
-    const stakeholderNames = [
-      ...(discoveryTargets.regulators?.map(r => r.name.toLowerCase()) || []),
-      ...(discoveryTargets.investors?.map(i => i.name.toLowerCase()) || []),
-      ...(discoveryTargets.analysts?.map(a => a.name.toLowerCase()) || []),
-      ...(discoveryTargets.activists?.map(a => a.name.toLowerCase()) || [])
-    ];
+    // discoveryTargets arrays contain strings (names), not objects
+    const competitorNames = discoveryTargets.competitors?.map(c => c.toLowerCase()) || [];
+    const stakeholderNames = discoveryTargets.stakeholders?.map(s => s.toLowerCase()) || [];
 
     const eventsAboutCompetitors = allEvents.filter(e => {
       const entityLower = e.entity?.toLowerCase() || '';
@@ -717,8 +747,8 @@ CRITICAL:
     const keyQuotes = context.strategicInsights.quotes?.slice(0, 15) || [];
     const metrics = context.strategicInsights.metrics?.slice(0, 10) || [];
 
-    // Get enriched articles with their deep analysis - from the enriched_data parameter
-    const enrichedArticles = enriched_data?.enriched_articles || [];
+    // Get enriched articles with their deep analysis - already declared above at line 580
+    // const enrichedArticles = enriched_data?.enriched_articles || [];
 
     // Log what we're getting from enriched articles
     console.log('📰 ENRICHED ARTICLES ANALYSIS:', {

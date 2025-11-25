@@ -2962,7 +2962,13 @@ ${campaignContext.timeline || 'Not specified'}
         const content = await callMCPServiceWithContext('thought-leadership', {
           organization: orgProfile.organizationName,
           topic: toolUse.input.topic,
-          angle: toolUse.input.angle
+          angle: toolUse.input.angle,
+          // Pass company profile to prevent hallucinations
+          product_lines: orgProfile.product_lines || [],
+          key_markets: orgProfile.key_markets || [],
+          business_model: orgProfile.business_model,
+          leadership: orgProfile.leadership || [],
+          industry: orgProfile.industry
         }, conversationHistory, conversationState, campaignContext);
         return new Response(JSON.stringify({
           success: true,
@@ -5868,6 +5874,10 @@ async function callMCPService(contentType, parameters) {
           fullFramework: parameters.fullFramework || null,
           contentStrategy: parameters.contentStrategy || null,
           executionPlan: parameters.executionPlan || null,
+          // Pass company profile data to prevent hallucinations
+          companyServices: parameters.companyServices || parameters.product_lines || [],
+          companyCapabilities: parameters.companyCapabilities || parameters.key_markets || [],
+          companyMethodologies: parameters.companyMethodologies || [],
           context: {
             strategy: {
               keyMessages: parameters.keyPoints || [],
@@ -5880,7 +5890,11 @@ async function callMCPService(contentType, parameters) {
             },
             organization: {
               name: parameters.organization || 'Organization',
-              industry: parameters.industry || 'technology'
+              industry: parameters.industry || 'technology',
+              business_model: parameters.business_model,
+              leadership: parameters.leadership || [],
+              product_lines: parameters.product_lines || [],
+              key_markets: parameters.key_markets || []
             },
             event: parameters.subject || parameters.topic || 'Product Announcement',
             // Include full strategic context for evidence-based content

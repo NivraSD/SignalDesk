@@ -14,6 +14,7 @@ interface Source {
   source_name: string;
   source_url: string;
   monitor_method: string;
+  monitor_config: { rss_url?: string } | null;
   industries: string[];
   tier: number;
 }
@@ -206,6 +207,32 @@ serve(async (req) => {
 // Helper: Discover articles via RSS
 // ============================================================================
 async function discoverViaRSS(source: Source): Promise<any[]> {
+  // FIRST: Try configured RSS URL if it exists in monitor_config
+  if (source.monitor_config?.rss_url) {
+    try {
+      console.log(`   🔍 Trying configured RSS URL: ${source.monitor_config.rss_url}`);
+
+      const response = await fetch(source.monitor_config.rss_url, {
+        headers: { 'User-Agent': 'SignalDesk-Scraper/5.0' }
+      });
+
+      if (response.ok) {
+        const xml = await response.text();
+        const articles = parseRSSXML(xml, source.monitor_config.rss_url);
+
+        if (articles.length > 0) {
+          console.log(`   ✅ Configured RSS URL worked! Found ${articles.length} articles`);
+          return articles;
+        }
+      }
+
+      console.log(`   ⚠️  Configured RSS URL failed (${response.status}), trying auto-discovery...`);
+    } catch (error: any) {
+      console.log(`   ⚠️  Configured RSS URL error: ${error.message}, trying auto-discovery...`);
+    }
+  }
+
+  // FALLBACK: Auto-discovery - try common RSS URL patterns
   const rssUrls = [
     `${source.source_url}/rss`,
     `${source.source_url}/feed`,
@@ -223,30 +250,7 @@ async function discoverViaRSS(source: Source): Promise<any[]> {
       if (!response.ok) continue;
 
       const xml = await response.text();
-      const articles: any[] = [];
-
-      const itemMatches = xml.matchAll(/<item>(.*?)<\/item>/gs);
-
-      for (const match of itemMatches) {
-        const item = match[1];
-
-        const titleMatch = item.match(/<title(?:[^>]*)>(.*?)<\/title>/s);
-        const linkMatch = item.match(/<link(?:[^>]*)>(.*?)<\/link>/s);
-        const descMatch = item.match(/<description(?:[^>]*)>(.*?)<\/description>/s);
-        const pubDateMatch = item.match(/<pubDate(?:[^>]*)>(.*?)<\/pubDate>/s);
-        const authorMatch = item.match(/<(?:dc:)?creator(?:[^>]*)>(.*?)<\/(?:dc:)?creator>/s);
-
-        if (titleMatch && linkMatch) {
-          articles.push({
-            url: linkMatch[1].trim(),
-            title: titleMatch[1].replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1').trim(),
-            description: descMatch ? descMatch[1].replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1').trim() : undefined,
-            author: authorMatch ? authorMatch[1].replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1').trim() : undefined,
-            published_at: pubDateMatch ? new Date(pubDateMatch[1].trim()).toISOString() : undefined,
-            raw_metadata: { rss_feed: rssUrl }
-          });
-        }
-      }
+      const articles = parseRSSXML(xml, rssUrl);
 
       if (articles.length > 0) {
         return articles;
@@ -257,4 +261,36 @@ async function discoverViaRSS(source: Source): Promise<any[]> {
   }
 
   return [];
+}
+
+// ============================================================================
+// Helper: Parse RSS/Atom XML into article objects
+// ============================================================================
+function parseRSSXML(xml: string, feedUrl: string): any[] {
+  const articles: any[] = [];
+
+  const itemMatches = xml.matchAll(/<item>(.*?)<\/item>/gs);
+
+  for (const match of itemMatches) {
+    const item = match[1];
+
+    const titleMatch = item.match(/<title(?:[^>]*)>(.*?)<\/title>/s);
+    const linkMatch = item.match(/<link(?:[^>]*)>(.*?)<\/link>/s);
+    const descMatch = item.match(/<description(?:[^>]*)>(.*?)<\/description>/s);
+    const pubDateMatch = item.match(/<pubDate(?:[^>]*)>(.*?)<\/pubDate>/s);
+    const authorMatch = item.match(/<(?:dc:)?creator(?:[^>]*)>(.*?)<\/(?:dc:)?creator>/s);
+
+    if (titleMatch && linkMatch) {
+      articles.push({
+        url: linkMatch[1].trim(),
+        title: titleMatch[1].replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1').trim(),
+        description: descMatch ? descMatch[1].replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1').trim() : undefined,
+        author: authorMatch ? authorMatch[1].replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1').trim() : undefined,
+        published_at: pubDateMatch ? new Date(pubDateMatch[1].trim()).toISOString() : undefined,
+        raw_metadata: { rss_feed: feedUrl }
+      });
+    }
+  }
+
+  return articles;
 }

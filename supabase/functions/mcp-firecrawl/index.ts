@@ -8,6 +8,12 @@ import { corsHeaders } from '../_shared/cors.ts';
 const FIRECRAWL_API_KEY = Deno.env.get('FIRECRAWL_API_KEY') || 'fc-3048810124b640eb99293880a4ab25d0';
 const FIRECRAWL_BASE_URL = 'https://api.firecrawl.dev/v2';  // Updated to v2 for extraction support
 
+// Premium source authentication cookies
+const WSJ_AUTH_COOKIE = Deno.env.get('WSJ_AUTH_COOKIE');
+const FT_AUTH_COOKIE = Deno.env.get('FT_AUTH_COOKIE');
+const BLOOMBERG_AUTH_COOKIE = Deno.env.get('BLOOMBERG_AUTH_COOKIE');
+const NYTIMES_AUTH_COOKIE = Deno.env.get('NYTIMES_AUTH_COOKIE');
+
 // MCP Tools Definition
 const TOOLS = [
   {
@@ -99,7 +105,7 @@ function cleanCache() {
 
 // Batch scrape implementation with intelligent prioritization
 async function batchScrapeArticles(args: any) {
-  const { articles, formats = ['markdown'], extractSchema, maxTimeout = 10000 } = args;
+  const { articles, formats = ['markdown'], onlyMainContent = true, extractSchema, maxTimeout = 10000 } = args;
   
   console.log(`🔥 Batch scraping ${articles.length} articles with Firecrawl`);
   cleanCache();
@@ -139,9 +145,35 @@ async function batchScrapeArticles(args: any) {
         const scrapeBody: any = {
           url: article.url,
           formats: formats,
-          onlyMainContent: true  // v2 API uses this at root level, not in scrapeOptions
+          onlyMainContent: onlyMainContent  // v2 API uses this at root level, not in scrapeOptions
         };
-        
+
+        // Add authentication for premium sources
+        let authCookie = null;
+        let sourceName = '';
+
+        if (article.url.includes('wsj.com') && WSJ_AUTH_COOKIE) {
+          authCookie = WSJ_AUTH_COOKIE;
+          sourceName = 'WSJ';
+        } else if (article.url.includes('ft.com') && FT_AUTH_COOKIE) {
+          authCookie = FT_AUTH_COOKIE;
+          sourceName = 'FT';
+        } else if (article.url.includes('bloomberg.com') && BLOOMBERG_AUTH_COOKIE) {
+          authCookie = BLOOMBERG_AUTH_COOKIE;
+          sourceName = 'Bloomberg';
+        } else if (article.url.includes('nytimes.com') && NYTIMES_AUTH_COOKIE) {
+          authCookie = NYTIMES_AUTH_COOKIE;
+          sourceName = 'NYTimes';
+        }
+
+        if (authCookie) {
+          scrapeBody.headers = {
+            'Cookie': authCookie,
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+          };
+          console.log(`   🔐 Using ${sourceName} authentication for: ${article.url.substring(0, 50)}`);
+        }
+
         // Add extraction schema if provided
         if (extractSchema) {
           // Log what we're sending to Firecrawl for first article

@@ -1035,10 +1035,46 @@ async function generateThoughtLeadership(args: any) {
   // Build industry context - use 'cross-industry' as default instead of 'technology'
   const industryContext = industry || 'cross-industry and sector-agnostic';
 
+  // Extract company context to prevent hallucination
+  const companyName = args.organization || args.company || 'the organization';
+  const companyServices = args.companyServices || args.services || [];
+  const companyCapabilities = args.companyCapabilities || args.capabilities || [];
+  const companyMethodologies = args.companyMethodologies || args.methodologies || [];
+
+  // Extract research data/statistics if provided
+  const researchData = args.research || args.researchData || '';
+  const statistics = args.statistics || [];
+
   // Build constraints section if provided
   const constraintsSection = constraints
     ? `\n\nIMPORTANT CONSTRAINTS:\n${constraints}\n`
     : '';
+
+  // Build research data section if available
+  const researchSection = (researchData || statistics.length > 0) ? `
+
+RESEARCH DATA & STATISTICS (You MAY cite these with proper attribution):
+${researchData ? `Research Findings:\n${researchData}\n` : ''}
+${statistics.length > 0 ? `Statistics:\n${statistics.map(s => `- ${s.stat} (Source: ${s.source})`).join('\n')}` : ''}
+` : '';
+
+  // Build company context section to ground the content
+  const companyContextSection = `
+
+COMPANY CONTEXT (${companyName}):
+${companyServices.length > 0 ? `Services: ${companyServices.join(', ')}` : 'Services: Not specified'}
+${companyCapabilities.length > 0 ? `Capabilities: ${companyCapabilities.join(', ')}` : 'Capabilities: Not specified'}
+${companyMethodologies.length > 0 ? `Known Methodologies: ${companyMethodologies.join(', ')}` : 'Known Methodologies: Not specified'}
+${researchSection}
+**CRITICAL ANTI-HALLUCINATION RULES:**
+- ONLY reference services, capabilities, or methodologies explicitly listed above
+- DO NOT invent proprietary frameworks, methodologies, or trademarked terms
+- DO NOT create fictional "™" or "®" branded approaches
+- If no company-specific details are provided, write generically about the industry without claiming company-specific innovations
+- Speak about the topic from industry expertise, NOT from invented company capabilities
+- **STATISTICS RULE**: DO NOT cite specific statistics, percentages, or numerical data unless explicitly provided in the RESEARCH DATA section above
+- If you want to reference a trend or pattern, use qualitative language ("many executives", "increasingly", "growing concern") instead of inventing numbers
+- NEVER write things like "17% of CEOs" or "according to recent studies" without actual citations from the research data provided above`;
 
   const prompt = `TODAY'S DATE: ${currentDate} (${currentYear})
 
@@ -1047,7 +1083,7 @@ Write a ${tone} thought leadership article:
   Industry: ${industryContext}
   Unique Perspective: ${perspective || 'forward-thinking'}
   Key Points: ${keyPoints.join('\n- ')}
-  Word Count: ~${wordCount}${constraintsSection}
+  Word Count: ~${wordCount}${companyContextSection}${constraintsSection}
 
   Requirements:
   - Start with a compelling hook
@@ -1057,7 +1093,8 @@ Write a ${tone} thought leadership article:
   - End with actionable takeaways
   - Use authoritative voice and expert positioning
   - If constraints are provided above, follow them strictly
-  - DO NOT reference years before ${currentYear} unless providing historical context`;
+  - DO NOT reference years before ${currentYear} unless providing historical context
+  - FOLLOW THE ANTI-HALLUCINATION RULES STRICTLY - do not invent company capabilities or methodologies`;
 
   const content = await callAnthropic(
     [{ role: 'user', content: prompt }],

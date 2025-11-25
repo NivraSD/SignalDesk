@@ -47,7 +47,7 @@ serve(async (req) => {
     console.log('📰 Step 2: Selecting articles from V5 batch scraper...');
 
     const articleResponse = await fetch(
-      `${SUPABASE_URL}/functions/v1/article-selector`,
+      `${SUPABASE_URL}/functions/v1/article-selector-v3`,
       {
         method: 'POST',
         headers: {

@@ -42,12 +42,13 @@ serve(async (req) => {
         triggered_by: req.headers.get('user-agent') || 'manual'
       });
 
-    // Get active Google CSE sources only
+    // Get active Google CSE sources only - prioritize least recently scraped
     const { data: sources, error: sourcesError } = await supabase
       .from('source_registry')
       .select('*')
       .eq('active', true)
       .eq('monitor_method', 'google_cse')
+      .order('last_successful_scrape', { ascending: true, nullsFirst: true })
       .order('tier', { ascending: true });
 
     if (sourcesError) throw new Error(`Failed to load sources: ${sourcesError.message}`);
@@ -192,11 +193,15 @@ async function discoverViaGoogleCSE(source: Source, supabase: any): Promise<{ ar
 
   const afterDate = sevenDaysAgo.toISOString().split('T')[0]; // YYYY-MM-DD
 
-  // Extract domain from source URL
-  const domain = new URL(source.source_url).hostname.replace('www.', '');
+  // Use the full URL path for more precise results
+  // e.g., site:statnews.com/latest instead of site:statnews.com
+  const url = new URL(source.source_url);
+  const domain = url.hostname.replace('www.', '');
+  const path = url.pathname.replace(/\/$/, ''); // Remove trailing slash
 
-  // Build search query
-  const query = `site:${domain} after:${afterDate}`;
+  // Build search query with path if present
+  const searchTarget = path && path !== '' ? `${domain}${path}` : domain;
+  const query = `site:${searchTarget} after:${afterDate}`;
 
   // Call existing niv-google-cse Edge Function
   const response = await fetch(`${SUPABASE_URL}/functions/v1/niv-google-cse`, {

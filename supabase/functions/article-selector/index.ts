@@ -81,20 +81,41 @@ serve(async (req) => {
 
     console.log(`   Found ${allSources?.length || 0} total active sources`);
 
+    // Detect if this is a diversified/conglomerate company
+    const isDiversifiedCompany =
+      /conglomerate|diversified|holding|multi-industry|multiple sectors/i.test(intelligenceContext) ||
+      /conglomerate|diversified|holding/i.test(profileData.description || '') ||
+      ['Mitsui', 'Mitsubishi', 'Sumitomo', 'Berkshire Hathaway', 'General Electric'].some(name =>
+        organization_name?.includes(name)
+      );
+
+    console.log(`   Company type: ${isDiversifiedCompany ? 'DIVERSIFIED/CONGLOMERATE' : 'FOCUSED'}`);
+
     // Ask Claude to select relevant sources for this organization
     const sourceSelectionPrompt = `You are selecting news sources for ${organization_name}, a ${industry} company.
 
 ORGANIZATION CONTEXT:
 ${intelligenceContext}
 
+COMPANY TYPE: ${isDiversifiedCompany ? 'DIVERSIFIED CONGLOMERATE - operates across multiple industries' : 'FOCUSED - operates in specific industry'}
+
 AVAILABLE SOURCES (${allSources?.length || 0} total):
 ${allSources?.map(s => `- ${s.source_name} (Tier ${s.tier}): ${s.industries?.join(', ') || 'general'}`).join('\n')}
 
 Select 15-25 sources that are most relevant for monitoring this organization's competitive landscape and industry.
-Prioritize:
+
+${isDiversifiedCompany ? `
+PRIORITIZATION (for diversified conglomerate):
+1. Include BOTH Tier 1 general news (Bloomberg, WSJ, Reuters, FT) AND specialist sources
+2. Tier 1 sources are CRITICAL for conglomerates - they cover cross-industry deals, leadership, strategy
+3. Add specialist sources for each major business unit (e.g., logistics, energy, materials, finance)
+4. Conglomerates appear in general business news more than niche industry news
+` : `
+PRIORITIZATION (for focused company):
 1. Sources that cover the organization's industry directly
-2. Tier 2/3 specialist sources over Tier 1 general news
+2. Prioritize Tier 2/3 specialist sources over Tier 1 general news
 3. Sources that would have information about competitors, industry trends, and market developments
+`}
 
 Respond with ONLY a JSON array of source names:
 ["Source Name 1", "Source Name 2", ...]`;
@@ -275,12 +296,41 @@ Respond with ONLY a JSON array of source names:
 
     const rejectedCount = relevantArticles.length - qualityValidatedArticles.length;
     console.log(`   Quality validation: ${qualityValidatedArticles.length} passed, ${rejectedCount} rejected`);
-    console.log(`   Returning top ${Math.min(qualityValidatedArticles.length, MAX_ARTICLES)} articles`);
+
+    // ================================================================
+    // SOURCE DIVERSITY ENFORCEMENT
+    // ================================================================
+    // Ensure we don't have all articles from just 1-2 sources
+    // Strategy: Take top articles but cap per source to force diversity
+    const MAX_PER_SOURCE = 8; // Max articles from any single source
+    const sourceArticleCounts = new Map();
+    const diverseArticles = [];
+
+    // First pass: Take top articles up to per-source limit
+    for (const article of qualityValidatedArticles) {
+      const source = article.source_name;
+      const currentCount = sourceArticleCounts.get(source) || 0;
+
+      if (currentCount < MAX_PER_SOURCE) {
+        diverseArticles.push(article);
+        sourceArticleCounts.set(source, currentCount + 1);
+      }
+
+      if (diverseArticles.length >= MAX_ARTICLES) break;
+    }
+
+    // Log source distribution
+    const sourceDistribution = {};
+    diverseArticles.forEach(a => {
+      sourceDistribution[a.source_name] = (sourceDistribution[a.source_name] || 0) + 1;
+    });
+    console.log(`   Source diversity enforced:`, sourceDistribution);
+    console.log(`   Selected: ${diverseArticles.length} articles from ${Object.keys(sourceDistribution).length} sources`);
 
     // ================================================================
     // STEP 4: Format for enrichment pipeline
     // ================================================================
-    const formattedArticles = qualityValidatedArticles.map(article => ({
+    const formattedArticles = diverseArticles.map(article => ({
       url: article.url,
       title: article.title,
       description: article.description || '',

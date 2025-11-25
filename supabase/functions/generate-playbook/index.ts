@@ -191,9 +191,22 @@ Return as structured JSON matching this format:
     const guidance = JSON.parse(jsonMatch[0])
     console.log(`✅ Playbook synthesized successfully`)
 
-    // Build complete playbook object
+    // Build complete playbook object - includes company profile + analyzed patterns
     const playbook = {
       guidance,
+      company_context: {
+        // Company facts (from profile)
+        business_model: org?.company_profile?.business_model,
+        leadership: org?.company_profile?.leadership || [],
+        product_lines: org?.company_profile?.product_lines || [],
+        key_markets: org?.company_profile?.key_markets || [],
+        headquarters: org?.company_profile?.headquarters,
+        company_size: org?.company_profile?.company_size,
+        // Analyzed positioning (from content patterns)
+        positioning: guidance.positioning || '',
+        key_differentiators: guidance.key_differentiators || [],
+        relevant_products: guidance.relevant_products || []
+      },
       based_on: {
         content_count: content.length,
         date_range: {

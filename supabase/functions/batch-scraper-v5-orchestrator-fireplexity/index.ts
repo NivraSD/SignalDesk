@@ -1,0 +1,241 @@
+// Batch Scraper V5 - Firecrawl Map Orchestrator
+// Discovers article URLs using Firecrawl Map API for premium sources
+// Stores URLs in raw_articles for later content extraction
+
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { corsHeaders } from '../_shared/cors.ts';
+
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const FIRECRAWL_API_KEY = Deno.env.get('FIRECRAWL_API_KEY') || 'fc-3048810124b640eb99293880a4ab25d0';
+
+interface Source {
+  id: string;
+  source_name: string;
+  source_url: string;
+  monitor_method: string;
+  industries: string[];
+  tier: number;
+  last_successful_scrape?: string;
+}
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  const runId = crypto.randomUUID();
+  const startTime = Date.now();
+
+  console.log('🔥 BATCH SCRAPER V5 - FIRECRAWL MAP ORCHESTRATOR');
+  console.log(`   Run ID: ${runId}`);
+  console.log(`   Time: ${new Date().toISOString()}\n`);
+
+  try {
+    const body = await req.json().catch(() => ({}));
+    const maxSources = body.max_sources || 10; // Limit for cost control
+
+    // Create batch run record
+    await supabase
+      .from('batch_scrape_runs')
+      .insert({
+        id: runId,
+        run_type: 'firecrawl_discovery',
+        status: 'running',
+        triggered_by: req.headers.get('user-agent') || 'manual'
+      });
+
+    // Get active Firecrawl sources, prioritize least recently scraped
+    const { data: sources, error: sourcesError } = await supabase
+      .from('source_registry')
+      .select('*')
+      .eq('active', true)
+      .eq('monitor_method', 'firecrawl')
+      .order('last_successful_scrape', { ascending: true, nullsFirst: true })
+      .order('tier', { ascending: true })
+      .limit(maxSources);
+
+    if (sourcesError) throw new Error(`Failed to load sources: ${sourcesError.message}`);
+
+    console.log(`📊 Found ${sources?.length || 0} active Firecrawl sources\\n`);
+
+    let totalArticles = 0;
+    let newArticles = 0;
+    let duplicateArticles = 0;
+    let sourcesSuccessful = 0;
+    let sourcesFailed = 0;
+
+    console.log('🔥 Discovering articles via Firecrawl Map...\\n');
+
+    for (const source of sources || []) {
+      try {
+        const result = await discoverViaFirecrawlMap(source, supabase);
+
+        totalArticles += result.articles;
+        newArticles += result.newCount;
+        duplicateArticles += result.duplicateCount;
+        sourcesSuccessful++;
+
+        console.log(`   ✅ ${source.source_name}: ${result.newCount} new, ${result.duplicateCount} duplicates`);
+
+        // Update last successful scrape
+        await supabase
+          .from('source_registry')
+          .update({ last_successful_scrape: new Date().toISOString() })
+          .eq('id', source.id);
+
+      } catch (error) {
+        console.error(`   ❌ ${source.source_name}: ${error.message}`);
+        sourcesFailed++;
+      }
+    }
+
+    const duration = Math.round((Date.now() - startTime) / 1000);
+
+    // Update batch run record
+    await supabase
+      .from('batch_scrape_runs')
+      .update({
+        status: 'completed',
+        articles_discovered: totalArticles,
+        articles_new: newArticles,
+        articles_duplicate: duplicateArticles,
+        sources_successful: sourcesSuccessful,
+        sources_failed: sourcesFailed,
+        duration_seconds: duration
+      })
+      .eq('id', runId);
+
+    const summary = {
+      sources_processed: sourcesSuccessful + sourcesFailed,
+      sources_failed: sourcesFailed,
+      articles_discovered: totalArticles,
+      new_urls: newArticles,
+      duplicates_skipped: duplicateArticles,
+      duration_seconds: duration
+    };
+
+    console.log('\\n📊 Summary:');
+    console.log(`   Sources processed: ${summary.sources_processed}`);
+    console.log(`   New URLs: ${summary.new_urls}`);
+    console.log(`   Duplicates: ${summary.duplicates_skipped}`);
+    console.log(`   Duration: ${duration}s`);
+
+    return new Response(
+      JSON.stringify({ success: true, run_id: runId, summary }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+
+  } catch (error) {
+    console.error('❌ Fatal error:', error);
+
+    await supabase
+      .from('batch_scrape_runs')
+      .update({ status: 'failed', error_message: error.message })
+      .eq('id', runId);
+
+    return new Response(
+      JSON.stringify({ success: false, error: error.message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+});
+
+// ============================================================================
+// Helper: Discover articles via Firecrawl Map API
+// ============================================================================
+async function discoverViaFirecrawlMap(source: Source, supabase: any): Promise<{ articles: number, newCount: number, duplicateCount: number }> {
+  // Use Firecrawl Map to discover article URLs on the site
+  const mapResponse = await fetch('https://api.firecrawl.dev/v1/map', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${FIRECRAWL_API_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      url: source.source_url,
+      search: 'article news',  // Search for article-related pages
+      limit: 50,  // Limit URLs per source for cost control
+      includeSubdomains: false
+    })
+  });
+
+  if (!mapResponse.ok) {
+    const errorText = await mapResponse.text();
+    throw new Error(`Firecrawl Map API error (${mapResponse.status}): ${errorText}`);
+  }
+
+  const mapData = await mapResponse.json();
+  const discoveredLinks = mapData.links || [];
+
+  if (discoveredLinks.length === 0) {
+    throw new Error('No links discovered');
+  }
+
+  // Filter URLs to find actual articles (not category/profile pages)
+  const articles = discoveredLinks
+    .filter((link: string | {url: string}) => {
+      const url = typeof link === 'string' ? link : link.url;
+      const lowerUrl = url.toLowerCase();
+
+      // Include URLs that look like articles
+      const isArticle =
+        lowerUrl.includes('/article') ||
+        lowerUrl.includes('/news/') ||
+        lowerUrl.includes('/story/') ||
+        lowerUrl.includes('/20') ||  // Date in URL
+        lowerUrl.match(/\/\d{4}\/\d{2}/);  // YYYY/MM pattern
+
+      // Exclude category/listing pages
+      const isNotCategory =
+        !lowerUrl.includes('/category') &&
+        !lowerUrl.includes('/tag/') &&
+        !lowerUrl.includes('/author/') &&
+        !lowerUrl.includes('/topics/') &&
+        !lowerUrl.endsWith('/news') &&
+        !lowerUrl.endsWith('/latest');
+
+      return isArticle && isNotCategory;
+    })
+    .map((link: string | {url: string, title?: string}) => {
+      if (typeof link === 'string') {
+        return { url: link, title: link.split('/').pop()?.replace(/-/g, ' ') || 'Untitled' };
+      }
+      return { url: link.url, title: link.title || link.url.split('/').pop()?.replace(/-/g, ' ') || 'Untitled' };
+    });
+
+  if (articles.length === 0) {
+    throw new Error('No valid articles after filtering');
+  }
+
+  // Check for duplicates
+  const urls = articles.map(a => a.url);
+  const { data: existingUrls } = await supabase
+    .from('raw_articles')
+    .select('url')
+    .in('url', urls);
+
+  const existingUrlSet = new Set((existingUrls || []).map((r: any) => r.url));
+  const newArticles = articles.filter(a => !existingUrlSet.has(a.url));
+
+  // Insert new articles
+  if (newArticles.length > 0) {
+    const records = newArticles.map(article => ({
+      source_id: source.id,
+      source_name: source.source_name,
+      url: article.url,
+      title: article.title,
+      scrape_status: 'pending'
+    }));
+
+    await supabase.from('raw_articles').insert(records);
+  }
+
+  return {
+    articles: articles.length,
+    newCount: newArticles.length,
+    duplicateCount: articles.length - newArticles.length
+  };
+}

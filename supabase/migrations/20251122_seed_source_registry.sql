@@ -41,11 +41,11 @@ INSERT INTO source_registry (source_name, source_url, source_type, industries, t
 
 -- PR & Marketing
 INSERT INTO source_registry (source_name, source_url, source_type, industries, tier, monitor_method) VALUES
-('PRWeek', 'https://prweek.com', 'website', ARRAY['public_relations', 'marketing'], 2, 'firecrawl_observer'),
-('PRovoke Media', 'https://provokemedia.com', 'website', ARRAY['public_relations'], 2, 'firecrawl_observer'),
-('PR Daily', 'https://prdaily.com', 'website', ARRAY['public_relations', 'marketing'], 2, 'firecrawl_observer'),
-('Ragan', 'https://ragan.com', 'website', ARRAY['public_relations', 'corporate_communications'], 2, 'firecrawl_observer'),
-('O''Dwyer''s', 'https://odwyerpr.com', 'website', ARRAY['public_relations'], 2, 'firecrawl_observer'),
+('PRWeek', 'https://prweek.com', 'website', ARRAY['public_relations', 'marketing'], 2, 'firecrawl'),
+('PRovoke Media', 'https://provokemedia.com', 'website', ARRAY['public_relations'], 2, 'firecrawl'),
+('PR Daily', 'https://prdaily.com', 'website', ARRAY['public_relations', 'marketing'], 2, 'firecrawl'),
+('Ragan', 'https://ragan.com', 'website', ARRAY['public_relations', 'corporate_communications'], 2, 'firecrawl'),
+('O''Dwyer''s', 'https://odwyerpr.com', 'website', ARRAY['public_relations'], 2, 'firecrawl'),
 ('AdAge', 'https://adage.com', 'website', ARRAY['advertising', 'marketing'], 2, 'rss'),
 ('AdWeek', 'https://adweek.com', 'website', ARRAY['advertising', 'marketing'], 2, 'rss'),
 ('The Drum', 'https://thedrum.com', 'website', ARRAY['marketing', 'advertising'], 2, 'rss'),
@@ -131,12 +131,12 @@ INSERT INTO source_registry (source_name, source_url, source_type, industries, t
 ('Pew Research', 'https://pewresearch.org', 'website', ARRAY['research', 'social'], 3, 'rss'),
 
 -- Consulting/Research Firms
-('McKinsey', 'https://mckinsey.com', 'website', ARRAY['consulting', 'strategy'], 3, 'firecrawl_observer'),
-('BCG', 'https://bcg.com', 'website', ARRAY['consulting', 'strategy'], 3, 'firecrawl_observer'),
-('Deloitte Insights', 'https://www2.deloitte.com', 'website', ARRAY['consulting', 'research'], 3, 'firecrawl_observer'),
-('PwC', 'https://pwc.com', 'website', ARRAY['consulting', 'professional_services'], 3, 'firecrawl_observer'),
-('Gartner', 'https://gartner.com', 'website', ARRAY['technology', 'research'], 3, 'firecrawl_observer'),
-('Forrester', 'https://forrester.com', 'website', ARRAY['technology', 'research'], 3, 'firecrawl_observer'),
+('McKinsey', 'https://mckinsey.com', 'website', ARRAY['consulting', 'strategy'], 3, 'firecrawl'),
+('BCG', 'https://bcg.com', 'website', ARRAY['consulting', 'strategy'], 3, 'firecrawl'),
+('Deloitte Insights', 'https://www2.deloitte.com', 'website', ARRAY['consulting', 'research'], 3, 'firecrawl'),
+('PwC', 'https://pwc.com', 'website', ARRAY['consulting', 'professional_services'], 3, 'firecrawl'),
+('Gartner', 'https://gartner.com', 'website', ARRAY['technology', 'research'], 3, 'firecrawl'),
+('Forrester', 'https://forrester.com', 'website', ARRAY['technology', 'research'], 3, 'firecrawl'),
 
 -- Startup/VC
 ('Crunchbase News', 'https://news.crunchbase.com', 'website', ARRAY['startups', 'venture_capital'], 3, 'rss'),
