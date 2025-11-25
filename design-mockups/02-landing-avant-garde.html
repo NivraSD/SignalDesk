@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SignalDesk - Avant Garde Landing Mockup</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* Sun Burnt Orange Palette */
+      --burnt-orange: #C75D3A;
+      --burnt-orange-light: #E07B5A;
+      --burnt-orange-muted: #D4907A;
+      --burnt-orange-pale: #F5E6E0;
+      --terracotta: #B54D2E;
+
+      /* Grey Scale */
+      --grey-900: #1A1A1A;
+      --grey-800: #2D2D2D;
+      --grey-700: #3D3D3D;
+      --grey-600: #4A4A4A;
+      --grey-500: #6B6B6B;
+      --grey-400: #8A8A8A;
+      --grey-300: #B0B0B0;
+      --grey-200: #D4D4D4;
+      --grey-100: #EBEBEB;
+      --grey-50: #F7F7F7;
+
+      /* Whites */
+      --white: #FFFFFF;
+      --off-white: #FAFAFA;
+
+      /* Typography */
+      --font-display: 'Space Grotesk', sans-serif;
+      --font-body: 'Inter', sans-serif;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--off-white);
+      color: var(--grey-900);
+      font-weight: 300;
+      letter-spacing: -0.01em;
+      overflow-x: hidden;
+    }
+
+    /* Navigation - Minimal, Asymmetric */
+    .nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      padding: 24px 48px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: linear-gradient(to bottom, var(--off-white) 60%, transparent);
+    }
+
+    .nav-logo {
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--grey-900);
+    }
+
+    .nav-logo-mark {
+      width: 32px;
+      height: 32px;
+      background: var(--burnt-orange);
+      clip-path: polygon(0 0, 100% 0, 100% 70%, 70% 100%, 0 100%);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 40px;
+      align-items: center;
+    }
+
+    .nav-link {
+      text-decoration: none;
+      color: var(--grey-600);
+      font-size: 0.9rem;
+      font-weight: 400;
+      transition: color 0.2s;
+    }
+
+    .nav-link:hover {
+      color: var(--grey-900);
+    }
+
+    .nav-cta {
+      padding: 12px 28px;
+      background: var(--grey-900);
+      color: var(--white);
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .nav-cta:hover {
+      background: var(--burnt-orange);
+    }
+
+    /* Hero - Avant Garde Editorial Style */
+    .hero {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      position: relative;
+    }
+
+    .hero-left {
+      padding: 180px 80px 80px 80px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      position: relative;
+    }
+
+    .hero-left::before {
+      content: '';
+      position: absolute;
+      top: 20%;
+      left: -100px;
+      width: 400px;
+      height: 400px;
+      border: 1px solid var(--burnt-orange);
+      opacity: 0.15;
+      transform: rotate(-12deg);
+    }
+
+    .hero-eyebrow {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: var(--burnt-orange);
+      font-weight: 600;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .hero-eyebrow::before {
+      content: '';
+      width: 40px;
+      height: 1px;
+      background: var(--burnt-orange);
+    }
+
+    .hero-title {
+      font-family: var(--font-display);
+      font-size: clamp(3rem, 6vw, 5rem);
+      font-weight: 600;
+      letter-spacing: -0.04em;
+      line-height: 1.05;
+      margin-bottom: 32px;
+    }
+
+    .hero-title span {
+      display: block;
+    }
+
+    .hero-title .accent {
+      color: var(--burnt-orange);
+      font-style: italic;
+      font-weight: 400;
+    }
+
+    .hero-description {
+      font-size: 1.15rem;
+      line-height: 1.7;
+      color: var(--grey-600);
+      max-width: 480px;
+      margin-bottom: 48px;
+    }
+
+    .hero-ctas {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .btn-large {
+      padding: 18px 40px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      border-radius: 8px;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      font-family: var(--font-body);
+    }
+
+    .btn-primary-large {
+      background: var(--burnt-orange);
+      color: var(--white);
+    }
+
+    .btn-primary-large:hover {
+      background: var(--terracotta);
+      transform: translateY(-2px);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--grey-700);
+      border: 1px solid var(--grey-300);
+    }
+
+    .btn-ghost:hover {
+      border-color: var(--grey-900);
+      color: var(--grey-900);
+    }
+
+    /* Hero Right - Asymmetric Visual */
+    .hero-right {
+      position: relative;
+      background: var(--grey-900);
+      clip-path: polygon(15% 0, 100% 0, 100% 100%, 0 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .hero-right::before {
+      content: '';
+      position: absolute;
+      top: -20%;
+      right: -20%;
+      width: 80%;
+      height: 80%;
+      background: var(--burnt-orange);
+      opacity: 0.1;
+      border-radius: 50%;
+    }
+
+    .hero-visual {
+      width: 85%;
+      max-width: 500px;
+      position: relative;
+    }
+
+    .hero-card {
+      background: var(--white);
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 20px;
+      transform: rotate(-2deg);
+      box-shadow: 0 30px 60px rgba(0,0,0,0.3);
+    }
+
+    .hero-card:nth-child(2) {
+      transform: rotate(1deg) translateX(40px);
+      margin-top: -60px;
+    }
+
+    .hero-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .hero-card-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--grey-500);
+      font-weight: 500;
+    }
+
+    .hero-card-badge {
+      padding: 4px 10px;
+      background: var(--burnt-orange-pale);
+      color: var(--burnt-orange);
+      font-size: 0.7rem;
+      font-weight: 600;
+      border-radius: 4px;
+    }
+
+    .hero-card-value {
+      font-family: var(--font-display);
+      font-size: 2rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    .hero-card-metric {
+      display: flex;
+      gap: 24px;
+      margin-top: 20px;
+    }
+
+    .metric-item {
+      flex: 1;
+    }
+
+    .metric-label {
+      font-size: 0.7rem;
+      color: var(--grey-500);
+      margin-bottom: 4px;
+    }
+
+    .metric-value {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      font-weight: 500;
+    }
+
+    /* Stats Bar */
+    .stats-bar {
+      background: var(--white);
+      padding: 40px 80px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 40px;
+      border-top: 1px solid var(--grey-100);
+      border-bottom: 1px solid var(--grey-100);
+    }
+
+    .stat-item {
+      text-align: center;
+    }
+
+    .stat-number {
+      font-family: var(--font-display);
+      font-size: 2.5rem;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      color: var(--grey-900);
+      margin-bottom: 8px;
+    }
+
+    .stat-number span {
+      color: var(--burnt-orange);
+    }
+
+    .stat-label {
+      font-size: 0.85rem;
+      color: var(--grey-500);
+    }
+
+    /* Features - Editorial Grid */
+    .features {
+      padding: 120px 80px;
+      position: relative;
+    }
+
+    .features::before {
+      content: 'CAPABILITIES';
+      position: absolute;
+      top: 100px;
+      right: 80px;
+      font-family: var(--font-display);
+      font-size: 0.7rem;
+      letter-spacing: 0.3em;
+      color: var(--grey-300);
+      writing-mode: vertical-lr;
+    }
+
+    .section-header {
+      max-width: 600px;
+      margin-bottom: 80px;
+    }
+
+    .section-eyebrow {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--burnt-orange);
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      font-family: var(--font-display);
+      font-size: 2.5rem;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+      margin-bottom: 20px;
+    }
+
+    .section-description {
+      font-size: 1.1rem;
+      color: var(--grey-500);
+      line-height: 1.7;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+    }
+
+    .feature-card {
+      background: var(--white);
+      border-radius: 16px;
+      padding: 40px;
+      border: 1px solid var(--grey-100);
+      position: relative;
+      transition: all 0.3s ease;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.06);
+    }
+
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 40px;
+      right: 40px;
+      height: 3px;
+      background: var(--grey-100);
+      border-radius: 0 0 3px 3px;
+    }
+
+    .feature-card:hover::before {
+      background: var(--burnt-orange);
+    }
+
+    .feature-card.featured {
+      background: var(--grey-900);
+      color: var(--white);
+      grid-row: span 2;
+    }
+
+    .feature-card.featured::before {
+      background: var(--burnt-orange);
+    }
+
+    .feature-icon {
+      width: 48px;
+      height: 48px;
+      background: var(--grey-50);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 24px;
+      color: var(--burnt-orange);
+    }
+
+    .feature-card.featured .feature-icon {
+      background: var(--grey-800);
+    }
+
+    .feature-title {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 500;
+      margin-bottom: 12px;
+      letter-spacing: -0.02em;
+    }
+
+    .feature-description {
+      font-size: 0.95rem;
+      color: var(--grey-500);
+      line-height: 1.6;
+    }
+
+    .feature-card.featured .feature-description {
+      color: var(--grey-400);
+    }
+
+    /* Testimonial - Editorial Style */
+    .testimonial {
+      padding: 120px 80px;
+      background: var(--grey-900);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .testimonial::before {
+      content: '"';
+      position: absolute;
+      top: -40px;
+      left: 60px;
+      font-family: Georgia, serif;
+      font-size: 400px;
+      color: var(--burnt-orange);
+      opacity: 0.08;
+      line-height: 1;
+    }
+
+    .testimonial-content {
+      max-width: 800px;
+      margin: 0 auto;
+      text-align: center;
+      position: relative;
+    }
+
+    .testimonial-quote {
+      font-family: var(--font-display);
+      font-size: 2rem;
+      font-weight: 400;
+      color: var(--white);
+      line-height: 1.5;
+      letter-spacing: -0.02em;
+      margin-bottom: 40px;
+    }
+
+    .testimonial-author {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .author-name {
+      font-weight: 500;
+      color: var(--white);
+    }
+
+    .author-title {
+      font-size: 0.9rem;
+      color: var(--grey-500);
+    }
+
+    .author-company {
+      font-size: 0.8rem;
+      color: var(--burnt-orange);
+      font-weight: 500;
+    }
+
+    /* CTA Section */
+    .cta-section {
+      padding: 120px 80px;
+      text-align: center;
+      position: relative;
+    }
+
+    .cta-section::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 600px;
+      height: 600px;
+      border: 1px solid var(--burnt-orange);
+      opacity: 0.1;
+      border-radius: 50%;
+    }
+
+    .cta-title {
+      font-family: var(--font-display);
+      font-size: 3rem;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      margin-bottom: 20px;
+    }
+
+    .cta-description {
+      font-size: 1.1rem;
+      color: var(--grey-500);
+      max-width: 500px;
+      margin: 0 auto 40px;
+    }
+
+    /* Footer */
+    .footer {
+      background: var(--grey-900);
+      color: var(--white);
+      padding: 80px;
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 60px;
+      margin-bottom: 60px;
+    }
+
+    .footer-brand {
+      max-width: 300px;
+    }
+
+    .footer-logo {
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .footer-description {
+      font-size: 0.9rem;
+      color: var(--grey-500);
+      line-height: 1.6;
+    }
+
+    .footer-column h4 {
+      font-family: var(--font-display);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--grey-400);
+      margin-bottom: 20px;
+    }
+
+    .footer-links {
+      list-style: none;
+    }
+
+    .footer-links li {
+      margin-bottom: 12px;
+    }
+
+    .footer-links a {
+      color: var(--grey-300);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover {
+      color: var(--burnt-orange);
+    }
+
+    .footer-bottom {
+      padding-top: 40px;
+      border-top: 1px solid var(--grey-800);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      color: var(--grey-500);
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="nav">
+    <a href="#" class="nav-logo">
+      <div class="nav-logo-mark"></div>
+      SignalDesk
+    </a>
+    <div class="nav-links">
+      <a href="#" class="nav-link">Platform</a>
+      <a href="#" class="nav-link">Solutions</a>
+      <a href="#" class="nav-link">Pricing</a>
+      <a href="#" class="nav-link">Resources</a>
+      <a href="#" class="nav-cta">Get Started</a>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-left">
+      <div class="hero-eyebrow">Strategic Communications Intelligence</div>
+      <h1 class="hero-title">
+        <span>Transform signals</span>
+        <span>into <span class="accent">strategic</span></span>
+        <span>advantage</span>
+      </h1>
+      <p class="hero-description">
+        The intelligence platform that monitors, analyzes, and activates PR opportunities in real-time. Built for consultancies that demand precision.
+      </p>
+      <div class="hero-ctas">
+        <a href="#" class="btn-large btn-primary-large">Start Free Trial</a>
+        <a href="#" class="btn-large btn-ghost">Watch Demo</a>
+      </div>
+    </div>
+    <div class="hero-right">
+      <div class="hero-visual">
+        <div class="hero-card">
+          <div class="hero-card-header">
+            <span class="hero-card-label">Live Intelligence</span>
+            <span class="hero-card-badge">Real-time</span>
+          </div>
+          <div class="hero-card-value">847 Active Signals</div>
+          <div class="hero-card-metric">
+            <div class="metric-item">
+              <div class="metric-label">Opportunities</div>
+              <div class="metric-value">23 New</div>
+            </div>
+            <div class="metric-item">
+              <div class="metric-label">Coverage</div>
+              <div class="metric-value">94%</div>
+            </div>
+          </div>
+        </div>
+        <div class="hero-card">
+          <div class="hero-card-header">
+            <span class="hero-card-label">Urgent Alert</span>
+            <span class="hero-card-badge">Action Required</span>
+          </div>
+          <div class="hero-card-value" style="font-size: 1.1rem; font-weight: 400;">
+            Competitor acquisition detected — positioning opportunity identified
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stats Bar -->
+  <section class="stats-bar">
+    <div class="stat-item">
+      <div class="stat-number">500<span>+</span></div>
+      <div class="stat-label">PR Teams Using SignalDesk</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-number">12<span>M</span></div>
+      <div class="stat-label">Signals Processed Monthly</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-number">34<span>%</span></div>
+      <div class="stat-label">Avg. Engagement Increase</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-number">2.3<span>x</span></div>
+      <div class="stat-label">Faster Response Time</div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="features">
+    <div class="section-header">
+      <div class="section-eyebrow">Platform Capabilities</div>
+      <h2 class="section-title">Intelligence that moves at the speed of news</h2>
+      <p class="section-description">
+        From monitoring to execution, SignalDesk provides the complete intelligence stack for modern PR operations.
+      </p>
+    </div>
+
+    <div class="features-grid">
+      <div class="feature-card featured">
+        <div class="feature-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 6v6l4 2"/>
+          </svg>
+        </div>
+        <h3 class="feature-title">Real-Time Intelligence</h3>
+        <p class="feature-description">
+          Monitor thousands of sources simultaneously. Our AI identifies emerging narratives, competitor moves, and media opportunities before they hit mainstream coverage.
+        </p>
+        <p class="feature-description" style="margin-top: 24px;">
+          Custom alerts ensure your team never misses a critical moment.
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+          </svg>
+        </div>
+        <h3 class="feature-title">Opportunity Detection</h3>
+        <p class="feature-description">
+          AI-powered scoring surfaces the highest-impact opportunities with confidence ratings and recommended actions.
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M12 20h9M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
+          </svg>
+        </div>
+        <h3 class="feature-title">Content Execution</h3>
+        <p class="feature-description">
+          Generate strategic content briefs, talking points, and campaign materials directly from intelligence insights.
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
+          </svg>
+        </div>
+        <h3 class="feature-title">Campaign Management</h3>
+        <p class="feature-description">
+          Unified workspace for planning, executing, and measuring campaign performance across all channels.
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+            <path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <h3 class="feature-title">NIV Strategic Advisor</h3>
+        <p class="feature-description">
+          Your AI co-pilot for strategic decisions. NIV synthesizes intelligence into actionable recommendations.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonial -->
+  <section class="testimonial">
+    <div class="testimonial-content">
+      <p class="testimonial-quote">
+        "SignalDesk transformed how we approach client intelligence. We're identifying opportunities 48 hours before competitors and executing with unprecedented precision."
+      </p>
+      <div class="testimonial-author">
+        <span class="author-name">Alexandra Chen</span>
+        <span class="author-title">Managing Director, Strategic Communications</span>
+        <span class="author-company">Meridian Partners</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta-section">
+    <h2 class="cta-title">Ready to transform your intelligence?</h2>
+    <p class="cta-description">
+      Join leading PR consultancies who trust SignalDesk to power their strategic communications.
+    </p>
+    <a href="#" class="btn-large btn-primary-large">Start Your Free Trial</a>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="footer-logo">
+          <div class="nav-logo-mark"></div>
+          SignalDesk
+        </div>
+        <p class="footer-description">
+          Strategic communications intelligence for PR consultancies and corporate communications teams.
+        </p>
+      </div>
+      <div class="footer-column">
+        <h4>Platform</h4>
+        <ul class="footer-links">
+          <li><a href="#">Intelligence</a></li>
+          <li><a href="#">Opportunities</a></li>
+          <li><a href="#">Execution</a></li>
+          <li><a href="#">Analytics</a></li>
+        </ul>
+      </div>
+      <div class="footer-column">
+        <h4>Company</h4>
+        <ul class="footer-links">
+          <li><a href="#">About</a></li>
+          <li><a href="#">Careers</a></li>
+          <li><a href="#">Press</a></li>
+          <li><a href="#">Contact</a></li>
+        </ul>
+      </div>
+      <div class="footer-column">
+        <h4>Resources</h4>
+        <ul class="footer-links">
+          <li><a href="#">Documentation</a></li>
+          <li><a href="#">Blog</a></li>
+          <li><a href="#">Case Studies</a></li>
+          <li><a href="#">Support</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>&copy; 2024 SignalDesk. All rights reserved.</span>
+      <div>
+        <a href="#" style="color: var(--grey-500); margin-left: 24px;">Privacy</a>
+        <a href="#" style="color: var(--grey-500); margin-left: 24px;">Terms</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

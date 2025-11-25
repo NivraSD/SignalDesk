@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SignalDesk - Editorial Component Showcase</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&family=Space+Grotesk:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* Sun Burnt Orange - Refined */
+      --burnt-orange: #C75D3A;
+      --burnt-orange-light: #E07B5A;
+      --burnt-orange-muted: #D4907A;
+      --burnt-orange-pale: #F5E6E0;
+      --terracotta: #B54D2E;
+      --rust: #8B3A2F;
+
+      /* Grey Scale - Sophisticated */
+      --charcoal: #1A1A1A;
+      --grey-900: #212121;
+      --grey-800: #2E2E2E;
+      --grey-700: #424242;
+      --grey-600: #555555;
+      --grey-500: #757575;
+      --grey-400: #9E9E9E;
+      --grey-300: #BDBDBD;
+      --grey-200: #E0E0E0;
+      --grey-100: #F0F0F0;
+      --grey-50: #F8F8F8;
+
+      /* Paper Whites */
+      --white: #FFFFFF;
+      --cream: #FAF9F7;
+      --paper: #F5F4F2;
+
+      /* Typography */
+      --font-display: 'Space Grotesk', sans-serif;
+      --font-serif: 'Playfair Display', serif;
+      --font-body: 'Inter', sans-serif;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--cream);
+      color: var(--charcoal);
+      font-weight: 300;
+      letter-spacing: -0.01em;
+    }
+
+    .showcase {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 80px 60px;
+    }
+
+    /* Header - Editorial Magazine Style */
+    .showcase-header {
+      margin-bottom: 100px;
+      position: relative;
+    }
+
+    .showcase-header::after {
+      content: '';
+      position: absolute;
+      bottom: -50px;
+      left: 0;
+      width: 200px;
+      height: 2px;
+      background: var(--burnt-orange);
+    }
+
+    .showcase-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.25em;
+      color: var(--burnt-orange);
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+
+    .showcase-title {
+      font-family: var(--font-serif);
+      font-size: 4rem;
+      font-weight: 400;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+    }
+
+    .showcase-title em {
+      font-style: italic;
+      color: var(--burnt-orange);
+    }
+
+    /* Section Divider */
+    .section {
+      margin-bottom: 120px;
+    }
+
+    .section-label {
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.3em;
+      color: var(--grey-400);
+      margin-bottom: 40px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--grey-200);
+    }
+
+    /* Card Variants Grid */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 30px;
+    }
+
+    /* Minimal Card */
+    .card-minimal {
+      background: var(--white);
+      padding: 40px;
+      position: relative;
+    }
+
+    .card-minimal::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 3px;
+      height: 60px;
+      background: var(--burnt-orange);
+    }
+
+    .card-minimal-eyebrow {
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: var(--grey-400);
+      margin-bottom: 12px;
+    }
+
+    .card-minimal-title {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 500;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+    }
+
+    .card-minimal-value {
+      font-family: var(--font-serif);
+      font-size: 3rem;
+      font-weight: 400;
+      color: var(--burnt-orange);
+      letter-spacing: -0.02em;
+    }
+
+    /* Editorial Card */
+    .card-editorial {
+      background: var(--charcoal);
+      color: var(--white);
+      padding: 50px 40px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card-editorial::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 100%;
+      height: 100%;
+      background: var(--burnt-orange);
+      opacity: 0.08;
+      transform: rotate(-20deg);
+    }
+
+    .card-editorial-number {
+      font-family: var(--font-serif);
+      font-size: 6rem;
+      font-weight: 400;
+      line-height: 1;
+      opacity: 0.15;
+      position: absolute;
+      top: 20px;
+      right: 30px;
+    }
+
+    .card-editorial-content {
+      position: relative;
+    }
+
+    .card-editorial-label {
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: var(--grey-400);
+      margin-bottom: 20px;
+    }
+
+    .card-editorial-title {
+      font-family: var(--font-serif);
+      font-size: 1.8rem;
+      font-weight: 400;
+      line-height: 1.3;
+      margin-bottom: 16px;
+    }
+
+    .card-editorial-meta {
+      font-size: 0.85rem;
+      color: var(--burnt-orange-muted);
+    }
+
+    /* Asymmetric Card */
+    .card-asymmetric {
+      background: var(--white);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      overflow: hidden;
+    }
+
+    .card-asymmetric-visual {
+      background: var(--burnt-orange);
+      padding: 40px;
+      display: flex;
+      align-items: flex-end;
+      position: relative;
+      clip-path: polygon(0 0, 100% 0, 85% 100%, 0 100%);
+    }
+
+    .card-asymmetric-icon {
+      color: var(--white);
+      opacity: 0.3;
+      font-size: 4rem;
+    }
+
+    .card-asymmetric-content {
+      padding: 40px 40px 40px 20px;
+    }
+
+    .card-asymmetric-label {
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--burnt-orange);
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .card-asymmetric-title {
+      font-family: var(--font-display);
+      font-size: 1.3rem;
+      font-weight: 500;
+      margin-bottom: 12px;
+    }
+
+    .card-asymmetric-desc {
+      font-size: 0.9rem;
+      color: var(--grey-500);
+      line-height: 1.6;
+    }
+
+    /* Alert/Notification Variants */
+    .alert-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .alert {
+      display: flex;
+      align-items: stretch;
+      background: var(--white);
+      overflow: hidden;
+    }
+
+    .alert-accent {
+      width: 4px;
+      background: var(--grey-300);
+      flex-shrink: 0;
+    }
+
+    .alert.urgent .alert-accent {
+      background: var(--burnt-orange);
+    }
+
+    .alert.success .alert-accent {
+      background: #4A7C59;
+    }
+
+    .alert-content {
+      flex: 1;
+      padding: 24px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .alert-text {
+      flex: 1;
+    }
+
+    .alert-label {
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--grey-400);
+      margin-bottom: 6px;
+    }
+
+    .alert.urgent .alert-label {
+      color: var(--burnt-orange);
+    }
+
+    .alert-title {
+      font-family: var(--font-display);
+      font-size: 1rem;
+      font-weight: 400;
+    }
+
+    .alert-time {
+      font-size: 0.8rem;
+      color: var(--grey-400);
+      margin-left: 40px;
+    }
+
+    /* Button Showcase */
+    .button-row {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .btn {
+      padding: 16px 32px;
+      font-family: var(--font-body);
+      font-size: 0.9rem;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      letter-spacing: 0.02em;
+    }
+
+    .btn-burnt {
+      background: var(--burnt-orange);
+      color: var(--white);
+    }
+
+    .btn-burnt:hover {
+      background: var(--terracotta);
+      transform: translateY(-2px);
+    }
+
+    .btn-dark {
+      background: var(--charcoal);
+      color: var(--white);
+    }
+
+    .btn-dark:hover {
+      background: var(--grey-800);
+    }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--charcoal);
+      border: 1px solid var(--charcoal);
+    }
+
+    .btn-outline:hover {
+      background: var(--charcoal);
+      color: var(--white);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--burnt-orange);
+      padding: 16px 0;
+      position: relative;
+    }
+
+    .btn-ghost::after {
+      content: '';
+      position: absolute;
+      bottom: 12px;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: var(--burnt-orange);
+      transform: scaleX(0);
+      transition: transform 0.3s ease;
+    }
+
+    .btn-ghost:hover::after {
+      transform: scaleX(1);
+    }
+
+    /* Asymmetric Button */
+    .btn-asymmetric {
+      background: var(--burnt-orange);
+      color: var(--white);
+      clip-path: polygon(0 0, 100% 0, 100% 70%, 95% 100%, 0 100%);
+      padding: 18px 40px;
+    }
+
+    .btn-asymmetric:hover {
+      background: var(--terracotta);
+    }
+
+    /* Typography Showcase */
+    .type-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+    }
+
+    .type-sample {
+      padding: 40px;
+      background: var(--white);
+    }
+
+    .type-label {
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: var(--grey-400);
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .type-display {
+      font-family: var(--font-display);
+      font-size: 3.5rem;
+      font-weight: 600;
+      letter-spacing: -0.04em;
+      line-height: 1.1;
+      margin-bottom: 12px;
+    }
+
+    .type-serif {
+      font-family: var(--font-serif);
+      font-size: 3rem;
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+
+    .type-serif em {
+      font-style: italic;
+      color: var(--burnt-orange);
+    }
+
+    .type-body {
+      font-family: var(--font-body);
+      font-size: 1rem;
+      font-weight: 300;
+      line-height: 1.7;
+      color: var(--grey-600);
+      max-width: 400px;
+    }
+
+    /* Input Styles */
+    .input-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 30px;
+    }
+
+    .input-group {
+      background: var(--white);
+      padding: 30px;
+    }
+
+    .input-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--grey-500);
+      margin-bottom: 10px;
+      display: block;
+    }
+
+    .input-field {
+      width: 100%;
+      padding: 14px 0;
+      border: none;
+      border-bottom: 1px solid var(--grey-200);
+      font-family: var(--font-body);
+      font-size: 1rem;
+      font-weight: 300;
+      background: transparent;
+      transition: border-color 0.2s;
+    }
+
+    .input-field:focus {
+      outline: none;
+      border-bottom-color: var(--burnt-orange);
+    }
+
+    .input-field::placeholder {
+      color: var(--grey-300);
+    }
+
+    /* Tag Styles */
+    .tag-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .tag {
+      padding: 8px 16px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .tag-burnt {
+      background: var(--burnt-orange-pale);
+      color: var(--terracotta);
+    }
+
+    .tag-dark {
+      background: var(--charcoal);
+      color: var(--white);
+    }
+
+    .tag-outline {
+      background: transparent;
+      border: 1px solid var(--grey-300);
+      color: var(--grey-600);
+    }
+
+    .tag-minimal {
+      background: var(--grey-100);
+      color: var(--grey-600);
+    }
+
+    /* Data Visualization Card */
+    .data-card {
+      background: var(--white);
+      padding: 40px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+    }
+
+    .data-visual {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .data-bar {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .data-bar-label {
+      font-size: 0.75rem;
+      color: var(--grey-500);
+      width: 80px;
+      flex-shrink: 0;
+    }
+
+    .data-bar-track {
+      flex: 1;
+      height: 8px;
+      background: var(--grey-100);
+      overflow: hidden;
+    }
+
+    .data-bar-fill {
+      height: 100%;
+      background: var(--burnt-orange);
+    }
+
+    .data-bar-fill.muted {
+      background: var(--burnt-orange-muted);
+    }
+
+    .data-bar-fill.light {
+      background: var(--grey-300);
+    }
+
+    .data-bar-value {
+      font-family: var(--font-display);
+      font-size: 0.85rem;
+      font-weight: 500;
+      width: 40px;
+      text-align: right;
+    }
+
+    .data-info h3 {
+      font-family: var(--font-serif);
+      font-size: 1.8rem;
+      font-weight: 400;
+      margin-bottom: 12px;
+    }
+
+    .data-info p {
+      font-size: 0.9rem;
+      color: var(--grey-500);
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+
+    /* Navigation Sample */
+    .nav-sample {
+      background: var(--charcoal);
+      padding: 24px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .nav-sample-logo {
+      font-family: var(--font-display);
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: var(--white);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .nav-sample-mark {
+      width: 28px;
+      height: 28px;
+      background: var(--burnt-orange);
+      clip-path: polygon(0 0, 100% 0, 100% 70%, 70% 100%, 0 100%);
+    }
+
+    .nav-sample-links {
+      display: flex;
+      gap: 36px;
+    }
+
+    .nav-sample-link {
+      color: var(--grey-400);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color 0.2s;
+    }
+
+    .nav-sample-link:hover {
+      color: var(--white);
+    }
+
+    .nav-sample-link.active {
+      color: var(--burnt-orange);
+    }
+
+    /* Large Statement */
+    .statement {
+      padding: 100px 0;
+      text-align: center;
+      position: relative;
+    }
+
+    .statement::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(45deg);
+      width: 300px;
+      height: 300px;
+      border: 1px solid var(--burnt-orange);
+      opacity: 0.1;
+    }
+
+    .statement-text {
+      font-family: var(--font-serif);
+      font-size: 3.5rem;
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.3;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .statement-text em {
+      font-style: italic;
+      color: var(--burnt-orange);
+    }
+
+    /* Color Palette Display */
+    .palette {
+      display: flex;
+      gap: 4px;
+      margin-top: 40px;
+    }
+
+    .palette-color {
+      flex: 1;
+      height: 80px;
+      display: flex;
+      align-items: flex-end;
+      padding: 12px;
+    }
+
+    .palette-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .palette-color.dark .palette-label {
+      color: var(--white);
+    }
+
+    .palette-color.light .palette-label {
+      color: var(--charcoal);
+    }
+  </style>
+</head>
+<body>
+  <div class="showcase">
+    <!-- Header -->
+    <header class="showcase-header">
+      <div class="showcase-label">Design System Preview</div>
+      <h1 class="showcase-title">Editorial <em>Components</em></h1>
+    </header>
+
+    <!-- Color Palette -->
+    <section class="section">
+      <div class="section-label">Color Palette</div>
+      <div class="palette">
+        <div class="palette-color dark" style="background: var(--charcoal);">
+          <span class="palette-label">Charcoal</span>
+        </div>
+        <div class="palette-color dark" style="background: var(--grey-700);">
+          <span class="palette-label">Grey 700</span>
+        </div>
+        <div class="palette-color light" style="background: var(--grey-200);">
+          <span class="palette-label">Grey 200</span>
+        </div>
+        <div class="palette-color light" style="background: var(--cream);">
+          <span class="palette-label">Cream</span>
+        </div>
+        <div class="palette-color light" style="background: var(--white);">
+          <span class="palette-label">White</span>
+        </div>
+        <div class="palette-color dark" style="background: var(--rust);">
+          <span class="palette-label">Rust</span>
+        </div>
+        <div class="palette-color dark" style="background: var(--burnt-orange);">
+          <span class="palette-label">Burnt Orange</span>
+        </div>
+        <div class="palette-color dark" style="background: var(--burnt-orange-light);">
+          <span class="palette-label">Orange Light</span>
+        </div>
+        <div class="palette-color light" style="background: var(--burnt-orange-pale);">
+          <span class="palette-label">Orange Pale</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Typography -->
+    <section class="section">
+      <div class="section-label">Typography</div>
+      <div class="type-grid">
+        <div class="type-sample">
+          <div class="type-label">
+            <span>Space Grotesk / Display</span>
+            <span>600</span>
+          </div>
+          <div class="type-display">Strategic Intelligence</div>
+          <div class="type-body">Clean, geometric display type for headlines and data visualization.</div>
+        </div>
+        <div class="type-sample">
+          <div class="type-label">
+            <span>Playfair Display / Serif</span>
+            <span>400</span>
+          </div>
+          <div class="type-serif">Transform <em>signals</em></div>
+          <div class="type-body">Elegant serif for editorial moments and brand statements.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Navigation -->
+    <section class="section">
+      <div class="section-label">Navigation</div>
+      <div class="nav-sample">
+        <div class="nav-sample-logo">
+          <div class="nav-sample-mark"></div>
+          SignalDesk
+        </div>
+        <div class="nav-sample-links">
+          <a href="#" class="nav-sample-link active">Dashboard</a>
+          <a href="#" class="nav-sample-link">Intelligence</a>
+          <a href="#" class="nav-sample-link">Opportunities</a>
+          <a href="#" class="nav-sample-link">Execute</a>
+          <a href="#" class="nav-sample-link">Settings</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Cards -->
+    <section class="section">
+      <div class="section-label">Card Components</div>
+      <div class="card-grid">
+        <div class="card-minimal">
+          <div class="card-minimal-eyebrow">Active Signals</div>
+          <div class="card-minimal-title">Real-time Monitoring</div>
+          <div class="card-minimal-value">847</div>
+        </div>
+        <div class="card-editorial">
+          <div class="card-editorial-number">01</div>
+          <div class="card-editorial-content">
+            <div class="card-editorial-label">Featured Opportunity</div>
+            <div class="card-editorial-title">ESG Report Launch Creates Media Positioning Window</div>
+            <div class="card-editorial-meta">Meridian Capital • Due in 3 days</div>
+          </div>
+        </div>
+        <div class="card-asymmetric">
+          <div class="card-asymmetric-visual">
+            <svg class="card-asymmetric-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+            </svg>
+          </div>
+          <div class="card-asymmetric-content">
+            <div class="card-asymmetric-label">Opportunity Score</div>
+            <div class="card-asymmetric-title">High-Impact Detection</div>
+            <div class="card-asymmetric-desc">AI-powered scoring surfaces critical opportunities.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Alerts -->
+    <section class="section">
+      <div class="section-label">Alerts & Notifications</div>
+      <div class="alert-grid">
+        <div class="alert urgent">
+          <div class="alert-accent"></div>
+          <div class="alert-content">
+            <div class="alert-text">
+              <div class="alert-label">Urgent Response Required</div>
+              <div class="alert-title">Competitor acquisition announcement expected within 48 hours</div>
+            </div>
+            <div class="alert-time">12 min ago</div>
+          </div>
+        </div>
+        <div class="alert success">
+          <div class="alert-accent"></div>
+          <div class="alert-content">
+            <div class="alert-text">
+              <div class="alert-label">Opportunity Detected</div>
+              <div class="alert-title">New regulatory framework creates thought leadership positioning</div>
+            </div>
+            <div class="alert-time">1 hour ago</div>
+          </div>
+        </div>
+        <div class="alert">
+          <div class="alert-accent"></div>
+          <div class="alert-content">
+            <div class="alert-text">
+              <div class="alert-label">Monitoring</div>
+              <div class="alert-title">Executive interview gaining traction — engagement 2.3x above benchmark</div>
+            </div>
+            <div class="alert-time">2 hours ago</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Buttons -->
+    <section class="section">
+      <div class="section-label">Buttons</div>
+      <div class="button-row">
+        <button class="btn btn-burnt">Primary Action</button>
+        <button class="btn btn-dark">Secondary</button>
+        <button class="btn btn-outline">Outline</button>
+        <button class="btn btn-ghost">Learn More →</button>
+        <button class="btn btn-asymmetric">Asymmetric CTA</button>
+      </div>
+    </section>
+
+    <!-- Tags -->
+    <section class="section">
+      <div class="section-label">Tags & Labels</div>
+      <div class="tag-row">
+        <span class="tag tag-burnt">Urgent</span>
+        <span class="tag tag-dark">Featured</span>
+        <span class="tag tag-outline">Monitoring</span>
+        <span class="tag tag-minimal">Financial</span>
+        <span class="tag tag-minimal">Technology</span>
+        <span class="tag tag-burnt">Opportunity</span>
+      </div>
+    </section>
+
+    <!-- Inputs -->
+    <section class="section">
+      <div class="section-label">Form Elements</div>
+      <div class="input-grid">
+        <div class="input-group">
+          <label class="input-label">Company Name</label>
+          <input type="text" class="input-field" placeholder="Enter company name">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Campaign Title</label>
+          <input type="text" class="input-field" placeholder="Q4 Thought Leadership Series">
+        </div>
+      </div>
+    </section>
+
+    <!-- Data Card -->
+    <section class="section">
+      <div class="section-label">Data Visualization</div>
+      <div class="data-card">
+        <div class="data-visual">
+          <div class="data-bar">
+            <span class="data-bar-label">Coverage</span>
+            <div class="data-bar-track">
+              <div class="data-bar-fill" style="width: 94%;"></div>
+            </div>
+            <span class="data-bar-value">94%</span>
+          </div>
+          <div class="data-bar">
+            <span class="data-bar-label">Engagement</span>
+            <div class="data-bar-track">
+              <div class="data-bar-fill muted" style="width: 78%;"></div>
+            </div>
+            <span class="data-bar-value">78%</span>
+          </div>
+          <div class="data-bar">
+            <span class="data-bar-label">Conversion</span>
+            <div class="data-bar-track">
+              <div class="data-bar-fill light" style="width: 45%;"></div>
+            </div>
+            <span class="data-bar-value">45%</span>
+          </div>
+        </div>
+        <div class="data-info">
+          <h3>Campaign Performance</h3>
+          <p>Real-time metrics across all active campaigns. Coverage indicates media reach, engagement measures interaction quality.</p>
+          <button class="btn btn-ghost">View Full Report →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Statement -->
+    <section class="statement">
+      <p class="statement-text">Intelligence that moves at the <em>speed of news</em></p>
+    </section>
+  </div>
+</body>
+</html>

@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SignalDesk - Avant Garde Dashboard Mockup</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* Sun Burnt Orange Palette */
+      --burnt-orange: #C75D3A;
+      --burnt-orange-light: #E07B5A;
+      --burnt-orange-muted: #D4907A;
+      --terracotta: #B54D2E;
+
+      /* Grey Scale */
+      --grey-900: #1A1A1A;
+      --grey-800: #2D2D2D;
+      --grey-700: #3D3D3D;
+      --grey-600: #4A4A4A;
+      --grey-500: #6B6B6B;
+      --grey-400: #8A8A8A;
+      --grey-300: #B0B0B0;
+      --grey-200: #D4D4D4;
+      --grey-100: #EBEBEB;
+      --grey-50: #F7F7F7;
+
+      /* Whites */
+      --white: #FFFFFF;
+      --off-white: #FAFAFA;
+
+      /* Functional */
+      --success: #4A7C59;
+      --warning: #C9A227;
+      --error: #9B2C2C;
+
+      /* Typography */
+      --font-display: 'Space Grotesk', sans-serif;
+      --font-body: 'Inter', sans-serif;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--grey-50);
+      color: var(--grey-900);
+      min-height: 100vh;
+      font-weight: 300;
+      letter-spacing: -0.01em;
+    }
+
+    /* Asymmetric Layout Container */
+    .layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      min-height: 100vh;
+    }
+
+    /* Sidebar - Avant Garde Treatment */
+    .sidebar {
+      background: var(--grey-900);
+      color: var(--white);
+      padding: 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .sidebar::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -100px;
+      width: 300px;
+      height: 200%;
+      background: var(--burnt-orange);
+      transform: skewX(-12deg);
+      opacity: 0.08;
+    }
+
+    .sidebar-header {
+      padding: 32px 24px;
+      border-bottom: 1px solid var(--grey-700);
+      position: relative;
+    }
+
+    .logo {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-mark {
+      width: 36px;
+      height: 36px;
+      background: var(--burnt-orange);
+      clip-path: polygon(0 0, 100% 0, 100% 70%, 70% 100%, 0 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .nav-section {
+      padding: 24px 16px;
+    }
+
+    .nav-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--grey-500);
+      padding: 0 8px;
+      margin-bottom: 12px;
+      font-weight: 500;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      color: var(--grey-300);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+      position: relative;
+      margin-bottom: 4px;
+    }
+
+    .nav-item:hover {
+      background: var(--grey-800);
+      color: var(--white);
+    }
+
+    .nav-item.active {
+      background: var(--burnt-orange);
+      color: var(--white);
+    }
+
+    .nav-item.active::before {
+      content: '';
+      position: absolute;
+      left: -16px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 3px;
+      height: 24px;
+      background: var(--burnt-orange-light);
+    }
+
+    .nav-icon {
+      width: 20px;
+      height: 20px;
+      opacity: 0.8;
+    }
+
+    /* Main Content */
+    .main {
+      padding: 32px 48px;
+      overflow-y: auto;
+    }
+
+    /* Header with Asymmetric Elements */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 48px;
+      position: relative;
+    }
+
+    .header::after {
+      content: '';
+      position: absolute;
+      bottom: -24px;
+      left: 0;
+      width: 120px;
+      height: 3px;
+      background: linear-gradient(90deg, var(--burnt-orange), transparent);
+    }
+
+    .header-left h1 {
+      font-family: var(--font-display);
+      font-size: 2.5rem;
+      font-weight: 600;
+      letter-spacing: -0.04em;
+      line-height: 1.1;
+      margin-bottom: 8px;
+    }
+
+    .header-left p {
+      color: var(--grey-500);
+      font-size: 0.95rem;
+    }
+
+    .header-right {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: none;
+      font-family: var(--font-body);
+    }
+
+    .btn-primary {
+      background: var(--burnt-orange);
+      color: var(--white);
+    }
+
+    .btn-primary:hover {
+      background: var(--terracotta);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--grey-700);
+      border: 1px solid var(--grey-300);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--burnt-orange);
+      color: var(--burnt-orange);
+    }
+
+    /* Stats Grid - Asymmetric */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr 1fr 0.8fr;
+      gap: 20px;
+      margin-bottom: 48px;
+    }
+
+    .stat-card {
+      background: var(--white);
+      border-radius: 12px;
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--grey-100);
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: var(--grey-200);
+    }
+
+    .stat-card.highlight::before {
+      background: var(--burnt-orange);
+    }
+
+    .stat-card.highlight {
+      background: var(--grey-900);
+      color: var(--white);
+      grid-row: span 2;
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--grey-500);
+      margin-bottom: 8px;
+    }
+
+    .stat-card.highlight .stat-label {
+      color: var(--grey-400);
+    }
+
+    .stat-value {
+      font-family: var(--font-display);
+      font-size: 2.5rem;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+
+    .stat-card.highlight .stat-value {
+      font-size: 3.5rem;
+      color: var(--burnt-orange-light);
+    }
+
+    .stat-change {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.8rem;
+      margin-top: 8px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      background: var(--grey-50);
+    }
+
+    .stat-change.positive {
+      color: var(--success);
+    }
+
+    .stat-change.negative {
+      color: var(--error);
+    }
+
+    /* Content Grid - Avant Garde Asymmetry */
+    .content-grid {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 32px;
+    }
+
+    .panel {
+      background: var(--white);
+      border-radius: 16px;
+      border: 1px solid var(--grey-100);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--grey-100);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .panel-title {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      font-weight: 500;
+      letter-spacing: -0.02em;
+    }
+
+    .panel-action {
+      font-size: 0.8rem;
+      color: var(--burnt-orange);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .panel-action:hover {
+      text-decoration: underline;
+    }
+
+    /* Intelligence Feed */
+    .feed-item {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--grey-50);
+      position: relative;
+      transition: background 0.2s ease;
+    }
+
+    .feed-item:hover {
+      background: var(--grey-50);
+    }
+
+    .feed-item::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 20px;
+      bottom: 20px;
+      width: 3px;
+      background: var(--grey-200);
+      border-radius: 0 2px 2px 0;
+    }
+
+    .feed-item.urgent::before {
+      background: var(--burnt-orange);
+    }
+
+    .feed-item.opportunity::before {
+      background: var(--success);
+    }
+
+    .feed-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .feed-source {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--grey-500);
+      font-weight: 500;
+    }
+
+    .feed-time {
+      font-size: 0.75rem;
+      color: var(--grey-400);
+    }
+
+    .feed-title {
+      font-size: 0.95rem;
+      font-weight: 400;
+      line-height: 1.4;
+      margin-bottom: 8px;
+    }
+
+    .feed-tag {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .feed-tag.urgent {
+      background: var(--burnt-orange-muted);
+      color: var(--terracotta);
+    }
+
+    .feed-tag.opportunity {
+      background: #E8F5E9;
+      color: var(--success);
+    }
+
+    .feed-tag.monitoring {
+      background: var(--grey-100);
+      color: var(--grey-600);
+    }
+
+    /* Opportunities Panel */
+    .opportunity-card {
+      padding: 20px;
+      margin: 16px;
+      background: var(--grey-50);
+      border-radius: 12px;
+      position: relative;
+    }
+
+    .opportunity-card::after {
+      content: '';
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      width: 8px;
+      height: 8px;
+      background: var(--burnt-orange);
+      border-radius: 50%;
+    }
+
+    .opportunity-client {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--burnt-orange);
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .opportunity-title {
+      font-family: var(--font-display);
+      font-size: 1rem;
+      font-weight: 500;
+      margin-bottom: 12px;
+      line-height: 1.3;
+    }
+
+    .opportunity-meta {
+      display: flex;
+      gap: 16px;
+      font-size: 0.8rem;
+      color: var(--grey-500);
+    }
+
+    .opportunity-score {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .score-bar {
+      width: 60px;
+      height: 4px;
+      background: var(--grey-200);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .score-fill {
+      height: 100%;
+      background: var(--burnt-orange);
+      border-radius: 2px;
+    }
+
+    /* Avant Garde Decorative Elements */
+    .decor-line {
+      position: absolute;
+      background: var(--burnt-orange);
+      opacity: 0.1;
+    }
+
+    /* Profile/Avatar */
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      background: var(--grey-200);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: var(--grey-600);
+    }
+
+    /* Quick Actions - Asymmetric placement */
+    .quick-actions {
+      position: fixed;
+      bottom: 32px;
+      right: 48px;
+      display: flex;
+      gap: 12px;
+    }
+
+    .quick-action {
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
+      background: var(--grey-900);
+      color: var(--white);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: none;
+    }
+
+    .quick-action:hover {
+      background: var(--burnt-orange);
+      transform: translateY(-4px);
+    }
+
+    .quick-action.primary {
+      background: var(--burnt-orange);
+      width: 64px;
+      height: 64px;
+      border-radius: 20px;
+    }
+
+    .quick-action.primary:hover {
+      background: var(--terracotta);
+    }
+
+    /* Geometric accent */
+    .geo-accent {
+      position: fixed;
+      top: 120px;
+      right: -60px;
+      width: 200px;
+      height: 200px;
+      border: 2px solid var(--burnt-orange);
+      opacity: 0.06;
+      transform: rotate(45deg);
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <div class="logo-mark">S</div>
+          SignalDesk
+        </div>
+      </div>
+
+      <nav class="nav-section">
+        <div class="nav-label">Workspace</div>
+        <a href="#" class="nav-item active">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <path d="M3 9h18M9 21V9"/>
+          </svg>
+          Dashboard
+        </a>
+        <a href="#" class="nav-item">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 6v6l4 2"/>
+          </svg>
+          Intelligence
+        </a>
+        <a href="#" class="nav-item">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+          </svg>
+          Opportunities
+        </a>
+        <a href="#" class="nav-item">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M12 20h9M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
+          </svg>
+          Execute
+        </a>
+      </nav>
+
+      <nav class="nav-section">
+        <div class="nav-label">Strategy</div>
+        <a href="#" class="nav-item">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
+          </svg>
+          Campaigns
+        </a>
+        <a href="#" class="nav-item">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M4 19.5A2.5 2.5 0 016.5 17H20"/>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/>
+          </svg>
+          Memory Vault
+        </a>
+        <a href="#" class="nav-item">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+            <path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+          NIV Assistant
+        </a>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main">
+      <header class="header">
+        <div class="header-left">
+          <h1>Good morning, Sarah</h1>
+          <p>3 urgent signals detected across your portfolio</p>
+        </div>
+        <div class="header-right">
+          <button class="btn btn-secondary">View Reports</button>
+          <button class="btn btn-primary">+ New Campaign</button>
+          <div class="avatar">SK</div>
+        </div>
+      </header>
+
+      <!-- Stats Grid -->
+      <div class="stats-grid">
+        <div class="stat-card highlight">
+          <div class="stat-label">Active Signals</div>
+          <div class="stat-value">847</div>
+          <div class="stat-change positive" style="background: var(--grey-800); margin-top: 24px;">
+            ↑ 12% from last week
+          </div>
+          <p style="margin-top: 16px; font-size: 0.85rem; color: var(--grey-400); line-height: 1.5;">
+            Real-time monitoring across 12 clients and 340+ tracked entities
+          </p>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Opportunities</div>
+          <div class="stat-value">23</div>
+          <div class="stat-change positive">↑ 8 new</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Pending Actions</div>
+          <div class="stat-value">7</div>
+          <div class="stat-change negative">↓ 3 overdue</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Coverage Score</div>
+          <div class="stat-value">94%</div>
+        </div>
+        <div class="stat-card" style="grid-column: span 2;">
+          <div class="stat-label">Campaign Performance</div>
+          <div style="display: flex; align-items: baseline; gap: 12px;">
+            <div class="stat-value">+34%</div>
+            <span style="color: var(--grey-500); font-size: 0.9rem;">avg. engagement lift</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Content Grid -->
+      <div class="content-grid">
+        <div class="panel">
+          <div class="panel-header">
+            <h2 class="panel-title">Intelligence Feed</h2>
+            <a href="#" class="panel-action">View all signals →</a>
+          </div>
+
+          <div class="feed-item urgent">
+            <div class="feed-meta">
+              <span class="feed-source">Reuters • Financial</span>
+              <span class="feed-time">12 min ago</span>
+            </div>
+            <h3 class="feed-title">Competitor acquisition announcement expected within 48 hours - market positioning opportunity identified</h3>
+            <span class="feed-tag urgent">Urgent Response</span>
+          </div>
+
+          <div class="feed-item opportunity">
+            <div class="feed-meta">
+              <span class="feed-source">Industry Analysis</span>
+              <span class="feed-time">1 hour ago</span>
+            </div>
+            <h3 class="feed-title">New regulatory framework creates thought leadership opportunity in sustainable finance sector</h3>
+            <span class="feed-tag opportunity">Opportunity</span>
+          </div>
+
+          <div class="feed-item">
+            <div class="feed-meta">
+              <span class="feed-source">Social Monitoring</span>
+              <span class="feed-time">2 hours ago</span>
+            </div>
+            <h3 class="feed-title">Executive interview gaining traction on LinkedIn - engagement metrics exceed benchmark by 2.3x</h3>
+            <span class="feed-tag monitoring">Monitoring</span>
+          </div>
+
+          <div class="feed-item">
+            <div class="feed-meta">
+              <span class="feed-source">News Alert</span>
+              <span class="feed-time">3 hours ago</span>
+            </div>
+            <h3 class="feed-title">Industry conference keynote slot available - submission deadline in 5 days</h3>
+            <span class="feed-tag opportunity">Opportunity</span>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <h2 class="panel-title">Top Opportunities</h2>
+            <a href="#" class="panel-action">Manage →</a>
+          </div>
+
+          <div class="opportunity-card">
+            <div class="opportunity-client">Meridian Capital</div>
+            <h3 class="opportunity-title">ESG Report Launch Media Strategy</h3>
+            <div class="opportunity-meta">
+              <div class="opportunity-score">
+                <span>Score</span>
+                <div class="score-bar">
+                  <div class="score-fill" style="width: 92%;"></div>
+                </div>
+                <span>92</span>
+              </div>
+              <span>Due in 3 days</span>
+            </div>
+          </div>
+
+          <div class="opportunity-card">
+            <div class="opportunity-client">Vertex Tech</div>
+            <h3 class="opportunity-title">Crisis Response - Data Breach Coverage</h3>
+            <div class="opportunity-meta">
+              <div class="opportunity-score">
+                <span>Score</span>
+                <div class="score-bar">
+                  <div class="score-fill" style="width: 88%;"></div>
+                </div>
+                <span>88</span>
+              </div>
+              <span>Immediate</span>
+            </div>
+          </div>
+
+          <div class="opportunity-card">
+            <div class="opportunity-client">Horizon Healthcare</div>
+            <h3 class="opportunity-title">Thought Leadership Series - Q4</h3>
+            <div class="opportunity-meta">
+              <div class="opportunity-score">
+                <span>Score</span>
+                <div class="score-bar">
+                  <div class="score-fill" style="width: 75%;"></div>
+                </div>
+                <span>75</span>
+              </div>
+              <span>2 weeks</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="quick-actions">
+    <button class="quick-action">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+      </svg>
+    </button>
+    <button class="quick-action primary">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Geometric Accent -->
+  <div class="geo-accent"></div>
+</body>
+</html>
