@@ -7,9 +7,15 @@ import { createClient } from '@supabase/supabase-js'
 import { invalidateBrandContextCache } from '@/lib/memory-vault/brand-context-cache'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://zskaxjtyuaqazydouifp.supabase.co'
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+// Lazy initialization to avoid build-time errors
+function getSupabaseClient() {
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!serviceKey) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY is not configured')
+  }
+  return createClient(SUPABASE_URL, serviceKey)
+}
 
 // Max file sizes (in bytes)
 const MAX_FILE_SIZES = {
@@ -58,6 +64,7 @@ export async function POST(request: NextRequest) {
     console.log(`📤 Uploading brand asset: ${file.name} (${assetType})`)
 
     // 1. Upload file to Supabase Storage
+    const supabase = getSupabaseClient()
     const fileName = `${organizationId}/${Date.now()}-${file.name}`
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('brand-assets')
@@ -156,6 +163,7 @@ async function queueAnalysisJob(
   fileName: string,
   assetType: string
 ): Promise<void> {
+  const supabase = getSupabaseClient()
   await supabase
     .from('job_queue')
     .insert({
@@ -217,6 +225,7 @@ export async function GET(request: NextRequest) {
       }, { status: 400 })
     }
 
+    const supabase = getSupabaseClient()
     let query = supabase
       .from('brand_assets')
       .select('*')

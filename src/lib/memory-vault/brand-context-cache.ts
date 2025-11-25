@@ -5,9 +5,19 @@
 import { createClient } from '@supabase/supabase-js'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://zskaxjtyuaqazydouifp.supabase.co'
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+// Lazy initialization to avoid build-time errors
+let _supabaseClient: ReturnType<typeof createClient> | null = null
+function getSupabaseClient() {
+  if (!_supabaseClient) {
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (!serviceKey) {
+      throw new Error('SUPABASE_SERVICE_ROLE_KEY is not configured')
+    }
+    _supabaseClient = createClient(SUPABASE_URL, serviceKey)
+  }
+  return _supabaseClient
+}
 
 interface BrandContext {
   guidelines?: {
@@ -103,7 +113,7 @@ async function queryBrandContext(
     const result = await Promise.race([
       // Query database
       (async () => {
-        const { data, error } = await supabase
+        const { data, error } = await getSupabaseClient()
           .from('brand_assets')
           .select('id, asset_type, extracted_guidelines, brand_voice_profile, template_structure, usage_instructions')
           .eq('organization_id', organizationId)
@@ -282,7 +292,7 @@ export function getBrandContextSync(
 async function boostBrandAssetSalience(assetIds: string[]): Promise<void> {
   try {
     // Boost salience by 0.05 (5%) and increment access_count
-    await supabase
+    await getSupabaseClient()
       .from('brand_assets')
       .update({
         last_accessed_at: new Date().toISOString()
