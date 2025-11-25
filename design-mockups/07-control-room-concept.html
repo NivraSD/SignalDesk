@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nivria - Control Room Concept</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --burnt-orange: #D4693D;
+      --burnt-orange-light: #E8845A;
+      --burnt-orange-muted: #C4836A;
+      --burnt-orange-glow: rgba(212, 105, 61, 0.15);
+
+      --charcoal: #131313;
+      --grey-950: #1a1a1a;
+      --grey-900: #212121;
+      --grey-850: #282828;
+      --grey-800: #333333;
+      --grey-700: #444444;
+      --grey-600: #555555;
+      --grey-500: #777777;
+      --grey-400: #999999;
+      --grey-300: #b0b0b0;
+      --grey-200: #cccccc;
+      --grey-100: #e5e5e5;
+
+      --white: #FFFFFF;
+      --green: #4ADE80;
+      --yellow: #FACC15;
+      --red: #F87171;
+
+      --font-display: 'Space Grotesk', sans-serif;
+      --font-body: 'Inter', sans-serif;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--charcoal);
+      color: var(--grey-100);
+      min-height: 100vh;
+      font-weight: 300;
+    }
+
+    /* Layout: Rail + Main + NIV Panel */
+    .layout {
+      display: grid;
+      grid-template-columns: 64px 1fr 380px;
+      min-height: 100vh;
+    }
+
+    /* Icon Rail */
+    .rail {
+      background: var(--grey-950);
+      border-right: 1px solid var(--grey-850);
+      padding: 20px 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .rail-logo {
+      width: 36px;
+      height: 36px;
+      background: var(--burnt-orange);
+      clip-path: polygon(0 0, 100% 0, 100% 65%, 65% 100%, 0 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 24px;
+    }
+
+    .rail-logo svg {
+      width: 18px;
+      height: 18px;
+      color: var(--white);
+    }
+
+    .rail-item {
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--grey-500);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.15s;
+      position: relative;
+    }
+
+    .rail-item:hover {
+      background: var(--grey-850);
+      color: var(--grey-200);
+    }
+
+    .rail-item.active {
+      background: var(--burnt-orange-glow);
+      color: var(--burnt-orange);
+    }
+
+    .rail-item.has-alert::after {
+      content: '';
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 8px;
+      height: 8px;
+      background: var(--burnt-orange);
+      border-radius: 50%;
+    }
+
+    .rail-spacer { flex: 1; }
+
+    .rail-divider {
+      width: 24px;
+      height: 1px;
+      background: var(--grey-800);
+      margin: 8px 0;
+    }
+
+    /* Main Content */
+    .main {
+      padding: 24px 32px;
+      overflow-y: auto;
+    }
+
+    /* Header - Minimal */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 32px;
+    }
+
+    .header-context {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .context-switcher {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      background: var(--grey-900);
+      border: 1px solid var(--grey-800);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+
+    .context-switcher:hover {
+      border-color: var(--grey-700);
+    }
+
+    .context-avatar {
+      width: 28px;
+      height: 28px;
+      background: var(--burnt-orange);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--white);
+    }
+
+    .context-name {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--grey-100);
+    }
+
+    .context-type {
+      font-size: 0.7rem;
+      color: var(--grey-500);
+    }
+
+    .header-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.8rem;
+      color: var(--grey-400);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--green);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* Attention Zone - What needs action */
+    .attention-zone {
+      margin-bottom: 32px;
+    }
+
+    .zone-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .zone-title {
+      font-family: var(--font-display);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--grey-500);
+    }
+
+    .zone-count {
+      font-size: 0.75rem;
+      color: var(--burnt-orange);
+      font-weight: 500;
+    }
+
+    /* Attention Cards */
+    .attention-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 12px;
+    }
+
+    .attention-card {
+      background: var(--grey-900);
+      border: 1px solid var(--grey-850);
+      border-radius: 12px;
+      padding: 20px;
+      cursor: pointer;
+      transition: all 0.15s;
+      position: relative;
+    }
+
+    .attention-card:hover {
+      border-color: var(--grey-700);
+      background: var(--grey-850);
+    }
+
+    .attention-card.urgent {
+      border-left: 3px solid var(--burnt-orange);
+    }
+
+    .attention-card.opportunity {
+      border-left: 3px solid var(--green);
+    }
+
+    .attention-card.warning {
+      border-left: 3px solid var(--yellow);
+    }
+
+    .attention-type {
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .attention-card.urgent .attention-type { color: var(--burnt-orange); }
+    .attention-card.opportunity .attention-type { color: var(--green); }
+    .attention-card.warning .attention-type { color: var(--yellow); }
+
+    .attention-title {
+      font-size: 0.95rem;
+      font-weight: 400;
+      color: var(--grey-100);
+      line-height: 1.4;
+      margin-bottom: 12px;
+    }
+
+    .attention-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .attention-source {
+      font-size: 0.75rem;
+      color: var(--grey-500);
+    }
+
+    .attention-time {
+      font-size: 0.7rem;
+      color: var(--grey-600);
+    }
+
+    /* Quick Actions */
+    .quick-actions {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+
+    .quick-action {
+      padding: 14px 24px;
+      background: var(--grey-900);
+      border: 1px solid var(--grey-800);
+      border-radius: 8px;
+      color: var(--grey-200);
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-body);
+    }
+
+    .quick-action:hover {
+      border-color: var(--burnt-orange);
+      color: var(--burnt-orange);
+    }
+
+    .quick-action svg {
+      width: 18px;
+      height: 18px;
+      opacity: 0.7;
+    }
+
+    /* Activity Stream - Minimal */
+    .activity-stream {
+      background: var(--grey-900);
+      border: 1px solid var(--grey-850);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .stream-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--grey-850);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .stream-title {
+      font-family: var(--font-display);
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+
+    .stream-filter {
+      font-size: 0.75rem;
+      color: var(--burnt-orange);
+      cursor: pointer;
+    }
+
+    .stream-item {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--grey-850);
+      display: flex;
+      gap: 14px;
+      transition: background 0.15s;
+    }
+
+    .stream-item:last-child {
+      border-bottom: none;
+    }
+
+    .stream-item:hover {
+      background: var(--grey-850);
+    }
+
+    .stream-icon {
+      width: 32px;
+      height: 32px;
+      background: var(--grey-800);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .stream-icon svg {
+      width: 16px;
+      height: 16px;
+      color: var(--grey-400);
+    }
+
+    .stream-icon.intel svg { color: var(--burnt-orange); }
+    .stream-icon.content svg { color: var(--green); }
+    .stream-icon.alert svg { color: var(--yellow); }
+
+    .stream-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .stream-text {
+      font-size: 0.85rem;
+      color: var(--grey-200);
+      line-height: 1.4;
+      margin-bottom: 4px;
+    }
+
+    .stream-text strong {
+      color: var(--white);
+      font-weight: 500;
+    }
+
+    .stream-time {
+      font-size: 0.7rem;
+      color: var(--grey-600);
+    }
+
+    /* NIV Panel - Always Present */
+    .niv-panel {
+      background: var(--grey-950);
+      border-left: 1px solid var(--grey-850);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .niv-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--grey-850);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .niv-avatar {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--burnt-orange), var(--burnt-orange-light));
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .niv-avatar svg {
+      width: 22px;
+      height: 22px;
+      color: var(--white);
+    }
+
+    .niv-info h3 {
+      font-family: var(--font-display);
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--white);
+    }
+
+    .niv-info span {
+      font-size: 0.75rem;
+      color: var(--grey-500);
+    }
+
+    .niv-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .niv-message {
+      max-width: 90%;
+    }
+
+    .niv-message.from-niv {
+      align-self: flex-start;
+    }
+
+    .niv-message.from-user {
+      align-self: flex-end;
+    }
+
+    .niv-bubble {
+      padding: 14px 18px;
+      border-radius: 16px;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .niv-message.from-niv .niv-bubble {
+      background: var(--grey-900);
+      color: var(--grey-100);
+      border-bottom-left-radius: 4px;
+    }
+
+    .niv-message.from-user .niv-bubble {
+      background: var(--burnt-orange);
+      color: var(--white);
+      border-bottom-right-radius: 4px;
+    }
+
+    .niv-suggestions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .niv-suggestion {
+      padding: 8px 14px;
+      background: var(--grey-850);
+      border: 1px solid var(--grey-800);
+      border-radius: 20px;
+      font-size: 0.8rem;
+      color: var(--grey-300);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .niv-suggestion:hover {
+      border-color: var(--burnt-orange);
+      color: var(--burnt-orange);
+    }
+
+    .niv-input-area {
+      padding: 16px 20px;
+      border-top: 1px solid var(--grey-850);
+    }
+
+    .niv-input {
+      width: 100%;
+      padding: 14px 18px;
+      background: var(--grey-900);
+      border: 1px solid var(--grey-800);
+      border-radius: 12px;
+      color: var(--grey-100);
+      font-size: 0.9rem;
+      font-family: var(--font-body);
+      resize: none;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .niv-input:focus {
+      border-color: var(--burnt-orange);
+    }
+
+    .niv-input::placeholder {
+      color: var(--grey-600);
+    }
+
+    /* Mode Indicator */
+    .mode-bar {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 8px;
+      background: var(--grey-900);
+      border: 1px solid var(--grey-800);
+      padding: 6px;
+      border-radius: 12px;
+      z-index: 100;
+    }
+
+    .mode-btn {
+      padding: 10px 20px;
+      background: transparent;
+      border: none;
+      border-radius: 8px;
+      font-family: var(--font-body);
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--grey-400);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .mode-btn:hover {
+      color: var(--grey-200);
+    }
+
+    .mode-btn.active {
+      background: var(--burnt-orange);
+      color: var(--white);
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <!-- Icon Rail -->
+    <aside class="rail">
+      <div class="rail-logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+        </svg>
+      </div>
+
+      <div class="rail-item active has-alert" title="Control Room">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="3" y="3" width="18" height="18" rx="2"/>
+          <path d="M3 9h18"/>
+        </svg>
+      </div>
+
+      <div class="rail-item" title="Intelligence">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+        </svg>
+      </div>
+
+      <div class="rail-item" title="Campaigns">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
+        </svg>
+      </div>
+
+      <div class="rail-item" title="Execute">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M12 20h9M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
+        </svg>
+      </div>
+
+      <div class="rail-item" title="Memory Vault">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M4 19.5A2.5 2.5 0 016.5 17H20"/>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/>
+        </svg>
+      </div>
+
+      <div class="rail-divider"></div>
+
+      <div class="rail-item has-alert" title="Crisis Center">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      </div>
+
+      <div class="rail-spacer"></div>
+
+      <div class="rail-item" title="Settings">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
+        </svg>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main">
+      <header class="header">
+        <div class="header-context">
+          <div class="context-switcher">
+            <div class="context-avatar">MC</div>
+            <div>
+              <div class="context-name">Meridian Capital</div>
+              <div class="context-type">Active Client</div>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--grey-500); margin-left: 8px;">
+              <path d="M6 9l6 6 6-6"/>
+            </svg>
+          </div>
+        </div>
+        <div class="header-status">
+          <span class="status-dot"></span>
+          Intelligence running
+        </div>
+      </header>
+
+      <!-- Attention Zone -->
+      <section class="attention-zone">
+        <div class="zone-header">
+          <span class="zone-title">Needs Attention</span>
+          <span class="zone-count">3 items</span>
+        </div>
+        <div class="attention-grid">
+          <div class="attention-card urgent">
+            <div class="attention-type">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="12" cy="12" r="10"/>
+              </svg>
+              Urgent Signal
+            </div>
+            <div class="attention-title">Competitor acquisition announcement expected within 48 hours — positioning window open</div>
+            <div class="attention-meta">
+              <span class="attention-source">Reuters • Financial</span>
+              <span class="attention-time">12 min ago</span>
+            </div>
+          </div>
+
+          <div class="attention-card opportunity">
+            <div class="attention-type">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="12" cy="12" r="10"/>
+              </svg>
+              Opportunity
+            </div>
+            <div class="attention-title">ESG regulatory framework creates thought leadership positioning — draft ready for review</div>
+            <div class="attention-meta">
+              <span class="attention-source">NIV Generated</span>
+              <span class="attention-time">1 hour ago</span>
+            </div>
+          </div>
+
+          <div class="attention-card warning">
+            <div class="attention-type">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="12" cy="12" r="10"/>
+              </svg>
+              Deadline
+            </div>
+            <div class="attention-title">Q4 Thought Leadership Series — content due in 48 hours</div>
+            <div class="attention-meta">
+              <span class="attention-source">Campaign: Horizon</span>
+              <span class="attention-time">2 days left</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Quick Actions -->
+      <div class="quick-actions">
+        <button class="quick-action">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          New Campaign
+        </button>
+        <button class="quick-action">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+          </svg>
+          Run Intelligence
+        </button>
+        <button class="quick-action">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M12 20h9M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
+          </svg>
+          Generate Content
+        </button>
+      </div>
+
+      <!-- Activity Stream -->
+      <div class="activity-stream">
+        <div class="stream-header">
+          <span class="stream-title">Recent Activity</span>
+          <span class="stream-filter">Filter</span>
+        </div>
+
+        <div class="stream-item">
+          <div class="stream-icon intel">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+            </svg>
+          </div>
+          <div class="stream-content">
+            <div class="stream-text">Intelligence pipeline completed — <strong>12 new signals</strong> detected for Meridian Capital</div>
+            <div class="stream-time">15 minutes ago</div>
+          </div>
+        </div>
+
+        <div class="stream-item">
+          <div class="stream-icon content">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M12 20h9M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
+            </svg>
+          </div>
+          <div class="stream-content">
+            <div class="stream-text">Press release generated for <strong>ESG Report Launch</strong> — pending review</div>
+            <div class="stream-time">1 hour ago</div>
+          </div>
+        </div>
+
+        <div class="stream-item">
+          <div class="stream-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
+            </svg>
+          </div>
+          <div class="stream-content">
+            <div class="stream-text">VECTOR Campaign <strong>"Market Leadership"</strong> entered Phase 2: Consideration</div>
+            <div class="stream-time">3 hours ago</div>
+          </div>
+        </div>
+
+        <div class="stream-item">
+          <div class="stream-icon alert">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 6v6l4 2"/>
+            </svg>
+          </div>
+          <div class="stream-content">
+            <div class="stream-text">Scheduled: <strong>Quarterly review</strong> with Vertex Tech tomorrow at 2pm</div>
+            <div class="stream-time">Yesterday</div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- NIV Panel - Always Present -->
+    <aside class="niv-panel">
+      <div class="niv-header">
+        <div class="niv-avatar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"/>
+          </svg>
+        </div>
+        <div class="niv-info">
+          <h3>NIV</h3>
+          <span>Strategic Advisor</span>
+        </div>
+      </div>
+
+      <div class="niv-messages">
+        <div class="niv-message from-niv">
+          <div class="niv-bubble">
+            I noticed the competitor acquisition signal. Based on Meridian's positioning, this creates a 48-hour window for a market leadership narrative. Want me to draft a response strategy?
+          </div>
+          <div class="niv-suggestions">
+            <span class="niv-suggestion">Draft response strategy</span>
+            <span class="niv-suggestion">Analyze competitor</span>
+            <span class="niv-suggestion">Show me the signal</span>
+          </div>
+        </div>
+
+        <div class="niv-message from-user">
+          <div class="niv-bubble">
+            Yes, draft the response. Focus on our ESG leadership angle.
+          </div>
+        </div>
+
+        <div class="niv-message from-niv">
+          <div class="niv-bubble">
+            On it. I'll frame Meridian as the stable, values-driven alternative while the market absorbs the acquisition news. Give me 60 seconds.
+          </div>
+        </div>
+      </div>
+
+      <div class="niv-input-area">
+        <textarea class="niv-input" placeholder="Ask NIV anything..." rows="2"></textarea>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Mode Bar -->
+  <div class="mode-bar">
+    <button class="mode-btn active">Monitor</button>
+    <button class="mode-btn">Plan</button>
+    <button class="mode-btn">Execute</button>
+    <button class="mode-btn">Crisis</button>
+  </div>
+</body>
+</html>
