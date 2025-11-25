@@ -1,0 +1,1614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nivria Dashboard - Hub Mockup</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --burnt-orange: #c75d3a;
+      --burnt-orange-light: #e07b5a;
+      --burnt-orange-muted: rgba(199, 93, 58, 0.1);
+      --terracotta: #b54d2e;
+      --rust: #8b3a2f;
+
+      --charcoal: #1a1a1a;
+      --charcoal-light: #242424;
+      --grey-900: #212121;
+      --grey-800: #2e2e2e;
+      --grey-700: #3d3d3d;
+      --grey-600: #555555;
+      --grey-500: #757575;
+      --grey-400: #9e9e9e;
+      --grey-300: #bdbdbd;
+      --grey-200: #e0e0e0;
+      --grey-100: #f0f0f0;
+
+      --white: #ffffff;
+      --cream: #faf9f7;
+      --cream-dark: #f5f4f2;
+
+      --font-display: 'Space Grotesk', sans-serif;
+      --font-serif: 'Playfair Display', serif;
+      --font-body: 'Inter', sans-serif;
+
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
+      --shadow-lg: 0 8px 30px rgba(0,0,0,0.08);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--cream);
+      color: var(--charcoal);
+      font-weight: 400;
+      min-height: 100vh;
+    }
+
+    /* ==================== NAVIGATION ==================== */
+    .nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      padding: 0 40px;
+      height: 64px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--cream);
+      border-bottom: 1px solid var(--grey-200);
+    }
+
+    .nav-left {
+      display: flex;
+      align-items: center;
+      gap: 48px;
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+    }
+
+    .logo-mark {
+      width: 36px;
+      height: 36px;
+      background: var(--burnt-orange);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      clip-path: polygon(0 0, 100% 0, 100% 65%, 65% 100%, 0 100%);
+    }
+
+    .logo-mark svg {
+      width: 20px;
+      height: 20px;
+      color: var(--white);
+    }
+
+    .logo-text {
+      font-family: var(--font-display);
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: var(--charcoal);
+      letter-spacing: -0.02em;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 8px;
+    }
+
+    .nav-link {
+      padding: 8px 16px;
+      font-family: var(--font-display);
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--grey-500);
+      text-decoration: none;
+      border-radius: 6px;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+
+    .nav-link:hover {
+      color: var(--charcoal);
+      background: var(--cream-dark);
+    }
+
+    .nav-link.active {
+      color: var(--charcoal);
+      background: var(--white);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .org-switcher {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      background: var(--white);
+      border: 1px solid var(--grey-200);
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--charcoal);
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    .org-switcher:hover {
+      border-color: var(--grey-300);
+    }
+
+    .profile-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--charcoal);
+      color: var(--white);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-display);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* ==================== MAIN LAYOUT ==================== */
+    .main {
+      padding-top: 64px;
+      min-height: 100vh;
+    }
+
+    .view {
+      display: none;
+      padding: 40px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .view.active {
+      display: block;
+    }
+
+    /* ==================== HUB VIEW ==================== */
+    .hub-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 40px;
+      position: relative;
+    }
+
+    .hub-header-left {
+      position: relative;
+      z-index: 1;
+    }
+
+    .section-number {
+      font-family: var(--font-serif);
+      font-size: 8rem;
+      font-weight: 400;
+      color: var(--burnt-orange);
+      opacity: 0.08;
+      line-height: 1;
+      position: absolute;
+      top: -40px;
+      left: -20px;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .hub-date {
+      font-family: var(--font-display);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: var(--grey-400);
+      margin-bottom: 8px;
+    }
+
+    .hub-greeting {
+      font-family: var(--font-serif);
+      font-size: 2.4rem;
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+
+    .hub-greeting em {
+      font-style: italic;
+      color: var(--burnt-orange);
+    }
+
+    .hub-subtext {
+      margin-top: 12px;
+      font-size: 1rem;
+      color: var(--grey-500);
+      max-width: 400px;
+      line-height: 1.6;
+    }
+
+    /* ==================== HUB GRID ==================== */
+    .hub-grid {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 32px;
+    }
+
+    .hub-main {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .hub-sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* ==================== CARD STYLES ==================== */
+    .card {
+      background: var(--white);
+      border: 1px solid var(--grey-200);
+      border-radius: 12px;
+      padding: 28px;
+      position: relative;
+      transition: box-shadow 0.2s, border-color 0.2s;
+    }
+
+    .card:hover {
+      box-shadow: var(--shadow-md);
+    }
+
+    .card-dark {
+      background: var(--charcoal);
+      border-color: var(--charcoal);
+      color: var(--white);
+    }
+
+    .card-dark:hover {
+      background: var(--charcoal-light);
+    }
+
+    .card-label {
+      font-family: var(--font-display);
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--grey-400);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-dark .card-label {
+      color: var(--burnt-orange);
+    }
+
+    .card-label-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--burnt-orange);
+      border-radius: 50%;
+    }
+
+    /* ==================== INTELLIGENCE BRIEF ==================== */
+    .brief-card {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .brief-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 200px;
+      height: 200px;
+      background: radial-gradient(circle at top right, var(--burnt-orange-muted), transparent 70%);
+      pointer-events: none;
+    }
+
+    .brief-summary {
+      font-family: var(--font-serif);
+      font-size: 1.35rem;
+      font-weight: 400;
+      line-height: 1.5;
+      margin-bottom: 24px;
+      max-width: 90%;
+    }
+
+    .brief-summary em {
+      font-style: italic;
+      color: var(--burnt-orange);
+    }
+
+    .brief-themes {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .brief-theme {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 0.9rem;
+      color: var(--grey-600);
+      line-height: 1.5;
+    }
+
+    .brief-theme-icon {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+      color: var(--burnt-orange);
+      opacity: 0.7;
+      margin-top: 2px;
+    }
+
+    .brief-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-display);
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--charcoal);
+      text-decoration: none;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--charcoal);
+      transition: all 0.2s;
+    }
+
+    .brief-cta:hover {
+      color: var(--burnt-orange);
+      border-color: var(--burnt-orange);
+    }
+
+    /* ==================== CAMPAIGNS CARD ==================== */
+    .campaigns-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .campaign-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px;
+      background: var(--grey-800);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .campaign-item:hover {
+      background: var(--grey-700);
+    }
+
+    .campaign-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .campaign-name {
+      font-family: var(--font-display);
+      font-size: 0.95rem;
+      font-weight: 500;
+    }
+
+    .campaign-phase {
+      font-size: 0.8rem;
+      color: var(--grey-400);
+    }
+
+    .campaign-progress {
+      display: flex;
+      gap: 4px;
+    }
+
+    .progress-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--grey-600);
+    }
+
+    .progress-dot.filled {
+      background: var(--burnt-orange);
+    }
+
+    /* ==================== OPPORTUNITIES ==================== */
+    .opportunities-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .opportunities-title {
+      font-family: var(--font-display);
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--grey-400);
+    }
+
+    .opportunities-count {
+      font-family: var(--font-display);
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--burnt-orange);
+      background: var(--burnt-orange-muted);
+      padding: 4px 10px;
+      border-radius: 12px;
+    }
+
+    .opportunities-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .opportunity-card {
+      background: var(--white);
+      border: 1px solid var(--grey-200);
+      border-radius: 10px;
+      padding: 20px;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .opportunity-card:hover {
+      border-color: var(--burnt-orange);
+      box-shadow: var(--shadow-md);
+    }
+
+    .opportunity-card.high-priority::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: var(--burnt-orange);
+    }
+
+    .opportunity-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 10px;
+    }
+
+    .opportunity-score {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--burnt-orange);
+      line-height: 1;
+    }
+
+    .opportunity-score.medium {
+      color: var(--grey-600);
+    }
+
+    .opportunity-urgency {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      color: var(--grey-500);
+    }
+
+    .urgency-bar {
+      width: 60px;
+      height: 4px;
+      background: var(--grey-200);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .urgency-fill {
+      height: 100%;
+      background: var(--burnt-orange);
+      border-radius: 2px;
+      transition: width 0.3s;
+    }
+
+    .opportunity-title {
+      font-family: var(--font-display);
+      font-size: 1rem;
+      font-weight: 500;
+      margin-bottom: 6px;
+      color: var(--charcoal);
+    }
+
+    .opportunity-desc {
+      font-size: 0.85rem;
+      color: var(--grey-500);
+      line-height: 1.5;
+    }
+
+    /* ==================== SUGGESTED ACTIONS ==================== */
+    .actions-section {
+      margin-top: 16px;
+    }
+
+    .actions-label {
+      font-family: var(--font-display);
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--grey-400);
+      margin-bottom: 16px;
+    }
+
+    .actions-list {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 20px;
+      background: var(--charcoal);
+      color: var(--white);
+      border: none;
+      border-radius: 8px;
+      font-family: var(--font-display);
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .action-btn:hover {
+      background: var(--burnt-orange);
+    }
+
+    .action-btn.secondary {
+      background: var(--white);
+      color: var(--charcoal);
+      border: 1px solid var(--grey-200);
+    }
+
+    .action-btn.secondary:hover {
+      border-color: var(--charcoal);
+    }
+
+    /* ==================== NIV FLOATING INPUT ==================== */
+    .niv-float {
+      position: fixed;
+      bottom: 32px;
+      right: 32px;
+      z-index: 90;
+    }
+
+    .niv-input-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--charcoal);
+      border-radius: 12px;
+      padding: 8px 8px 8px 20px;
+      box-shadow: var(--shadow-lg);
+      min-width: 320px;
+    }
+
+    .niv-input {
+      flex: 1;
+      background: none;
+      border: none;
+      outline: none;
+      font-family: var(--font-body);
+      font-size: 0.9rem;
+      color: var(--white);
+    }
+
+    .niv-input::placeholder {
+      color: var(--grey-500);
+    }
+
+    .niv-submit {
+      width: 40px;
+      height: 40px;
+      background: var(--burnt-orange);
+      border: none;
+      border-radius: 8px;
+      color: var(--white);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    .niv-submit:hover {
+      background: var(--burnt-orange-light);
+    }
+
+    /* ==================== STRATEGY VIEW ==================== */
+    .strategy-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-display);
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--grey-500);
+      text-decoration: none;
+      margin-bottom: 32px;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+
+    .strategy-back:hover {
+      color: var(--charcoal);
+    }
+
+    .strategy-header {
+      margin-bottom: 40px;
+      position: relative;
+    }
+
+    .strategy-score-large {
+      font-family: var(--font-serif);
+      font-size: 5rem;
+      font-weight: 400;
+      color: var(--burnt-orange);
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .strategy-title {
+      font-family: var(--font-serif);
+      font-size: 2.2rem;
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+
+    .strategy-meta {
+      display: flex;
+      gap: 24px;
+      font-size: 0.9rem;
+      color: var(--grey-500);
+    }
+
+    .strategy-meta-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .strategy-grid {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 32px;
+    }
+
+    .strategy-main {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .strategy-section-title {
+      font-family: var(--font-display);
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--burnt-orange);
+      margin-bottom: 12px;
+    }
+
+    .strategy-text {
+      font-size: 1rem;
+      line-height: 1.7;
+      color: var(--grey-600);
+    }
+
+    .strategy-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid var(--grey-200);
+    }
+
+    .btn-primary {
+      padding: 14px 28px;
+      background: var(--charcoal);
+      color: var(--white);
+      border: none;
+      font-family: var(--font-display);
+      font-size: 0.9rem;
+      font-weight: 500;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-primary:hover {
+      background: var(--burnt-orange);
+    }
+
+    .btn-secondary {
+      padding: 14px 28px;
+      background: var(--white);
+      color: var(--charcoal);
+      border: 1px solid var(--grey-200);
+      font-family: var(--font-display);
+      font-size: 0.9rem;
+      font-weight: 500;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--charcoal);
+    }
+
+    /* Context Sidebar */
+    .context-sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .context-card {
+      background: var(--cream-dark);
+      border-radius: 10px;
+      padding: 20px;
+    }
+
+    .context-title {
+      font-family: var(--font-display);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--grey-500);
+      margin-bottom: 14px;
+    }
+
+    .context-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .context-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 0.85rem;
+      color: var(--grey-600);
+      cursor: pointer;
+      padding: 8px;
+      margin: -8px;
+      border-radius: 6px;
+      transition: background 0.2s;
+    }
+
+    .context-item:hover {
+      background: var(--white);
+    }
+
+    .context-item-icon {
+      width: 16px;
+      height: 16px;
+      color: var(--burnt-orange);
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    /* ==================== EXECUTE VIEW ==================== */
+    .execute-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 32px;
+      position: relative;
+    }
+
+    .execute-campaign-name {
+      font-family: var(--font-display);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--grey-400);
+      margin-bottom: 8px;
+    }
+
+    .execute-title {
+      font-family: var(--font-serif);
+      font-size: 2rem;
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+
+    .execute-meta {
+      font-size: 0.9rem;
+      color: var(--grey-500);
+    }
+
+    .priority-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 32px;
+    }
+
+    .priority-tab {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px 32px;
+      background: var(--white);
+      border: 1px solid var(--grey-200);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+      min-width: 140px;
+    }
+
+    .priority-tab:hover {
+      border-color: var(--grey-300);
+    }
+
+    .priority-tab.active {
+      border-color: var(--burnt-orange);
+      background: var(--burnt-orange-muted);
+    }
+
+    .priority-tab-label {
+      font-family: var(--font-display);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--grey-500);
+      margin-bottom: 8px;
+    }
+
+    .priority-tab-progress {
+      width: 100%;
+      height: 4px;
+      background: var(--grey-200);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
+    .priority-tab-progress-fill {
+      height: 100%;
+      background: var(--burnt-orange);
+      border-radius: 2px;
+    }
+
+    .priority-tab-count {
+      font-family: var(--font-display);
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--charcoal);
+    }
+
+    .content-items-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .content-items-title {
+      font-family: var(--font-display);
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--charcoal);
+    }
+
+    .generate-all-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      background: var(--burnt-orange);
+      color: var(--white);
+      border: none;
+      border-radius: 6px;
+      font-family: var(--font-display);
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .generate-all-btn:hover {
+      background: var(--burnt-orange-light);
+    }
+
+    .content-items-list {
+      background: var(--white);
+      border: 1px solid var(--grey-200);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .content-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--grey-100);
+      transition: background 0.2s;
+    }
+
+    .content-item:last-child {
+      border-bottom: none;
+    }
+
+    .content-item:hover {
+      background: var(--cream);
+    }
+
+    .content-item-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .content-item-status {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      border: 2px solid var(--grey-300);
+    }
+
+    .content-item-status.done {
+      background: var(--burnt-orange);
+      border-color: var(--burnt-orange);
+    }
+
+    .content-item-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .content-item-type {
+      font-size: 0.75rem;
+      color: var(--grey-400);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .content-item-title {
+      font-family: var(--font-display);
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--charcoal);
+    }
+
+    .content-item-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .item-action-btn {
+      padding: 8px 14px;
+      background: var(--cream);
+      border: 1px solid var(--grey-200);
+      border-radius: 6px;
+      font-family: var(--font-display);
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--charcoal);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .item-action-btn:hover {
+      border-color: var(--charcoal);
+    }
+
+    .item-action-btn.primary {
+      background: var(--charcoal);
+      border-color: var(--charcoal);
+      color: var(--white);
+    }
+
+    .item-action-btn.primary:hover {
+      background: var(--burnt-orange);
+      border-color: var(--burnt-orange);
+    }
+
+    /* View tabs within execute */
+    .execute-tabs {
+      display: flex;
+      gap: 4px;
+      margin-top: 32px;
+      border-top: 1px solid var(--grey-200);
+      padding-top: 24px;
+    }
+
+    .execute-tab {
+      padding: 10px 20px;
+      font-family: var(--font-display);
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--grey-500);
+      background: none;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .execute-tab:hover {
+      color: var(--charcoal);
+      background: var(--cream-dark);
+    }
+
+    .execute-tab.active {
+      color: var(--charcoal);
+      background: var(--white);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Asymmetric offset card */
+    .offset-card {
+      position: relative;
+      margin-left: 24px;
+      margin-top: -16px;
+    }
+
+    .offset-card::before {
+      content: '';
+      position: absolute;
+      top: -8px;
+      left: -24px;
+      right: 48px;
+      bottom: 24px;
+      border: 2px solid var(--burnt-orange);
+      border-radius: 12px;
+      pointer-events: none;
+      opacity: 0.15;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="nav">
+    <div class="nav-left">
+      <a href="#" class="nav-logo">
+        <div class="logo-mark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+          </svg>
+        </div>
+        <span class="logo-text">Nivria</span>
+      </a>
+      <div class="nav-links">
+        <a class="nav-link active" data-view="hub">Hub</a>
+        <a class="nav-link" data-view="strategy">Strategy</a>
+        <a class="nav-link" data-view="execute">Execute</a>
+        <a class="nav-link">Vault</a>
+      </div>
+    </div>
+    <div class="nav-right">
+      <button class="org-switcher">
+        <span>Acme Corp</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M6 9l6 6 6-6"/>
+        </svg>
+      </button>
+      <div class="profile-btn">JD</div>
+    </div>
+  </nav>
+
+  <main class="main">
+    <!-- ==================== HUB VIEW ==================== -->
+    <div class="view active" id="hub-view">
+      <div class="hub-header">
+        <div class="hub-header-left">
+          <div class="section-number">01</div>
+          <div class="hub-date">Monday, November 25, 2024</div>
+          <h1 class="hub-greeting">Good morning. <em>3 opportunities</em> await.</h1>
+          <p class="hub-subtext">Your overnight intelligence synthesis detected strategic windows in the market.</p>
+        </div>
+      </div>
+
+      <div class="hub-grid">
+        <div class="hub-main">
+          <!-- Intelligence Brief -->
+          <div class="card brief-card">
+            <div class="card-label">
+              <span class="card-label-dot"></span>
+              Intelligence Brief
+            </div>
+            <p class="brief-summary">
+              Market signals indicate a <em>narrowing window</em> for AI narrative positioning. Competitor silence creates opportunity. Q4 earnings season amplifies stakeholder attention.
+            </p>
+            <div class="brief-themes">
+              <div class="brief-theme">
+                <svg class="brief-theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                </svg>
+                <span><strong>Market Shift:</strong> Tech sector rotation creates messaging opportunity for differentiated positioning</span>
+              </div>
+              <div class="brief-theme">
+                <svg class="brief-theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M12 6v6l4 2"/>
+                </svg>
+                <span><strong>Timing:</strong> 48-hour window before competitor announcements expected</span>
+              </div>
+              <div class="brief-theme">
+                <svg class="brief-theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+                <span><strong>Stakeholders:</strong> Analyst sentiment shifting positive on sustainable tech narratives</span>
+              </div>
+            </div>
+            <a href="#" class="brief-cta">
+              Read full synthesis
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+            </a>
+          </div>
+
+          <!-- Campaigns Card (Offset) -->
+          <div class="card card-dark offset-card">
+            <div class="card-label">Active Campaigns</div>
+            <div class="campaigns-list">
+              <div class="campaign-item" onclick="showView('execute')">
+                <div class="campaign-info">
+                  <div class="campaign-name">Product Launch 2024</div>
+                  <div class="campaign-phase">Phase 2: Media Outreach</div>
+                </div>
+                <div class="campaign-progress">
+                  <div class="progress-dot filled"></div>
+                  <div class="progress-dot filled"></div>
+                  <div class="progress-dot"></div>
+                  <div class="progress-dot"></div>
+                </div>
+              </div>
+              <div class="campaign-item">
+                <div class="campaign-info">
+                  <div class="campaign-name">Thought Leadership Series</div>
+                  <div class="campaign-phase">Phase 3: Content Execution</div>
+                </div>
+                <div class="campaign-progress">
+                  <div class="progress-dot filled"></div>
+                  <div class="progress-dot filled"></div>
+                  <div class="progress-dot filled"></div>
+                  <div class="progress-dot"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Suggested Actions -->
+          <div class="actions-section">
+            <div class="actions-label">Suggested Actions</div>
+            <div class="actions-list">
+              <button class="action-btn" onclick="showView('strategy')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                </svg>
+                Execute Q4 Opportunity
+              </button>
+              <button class="action-btn secondary" onclick="showView('execute')">
+                Continue Product Launch
+              </button>
+              <button class="action-btn secondary">
+                Review Full Brief
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="hub-sidebar">
+          <!-- Opportunities -->
+          <div class="opportunities-header">
+            <div class="opportunities-title">Today's Opportunities</div>
+            <div class="opportunities-count">3 detected</div>
+          </div>
+          <div class="opportunities-list">
+            <div class="opportunity-card high-priority" onclick="showView('strategy')">
+              <div class="opportunity-header">
+                <div class="opportunity-score">92</div>
+                <div class="opportunity-urgency">
+                  <div class="urgency-bar">
+                    <div class="urgency-fill" style="width: 35%"></div>
+                  </div>
+                  <span>48h</span>
+                </div>
+              </div>
+              <div class="opportunity-title">Q4 Earnings Window</div>
+              <div class="opportunity-desc">Competitor silence on AI investment creates narrative opportunity before earnings season.</div>
+            </div>
+            <div class="opportunity-card">
+              <div class="opportunity-header">
+                <div class="opportunity-score">87</div>
+                <div class="opportunity-urgency">
+                  <div class="urgency-bar">
+                    <div class="urgency-fill" style="width: 60%"></div>
+                  </div>
+                  <span>5d</span>
+                </div>
+              </div>
+              <div class="opportunity-title">Competitor Gap</div>
+              <div class="opportunity-desc">Market leader silent on sustainability. Positioning window open.</div>
+            </div>
+            <div class="opportunity-card">
+              <div class="opportunity-header">
+                <div class="opportunity-score medium">78</div>
+                <div class="opportunity-urgency">
+                  <div class="urgency-bar">
+                    <div class="urgency-fill" style="width: 80%"></div>
+                  </div>
+                  <span>2w</span>
+                </div>
+              </div>
+              <div class="opportunity-title">Partnership Signal</div>
+              <div class="opportunity-desc">Strategic alliance indicators detected in supply chain movements.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== STRATEGY VIEW ==================== -->
+    <div class="view" id="strategy-view">
+      <a class="strategy-back" onclick="showView('hub')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        Back to Hub
+      </a>
+
+      <div class="strategy-header">
+        <div class="section-number">02</div>
+        <div class="strategy-score-large">92</div>
+        <h1 class="strategy-title">Q4 Earnings Window</h1>
+        <div class="strategy-meta">
+          <div class="strategy-meta-item">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 6v6l4 2"/>
+            </svg>
+            <span>Expires in 48 hours</span>
+          </div>
+          <div class="strategy-meta-item">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+            </svg>
+            <span>High confidence</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="strategy-grid">
+        <div class="strategy-main">
+          <div class="card">
+            <div class="strategy-section-title">Why Now</div>
+            <p class="strategy-text">
+              Competitors have remained silent on AI investment strategies ahead of Q4 earnings. This creates a 48-hour window to establish narrative leadership before the earnings cycle begins. Market analysts are actively seeking forward-looking AI commitment signals.
+            </p>
+          </div>
+
+          <div class="card">
+            <div class="strategy-section-title">Strategic Context</div>
+            <p class="strategy-text">
+              Market dynamics currently favor organizations demonstrating concrete AI integration roadmaps. Recent analyst reports indicate a 34% premium on companies with articulated AI strategies. First-mover advantage in this cycle could establish lasting perception leadership.
+            </p>
+          </div>
+
+          <div class="card">
+            <div class="strategy-section-title">Risk if Missed</div>
+            <p class="strategy-text">
+              Window closes when competitors begin their pre-earnings communications (estimated Thursday). Missing this window means waiting until Q1 for equivalent positioning opportunity, allowing competitors to establish narrative anchors.
+            </p>
+          </div>
+
+          <div class="strategy-actions">
+            <button class="btn-primary" onclick="showView('execute')">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+              </svg>
+              Create Campaign
+            </button>
+            <button class="btn-secondary">Save to Vault</button>
+            <button class="btn-secondary">Dismiss</button>
+          </div>
+        </div>
+
+        <div class="context-sidebar">
+          <div class="context-card">
+            <div class="context-title">Source Intelligence</div>
+            <div class="context-list">
+              <div class="context-item">
+                <svg class="context-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
+                </svg>
+                <span>WSJ: Tech sector positioning shifts ahead of Q4</span>
+              </div>
+              <div class="context-item">
+                <svg class="context-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
+                </svg>
+                <span>Reuters: AI investment narratives dominate analyst calls</span>
+              </div>
+              <div class="context-item">
+                <svg class="context-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
+                </svg>
+                <span>Bloomberg: Competitor earnings preview analysis</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="context-card">
+            <div class="context-title">Related Intelligence</div>
+            <div class="context-list">
+              <div class="context-item">
+                <svg class="context-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M12 6v6l4 2"/>
+                </svg>
+                <span>Nov 23 synthesis: Market sentiment analysis</span>
+              </div>
+              <div class="context-item">
+                <svg class="context-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                </svg>
+                <span>Stakeholder map: Analyst relationships</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="context-card">
+            <div class="context-title">From Vault</div>
+            <div class="context-list">
+              <div class="context-item">
+                <svg class="context-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                </svg>
+                <span>Q3 AI messaging framework</span>
+              </div>
+              <div class="context-item">
+                <svg class="context-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                </svg>
+                <span>Executive quote library: Innovation</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== EXECUTE VIEW ==================== -->
+    <div class="view" id="execute-view">
+      <a class="strategy-back" onclick="showView('hub')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        Back to Hub
+      </a>
+
+      <div class="execute-header">
+        <div>
+          <div class="section-number">03</div>
+          <div class="execute-campaign-name">Campaign</div>
+          <h1 class="execute-title">Product Launch 2024</h1>
+          <div class="execute-meta">Phase 2 of 4 · 12 items remaining</div>
+        </div>
+      </div>
+
+      <div class="priority-tabs">
+        <div class="priority-tab">
+          <div class="priority-tab-label">Priority 1</div>
+          <div class="priority-tab-progress">
+            <div class="priority-tab-progress-fill" style="width: 100%"></div>
+          </div>
+          <div class="priority-tab-count">4/4 done</div>
+        </div>
+        <div class="priority-tab active">
+          <div class="priority-tab-label">Priority 2</div>
+          <div class="priority-tab-progress">
+            <div class="priority-tab-progress-fill" style="width: 40%"></div>
+          </div>
+          <div class="priority-tab-count">2/5 done</div>
+        </div>
+        <div class="priority-tab">
+          <div class="priority-tab-label">Priority 3</div>
+          <div class="priority-tab-progress">
+            <div class="priority-tab-progress-fill" style="width: 0%"></div>
+          </div>
+          <div class="priority-tab-count">0/6 done</div>
+        </div>
+        <div class="priority-tab">
+          <div class="priority-tab-label">Priority 4</div>
+          <div class="priority-tab-progress">
+            <div class="priority-tab-progress-fill" style="width: 0%"></div>
+          </div>
+          <div class="priority-tab-count">0/4 done</div>
+        </div>
+      </div>
+
+      <div class="content-items-header">
+        <div class="content-items-title">Priority 2 Items</div>
+        <button class="generate-all-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+          </svg>
+          Generate All P2
+        </button>
+      </div>
+
+      <div class="content-items-list">
+        <div class="content-item">
+          <div class="content-item-left">
+            <div class="content-item-status"></div>
+            <div class="content-item-info">
+              <div class="content-item-type">Media Pitch</div>
+              <div class="content-item-title">TechCrunch: AI Integration Story</div>
+            </div>
+          </div>
+          <div class="content-item-actions">
+            <button class="item-action-btn primary">Generate</button>
+            <button class="item-action-btn">Context</button>
+          </div>
+        </div>
+        <div class="content-item">
+          <div class="content-item-left">
+            <div class="content-item-status"></div>
+            <div class="content-item-info">
+              <div class="content-item-type">Media Pitch</div>
+              <div class="content-item-title">Wired: Future of Work Angle</div>
+            </div>
+          </div>
+          <div class="content-item-actions">
+            <button class="item-action-btn primary">Generate</button>
+            <button class="item-action-btn">Context</button>
+          </div>
+        </div>
+        <div class="content-item">
+          <div class="content-item-left">
+            <div class="content-item-status"></div>
+            <div class="content-item-info">
+              <div class="content-item-type">Media Pitch</div>
+              <div class="content-item-title">Forbes: Enterprise Innovation</div>
+            </div>
+          </div>
+          <div class="content-item-actions">
+            <button class="item-action-btn primary">Generate</button>
+            <button class="item-action-btn">Context</button>
+          </div>
+        </div>
+        <div class="content-item">
+          <div class="content-item-left">
+            <div class="content-item-status done"></div>
+            <div class="content-item-info">
+              <div class="content-item-type">Social Post</div>
+              <div class="content-item-title">LinkedIn: Executive Announcement</div>
+            </div>
+          </div>
+          <div class="content-item-actions">
+            <button class="item-action-btn">View</button>
+            <button class="item-action-btn">Edit</button>
+          </div>
+        </div>
+        <div class="content-item">
+          <div class="content-item-left">
+            <div class="content-item-status done"></div>
+            <div class="content-item-info">
+              <div class="content-item-type">Thought Leadership</div>
+              <div class="content-item-title">Blog: Our AI Journey</div>
+            </div>
+          </div>
+          <div class="content-item-actions">
+            <button class="item-action-btn">View</button>
+            <button class="item-action-btn">Edit</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="execute-tabs">
+        <button class="execute-tab active">Execution</button>
+        <button class="execute-tab">Blueprint</button>
+        <button class="execute-tab">Progress</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- NIV Floating Input -->
+  <div class="niv-float">
+    <div class="niv-input-wrapper">
+      <input type="text" class="niv-input" placeholder="Ask NIV anything...">
+      <button class="niv-submit">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // View switching
+    function showView(viewName) {
+      // Hide all views
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      // Show target view
+      document.getElementById(viewName + '-view').classList.add('active');
+      // Update nav
+      document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+        if (link.dataset.view === viewName) {
+          link.classList.add('active');
+        }
+      });
+    }
+
+    // Nav link clicks
+    document.querySelectorAll('.nav-link[data-view]').forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        showView(link.dataset.view);
+      });
+    });
+
+    // Priority tab switching
+    document.querySelectorAll('.priority-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.priority-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>
