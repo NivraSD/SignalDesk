@@ -1,5 +1,5 @@
-// Monitor Stage 2: AI-Powered Intelligent Relevance Filtering
-// Uses Claude to understand if articles are actually about the organization's targets
+// Monitor Stage 2: Relevance Filter (V2 - works with pre-scraped content)
+// Uses Claude to score relevance, enforces source diversity
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -9,43 +9,14 @@ const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')!;
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-// Helper: Extract date from URL patterns
-function extractDateFromUrl(url: string): string | null {
-  try {
-    const patterns = [
-      /\/(\d{4})\/(\d{2})\/(\d{2})/,           // /2025/11/21/
-      /\/(\d{4})-(\d{2})-(\d{2})/,             // /2025-11-21/
-      /-(\d{4})-(\d{2})-(\d{2})-/,             // -2025-11-21-
-      /\/(\d{4})(\d{2})(\d{2})\//,             // /20251121/
-      /news-(\d{4})-(\d{2})-(\d{2})/,          // news-2025-11-21
-      /article-(\d{4})-(\d{2})-(\d{2})/,       // article-2025-11-21
-    ];
-
-    for (const pattern of patterns) {
-      const match = url.match(pattern);
-      if (match) {
-        const year = match[1];
-        const month = match[2].padStart(2, '0');
-        const day = match[3].padStart(2, '0');
-        const date = new Date(`${year}-${month}-${day}`);
-        if (!isNaN(date.getTime())) {
-          return date.toISOString();
-        }
-      }
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
-
 interface Article {
   id?: number;
   title: string;
   description?: string;
-  content?: string;
+  full_content?: string;
   url?: string;
   source?: string;
+  source_name?: string;
   published_at?: string;
   [key: string]: any;
 }
@@ -55,10 +26,13 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const startTime = Date.now();
+
   try {
     const { articles, organization_name, organization_id, profile } = await req.json();
 
-    console.log(`🔍 Relevance filtering for ${organization_name}: ${articles?.length || 0} articles`);
+    console.log(`🔍 RELEVANCE FILTER V2 for ${organization_name}`);
+    console.log(`   Input articles: ${articles?.length || 0}`);
 
     if (!articles || articles.length === 0) {
       return new Response(JSON.stringify({
@@ -70,187 +44,94 @@ serve(async (req) => {
       });
     }
 
-    // Load intelligence targets with monitoring context
-    console.log(`📊 Loading intelligence targets for ${organization_name}...`);
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
-
-    const { data: targets, error: targetsError } = await supabase
-      .from('intelligence_targets')
-      .select('name, type, monitoring_context, industry_context, relevance_filter, priority')
-      .eq('organization_id', organization_id)
-      .eq('active', true);
-
-    if (targetsError) {
-      console.error('❌ Failed to load intelligence targets:', targetsError);
-      throw new Error(`Failed to load targets: ${targetsError.message}`);
+    // Get profile data - use passed profile or load from org
+    let profileData = profile;
+    if (!profileData && organization_id) {
+      const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+      const { data: org } = await supabase
+        .from('organizations')
+        .select('company_profile, industry')
+        .eq('id', organization_id)
+        .single();
+      profileData = org?.company_profile || {};
+      profileData.industry = org?.industry || profileData.industry;
     }
 
-    console.log(`✅ Loaded ${targets?.length || 0} intelligence targets`);
+    const industry = profileData?.industry || 'general';
+    const competitors = profileData?.competition?.direct_competitors || [];
+    const serviceLines = profileData?.service_lines || [];
+    const description = profileData?.description || '';
 
-    const competitors = targets?.filter(t => t.type === 'competitor').map(t => ({
-      name: t.name,
-      monitoring_context: t.monitoring_context,
-      industry_context: t.industry_context,
-      keywords: t.relevance_filter?.keywords || []
-    })) || [];
+    console.log(`   Industry: ${industry}`);
+    console.log(`   Competitors: ${competitors.length}`);
 
-    const stakeholders = targets?.filter(t => t.type === 'stakeholder').map(t => ({
-      name: t.name,
-      monitoring_context: t.monitoring_context,
-      industry_context: t.industry_context,
-      keywords: t.relevance_filter?.keywords || []
-    })) || [];
-
-    if (competitors.length === 0 && stakeholders.length === 0) {
-      console.warn('⚠️ No intelligence targets found - returning all articles');
-      return new Response(JSON.stringify({
-        relevant_articles: articles,
-        filtered_out: 0,
-        total: articles.length,
-        warning: 'No intelligence targets configured'
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    // Filter out old articles (keep last 7 days)
-    // Extract dates from URLs as fallback before filtering
-    const RECENCY_DAYS = 7;
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - RECENCY_DAYS);
-
-    const recentArticles = articles.filter(article => {
-      let publishedDate: Date | null = null;
-
-      // Try explicit date fields first
-      if (article.published_at || article.publishDate) {
-        publishedDate = new Date(article.published_at || article.publishDate);
-      }
-
-      // Fallback: Extract date from URL (common patterns: /2024/05/15/ or /2024-05-15-)
-      if (!publishedDate || isNaN(publishedDate.getTime())) {
-        const urlDatePatterns = [
-          /\/(\d{4})\/(\d{1,2})\/(\d{1,2})\//,  // /2024/05/15/
-          /\/(\d{4})-(\d{1,2})-(\d{1,2})-/,     // /2024-05-15-
-          /\/(\d{4})(\d{2})(\d{2})\//           // /20240515/
-        ];
-
-        for (const pattern of urlDatePatterns) {
-          const match = article.url?.match(pattern);
-          if (match) {
-            const year = parseInt(match[1]);
-            const month = parseInt(match[2]) - 1; // JS months are 0-indexed
-            const day = parseInt(match[3]);
-            publishedDate = new Date(year, month, day);
-            if (!isNaN(publishedDate.getTime())) {
-              console.log(`   📅 Extracted date from URL for "${article.title?.substring(0, 40)}...": ${publishedDate.toDateString()}`);
-              break;
-            }
-          }
-        }
-      }
-
-      // If still no date after URL extraction, REJECT (can't verify recency)
-      if (!publishedDate || isNaN(publishedDate.getTime())) {
-        console.log(`   ⏭️  Filtering out undated article: "${article.title?.substring(0, 60)}..." (no date available)`);
-        return false;
-      }
-
-      const isRecent = publishedDate >= cutoffDate;
-
-      if (!isRecent) {
-        console.log(`   ⏭️  Filtering out old article: "${article.title?.substring(0, 60)}..." (${publishedDate.toDateString()})`);
-      }
-
-      return isRecent;
+    // Log input source distribution
+    const inputSourceDist: Record<string, number> = {};
+    articles.forEach((a: Article) => {
+      const src = a.source || a.source_name || 'Unknown';
+      inputSourceDist[src] = (inputSourceDist[src] || 0) + 1;
     });
+    console.log(`   Input sources: ${Object.keys(inputSourceDist).length}`);
+    console.log(`   Input distribution:`, inputSourceDist);
 
-    const filteredByAge = articles.length - recentArticles.length;
-    console.log(`📅 Date filtering: ${articles.length} → ${recentArticles.length} articles (removed ${filteredByAge} older than ${RECENCY_DAYS} days)`);
+    // ================================================================
+    // STEP 1: Score articles with Claude (use full_content if available)
+    // ================================================================
+    console.log(`\n🤖 Scoring ${articles.length} articles with Claude...`);
 
-    if (recentArticles.length === 0) {
-      console.log('⚠️ No recent articles after date filtering');
-      return new Response(JSON.stringify({
-        relevant_articles: [],
-        filtered_out: articles.length,
-        filtered_by_age: filteredByAge,
-        total: articles.length,
-        message: `All ${articles.length} articles were older than ${RECENCY_DAYS} days`
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
+    const batchSize = 25;
+    const scoredArticles: any[] = [];
 
-    // Use Claude to intelligently filter articles in batches
-    console.log(`🤖 Using Claude to intelligently filter ${recentArticles.length} recent articles...`);
+    for (let i = 0; i < articles.length; i += batchSize) {
+      const batch = articles.slice(i, i + batchSize);
+      const batchNum = Math.floor(i / batchSize) + 1;
+      const totalBatches = Math.ceil(articles.length / batchSize);
 
-    const batchSize = 20; // Process 20 articles at a time
-    const relevantArticles: any[] = [];
+      console.log(`   Batch ${batchNum}/${totalBatches} (${batch.length} articles)...`);
 
-    for (let i = 0; i < recentArticles.length; i += batchSize) {
-      const batch = recentArticles.slice(i, i + batchSize);
+      const prompt = `You are an intelligence analyst scoring news relevance for ${organization_name}, a ${industry} company.
 
-      console.log(`   Processing batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(recentArticles.length/batchSize)} (${batch.length} articles)...`);
+COMPANY CONTEXT:
+${description ? `Description: ${description}` : ''}
+Industry: ${industry}
+Service Lines: ${serviceLines.join(', ') || 'Various'}
+Competitors: ${competitors.slice(0, 10).join(', ') || 'Unknown'}
 
-      const prompt = `You are an INTELLIGENCE ANALYST filtering news for ${organization_name}, a ${profile?.industry || 'trading'} company.
+SCORING CRITERIA (be INCLUSIVE - score 60+ if potentially relevant):
 
-YOUR MISSION:
-Cast a WIDE net. This company needs strategic intelligence about their industry, competitors, and market forces.
+HIGH RELEVANCE (80-100):
+- Direct mention of company or competitors
+- Major industry news affecting the company's sector
+- Regulatory changes in their industry
+- M&A activity in their space
 
-CONTEXT:
-Industry: ${profile?.industry || 'trading'}
-Competitors: ${competitors.map(c => c.name).join(', ')}
-Stakeholders: ${stakeholders.map(s => s.name).join(', ')}
+MEDIUM RELEVANCE (60-79):
+- Industry trends and market dynamics
+- Tangentially related news (supply chain, commodities for trading)
+- Geographic market news relevant to their operations
+- Technology/innovation in their sector
 
-✅ RELEVANT ARTICLES (be INCLUSIVE):
+LOW RELEVANCE (40-59):
+- Loosely connected industry news
+- General business news with some connection
 
-1. DIRECT COMPETITOR INTELLIGENCE:
-   - Any news about competitors (launches, hires, partnerships, acquisitions, crises, lawsuits, investigations)
-   - Competitor financial results, strategy shifts, market moves
+NOT RELEVANT (0-39):
+- Completely unrelated industries
+- Articles about ${organization_name} themselves (we want external intel)
+- Spam/promotional content
 
-2. INDUSTRY CONTEXT (CRITICAL - even without competitor mention):
-   - Major industry lawsuits/investigations (e.g., "Total Energies war crimes" affects trading industry)
-   - Regulatory changes affecting ${profile?.industry || 'trading'}
-   - Market trends, commodity price shifts, supply chain disruptions
-   - Technology innovations in the industry
-   - Major M&A activity in the sector
+ARTICLES TO SCORE:
+${batch.map((a: Article, idx: number) => {
+  const content = a.full_content ? a.full_content.substring(0, 800) : (a.description || '');
+  return `[${idx}] SOURCE: ${a.source || a.source_name || 'Unknown'}
+TITLE: ${a.title}
+CONTENT: ${content}`;
+}).join('\n\n---\n\n')}
 
-3. STAKEHOLDER ACTIVITY:
-   - Policy announcements, regulatory changes
-   - Government initiatives affecting the industry
+Return JSON array with score for each article:
+{"scores": [{"id": 0, "score": 85, "reason": "brief reason"}, ...]}
 
-4. STRATEGIC SIGNALS:
-   - Emerging markets, new partnerships
-   - ESG/sustainability trends in industry
-   - Geopolitical events affecting ${profile?.industry || 'trading'}
-
-❌ NOT RELEVANT:
-   - Articles about ${organization_name} themselves
-   - Completely unrelated industries (unless clear spillover effect)
-   - Pure spam/promotional content
-
-ARTICLES:
-${batch.map((a, idx) => `
-[${idx + 1}]
-Title: ${a.title}
-Description: ${a.description || 'N/A'}
-${a.content ? `Content: ${a.content.substring(0, 500)}` : ''}
-`).join('\n---\n')}
-
-RESPOND IN JSON:
-{
-  "relevant": [
-    {
-      "article_number": 1,
-      "is_relevant": true,
-      "relevance_type": "competitor_intelligence" OR "industry_context" OR "regulatory" OR "strategic_signal",
-      "relevance_score": 85,
-      "reason": "Why this matters for ${organization_name}"
-    }
-  ]
-}
-
-Be INCLUSIVE - when in doubt, include it. Better to have too many than miss critical intelligence.`;
+Score ALL ${batch.length} articles.`;
 
       try {
         const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -261,226 +142,133 @@ Be INCLUSIVE - when in doubt, include it. Better to have too many than miss crit
             'anthropic-version': '2023-06-01'
           },
           body: JSON.stringify({
-            model: 'claude-sonnet-4-20250514',
+            model: 'claude-3-5-haiku-20241022',  // Fast for scoring
             max_tokens: 4000,
-            temperature: 0.3,
-            messages: [{
-              role: 'user',
-              content: prompt
-            }]
+            temperature: 0,
+            messages: [{ role: 'user', content: prompt }]
           })
         });
 
         if (!response.ok) {
-          throw new Error(`Claude API error: ${response.statusText}`);
+          throw new Error(`Claude API error: ${response.status}`);
         }
 
         const data = await response.json();
-        const claudeResponse = data.content[0].text;
+        const text = data.content[0].text;
 
-        // Parse Claude's JSON response
-        const jsonMatch = claudeResponse.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) {
-          console.error('❌ Failed to parse Claude response - no JSON found');
-          continue;
-        }
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const result = JSON.parse(jsonMatch[0]);
 
-        const filterResults = JSON.parse(jsonMatch[0]);
-
-        // Add relevant articles with enriched metadata
-        filterResults.relevant?.forEach((result: any) => {
-          const articleIdx = result.article_number - 1;
-          if (articleIdx >= 0 && articleIdx < batch.length) {
-            relevantArticles.push({
-              ...batch[articleIdx],
-              // Top-level fields for enrichment stage
-              pr_relevance_score: result.relevance_score || 75,
-              pr_category: result.relevance_type || 'industry_context',
-              // Nested metadata for reference
-              relevance_metadata: {
-                target: result.target_mentioned,
-                relevance_score: result.relevance_score,
-                relevance_type: result.relevance_type,
-                reason: result.reason,
-                filtered_by: 'claude_ai'
-              }
-            });
-          }
-        });
-
-        console.log(`   ✅ Batch ${Math.floor(i/batchSize) + 1}: ${filterResults.relevant?.length || 0} relevant articles found`);
-
-      } catch (claudeError: any) {
-        console.error(`❌ Claude filtering error for batch ${Math.floor(i/batchSize) + 1}:`, claudeError.message);
-        // On error, include the batch as-is with lower confidence
-        batch.forEach(article => {
-          relevantArticles.push({
-            ...article,
-            // Top-level fields for enrichment stage
-            pr_relevance_score: 50,
-            pr_category: 'general',
-            // Nested metadata for reference
-            relevance_metadata: {
-              relevance_score: 50,
-              reason: 'Included due to filtering error',
-              filtered_by: 'fallback'
+          (result.scores || []).forEach((s: any) => {
+            const article = batch[s.id];
+            if (article && s.score >= 50) {  // Keep score 50+
+              scoredArticles.push({
+                ...article,
+                relevance_score: s.score,
+                relevance_reason: s.reason
+              });
             }
           });
-        });
-      }
-    }
-
-    const filteredByRelevance = recentArticles.length - relevantArticles.length;
-    const totalFilteredOut = articles.length - relevantArticles.length;
-
-    console.log(`✅ Relevance filtering complete:`);
-    console.log(`   Original articles: ${articles.length}`);
-    console.log(`   After date filter: ${recentArticles.length} (removed ${filteredByAge})`);
-    console.log(`   After relevance filter: ${relevantArticles.length} (removed ${filteredByRelevance})`);
-    console.log(`   Total filtered out: ${totalFilteredOut}`);
-    console.log(`   Keep rate: ${((relevantArticles.length / articles.length) * 100).toFixed(1)}%`);
-
-    // SCRAPE TOP ARTICLES: Get full content and extract dates
-    console.log('\n🔥 Scraping top articles for full content and date extraction...');
-
-    const articlesToScrape = relevantArticles
-      .filter(a => a.pr_relevance_score >= 60)
-      .slice(0, 15); // Limit to 15 high-value articles
-
-    console.log(`   Scraping ${articlesToScrape.length} top articles (score 60+)`);
-
-    if (articlesToScrape.length > 0) {
-      try {
-        const firecrawlResponse = await fetch(`${SUPABASE_URL}/functions/v1/mcp-firecrawl`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
-          },
-          body: JSON.stringify({
-            method: 'tools/call',
-            params: {
-              name: 'batch_scrape_articles',
-              arguments: {
-                articles: articlesToScrape.map(article => ({
-                  url: article.url,
-                  priority: article.pr_relevance_score,
-                  metadata: {
-                    title: article.title,
-                    category: article.pr_category
-                  }
-                })),
-                formats: ['markdown'],
-                maxTimeout: 10000
-              }
-            }
-          })
-        });
-
-        if (firecrawlResponse.ok) {
-          const firecrawlData = await firecrawlResponse.json();
-          const scrapeResults = JSON.parse(firecrawlData.content[0].text);
-
-          console.log(`   ✅ Scraped ${scrapeResults.results?.length || 0} articles`);
-
-          // Merge scraped content and extract dates
-          for (const result of scrapeResults.results || []) {
-            if (result.success && result.data) {
-              const article = relevantArticles.find(a => a.url === result.url);
-              if (article) {
-                const markdown = result.data.markdown || result.data.content || '';
-                const metadata = result.data.metadata || {};
-
-                if (markdown && markdown.length > 500) {
-                  article.full_content = markdown;
-                  article.content_length = markdown.length;
-                  article.has_full_content = true;
-
-                  // Priority 1: Check Firecrawl metadata for publish date
-                  const metadataDate = metadata.publishDate ||
-                                      metadata.publishedTime ||
-                                      metadata.datePublished ||
-                                      metadata.article?.publishedTime ||
-                                      metadata.ogArticlePublishedTime;
-
-                  if (metadataDate) {
-                    try {
-                      const parsedDate = new Date(metadataDate);
-                      if (!isNaN(parsedDate.getTime())) {
-                        article.published_at = parsedDate.toISOString();
-                        console.log(`      ✅ Extracted date from metadata for "${article.title?.substring(0, 40)}...": ${parsedDate.toDateString()}`);
-                        continue; // Skip content regex if we found metadata date
-                      }
-                    } catch (e) {
-                      // Fall through to content extraction
-                    }
-                  }
-
-                  // Priority 2: Try extracting date from URL
-                  const urlDate = extractDateFromUrl(article.url);
-                  if (urlDate) {
-                    article.published_at = urlDate;
-                    console.log(`      ✅ Extracted date from URL for "${article.title?.substring(0, 40)}...": ${new Date(urlDate).toDateString()}`);
-                    continue;
-                  }
-
-                  // Priority 3: Extract publish date from content using patterns
-                  const datePatterns = [
-                    /published[:\s]+([A-Za-z]+\s+\d{1,2},?\s+\d{4})/i,
-                    /(\d{1,2}\s+[A-Za-z]+\s+\d{4})/,
-                    /(\d{4}-\d{2}-\d{2})/,
-                    /([A-Za-z]+\s+\d{1,2},?\s+\d{4})/
-                  ];
-
-                  for (const pattern of datePatterns) {
-                    const match = markdown.match(pattern);
-                    if (match) {
-                      try {
-                        const parsedDate = new Date(match[1]);
-                        if (!isNaN(parsedDate.getTime())) {
-                          article.published_at = parsedDate.toISOString();
-                          console.log(`      ✅ Extracted date from content for "${article.title?.substring(0, 40)}...": ${parsedDate.toDateString()}`);
-                          break;
-                        }
-                      } catch (e) {
-                        // Continue to next pattern
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-
-          const enhancedCount = relevantArticles.filter(a => a.has_full_content).length;
-          const datesExtracted = relevantArticles.filter(a => a.has_full_content && a.published_at).length;
-          console.log(`   ✅ Enhanced ${enhancedCount} articles with full content`);
-          console.log(`   📅 Extracted dates for ${datesExtracted} articles`);
         }
-      } catch (error: any) {
-        console.error(`   ❌ Scraping error: ${error.message}`);
-        // Continue without scraping
+
+        console.log(`      ✅ Batch ${batchNum}: ${result?.scores?.filter((s: any) => s.score >= 50).length || 0} relevant`);
+
+      } catch (err: any) {
+        console.error(`      ❌ Batch ${batchNum} error: ${err.message}`);
+        // On error, include batch with default score
+        batch.forEach((a: Article) => {
+          scoredArticles.push({ ...a, relevance_score: 60, relevance_reason: 'Scoring error - included by default' });
+        });
       }
     }
+
+    console.log(`\n   Total scored relevant: ${scoredArticles.length}`);
+
+    // ================================================================
+    // STEP 2: Enforce SOURCE DIVERSITY
+    // Take top N from each source, sorted by score
+    // ================================================================
+    console.log(`\n📊 Enforcing source diversity...`);
+
+    // Group by source
+    const bySource: Record<string, any[]> = {};
+    scoredArticles.forEach(a => {
+      const src = a.source || a.source_name || 'Unknown';
+      if (!bySource[src]) bySource[src] = [];
+      bySource[src].push(a);
+    });
+
+    // Sort each source by score
+    Object.keys(bySource).forEach(src => {
+      bySource[src].sort((a, b) => (b.relevance_score || 0) - (a.relevance_score || 0));
+    });
+
+    // Take top articles from each source to ensure diversity
+    const MAX_PER_SOURCE = 8;  // Max 8 per source
+    const TARGET_TOTAL = 80;   // Target ~80 articles total
+
+    const diverseArticles: any[] = [];
+    const sourceCount: Record<string, number> = {};
+    let round = 0;
+
+    // Round-robin: take 1 from each source per round until we hit target
+    while (diverseArticles.length < TARGET_TOTAL) {
+      let addedThisRound = 0;
+
+      for (const src of Object.keys(bySource)) {
+        const count = sourceCount[src] || 0;
+        if (count < MAX_PER_SOURCE && bySource[src][count]) {
+          diverseArticles.push(bySource[src][count]);
+          sourceCount[src] = count + 1;
+          addedThisRound++;
+
+          if (diverseArticles.length >= TARGET_TOTAL) break;
+        }
+      }
+
+      round++;
+      if (addedThisRound === 0) break;  // No more articles to add
+      if (round > 20) break;  // Safety limit
+    }
+
+    // Sort final list by score
+    diverseArticles.sort((a, b) => (b.relevance_score || 0) - (a.relevance_score || 0));
+
+    // Log output distribution
+    const outputSourceDist: Record<string, number> = {};
+    diverseArticles.forEach(a => {
+      const src = a.source || a.source_name || 'Unknown';
+      outputSourceDist[src] = (outputSourceDist[src] || 0) + 1;
+    });
+
+    const duration = Math.round((Date.now() - startTime) / 1000);
+
+    console.log(`\n✅ RELEVANCE FILTER COMPLETE`);
+    console.log(`   Input: ${articles.length} articles`);
+    console.log(`   Scored relevant: ${scoredArticles.length}`);
+    console.log(`   After diversity: ${diverseArticles.length}`);
+    console.log(`   Output sources: ${Object.keys(outputSourceDist).length}`);
+    console.log(`   Output distribution:`, outputSourceDist);
+    console.log(`   Duration: ${duration}s`);
 
     return new Response(JSON.stringify({
-      relevant_articles: relevantArticles,
-      filtered_out: totalFilteredOut,
-      filtered_by_age: filteredByAge,
-      filtered_by_relevance: filteredByRelevance,
-      total: articles.length,
-      keep_rate: ((relevantArticles.length / articles.length) * 100).toFixed(1) + '%',
-      scraped_articles: relevantArticles.filter(a => a.has_full_content).length,
-      targets_loaded: {
-        competitors: competitors.length,
-        stakeholders: stakeholders.length
-      }
+      relevant_articles: diverseArticles,
+      total_input: articles.length,
+      total_scored: scoredArticles.length,
+      total_output: diverseArticles.length,
+      filtered_out: articles.length - diverseArticles.length,
+      keep_rate: ((diverseArticles.length / articles.length) * 100).toFixed(1) + '%',
+      input_sources: Object.keys(inputSourceDist).length,
+      output_sources: Object.keys(outputSourceDist).length,
+      source_distribution: outputSourceDist,
+      duration_seconds: duration
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
   } catch (error: any) {
-    console.error('❌ Relevance filtering error:', error);
+    console.error('❌ Relevance filter error:', error);
     return new Response(JSON.stringify({
       error: error.message,
       stack: error.stack

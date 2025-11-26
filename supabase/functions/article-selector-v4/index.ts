@@ -1,8 +1,8 @@
-// Article Selector V4 - Intelligence Hunter
-// Three-part system:
-// 1. INTELLIGENCE EXPANSION - Expand company profile into 50-100 search vectors
-// 2. ARTICLE HUNTING - Match articles against expanded vectors with semantic understanding
-// 3. QUALITY CONTROL - Final review pass to catch mistakes
+// Article Selector V4 - Intelligence Hunter (INDUSTRY-AWARE)
+// Uses company profile intelligence context for targeted article selection
+// 1. PROFILE-DRIVEN - Uses intelligence_context from company profile
+// 2. SOURCE-AWARE - Prioritizes industry-relevant sources
+// 3. TOPIC-FOCUSED - Generates industry-specific search vectors
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -12,13 +12,62 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')!;
 
-interface IntelligenceVectors {
-  commodities: string[];
-  geographic_signals: string[];
-  competitors: string[];
-  themes: string[];
-  specific_queries: string[];
-}
+// Industry-specific source priorities - which sources matter most for each industry
+const INDUSTRY_PRIORITY_SOURCES: Record<string, string[]> = {
+  public_relations: ['PRWeek', 'PR Daily', 'AdWeek', 'Campaign', 'The Holmes Report', 'Ragan', 'Spin Sucks', 'CommPRO', 'PR News', "O'Dwyer's", 'AdAge', 'MediaPost'],
+  advertising: ['AdWeek', 'AdAge', 'Campaign', 'The Drum', 'MediaPost', 'Marketing Week', 'Digiday'],
+  finance: ['Wall Street Journal', 'Bloomberg', 'Financial Times', 'Reuters', 'CNBC', 'Seeking Alpha', "Barron's"],
+  technology: ['TechCrunch', 'The Verge', 'Ars Technica', 'Wired', 'VentureBeat', 'Protocol', 'The Information'],
+  healthcare: ['BioPharma Dive', 'Endpoints News', 'STAT News', 'FiercePharma', 'Healthcare Dive'],
+  energy: ['CleanTechnica', 'Utility Dive', 'Energy Voice', 'Oil & Gas Journal', 'Renewable Energy World'],
+  retail: ['Chain Store Age', 'Retail Dive', 'RetailWire', 'Progressive Grocer'],
+  legal: ['Above the Law', 'Law360', 'The American Lawyer', 'Law.com'],
+  logistics: ['FreightWaves', 'Supply Chain Dive', 'Logistics Management', 'Journal of Commerce'],
+  trading: ['Wall Street Journal', 'Bloomberg', 'Reuters', 'Financial Times', 'Nikkei Asia'],
+  default: ['Wall Street Journal', 'Bloomberg', 'Reuters', 'Financial Times', 'CNBC']
+};
+
+// Industry-specific expansion prompts - what matters for each industry
+const INDUSTRY_EXPANSION_TEMPLATES: Record<string, string> = {
+  public_relations: `You are a PR intelligence analyst. For a PR/communications firm, focus on:
+- Agency news: client wins/losses, new business pitches, account reviews
+- Reputation & crisis: major corporate crises, PR responses, reputation damage
+- Industry trends: earned media, influencer marketing, ESG communications, AI in PR
+- M&A: agency acquisitions, holding company moves, agency mergers
+- Executive moves: CCO hires, agency leadership changes
+- Award shows: Cannes Lions, PRWeek Awards, SABRE Awards
+- Client activity: major campaigns, rebrand announcements, product launches
+
+DO NOT focus on: commodities, currencies, central banks, geopolitical tensions (unless there's a specific PR/reputation angle)`,
+
+  advertising: `You are an advertising intelligence analyst. Focus on:
+- Creative campaigns and award-winning work
+- Agency reviews and client wins/losses
+- Media buying trends and programmatic
+- Brand marketing strategies
+- CMO and marketing executive moves`,
+
+  trading: `You are a commodities/trading intelligence analyst. Focus on:
+- Commodity prices (LNG, oil, metals, agriculture)
+- Trade flows and supply chain disruptions
+- Geographic market developments (key trading regions)
+- Competitor moves (other trading houses)
+- Infrastructure and logistics investments`,
+
+  technology: `You are a tech intelligence analyst. Focus on:
+- Product launches and feature updates
+- Funding rounds and M&A activity
+- Executive moves and layoffs
+- Competitive dynamics and market share
+- Technology trends (AI, cloud, security)`,
+
+  default: `You are a business intelligence analyst. Focus on:
+- Competitive moves and market dynamics
+- Industry trends and disruptions
+- Executive changes and strategy shifts
+- Regulatory developments
+- M&A and partnership activity`
+};
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -30,14 +79,14 @@ serve(async (req) => {
   try {
     const { organization_id, organization_name } = await req.json();
 
-    console.log('🎯 ARTICLE SELECTOR V4 - INTELLIGENCE HUNTER');
+    console.log('🎯 ARTICLE SELECTOR V4 - INTELLIGENCE HUNTER (PROFILE-AWARE)');
     console.log(`   Organization: ${organization_name}`);
     console.log(`   Time: ${new Date().toISOString()}`);
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
     // ================================================================
-    // STEP 1: Load company profile and intelligence targets
+    // STEP 1: Load company profile with intelligence context
     // ================================================================
     const { data: org, error: orgError } = await supabase
       .from('organizations')
@@ -49,24 +98,32 @@ serve(async (req) => {
       throw new Error(`Failed to fetch organization: ${orgError?.message || 'Not found'}`);
     }
 
-    const { data: intelligenceTargets } = await supabase
-      .from('intelligence_targets')
-      .select('name, type, priority, monitoring_context')
-      .eq('organization_id', org.id)
-      .eq('active', true);
-
     const profileData = org.company_profile || {};
-    const industry = org.industry || 'unknown';
+    // Normalize industry to lowercase for matching
+    const industryRaw = org.industry || profileData.industry || 'default';
+    const industry = industryRaw.toLowerCase().replace(/[^a-z_]/g, '_');
+    const intelligenceContext = profileData.intelligence_context || {};
+    const competitors = profileData.competition?.direct_competitors || [];
+    const stakeholderAnalysts = profileData.stakeholders?.key_analysts || [];
+    const serviceLines = profileData.service_lines || [];
 
     console.log(`   Industry: ${industry}`);
-    console.log(`   Intelligence targets: ${intelligenceTargets?.length || 0}`);
+    console.log(`   Competitors from profile: ${competitors.length}`);
+    console.log(`   Key analysts: ${stakeholderAnalysts.length}`);
+    console.log(`   Service lines: ${serviceLines.length}`);
+
+    // Get industry-specific priority sources
+    const prioritySources = INDUSTRY_PRIORITY_SOURCES[industry] || INDUSTRY_PRIORITY_SOURCES.default;
+    console.log(`   Priority sources for ${industry}: ${prioritySources.slice(0, 5).join(', ')}...`);
 
     // ================================================================
-    // STEP 2: Get articles from last 48h (ONLY with valid published_at)
+    // STEP 2: Get ALL articles from last 48h - NO CAPS
+    // Pass everything to relevance filter which will do smart filtering
     // ================================================================
     const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
 
-    const { data: articles, error: articlesError } = await supabase
+    // Get ALL articles - no limits, relevance filter handles volume
+    const { data: allArticles, error: articlesError } = await supabase
       .from('raw_articles')
       .select(`
         id,
@@ -76,21 +133,38 @@ serve(async (req) => {
         description,
         published_at,
         full_content,
-        source_registry!inner(tier, industries)
+        source_registry(tier, industries)
       `)
       .in('scrape_status', ['completed', 'failed'])
       .not('published_at', 'is', null)
       .gte('published_at', fortyEightHoursAgo)
-      .order('published_at', { ascending: false })
-      .limit(150);  // Reduced to avoid timeout
+      .order('published_at', { ascending: false });
 
     if (articlesError) {
+      console.error('Articles fetch error:', articlesError.message);
       throw new Error(`Failed to fetch articles: ${articlesError.message}`);
     }
 
-    console.log(`   Articles in last 48h: ${articles?.length || 0}`);
+    console.log(`   Total articles from all sources: ${allArticles?.length || 0}`);
 
-    if (!articles || articles.length === 0) {
+    // Mark priority sources for Claude's context
+    const prioritySourcesLower = prioritySources.map(s => s.toLowerCase());
+    const articles = (allArticles || []).map(a => ({
+      ...a,
+      isPriority: prioritySourcesLower.includes(a.source_name?.toLowerCase() || '')
+    }));
+
+    // Log source distribution
+    const sourceDistributionRaw: Record<string, number> = {};
+    articles.forEach(a => {
+      sourceDistributionRaw[a.source_name] = (sourceDistributionRaw[a.source_name] || 0) + 1;
+    });
+
+    console.log(`   Total articles fetched: ${articles.length}`);
+    console.log(`   Unique sources: ${Object.keys(sourceDistributionRaw).length}`);
+    console.log(`   Source distribution:`, sourceDistributionRaw);
+
+    if (articles.length === 0) {
       return new Response(JSON.stringify({
         success: true,
         organization_id: org.id,
@@ -104,80 +178,64 @@ serve(async (req) => {
     }
 
     // ================================================================
-    // PART 1: INTELLIGENCE EXPANSION
+    // PART 1: INTELLIGENCE EXPANSION (PROFILE-AWARE)
     // ================================================================
-    console.log('\n📡 PART 1: INTELLIGENCE EXPANSION');
-    console.log('   Expanding company profile into search vectors...');
+    console.log('\n📡 PART 1: INTELLIGENCE EXPANSION (using profile context)');
 
-    const competitors = intelligenceTargets?.filter(t => t.type === 'competitor') || [];
-    const stakeholders = intelligenceTargets?.filter(t => t.type === 'stakeholder') || [];
+    // Get industry-specific expansion template
+    const industryTemplate = INDUSTRY_EXPANSION_TEMPLATES[industry] || INDUSTRY_EXPANSION_TEMPLATES.default;
 
-    const expansionPrompt = `You are a senior intelligence analyst. Your client is ${org.name}.
+    const expansionPrompt = `${industryTemplate}
 
-COMPANY PROFILE:
-- Name: ${org.name}
-- Industry: ${industry}
-- Description: ${profileData.description || 'Not provided'}
-- Key Markets: ${profileData.market?.geographic_focus?.join(', ') || 'Global'}
-- Market Drivers: ${profileData.market?.market_drivers?.join(', ') || 'Not specified'}
+CLIENT: ${org.name}
+INDUSTRY: ${industry}
+${profileData.description ? `DESCRIPTION: ${profileData.description}` : ''}
 
-KNOWN COMPETITORS:
-${competitors.map(c => `- ${c.name}`).join('\n') || 'None specified'}
+SERVICE LINES:
+${serviceLines.map(s => `- ${s}`).join('\n') || '- General services'}
 
-KNOWN STAKEHOLDERS:
-${stakeholders.map(s => `- ${s.name}: ${s.monitoring_context || ''}`).join('\n') || 'None specified'}
+KEY COMPETITORS TO TRACK:
+${competitors.slice(0, 10).map(c => `- ${c}`).join('\n') || '- Unknown competitors'}
 
-YOUR TASK: Generate comprehensive intelligence vectors for hunting relevant news.
+KEY INDUSTRY VOICES/ANALYSTS:
+${stakeholderAnalysts.slice(0, 5).map(a => `- ${a}`).join('\n') || '- Industry analysts'}
 
-Think deeply about what this company ACTUALLY cares about:
-- What commodities/products do they trade or produce?
-- What geographic regions are critical to their operations?
-- What macro themes affect their business?
-- What specific events would executives want to know about?
+MONITORING QUESTIONS FROM PROFILE:
+${(intelligenceContext.key_questions || []).map(q => `- ${q}`).join('\n') || '- What are competitors doing?'}
 
-For a diversified trading company like a Japanese sogo shosha, think about:
-- Energy (LNG, oil, gas, coal, renewables)
-- Metals & Mining (iron ore, copper, nickel, aluminum, rare earths)
-- Agriculture (soybeans, wheat, corn, coffee, palm oil)
-- Infrastructure & Logistics (ports, shipping, rail, power plants)
-- Chemicals & Materials
-- Consumer & Retail investments
+YOUR TASK: Generate intelligence vectors specifically for ${org.name} in the ${industry} industry.
+
+Think about what ACTUALLY matters to a ${industry} company:
+${industry === 'public_relations' ? `
+- PR agency news (wins, losses, reviews)
+- Corporate crises and PR responses
+- Communications trends (ESG, AI, influencers)
+- Reputation management cases
+- Industry M&A and consolidation
+- CMO/CCO executive moves
+` : ''}
 
 Return JSON only:
 {
-  "commodities": [
-    "LNG spot prices and long-term contracts",
-    "Iron ore prices and Australian exports",
-    "Copper market and Chilean production",
-    ... (15-25 specific commodity/product vectors)
+  "industry_signals": [
+    "15-20 industry-specific signals to hunt for",
+    "These should be things that matter to a ${industry} company"
   ],
-  "geographic_signals": [
-    "Japan energy policy and imports",
-    "Australia mining regulations and exports",
-    "Brazil agricultural exports and Petrobras",
-    ... (15-25 specific geographic vectors)
+  "competitor_signals": [
+    "5-10 competitor-specific signals",
+    "Format: 'CompetitorName + what to watch for'"
   ],
-  "competitors": [
-    "Mitsubishi Corporation earnings and strategy",
-    "Itochu quarterly results and investments",
-    ... (include ALL known competitors plus any you identify)
+  "trend_signals": [
+    "5-10 industry trend signals",
+    "Emerging topics, technology shifts, market changes"
   ],
-  "themes": [
-    "Energy transition and decarbonization investments",
-    "Supply chain disruptions and logistics",
-    "ESG regulations affecting resource companies",
-    ... (10-15 macro themes)
-  ],
-  "specific_queries": [
-    "LNG project delays or cancellations",
-    "Mining M&A and asset sales",
-    "Japanese trading house earnings",
-    "Commodity price forecasts",
-    ... (15-25 specific news queries an analyst would search for)
+  "crisis_signals": [
+    "3-5 crisis/reputation signals",
+    "Things that indicate reputation issues in the industry"
   ]
 }
 
-Be COMPREHENSIVE. Better to have too many vectors than miss important news.`;
+Be SPECIFIC to ${industry}. Not generic business news.`;
 
     const expansionResponse = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -187,7 +245,7 @@ Be COMPREHENSIVE. Better to have too many vectors than miss important news.`;
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-3-5-haiku-20241022',  // Use Haiku for speed - expansion is simpler
+        model: 'claude-3-5-haiku-20241022',
         max_tokens: 4000,
         temperature: 0.3,
         messages: [{ role: 'user', content: expansionPrompt }]
@@ -207,86 +265,130 @@ Be COMPREHENSIVE. Better to have too many vectors than miss important news.`;
       throw new Error('Failed to parse intelligence vectors');
     }
 
-    const vectors: IntelligenceVectors = JSON.parse(vectorsMatch[0]);
+    const vectors = JSON.parse(vectorsMatch[0]);
 
     const totalVectors =
-      vectors.commodities.length +
-      vectors.geographic_signals.length +
-      vectors.competitors.length +
-      vectors.themes.length +
-      vectors.specific_queries.length;
+      (vectors.industry_signals?.length || 0) +
+      (vectors.competitor_signals?.length || 0) +
+      (vectors.trend_signals?.length || 0) +
+      (vectors.crisis_signals?.length || 0);
 
     console.log(`   Generated ${totalVectors} intelligence vectors:`);
-    console.log(`   - Commodities: ${vectors.commodities.length}`);
-    console.log(`   - Geographic: ${vectors.geographic_signals.length}`);
-    console.log(`   - Competitors: ${vectors.competitors.length}`);
-    console.log(`   - Themes: ${vectors.themes.length}`);
-    console.log(`   - Specific queries: ${vectors.specific_queries.length}`);
+    console.log(`   - Industry signals: ${vectors.industry_signals?.length || 0}`);
+    console.log(`   - Competitor signals: ${vectors.competitor_signals?.length || 0}`);
+    console.log(`   - Trend signals: ${vectors.trend_signals?.length || 0}`);
+    console.log(`   - Crisis signals: ${vectors.crisis_signals?.length || 0}`);
 
     // ================================================================
-    // PART 2: ARTICLE HUNTING
+    // PART 2: ARTICLE HUNTING (INDUSTRY-FOCUSED)
     // ================================================================
     console.log('\n🔍 PART 2: ARTICLE HUNTING');
     console.log(`   Hunting through ${articles.length} articles...`);
 
-    // Prepare articles for evaluation (title + description + snippet)
+    // Prepare articles for evaluation - LIGHTWEIGHT: just title + source
+    // Enrichment does the heavy processing, selector just matches headlines
     const articlesForHunting = articles.map((article, idx) => ({
       id: idx,
-      title: article.title,
-      source: article.source_name,
-      published: article.published_at,
-      description: article.description || '',
-      snippet: article.full_content ? article.full_content.substring(0, 300) : ''
+      t: article.title,  // title
+      s: article.source_name  // source
     }));
 
-    const huntingPrompt = `You are an intelligence analyst hunting for relevant news for ${org.name}.
+    const huntingPrompt = `You are an intelligence analyst hunting for news relevant to ${org.name}, a ${industry} company.
 
 TODAY'S DATE: ${new Date().toISOString().split('T')[0]}
 
-INTELLIGENCE VECTORS TO HUNT FOR:
+ABOUT ${org.name}:
+${profileData.description || `A ${industry} company`}
 
-COMMODITIES:
-${vectors.commodities.map(v => `• ${v}`).join('\n')}
+SERVICE LINES: ${serviceLines.join(', ') || 'Various services'}
 
-GEOGRAPHIC SIGNALS:
-${vectors.geographic_signals.map(v => `• ${v}`).join('\n')}
+KEY COMPETITORS: ${competitors.slice(0, 8).join(', ') || 'Unknown'}
 
-COMPETITORS:
-${vectors.competitors.map(v => `• ${v}`).join('\n')}
+INTELLIGENCE VECTORS TO MATCH:
 
-THEMES:
-${vectors.themes.map(v => `• ${v}`).join('\n')}
+INDUSTRY SIGNALS (${industry}-specific):
+${(vectors.industry_signals || []).map(v => `• ${v}`).join('\n')}
 
-SPECIFIC QUERIES:
-${vectors.specific_queries.map(v => `• ${v}`).join('\n')}
+COMPETITOR SIGNALS:
+${(vectors.competitor_signals || []).map(v => `• ${v}`).join('\n')}
 
-YOUR MISSION: Hunt through these ${articlesForHunting.length} articles and find EVERYTHING that matches ANY of the intelligence vectors above.
+TREND SIGNALS:
+${(vectors.trend_signals || []).map(v => `• ${v}`).join('\n')}
 
-RULES:
-1. Be AGGRESSIVE - if an article might be relevant, INCLUDE IT
-2. Match against ANY vector - commodities, geographic, competitors, themes, or specific queries
-3. An article about "copper prices" matches the commodities vector even if it doesn't mention ${org.name}
-4. An article about "Australia mining" matches geographic signals
-5. An article about any competitor is ALWAYS relevant
-6. REJECT only things that are clearly irrelevant (celebrity news, sports, unrelated consumer tech)
+CRISIS/REPUTATION SIGNALS:
+${(vectors.crisis_signals || []).map(v => `• ${v}`).join('\n')}
 
-For each article, decide:
-- keep: true if it matches ANY intelligence vector
-- vector_match: which category it matched (commodities/geographic/competitors/themes/specific)
-- relevance: brief explanation of WHY it's relevant
+YOUR MISSION: Find articles that are relevant to a ${industry} company.
+
+${industry === 'public_relations' ? `
+FOR PR/COMMUNICATIONS FIRMS, PRIORITIZE:
+✅ Agency news (account wins, losses, reviews, pitches)
+✅ Corporate crises and PR responses
+✅ Reputation management cases
+✅ Communications industry M&A
+✅ CMO/CCO/Communications executive moves
+✅ PR campaign results and case studies
+✅ Industry trends (ESG comms, AI in PR, influencer marketing)
+✅ Any article mentioning competitors: ${competitors.slice(0, 5).join(', ')}
+
+REJECT UNLESS CLEAR PR ANGLE:
+❌ Commodity prices, currency moves, central bank rates
+❌ General geopolitical news without PR implications
+❌ Stock market movements
+❌ Random company news with no communications angle
+` : ''}
+
+${industry === 'trading' ? `
+FOR TRADING/SOGO SHOSHA (GLOBAL CONGLOMERATE) - BE VERY INCLUSIVE:
+
+A diversified trading company like Mitsui operates across virtually every sector globally.
+They care about EVERYTHING that affects global business, markets, and policy.
+
+INCLUDE ALL OF THESE:
+✅ Commodities: oil, gas, LNG, metals, minerals, agriculture, chemicals, steel
+✅ Energy: renewable, solar, wind, nuclear, batteries, EVs, grid infrastructure
+✅ Logistics: freight, shipping, ports, supply chain, warehousing
+✅ Trade policy: tariffs, sanctions, trade agreements, export controls
+✅ Politics & regulation: US policy, China relations, EU regulations, Japan policy
+✅ Geopolitics: regional tensions, trade wars, diplomatic developments
+✅ Environmental: climate policy, ESG, activists, sustainability regulations
+✅ Industrial: manufacturing, infrastructure, construction, real estate
+✅ Finance: currencies, interest rates, central banks, capital markets
+✅ Technology: industrial tech, AI in business, digital transformation
+✅ Competitors: Mitsubishi Corp, Sumitomo, Itochu, Marubeni, Glencore, Trafigura
+✅ Regional: Asia-Pacific, Americas, Europe, Middle East, Africa developments
+
+USE ALL SOURCES - each has value:
+- Politico, Axios: policy and politics
+- FreightWaves: logistics and freight
+- CleanTechnica: energy transition
+- Industry Week: manufacturing
+- Bloomberg, Reuters, WSJ, FT: markets and finance
+- CNBC: business news
+
+Aim for 80-150 articles. When in doubt, INCLUDE IT.
+` : ''}
+
+PRIORITY SOURCES (articles from these are more likely relevant):
+${prioritySources.slice(0, 10).join(', ')}
+
+IMPORTANT GUIDELINES:
+- Be INCLUSIVE, not exclusive. When in doubt, include the article.
+- Aim for 50-100 articles. More is better - enrichment will filter further.
+- Use DIVERSE sources. Don't just pick from one or two sources.
+- Trade publications (FreightWaves, CleanTechnica, Industry Week) often have highly relevant industry news.
+- Articles about competitors, commodities, supply chains, and markets are relevant to trading companies.
+
+TASK: Return the IDs of relevant articles as a JSON array.
+Just scan headlines - enrichment will do deep analysis later.
 
 Return JSON only:
-{
-  "selections": [
-    {"id": 0, "keep": true, "vector_match": "commodities", "relevance": "LNG pricing in Asia"},
-    {"id": 1, "keep": false, "relevance": "Celebrity news, not relevant"},
-    ...
-  ]
-}
+{"ids": [0, 3, 7, 12, ...]}
 
-ARTICLES TO HUNT:
-${JSON.stringify(articlesForHunting, null, 2)}`;
+ARTICLES (id, title, source):
+${articlesForHunting.map(a => `${a.id}|${a.t}|${a.s}`).join('\n')}`;
 
+    // Use Sonnet for better judgment on relevance
     const huntingResponse = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -296,7 +398,7 @@ ${JSON.stringify(articlesForHunting, null, 2)}`;
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 16000,
+        max_tokens: 4000,
         temperature: 0,
         messages: [{ role: 'user', content: huntingPrompt }]
       })
@@ -309,63 +411,50 @@ ${JSON.stringify(articlesForHunting, null, 2)}`;
     const huntingResult = await huntingResponse.json();
     const huntingText = huntingResult.content[0].text;
 
-    const selectionsMatch = huntingText.match(/\{[\s\S]*\}/);
-    if (!selectionsMatch) {
+    // Parse simple ID array response
+    const idsMatch = huntingText.match(/\{[\s\S]*\}/);
+    if (!idsMatch) {
       throw new Error('Failed to parse hunting selections');
     }
 
-    const { selections } = JSON.parse(selectionsMatch[0]);
+    const { ids } = JSON.parse(idsMatch[0]);
+    const selectedIds = new Set(ids || []);
 
     // Collect selected articles
     const selectedArticles = [];
-    const vectorMatchCounts: Record<string, number> = {};
 
-    for (const selection of selections) {
-      if (selection.keep) {
-        const article = articles[selection.id];
-        if (article) {
-          selectedArticles.push({
-            ...article,
-            vector_match: selection.vector_match,
-            relevance: selection.relevance
-          });
-          vectorMatchCounts[selection.vector_match] = (vectorMatchCounts[selection.vector_match] || 0) + 1;
-        }
+    for (const id of selectedIds) {
+      const article = articles[id];
+      if (article) {
+        selectedArticles.push({
+          ...article,
+          priority: article.isPriority ? 'high' : 'normal'
+        });
       }
     }
 
     console.log(`   Hunting found ${selectedArticles.length} relevant articles`);
-    console.log(`   By vector type:`, vectorMatchCounts);
 
-    // Log what Hunter selected (before QC)
-    console.log('\n   📋 HUNTER SELECTIONS (before QC):');
+    // Log what Hunter selected
+    console.log('\n   📋 HUNTER SELECTIONS:');
     selectedArticles.slice(0, 30).forEach((a, i) => {
-      console.log(`   ${i+1}. [${a.vector_match}] ${a.title?.substring(0, 60)}`);
-      console.log(`      → ${a.relevance}`);
+      console.log(`   ${i+1}. [${a.source_name}] ${a.title?.substring(0, 60)}`);
     });
-
-    // QC REMOVED - Enrichment and Synthesis provide downstream filtering
-    // No need to second-guess the Hunter's selections here
-    const finalArticles = selectedArticles;
 
     // ================================================================
     // STEP 3: Format and return results
     // ================================================================
 
-    // Enforce source diversity for final output
-    // For diversified trading companies like Mitsui, we want MORE coverage
-    const MAX_PER_SOURCE = 15;  // Allow up to 15 per source for better coverage
-    const sourceCount = new Map<string, number>();
-    const diverseArticles = [];
+    // Sort by priority (high first), then by publication date
+    const sortedArticles = selectedArticles.sort((a, b) => {
+      if (a.priority === 'high' && b.priority !== 'high') return -1;
+      if (b.priority === 'high' && a.priority !== 'high') return 1;
+      return new Date(b.published_at).getTime() - new Date(a.published_at).getTime();
+    });
 
-    for (const article of finalArticles) {
-      const count = sourceCount.get(article.source_name) || 0;
-      if (count < MAX_PER_SOURCE) {
-        diverseArticles.push(article);
-        sourceCount.set(article.source_name, count + 1);
-      }
-      if (diverseArticles.length >= 100) break;  // Allow up to 100 articles for comprehensive coverage
-    }
+    // Pass through ALL selected articles - let downstream stages filter
+    // Selector should cast a wide net, relevance filter will score/trim
+    const diverseArticles = sortedArticles.slice(0, 150);  // Cap at 150 max
 
     // Format for output
     const formattedArticles = diverseArticles.map(article => ({
@@ -375,8 +464,7 @@ ${JSON.stringify(articlesForHunting, null, 2)}`;
       source: article.source_name,
       published_at: article.published_at,
       full_content: article.full_content,
-      vector_match: article.vector_match,
-      relevance: article.relevance,
+      priority: article.priority,
       source_tier: article.source_registry?.tier || 2
     }));
 
@@ -394,14 +482,6 @@ ${JSON.stringify(articlesForHunting, null, 2)}`;
     console.log(`   Distribution:`, sourceDistribution);
     console.log(`   Duration: ${duration}s`);
 
-    // Format hunter selections for debugging
-    const hunterSelectionsFormatted = selectedArticles.slice(0, 60).map(a => ({
-      title: a.title,
-      source: a.source_name,
-      vector_match: a.vector_match,
-      relevance: a.relevance
-    }));
-
     return new Response(JSON.stringify({
       success: true,
       organization_id: org.id,
@@ -411,14 +491,12 @@ ${JSON.stringify(articlesForHunting, null, 2)}`;
       hunter_selected: selectedArticles.length,
       articles_scanned: articles.length,
       intelligence_vectors: totalVectors,
-      vector_matches: vectorMatchCounts,
-      hunter_selections: hunterSelectionsFormatted,
       articles: formattedArticles,
       sources: Object.keys(sourceDistribution),
       source_distribution: sourceDistribution,
       selected_at: new Date().toISOString(),
       duration_seconds: duration,
-      selection_method: 'v4_intelligence_hunter'
+      selection_method: 'v4_profile_aware_hunter'
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
