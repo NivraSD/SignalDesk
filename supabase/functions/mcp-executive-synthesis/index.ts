@@ -1440,7 +1440,8 @@ Remember: You're not gathering intelligence - you're SYNTHESIZING already-gather
 
       // POST-PROCESSING: Enrich URLs in key_developments using original event data
       // Claude often fails to copy URLs correctly, so we match by source/title and fix them
-      if (result.synthesis?.key_developments && topEvents && enrichedArticles) {
+      const contextEvents = context.strategicInsights?.events || [];
+      if (result.synthesis?.key_developments && (contextEvents.length > 0 || enrichedArticles.length > 0)) {
         console.log('🔗 Enriching URLs in key_developments...');
 
         // Create URL lookup maps from both events and articles
@@ -1448,7 +1449,7 @@ Remember: You're not gathering intelligence - you're SYNTHESIZING already-gather
         const urlByTitle: Record<string, string> = {};
 
         // From events
-        topEvents.forEach((e: any) => {
+        contextEvents.forEach((e: any) => {
           if (e.source && e.url) urlBySource[e.source.toLowerCase()] = e.url;
           if (e.article_title && e.url) urlByTitle[e.article_title.toLowerCase().substring(0, 50)] = e.url;
         });
