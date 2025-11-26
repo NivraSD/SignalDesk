@@ -121,8 +121,35 @@ export class IntelligenceService {
         console.log('✅ article-selector completed')
         onProgress?.('article-selector', 'completed', articleResponse.data)
 
-        const finalArticles = articleResponse.data?.articles || []
-        console.log('📊 Article selector:', finalArticles.length, 'relevant articles selected (AI-scored)')
+        const selectedArticles = articleResponse.data?.articles || []
+        console.log('📊 Article selector:', selectedArticles.length, 'articles selected')
+
+        // STEP 3: Relevance filter - score and filter articles
+        let finalArticles = selectedArticles
+        if (selectedArticles.length > 0) {
+          console.log('Starting monitor-stage-2-relevance with', selectedArticles.length, 'articles')
+          onProgress?.('monitor-stage-2-relevance', 'running')
+
+          const relevanceResponse = await supabase.functions.invoke('monitor-stage-2-relevance', {
+            body: {
+              articles: selectedArticles,
+              organization_id: organizationId,
+              organization_name: orgName,
+              profile: profile
+            }
+          })
+
+          if (relevanceResponse.error) {
+            console.warn('⚠️ Relevance filter failed (using all articles):', relevanceResponse.error)
+            onProgress?.('monitor-stage-2-relevance', 'failed', relevanceResponse.error)
+            // Continue with all articles if relevance filter fails
+          } else {
+            finalArticles = relevanceResponse.data?.relevant_articles || selectedArticles
+            console.log('✅ Relevance filter:', selectedArticles.length, '→', finalArticles.length, 'articles')
+            console.log('   Keep rate:', relevanceResponse.data?.keep_rate || 'N/A')
+            onProgress?.('monitor-stage-2-relevance', 'completed', relevanceResponse.data)
+          }
+        }
 
           // STEP 3.5: target-intelligence-collector (NEW: Save mentions to intelligence repository)
           if (finalArticles.length > 0) {
@@ -385,8 +412,35 @@ export class IntelligenceService {
       console.log('✅ article-selector completed')
       onProgress?.('article-selector', 'completed', articleResponse.data)
 
-      const finalArticles = articleResponse.data?.articles || []
-      console.log('📊 Article selector:', finalArticles.length, 'relevant articles selected (AI-scored)')
+      const selectedArticles = articleResponse.data?.articles || []
+      console.log('📊 Article selector:', selectedArticles.length, 'articles selected')
+
+      // STEP 3: Relevance filter - score and filter articles
+      let finalArticles = selectedArticles
+      if (selectedArticles.length > 0) {
+        console.log('Starting monitor-stage-2-relevance with', selectedArticles.length, 'articles')
+        onProgress?.('monitor-stage-2-relevance', 'running')
+
+        const relevanceResponse = await supabase.functions.invoke('monitor-stage-2-relevance', {
+          body: {
+            articles: selectedArticles,
+            organization_id: organizationId,
+            organization_name: organizationName,
+            profile: profile
+          }
+        })
+
+        if (relevanceResponse.error) {
+          console.warn('⚠️ Relevance filter failed (using all articles):', relevanceResponse.error)
+          onProgress?.('monitor-stage-2-relevance', 'failed', relevanceResponse.error)
+          // Continue with all articles if relevance filter fails
+        } else {
+          finalArticles = relevanceResponse.data?.relevant_articles || selectedArticles
+          console.log('✅ Relevance filter:', selectedArticles.length, '→', finalArticles.length, 'articles')
+          console.log('   Keep rate:', relevanceResponse.data?.keep_rate || 'N/A')
+          onProgress?.('monitor-stage-2-relevance', 'completed', relevanceResponse.data)
+        }
+      }
 
         // STEP 3.5: target-intelligence-collector (NEW: Save mentions to intelligence repository)
         if (finalArticles.length > 0) {
