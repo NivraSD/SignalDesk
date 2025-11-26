@@ -102,10 +102,10 @@ export class IntelligenceService {
 
       // Use article-selector to query V5 batch scraper articles
       if (profile) {
-        console.log('Starting article-selector-v3 (Smart keyword matching)')
+        console.log('Starting article-selector-v4 (Intelligence Hunter)')
         onProgress?.('article-selector', 'running')
 
-        const articleResponse = await supabase.functions.invoke('article-selector-v3', {
+        const articleResponse = await supabase.functions.invoke('article-selector-v4', {
           body: {
             organization_id: organizationId,
             organization_name: orgName
@@ -365,11 +365,11 @@ export class IntelligenceService {
       console.log('✅ Profile loaded successfully')
       onProgress?.('load-profile', 'completed', { profile })
 
-      // STEP 2: Use article-selector-v3 to query V5 batch scraper articles
-      console.log('Starting article-selector-v3 (Smart keyword matching)')
+      // STEP 2: Use article-selector-v4 to query V5 batch scraper articles
+      console.log('Starting article-selector-v4 (Intelligence Hunter)')
       onProgress?.('article-selector', 'running')
 
-      const articleResponse = await supabase.functions.invoke('article-selector-v3', {
+      const articleResponse = await supabase.functions.invoke('article-selector-v4', {
         body: {
           organization_id: organizationId,
           organization_name: organizationName

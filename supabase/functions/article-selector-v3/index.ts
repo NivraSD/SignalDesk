@@ -1,5 +1,6 @@
-// Article Selector V3 - Smart, Fast, Effective
-// No bullshit AI scoring. Simple logic: Does it mention the company or industry? Include it.
+// Article Selector V5 - Strategic Intelligence Selection
+// Selects articles that directly inform competitive intelligence and strategic decisions
+// Focuses on: competitor actions, industry developments, stakeholder moves, client opportunities
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -27,35 +28,24 @@ serve(async (req) => {
     let org;
     let orgError;
 
-    if (organization_name) {
-      // Try organization_profiles first
-      const { data: profileData, error: profileError } = await supabase
-        .from('organization_profiles')
-        .select('*')
-        .eq('organization_name', organization_name)
-        .limit(1)
-        .maybeSingle();
-
-      if (profileData) {
-        org = profileData;
-      } else {
-        // Fallback to organizations table
-        const { data: orgData, error: orgErr } = await supabase
-          .from('organizations')
-          .select('*')
-          .eq('name', organization_name)
-          .limit(1)
-          .maybeSingle();
-
-        org = orgData;
-        orgError = orgErr;
-      }
-    } else if (organization_id) {
+    if (organization_id) {
+      // Use ID if provided (most reliable)
       const { data: orgData, error: orgErr } = await supabase
         .from('organizations')
         .select('*')
         .eq('id', organization_id)
-        .single();
+        .maybeSingle();
+
+      org = orgData;
+      orgError = orgErr;
+    } else if (organization_name) {
+      // Try organizations table
+      const { data: orgData, error: orgErr } = await supabase
+        .from('organizations')
+        .select('*')
+        .eq('name', organization_name)
+        .limit(1)
+        .maybeSingle();
 
       org = orgData;
       orgError = orgErr;
@@ -67,11 +57,11 @@ serve(async (req) => {
       throw new Error(`Failed to fetch organization: ${orgError?.message}`);
     }
 
-    const profileData = org.profile_data || org.company_profile || {};
-    const industry = profileData.industry || org.industry || 'unknown';
+    const profileData = org.company_profile || {};
+    const industry = org.industry || 'unknown';
 
     console.log(`   Industry: ${industry}`);
-    console.log(`   Profile data available: ${!!profileData && Object.keys(profileData).length > 0}`);
+    console.log(`   Profile data keys:`, Object.keys(profileData));
 
     // ================================================================
     // STEP 2: Build search keywords from profile
@@ -83,7 +73,8 @@ serve(async (req) => {
     if (org.name) keywords.add(org.name.toLowerCase());
     if (org.organization_name) keywords.add(org.organization_name.toLowerCase());
 
-    // Add competitors
+    // Extract keywords from common profile structures
+    // Handle legacy structure (competition, stakeholders, etc.)
     if (profileData.competition) {
       [...(profileData.competition.direct_competitors || []),
        ...(profileData.competition.indirect_competitors || []),
@@ -91,8 +82,6 @@ serve(async (req) => {
         if (c && typeof c === 'string') keywords.add(c.toLowerCase());
       });
     }
-
-    // Add stakeholders
     if (profileData.stakeholders) {
       [...(profileData.stakeholders.regulators || []),
        ...(profileData.stakeholders.major_investors || []),
@@ -100,8 +89,6 @@ serve(async (req) => {
         if (s && typeof s === 'string') keywords.add(s.toLowerCase());
       });
     }
-
-    // Add industry keywords
     if (profileData.keywords) {
       profileData.keywords.forEach(k => {
         if (k && typeof k === 'string') keywords.add(k.toLowerCase());
@@ -113,21 +100,24 @@ serve(async (req) => {
       });
     }
 
+    // Handle market-based structure (key_metrics, market_drivers, etc.)
+    if (profileData.market) {
+      ['key_metrics', 'market_drivers', 'market_barriers', 'geographic_focus', 'monitoring_queries'].forEach(field => {
+        const values = profileData.market[field];
+        if (Array.isArray(values)) {
+          values.forEach(v => {
+            if (v && typeof v === 'string' && v.length > 2 && v.length < 100) {
+              keywords.add(v.toLowerCase());
+            }
+          });
+        }
+      });
+    }
+
     // Add industry name itself
     if (industry && industry !== 'unknown') keywords.add(industry.toLowerCase());
 
     console.log(`   Keywords: ${keywords.size} total`);
-    console.log(`   All keywords:`, Array.from(keywords));
-
-    // DEBUG: Log profile data structure
-    console.log(`   Profile structure:`, {
-      has_competition: !!profileData.competition,
-      has_stakeholders: !!profileData.stakeholders,
-      has_keywords: !!profileData.keywords,
-      has_monitoring_config: !!profileData.monitoring_config,
-      competitors_count: profileData.competition?.direct_competitors?.length || 0,
-      profile_keys: Object.keys(profileData)
-    });
 
     // ================================================================
     // STEP 3: Get intelligence targets from database
@@ -156,12 +146,17 @@ serve(async (req) => {
 
     console.log(`   Company type: ${isDiversified ? 'DIVERSIFIED' : 'FOCUSED'}`);
 
-    // ================================================================
-    // STEP 5: Get articles from ALL sources from last 24h
-    // ================================================================
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    // Convert keywords to array for filtering
+    const keywordArray = Array.from(keywords);
 
-    const { data: allArticles } = await supabase
+    // ================================================================
+    // STEP 5: Get articles from last 48h
+    // ================================================================
+    const twentyFourHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+
+    // Get articles from last 48h - limit to 100 most recent to avoid timeout
+    // Prefer published_at when available, fallback to scraped_at
+    const { data: articlesWithPublishedDate } = await supabase
       .from('raw_articles')
       .select(`
         id,
@@ -170,15 +165,24 @@ serve(async (req) => {
         title,
         description,
         published_at,
+        scraped_at,
         full_content,
+        extracted_metadata,
         source_registry!inner(tier, industries)
       `)
-      .eq('scrape_status', 'completed')
+      .in('scrape_status', ['completed', 'failed'])  // Include paywalled articles with titles
+      .not('published_at', 'is', null)
       .gte('published_at', twentyFourHoursAgo)
       .order('published_at', { ascending: false })
-      .limit(500); // Get plenty to work with
+      .limit(100);
 
-    console.log(`   Found ${allArticles?.length || 0} articles from last 24h`);
+    // REMOVED: No longer fetch articles without published_at
+    // Articles without proper publication dates (like old Brookings research) were contaminating results
+    // If an article doesn't have a published_at date, we can't trust its recency
+
+    const allArticles = articlesWithPublishedDate || [];
+
+    console.log(`   Found ${allArticles?.length || 0} articles from last 48h`);
 
     if (!allArticles || allArticles.length === 0) {
       return new Response(JSON.stringify({
@@ -187,59 +191,249 @@ serve(async (req) => {
         organization_name,
         total_articles: 0,
         articles: [],
-        message: 'No articles found in last 24 hours'
+        message: 'No articles found in last 48 hours'
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
     // ================================================================
-    // STEP 6: SMART MATCHING - Check each article for keyword matches
+    // STEP 6: INTELLIGENT CLAUDE EVALUATION
     // ================================================================
-    const matchedArticles = [];
-    const keywordArray = Array.from(keywords);
+    // Skip keyword pre-filtering - let Claude do the intelligent selection
+    // We want VOLUME for synthesis, so evaluate as many articles as feasible
+    console.log(`   🤖 Sending ${Math.min(allArticles.length, 100)} articles to Claude for intelligent evaluation...`);
 
-    for (const article of allArticles) {
-      const searchText = `${article.title || ''} ${article.description || ''}`.toLowerCase();
-
-      // Check if ANY keyword matches
-      const matches = keywordArray.filter(keyword => searchText.includes(keyword));
-
-      if (matches.length > 0) {
-        // Calculate relevance score based on matches
-        let score = matches.length * 10; // Base score
-
-        // Bonus for company name match
-        const companyName = organization_name || org.name || org.organization_name;
-        if (companyName && searchText.includes(companyName.toLowerCase())) {
-          score += 30;
-        }
-
-        // Bonus for tier 1 sources if diversified company
-        if (isDiversified && article.source_registry?.tier === 1) {
-          score += 20;
-        }
-
-        // Bonus for full content
-        if (article.full_content && article.full_content.length > 500) {
-          score += 10;
-        }
-
-        matchedArticles.push({
-          ...article,
-          relevance_score: Math.min(score, 100),
-          matched_keywords: matches
-        });
-      }
+    const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
+    if (!ANTHROPIC_API_KEY) {
+      throw new Error('ANTHROPIC_API_KEY not configured');
     }
 
-    console.log(`   Matched: ${matchedArticles.length} articles`);
+    const matchedArticles = [];
+
+    // SOURCE BALANCING: Limit articles per source to ensure diversity
+    // Without this, one source can flood the evaluation window
+    const MAX_PER_SOURCE_EVAL = 15;
+    const sourceCountsEval: Record<string, number> = {};
+    const balancedArticles: typeof allArticles = [];
+
+    for (const article of allArticles) {
+      const source = article.source_name || 'Unknown';
+      sourceCountsEval[source] = (sourceCountsEval[source] || 0) + 1;
+
+      if (sourceCountsEval[source] <= MAX_PER_SOURCE_EVAL) {
+        balancedArticles.push(article);
+      }
+
+      // Stop once we have 200 balanced articles
+      if (balancedArticles.length >= 200) break;
+    }
+
+    // Evaluate the balanced set (max 150)
+    const articlesToEvaluate = balancedArticles.slice(0, 150);
+
+    console.log(`   📊 Source balancing: ${allArticles.length} articles → ${balancedArticles.length} balanced (max ${MAX_PER_SOURCE_EVAL}/source)`);
+    console.log(`   🤖 Using Claude to evaluate ${articlesToEvaluate.length} articles...`);
+
+    // Give Claude more content to work with - 800 chars instead of 400
+    // Include published_at so Claude can assess timeliness
+    const articlesForEvaluation = articlesToEvaluate.map((article, idx) => ({
+      id: idx,
+      title: article.title,
+      description: article.description || '',
+      source: article.source_name,
+      published_at: article.published_at,
+      snippet: article.full_content ? article.full_content.substring(0, 800) : ''
+    }));
+
+    // Build rich intelligence context from the full company profile
+    const competitors = intelligenceTargets
+      ?.filter(t => t.type === 'competitor')
+      .map(t => t.name) || [];
+
+    const stakeholders = intelligenceTargets
+      ?.filter(t => t.type === 'stakeholder')
+      .map(t => t.name) || [];
+
+    // Extract the rich context that already exists in the profile
+    const companyDescription = profileData.description || '';
+    const businessModel = profileData.company_profile?.business_model || '';
+    const productLines = profileData.company_profile?.product_lines || [];
+    const keyMarkets = profileData.company_profile?.key_markets || [];
+    const strategicGoals = profileData.company_profile?.strategic_goals || [];
+    const serviceLines = profileData.service_lines || [];
+    const keyQuestions = profileData.intelligence_context?.key_questions || [];
+    const marketDrivers = profileData.market?.market_drivers || [];
+
+    const prompt = `You are an elite strategic intelligence analyst. Your client is ${organization_name || org.name}.
+
+═══════════════════════════════════════════════════════════════
+DEEP COMPANY UNDERSTANDING - Study this carefully before evaluating
+═══════════════════════════════════════════════════════════════
+
+COMPANY: ${organization_name || org.name}
+INDUSTRY: ${industry}
+
+DESCRIPTION:
+${companyDescription || `A ${industry} company`}
+
+BUSINESS MODEL:
+${businessModel || 'Not specified'}
+
+PRODUCT/SERVICE LINES:
+${productLines.length > 0 ? productLines.map((p: string) => `• ${p}`).join('\n') : serviceLines.length > 0 ? serviceLines.map((s: string) => `• ${s}`).join('\n') : 'Not specified'}
+
+KEY MARKETS:
+${keyMarkets.length > 0 ? keyMarkets.join(', ') : 'Global'}
+
+STRATEGIC GOALS:
+${strategicGoals.length > 0 ? strategicGoals.map((g: any) => `• ${g.goal}: ${g.description}`).join('\n') : 'Not specified'}
+
+MARKET DRIVERS TO WATCH:
+${marketDrivers.length > 0 ? marketDrivers.join(', ') : 'Not specified'}
+
+═══════════════════════════════════════════════════════════════
+INTELLIGENCE TARGETS - Who/what we're hunting for
+═══════════════════════════════════════════════════════════════
+
+COMPETITORS (actively hunt for news about these):
+${competitors.length > 0 ? competitors.map(c => `• ${c}`).join('\n') : 'None specified'}
+
+KEY STAKEHOLDERS (analysts, regulators, industry figures):
+${stakeholders.length > 0 ? stakeholders.map(s => `• ${s}`).join('\n') : 'None specified'}
+
+KEY QUESTIONS THE EXECUTIVE TEAM WANTS ANSWERED:
+${keyQuestions.length > 0 ? keyQuestions.map((q: string) => `• ${q}`).join('\n') : 'Not specified'}
+
+═══════════════════════════════════════════════════════════════
+YOUR MISSION: HUNT FOR BREAKING STRATEGIC INTELLIGENCE
+═══════════════════════════════════════════════════════════════
+
+TODAY'S DATE: ${new Date().toISOString().split('T')[0]}
+
+You have ${articlesForEvaluation.length} RECENT articles (published in last 48 hours) to evaluate.
+Your job is to HUNT for BREAKING NEWS that provides genuine strategic value.
+
+CRITICAL: These should all be recent news. Each article has a published_at timestamp - verify it's from the last 48 hours. Reject anything that looks like old content, evergreen articles, or research papers.
+
+WHAT TO SELECT:
+
+1. COMPETITOR INTELLIGENCE (HIGHEST VALUE)
+   - Any mention of a listed competitor
+   - Competitor earnings, strategy shifts, leadership changes, M&A, partnerships
+   - Even brief mentions - executives want to know what competitors are doing
+
+2. MARKET/INDUSTRY INTELLIGENCE
+   - Developments in ${industry} and adjacent sectors
+   - For diversified companies: commodities, energy, mining, agriculture, infrastructure, logistics
+   - Regulatory changes affecting any of the company's business lines
+   - Geopolitical developments affecting supply chains or markets
+
+3. STAKEHOLDER INTELLIGENCE
+   - Statements from listed analysts, regulators, or industry figures
+   - Government policy announcements affecting key markets
+
+4. OPPORTUNITY/THREAT SIGNALS
+   - Major deals, IPOs, restructurings that create opportunities
+   - Supply chain disruptions, geopolitical tensions, price movements
+   - Technology shifts affecting the company's sectors
+
+WHAT TO EXCLUDE:
+
+✗ OLD CONTENT - research papers, analysis pieces, or "evergreen" articles that aren't breaking news
+✗ Generic tech news (AI model releases, gadget reviews) unless directly about ${industry}
+✗ Consumer lifestyle content
+✗ Local news with no business relevance
+✗ Entertainment, sports, celebrity news
+✗ Articles with no clear connection to ${organization_name || org.name}'s business
+✗ Think tank research, white papers, or policy analysis (unless announcing new findings TODAY)
+
+═══════════════════════════════════════════════════════════════
+SCORING GUIDANCE
+═══════════════════════════════════════════════════════════════
+
+90-100: Direct competitor mention OR critical market-moving news
+75-89:  Clear industry relevance, stakeholder activity, or major opportunity/threat
+60-74:  Relevant to one of the company's business lines or markets
+50-59:  Tangentially relevant - include only if strong signal
+0-49:   No strategic value - EXCLUDE
+
+TARGET: Select 25-40 high-quality articles. Be thorough but selective.
+
+Return JSON only:
+{
+  "evaluations": [
+    {"id": 0, "keep": true/false, "score": 0-100, "reason": "brief reason (3-6 words)"}
+  ]
+}
+
+ARTICLES TO EVALUATE:
+${JSON.stringify(articlesForEvaluation, null, 2)}`;
+
+    try {
+      // Use Sonnet for smarter analysis (no extended thinking - too slow)
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 16000,
+          temperature: 0,
+          messages: [{
+            role: 'user',
+            content: prompt
+          }]
+        })
+      });
+
+      if (!response.ok) {
+        console.error(`   ⚠️ Claude API error: ${response.status}, returning empty results`);
+        throw new Error(`Claude API error: ${response.status}`);
+      }
+
+      const result = await response.json();
+      const responseText = result.content[0].text;
+
+      console.log(`   🧠 Claude analysis complete, parsing response...`);
+
+      // Extract JSON from response (Claude might wrap it in markdown)
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        console.error('No JSON found in response:', responseText.substring(0, 500));
+        throw new Error('No JSON found in Claude response');
+      }
+
+      const evaluations = JSON.parse(jsonMatch[0]).evaluations;
+
+      for (const evaluation of evaluations) {
+        // Threshold 50+ for strategic relevance - balanced approach
+        // (60 was too strict for diversified companies like trading firms)
+        if (evaluation.keep && evaluation.score >= 50) {
+          const article = articlesToEvaluate[evaluation.id];
+          matchedArticles.push({
+            ...article,
+            relevance_score: evaluation.score,
+            matched_keywords: [], // No keyword matching used
+            ai_reasoning: evaluation.reason
+          });
+        }
+      }
+
+      console.log(`   ✨ Claude kept: ${matchedArticles.length}/${articlesToEvaluate.length} articles`);
+    } catch (error) {
+      console.error(`   ❌ Claude evaluation error: ${error.message}`);
+      throw error; // Don't fallback, just fail - we need intelligent selection
+    }
 
     // ================================================================
     // STEP 7: CURATE - Enforce source diversity and take best
     // ================================================================
-    const MAX_ARTICLES = 50;
-    const MAX_PER_SOURCE = 8;
+    const MAX_ARTICLES = 40;  // Allow more for diversified companies
+    const MAX_PER_SOURCE = 5;
 
     // Sort by relevance score
     matchedArticles.sort((a, b) => b.relevance_score - a.relevance_score);
@@ -276,7 +470,8 @@ serve(async (req) => {
       title: article.title,
       description: article.description || '',
       source: article.source_name,
-      published_at: article.published_at,
+      published_at: article.published_at || article.scraped_at, // Use scraped_at if published_at is null
+      scraped_at: article.scraped_at,
       full_content: article.full_content,
       pr_score: article.relevance_score,
       source_tier: article.source_registry?.tier || 2,
@@ -298,7 +493,7 @@ serve(async (req) => {
       sources: Object.keys(sourceDistribution),
       source_distribution: sourceDistribution,
       selected_at: new Date().toISOString(),
-      selection_method: 'v3_keyword_matching'
+      selection_method: 'v5_strategic_intelligence'
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
