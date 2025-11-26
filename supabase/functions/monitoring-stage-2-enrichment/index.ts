@@ -1064,10 +1064,35 @@ function extractAndOrganizeData(articles: any[], profile: any, organization_name
                 const companyPattern = /\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\b/g;
                 const matches = context.match(companyPattern);
                 if (matches && matches.length > 0) {
-                  // Filter out common words
+                  // EXPANDED filter for common garbage words - days, months, generic words
+                  const commonGarbageWords = [
+                    // Articles/pronouns
+                    'The', 'This', 'That', 'These', 'Those', 'What', 'When', 'Where', 'Why', 'How',
+                    'They', 'Their', 'There', 'Here', 'Some', 'Many', 'Most', 'Each', 'Every',
+                    // Days of week
+                    'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
+                    // Months
+                    'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August',
+                    'September', 'October', 'November', 'December',
+                    // Time words
+                    'Today', 'Yesterday', 'Tomorrow', 'Now', 'Later', 'Earlier', 'Morning', 'Evening',
+                    // Generic nouns often capitalized in titles
+                    'Videos', 'Photos', 'News', 'Update', 'Report', 'Article', 'Story', 'Breaking',
+                    'Market', 'Markets', 'Stock', 'Stocks', 'Share', 'Shares', 'Trading', 'Trade',
+                    'Industry', 'Sector', 'Company', 'Companies', 'Business', 'Corp', 'Inc', 'Ltd',
+                    // Action words
+                    'Still', 'While', 'Just', 'More', 'Less', 'Much', 'Very', 'Also', 'Even',
+                    'New', 'Old', 'First', 'Last', 'Next', 'Final', 'Latest', 'Recent',
+                    // Generic descriptions
+                    'Dramatic', 'Major', 'Big', 'Small', 'Large', 'Significant', 'Important',
+                    // Tech/AI model names that leak in
+                    'Sonnet', 'Claude', 'Opus', 'Haiku', 'Model', 'Version',
+                    // Locations that are too generic
+                    'City', 'Country', 'State', 'Region', 'Area', 'Zone', 'Source'
+                  ];
                   const potentialEntity = matches.find(m =>
                     m.length > 3 &&
-                    !['The', 'This', 'That', 'These', 'Those', 'What', 'When', 'Where', 'Why', 'How'].includes(m)
+                    !commonGarbageWords.includes(m)
                   );
                   if (potentialEntity) {
                     entityName = potentialEntity;
