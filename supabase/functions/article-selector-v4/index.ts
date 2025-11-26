@@ -353,7 +353,8 @@ ${JSON.stringify(articlesForHunting, null, 2)}`;
     // ================================================================
 
     // Enforce source diversity for final output
-    const MAX_PER_SOURCE = 8;  // Allow more per source
+    // For diversified trading companies like Mitsui, we want MORE coverage
+    const MAX_PER_SOURCE = 15;  // Allow up to 15 per source for better coverage
     const sourceCount = new Map<string, number>();
     const diverseArticles = [];
 
@@ -363,7 +364,7 @@ ${JSON.stringify(articlesForHunting, null, 2)}`;
         diverseArticles.push(article);
         sourceCount.set(article.source_name, count + 1);
       }
-      if (diverseArticles.length >= 60) break;  // Allow up to 60 articles
+      if (diverseArticles.length >= 100) break;  // Allow up to 100 articles for comprehensive coverage
     }
 
     // Format for output

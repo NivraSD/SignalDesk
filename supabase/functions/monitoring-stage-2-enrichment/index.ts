@@ -88,15 +88,110 @@ function extractValidText(content: string, maxLength = 200): string {
 }
 
 /**
+ * Remove paywall/subscription prompts from the START of articles
+ */
+function stripPaywallHeader(content: string): string {
+  if (!content) return '';
+
+  // Patterns that indicate paywall/subscription content at the START
+  const paywallPatterns = [
+    // FT subscription prompts
+    /with myFT.*?FT's flagship/is,
+    /FT Videos & Podcasts/i,
+    /additional monthly gift articles/i,
+    /Premium newsletters from leading experts/i,
+    /FT Digital Edition/i,
+    // Generic paywall patterns
+    /Subscribe to continue reading/i,
+    /Already a subscriber\? Sign in/i,
+    /Unlock this article/i,
+    /Get full access/i,
+    /Start your free trial/i,
+  ];
+
+  for (const pattern of paywallPatterns) {
+    // Only check first 1000 chars for paywall content
+    const first1000 = content.substring(0, 1000);
+    if (pattern.test(first1000)) {
+      // Find where the actual article starts (usually after a title pattern)
+      // Look for the first paragraph or header after the paywall
+      const match = content.match(/\n\n[A-Z][^.!?]*[.!?]/);
+      if (match && match.index && match.index < 2000) {
+        console.log(`   🧹 Stripped paywall header (${match.index} chars)`);
+        return content.substring(match.index).trim();
+      }
+    }
+  }
+
+  return content;
+}
+
+/**
+ * Remove footer garbage (signup forms, country dropdowns, etc.)
+ * This garbage typically appears at the END of articles
+ */
+function truncateFooterGarbage(content: string): string {
+  if (!content) return '';
+
+  // Patterns that indicate start of footer/signup garbage
+  const footerPatterns = [
+    // Country dropdown lists (Forrester, PR Daily, etc.)
+    /AfghanistanAlbaniaAlgeria/i,
+    /LesothoLiberiaLiechtenstein/i,
+    /viaLesothoLiberia/i,
+    // Newsletter signup sections
+    /Yes,?\s*I'?d like to receive/i,
+    /Sign up for our newsletter/i,
+    /Subscribe to our newsletter/i,
+    /Get the latest news/i,
+    /Stay tuned for updates/i,
+    /Thanks for signing up/i,
+    // Footer navigation
+    /Related Articles\s*\n.*\n.*\n.*\n/i,
+    /You might also like/i,
+    /More from this author/i,
+    /Share this article/i,
+    /About the Author/i,
+    // Legal/copyright footers
+    /All rights reserved\./i,
+    /Terms of Service\s*\|?\s*Privacy Policy/i,
+  ];
+
+  let truncateAt = content.length;
+
+  for (const pattern of footerPatterns) {
+    const match = content.match(pattern);
+    if (match && match.index !== undefined) {
+      // Truncate at whichever garbage pattern comes first
+      truncateAt = Math.min(truncateAt, match.index);
+    }
+  }
+
+  // If we found garbage, truncate before it
+  if (truncateAt < content.length) {
+    console.log(`   🧹 Truncated footer garbage at char ${truncateAt} (was ${content.length})`);
+    return content.substring(0, truncateAt).trim();
+  }
+
+  return content;
+}
+
+/**
  * PRAGMATIC content preparation - handle messy HTML gracefully
  * Returns clean content OR falls back to title+description
  */
 function prepareArticleContent(article: any): { content: string, contentType: 'full' | 'title_desc' | 'title_only', isClean: boolean } {
   const title = article.title || '';
   const description = article.description || '';
-  const fullContent = article.full_content || '';
+  let fullContent = article.full_content || '';
 
-  // Quick check for navigation garbage patterns
+  // FIRST: Strip paywall headers from the start
+  fullContent = stripPaywallHeader(fullContent);
+
+  // SECOND: Truncate any footer garbage (signup forms, country dropdowns, etc.)
+  fullContent = truncateFooterGarbage(fullContent);
+
+  // Quick check for navigation garbage patterns at the START
   const hasSkipLinks = /Skip to (Content|Main|Footer|Navigation)/i.test(fullContent.substring(0, 500));
   const hasMenuItems = /\]\s*\[.*\]\s*\[/g.test(fullContent.substring(0, 1000)); // Multiple menu links
   const hasSubscriptionWall = /Subscribe|Sign Up|Log In.*to read/i.test(fullContent.substring(0, 800));
@@ -106,7 +201,7 @@ function prepareArticleContent(article: any): { content: string, contentType: 'f
   const isCleanContent = !hasSkipLinks && !hasMenuItems && isValidContent(cleaned);
 
   if (isCleanContent && fullContent.length > 300) {
-    // Full content is good - use it
+    // Full content is good - use it (limit to 8000 chars for Claude)
     return {
       content: fullContent.substring(0, 8000),
       contentType: 'full',
@@ -147,10 +242,10 @@ async function analyzeWithClaude(articlesWithContent: any[], profile: any, orgNa
     return null;
   }
 
-  // Limit to 30 articles max to prevent timeout (30 articles = 2 batches = ~60s max)
-  if (articlesWithContent.length > 30) {
-    console.log(`⚠️ Limiting from ${articlesWithContent.length} to 30 articles to prevent timeout`);
-    articlesWithContent = articlesWithContent.slice(0, 30);
+  // Limit to 50 articles max to prevent timeout (increased for comprehensive coverage)
+  if (articlesWithContent.length > 50) {
+    console.log(`⚠️ Limiting from ${articlesWithContent.length} to 50 articles to prevent timeout`);
+    articlesWithContent = articlesWithContent.slice(0, 50);
   }
 
   try {
