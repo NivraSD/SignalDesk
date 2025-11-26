@@ -24,48 +24,31 @@ function stripHtmlTags(text: string): string {
 }
 
 function isValidContent(text: string): boolean {
-  if (!text || text.length < 50) return false; // Increased minimum length
-  
-  // Check for HTML garbage patterns
+  if (!text || text.length < 50) return false;
+
+  // Check for HTML garbage patterns - only reject HEAVY garbage
   const htmlGarbagePatterns = [
-    /<[^>]+>/,  // Contains HTML tags
-    /&[^;]+;/,  // Contains HTML entities
     /^[\s\W]{0,10}$/, // Only whitespace/punctuation
     /^(undefined|null|NaN)$/i, // Invalid values
     /^\[.*\]$/,  // Looks like array stringification
     /^{.*}$/,    // Looks like object stringification
   ];
-  
-  // EXPANDED navigation/garbage patterns based on rawResponse.md
+
+  // LESS AGGRESSIVE navigation patterns - only check START of content
+  // Don't reject entire articles for having URLs or common words
+  const first500 = text.substring(0, 500);
   const navigationPatterns = [
-    /\]\s*\[/,  // Multiple bracketed items in sequence
-    /https?:\/\/[^\s]+\.(com|org|net)/i,  // URLs in content
-    /\(https:\/\//,  // Markdown-style links
-    /Stock Lists|IBD 50|Sector Leaders/i,  // IBD navigation
-    /Log In|Sign Up|Subscribe|Accessibility/i,  // Auth UI
-    /Cookie|cookie|privacy policy/i,  // Legal text
-    // NEW: Specific garbage patterns from rawResponse.md
-    /ft-content-uuid/i,  // Financial Times URLs
-    /ffer\//,  // Broken URL fragments
-    /What's included/i,  // Subscription promos
-    /Expert opinion/i,  // Menu items
-    /FT App|Android & iOS/i,  // App promotion
-    /FirstFT|curated newsletters/i,  // Newsletter signup
-    /Follow topics|set al/i,  // UI elements
-    /Forward-Looking Statements/i,  // Legal boilerplate
-    /[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}/i,  // UUIDs
-    /41218b9e-c8ae-c934/i,  // Specific UUID garbage
-    /\) What$/,  // Truncated text
-    /20\+ curated/i,  // Newsletter count
-    /©|\(c\)|Copyright/i,  // Copyright notices
-    /Menu|Navigation|Header|Footer/i,  // Navigation keywords
-    /\w+\]\(\/\w+/,  // Markdown links pattern
+    /^\s*\]\s*\[/,  // Multiple bracketed items at START only
+    /^Skip to (Content|Main|Navigation)/i,  // Skip links at start
+    /^(Log In|Sign Up|Menu|Navigation)/i,  // Auth UI at start
+    /^\s*Cookie|^\s*privacy policy/i,  // Legal at start
+    /^\s*Stock Lists|IBD 50/i,  // IBD navigation at start
   ];
-  
+
   const hasHTMLGarbage = htmlGarbagePatterns.some(pattern => pattern.test(text));
-  const hasNavigation = navigationPatterns.some(pattern => pattern.test(text));
-  
-  if (hasHTMLGarbage || hasNavigation) return false;
+  const hasNavAtStart = navigationPatterns.some(pattern => pattern.test(first500));
+
+  if (hasHTMLGarbage || hasNavAtStart) return false;
   
   // Additional quality checks
   const words = text.split(/\s+/).filter(w => w.length > 2);
@@ -95,12 +78,15 @@ function stripPaywallHeader(content: string): string {
 
   // Patterns that indicate paywall/subscription content at the START
   const paywallPatterns = [
-    // FT subscription prompts
+    // FT subscription prompts - more comprehensive
     /with myFT.*?FT's flagship/is,
     /FT Videos & Podcasts/i,
     /additional monthly gift articles/i,
     /Premium newsletters from leading experts/i,
     /FT Digital Edition/i,
+    /Lex: FT's flagship investment column/i,
+    /myFT.*?gift articles/i,
+    /What's included.*?Standard Digital/is,
     // Generic paywall patterns
     /Subscribe to continue reading/i,
     /Already a subscriber\? Sign in/i,
@@ -110,15 +96,20 @@ function stripPaywallHeader(content: string): string {
   ];
 
   for (const pattern of paywallPatterns) {
-    // Only check first 1000 chars for paywall content
-    const first1000 = content.substring(0, 1000);
-    if (pattern.test(first1000)) {
+    // Only check first 1500 chars for paywall content (expanded)
+    const first1500 = content.substring(0, 1500);
+    if (pattern.test(first1500)) {
       // Find where the actual article starts (usually after a title pattern)
       // Look for the first paragraph or header after the paywall
       const match = content.match(/\n\n[A-Z][^.!?]*[.!?]/);
-      if (match && match.index && match.index < 2000) {
+      if (match && match.index && match.index < 2500) {
         console.log(`   🧹 Stripped paywall header (${match.index} chars)`);
         return content.substring(match.index).trim();
+      }
+      // If we can't find a clean break, try to skip the first 1000 chars
+      if (content.length > 1500) {
+        console.log(`   🧹 Force-stripped paywall header (1000 chars)`);
+        return content.substring(1000).trim();
       }
     }
   }
@@ -135,10 +126,14 @@ function truncateFooterGarbage(content: string): string {
 
   // Patterns that indicate start of footer/signup garbage
   const footerPatterns = [
-    // Country dropdown lists (Forrester, PR Daily, etc.)
+    // Country dropdown lists (Forrester, PR Daily, etc.) - EXPANDED
     /AfghanistanAlbaniaAlgeria/i,
     /LesothoLiberiaLiechtenstein/i,
     /viaLesothoLiberia/i,
+    /MartiniqueMauritaniaMauritius/i,
+    /MicronesiaMoldovaMonaco/i,
+    /MexicoMicronesia/i,
+    /PakistanPalauPalestinian/i,
     // Newsletter signup sections
     /Yes,?\s*I'?d like to receive/i,
     /Sign up for our newsletter/i,
@@ -155,6 +150,9 @@ function truncateFooterGarbage(content: string): string {
     // Legal/copyright footers
     /All rights reserved\./i,
     /Terms of Service\s*\|?\s*Privacy Policy/i,
+    // FT specific footers
+    /Explore the series|Read more from|View Comments/i,
+    /Copyright The Financial Times/i,
   ];
 
   let truncateAt = content.length;
@@ -811,11 +809,17 @@ function extractAndOrganizeData(articles: any[], profile: any, organization_name
   // Process both full and partial content articles intelligently
   articlesWithContent.forEach((article, idx) => {
     // Use full content if available, otherwise use whatever we have
-    const content = article.full_content || 
-                   article.content || 
-                   article.description || 
-                   article.summary || 
+    // CRITICAL: Clean the content BEFORE using it for extraction
+    let rawContent = article.full_content ||
+                   article.content ||
+                   article.description ||
+                   article.summary ||
                    `${article.title || ''} ${article.description || ''}`;
+
+    // Apply paywall stripping and garbage truncation
+    rawContent = stripPaywallHeader(rawContent);
+    rawContent = truncateFooterGarbage(rawContent);
+    const content = rawContent;
     const title = article.title || '';
     const hasFullContent = article.has_full_content && article.full_content && article.full_content.length > 500;
     const lowerContent = content.toLowerCase();

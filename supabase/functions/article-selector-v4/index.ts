@@ -249,6 +249,8 @@ serve(async (req) => {
       source: article.source_name,
       published_at: article.published_at,
       full_content: article.full_content,
+      // CRITICAL: Set has_full_content flag so enrichment knows to use it
+      has_full_content: !!(article.full_content && article.full_content.length > 500),
       source_tier: article.source_registry?.tier || 2
     }));
 
