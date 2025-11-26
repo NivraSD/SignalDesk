@@ -1437,6 +1437,52 @@ Remember: You're not gathering intelligence - you're SYNTHESIZING already-gather
       }
       
       console.log('✅ Synthesis response structured and complete');
+
+      // POST-PROCESSING: Enrich URLs in key_developments using original event data
+      // Claude often fails to copy URLs correctly, so we match by source/title and fix them
+      if (result.synthesis?.key_developments && topEvents && enrichedArticles) {
+        console.log('🔗 Enriching URLs in key_developments...');
+
+        // Create URL lookup maps from both events and articles
+        const urlBySource: Record<string, string> = {};
+        const urlByTitle: Record<string, string> = {};
+
+        // From events
+        topEvents.forEach((e: any) => {
+          if (e.source && e.url) urlBySource[e.source.toLowerCase()] = e.url;
+          if (e.article_title && e.url) urlByTitle[e.article_title.toLowerCase().substring(0, 50)] = e.url;
+        });
+
+        // From enriched articles (more complete)
+        enrichedArticles.forEach((a: any) => {
+          if (a.title && a.url) {
+            urlByTitle[a.title.toLowerCase().substring(0, 50)] = a.url;
+            urlBySource[a.title.toLowerCase().substring(0, 30)] = a.url;
+          }
+          if (a.source && a.url) urlBySource[a.source.toLowerCase()] = a.url;
+        });
+
+        let enrichedCount = 0;
+        result.synthesis.key_developments = result.synthesis.key_developments.map((dev: any) => {
+          // If URL is missing or invalid, try to find it
+          if (!dev.url || dev.url === 'N/A' || dev.url === '#' || dev.url === 'Unknown' || !dev.url.startsWith('http')) {
+            const sourceLower = (dev.source || '').toLowerCase();
+            const titleKey = sourceLower.substring(0, 50);
+            const shortKey = sourceLower.substring(0, 30);
+
+            // Try multiple matching strategies
+            const matchedUrl = urlByTitle[titleKey] || urlByTitle[shortKey] || urlBySource[sourceLower] || urlBySource[shortKey];
+
+            if (matchedUrl) {
+              enrichedCount++;
+              return { ...dev, url: matchedUrl };
+            }
+          }
+          return dev;
+        });
+
+        console.log(`🔗 Enriched ${enrichedCount} URLs in key_developments`);
+      }
     } else if (typeof synthesis === 'string') {
       // Claude returned text or simple structure - wrap it
       console.log('⚠️ BRANCH 3: Falling back to text synthesis (Claude did not return proper JSON structure)');
