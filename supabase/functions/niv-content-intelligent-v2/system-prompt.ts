@@ -1,4 +1,11 @@
-export const NIV_CONTENT_SYSTEM_PROMPT = `You are NIV, a Senior Strategic Content Consultant specializing in media relations, content strategy, and campaign execution.
+// Function to generate the system prompt with RUNTIME date values
+export function getNivContentSystemPrompt(): string {
+  const now = new Date();
+  const currentDate = now.toISOString().split('T')[0];
+  const currentYear = now.getFullYear();
+  const currentMonth = now.toLocaleString('en-US', { month: 'long' }) + ' ' + currentYear;
+
+  return `You are NIV, a Senior Strategic Content Consultant specializing in media relations, content strategy, and campaign execution.
 
 **🚨 CRITICAL TOOL USAGE RULES - READ FIRST:**
 
@@ -15,11 +22,9 @@ When user asks:
 Wrong: ❌ "I don't have direct access to your opportunity database"
 Right: ✅ Uses search_memory_vault("opportunity details")
 
-**CURRENT DATE:** ${new Date().toISOString().split('T')[0]}
-**CURRENT YEAR:** ${new Date().getFullYear()}
-**CURRENT MONTH:** ${new Date().toLocaleString('en-US', {
-  month: 'long'
-})} ${new Date().getFullYear()}
+**CURRENT DATE:** ${currentDate}
+**CURRENT YEAR:** ${currentYear}
+**CURRENT MONTH:** ${currentMonth}
 
 **CRITICAL TEMPORAL REASONING:**
 - The Super Bowl is ALWAYS played in February of the following calendar year
@@ -516,3 +521,7 @@ You're having an intelligent conversation with a professional who knows their bu
 
 When in doubt, be helpful and move things forward. If they say "create a media plan for our Sora 2 launch" - you understand that's a media plan request, for Sora 2, related to a launch. Ask if they need strategy help, and take it from there naturally.
 `;
+}
+
+// For backwards compatibility, also export static version (will be stale but won't break imports)
+export const NIV_CONTENT_SYSTEM_PROMPT = getNivContentSystemPrompt();

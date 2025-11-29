@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NIV by nivria - Brand Exploration</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Playfair+Display:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Inter", sans-serif;
+        background: #faf9f7;
+        color: #1a1a1a;
+        padding: 60px;
+      }
+
+      h1 {
+        font-family: "Playfair Display", serif;
+        font-size: 32px;
+        margin-bottom: 12px;
+        color: #1a1a1a;
+      }
+
+      .subtitle {
+        font-size: 14px;
+        color: #666;
+        margin-bottom: 60px;
+      }
+
+      .section {
+        margin-bottom: 80px;
+      }
+
+      .section-title {
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: #999;
+        margin-bottom: 32px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #e5e5e5;
+      }
+
+      .logo-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 40px;
+      }
+
+      .logo-card {
+        background: white;
+        border-radius: 16px;
+        padding: 48px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+      }
+
+      .logo-card.dark {
+        background: #1a1a1a;
+      }
+
+      .logo-card.orange {
+        background: #c75d3a;
+      }
+
+      .logo-name {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: #999;
+        margin-top: 24px;
+      }
+
+      .logo-card.dark .logo-name,
+      .logo-card.orange .logo-name {
+        color: rgba(255, 255, 255, 0.5);
+      }
+
+      /* NIV Primary Marks */
+      .niv-mark {
+        font-family: "Space Grotesk", sans-serif;
+        font-weight: 700;
+        font-size: 72px;
+        letter-spacing: -3px;
+      }
+
+      .niv-mark.clipped {
+        position: relative;
+        color: #1a1a1a;
+      }
+
+      .niv-mark.clipped::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        right: -4px;
+        width: 20px;
+        height: 20px;
+        background: white;
+        transform: rotate(45deg);
+        transform-origin: top right;
+      }
+
+      .dark .niv-mark.clipped {
+        color: #faf9f7;
+      }
+
+      .dark .niv-mark.clipped::after {
+        background: #1a1a1a;
+      }
+
+      .orange .niv-mark.clipped {
+        color: #faf9f7;
+      }
+
+      .orange .niv-mark.clipped::after {
+        background: #c75d3a;
+      }
+
+      /* SVG NIV Marks */
+      .niv-svg {
+        width: 120px;
+        height: 60px;
+      }
+
+      /* Lockups */
+      .lockup {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .lockup-horizontal {
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+      }
+
+      .by-nivria {
+        font-family: "Inter", sans-serif;
+        font-size: 12px;
+        font-weight: 400;
+        letter-spacing: 1px;
+        color: #999;
+      }
+
+      .dark .by-nivria {
+        color: rgba(255, 255, 255, 0.4);
+      }
+
+      .orange .by-nivria {
+        color: rgba(255, 255, 255, 0.6);
+      }
+
+      .nivria-word {
+        font-family: "Space Grotesk", sans-serif;
+        font-weight: 500;
+        font-size: 14px;
+        letter-spacing: 0.5px;
+      }
+
+      /* Full Wordmark Styles */
+      .full-wordmark {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .divider-line {
+        width: 1px;
+        height: 32px;
+        background: #ddd;
+      }
+
+      .dark .divider-line {
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      /* Stacked Layouts */
+      .stacked {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+      }
+
+      .stacked .niv-text {
+        font-family: "Space Grotesk", sans-serif;
+        font-weight: 700;
+        font-size: 48px;
+        letter-spacing: -2px;
+        line-height: 1;
+      }
+
+      .stacked .by-line {
+        font-family: "Inter", sans-serif;
+        font-size: 11px;
+        font-weight: 400;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: #999;
+      }
+
+      /* Icon Variations */
+      .icon-box {
+        width: 72px;
+        height: 72px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 16px;
+        font-family: "Space Grotesk", sans-serif;
+        font-weight: 700;
+        font-size: 36px;
+      }
+
+      .icon-box.filled {
+        background: #1a1a1a;
+        color: #faf9f7;
+      }
+
+      .icon-box.orange-fill {
+        background: #c75d3a;
+        color: #faf9f7;
+      }
+
+      .icon-box.outlined {
+        border: 2px solid #1a1a1a;
+        color: #1a1a1a;
+      }
+
+      /* Size demo */
+      .size-row {
+        display: flex;
+        align-items: flex-end;
+        gap: 32px;
+        flex-wrap: wrap;
+      }
+
+      .size-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .size-label {
+        font-size: 10px;
+        color: #999;
+      }
+
+      /* Application Preview */
+      .app-preview {
+        background: #1a1a1a;
+        border-radius: 16px;
+        overflow: hidden;
+      }
+
+      .app-header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 16px 24px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .app-logo {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .app-logo-icon {
+        width: 32px;
+        height: 32px;
+        background: #c75d3a;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: "Space Grotesk", sans-serif;
+        font-weight: 700;
+        font-size: 16px;
+        color: #faf9f7;
+      }
+
+      .app-logo-text {
+        color: #faf9f7;
+        font-family: "Space Grotesk", sans-serif;
+        font-weight: 600;
+        font-size: 18px;
+        letter-spacing: -0.5px;
+      }
+
+      .app-logo-sub {
+        color: rgba(255, 255, 255, 0.4);
+        font-family: "Inter", sans-serif;
+        font-size: 11px;
+        letter-spacing: 0.5px;
+      }
+
+      .app-content {
+        padding: 48px;
+        min-height: 200px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .app-placeholder {
+        color: rgba(255, 255, 255, 0.2);
+        font-size: 14px;
+      }
+
+      /* Comparison Grid */
+      .comparison {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 24px;
+      }
+
+      .comparison-item {
+        background: white;
+        border-radius: 12px;
+        padding: 32px;
+        text-align: center;
+      }
+
+      .comparison-label {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #999;
+        margin-bottom: 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>NIV by nivria</h1>
+    <p class="subtitle">
+      Exploring NIV as the primary brand with nivria as the parent company
+    </p>
+
+    <!-- Primary NIV Marks -->
+    <div class="section">
+      <div class="section-title">Primary NIV Mark — Clipped Aesthetic</div>
+      <div class="logo-grid">
+        <div class="logo-card">
+          <svg width="140" height="70" viewBox="0 0 140 70">
+            <defs>
+              <clipPath id="clip1">
+                <polygon points="0,0 120,0 120,70 0,70" />
+              </clipPath>
+            </defs>
+            <text
+              x="0"
+              y="58"
+              font-family="Space Grotesk, sans-serif"
+              font-weight="700"
+              font-size="64"
+              letter-spacing="-3"
+              fill="#1a1a1a"
+              clip-path="url(#clip1)"
+            >
+              NIV
+            </text>
+            <polygon points="120,0 140,0 120,20" fill="#faf9f7" />
+          </svg>
+          <span class="logo-name">Corner Clip</span>
+        </div>
+
+        <div class="logo-card dark">
+          <svg width="140" height="70" viewBox="0 0 140 70">
+            <text
+              x="0"
+              y="58"
+              font-family="Space Grotesk, sans-serif"
+              font-weight="700"
+              font-size="64"
+              letter-spacing="-3"
+              fill="#faf9f7"
+            >
+              NIV
+            </text>
+            <polygon points="115,0 140,0 140,25" fill="#1a1a1a" />
+          </svg>
+          <span class="logo-name">Dark Mode</span>
+        </div>
+
+        <div class="logo-card orange">
+          <svg width="140" height="70" viewBox="0 0 140 70">
+            <text
+              x="0"
+              y="58"
+              font-family="Space Grotesk, sans-serif"
+              font-weight="700"
+              font-size="64"
+              letter-spacing="-3"
+              fill="#faf9f7"
+            >
+              NIV
+            </text>
+            <polygon points="115,0 140,0 140,25" fill="#c75d3a" />
+          </svg>
+          <span class="logo-name">Brand Orange</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- NIV Icon Variations -->
+    <div class="section">
+      <div class="section-title">App Icon / Favicon — Square Format</div>
+      <div class="logo-grid">
+        <div class="logo-card">
+          <svg width="72" height="72" viewBox="0 0 72 72">
+            <rect width="72" height="72" rx="16" fill="#1a1a1a" />
+            <text
+              x="10"
+              y="50"
+              font-family="Space Grotesk, sans-serif"
+              font-weight="700"
+              font-size="36"
+              fill="#faf9f7"
+            >
+              NIV
+            </text>
+            <polygon
+              points="58,0 72,0 72,14"
+              fill="#1a1a1a"
+              stroke="#faf9f7"
+              stroke-width="0"
+            />
+            <polygon points="60,4 68,4 68,12" fill="#c75d3a" />
+          </svg>
+          <span class="logo-name">Charcoal + Accent</span>
+        </div>
+
+        <div class="logo-card">
+          <svg width="72" height="72" viewBox="0 0 72 72">
+            <rect width="72" height="72" rx="16" fill="#c75d3a" />
+            <text
+              x="10"
+              y="50"
+              font-family="Space Grotesk, sans-serif"
+              font-weight="700"
+              font-size="36"
+              fill="#faf9f7"
+            >
+              NIV
+            </text>
+            <polygon points="58,0 72,0 72,14" fill="#faf9f7" />
+          </svg>
+          <span class="logo-name">Orange Primary</span>
+        </div>
+
+        <div class="logo-card dark">
+          <svg width="72" height="72" viewBox="0 0 72 72">
+            <rect width="72" height="72" rx="16" fill="#faf9f7" />
+            <text
+              x="10"
+              y="50"
+              font-family="Space Grotesk, sans-serif"
+              font-weight="700"
+              font-size="36"
+              fill="#1a1a1a"
+            >
+              NIV
+            </text>
+            <polygon points="58,0 72,0 72,14" fill="#c75d3a" />
+          </svg>
+          <span class="logo-name">Light Mode</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Full Lockups -->
+    <div class="section">
+      <div class="section-title">NIV by nivria — Full Lockups</div>
+      <div class="logo-grid">
+        <div class="logo-card">
+          <div class="stacked">
+            <svg width="100" height="50" viewBox="0 0 100 50">
+              <text
+                x="0"
+                y="42"
+                font-family="Space Grotesk, sans-serif"
+                font-weight="700"
+                font-size="48"
+                letter-spacing="-2"
+                fill="#1a1a1a"
+              >
+                NIV
+              </text>
+              <polygon points="82,0 100,0 100,18" fill="#faf9f7" />
+            </svg>
+            <span class="by-line">by nivria</span>
+          </div>
+          <span class="logo-name">Stacked Vertical</span>
+        </div>
+
+        <div class="logo-card dark">
+          <div class="lockup-horizontal">
+            <svg width="80" height="40" viewBox="0 0 80 40">
+              <text
+                x="0"
+                y="34"
+                font-family="Space Grotesk, sans-serif"
+                font-weight="700"
+                font-size="38"
+                letter-spacing="-1.5"
+                fill="#faf9f7"
+              >
+                NIV
+              </text>
+              <polygon points="66,0 80,0 80,14" fill="#1a1a1a" />
+            </svg>
+            <span
+              style="
+                color: rgba(255, 255, 255, 0.3);
+                font-size: 24px;
+                font-weight: 200;
+              "
+              >|</span
+            >
+            <span
+              style="
+                font-family: 'Space Grotesk', sans-serif;
+                font-size: 14px;
+                color: rgba(255, 255, 255, 0.5);
+                letter-spacing: 1px;
+              "
+              >by nivria</span
+            >
+          </div>
+          <span class="logo-name">Horizontal with Divider</span>
+        </div>
+
+        <div class="logo-card orange">
+          <div style="display: flex; align-items: center; gap: 12px">
+            <svg width="72" height="72" viewBox="0 0 72 72">
+              <rect
+                width="72"
+                height="72"
+                rx="14"
+                fill="rgba(255,255,255,0.15)"
+              />
+              <text
+                x="10"
+                y="50"
+                font-family="Space Grotesk, sans-serif"
+                font-weight="700"
+                font-size="36"
+                fill="#faf9f7"
+              >
+                NIV
+              </text>
+              <polygon points="58,0 72,0 72,14 58,14" fill="#c75d3a" />
+              <polygon points="60,2 70,2 70,12" fill="#faf9f7" />
+            </svg>
+            <div style="display: flex; flex-direction: column; gap: 2px">
+              <span
+                style="
+                  font-family: 'Space Grotesk', sans-serif;
+                  font-size: 24px;
+                  font-weight: 600;
+                  color: #faf9f7;
+                  letter-spacing: -0.5px;
+                "
+                >NIV</span
+              >
+              <span
+                style="
+                  font-family: 'Inter', sans-serif;
+                  font-size: 11px;
+                  color: rgba(255, 255, 255, 0.6);
+                  letter-spacing: 1px;
+                "
+                >by nivria</span
+              >
+            </div>
+          </div>
+          <span class="logo-name">Icon + Text Lockup</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alternative N Marks -->
+    <div class="section">
+      <div class="section-title">Single Letter Mark — Just "N" with Clip</div>
+      <div class="logo-grid">
+        <div class="logo-card">
+          <svg width="64" height="72" viewBox="0 0 64 72">
+            <text
+              x="0"
+              y="62"
+              font-family="Space Grotesk, sans-serif"
+              font-weight="700"
+              font-size="72"
+              fill="#1a1a1a"
+            >
+              N
+            </text>
+            <polygon points="48,0 64,0 64,16" fill="#faf9f7" />
+          </svg>
+          <span class="logo-name">N Clipped</span>
+        </div>
+
+        <div class="logo-card dark">
+          <svg width="64" height="64" viewBox="0 0 64 64">
+            <rect width="64" height="64" rx="14" fill="#c75d3a" />
+            <text
+              x="12"
+              y="50"
+              font-family="Space Grotesk, sans-serif"
+              font-weight="700"
+              font-size="48"
+              fill="#faf9f7"
+            >
+              N
+            </text>
+            <polygon points="50,0 64,0 64,14" fill="#1a1a1a" />
+          </svg>
+          <span class="logo-name">N Icon — Orange</span>
+        </div>
+
+        <div class="logo-card">
+          <svg width="64" height="64" viewBox="0 0 64 64">
+            <rect width="64" height="64" rx="14" fill="#1a1a1a" />
+            <text
+              x="12"
+              y="50"
+              font-family="Space Grotesk, sans-serif"
+              font-weight="700"
+              font-size="48"
+              fill="#faf9f7"
+            >
+              N
+            </text>
+            <polygon points="50,0 64,0 64,14" fill="#c75d3a" />
+          </svg>
+          <span class="logo-name">N Icon — Charcoal</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Brand Hierarchy Examples -->
+    <div class="section">
+      <div class="section-title">Brand Hierarchy in Use</div>
+      <div class="comparison">
+        <div class="comparison-item">
+          <div class="comparison-label">App Header</div>
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              gap: 10px;
+              justify-content: center;
+            "
+          >
+            <svg width="32" height="32" viewBox="0 0 32 32">
+              <rect width="32" height="32" rx="7" fill="#1a1a1a" />
+              <text
+                x="6"
+                y="24"
+                font-family="Space Grotesk, sans-serif"
+                font-weight="700"
+                font-size="20"
+                fill="#faf9f7"
+              >
+                N
+              </text>
+              <polygon points="24,0 32,0 32,8" fill="#c75d3a" />
+            </svg>
+            <span
+              style="
+                font-family: 'Space Grotesk', sans-serif;
+                font-weight: 600;
+                font-size: 18px;
+              "
+              >NIV</span
+            >
+          </div>
+        </div>
+
+        <div class="comparison-item">
+          <div class="comparison-label">Loading Screen</div>
+          <div
+            style="
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              gap: 6px;
+            "
+          >
+            <svg width="48" height="48" viewBox="0 0 48 48">
+              <rect width="48" height="48" rx="10" fill="#1a1a1a" />
+              <text
+                x="8"
+                y="36"
+                font-family="Space Grotesk, sans-serif"
+                font-weight="700"
+                font-size="32"
+                fill="#faf9f7"
+              >
+                N
+              </text>
+              <polygon points="36,0 48,0 48,12" fill="#c75d3a" />
+            </svg>
+            <span style="font-size: 10px; color: #999; letter-spacing: 1px"
+              >by nivria</span
+            >
+          </div>
+        </div>
+
+        <div class="comparison-item">
+          <div class="comparison-label">Footer</div>
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              justify-content: center;
+            "
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24">
+              <rect width="24" height="24" rx="5" fill="#1a1a1a" />
+              <text
+                x="5"
+                y="18"
+                font-family="Space Grotesk, sans-serif"
+                font-weight="700"
+                font-size="14"
+                fill="#faf9f7"
+              >
+                N
+              </text>
+              <polygon points="18,0 24,0 24,6" fill="#c75d3a" />
+            </svg>
+            <span style="font-size: 12px; color: #666">NIV by nivria</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Application Preview -->
+    <div class="section">
+      <div class="section-title">In-App Preview</div>
+      <div class="app-preview">
+        <div class="app-header">
+          <div class="app-logo">
+            <svg width="36" height="36" viewBox="0 0 36 36">
+              <rect width="36" height="36" rx="8" fill="#c75d3a" />
+              <text
+                x="7"
+                y="27"
+                font-family="Space Grotesk, sans-serif"
+                font-weight="700"
+                font-size="22"
+                fill="#faf9f7"
+              >
+                N
+              </text>
+              <polygon points="27,0 36,0 36,9" fill="#faf9f7" />
+            </svg>
+            <div>
+              <div class="app-logo-text">NIV</div>
+              <div class="app-logo-sub">by nivria</div>
+            </div>
+          </div>
+          <div style="flex: 1"></div>
+          <div
+            style="
+              display: flex;
+              gap: 24px;
+              color: rgba(255, 255, 255, 0.6);
+              font-size: 13px;
+            "
+          >
+            <span style="color: #c75d3a">Hub</span>
+            <span>Studio</span>
+            <span>Strategy</span>
+          </div>
+        </div>
+        <div class="app-content">
+          <span class="app-placeholder">Platform Content Area</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Size Variations -->
+    <div class="section">
+      <div class="section-title">Scale — From Favicon to Billboard</div>
+      <div class="size-row">
+        <div class="size-item">
+          <svg width="16" height="16" viewBox="0 0 16 16">
+            <rect width="16" height="16" rx="3" fill="#1a1a1a" />
+            <text
+              x="3"
+              y="12"
+              font-family="Space Grotesk, sans-serif"
+              font-weight="700"
+              font-size="10"
+              fill="#faf9f7"
+            >
+              N
+            </text>
+            <polygon points="12,0 16,0 16,4" fill="#c75d3a" />
+          </svg>
+          <span class="size-label">16px</span>
+        </div>
+
+        <div class="size-item">
+          <svg width="32" height="32" viewBox="0 0 32 32">
+            <rect width="32" height="32" rx="7" fill="#1a1a1a" />
+            <text
+              x="6"
+              y="24"
+              font-family="Space Grotesk, sans-serif"
+              font-weight="700"
+              font-size="20"
+              fill="#faf9f7"
+            >
+              N
+            </text>
+            <polygon points="24,0 32,0 32,8" fill="#c75d3a" />
+          </svg>
+          <span class="size-label">32px</span>
+        </div>
+
+        <div class="size-item">
+          <svg width="64" height="64" viewBox="0 0 64 64">
+            <rect width="64" height="64" rx="14" fill="#1a1a1a" />
+            <text
+              x="12"
+              y="48"
+              font-family="Space Grotesk, sans-serif"
+              font-weight="700"
+              font-size="40"
+              fill="#faf9f7"
+            >
+              N
+            </text>
+            <polygon points="48,0 64,0 64,16" fill="#c75d3a" />
+          </svg>
+          <span class="size-label">64px</span>
+        </div>
+
+        <div class="size-item">
+          <svg width="120" height="60" viewBox="0 0 120 60">
+            <text
+              x="0"
+              y="50"
+              font-family="Space Grotesk, sans-serif"
+              font-weight="700"
+              font-size="56"
+              letter-spacing="-2"
+              fill="#1a1a1a"
+            >
+              NIV
+            </text>
+            <polygon points="100,0 120,0 120,20" fill="#faf9f7" />
+          </svg>
+          <span class="size-label">Wordmark</span>
+        </div>
+
+        <div class="size-item">
+          <div
+            style="
+              display: flex;
+              flex-direction: column;
+              align-items: flex-start;
+              gap: 4px;
+            "
+          >
+            <svg width="100" height="44" viewBox="0 0 100 44">
+              <text
+                x="0"
+                y="38"
+                font-family="Space Grotesk, sans-serif"
+                font-weight="700"
+                font-size="44"
+                letter-spacing="-1.5"
+                fill="#1a1a1a"
+              >
+                NIV
+              </text>
+              <polygon points="80,0 100,0 100,16" fill="#faf9f7" />
+            </svg>
+            <span
+              style="
+                font-size: 10px;
+                color: #999;
+                letter-spacing: 2px;
+                text-transform: uppercase;
+              "
+              >by nivria</span
+            >
+          </div>
+          <span class="size-label">Full Lockup</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alternative Wordmark Treatments -->
+    <div class="section">
+      <div class="section-title">
+        Wordmark Variations — Different Clip Positions
+      </div>
+      <div class="logo-grid">
+        <div class="logo-card">
+          <svg width="140" height="60" viewBox="0 0 140 60">
+            <text
+              x="0"
+              y="50"
+              font-family="Space Grotesk, sans-serif"
+              font-weight="700"
+              font-size="56"
+              letter-spacing="-2"
+              fill="#1a1a1a"
+            >
+              NIV
+            </text>
+            <!-- Clip on V -->
+            <polygon points="122,0 140,0 140,18" fill="#faf9f7" />
+          </svg>
+          <span class="logo-name">Clip on V (Standard)</span>
+        </div>
+
+        <div class="logo-card">
+          <svg width="140" height="60" viewBox="0 0 140 60">
+            <text
+              x="0"
+              y="50"
+              font-family="Space Grotesk, sans-serif"
+              font-weight="700"
+              font-size="56"
+              letter-spacing="-2"
+              fill="#1a1a1a"
+            >
+              NIV
+            </text>
+            <!-- Clip on N -->
+            <polygon points="0,0 18,0 0,18" fill="#faf9f7" />
+          </svg>
+          <span class="logo-name">Clip on N (Left)</span>
+        </div>
+
+        <div class="logo-card dark">
+          <svg width="140" height="60" viewBox="0 0 140 60">
+            <text
+              x="0"
+              y="50"
+              font-family="Space Grotesk, sans-serif"
+              font-weight="700"
+              font-size="56"
+              letter-spacing="-2"
+              fill="#faf9f7"
+            >
+              NIV
+            </text>
+            <!-- Orange accent underline -->
+            <rect x="0" y="54" width="60" height="4" fill="#c75d3a" />
+          </svg>
+          <span class="logo-name">Underline Accent</span>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

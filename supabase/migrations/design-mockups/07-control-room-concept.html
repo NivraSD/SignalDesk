@@ -1,0 +1,1645 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nivria Dashboard - V3 Unified</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --burnt-orange: #c75d3a;
+        --burnt-orange-light: #e07b5a;
+        --burnt-orange-muted: rgba(199, 93, 58, 0.1);
+        --charcoal: #1a1a1a;
+        --grey-900: #212121;
+        --grey-800: #2e2e2e;
+        --grey-700: #3d3d3d;
+        --grey-600: #555555;
+        --grey-500: #757575;
+        --grey-400: #9e9e9e;
+        --grey-300: #bdbdbd;
+        --grey-200: #e0e0e0;
+        --white: #ffffff;
+        --cream: #faf9f7;
+        --cream-dark: #f5f4f2;
+        --font-display: "Space Grotesk", sans-serif;
+        --font-serif: "Playfair Display", serif;
+        --font-body: "Inter", sans-serif;
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: var(--font-body);
+        background: var(--cream);
+        color: var(--charcoal);
+        min-height: 100vh;
+      }
+
+      /* NAV */
+      .nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        padding: 0 40px;
+        height: 64px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: var(--cream);
+        border-bottom: 1px solid var(--grey-200);
+      }
+
+      .nav-left {
+        display: flex;
+        align-items: center;
+        gap: 48px;
+      }
+
+      .nav-logo {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        text-decoration: none;
+      }
+
+      .logo-mark {
+        width: 36px;
+        height: 36px;
+        background: var(--burnt-orange);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        clip-path: polygon(0 0, 100% 0, 100% 65%, 65% 100%, 0 100%);
+      }
+
+      .logo-mark svg {
+        width: 20px;
+        height: 20px;
+        color: var(--white);
+      }
+
+      .logo-text {
+        font-family: var(--font-display);
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: var(--charcoal);
+      }
+
+      .nav-links {
+        display: flex;
+        gap: 8px;
+      }
+
+      .nav-link {
+        padding: 8px 16px;
+        font-family: var(--font-display);
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: var(--grey-500);
+        text-decoration: none;
+        border-radius: 6px;
+        transition: all 0.2s;
+        cursor: pointer;
+      }
+
+      .nav-link:hover {
+        color: var(--charcoal);
+        background: var(--cream-dark);
+      }
+      .nav-link.active {
+        color: var(--charcoal);
+        background: var(--white);
+        box-shadow: var(--shadow-sm);
+      }
+
+      .nav-right {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .org-switcher {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 14px;
+        background: var(--white);
+        border: 1px solid var(--grey-200);
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        cursor: pointer;
+      }
+
+      .profile-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: var(--charcoal);
+        color: var(--white);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-size: 0.8rem;
+        font-weight: 600;
+      }
+
+      /* MAIN */
+      .main {
+        padding-top: 64px;
+        min-height: 100vh;
+      }
+      .view {
+        display: none;
+        min-height: calc(100vh - 64px);
+      }
+      .view.active {
+        display: flex;
+      }
+
+      /* ==================== HUB VIEW ==================== */
+      .hub-container {
+        display: grid;
+        grid-template-columns: 1fr 340px;
+        gap: 0;
+        width: 100%;
+        min-height: calc(100vh - 64px);
+      }
+
+      .hub-main {
+        padding: 40px;
+        overflow-y: auto;
+        max-height: calc(100vh - 64px);
+      }
+
+      .hub-sidebar {
+        background: var(--charcoal);
+        padding: 24px;
+        border-left: 1px solid var(--grey-800);
+        overflow-y: auto;
+        max-height: calc(100vh - 64px);
+      }
+
+      .hub-date {
+        font-family: var(--font-display);
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+        color: var(--grey-400);
+        margin-bottom: 8px;
+      }
+
+      .hub-greeting {
+        font-family: var(--font-serif);
+        font-size: 1.8rem;
+        font-weight: 400;
+        line-height: 1.3;
+        margin-bottom: 32px;
+      }
+
+      .hub-greeting em {
+        font-style: italic;
+        color: var(--burnt-orange);
+      }
+
+      /* Brief Card */
+      .brief-card {
+        background: var(--white);
+        border: 1px solid var(--grey-200);
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 24px;
+      }
+
+      .brief-label {
+        font-family: var(--font-display);
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        color: var(--burnt-orange);
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .brief-label-dot {
+        width: 6px;
+        height: 6px;
+        background: var(--burnt-orange);
+        border-radius: 50%;
+      }
+
+      .brief-text {
+        font-family: var(--font-serif);
+        font-size: 1.1rem;
+        line-height: 1.6;
+        color: var(--charcoal);
+      }
+
+      .brief-text em {
+        font-style: italic;
+        color: var(--burnt-orange);
+      }
+
+      /* Section Header */
+      .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        margin-top: 32px;
+      }
+
+      .section-title {
+        font-family: var(--font-display);
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        color: var(--grey-500);
+      }
+
+      .section-badge {
+        font-family: var(--font-display);
+        font-size: 0.7rem;
+        font-weight: 500;
+        color: var(--burnt-orange);
+        background: var(--burnt-orange-muted);
+        padding: 4px 10px;
+        border-radius: 12px;
+      }
+
+      /* Opportunity Cards */
+      .opp-card {
+        background: var(--white);
+        border: 1px solid var(--grey-200);
+        border-radius: 10px;
+        padding: 18px;
+        margin-bottom: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+        position: relative;
+      }
+
+      .opp-card:hover {
+        border-color: var(--burnt-orange);
+        box-shadow: var(--shadow-md);
+      }
+      .opp-card.high::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: var(--burnt-orange);
+        border-radius: 10px 0 0 10px;
+      }
+
+      .opp-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 8px;
+      }
+
+      .opp-score {
+        font-family: var(--font-display);
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--burnt-orange);
+      }
+
+      .opp-score.medium {
+        color: var(--grey-600);
+      }
+
+      .opp-time {
+        font-size: 0.75rem;
+        color: var(--grey-500);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .opp-title {
+        font-family: var(--font-display);
+        font-size: 0.95rem;
+        font-weight: 500;
+        margin-bottom: 4px;
+      }
+
+      .opp-desc {
+        font-size: 0.8rem;
+        color: var(--grey-500);
+        line-height: 1.4;
+      }
+
+      .opp-execute {
+        margin-top: 12px;
+        padding: 10px 16px;
+        background: var(--burnt-orange);
+        color: var(--white);
+        border: none;
+        border-radius: 6px;
+        font-family: var(--font-display);
+        font-size: 0.8rem;
+        font-weight: 500;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: background 0.2s;
+      }
+
+      .opp-execute:hover {
+        background: var(--burnt-orange-light);
+      }
+
+      /* Sidebar Items */
+      .sidebar-section {
+        margin-bottom: 28px;
+      }
+
+      .sidebar-title {
+        font-family: var(--font-display);
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        color: var(--grey-500);
+        margin-bottom: 12px;
+      }
+
+      .sidebar-item {
+        padding: 12px;
+        background: var(--grey-900);
+        border-radius: 8px;
+        margin-bottom: 8px;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+
+      .sidebar-item:hover {
+        background: var(--grey-800);
+      }
+
+      .sidebar-item-title {
+        font-size: 0.85rem;
+        color: var(--white);
+        margin-bottom: 4px;
+      }
+
+      .sidebar-item-meta {
+        font-size: 0.75rem;
+        color: var(--grey-500);
+      }
+
+      .sidebar-item-highlight {
+        color: var(--burnt-orange);
+        font-weight: 500;
+      }
+
+      /* Intel tabs in sidebar */
+      .intel-tabs {
+        display: flex;
+        gap: 4px;
+        margin-bottom: 16px;
+      }
+
+      .intel-tab {
+        padding: 6px 12px;
+        font-size: 0.7rem;
+        font-family: var(--font-display);
+        color: var(--grey-500);
+        background: transparent;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .intel-tab:hover {
+        color: var(--grey-300);
+      }
+      .intel-tab.active {
+        color: var(--burnt-orange);
+        background: rgba(199, 93, 58, 0.1);
+      }
+
+      /* ==================== STUDIO VIEW ==================== */
+      .studio-container {
+        display: flex;
+        width: 100%;
+        min-height: calc(100vh - 64px);
+      }
+
+      .studio-sidebar {
+        width: 280px;
+        background: var(--cream);
+        border-right: 1px solid var(--grey-200);
+        display: flex;
+        flex-direction: column;
+      }
+
+      .studio-sidebar-header {
+        padding: 20px;
+        border-bottom: 1px solid var(--grey-200);
+      }
+
+      .studio-sidebar-title {
+        font-family: var(--font-display);
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        color: var(--grey-500);
+        margin-bottom: 8px;
+      }
+
+      .studio-campaign-name {
+        font-family: var(--font-serif);
+        font-size: 1.1rem;
+        color: var(--charcoal);
+      }
+
+      .studio-tabs {
+        display: flex;
+        border-bottom: 1px solid var(--grey-200);
+      }
+
+      .studio-tab {
+        flex: 1;
+        padding: 12px;
+        font-family: var(--font-display);
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: var(--grey-500);
+        background: none;
+        border: none;
+        border-bottom: 2px solid transparent;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .studio-tab:hover {
+        color: var(--charcoal);
+      }
+      .studio-tab.active {
+        color: var(--charcoal);
+        border-bottom-color: var(--burnt-orange);
+      }
+
+      .studio-items {
+        flex: 1;
+        padding: 16px;
+        overflow-y: auto;
+      }
+
+      .studio-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 12px;
+        background: var(--white);
+        border: 1px solid var(--grey-200);
+        border-radius: 8px;
+        margin-bottom: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .studio-item:hover {
+        border-color: var(--burnt-orange);
+      }
+      .studio-item.active {
+        border-color: var(--burnt-orange);
+        background: var(--burnt-orange-muted);
+      }
+
+      .studio-item-status {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        border: 2px solid var(--grey-300);
+        margin-top: 4px;
+      }
+
+      .studio-item-status.done {
+        background: var(--burnt-orange);
+        border-color: var(--burnt-orange);
+      }
+      .studio-item-status.active {
+        border-color: var(--burnt-orange);
+        animation: pulse 1.5s infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
+
+      .studio-item-type {
+        font-size: 0.65rem;
+        color: var(--grey-400);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .studio-item-title {
+        font-family: var(--font-display);
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: var(--charcoal);
+      }
+
+      /* NIV Main Area */
+      .studio-main {
+        flex: 1;
+        background: var(--charcoal);
+        display: flex;
+        flex-direction: column;
+      }
+
+      .niv-header {
+        padding: 16px 24px;
+        border-bottom: 1px solid var(--grey-800);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .niv-avatar {
+        width: 40px;
+        height: 40px;
+        background: var(--burnt-orange);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        clip-path: polygon(0 0, 100% 0, 100% 65%, 65% 100%, 0 100%);
+      }
+
+      .niv-avatar svg {
+        width: 20px;
+        height: 20px;
+        color: var(--white);
+      }
+
+      .niv-name {
+        font-family: var(--font-display);
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--white);
+      }
+
+      .niv-status {
+        font-size: 0.75rem;
+        color: var(--grey-500);
+      }
+
+      .niv-conversation {
+        flex: 1;
+        padding: 24px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      .niv-message {
+        display: flex;
+        gap: 12px;
+        max-width: 85%;
+      }
+
+      .niv-message.user {
+        align-self: flex-end;
+        flex-direction: row-reverse;
+      }
+
+      .niv-msg-avatar {
+        width: 32px;
+        height: 32px;
+        background: var(--burnt-orange);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .niv-msg-avatar svg {
+        width: 16px;
+        height: 16px;
+        color: var(--white);
+      }
+      .niv-msg-avatar.user {
+        background: var(--grey-700);
+      }
+
+      .niv-msg-content {
+        background: var(--grey-900);
+        border-radius: 12px;
+        padding: 14px 18px;
+        border: 1px solid var(--grey-800);
+      }
+
+      .niv-message.user .niv-msg-content {
+        background: var(--burnt-orange);
+        border-color: var(--burnt-orange);
+      }
+
+      .niv-msg-text {
+        font-size: 0.9rem;
+        line-height: 1.6;
+        color: var(--grey-200);
+      }
+
+      .niv-message.user .niv-msg-text {
+        color: var(--white);
+      }
+
+      .niv-msg-text em {
+        color: var(--burnt-orange);
+        font-style: normal;
+      }
+
+      /* Content Output in Conversation */
+      .niv-content-block {
+        background: var(--grey-800);
+        border-radius: 8px;
+        padding: 16px;
+        margin-top: 12px;
+        border-left: 3px solid var(--burnt-orange);
+      }
+
+      .niv-content-label {
+        font-family: var(--font-display);
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--burnt-orange);
+        margin-bottom: 8px;
+      }
+
+      .niv-content-preview {
+        font-size: 0.85rem;
+        line-height: 1.6;
+        color: var(--grey-300);
+        white-space: pre-wrap;
+      }
+
+      .niv-content-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .niv-action {
+        padding: 8px 14px;
+        font-family: var(--font-display);
+        font-size: 0.75rem;
+        font-weight: 500;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .niv-action.primary {
+        background: var(--burnt-orange);
+        color: var(--white);
+        border: none;
+      }
+
+      .niv-action.secondary {
+        background: transparent;
+        color: var(--grey-300);
+        border: 1px solid var(--grey-600);
+      }
+
+      /* Suggestions */
+      .niv-suggestions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .niv-suggestion {
+        padding: 8px 14px;
+        background: var(--grey-800);
+        border: 1px solid var(--grey-700);
+        border-radius: 20px;
+        font-size: 0.8rem;
+        color: var(--grey-300);
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .niv-suggestion:hover {
+        border-color: var(--burnt-orange);
+        color: var(--white);
+      }
+
+      /* Input Area */
+      .niv-input-area {
+        padding: 20px 24px;
+        border-top: 1px solid var(--grey-800);
+        background: var(--grey-900);
+      }
+
+      .niv-input-wrapper {
+        display: flex;
+        align-items: flex-end;
+        gap: 12px;
+        background: var(--charcoal);
+        border: 1px solid var(--grey-700);
+        border-radius: 12px;
+        padding: 12px;
+      }
+
+      .niv-input {
+        flex: 1;
+        background: none;
+        border: none;
+        outline: none;
+        font-family: var(--font-body);
+        font-size: 0.9rem;
+        color: var(--white);
+        resize: none;
+        min-height: 24px;
+        max-height: 120px;
+      }
+
+      .niv-input::placeholder {
+        color: var(--grey-500);
+      }
+
+      .niv-send {
+        width: 40px;
+        height: 40px;
+        background: var(--burnt-orange);
+        border: none;
+        border-radius: 10px;
+        color: var(--white);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.2s;
+      }
+
+      .niv-send:hover {
+        background: var(--burnt-orange-light);
+      }
+
+      /* ==================== STRATEGY VIEW ==================== */
+      .strategy-container {
+        display: flex;
+        width: 100%;
+        min-height: calc(100vh - 64px);
+      }
+
+      .strategy-nav {
+        width: 240px;
+        background: var(--cream);
+        border-right: 1px solid var(--grey-200);
+        padding: 24px;
+      }
+
+      .strategy-nav-title {
+        font-family: var(--font-display);
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        color: var(--grey-500);
+        margin-bottom: 16px;
+      }
+
+      .strategy-nav-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 14px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+        margin-bottom: 4px;
+        font-family: var(--font-display);
+        font-size: 0.85rem;
+        color: var(--grey-600);
+      }
+
+      .strategy-nav-item:hover {
+        background: var(--cream-dark);
+        color: var(--charcoal);
+      }
+      .strategy-nav-item.active {
+        background: var(--white);
+        color: var(--charcoal);
+        box-shadow: var(--shadow-sm);
+      }
+
+      .strategy-main {
+        flex: 1;
+        padding: 40px;
+        overflow-y: auto;
+      }
+
+      .strategy-header {
+        margin-bottom: 32px;
+      }
+
+      .strategy-page-title {
+        font-family: var(--font-serif);
+        font-size: 1.8rem;
+        font-weight: 400;
+        margin-bottom: 8px;
+      }
+
+      .strategy-page-desc {
+        font-size: 0.9rem;
+        color: var(--grey-500);
+      }
+
+      /* Timeline */
+      .timeline {
+        background: var(--white);
+        border: 1px solid var(--grey-200);
+        border-radius: 12px;
+        padding: 24px;
+      }
+
+      .timeline-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+
+      .timeline-title {
+        font-family: var(--font-display);
+        font-size: 0.9rem;
+        font-weight: 500;
+      }
+
+      .timeline-period {
+        font-size: 0.8rem;
+        color: var(--grey-500);
+      }
+
+      .timeline-row {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--grey-200);
+      }
+
+      .timeline-row:last-child {
+        border-bottom: none;
+      }
+
+      .timeline-label {
+        width: 120px;
+        font-family: var(--font-display);
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: var(--charcoal);
+      }
+
+      .timeline-bar {
+        flex: 1;
+        height: 32px;
+        background: var(--cream-dark);
+        border-radius: 4px;
+        position: relative;
+      }
+
+      .timeline-segment {
+        position: absolute;
+        height: 100%;
+        background: var(--burnt-orange);
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.7rem;
+        color: var(--white);
+        font-weight: 500;
+      }
+
+      /* Campaign Cards */
+      .campaign-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+        margin-top: 24px;
+      }
+
+      .campaign-card {
+        background: var(--white);
+        border: 1px solid var(--grey-200);
+        border-radius: 10px;
+        padding: 20px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .campaign-card:hover {
+        border-color: var(--burnt-orange);
+        box-shadow: var(--shadow-md);
+      }
+
+      .campaign-card-title {
+        font-family: var(--font-display);
+        font-size: 0.95rem;
+        font-weight: 500;
+        margin-bottom: 4px;
+      }
+
+      .campaign-card-phase {
+        font-size: 0.8rem;
+        color: var(--grey-500);
+        margin-bottom: 12px;
+      }
+
+      .campaign-progress-bar {
+        height: 4px;
+        background: var(--grey-200);
+        border-radius: 2px;
+        overflow: hidden;
+      }
+
+      .campaign-progress-fill {
+        height: 100%;
+        background: var(--burnt-orange);
+        border-radius: 2px;
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="nav">
+      <div class="nav-left">
+        <a href="#" class="nav-logo">
+          <div class="logo-mark">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+            </svg>
+          </div>
+          <span class="logo-text">Nivria</span>
+        </a>
+        <div class="nav-links">
+          <a class="nav-link active" data-view="hub">Hub</a>
+          <a class="nav-link" data-view="studio">Studio</a>
+          <a class="nav-link" data-view="strategy">Strategy</a>
+          <a class="nav-link">Vault</a>
+        </div>
+      </div>
+      <div class="nav-right">
+        <button class="org-switcher">
+          <span>Acme Corp</span>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </button>
+        <div class="profile-btn">JD</div>
+      </div>
+    </nav>
+
+    <main class="main">
+      <!-- ==================== HUB VIEW ==================== -->
+      <div class="view active" id="hub-view">
+        <div class="hub-container">
+          <div class="hub-main">
+            <div class="hub-date">Monday, November 25, 2024</div>
+            <h1 class="hub-greeting">
+              Good morning. <em>3 opportunities</em> detected overnight.
+            </h1>
+
+            <!-- Executive Brief -->
+            <div class="brief-card">
+              <div class="brief-label">
+                <span class="brief-label-dot"></span>
+                Intelligence Brief
+              </div>
+              <p class="brief-text">
+                Market signals indicate a <em>narrowing window</em> for AI
+                narrative positioning. Competitor silence creates opportunity.
+                Q4 earnings season amplifies stakeholder attention—act within 48
+                hours.
+              </p>
+            </div>
+
+            <!-- Opportunities -->
+            <div class="section-header">
+              <div class="section-title">Opportunities</div>
+              <div class="section-badge">3 active</div>
+            </div>
+
+            <div class="opp-card high">
+              <div class="opp-header">
+                <div class="opp-score">92</div>
+                <div class="opp-time">
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 6v6l4 2" />
+                  </svg>
+                  48h window
+                </div>
+              </div>
+              <div class="opp-title">Q4 Earnings Narrative Window</div>
+              <div class="opp-desc">
+                Competitor silence on AI investment creates first-mover
+                advantage for earnings positioning
+              </div>
+              <button class="opp-execute">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
+                Execute Campaign
+              </button>
+            </div>
+
+            <div class="opp-card">
+              <div class="opp-header">
+                <div class="opp-score">87</div>
+                <div class="opp-time">
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 6v6l4 2" />
+                  </svg>
+                  5 days
+                </div>
+              </div>
+              <div class="opp-title">Sustainability Positioning Gap</div>
+              <div class="opp-desc">
+                Market leader silent on ESG messaging—opportunity to own the
+                narrative
+              </div>
+              <button class="opp-execute">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
+                Execute Campaign
+              </button>
+            </div>
+
+            <div class="opp-card">
+              <div class="opp-header">
+                <div class="opp-score medium">78</div>
+                <div class="opp-time">
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 6v6l4 2" />
+                  </svg>
+                  2 weeks
+                </div>
+              </div>
+              <div class="opp-title">Partnership Signal Detection</div>
+              <div class="opp-desc">
+                Supply chain movements suggest strategic alliance opportunity
+              </div>
+              <button class="opp-execute">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
+                Execute Campaign
+              </button>
+            </div>
+          </div>
+
+          <!-- Sidebar: Intel Highlights -->
+          <div class="hub-sidebar">
+            <div class="intel-tabs">
+              <button class="intel-tab active">Social</button>
+              <button class="intel-tab">Predictions</button>
+              <button class="intel-tab">Connections</button>
+            </div>
+
+            <div class="sidebar-section">
+              <div class="sidebar-title">Trending Mentions</div>
+              <div class="sidebar-item">
+                <div class="sidebar-item-title">
+                  Twitter surge on "AI enterprise"
+                </div>
+                <div class="sidebar-item-meta">
+                  <span class="sidebar-item-highlight">+340%</span> volume · 2h
+                  ago
+                </div>
+              </div>
+              <div class="sidebar-item">
+                <div class="sidebar-item-title">
+                  Reddit discussion: competitor layoffs
+                </div>
+                <div class="sidebar-item-meta">
+                  <span class="sidebar-item-highlight">892</span> engagements ·
+                  4h ago
+                </div>
+              </div>
+              <div class="sidebar-item">
+                <div class="sidebar-item-title">
+                  LinkedIn: CEO interview shared widely
+                </div>
+                <div class="sidebar-item-meta">
+                  <span class="sidebar-item-highlight">12K</span> impressions ·
+                  6h ago
+                </div>
+              </div>
+            </div>
+
+            <div class="sidebar-section">
+              <div class="sidebar-title">Predictions</div>
+              <div class="sidebar-item">
+                <div class="sidebar-item-title">Analyst upgrade likely</div>
+                <div class="sidebar-item-meta">
+                  <span class="sidebar-item-highlight">78%</span> confidence · 3
+                  days
+                </div>
+              </div>
+              <div class="sidebar-item">
+                <div class="sidebar-item-title">
+                  Competitor announcement expected
+                </div>
+                <div class="sidebar-item-meta">
+                  <span class="sidebar-item-highlight">65%</span> confidence · 1
+                  week
+                </div>
+              </div>
+            </div>
+
+            <div class="sidebar-section">
+              <div class="sidebar-title">New Connections</div>
+              <div class="sidebar-item">
+                <div class="sidebar-item-title">Sarah Chen → Board Member</div>
+                <div class="sidebar-item-meta">
+                  TechCorp ·
+                  <span class="sidebar-item-highlight">Mutual: 3</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== STUDIO VIEW ==================== -->
+      <div class="view" id="studio-view">
+        <div class="studio-container">
+          <!-- Content Queue Sidebar -->
+          <div class="studio-sidebar">
+            <div class="studio-sidebar-header">
+              <div class="studio-sidebar-title">Current Project</div>
+              <div class="studio-campaign-name">Q4 Earnings Campaign</div>
+            </div>
+            <div class="studio-tabs">
+              <button class="studio-tab active">Queue</button>
+              <button class="studio-tab">Library</button>
+            </div>
+            <div class="studio-items">
+              <div class="studio-item active">
+                <div class="studio-item-status active"></div>
+                <div>
+                  <div class="studio-item-type">Media Pitch</div>
+                  <div class="studio-item-title">TechCrunch: AI Metrics</div>
+                </div>
+              </div>
+              <div class="studio-item">
+                <div class="studio-item-status"></div>
+                <div>
+                  <div class="studio-item-type">Press Release</div>
+                  <div class="studio-item-title">Q4 AI Investment</div>
+                </div>
+              </div>
+              <div class="studio-item">
+                <div class="studio-item-status"></div>
+                <div>
+                  <div class="studio-item-type">Social Thread</div>
+                  <div class="studio-item-title">Executive Announcement</div>
+                </div>
+              </div>
+              <div class="studio-item">
+                <div class="studio-item-status done"></div>
+                <div>
+                  <div class="studio-item-type">Talking Points</div>
+                  <div class="studio-item-title">CEO Interview Prep</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- NIV Conversation -->
+          <div class="studio-main">
+            <div class="niv-header">
+              <div class="niv-avatar">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                </svg>
+              </div>
+              <div>
+                <div class="niv-name">NIV</div>
+                <div class="niv-status">
+                  Content Studio · Q4 Earnings Campaign
+                </div>
+              </div>
+            </div>
+
+            <div class="niv-conversation">
+              <div class="niv-message">
+                <div class="niv-msg-avatar">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                  </svg>
+                </div>
+                <div class="niv-msg-content">
+                  <div class="niv-msg-text">
+                    I'm working on the <em>TechCrunch media pitch</em> for the
+                    Q4 Earnings Campaign. Based on the opportunity brief, I'm
+                    emphasizing concrete AI metrics—TechCrunch editors respond
+                    well to data-driven exclusives. Here's my first draft:
+                  </div>
+                  <div class="niv-content-block">
+                    <div class="niv-content-label">Media Pitch Draft</div>
+                    <div class="niv-content-preview">
+                      Subject: Exclusive: [Company] Reveals AI Integration
+                      Roadmap with 40% Efficiency Gains Hi [Editor], I wanted to
+                      share an exclusive ahead of Q4 earnings: we're releasing
+                      concrete data on our AI integration initiative for the
+                      first time. Key highlights: • 40% improvement in
+                      operational efficiency • $12M in cost savings from AI
+                      automation • 18-month roadmap to full AI workflows Unlike
+                      vague "AI-first" promises, we have metrics...
+                    </div>
+                    <div class="niv-content-actions">
+                      <button class="niv-action primary">
+                        Save to Library
+                      </button>
+                      <button class="niv-action secondary">Refine</button>
+                      <button class="niv-action secondary">
+                        Try Different Angle
+                      </button>
+                    </div>
+                  </div>
+                  <div class="niv-suggestions">
+                    <div class="niv-suggestion">Make it more urgent</div>
+                    <div class="niv-suggestion">Add competitor comparison</div>
+                    <div class="niv-suggestion">Shorter version</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="niv-message user">
+                <div class="niv-msg-avatar user">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                </div>
+                <div class="niv-msg-content">
+                  <div class="niv-msg-text">
+                    Can you add a line about how this positions us ahead of
+                    competitors who haven't disclosed their AI strategies?
+                  </div>
+                </div>
+              </div>
+
+              <div class="niv-message">
+                <div class="niv-msg-avatar">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                  </svg>
+                </div>
+                <div class="niv-msg-content">
+                  <div class="niv-msg-text">
+                    Good call—that's the competitive angle from the opportunity
+                    brief. I've added a line after the key highlights:
+                  </div>
+                  <div class="niv-content-block">
+                    <div class="niv-content-label">Updated Section</div>
+                    <div class="niv-content-preview">
+                      While major competitors remain silent on their AI
+                      investment strategies ahead of Q4 earnings, we're the
+                      first to put real numbers on the table. This is a story
+                      about transparency and execution.
+                    </div>
+                    <div class="niv-content-actions">
+                      <button class="niv-action primary">Apply Edit</button>
+                      <button class="niv-action secondary">
+                        See Full Draft
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="niv-input-area">
+              <div class="niv-input-wrapper">
+                <textarea
+                  class="niv-input"
+                  placeholder="Ask NIV to refine, create something new, or explore ideas..."
+                  rows="1"
+                ></textarea>
+                <button class="niv-send">
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== STRATEGY VIEW ==================== -->
+      <div class="view" id="strategy-view">
+        <div class="strategy-container">
+          <div class="strategy-nav">
+            <div class="strategy-nav-title">Strategy</div>
+            <div class="strategy-nav-item active">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+              </svg>
+              Planner
+            </div>
+            <div class="strategy-nav-item">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"
+                />
+              </svg>
+              Campaign Builder
+            </div>
+            <div class="strategy-nav-item">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+                />
+              </svg>
+              Active Campaigns
+            </div>
+          </div>
+
+          <div class="strategy-main">
+            <div class="strategy-header">
+              <h1 class="strategy-page-title">Campaign Planner</h1>
+              <p class="strategy-page-desc">
+                Timeline view of active and planned campaigns
+              </p>
+            </div>
+
+            <!-- Timeline -->
+            <div class="timeline">
+              <div class="timeline-header">
+                <div class="timeline-title">November - December 2024</div>
+                <div class="timeline-period">
+                  Week 1 · Week 2 · Week 3 · Week 4 · Week 5 · Week 6
+                </div>
+              </div>
+
+              <div class="timeline-row">
+                <div class="timeline-label">Q4 Earnings</div>
+                <div class="timeline-bar">
+                  <div class="timeline-segment" style="left: 0; width: 25%">
+                    Phase 1
+                  </div>
+                </div>
+              </div>
+
+              <div class="timeline-row">
+                <div class="timeline-label">Product Launch</div>
+                <div class="timeline-bar">
+                  <div class="timeline-segment" style="left: 15%; width: 40%">
+                    Active
+                  </div>
+                </div>
+              </div>
+
+              <div class="timeline-row">
+                <div class="timeline-label">Thought Leadership</div>
+                <div class="timeline-bar">
+                  <div
+                    class="timeline-segment"
+                    style="left: 30%; width: 50%; opacity: 0.6"
+                  >
+                    Ongoing
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Active Campaigns -->
+            <div class="section-header">
+              <div class="section-title">Active Campaigns</div>
+              <div class="section-badge">3 running</div>
+            </div>
+
+            <div class="campaign-grid">
+              <div class="campaign-card" onclick="showView('studio')">
+                <div class="campaign-card-title">Q4 Earnings Campaign</div>
+                <div class="campaign-card-phase">Phase 1: Media Outreach</div>
+                <div class="campaign-progress-bar">
+                  <div class="campaign-progress-fill" style="width: 25%"></div>
+                </div>
+              </div>
+              <div class="campaign-card">
+                <div class="campaign-card-title">Product Launch 2024</div>
+                <div class="campaign-card-phase">
+                  Phase 2: Content Execution
+                </div>
+                <div class="campaign-progress-bar">
+                  <div class="campaign-progress-fill" style="width: 55%"></div>
+                </div>
+              </div>
+              <div class="campaign-card">
+                <div class="campaign-card-title">Thought Leadership Series</div>
+                <div class="campaign-card-phase">Phase 3: Distribution</div>
+                <div class="campaign-progress-bar">
+                  <div class="campaign-progress-fill" style="width: 75%"></div>
+                </div>
+              </div>
+              <div
+                class="campaign-card"
+                style="border-style: dashed; opacity: 0.7"
+              >
+                <div class="campaign-card-title" style="color: var(--grey-500)">
+                  + New Campaign
+                </div>
+                <div class="campaign-card-phase">
+                  Start from opportunity or scratch
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      function showView(viewName) {
+        document
+          .querySelectorAll(".view")
+          .forEach((v) => v.classList.remove("active"));
+        document.getElementById(viewName + "-view").classList.add("active");
+        document.querySelectorAll(".nav-link").forEach((link) => {
+          link.classList.remove("active");
+          if (link.dataset.view === viewName) link.classList.add("active");
+        });
+      }
+
+      document.querySelectorAll(".nav-link[data-view]").forEach((link) => {
+        link.addEventListener("click", (e) => {
+          e.preventDefault();
+          showView(link.dataset.view);
+        });
+      });
+
+      document.querySelectorAll(".studio-tab").forEach((tab) => {
+        tab.addEventListener("click", () => {
+          document
+            .querySelectorAll(".studio-tab")
+            .forEach((t) => t.classList.remove("active"));
+          tab.classList.add("active");
+        });
+      });
+
+      document.querySelectorAll(".intel-tab").forEach((tab) => {
+        tab.addEventListener("click", () => {
+          document
+            .querySelectorAll(".intel-tab")
+            .forEach((t) => t.classList.remove("active"));
+          tab.classList.add("active");
+        });
+      });
+
+      document.querySelectorAll(".strategy-nav-item").forEach((item) => {
+        item.addEventListener("click", () => {
+          document
+            .querySelectorAll(".strategy-nav-item")
+            .forEach((i) => i.classList.remove("active"));
+          item.classList.add("active");
+        });
+      });
+    </script>
+  </body>
+</html>

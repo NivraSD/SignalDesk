@@ -152,6 +152,7 @@ async function buildTargetedMediaList(params: {
   };
   tier: string;
   count: number;
+  org_industry?: string;  // Fallback industry from organization profile
 }): Promise<any[]> {
   const allJournalists: any[] = [];
 
@@ -174,13 +175,37 @@ async function buildTargetedMediaList(params: {
     });
 
     const data = await response.json();
-    if (data.journalists) {
+    if (data.journalists && data.journalists.length > 0) {
       console.log(`✅ PRIMARY: Found ${data.journalists.length} core journalists`);
       allJournalists.push(...data.journalists.map((j: any) => ({
         ...j,
         target_priority: 'primary',
         relevance_reasoning: params.strategy.primary_target.reasoning
       })));
+    } else if (params.org_industry && params.org_industry !== params.strategy.primary_target.industry) {
+      // PRIMARY returned 0 results - try org_industry as fallback
+      console.log(`⚠️ PRIMARY returned 0 results, trying org industry fallback: ${params.org_industry}`);
+      const fallbackResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/journalist-lookup`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          industry: params.org_industry,
+          tier: params.tier,
+          count: params.count
+        })
+      });
+      const fallbackData = await fallbackResponse.json();
+      if (fallbackData.journalists && fallbackData.journalists.length > 0) {
+        console.log(`✅ FALLBACK (org industry): Found ${fallbackData.journalists.length} journalists`);
+        allJournalists.push(...fallbackData.journalists.map((j: any) => ({
+          ...j,
+          target_priority: 'primary',
+          relevance_reasoning: `Fallback to organization's industry: ${params.org_industry}`
+        })));
+      }
     }
   } catch (error) {
     console.error(`❌ Error querying primary target:`, error);
@@ -243,14 +268,21 @@ async function buildTargetedMediaList(params: {
  * Main function: Generate intelligent media list
  */
 async function generateMediaList(args: any) {
-  const { topic, count = 15, tier = 'tier1', enrich_with_web = false } = args;
+  const { topic, count = 15, tier = 'tier1', enrich_with_web = false, org_industry = '' } = args;
 
   console.log(`📋 Generating media list for topic: "${topic}"`);
   console.log(`🎯 Parameters: count=${count}, tier=${tier}, enrich_with_web=${enrich_with_web}`);
+  if (org_industry) {
+    console.log(`🏢 Organization industry fallback: "${org_industry}"`);
+  }
 
   try {
     // Step 1: Analyze topic with PR strategist mindset
-    const strategy = await analyzeTopicForJournalists(topic);
+    // Include org_industry as context for better targeting
+    const enhancedTopic = org_industry && !topic.toLowerCase().includes(org_industry.toLowerCase())
+      ? `${topic} (organization industry: ${org_industry})`
+      : topic;
+    const strategy = await analyzeTopicForJournalists(enhancedTopic);
     console.log(`🧠 Media targeting strategy complete`);
     console.log(`📋 Strategy: ${strategy.overall_strategy}`);
 
@@ -258,7 +290,8 @@ async function generateMediaList(args: any) {
     const journalists = await buildTargetedMediaList({
       strategy,
       tier,
-      count
+      count,
+      org_industry  // Pass org industry for fallback
     });
 
     console.log(`✅ Built targeted list: ${journalists.length} journalists`);

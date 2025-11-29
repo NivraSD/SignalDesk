@@ -315,9 +315,7 @@ export default function ExecuteTabProduction({
   }, {} as Record<string, typeof CONTENT_TYPES>)
 
   // No longer auto-open workspace - user controls when it opens
-  useEffect(() => {
-    // Keep this empty or remove - workspace opens on user action only
-  }, [currentContent, showWorkspace])
+  // Note: currentContent and showWorkspace were removed - workspace opens via canvas
 
   return (
     <div className="relative h-full flex">

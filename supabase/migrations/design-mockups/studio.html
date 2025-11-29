@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nivria Content Studio - V4</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --burnt-orange: #c75d3a;
+        --burnt-orange-light: #e07b5a;
+        --burnt-orange-muted: rgba(199, 93, 58, 0.1);
+        --charcoal: #1a1a1a;
+        --grey-900: #212121;
+        --grey-800: #2e2e2e;
+        --grey-700: #3d3d3d;
+        --grey-600: #555555;
+        --grey-500: #757575;
+        --grey-400: #9e9e9e;
+        --grey-300: #bdbdbd;
+        --grey-200: #e0e0e0;
+        --white: #ffffff;
+        --cream: #faf9f7;
+        --cream-dark: #f5f4f2;
+        --font-display: "Space Grotesk", sans-serif;
+        --font-serif: "Playfair Display", serif;
+        --font-body: "Inter", sans-serif;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: var(--font-body);
+        background: var(--grey-900);
+        color: var(--white);
+        min-height: 100vh;
+      }
+
+      /* STUDIO LAYOUT */
+      .studio {
+        display: grid;
+        grid-template-columns: 260px 1fr 380px;
+        grid-template-rows: 56px 1fr;
+        height: 100vh;
+      }
+
+      /* HEADER BAR */
+      .studio-header {
+        grid-column: 1 / -1;
+        background: var(--charcoal);
+        border-bottom: 1px solid var(--grey-800);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 20px;
+      }
+
+      .studio-header-left {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+      }
+
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .logo-mark {
+        width: 32px;
+        height: 32px;
+        background: var(--burnt-orange);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        clip-path: polygon(0 0, 100% 0, 100% 65%, 65% 100%, 0 100%);
+      }
+
+      .logo-mark svg {
+        width: 16px;
+        height: 16px;
+        color: var(--white);
+      }
+
+      .logo-text {
+        font-family: var(--font-display);
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--white);
+      }
+
+      .nav-tabs {
+        display: flex;
+        gap: 4px;
+      }
+
+      .nav-tab {
+        padding: 8px 16px;
+        font-family: var(--font-display);
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: var(--grey-500);
+        background: none;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .nav-tab:hover {
+        color: var(--grey-300);
+      }
+      .nav-tab.active {
+        color: var(--white);
+        background: var(--grey-800);
+      }
+
+      .studio-header-right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .header-btn {
+        padding: 8px 14px;
+        font-family: var(--font-display);
+        font-size: 0.8rem;
+        font-weight: 500;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .header-btn.secondary {
+        background: var(--grey-800);
+        color: var(--grey-300);
+        border: 1px solid var(--grey-700);
+      }
+
+      .header-btn.primary {
+        background: var(--burnt-orange);
+        color: var(--white);
+        border: none;
+      }
+
+      /* LEFT PANEL - CONTENT TYPES */
+      .types-panel {
+        background: var(--charcoal);
+        border-right: 1px solid var(--grey-800);
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .types-header {
+        padding: 16px;
+        border-bottom: 1px solid var(--grey-800);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .types-title {
+        font-family: var(--font-display);
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--grey-500);
+      }
+
+      .types-search {
+        width: 100%;
+        padding: 10px 12px;
+        background: var(--grey-900);
+        border: 1px solid var(--grey-800);
+        border-radius: 6px;
+        color: var(--white);
+        font-size: 0.85rem;
+        margin: 12px 16px;
+        width: calc(100% - 32px);
+      }
+
+      .types-search::placeholder {
+        color: var(--grey-600);
+      }
+
+      .types-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 0 12px 12px;
+      }
+
+      .type-category {
+        margin-bottom: 8px;
+      }
+
+      .type-category-header {
+        padding: 8px 8px;
+        font-family: var(--font-display);
+        font-size: 0.7rem;
+        font-weight: 500;
+        color: var(--grey-500);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+        border-radius: 4px;
+      }
+
+      .type-category-header:hover {
+        background: var(--grey-800);
+      }
+
+      .type-category-items {
+        display: none;
+      }
+
+      .type-category.expanded .type-category-items {
+        display: block;
+      }
+
+      .type-item {
+        padding: 10px 12px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.15s;
+        color: var(--grey-300);
+        font-size: 0.85rem;
+      }
+
+      .type-item:hover {
+        background: var(--grey-800);
+        color: var(--white);
+      }
+
+      .type-item.selected {
+        background: var(--burnt-orange-muted);
+        color: var(--burnt-orange);
+      }
+
+      .type-item svg {
+        width: 16px;
+        height: 16px;
+        opacity: 0.7;
+      }
+
+      /* CENTER - WORKSPACE */
+      .workspace {
+        background: var(--grey-900);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .workspace-toolbar {
+        padding: 12px 20px;
+        background: var(--charcoal);
+        border-bottom: 1px solid var(--grey-800);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .workspace-title-area {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .workspace-type-badge {
+        padding: 4px 10px;
+        background: var(--burnt-orange-muted);
+        color: var(--burnt-orange);
+        font-family: var(--font-display);
+        font-size: 0.7rem;
+        font-weight: 500;
+        border-radius: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .workspace-title {
+        font-family: var(--font-display);
+        font-size: 0.95rem;
+        font-weight: 500;
+        color: var(--white);
+        background: none;
+        border: none;
+        outline: none;
+      }
+
+      .workspace-title::placeholder {
+        color: var(--grey-600);
+      }
+
+      .workspace-actions {
+        display: flex;
+        gap: 8px;
+      }
+
+      .workspace-btn {
+        padding: 6px 12px;
+        font-size: 0.75rem;
+        font-family: var(--font-display);
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .workspace-btn.ghost {
+        background: none;
+        border: 1px solid var(--grey-700);
+        color: var(--grey-400);
+      }
+
+      .workspace-btn.ghost:hover {
+        border-color: var(--grey-600);
+        color: var(--grey-300);
+      }
+
+      /* Editor Area */
+      .editor-area {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .editor-canvas {
+        flex: 1;
+        padding: 32px 48px;
+        overflow-y: auto;
+      }
+
+      .editor-content {
+        max-width: 700px;
+        margin: 0 auto;
+      }
+
+      .editor-empty {
+        text-align: center;
+        padding: 80px 40px;
+      }
+
+      .editor-empty-icon {
+        width: 64px;
+        height: 64px;
+        margin: 0 auto 20px;
+        background: var(--grey-800);
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .editor-empty-icon svg {
+        width: 28px;
+        height: 28px;
+        color: var(--grey-600);
+      }
+
+      .editor-empty-title {
+        font-family: var(--font-display);
+        font-size: 1.1rem;
+        color: var(--grey-400);
+        margin-bottom: 8px;
+      }
+
+      .editor-empty-desc {
+        font-size: 0.85rem;
+        color: var(--grey-600);
+        max-width: 360px;
+        margin: 0 auto;
+        line-height: 1.5;
+      }
+
+      /* Content Preview */
+      .content-draft {
+        background: var(--charcoal);
+        border: 1px solid var(--grey-800);
+        border-radius: 12px;
+        overflow: hidden;
+      }
+
+      .content-draft-header {
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--grey-800);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .content-draft-label {
+        font-family: var(--font-display);
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--burnt-orange);
+      }
+
+      .content-draft-version {
+        font-size: 0.75rem;
+        color: var(--grey-500);
+      }
+
+      .content-draft-body {
+        padding: 24px;
+      }
+
+      .content-draft-text {
+        font-size: 0.95rem;
+        line-height: 1.8;
+        color: var(--grey-200);
+        white-space: pre-wrap;
+      }
+
+      .content-draft-text em {
+        color: var(--burnt-orange);
+        font-style: normal;
+        background: var(--burnt-orange-muted);
+        padding: 0 4px;
+        border-radius: 2px;
+      }
+
+      .content-draft-actions {
+        padding: 16px 20px;
+        border-top: 1px solid var(--grey-800);
+        display: flex;
+        gap: 8px;
+      }
+
+      .draft-btn {
+        padding: 10px 18px;
+        font-family: var(--font-display);
+        font-size: 0.8rem;
+        font-weight: 500;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .draft-btn.primary {
+        background: var(--burnt-orange);
+        color: var(--white);
+        border: none;
+      }
+
+      .draft-btn.secondary {
+        background: transparent;
+        color: var(--grey-300);
+        border: 1px solid var(--grey-700);
+      }
+
+      /* RIGHT PANEL - NIV */
+      .niv-panel {
+        background: var(--charcoal);
+        border-left: 1px solid var(--grey-800);
+        display: flex;
+        flex-direction: column;
+      }
+
+      .niv-header {
+        padding: 16px;
+        border-bottom: 1px solid var(--grey-800);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .niv-avatar {
+        width: 36px;
+        height: 36px;
+        background: var(--burnt-orange);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        clip-path: polygon(0 0, 100% 0, 100% 65%, 65% 100%, 0 100%);
+      }
+
+      .niv-avatar svg {
+        width: 18px;
+        height: 18px;
+        color: var(--white);
+      }
+
+      .niv-info {
+        flex: 1;
+      }
+
+      .niv-name {
+        font-family: var(--font-display);
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--white);
+      }
+
+      .niv-status {
+        font-size: 0.75rem;
+        color: var(--grey-500);
+      }
+
+      .niv-conversation {
+        flex: 1;
+        overflow-y: auto;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .niv-message {
+        display: flex;
+        gap: 10px;
+      }
+
+      .niv-message.user {
+        flex-direction: row-reverse;
+      }
+
+      .niv-msg-avatar {
+        width: 28px;
+        height: 28px;
+        background: var(--burnt-orange);
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .niv-msg-avatar svg {
+        width: 14px;
+        height: 14px;
+        color: var(--white);
+      }
+      .niv-msg-avatar.user {
+        background: var(--grey-700);
+      }
+
+      .niv-msg-bubble {
+        background: var(--grey-900);
+        border-radius: 12px;
+        padding: 12px 14px;
+        max-width: 85%;
+      }
+
+      .niv-message.user .niv-msg-bubble {
+        background: var(--burnt-orange);
+      }
+
+      .niv-msg-text {
+        font-size: 0.85rem;
+        line-height: 1.5;
+        color: var(--grey-200);
+      }
+
+      .niv-message.user .niv-msg-text {
+        color: var(--white);
+      }
+
+      .niv-suggestions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 10px;
+      }
+
+      .niv-suggestion {
+        padding: 6px 12px;
+        background: var(--grey-800);
+        border: 1px solid var(--grey-700);
+        border-radius: 16px;
+        font-size: 0.75rem;
+        color: var(--grey-300);
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .niv-suggestion:hover {
+        border-color: var(--burnt-orange);
+        color: var(--white);
+      }
+
+      .niv-input-area {
+        padding: 16px;
+        border-top: 1px solid var(--grey-800);
+      }
+
+      .niv-input-wrapper {
+        display: flex;
+        gap: 8px;
+        background: var(--grey-900);
+        border: 1px solid var(--grey-800);
+        border-radius: 10px;
+        padding: 8px 8px 8px 14px;
+      }
+
+      .niv-input {
+        flex: 1;
+        background: none;
+        border: none;
+        outline: none;
+        font-size: 0.85rem;
+        color: var(--white);
+        resize: none;
+      }
+
+      .niv-input::placeholder {
+        color: var(--grey-600);
+      }
+
+      .niv-send {
+        width: 36px;
+        height: 36px;
+        background: var(--burnt-orange);
+        border: none;
+        border-radius: 8px;
+        color: var(--white);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* Queue/Library toggle */
+      .panel-tabs {
+        display: flex;
+        padding: 0 16px;
+        border-bottom: 1px solid var(--grey-800);
+      }
+
+      .panel-tab {
+        padding: 12px 16px;
+        font-family: var(--font-display);
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: var(--grey-500);
+        background: none;
+        border: none;
+        border-bottom: 2px solid transparent;
+        cursor: pointer;
+        margin-bottom: -1px;
+      }
+
+      .panel-tab:hover {
+        color: var(--grey-300);
+      }
+      .panel-tab.active {
+        color: var(--white);
+        border-bottom-color: var(--burnt-orange);
+      }
+
+      .queue-list {
+        padding: 12px;
+        max-height: 200px;
+        overflow-y: auto;
+        border-bottom: 1px solid var(--grey-800);
+      }
+
+      .queue-item {
+        padding: 10px 12px;
+        background: var(--grey-900);
+        border-radius: 6px;
+        margin-bottom: 6px;
+        cursor: pointer;
+        transition: all 0.15s;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .queue-item:hover {
+        background: var(--grey-800);
+      }
+      .queue-item.active {
+        background: var(--burnt-orange-muted);
+        border: 1px solid var(--burnt-orange);
+      }
+
+      .queue-item-status {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        border: 2px solid var(--grey-600);
+      }
+
+      .queue-item-status.done {
+        background: var(--burnt-orange);
+        border-color: var(--burnt-orange);
+      }
+      .queue-item-status.active {
+        border-color: var(--burnt-orange);
+        animation: pulse 1.5s infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.4;
+        }
+      }
+
+      .queue-item-info {
+        flex: 1;
+      }
+
+      .queue-item-type {
+        font-size: 0.65rem;
+        color: var(--grey-500);
+        text-transform: uppercase;
+      }
+
+      .queue-item-title {
+        font-size: 0.8rem;
+        color: var(--grey-300);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="studio">
+      <!-- HEADER -->
+      <header class="studio-header">
+        <div class="studio-header-left">
+          <div class="logo">
+            <div class="logo-mark">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+              </svg>
+            </div>
+            <span class="logo-text">Nivria</span>
+          </div>
+          <div class="nav-tabs">
+            <button class="nav-tab">Hub</button>
+            <button class="nav-tab active">Studio</button>
+            <button class="nav-tab">Strategy</button>
+            <button class="nav-tab">Vault</button>
+          </div>
+        </div>
+        <div class="studio-header-right">
+          <button class="header-btn secondary">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M12 3v18M3 12h18" />
+            </svg>
+            New
+          </button>
+          <button class="header-btn primary">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"
+              />
+              <polyline points="17 21 17 13 7 13 7 21" />
+            </svg>
+            Save
+          </button>
+        </div>
+      </header>
+
+      <!-- LEFT: CONTENT TYPES -->
+      <div class="types-panel">
+        <div class="types-header">
+          <span class="types-title">Content Types</span>
+        </div>
+        <input type="text" class="types-search" placeholder="Search types..." />
+
+        <div class="types-list">
+          <div class="type-category expanded">
+            <div class="type-category-header">
+              Written
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            </div>
+            <div class="type-category-items">
+              <div class="type-item">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path
+                    d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                  />
+                </svg>
+                Press Release
+              </div>
+              <div class="type-item">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                  <path
+                    d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"
+                  />
+                </svg>
+                Blog Post
+              </div>
+              <div class="type-item">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+                  <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+                </svg>
+                Thought Leadership
+              </div>
+              <div class="type-item">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path
+                    d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                  />
+                  <path d="M14 2v6h6" />
+                </svg>
+                Case Study
+              </div>
+            </div>
+          </div>
+
+          <div class="type-category expanded">
+            <div class="type-category-header">
+              Media & PR
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            </div>
+            <div class="type-category-items">
+              <div class="type-item selected">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                </svg>
+                Media Pitch
+              </div>
+              <div class="type-item">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                </svg>
+                Media List
+              </div>
+              <div class="type-item">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path
+                    d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"
+                  />
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                </svg>
+                Podcast Pitch
+              </div>
+              <div class="type-item">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <rect x="2" y="7" width="20" height="15" rx="2" ry="2" />
+                  <polyline points="17 2 12 7 7 2" />
+                </svg>
+                TV Interview Prep
+              </div>
+            </div>
+          </div>
+
+          <div class="type-category">
+            <div class="type-category-header">
+              Social & Digital
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </div>
+            <div class="type-category-items"></div>
+          </div>
+
+          <div class="type-category">
+            <div class="type-category-header">
+              Email & Campaigns
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </div>
+            <div class="type-category-items"></div>
+          </div>
+
+          <div class="type-category">
+            <div class="type-category-header">
+              Executive & Crisis
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </div>
+            <div class="type-category-items"></div>
+          </div>
+
+          <div class="type-category">
+            <div class="type-category-header">
+              Strategy & Messaging
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </div>
+            <div class="type-category-items"></div>
+          </div>
+
+          <div class="type-category">
+            <div class="type-category-header">
+              Visual Content
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </div>
+            <div class="type-category-items"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CENTER: WORKSPACE -->
+      <div class="workspace">
+        <div class="workspace-toolbar">
+          <div class="workspace-title-area">
+            <span class="workspace-type-badge">Media Pitch</span>
+            <input
+              type="text"
+              class="workspace-title"
+              value="TechCrunch: AI Integration Exclusive"
+              placeholder="Untitled"
+            />
+          </div>
+          <div class="workspace-actions">
+            <button class="workspace-btn ghost">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+              Preview
+            </button>
+            <button class="workspace-btn ghost">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle cx="12" cy="12" r="1" />
+                <circle cx="19" cy="12" r="1" />
+                <circle cx="5" cy="12" r="1" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="editor-area">
+          <div class="editor-canvas">
+            <div class="editor-content">
+              <div class="content-draft">
+                <div class="content-draft-header">
+                  <span class="content-draft-label">Draft v2</span>
+                  <span class="content-draft-version">Generated just now</span>
+                </div>
+                <div class="content-draft-body">
+                  <div class="content-draft-text">
+                    <strong>Subject:</strong> Exclusive: [Company] Reveals AI
+                    Integration Roadmap with <em>40% Efficiency Gains</em>
+
+                    Hi Sarah, I wanted to share an exclusive ahead of
+                    [Company]'s Q4 earnings: we're releasing concrete data on
+                    our AI integration initiative for the first time.
+
+                    <strong>Key highlights:</strong>
+                    • 40% improvement in operational efficiency across 3
+                    business units • $12M in cost savings attributed directly to
+                    AI automation • 18-month roadmap to full AI-augmented
+                    workflows While major competitors remain silent on their AI
+                    investment strategies ahead of Q4 earnings, we're the first
+                    to put real numbers on the table. This is a story about
+                    transparency and execution. Our CTO [Name] is available for
+                    an interview this week to walk through the technical
+                    implementation. This aligns with your recent coverage of
+                    enterprise AI adoption—happy to provide exclusive access to
+                    our internal data for a deeper story. Best, [Name]
+                  </div>
+                </div>
+                <div class="content-draft-actions">
+                  <button class="draft-btn primary">Save to Library</button>
+                  <button class="draft-btn secondary">Regenerate</button>
+                  <button class="draft-btn secondary">Edit Manually</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: NIV PANEL -->
+      <div class="niv-panel">
+        <div class="niv-header">
+          <div class="niv-avatar">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+            </svg>
+          </div>
+          <div class="niv-info">
+            <div class="niv-name">NIV</div>
+            <div class="niv-status">Content Assistant</div>
+          </div>
+        </div>
+
+        <div class="panel-tabs">
+          <button class="panel-tab active">Chat</button>
+          <button class="panel-tab">Queue (4)</button>
+          <button class="panel-tab">Library</button>
+        </div>
+
+        <div class="niv-conversation">
+          <div class="niv-message">
+            <div class="niv-msg-avatar">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+              </svg>
+            </div>
+            <div class="niv-msg-bubble">
+              <div class="niv-msg-text">
+                I've created a media pitch for TechCrunch targeting Sarah Chen.
+                I emphasized the concrete AI metrics angle—TechCrunch editors
+                prefer data-driven exclusives.
+              </div>
+              <div class="niv-suggestions">
+                <div class="niv-suggestion">Make more urgent</div>
+                <div class="niv-suggestion">Different angle</div>
+                <div class="niv-suggestion">Shorter version</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="niv-message user">
+            <div class="niv-msg-avatar user">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+            </div>
+            <div class="niv-msg-bubble">
+              <div class="niv-msg-text">
+                Add a line about competitors staying silent
+              </div>
+            </div>
+          </div>
+
+          <div class="niv-message">
+            <div class="niv-msg-avatar">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+              </svg>
+            </div>
+            <div class="niv-msg-bubble">
+              <div class="niv-msg-text">
+                Done! I added the competitive angle after the key highlights. It
+                reinforces the first-mover advantage from the opportunity brief.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="niv-input-area">
+          <div class="niv-input-wrapper">
+            <input
+              type="text"
+              class="niv-input"
+              placeholder="Ask NIV to refine or create..."
+            />
+            <button class="niv-send">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Toggle categories
+      document.querySelectorAll(".type-category-header").forEach((header) => {
+        header.addEventListener("click", () => {
+          header.parentElement.classList.toggle("expanded");
+        });
+      });
+
+      // Select content type
+      document.querySelectorAll(".type-item").forEach((item) => {
+        item.addEventListener("click", () => {
+          document
+            .querySelectorAll(".type-item")
+            .forEach((i) => i.classList.remove("selected"));
+          item.classList.add("selected");
+        });
+      });
+
+      // Panel tabs
+      document.querySelectorAll(".panel-tab").forEach((tab) => {
+        tab.addEventListener("click", () => {
+          document
+            .querySelectorAll(".panel-tab")
+            .forEach((t) => t.classList.remove("active"));
+          tab.classList.add("active");
+        });
+      });
+
+      // Nav tabs
+      document.querySelectorAll(".nav-tab").forEach((tab) => {
+        tab.addEventListener("click", () => {
+          document
+            .querySelectorAll(".nav-tab")
+            .forEach((t) => t.classList.remove("active"));
+          tab.classList.add("active");
+        });
+      });
+    </script>
+  </body>
+</html>

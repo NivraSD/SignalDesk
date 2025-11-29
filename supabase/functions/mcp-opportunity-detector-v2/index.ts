@@ -73,6 +73,9 @@ interface DetectedOpportunity {
 /**
  * Extract and structure data from enriched_data for Claude
  * Similar to prepareSynthesisContext in mcp-executive-synthesis
+ *
+ * UPDATED: Now works with simplified enrichment that passes articles directly
+ * instead of pre-extracted events. If events are empty, we create them from articles.
  */
 async function extractIntelligenceData(enrichedData: any, organizationName: string, organizationId: string) {
   // Use organized_intelligence as primary source, fall back to extracted_data
@@ -81,12 +84,33 @@ async function extractIntelligenceData(enrichedData: any, organizationName: stri
   const profile = enrichedData?.profile || {};
   const executiveSummary = enrichedData?.executive_summary || {};
 
+  // Get articles from enriched data (new simplified format)
+  const enrichedArticles = enrichedData?.enriched_articles || enrichedData?.articles || extractedData?.article_summaries || [];
+
   // Extract events, entities, topics, quotes
-  const events = (organizedData.events?.length > 0 ? organizedData.events : extractedData.events) || [];
+  let events = (organizedData.events?.length > 0 ? organizedData.events : extractedData.events) || [];
   const entities = (organizedData.entities?.length > 0 ? organizedData.entities : extractedData.entities) || [];
   const topics = (organizedData.topic_clusters?.length > 0 ? organizedData.topic_clusters : extractedData.topic_clusters) || [];
   const quotes = (organizedData.quotes?.length > 0 ? organizedData.quotes : extractedData.quotes) || [];
   const metrics = (organizedData.metrics?.length > 0 ? organizedData.metrics : extractedData.metrics) || [];
+
+  // ARTICLE-ONLY MODE: If no events but we have articles, create events from articles
+  // This handles the simplified enrichment that skips event extraction
+  if (events.length === 0 && enrichedArticles.length > 0) {
+    console.log(`📰 ARTICLE-ONLY MODE: Creating events from ${enrichedArticles.length} articles`);
+    events = enrichedArticles.map((article: any) => ({
+      type: 'NEWS',
+      entity: article.source || article.source_name || 'News',
+      description: article.title + (article.summary ? `: ${article.summary}` : (article.description ? `: ${article.description}` : '')),
+      date: article.published_at || new Date().toISOString(),
+      url: article.url,
+      article_title: article.title,
+      source: article.source || article.source_name,
+      relevance_score: article.relevance_score || 50,
+      is_trade_source: article.is_trade_source || false
+    }));
+    console.log(`   Created ${events.length} events from articles`);
+  }
 
   // Separate events about the org vs competitors/market
   const orgNameLower = organizationName?.toLowerCase() || '';
@@ -175,6 +199,13 @@ async function detectOpportunitiesWithClaude(
   const orgEvents = events.organizational.slice(0, 10);
   const topEvents = [...competitorEvents, ...orgEvents];
 
+  // CRITICAL: If no events, return empty - don't let Claude hallucinate
+  if (topEvents.length === 0) {
+    console.log('⚠️ NO EVENTS TO ANALYZE - returning empty opportunities');
+    console.log('   This likely means enrichment had no articles or events');
+    return [];
+  }
+
   console.log(`🤖 Calling Claude with ${topEvents.length} events for opportunity detection`);
   console.log('Using model:', 'claude-sonnet-4-20250514');
   console.log('API Key present:', !!ANTHROPIC_API_KEY);
@@ -211,6 +242,12 @@ async function detectOpportunitiesWithClaude(
 3. Opportunities should capitalize on recent/current events to create FUTURE PR moments
 4. Time windows like "24-48 hours" mean "${futureRefs.tomorrow}" onwards, NOT dates in the past
 5. Use present/future tense: "Company X announces..." (if today) or "capitalize on Company X's announcement..." (opportunity for future action)
+
+🚨 **GROUNDING RULE** 🚨
+- Every opportunity MUST be based on specific events from the list below
+- Do NOT make up generic seasonal opportunities (no "Black Friday", "year-end", "holiday" unless in the events)
+- Reference actual events by describing them in your trigger_event field
+- The events list below contains REAL news - use it to find opportunities
 
 MONITORING DATE: ${currentDate}
 
@@ -512,9 +549,23 @@ async function detectOpportunitiesV2(
 
   console.log('🚀 V2 Opportunity Detection - Building execution-ready opportunities...')
 
+  // CRITICAL: Check if we have real events to analyze
+  const allEvents = extractedData.events?.all || [];
+  if (allEvents.length === 0) {
+    console.log('⚠️ V2: NO EVENTS TO ANALYZE - returning empty opportunities');
+    console.log('   This prevents Claude from hallucinating generic opportunities');
+    return [];
+  }
+
+  console.log(`📰 V2: Found ${allEvents.length} events to analyze`);
+  // Log first few events to verify they're real
+  allEvents.slice(0, 3).forEach((e: any, i: number) => {
+    console.log(`   ${i+1}. [${e.type}] ${e.entity}: ${e.description?.substring(0, 80)}...`);
+  });
+
   const prompt = buildOpportunityDetectionPromptV2({
     organizationName,
-    events: extractedData.events.all.slice(0, 25), // Reduced from 40 to prevent timeout
+    events: allEvents.slice(0, 25), // Reduced from 40 to prevent timeout
     topics: extractedData.topics.slice(0, 8), // Limit topics
     quotes: extractedData.quotes.slice(0, 8), // Limit quotes
     entities: extractedData.entities.slice(0, 12), // Limit entities

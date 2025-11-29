@@ -18,6 +18,9 @@ interface Article {
   source?: string;
   source_name?: string;
   published_at?: string;
+  industry_priority?: boolean;  // Flag from article selector - don't drop these
+  priority_reason?: string;
+  relevance_score?: number;
   [key: string]: any;
 }
 
@@ -157,22 +160,34 @@ Score ALL ${batch.length} articles.`;
         const text = data.content[0].text;
 
         const jsonMatch = text.match(/\{[\s\S]*\}/);
+        let batchRelevantCount = 0;
+
         if (jsonMatch) {
           const result = JSON.parse(jsonMatch[0]);
+          const scores = result.scores || [];
 
-          (result.scores || []).forEach((s: any) => {
+          scores.forEach((s: any) => {
             const article = batch[s.id];
-            if (article && s.score >= 50) {  // Keep score 50+
+            if (!article) return;
+
+            // Industry priority articles get a score boost and lower threshold
+            const isPriority = article.industry_priority === true;
+            const effectiveScore = isPriority ? Math.max(s.score, 65) : s.score;
+            const threshold = isPriority ? 40 : 50;  // Lower threshold for priority articles
+
+            if (effectiveScore >= threshold) {
               scoredArticles.push({
                 ...article,
-                relevance_score: s.score,
-                relevance_reason: s.reason
+                relevance_score: effectiveScore,
+                relevance_reason: s.reason,
+                priority_boosted: isPriority && s.score < 65
               });
+              batchRelevantCount++;
             }
           });
         }
 
-        console.log(`      ✅ Batch ${batchNum}: ${result?.scores?.filter((s: any) => s.score >= 50).length || 0} relevant`);
+        console.log(`      ✅ Batch ${batchNum}: ${batchRelevantCount} relevant`);
 
       } catch (err: any) {
         console.error(`      ❌ Batch ${batchNum} error: ${err.message}`);
@@ -183,7 +198,10 @@ Score ALL ${batch.length} articles.`;
       }
     }
 
+    const priorityKept = scoredArticles.filter(a => a.industry_priority).length;
+    const priorityBoosted = scoredArticles.filter(a => a.priority_boosted).length;
     console.log(`\n   Total scored relevant: ${scoredArticles.length}`);
+    console.log(`   Industry priority kept: ${priorityKept} (${priorityBoosted} boosted)`);
 
     // ================================================================
     // STEP 2: Enforce SOURCE DIVERSITY

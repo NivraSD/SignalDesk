@@ -1,7 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
-import { NIV_CONTENT_SYSTEM_PROMPT } from './system-prompt.ts';
+import { getNivContentSystemPrompt } from './system-prompt.ts';
 import { decomposeQuery, orchestrateResearch } from './self-orchestration.ts';
 import { synthesizeConversationContext, requiresConversationSynthesis } from './conversation-synthesizer.ts';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
@@ -2577,6 +2577,9 @@ ${campaignContext.timeline || 'Not specified'}
         const requestedCount1 = toolUse.input.count || 15;
         const focusArea1 = toolUse.input.focus_area || '';
         const tier1 = toolUse.input.tier?.toLowerCase().replace(' ', '') || 'tier1';
+        // Use org industry as fallback if focus_area doesn't map to a known industry
+        const orgIndustry = orgProfile?.industry || '';
+        console.log(`   Focus area: "${focusArea1}", Org industry fallback: "${orgIndustry}"`);
         try {
           // Call the intelligent MCP media list service
           const mcpResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/mcp-media-list`, {
@@ -2591,7 +2594,8 @@ ${campaignContext.timeline || 'Not specified'}
                 topic: focusArea1,
                 count: requestedCount1,
                 tier: tier1,
-                enrich_with_web: false
+                enrich_with_web: false,
+                org_industry: orgIndustry  // Pass org industry as fallback
               }
             })
           });
@@ -4601,7 +4605,7 @@ function detectResearchNeed(message, history) {
 // Helper: Call Claude for natural conversation
 async function callClaude(context, research, orgProfile, conversationState, conversationHistory = [], shouldPresentResearchFirst = false, useStrategyModel = false) {
   // Build system prompt with organization context
-  const enhancedSystemPrompt = NIV_CONTENT_SYSTEM_PROMPT + `
+  const enhancedSystemPrompt = getNivContentSystemPrompt() + `
 
 **ORGANIZATION CONTEXT:**
 - Name: ${orgProfile.organizationName}

@@ -1,0 +1,1974 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nivria - Editorial Landing V2</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&family=Space+Grotesk:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --burnt-orange: #c75d3a;
+        --burnt-orange-light: #e07b5a;
+        --terracotta: #b54d2e;
+        --rust: #8b3a2f;
+        --charcoal: #1a1a1a;
+        --grey-900: #212121;
+        --grey-800: #2e2e2e;
+        --grey-600: #555555;
+        --grey-500: #757575;
+        --grey-400: #9e9e9e;
+        --grey-300: #bdbdbd;
+        --grey-200: #e0e0e0;
+        --grey-100: #f0f0f0;
+        --white: #ffffff;
+        --cream: #faf9f7;
+        --font-display: "Space Grotesk", sans-serif;
+        --font-serif: "Playfair Display", serif;
+        --font-body: "Inter", sans-serif;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: var(--font-body);
+        background: var(--cream);
+        color: var(--charcoal);
+        font-weight: 300;
+        overflow-x: hidden;
+      }
+      .nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        padding: 24px 60px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: linear-gradient(to bottom, var(--cream) 50%, transparent);
+      }
+      .nav-logo {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        text-decoration: none;
+      }
+      .logo-mark {
+        width: 44px;
+        height: 44px;
+        background: var(--burnt-orange);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        clip-path: polygon(0 0, 100% 0, 100% 65%, 65% 100%, 0 100%);
+      }
+      .logo-mark svg {
+        width: 24px;
+        height: 24px;
+        color: var(--white);
+      }
+      .logo-text {
+        font-family: var(--font-display);
+        font-size: 1.6rem;
+        font-weight: 600;
+        color: var(--charcoal);
+        letter-spacing: -0.03em;
+      }
+      .nav-links {
+        display: flex;
+        gap: 40px;
+        align-items: center;
+      }
+      .nav-link {
+        color: var(--grey-600);
+        text-decoration: none;
+        font-size: 0.9rem;
+        font-weight: 400;
+        transition: color 0.2s;
+      }
+      .nav-link:hover {
+        color: var(--charcoal);
+      }
+      .nav-cta {
+        color: var(--white);
+        background: var(--charcoal);
+        text-decoration: none;
+        font-size: 0.85rem;
+        font-weight: 500;
+        padding: 12px 28px;
+        border-radius: 6px;
+        transition: background 0.2s;
+      }
+      .nav-cta:hover {
+        background: var(--burnt-orange);
+      }
+      .side-text {
+        position: fixed;
+        left: 20px;
+        top: 50%;
+        transform: translateY(-50%) rotate(-90deg);
+        transform-origin: center center;
+        font-size: 0.55rem;
+        text-transform: uppercase;
+        letter-spacing: 0.35em;
+        color: var(--grey-400);
+        white-space: nowrap;
+        z-index: 50;
+      }
+      .hero {
+        min-height: 100vh;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        position: relative;
+        padding-left: 60px;
+      }
+      .hero-content {
+        padding: 200px 60px 100px 40px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+      .hero-headline {
+        font-family: var(--font-serif);
+        font-size: clamp(3.5rem, 8vw, 6.5rem);
+        font-weight: 400;
+        line-height: 0.95;
+        letter-spacing: -0.03em;
+        margin-bottom: 40px;
+      }
+      .hero-headline .line {
+        display: block;
+      }
+      .hero-headline .italic {
+        font-style: italic;
+        color: var(--burnt-orange);
+      }
+      .hero-intro {
+        max-width: 440px;
+        font-size: 1.15rem;
+        line-height: 1.7;
+        color: var(--grey-600);
+        margin-bottom: 48px;
+      }
+      .hero-cta-row {
+        display: flex;
+        gap: 24px;
+        align-items: center;
+      }
+      .btn-primary {
+        padding: 18px 44px;
+        background: var(--charcoal);
+        color: var(--white);
+        border: none;
+        font-family: var(--font-body);
+        font-size: 0.95rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-decoration: none;
+      }
+      .btn-primary:hover {
+        background: var(--burnt-orange);
+      }
+      .btn-text {
+        color: var(--charcoal);
+        text-decoration: none;
+        font-size: 0.95rem;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: color 0.2s;
+      }
+      .btn-text:hover {
+        color: var(--burnt-orange);
+      }
+      .hero-visual {
+        background: var(--charcoal);
+        position: relative;
+        overflow: hidden;
+        clip-path: polygon(15% 0, 100% 0, 100% 100%, 0 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .loop-container {
+        position: relative;
+        width: 420px;
+        height: 420px;
+      }
+      .loop-ring {
+        position: absolute;
+        inset: 0;
+        border: 2px solid var(--burnt-orange);
+        border-radius: 50%;
+        opacity: 0.3;
+      }
+      .loop-ring-inner {
+        position: absolute;
+        inset: 60px;
+        border: 1px solid var(--grey-600);
+        border-radius: 50%;
+        opacity: 0.5;
+      }
+      .loop-arrows {
+        position: absolute;
+        inset: 20px;
+        animation: rotate 30s linear infinite;
+      }
+      @keyframes rotate {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .loop-arrow {
+        position: absolute;
+        color: var(--burnt-orange);
+        opacity: 0.6;
+      }
+      .loop-arrow:nth-child(1) {
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%) rotate(0deg);
+      }
+      .loop-arrow:nth-child(2) {
+        top: 50%;
+        right: 0;
+        transform: translateY(-50%) rotate(90deg);
+      }
+      .loop-arrow:nth-child(3) {
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%) rotate(180deg);
+      }
+      .loop-arrow:nth-child(4) {
+        top: 50%;
+        left: 0;
+        transform: translateY(-50%) rotate(270deg);
+      }
+      .loop-node {
+        position: absolute;
+        background: var(--charcoal);
+        border: 2px solid var(--burnt-orange);
+        padding: 16px 20px;
+        text-align: center;
+        min-width: 130px;
+      }
+      .loop-node-label {
+        font-family: var(--font-display);
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--white);
+        font-weight: 500;
+      }
+      .loop-node.intelligence {
+        top: -20px;
+        left: 50%;
+        transform: translateX(-50%);
+      }
+      .loop-node.strategy {
+        top: 50%;
+        right: -30px;
+        transform: translateY(-50%);
+      }
+      .loop-node.execution {
+        bottom: -20px;
+        left: 50%;
+        transform: translateX(-50%);
+      }
+      .loop-node.learning {
+        top: 50%;
+        left: -30px;
+        transform: translateY(-50%);
+      }
+      .loop-center {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+      }
+      .loop-center-mark {
+        width: 64px;
+        height: 64px;
+        background: var(--burnt-orange);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        clip-path: polygon(0 0, 100% 0, 100% 65%, 65% 100%, 0 100%);
+        margin: 0 auto 12px;
+      }
+      .loop-center-mark svg {
+        width: 32px;
+        height: 32px;
+        color: var(--white);
+      }
+      .loop-center-text {
+        font-family: var(--font-display);
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--white);
+        letter-spacing: -0.02em;
+      }
+      .hero-visual::before {
+        content: "";
+        position: absolute;
+        top: 20%;
+        right: 10%;
+        width: 300px;
+        height: 300px;
+        border: 1px solid var(--burnt-orange);
+        opacity: 0.08;
+        border-radius: 50%;
+      }
+      .marquee-section {
+        background: var(--charcoal);
+        padding: 20px 0;
+        overflow: hidden;
+      }
+      .marquee {
+        display: flex;
+        gap: 60px;
+        animation: marquee 25s linear infinite;
+      }
+      @keyframes marquee {
+        from {
+          transform: translateX(0);
+        }
+        to {
+          transform: translateX(-50%);
+        }
+      }
+      .marquee-item {
+        font-family: var(--font-display);
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+        color: var(--grey-500);
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 60px;
+      }
+      .marquee-item::after {
+        content: "◆";
+        color: var(--burnt-orange);
+        font-size: 0.4rem;
+      }
+      .statement-section {
+        padding: 180px 80px;
+        position: relative;
+      }
+      .statement-grid {
+        display: grid;
+        grid-template-columns: 1.2fr 1fr;
+        gap: 100px;
+        align-items: center;
+      }
+      .statement-number {
+        font-family: var(--font-serif);
+        font-size: 10rem;
+        font-weight: 400;
+        color: var(--burnt-orange);
+        opacity: 0.12;
+        line-height: 1;
+        position: absolute;
+        top: 80px;
+        left: 60px;
+      }
+      .statement-content {
+        position: relative;
+      }
+      .statement-eyebrow {
+        font-size: 0.6rem;
+        text-transform: uppercase;
+        letter-spacing: 0.25em;
+        color: var(--burnt-orange);
+        font-weight: 600;
+        margin-bottom: 24px;
+      }
+      .statement-eyebrow-large {
+        font-family: var(--font-display);
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--burnt-orange);
+        margin-bottom: 16px;
+        letter-spacing: -0.01em;
+      }
+      .statement-headline {
+        font-family: var(--font-serif);
+        font-size: 3.2rem;
+        font-weight: 400;
+        line-height: 1.15;
+        letter-spacing: -0.02em;
+        margin-bottom: 28px;
+      }
+      .statement-headline em {
+        font-style: italic;
+        color: var(--burnt-orange);
+      }
+      .statement-text {
+        font-size: 1.1rem;
+        line-height: 1.8;
+        color: var(--grey-600);
+        max-width: 480px;
+      }
+      .statement-visual {
+        position: relative;
+      }
+      .statement-image {
+        background: linear-gradient(
+          135deg,
+          var(--grey-200) 0%,
+          var(--grey-100) 100%
+        );
+        aspect-ratio: 4/5;
+        position: relative;
+      }
+      .statement-image::before {
+        content: "";
+        position: absolute;
+        top: -24px;
+        left: -24px;
+        right: 48px;
+        bottom: 48px;
+        border: 2px solid var(--burnt-orange);
+      }
+      .statement-card {
+        position: absolute;
+        bottom: -50px;
+        right: -50px;
+        background: var(--charcoal);
+        color: var(--white);
+        padding: 28px 32px;
+        max-width: 300px;
+      }
+      .statement-card-label {
+        font-size: 0.55rem;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        color: var(--burnt-orange);
+        margin-bottom: 10px;
+      }
+      .statement-card-text {
+        font-family: var(--font-display);
+        font-size: 1rem;
+        font-weight: 500;
+        line-height: 1.4;
+      }
+      /* PREVIEW PANEL */
+      .preview-panel {
+        background: var(--white);
+        border-radius: 16px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.12);
+        overflow: hidden;
+        border: 1px solid var(--grey-200);
+      }
+      .preview-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--grey-200);
+        background: var(--grey-100);
+      }
+      .preview-org {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .preview-org-avatar {
+        width: 32px;
+        height: 32px;
+        background: var(--charcoal);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: var(--white);
+      }
+      .preview-org-name {
+        font-family: var(--font-display);
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--charcoal);
+      }
+      .preview-org-label {
+        font-size: 0.65rem;
+        color: var(--grey-500);
+      }
+      .preview-live {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.7rem;
+        font-weight: 500;
+        color: #22c55e;
+      }
+      .preview-live-dot {
+        width: 6px;
+        height: 6px;
+        background: #22c55e;
+        border-radius: 50%;
+        animation: livePulse 2s ease-in-out infinite;
+      }
+      @keyframes livePulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.4; }
+      }
+      .preview-section {
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--grey-100);
+      }
+      .preview-section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+      .preview-section-title {
+        font-family: var(--font-display);
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--grey-500);
+      }
+      .preview-section-badge {
+        font-size: 0.65rem;
+        font-weight: 500;
+        color: var(--burnt-orange);
+        background: rgba(199, 93, 58, 0.1);
+        padding: 3px 8px;
+        border-radius: 10px;
+      }
+      .preview-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 0;
+      }
+      .preview-item + .preview-item {
+        border-top: 1px solid var(--grey-100);
+        padding-top: 10px;
+      }
+      .preview-item-icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .preview-item-icon.competitor {
+        background: #fef3c7;
+        color: #d97706;
+      }
+      .preview-item-content {
+        flex: 1;
+        min-width: 0;
+      }
+      .preview-item-title {
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: var(--charcoal);
+      }
+      .preview-item-desc {
+        font-size: 0.7rem;
+        color: var(--grey-500);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .preview-item-time {
+        font-size: 0.65rem;
+        color: var(--grey-400);
+        flex-shrink: 0;
+      }
+      .preview-opportunity {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px;
+        background: linear-gradient(135deg, rgba(199, 93, 58, 0.08), rgba(199, 93, 58, 0.02));
+        border-radius: 10px;
+        border: 1px solid rgba(199, 93, 58, 0.15);
+      }
+      .preview-opp-score {
+        width: 36px;
+        height: 36px;
+        background: linear-gradient(135deg, var(--burnt-orange), #e07b5a);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: white;
+        flex-shrink: 0;
+      }
+      .preview-opp-content {
+        flex: 1;
+      }
+      .preview-opp-title {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--charcoal);
+      }
+      .preview-opp-desc {
+        font-size: 0.7rem;
+        color: var(--grey-500);
+      }
+      .preview-opp-time {
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: var(--burnt-orange);
+        background: rgba(199, 93, 58, 0.1);
+        padding: 4px 10px;
+        border-radius: 12px;
+      }
+      .preview-niv {
+        display: flex;
+        gap: 10px;
+        padding: 16px 20px;
+        background: var(--charcoal);
+      }
+      .preview-niv-avatar {
+        width: 28px;
+        height: 28px;
+        background: var(--burnt-orange);
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-size: 0.55rem;
+        font-weight: 700;
+        color: white;
+        flex-shrink: 0;
+      }
+      .preview-niv-bubble {
+        font-size: 0.8rem;
+        color: var(--grey-300);
+        line-height: 1.5;
+      }
+      .preview-niv-greeting {
+        color: var(--white);
+        font-weight: 500;
+      }
+      /* TIMELAPSE VISUAL */
+      .timelapse {
+        background: var(--charcoal);
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 24px 64px rgba(0,0,0,0.2);
+      }
+      .timelapse-header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 20px 24px;
+        border-bottom: 1px solid var(--grey-800);
+      }
+      .timelapse-clock {
+        width: 44px;
+        height: 44px;
+        position: relative;
+      }
+      .timelapse-clock-ring {
+        position: absolute;
+        inset: 0;
+        border: 2px solid var(--grey-600);
+        border-radius: 50%;
+      }
+      .timelapse-clock-hand {
+        position: absolute;
+        width: 2px;
+        height: 14px;
+        background: var(--burnt-orange);
+        top: 8px;
+        left: 50%;
+        transform: translateX(-50%) rotate(45deg);
+        transform-origin: bottom center;
+        animation: clockSpin 8s linear infinite;
+      }
+      @keyframes clockSpin {
+        from { transform: translateX(-50%) rotate(0deg); }
+        to { transform: translateX(-50%) rotate(360deg); }
+      }
+      .timelapse-clock-center {
+        position: absolute;
+        width: 6px;
+        height: 6px;
+        background: var(--burnt-orange);
+        border-radius: 50%;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+      .timelapse-time {
+        flex: 1;
+      }
+      .timelapse-current {
+        font-family: var(--font-display);
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: var(--white);
+        letter-spacing: -0.02em;
+      }
+      .timelapse-label {
+        font-size: 0.7rem;
+        color: var(--burnt-orange);
+        font-weight: 500;
+      }
+      .timelapse-org {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.8rem;
+        color: var(--grey-400);
+      }
+      .timelapse-org-avatar {
+        width: 24px;
+        height: 24px;
+        background: var(--grey-600);
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-size: 0.55rem;
+        font-weight: 600;
+        color: var(--white);
+      }
+      .timelapse-stream {
+        padding: 8px 0;
+      }
+      .timelapse-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 12px 24px;
+        position: relative;
+      }
+      .timelapse-item::before {
+        content: '';
+        position: absolute;
+        left: 67px;
+        top: 28px;
+        bottom: -12px;
+        width: 1px;
+        background: var(--grey-800);
+      }
+      .timelapse-item:last-child::before {
+        display: none;
+      }
+      .timelapse-item-time {
+        width: 56px;
+        font-size: 0.7rem;
+        color: var(--grey-500);
+        font-weight: 500;
+        flex-shrink: 0;
+        padding-top: 2px;
+      }
+      .timelapse-item-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--grey-600);
+        border: 2px solid var(--grey-500);
+        flex-shrink: 0;
+        margin-top: 4px;
+        position: relative;
+        z-index: 1;
+      }
+      .timelapse-item.completed .timelapse-item-dot {
+        background: var(--burnt-orange);
+        border-color: var(--burnt-orange);
+      }
+      .timelapse-item.active .timelapse-item-dot {
+        background: var(--burnt-orange);
+        border-color: var(--burnt-orange);
+        box-shadow: 0 0 0 4px rgba(199, 93, 58, 0.25);
+        animation: activePulse 2s ease-in-out infinite;
+      }
+      @keyframes activePulse {
+        0%, 100% { box-shadow: 0 0 0 4px rgba(199, 93, 58, 0.25); }
+        50% { box-shadow: 0 0 0 8px rgba(199, 93, 58, 0.1); }
+      }
+      .timelapse-item-content {
+        flex: 1;
+      }
+      .timelapse-item-action {
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: var(--white);
+        margin-bottom: 2px;
+      }
+      .timelapse-item.completed .timelapse-item-action {
+        color: var(--grey-400);
+      }
+      .timelapse-item-detail {
+        font-size: 0.75rem;
+        color: var(--grey-500);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .timelapse-score {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 22px;
+        height: 22px;
+        background: linear-gradient(135deg, var(--burnt-orange), #e07b5a);
+        border-radius: 5px;
+        font-family: var(--font-display);
+        font-size: 0.65rem;
+        font-weight: 700;
+        color: white;
+      }
+      .timelapse-item-assets {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-top: 6px;
+      }
+      .timelapse-item-assets span {
+        font-size: 0.7rem;
+        padding: 4px 10px;
+        background: var(--grey-800);
+        border-radius: 4px;
+        color: var(--grey-300);
+      }
+      .timelapse-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 24px;
+        background: var(--grey-900);
+        border-top: 1px solid var(--grey-800);
+      }
+      .timelapse-status {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: var(--white);
+      }
+      .timelapse-status-dot {
+        width: 8px;
+        height: 8px;
+        background: #22c55e;
+        border-radius: 50%;
+        animation: livePulse 2s ease-in-out infinite;
+      }
+      .timelapse-stats {
+        display: flex;
+        gap: 8px;
+        font-size: 0.7rem;
+        color: var(--grey-500);
+      }
+      /* ONE-CLICK SECTION */
+      .oneclick-section {
+        background: var(--charcoal);
+        padding: 120px 80px;
+      }
+      .oneclick-header {
+        text-align: center;
+        margin-bottom: 60px;
+      }
+      .oneclick-eyebrow {
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.25em;
+        color: var(--burnt-orange);
+        font-weight: 600;
+        margin-bottom: 16px;
+      }
+      .oneclick-headline {
+        font-family: var(--font-serif);
+        font-size: 3.2rem;
+        font-weight: 400;
+        color: var(--white);
+        margin-bottom: 16px;
+      }
+      .oneclick-headline em {
+        font-style: italic;
+        color: var(--burnt-orange);
+      }
+      .oneclick-subtext {
+        font-size: 1.1rem;
+        color: var(--grey-400);
+        max-width: 500px;
+        margin: 0 auto;
+        line-height: 1.6;
+      }
+      .oneclick-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 32px;
+        max-width: 1100px;
+        margin: 0 auto;
+      }
+      .oneclick-card {
+        background: var(--grey-900);
+        border-radius: 16px;
+        padding: 40px;
+        display: flex;
+        gap: 24px;
+        transition: transform 0.2s, box-shadow 0.2s;
+      }
+      .oneclick-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+      }
+      .oneclick-icon-wrap {
+        width: 56px;
+        height: 56px;
+        background: var(--burnt-orange);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .oneclick-icon-wrap.secondary {
+        background: linear-gradient(135deg, var(--grey-700), var(--grey-600));
+      }
+      .oneclick-icon {
+        width: 28px;
+        height: 28px;
+        color: var(--white);
+      }
+      .oneclick-card-content {
+        flex: 1;
+      }
+      .oneclick-card-label {
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        color: var(--burnt-orange);
+        font-weight: 600;
+        margin-bottom: 8px;
+      }
+      .oneclick-card-title {
+        font-family: var(--font-display);
+        font-size: 1.4rem;
+        font-weight: 600;
+        color: var(--white);
+        margin-bottom: 12px;
+        letter-spacing: -0.02em;
+      }
+      .oneclick-card-desc {
+        font-size: 0.95rem;
+        color: var(--grey-400);
+        line-height: 1.6;
+        margin-bottom: 24px;
+      }
+      .oneclick-demo {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 16px;
+        background: rgba(255,255,255,0.03);
+        border-radius: 10px;
+        border: 1px solid var(--grey-700);
+      }
+      .oneclick-demo-box {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 14px;
+        background: var(--grey-800);
+        border-radius: 6px;
+      }
+      .oneclick-demo-badge {
+        width: 28px;
+        height: 28px;
+        background: linear-gradient(135deg, var(--burnt-orange), #e07b5a);
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: white;
+      }
+      .oneclick-demo-text {
+        font-size: 0.85rem;
+        color: var(--white);
+        font-weight: 500;
+      }
+      .oneclick-demo-arrow {
+        width: 20px;
+        height: 20px;
+        color: var(--grey-500);
+        flex-shrink: 0;
+      }
+      .oneclick-demo-btn {
+        padding: 10px 20px;
+        background: var(--burnt-orange);
+        border-radius: 6px;
+        font-family: var(--font-display);
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--white);
+        white-space: nowrap;
+      }
+      .oneclick-demo-input {
+        padding: 10px 14px;
+        background: var(--grey-800);
+        border-radius: 6px;
+        font-size: 0.85rem;
+        color: var(--grey-300);
+        font-style: italic;
+        flex: 1;
+      }
+      .oneclick-demo-output {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.8rem;
+        color: var(--grey-300);
+        font-weight: 500;
+      }
+      .oneclick-demo-output span:nth-child(2) {
+        color: var(--grey-600);
+      }
+      .features-section {
+        background: var(--white);
+        padding: 140px 80px;
+      }
+      .features-header {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 60px;
+        margin-bottom: 80px;
+        align-items: end;
+      }
+      .features-count {
+        font-family: var(--font-serif);
+        font-size: 7rem;
+        font-weight: 400;
+        color: var(--burnt-orange);
+        line-height: 1;
+        opacity: 0.8;
+      }
+      .features-intro h2 {
+        font-family: var(--font-serif);
+        font-size: 2.2rem;
+        font-weight: 400;
+        letter-spacing: -0.02em;
+        margin-bottom: 12px;
+      }
+      .features-intro p {
+        font-size: 1.05rem;
+        color: var(--grey-500);
+        max-width: 500px;
+      }
+      .features-grid {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 20px;
+      }
+      .feature-item {
+        padding: 40px;
+        position: relative;
+      }
+      .feature-item:nth-child(1) {
+        grid-column: span 7;
+        background: var(--charcoal);
+        color: var(--white);
+      }
+      .feature-item:nth-child(2) {
+        grid-column: span 5;
+        background: var(--cream);
+        border: 1px solid var(--grey-200);
+      }
+      .feature-item:nth-child(3) {
+        grid-column: span 4;
+        background: var(--burnt-orange);
+        color: var(--white);
+      }
+      .feature-item:nth-child(4) {
+        grid-column: span 8;
+        background: var(--cream);
+        border: 1px solid var(--grey-200);
+      }
+      .feature-item:nth-child(5) {
+        grid-column: span 6;
+        background: var(--grey-900);
+        color: var(--white);
+      }
+      .feature-item:nth-child(6) {
+        grid-column: span 6;
+        background: var(--cream);
+        border: 1px solid var(--grey-200);
+      }
+      .feature-number {
+        font-family: var(--font-serif);
+        font-size: 2.5rem;
+        font-weight: 400;
+        opacity: 0.15;
+        position: absolute;
+        top: 20px;
+        right: 28px;
+      }
+      .feature-icon {
+        width: 40px;
+        height: 40px;
+        margin-bottom: 20px;
+        opacity: 0.7;
+      }
+      .feature-title {
+        font-family: var(--font-display);
+        font-size: 1.25rem;
+        font-weight: 500;
+        letter-spacing: -0.01em;
+        margin-bottom: 12px;
+      }
+      .feature-desc {
+        font-size: 0.9rem;
+        line-height: 1.6;
+        opacity: 0.8;
+      }
+      .quote-section {
+        padding: 160px 80px;
+        position: relative;
+        overflow: hidden;
+      }
+      .quote-bg {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-family: Georgia, serif;
+        font-size: 45vw;
+        color: var(--burnt-orange);
+        opacity: 0.04;
+        pointer-events: none;
+        line-height: 1;
+      }
+      .quote-content {
+        max-width: 850px;
+        margin: 0 auto;
+        text-align: center;
+        position: relative;
+      }
+      .quote-text {
+        font-family: var(--font-serif);
+        font-size: 2.2rem;
+        font-weight: 400;
+        line-height: 1.45;
+        letter-spacing: -0.01em;
+        margin-bottom: 40px;
+      }
+      .quote-text em {
+        font-style: italic;
+        color: var(--burnt-orange);
+      }
+      .quote-author {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .quote-name {
+        font-family: var(--font-display);
+        font-weight: 500;
+      }
+      .quote-title {
+        font-size: 0.9rem;
+        color: var(--grey-500);
+      }
+      .cta-section {
+        background: var(--charcoal);
+        color: var(--white);
+        padding: 140px 80px;
+        position: relative;
+        overflow: hidden;
+      }
+      .cta-content {
+        display: grid;
+        grid-template-columns: 1.5fr 1fr;
+        gap: 60px;
+        align-items: center;
+        position: relative;
+      }
+      .cta-headline {
+        font-family: var(--font-serif);
+        font-size: clamp(2.5rem, 5vw, 4rem);
+        font-weight: 400;
+        line-height: 1.15;
+        letter-spacing: -0.02em;
+      }
+      .cta-headline em {
+        font-style: italic;
+        color: var(--burnt-orange);
+      }
+      .cta-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .cta-btn {
+        padding: 18px 40px;
+        background: var(--burnt-orange);
+        color: var(--white);
+        border: none;
+        font-family: var(--font-body);
+        font-size: 0.95rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-align: center;
+        text-decoration: none;
+      }
+      .cta-btn:hover {
+        background: var(--burnt-orange-light);
+      }
+      .cta-btn-outline {
+        background: transparent;
+        border: 1px solid var(--grey-600);
+        color: var(--grey-300);
+      }
+      .cta-btn-outline:hover {
+        border-color: var(--white);
+        color: var(--white);
+        background: transparent;
+      }
+      .cta-decoration {
+        position: absolute;
+        right: -80px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 350px;
+        height: 350px;
+        border: 1px solid var(--burnt-orange);
+        opacity: 0.15;
+        border-radius: 50%;
+      }
+      .footer {
+        background: var(--charcoal);
+        color: var(--grey-400);
+        padding: 50px 80px;
+        border-top: 1px solid var(--grey-800);
+      }
+      .footer-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .footer-logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .footer-logo-mark {
+        width: 28px;
+        height: 28px;
+        background: var(--burnt-orange);
+        clip-path: polygon(0 0, 100% 0, 100% 65%, 65% 100%, 0 100%);
+      }
+      .footer-logo-text {
+        font-family: var(--font-display);
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--white);
+      }
+      .footer-links {
+        display: flex;
+        gap: 36px;
+      }
+      .footer-link {
+        color: var(--grey-500);
+        text-decoration: none;
+        font-size: 0.85rem;
+        transition: color 0.2s;
+      }
+      .footer-link:hover {
+        color: var(--white);
+      }
+      .footer-copy {
+        font-size: 0.8rem;
+      }
+      /* GEO SECTION */
+      .geo-section {
+        background: var(--cream);
+        padding: 140px 80px;
+      }
+      .geo-header {
+        text-align: center;
+        margin-bottom: 60px;
+      }
+      .geo-badge {
+        display: inline-block;
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+        color: var(--burnt-orange);
+        font-weight: 600;
+        padding: 8px 16px;
+        border: 1px solid var(--burnt-orange);
+        border-radius: 20px;
+        margin-bottom: 24px;
+      }
+      .geo-headline {
+        font-family: var(--font-serif);
+        font-size: 3.2rem;
+        font-weight: 400;
+        margin-bottom: 16px;
+      }
+      .geo-headline em {
+        font-style: italic;
+        color: var(--burnt-orange);
+      }
+      .geo-subtext {
+        font-size: 1.1rem;
+        color: var(--grey-600);
+        max-width: 600px;
+        margin: 0 auto;
+        line-height: 1.7;
+      }
+      .geo-grid {
+        display: grid;
+        grid-template-columns: 1.2fr 1fr;
+        grid-template-rows: auto auto;
+        gap: 24px;
+        max-width: 1100px;
+        margin: 0 auto;
+      }
+      .geo-card {
+        background: var(--white);
+        border-radius: 16px;
+        padding: 40px;
+        border: 1px solid var(--grey-200);
+        transition: transform 0.2s, box-shadow 0.2s;
+      }
+      .geo-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+      }
+      .geo-card.primary {
+        grid-row: span 2;
+        background: var(--charcoal);
+        color: var(--white);
+        border: none;
+      }
+      .geo-card-stat {
+        font-family: var(--font-serif);
+        font-size: 5rem;
+        font-weight: 400;
+        color: var(--burnt-orange);
+        line-height: 1;
+        margin-bottom: 12px;
+      }
+      .geo-card-label {
+        font-size: 1rem;
+        color: var(--grey-400);
+        margin-bottom: 32px;
+      }
+      .geo-card-divider {
+        height: 1px;
+        background: var(--grey-700);
+        margin-bottom: 32px;
+      }
+      .geo-card-title {
+        font-family: var(--font-display);
+        font-size: 1.4rem;
+        font-weight: 600;
+        color: var(--white);
+        margin-bottom: 16px;
+        letter-spacing: -0.02em;
+      }
+      .geo-card-desc {
+        font-size: 0.95rem;
+        color: var(--grey-400);
+        line-height: 1.7;
+        margin-bottom: 24px;
+      }
+      .geo-card-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .geo-card-tags span {
+        font-size: 0.7rem;
+        padding: 6px 12px;
+        background: var(--grey-800);
+        border-radius: 4px;
+        color: var(--grey-300);
+        font-weight: 500;
+      }
+      .geo-card-icon {
+        width: 48px;
+        height: 48px;
+        background: linear-gradient(135deg, var(--burnt-orange), #e07b5a);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 24px;
+      }
+      .geo-card-icon svg {
+        width: 24px;
+        height: 24px;
+        color: var(--white);
+      }
+      .geo-card:not(.primary) .geo-card-title {
+        color: var(--charcoal);
+        font-size: 1.25rem;
+      }
+      .geo-card:not(.primary) .geo-card-desc {
+        color: var(--grey-600);
+        font-size: 0.9rem;
+      }
+      .geo-card-check {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 0.85rem;
+        color: var(--grey-600);
+        margin-top: 16px;
+      }
+      .geo-card-check svg {
+        width: 18px;
+        height: 18px;
+        color: var(--burnt-orange);
+        flex-shrink: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="side-text">Strategic Communications Intelligence Platform</div>
+    <nav class="nav">
+      <a href="#" class="nav-logo">
+        <svg width="80" height="48" viewBox="0 0 80 48">
+          <path d="M10 0 H80 V48 H0 L10 0 Z" fill="#1a1a1a" />
+          <text x="40" y="33" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="22" font-weight="700" fill="#faf9f7" letter-spacing="-0.5">NIV</text>
+          <path d="M68 0 H80 V12 L68 0 Z" fill="#c75d3a" />
+        </svg>
+        <span style="color: rgba(0,0,0,0.2); font-size: 24px; font-weight: 200;">|</span>
+        <span style="font-family: 'Space Grotesk', sans-serif; font-size: 14px; color: rgba(0,0,0,0.4); letter-spacing: 1px;">by nivria</span>
+      </a>
+      <div class="nav-links">
+        <a href="#" class="nav-link">Platform</a>
+        <a href="#" class="nav-link">Solutions</a>
+        <a href="#" class="nav-link">About</a>
+        <a href="#" class="nav-cta">Get Started</a>
+      </div>
+    </nav>
+    <section class="hero">
+      <div class="hero-content">
+        <h1 class="hero-headline">
+          <span class="line">The <span class="italic">influence</span></span>
+          <span class="line">orchestration</span>
+          <span class="line">operating system</span>
+        </h1>
+        <p class="hero-intro">
+          NIV transforms how organizations discover opportunities, generate
+          strategies, and execute campaigns — with AI that learns and compounds
+          over time.
+        </p>
+        <div class="hero-cta-row">
+          <a href="#" class="btn-primary">Start Free Trial</a>
+          <a href="#" class="btn-text"
+            >Watch Demo
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M5 12h14M12 5l7 7-7 7" /></svg
+          ></a>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <div class="loop-container">
+          <div class="loop-ring"></div>
+          <div class="loop-ring-inner"></div>
+          <div class="loop-arrows">
+            <svg
+              class="loop-arrow"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+            >
+              <path
+                d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
+              />
+            </svg>
+            <svg
+              class="loop-arrow"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+            >
+              <path
+                d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
+              />
+            </svg>
+            <svg
+              class="loop-arrow"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+            >
+              <path
+                d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
+              />
+            </svg>
+            <svg
+              class="loop-arrow"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+            >
+              <path
+                d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"
+              />
+            </svg>
+          </div>
+          <div class="loop-node intelligence">
+            <div class="loop-node-label">Intelligence</div>
+          </div>
+          <div class="loop-node strategy">
+            <div class="loop-node-label">Strategy</div>
+          </div>
+          <div class="loop-node execution">
+            <div class="loop-node-label">Execution</div>
+          </div>
+          <div class="loop-node learning">
+            <div class="loop-node-label">Learning</div>
+          </div>
+          <div class="loop-center">
+            <svg width="80" height="48" viewBox="0 0 80 48">
+              <path d="M10 0 H80 V48 H0 L10 0 Z" fill="#faf9f7" />
+              <text x="40" y="33" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="22" font-weight="700" fill="#1a1a1a" letter-spacing="-0.5">NIV</text>
+              <path d="M68 0 H80 V12 L68 0 Z" fill="#c75d3a" />
+            </svg>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="marquee-section">
+      <div class="marquee">
+        <span class="marquee-item">Intelligence Pipeline</span>
+        <span class="marquee-item">VECTOR Campaigns</span>
+        <span class="marquee-item">Crisis Command</span>
+        <span class="marquee-item">Memory Vault</span>
+        <span class="marquee-item">NIV Advisor</span>
+        <span class="marquee-item">Content Execution</span>
+        <span class="marquee-item">Intelligence Pipeline</span>
+        <span class="marquee-item">VECTOR Campaigns</span>
+        <span class="marquee-item">Crisis Command</span>
+        <span class="marquee-item">Memory Vault</span>
+        <span class="marquee-item">NIV Advisor</span>
+        <span class="marquee-item">Content Execution</span>
+      </div>
+    </section>
+    <section class="statement-section">
+      <div class="statement-number">24/7</div>
+      <div class="statement-grid">
+        <div class="statement-content">
+          <h2 class="statement-headline">
+            AI built for you, <em>working around the clock</em>
+          </h2>
+          <p class="statement-text">
+            Unlike generic AI tools that start from scratch every time, NIV knows your organization — your voice, your competitors, your stakeholders, your goals. Every insight, every strategy, every piece of content is built with <em>you</em> in mind.
+          </p>
+        </div>
+        <div class="statement-visual">
+          <div class="timelapse">
+            <!-- Clock Header -->
+            <div class="timelapse-header">
+              <div class="timelapse-clock">
+                <div class="timelapse-clock-ring"></div>
+                <div class="timelapse-clock-hand"></div>
+                <div class="timelapse-clock-center"></div>
+              </div>
+              <div class="timelapse-time">
+                <div class="timelapse-current">3:42 AM</div>
+                <div class="timelapse-label">NIV is working</div>
+              </div>
+              <div class="timelapse-org">
+                <div class="timelapse-org-avatar">AC</div>
+                <span>Acme Corp</span>
+              </div>
+            </div>
+
+            <!-- Activity Stream -->
+            <div class="timelapse-stream">
+              <div class="timelapse-item completed">
+                <div class="timelapse-item-time">2:15 AM</div>
+                <div class="timelapse-item-dot"></div>
+                <div class="timelapse-item-content">
+                  <div class="timelapse-item-action">Signal detected</div>
+                  <div class="timelapse-item-detail">TechRival announces AI partnership</div>
+                </div>
+              </div>
+              <div class="timelapse-item completed">
+                <div class="timelapse-item-time">2:18 AM</div>
+                <div class="timelapse-item-dot"></div>
+                <div class="timelapse-item-content">
+                  <div class="timelapse-item-action">Opportunity scored</div>
+                  <div class="timelapse-item-detail">
+                    <span class="timelapse-score">92</span>
+                    Response window identified
+                  </div>
+                </div>
+              </div>
+              <div class="timelapse-item completed">
+                <div class="timelapse-item-time">2:24 AM</div>
+                <div class="timelapse-item-dot"></div>
+                <div class="timelapse-item-content">
+                  <div class="timelapse-item-action">Strategy generated</div>
+                  <div class="timelapse-item-detail">4-phase response plan drafted</div>
+                </div>
+              </div>
+              <div class="timelapse-item active">
+                <div class="timelapse-item-time">3:42 AM</div>
+                <div class="timelapse-item-dot"></div>
+                <div class="timelapse-item-content">
+                  <div class="timelapse-item-action">Content ready</div>
+                  <div class="timelapse-item-assets">
+                    <span>Press release</span>
+                    <span>Exec talking points</span>
+                    <span>Social posts</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bottom Status -->
+            <div class="timelapse-footer">
+              <div class="timelapse-status">
+                <span class="timelapse-status-dot"></span>
+                Ready when you wake up
+              </div>
+              <div class="timelapse-stats">
+                <span>47 signals processed</span>
+                <span>·</span>
+                <span>3 opportunities found</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ONE-CLICK POWER SECTION -->
+    <section class="oneclick-section">
+      <div class="oneclick-header">
+        <div class="oneclick-eyebrow">Zero Friction</div>
+        <h2 class="oneclick-headline">One click. <em>That's it.</em></h2>
+        <p class="oneclick-subtext">From signal detection to full campaign execution — we do the heavy lifting so you can focus on what matters.</p>
+      </div>
+      <div class="oneclick-grid">
+        <div class="oneclick-card">
+          <div class="oneclick-icon-wrap">
+            <svg class="oneclick-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+            </svg>
+          </div>
+          <div class="oneclick-card-content">
+            <div class="oneclick-card-label">Opportunities</div>
+            <div class="oneclick-card-title">Detect → Execute</div>
+            <div class="oneclick-card-desc">AI finds the opportunity. You click once. Full campaign materials generated — press releases, talking points, social content — ready to deploy.</div>
+            <div class="oneclick-demo">
+              <div class="oneclick-demo-box">
+                <span class="oneclick-demo-badge">92</span>
+                <span class="oneclick-demo-text">Q4 Earnings Window</span>
+              </div>
+              <svg class="oneclick-demo-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M5 12h14M12 5l7 7-7 7" />
+              </svg>
+              <div class="oneclick-demo-btn">Execute</div>
+            </div>
+          </div>
+        </div>
+        <div class="oneclick-card">
+          <div class="oneclick-icon-wrap secondary">
+            <svg class="oneclick-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />
+            </svg>
+          </div>
+          <div class="oneclick-card-content">
+            <div class="oneclick-card-label">Campaigns</div>
+            <div class="oneclick-card-title">Brief → Deploy</div>
+            <div class="oneclick-card-desc">Describe your goal in plain English. The VECTOR engine generates a full multi-phase campaign with stakeholder-specific content across all channels.</div>
+            <div class="oneclick-demo">
+              <div class="oneclick-demo-input">"Launch Q1 thought leadership series"</div>
+              <svg class="oneclick-demo-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M5 12h14M12 5l7 7-7 7" />
+              </svg>
+              <div class="oneclick-demo-output">
+                <span>4-phase plan</span>
+                <span>·</span>
+                <span>23 assets</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="features-section">
+      <div class="features-header">
+        <div class="features-count">06</div>
+        <div class="features-intro">
+          <h2>Capabilities that compound</h2>
+          <p>
+            Each module amplifies the others. Intelligence feeds strategy.
+            Strategy drives execution. Execution generates intelligence.
+          </p>
+        </div>
+      </div>
+      <div class="features-grid">
+        <div class="feature-item">
+          <span class="feature-number">01</span
+          ><svg
+            class="feature-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+          >
+            <circle cx="12" cy="12" r="3" />
+            <path
+              d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"
+            />
+          </svg>
+          <h3 class="feature-title">NIV Advisor</h3>
+          <p class="feature-desc">
+            Your Neural Intelligence Vehicle. Conversational AI that routes to
+            specialized functions for research, content generation, and crisis
+            response.
+          </p>
+        </div>
+        <div class="feature-item">
+          <span class="feature-number">02</span
+          ><svg
+            class="feature-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+          >
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+          </svg>
+          <h3 class="feature-title">Intelligence Pipeline</h3>
+          <p class="feature-desc">
+            Five-stage signal processing with executive-level synthesis and
+            opportunity detection.
+          </p>
+        </div>
+        <div class="feature-item">
+          <span class="feature-number">03</span
+          ><svg
+            class="feature-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+          >
+            <path
+              d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"
+            />
+          </svg>
+          <h3 class="feature-title">VECTOR</h3>
+          <p class="feature-desc">
+            4 phases × 4 pillars. Multi-stakeholder psychological orchestration.
+          </p>
+        </div>
+        <div class="feature-item">
+          <span class="feature-number">04</span
+          ><svg
+            class="feature-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+          >
+            <path
+              d="M12 20h9M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z"
+            />
+          </svg>
+          <h3 class="feature-title">Content Execution</h3>
+          <p class="feature-desc">
+            40+ content types with platform-specific formatting. Press releases,
+            presentations, social posts — auto-generated from strategy.
+          </p>
+        </div>
+        <div class="feature-item">
+          <span class="feature-number">05</span
+          ><svg
+            class="feature-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+          >
+            <path
+              d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+            />
+            <line x1="12" y1="9" x2="12" y2="13" />
+            <line x1="12" y1="17" x2="12.01" y2="17" />
+          </svg>
+          <h3 class="feature-title">Crisis Command</h3>
+          <p class="feature-desc">
+            When seconds count. Real-time guidance, response generation, and
+            stakeholder coordination.
+          </p>
+        </div>
+        <div class="feature-item">
+          <span class="feature-number">06</span
+          ><svg
+            class="feature-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+          >
+            <path d="M4 19.5A2.5 2.5 0 016.5 17H20" />
+            <path
+              d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"
+            />
+          </svg>
+          <h3 class="feature-title">Memory Vault</h3>
+          <p class="feature-desc">
+            Every insight preserved. Every pattern learned. Institutional
+            knowledge that compounds.
+          </p>
+        </div>
+      </div>
+    </section>
+    <section class="quote-section">
+      <div class="quote-bg">"</div>
+      <div class="quote-content">
+        <p class="quote-text">
+          "We identified the acquisition 48 hours before competitors. By the
+          time it went public, our client had already
+          <em>owned the narrative.</em>"
+        </p>
+        <div class="quote-author">
+          <span class="quote-name">Alexandra Chen</span
+          ><span class="quote-title">Managing Director, Meridian Partners</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- GEO SECTION -->
+    <section class="geo-section">
+      <div class="geo-header">
+        <div class="geo-badge">Generative Engine Optimization</div>
+        <h2 class="geo-headline">Win the <em>AI battlefield</em></h2>
+        <p class="geo-subtext">Being visible to AI isn't enough. You need credibility too. We combine machine-friendly optimization with proven PR tactics.</p>
+      </div>
+      <div class="geo-grid">
+        <div class="geo-card primary">
+          <div class="geo-card-stat">70%</div>
+          <div class="geo-card-label">of organizations don't have proper JSON-LD schemas</div>
+          <div class="geo-card-divider"></div>
+          <div class="geo-card-title">Automated Schema Enhancement</div>
+          <div class="geo-card-desc">We auto-generate and continuously optimize JSON-LD structured data so AI models understand your organization, leadership, products, and expertise.</div>
+          <div class="geo-card-tags">
+            <span>Organization Schema</span>
+            <span>Person Schema</span>
+            <span>Article Schema</span>
+            <span>FAQ Schema</span>
+          </div>
+        </div>
+        <div class="geo-card">
+          <div class="geo-card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+              <polyline points="14,2 14,8 20,8" />
+              <line x1="16" y1="13" x2="8" y2="13" />
+              <line x1="16" y1="17" x2="8" y2="17" />
+            </svg>
+          </div>
+          <div class="geo-card-title">Machine-Readable Presence</div>
+          <div class="geo-card-desc">Structured data that makes your expertise visible to AI models, from entity graphs to semantic markup.</div>
+          <div class="geo-card-check">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="20,6 9,17 4,12" />
+            </svg>
+            Optimized for ChatGPT, Perplexity, Claude & more
+          </div>
+        </div>
+        <div class="geo-card">
+          <div class="geo-card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M12 20h9M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+            </svg>
+          </div>
+          <div class="geo-card-title">PR-Driven Credibility</div>
+          <div class="geo-card-desc">Machine optimization alone isn't enough. We layer in strategic placements and citations that build the authority AI models recognize.</div>
+          <div class="geo-card-check">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="20,6 9,17 4,12" />
+            </svg>
+            Authority signals that compound over time
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta-section">
+      <div class="cta-decoration"></div>
+      <div class="cta-content">
+        <h2 class="cta-headline">Ready to seize <em>opportunities others miss?</em></h2>
+        <div class="cta-actions">
+          <a href="#" class="cta-btn">Start Free Trial</a>
+          <a href="#" class="cta-btn cta-btn-outline">Schedule Demo</a>
+        </div>
+      </div>
+    </section>
+    <footer class="footer">
+      <div class="footer-content">
+        <div class="footer-logo">
+          <svg width="60" height="36" viewBox="0 0 80 48">
+            <path d="M10 0 H80 V48 H0 L10 0 Z" fill="#faf9f7" />
+            <text x="40" y="33" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="22" font-weight="700" fill="#1a1a1a" letter-spacing="-0.5">NIV</text>
+            <path d="M68 0 H80 V12 L68 0 Z" fill="#c75d3a" />
+          </svg>
+          <span style="color: var(--grey-600); font-size: 18px; font-weight: 200;">|</span>
+          <span style="font-family: 'Space Grotesk', sans-serif; font-size: 12px; color: var(--grey-500); letter-spacing: 1px;">by nivria</span>
+        </div>
+        <div class="footer-links">
+          <a href="#" class="footer-link">Platform</a>
+          <a href="#" class="footer-link">Pricing</a>
+          <a href="#" class="footer-link">About</a>
+          <a href="#" class="footer-link">Contact</a>
+          <a href="#" class="footer-link">Privacy</a>
+        </div>
+        <div class="footer-copy">© 2025 Nivria</div>
+      </div>
+    </footer>
+  </body>
+</html>

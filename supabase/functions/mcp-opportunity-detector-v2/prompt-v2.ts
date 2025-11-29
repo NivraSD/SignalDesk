@@ -50,6 +50,12 @@ export function buildOpportunityDetectionPromptV2(params: {
 5. Use present/future tense for actions to take, not past tense for completed events
 6. Example: "Capitalize on Company X's recent announcement" (good) vs "Company X announced in 2024" (historical context only)
 
+🚨 **GROUNDING RULE** 🚨
+- Every opportunity MUST be based on specific events from the EVENTS DETECTED list below
+- Do NOT make up generic seasonal opportunities (no "Black Friday", "year-end", "holiday" unless in the events)
+- Reference actual events by describing them in your trigger_events field
+- The events list below contains REAL news - use it to find opportunities
+
 MONITORING DATE: ${currentDate}
 
 ORGANIZATION: ${organizationName}

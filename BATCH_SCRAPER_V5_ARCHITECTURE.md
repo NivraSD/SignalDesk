@@ -2,7 +2,7 @@
 
 ## Overview
 
-Batch Scraper V5 is a complete rewrite that splits discovery into two separate Edge Functions to avoid timeout issues and leverages mcp-firecrawl for parallel batch scraping. The system uses a queue-based architecture with priority scheduling.
+Batch Scraper V5 is a complete rewrite that splits discovery into multiple separate Edge Functions to avoid timeout issues and leverages mcp-firecrawl for parallel batch scraping. The system uses a queue-based architecture with priority scheduling, followed by metadata extraction for intelligent article filtering.
 
 ## Why V5?
 
@@ -13,14 +13,15 @@ Batch Scraper V5 is a complete rewrite that splits discovery into two separate E
 - Result: Missing all major financial news sources
 
 **V5 Solutions:**
-- Split into two independent orchestrators (RSS + CSE)
+- Split into four independent discovery orchestrators (RSS, CSE, Sitemap, Fireplexity)
 - Each completes quickly without timeout
 - Queue-based scraping via separate worker
+- Metadata extraction for topics, entities, and summaries
 - Leverages existing mcp-firecrawl for parallel batching
 
 ## Architecture
 
-### Three Edge Functions
+### Six Edge Functions
 
 #### 1. `batch-scraper-v5-orchestrator-rss`
 **Purpose:** Discover article URLs from RSS feeds only
@@ -57,7 +58,34 @@ Batch Scraper V5 is a complete rewrite that splits discovery into two separate E
 
 **Trigger:** Manual or scheduled (2-4x per day)
 
-#### 3. `batch-scraper-v5-worker`
+#### 3. `batch-scraper-v5-orchestrator-sitemap`
+**Purpose:** Discover article URLs from XML sitemaps
+
+**Process:**
+- Queries `source_registry` for sources where `monitor_method='sitemap'`
+- Fetches and parses sitemap.xml or sitemap-news.xml
+- Filters URLs by lastmod date (last 7 days)
+- Inserts discovered URLs into `raw_articles` with `scrape_status='pending'`
+- Deduplicates against existing URLs
+
+**Performance:**
+- Processes ~13 sitemap sources
+- Completes in ~2-5 seconds
+- Discovers 20-50 articles per run
+
+**Trigger:** Manual or scheduled (2-4x per day)
+
+#### 4. `batch-scraper-v5-orchestrator-fireplexity`
+**Purpose:** Discover article URLs via Fireplexity integration
+
+**Process:**
+- Uses Fireplexity API for specialized source discovery
+- Targets sources not accessible via RSS or CSE
+- Inserts discovered URLs into `raw_articles` with `scrape_status='pending'`
+
+**Trigger:** Manual or scheduled (2-4x per day)
+
+#### 5. `batch-scraper-v5-worker`
 **Purpose:** Scrape full content for articles in the queue
 
 **Process:**
@@ -66,17 +94,71 @@ Batch Scraper V5 is a complete rewrite that splits discovery into two separate E
   - `scrape_status IN ('pending', 'failed')`
   - `scrape_attempts < 3`
 - Orders by `scrape_priority ASC, created_at DESC` (Tier 1 first)
-- Processes 25 articles per run
+- Processes 10 articles per run
 - Calls `mcp-firecrawl` with `batch_scrape_articles` tool
 - mcp-firecrawl handles parallel batching (5 at a time) internally
 - Updates `raw_articles` with scraped content or error
 
 **Performance:**
-- Processes 25 articles per run in ~20 seconds
-- 100% success rate with 0 failures
+- Processes 10 articles per run in ~8 seconds
+- High success rate with automatic retries
 - mcp-firecrawl provides 24hr caching and intelligent rate limiting
 
 **Trigger:** Loop script or scheduled (runs until queue empty)
+
+#### 6. `batch-metadata-orchestrator`
+**Purpose:** Extract metadata (topics, entities, summaries) from scraped articles
+
+**Process:**
+- Queries `raw_articles` where `scrape_status='completed'` AND `extracted_metadata IS NULL`
+- Spawns parallel calls to `extract-article-metadata` function
+- Processes 10 articles per batch, 5 batches in parallel
+- Uses Claude to extract:
+  - Topics/categories
+  - Named entities (people, companies, locations)
+  - Article summary
+  - Signals (paywall detection, content quality)
+
+**Performance:**
+- Processes 50 articles per orchestrator run
+- ~30 seconds per run
+- 95%+ success rate
+
+**Trigger:** After worker completes, or scheduled
+
+### Supporting Function
+
+#### `extract-article-metadata`
+**Purpose:** Extract metadata from a batch of articles using Claude
+
+**Process:**
+- Receives batch of article IDs
+- Fetches full_content for each article
+- Sends to Claude Haiku for extraction
+- Updates `extracted_metadata` JSONB column
+
+**Output Schema:**
+```json
+{
+  "topics": ["technology", "ai"],
+  "summary": "Brief article summary...",
+  "entities": {
+    "people": ["John Smith"],
+    "companies": ["Acme Corp"],
+    "locations": ["New York"],
+    "technologies": ["GPT-4"]
+  },
+  "signals": {
+    "has_content": true,
+    "has_paywall": false,
+    "word_count": 1500,
+    "confidence": "high"
+  },
+  "temporal": {
+    "age_hours": 12.5
+  }
+}
+```
 
 ## Database Schema
 
@@ -120,10 +202,19 @@ scraped_at TIMESTAMPTZ
 processed BOOLEAN DEFAULT FALSE
 raw_metadata JSONB
   -- Contains:
-  -- - discovery_method: 'rss' or 'google_cse'
+  -- - discovery_method: 'rss', 'google_cse', 'sitemap', or 'fireplexity'
   -- - scraping_method: 'mcp_firecrawl' (V5)
   -- - cached: boolean (from mcp-firecrawl)
   -- - rss_feed or cse_snippet
+
+extracted_metadata JSONB
+  -- Populated by batch-metadata-orchestrator
+  -- Contains:
+  -- - topics: string[] (article categories)
+  -- - summary: string (brief article summary)
+  -- - entities: {people, companies, locations, technologies}
+  -- - signals: {has_content, has_paywall, word_count, confidence}
+  -- - temporal: {age_hours}
 ```
 
 ### Indexes for Performance
@@ -149,7 +240,8 @@ source_url TEXT
 monitor_method TEXT
   -- 'rss' = RSS feed scraping (batch-scraper-v5-orchestrator-rss)
   -- 'google_cse' = Google Custom Search (batch-scraper-v5-orchestrator-cse)
-  -- 'firecrawl_observer' = Not used in V5
+  -- 'sitemap' = XML sitemap scraping (batch-scraper-v5-orchestrator-sitemap)
+  -- 'fireplexity' = Fireplexity integration (batch-scraper-v5-orchestrator-fireplexity)
 
 tier INTEGER
   -- 1 = Premium sources (Bloomberg, WSJ, Reuters, Financial Times)
@@ -191,18 +283,28 @@ completed_at TIMESTAMPTZ
 ### Daily Batch Scraping (Recommended)
 
 ```bash
-# Step 1: Discover URLs from RSS sources (~60s)
+# Step 1: Discover URLs from all sources (run in parallel)
 curl -X POST "https://{project}.supabase.co/functions/v1/batch-scraper-v5-orchestrator-rss" \
   -H "Authorization: Bearer {service_key}"
 
-# Step 2: Discover URLs from Google CSE sources (~13s)
 curl -X POST "https://{project}.supabase.co/functions/v1/batch-scraper-v5-orchestrator-cse" \
   -H "Authorization: Bearer {service_key}"
 
-# Step 3: Scrape all queued articles (loop until queue empty)
+curl -X POST "https://{project}.supabase.co/functions/v1/batch-scraper-v5-orchestrator-sitemap" \
+  -H "Authorization: Bearer {service_key}"
+
+curl -X POST "https://{project}.supabase.co/functions/v1/batch-scraper-v5-orchestrator-fireplexity" \
+  -H "Authorization: Bearer {service_key}"
+
+# Step 2: Scrape all queued articles (loop until queue empty)
 # See /tmp/scrape_loop.sh for automated loop
 curl -X POST "https://{project}.supabase.co/functions/v1/batch-scraper-v5-worker" \
   -H "Authorization: Bearer {service_key}"
+
+# Step 3: Extract metadata from scraped articles
+curl -X POST "https://{project}.supabase.co/functions/v1/batch-metadata-orchestrator" \
+  -H "Authorization: Bearer {service_key}" \
+  -d '{"limit": 500}'
 ```
 
 ### Query Queue Status
@@ -259,20 +361,27 @@ Output:
 ## Performance Metrics
 
 ### Discovery Phase
-- **RSS:** 44 sources → 500-800 URLs → ~60 seconds
-- **Google CSE:** 44 sources → 200-300 URLs → ~13 seconds
-- **Total:** 88 sources → ~1000 URLs → ~73 seconds
+- **RSS:** ~44 sources → 400-600 URLs → ~30 seconds
+- **Google CSE:** ~44 sources → 200-300 URLs → ~13 seconds
+- **Sitemap:** ~13 sources → 20-50 URLs → ~2-5 seconds
+- **Fireplexity:** Variable sources → 50-100 URLs → ~10 seconds
+- **Total:** ~99 sources → 700-1000 URLs → ~60 seconds
 
 ### Scraping Phase
-- **Worker:** 25 articles → ~20 seconds → ~75 articles/minute
-- **1000 articles:** ~40 worker runs → ~13 minutes total
-- **Success rate:** 100% (0 failures)
+- **Worker:** 10 articles → ~8 seconds → ~75 articles/minute
+- **500 articles:** ~50 worker runs → ~7 minutes total
+- **Success rate:** 95%+ (with automatic retries)
 
-### Content Stats
-- **Total articles:** 969 completed
-- **Total content:** ~15 MB
-- **Average article:** ~15,800 characters
-- **Range:** 642 - 180,117 characters
+### Metadata Extraction Phase
+- **Orchestrator:** 50 articles → ~30 seconds
+- **500 articles:** ~5 minutes total
+- **Success rate:** 95%+
+
+### Content Stats (typical run)
+- **Total articles:** ~700-1000 per day
+- **With full content:** 90%+
+- **With metadata:** 95%+
+- **Average article:** ~15,000 characters
 
 ## Monitoring
 
@@ -462,47 +571,110 @@ supabase/functions/
 │   └── index.ts                    # RSS discovery
 ├── batch-scraper-v5-orchestrator-cse/
 │   └── index.ts                    # Google CSE discovery
+├── batch-scraper-v5-orchestrator-sitemap/
+│   └── index.ts                    # Sitemap discovery
+├── batch-scraper-v5-orchestrator-fireplexity/
+│   └── index.ts                    # Fireplexity discovery
 ├── batch-scraper-v5-worker/
 │   └── index.ts                    # mcp-firecrawl batch scraper
+├── batch-metadata-orchestrator/
+│   └── index.ts                    # Metadata extraction orchestrator
+├── extract-article-metadata/
+│   └── index.ts                    # Claude-based metadata extraction
 ├── batch-article-tagger/
-│   └── index.ts                    # Industry classification (NEW)
+│   └── index.ts                    # Industry classification
 ├── mcp-firecrawl/
 │   └── index.ts                    # Parallel batch scraping tool
 └── niv-google-cse/
     └── index.ts                    # Google CSE wrapper
 
 supabase/migrations/
-└── 20251122194226_add_scrape_queue_columns.sql
+├── 20251122194226_add_scrape_queue_columns.sql
+└── 20251125_add_extracted_metadata.sql
 
 /tmp/
 ├── scrape_loop.sh                  # Automated worker loop
-├── tag_all_articles.sh             # Automated tagging loop (NEW)
+├── tag_all_articles.sh             # Automated tagging loop
 └── check_v5_queue.mjs              # Queue status checker
 ```
 
 ## Daily Workflow
 
 ```bash
-# Step 1: Discover URLs from RSS sources (~60s)
+# Step 1: Discover URLs from all sources (can run in parallel)
 curl -X POST "https://{project}.supabase.co/functions/v1/batch-scraper-v5-orchestrator-rss" \
   -H "Authorization: Bearer {service_key}"
 
-# Step 2: Discover URLs from Google CSE sources (~13s)
 curl -X POST "https://{project}.supabase.co/functions/v1/batch-scraper-v5-orchestrator-cse" \
   -H "Authorization: Bearer {service_key}"
 
-# Step 3: Scrape all queued articles (loop until queue empty, ~13 minutes for 1000 articles)
+curl -X POST "https://{project}.supabase.co/functions/v1/batch-scraper-v5-orchestrator-sitemap" \
+  -H "Authorization: Bearer {service_key}"
+
+curl -X POST "https://{project}.supabase.co/functions/v1/batch-scraper-v5-orchestrator-fireplexity" \
+  -H "Authorization: Bearer {service_key}"
+
+# Step 2: Scrape all queued articles (loop until queue empty)
 /tmp/scrape_loop.sh
 
-# Step 4: Tag articles with industries (~4s per 20 articles)
+# Step 3: Extract metadata from scraped articles
+curl -X POST "https://{project}.supabase.co/functions/v1/batch-metadata-orchestrator" \
+  -H "Authorization: Bearer {service_key}" \
+  -d '{"limit": 500}'
+
+# Step 4: Tag articles with industries (optional, for advanced filtering)
 curl -X POST "https://{project}.supabase.co/functions/v1/batch-article-tagger" \
   -H "Authorization: Bearer {service_key}"
 ```
 
+## Pipeline Flow
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                      DISCOVERY PHASE                             │
+├─────────────────────────────────────────────────────────────────┤
+│  RSS Orchestrator ──┐                                           │
+│  CSE Orchestrator ──┼──> raw_articles (scrape_status='pending') │
+│  Sitemap Orchestrator┤                                           │
+│  Fireplexity ───────┘                                           │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                      SCRAPING PHASE                              │
+├─────────────────────────────────────────────────────────────────┤
+│  batch-scraper-v5-worker                                        │
+│  - Fetches pending articles                                     │
+│  - Calls mcp-firecrawl for content                              │
+│  - Updates full_content, scrape_status='completed'              │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                   METADATA EXTRACTION PHASE                      │
+├─────────────────────────────────────────────────────────────────┤
+│  batch-metadata-orchestrator                                    │
+│  - Fetches completed articles without metadata                  │
+│  - Spawns extract-article-metadata calls                        │
+│  - Updates extracted_metadata JSONB column                      │
+│    (topics, entities, summary, signals)                         │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    DOWNSTREAM USAGE                              │
+├─────────────────────────────────────────────────────────────────┤
+│  article-selector-v4                                            │
+│  - Queries raw_articles by source industry                      │
+│  - Returns articles for company-specific intelligence           │
+│  - Downstream: relevance filter → enrichment → synthesis        │
+└─────────────────────────────────────────────────────────────────┘
+```
+
 ## Next Steps
 
-1. **Set up cron scheduling** for automated discovery + scraping + tagging
+1. **Set up cron scheduling** for automated discovery + scraping + metadata extraction
 2. **Monitor queue metrics** to tune worker frequency
 3. **Add alerting** for high failure rates or empty discovery
 4. **Expand source registry** with more Tier 1 sources
-5. **Build downstream pipeline** for article enrichment (using industry filters)
+5. **Tune metadata extraction** prompts for better entity/topic accuracy

@@ -115,7 +115,169 @@ export const JOURNALIST_REGISTRY = {
       { name: 'Ron Shevlin', outlet: 'Forbes', beat: 'Banking & Fintech Strategy', twitter: '@rshevlin', email: 'rshevlin@forbes.com' },
       { name: 'Jason Mikula', outlet: 'Fintech Business Weekly', beat: 'Fintech Analysis', twitter: '@jasonmikula', email: 'jason@fintechbusinessweekly.com' }
     ]
+  },
+
+  // HEALTHCARE / PHARMA
+  healthcare: {
+    tier1: [
+      // NYT Health
+      { name: 'Pam Belluck', outlet: 'New York Times', beat: 'Health & Science', twitter: '@PamBelluck', email: 'pam.belluck@nytimes.com' },
+      { name: 'Apoorva Mandavilli', outlet: 'New York Times', beat: 'Health', twitter: '@apooraboron', email: 'apoorva.mandavilli@nytimes.com' },
+
+      // Bloomberg Health
+      { name: 'Drew Armstrong', outlet: 'Bloomberg', beat: 'Pharma & Healthcare', twitter: '@DrewArmstrong', email: 'darmstrong@bloomberg.net' },
+      { name: 'Riley Griffin', outlet: 'Bloomberg', beat: 'Pharma', twitter: '@rilorin', email: 'rgriffin42@bloomberg.net' },
+
+      // STAT News
+      { name: 'Adam Feuerstein', outlet: 'STAT News', beat: 'Biotech', twitter: '@adamfeuerstein', email: 'adam.feuerstein@statnews.com' },
+      { name: 'Matthew Herper', outlet: 'STAT News', beat: 'Biotech & Pharma', twitter: '@matthewherper', email: 'matthew.herper@statnews.com' },
+      { name: 'Ed Silverman', outlet: 'STAT News', beat: 'Pharmalit', twitter: '@Pharmalot', email: 'ed.silverman@statnews.com' },
+
+      // WSJ Health
+      { name: 'Peter Loftus', outlet: 'Wall Street Journal', beat: 'Pharma', twitter: '@Laborunner', email: 'peter.loftus@wsj.com' },
+      { name: 'Jonathan D. Rockoff', outlet: 'Wall Street Journal', beat: 'Biotech', twitter: '@jdrockoff', email: 'jonathan.rockoff@wsj.com' },
+
+      // Reuters Health
+      { name: 'Julie Steenhuysen', outlet: 'Reuters', beat: 'Health & Science', twitter: '@juliesteen', email: 'julie.steenhuysen@reuters.com' }
+    ],
+    tier2: [
+      { name: 'Jacob Bell', outlet: 'Endpoints News', beat: 'Biotech', twitter: '@jacobbell', email: 'jacob@endpointsnews.com' },
+      { name: 'Amber Tong', outlet: 'Endpoints News', beat: 'Biotech', twitter: '@ambertong', email: 'amber@endpointsnews.com' }
+    ]
+  },
+
+  // ENERGY / CLIMATE
+  energy: {
+    tier1: [
+      // NYT Climate
+      { name: 'Brad Plumer', outlet: 'New York Times', beat: 'Climate', twitter: '@bradplumer', email: 'brad.plumer@nytimes.com' },
+      { name: 'Coral Davenport', outlet: 'New York Times', beat: 'Energy & Climate Policy', twitter: '@CoralMDavenport', email: 'coral.davenport@nytimes.com' },
+      { name: 'Hiroko Tabuchi', outlet: 'New York Times', beat: 'Climate & Energy', twitter: '@HirokoTabuchi', email: 'hiroko.tabuchi@nytimes.com' },
+
+      // Bloomberg Energy
+      { name: 'Will Wade', outlet: 'Bloomberg', beat: 'Power & Utilities', twitter: '@willwade', email: 'wwade@bloomberg.net' },
+      { name: 'Jennifer A. Dlouhy', outlet: 'Bloomberg', beat: 'Energy Policy', twitter: '@jaboratory', email: 'jdlouhy@bloomberg.net' },
+
+      // WSJ Energy
+      { name: 'Christopher M. Matthews', outlet: 'Wall Street Journal', beat: 'Energy', twitter: '@CMMatthews', email: 'christopher.matthews@wsj.com' },
+      { name: 'Timothy Puko', outlet: 'Wall Street Journal', beat: 'Climate & Energy', twitter: '@timothypuko', email: 'timothy.puko@wsj.com' },
+
+      // Axios
+      { name: 'Ben Geman', outlet: 'Axios', beat: 'Energy & Climate', twitter: '@BenGeman', email: 'ben@axios.com' },
+
+      // Reuters Energy
+      { name: 'Timothy Gardner', outlet: 'Reuters', beat: 'Energy Policy', twitter: '@timothy_gardner', email: 'timothy.gardner@reuters.com' }
+    ],
+    tier2: [
+      { name: 'Eric Roston', outlet: 'Bloomberg Green', beat: 'Climate & ESG', twitter: '@eroston', email: 'eroston@bloomberg.net' },
+      { name: 'Julian Spector', outlet: 'Canary Media', beat: 'Clean Energy', twitter: '@julianspector', email: 'julian@canarymedia.com' }
+    ]
+  },
+
+  // RETAIL / CONSUMER
+  retail: {
+    tier1: [
+      // WSJ Retail
+      { name: 'Sarah Nassauer', outlet: 'Wall Street Journal', beat: 'Retail', twitter: '@sarahnassauer', email: 'sarah.nassauer@wsj.com' },
+      { name: 'Suzanne Kapner', outlet: 'Wall Street Journal', beat: 'Retail', twitter: '@suzannekapner', email: 'suzanne.kapner@wsj.com' },
+
+      // Bloomberg Retail
+      { name: 'Kim Bhasin', outlet: 'Bloomberg', beat: 'Retail', twitter: '@KimBhasin', email: 'kbhasin2@bloomberg.net' },
+      { name: 'Jordan Valinsky', outlet: 'CNN Business', beat: 'Food & Retail', twitter: '@jordanvalinsky', email: 'jordan.valinsky@cnn.com' },
+
+      // NYT Business
+      { name: 'Sapna Maheshwari', outlet: 'New York Times', beat: 'Advertising & Retail', twitter: '@sapna', email: 'sapna.maheshwari@nytimes.com' },
+
+      // Retail Dive
+      { name: 'Daphne Howland', outlet: 'Retail Dive', beat: 'Retail Industry', twitter: '@daborough', email: 'dhowland@industrydive.com' },
+      { name: 'Cara Salpini', outlet: 'Retail Dive', beat: 'Retail Tech', twitter: '@CaraSalpini', email: 'csalpini@industrydive.com' }
+    ],
+    tier2: []
+  },
+
+  // MANUFACTURING / INDUSTRIALS
+  manufacturing: {
+    tier1: [
+      // WSJ
+      { name: 'Austen Hufford', outlet: 'Wall Street Journal', beat: 'Manufacturing', twitter: '@austenhufford', email: 'austen.hufford@wsj.com' },
+
+      // Bloomberg
+      { name: 'Kyle Stock', outlet: 'Bloomberg', beat: 'Industrials', twitter: '@kylestock', email: 'kstock@bloomberg.net' },
+
+      // Reuters
+      { name: 'David Shepardson', outlet: 'Reuters', beat: 'Autos & Transportation', twitter: '@davidshepardson', email: 'david.shepardson@reuters.com' },
+
+      // Industry Week
+      { name: 'Dennis Scimeca', outlet: 'Industry Week', beat: 'Manufacturing Tech', twitter: '@dennisscimeca', email: 'dscimeca@industryweek.com' }
+    ],
+    tier2: []
+  },
+
+  // GENERAL BUSINESS / CROSS-INDUSTRY
+  general: {
+    tier1: [
+      // WSJ
+      { name: 'Emily Glazer', outlet: 'Wall Street Journal', beat: 'Business', twitter: '@EmilyGlazer', email: 'emily.glazer@wsj.com' },
+      { name: 'Jean Eaglesham', outlet: 'Wall Street Journal', beat: 'Financial Regulation', twitter: '@jeaneaglesham', email: 'jean.eaglesham@wsj.com' },
+
+      // NYT Business
+      { name: 'Andrew Ross Sorkin', outlet: 'New York Times', beat: 'Business & Finance', twitter: '@andrewrsorkin', email: 'arsorkin@nytimes.com' },
+      { name: 'Lauren Hirsch', outlet: 'New York Times', beat: 'M&A & Deals', twitter: '@LaurenSHirsch', email: 'lauren.hirsch@nytimes.com' },
+
+      // Bloomberg
+      { name: 'Erik Schatzker', outlet: 'Bloomberg', beat: 'Business & Finance', twitter: '@erikschatzker', email: 'eschatzker@bloomberg.net' },
+
+      // Reuters
+      { name: 'Greg Roumeliotis', outlet: 'Reuters', beat: 'M&A', twitter: '@groum', email: 'greg.roumeliotis@reuters.com' },
+
+      // CNBC
+      { name: 'Kate Rooney', outlet: 'CNBC', beat: 'Fintech & Crypto', twitter: '@Kr00ney', email: 'kate.rooney@nbcuni.com' },
+      { name: 'Lauren Thomas', outlet: 'CNBC', beat: 'Retail', twitter: '@laurenthomas', email: 'lauren.thomas@nbcuni.com' },
+
+      // Fortune
+      { name: 'Shawn Tully', outlet: 'Fortune', beat: 'Business & Markets', twitter: '@ShawnTully', email: 'shawn.tully@fortune.com' },
+      { name: 'Jeff John Roberts', outlet: 'Fortune', beat: 'Tech & Business', twitter: '@jeffjohnroberts', email: 'jeff.roberts@fortune.com' }
+    ],
+    tier2: []
   }
+};
+
+// Industry aliases to handle various naming conventions
+const INDUSTRY_ALIASES: Record<string, string> = {
+  'pr': 'public_relations',
+  'public relations': 'public_relations',
+  'comms': 'public_relations',
+  'communications': 'public_relations',
+  'tech': 'technology',
+  'ai': 'technology',
+  'software': 'technology',
+  'enterprise': 'technology',
+  'finance': 'fintech',
+  'banking': 'fintech',
+  'financial_services': 'fintech',
+  'financial services': 'fintech',
+  'health': 'healthcare',
+  'pharma': 'healthcare',
+  'biotech': 'healthcare',
+  'pharmaceutical': 'healthcare',
+  'climate': 'energy',
+  'cleantech': 'energy',
+  'clean_energy': 'energy',
+  'utilities': 'energy',
+  'consumer': 'retail',
+  'ecommerce': 'retail',
+  'e-commerce': 'retail',
+  'cpg': 'retail',
+  'industrial': 'manufacturing',
+  'industrials': 'manufacturing',
+  'automotive': 'manufacturing',
+  'business': 'general',
+  'cross-industry': 'general',
+  'multi-industry': 'general',
+  'marketing': 'advertising',
+  'media': 'advertising',
+  'adtech': 'advertising',
+  'martech': 'advertising'
 };
 
 // Flatten function to search across all industries/tiers
@@ -123,16 +285,27 @@ export function getJournalists(industry?: string, tier?: string): any[] {
   const journalists: any[] = [];
 
   if (industry) {
-    // Get specific industry
-    const industryData = JOURNALIST_REGISTRY[industry as keyof typeof JOURNALIST_REGISTRY];
+    // Normalize industry name
+    const normalizedIndustry = industry.toLowerCase().trim();
+    const mappedIndustry = INDUSTRY_ALIASES[normalizedIndustry] || normalizedIndustry;
+
+    // Get specific industry (or fall back to general if not found)
+    let industryData = JOURNALIST_REGISTRY[mappedIndustry as keyof typeof JOURNALIST_REGISTRY];
+
+    // If industry not found, fall back to general business journalists
+    if (!industryData) {
+      console.log(`⚠️ Industry "${industry}" not found, falling back to general business journalists`);
+      industryData = JOURNALIST_REGISTRY.general;
+    }
+
     if (industryData) {
       if (tier) {
         const tierData = industryData[tier as keyof typeof industryData] || [];
-        journalists.push(...tierData.map(j => ({ ...j, industry, tier })));
+        journalists.push(...tierData.map(j => ({ ...j, industry: mappedIndustry, tier })));
       } else {
         // All tiers for this industry
         Object.entries(industryData).forEach(([t, journalistList]) => {
-          journalists.push(...(journalistList as any[]).map(j => ({ ...j, industry, tier: t })));
+          journalists.push(...(journalistList as any[]).map(j => ({ ...j, industry: mappedIndustry, tier: t })));
         });
       }
     }

@@ -164,12 +164,31 @@ serve(async (req) => {
         }
 
         // Successfully scraped - update with content (may include paywall flag)
+        // Extract published date from metadata
+        const metadata = result.data.metadata || {};
+        const publishedDateStr = metadata.publishedTime ||
+                                 metadata['article:published_time'] ||
+                                 metadata.datePublished ||
+                                 metadata.dateCreated ||
+                                 null;
+
+        // Convert to ISO string if valid
+        let publishedDate = null;
+        if (publishedDateStr) {
+          try {
+            publishedDate = new Date(publishedDateStr).toISOString();
+          } catch {
+            publishedDate = null;
+          }
+        }
+
         const { error: updateError } = await supabase
           .from('raw_articles')
           .update({
             full_content: result.data.markdown,
             scrape_status: 'completed',
             scraped_at: new Date().toISOString(),
+            published_at: publishedDate, // Extract from metadata and convert to ISO
             content_length: result.data.markdown.length,
             raw_metadata: {
               ...(result.data.metadata || {}),

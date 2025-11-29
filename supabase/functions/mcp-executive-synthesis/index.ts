@@ -574,6 +574,7 @@ CRITICAL:
     // discoveryTargets is already declared at function scope (line 215)
 
     // Get ALL events but PRIORITIZE non-org events
+    // NOTE: With simplified enrichment, events may be empty - synthesis will work from articles instead
     let allEvents = context.strategicInsights.events || [];
 
     // 🔗 ENRICH EVENTS WITH ARTICLE URLs
@@ -760,19 +761,29 @@ CRITICAL:
       sample_relevance_scores: enrichedArticles.slice(0, 5).map(a => a.pr_relevance_score || a.relevance_score || 0)
     });
 
-    const articleSummaries = enrichedArticles.slice(0, 20).map((article, i) => ({
+    const articleSummaries = enrichedArticles.slice(0, 40).map((article, i) => ({
       headline: article.title,
+      url: article.url,  // Include URL for article-only mode
+      source: article.source || article.source_name || 'Unknown',
+      published_at: article.published_at,
       category: article.pr_category || article.category,
       relevance: article.pr_relevance_score || article.relevance_score,
       sentiment: article.deep_analysis?.sentiment || 'neutral',
-      key_insight: article.deep_analysis?.key_takeaway || article.summary?.substring(0, 150),
+      key_insight: article.deep_analysis?.key_takeaway || article.summary?.substring(0, 200) || article.description?.substring(0, 200),
       entities_mentioned: article.entities?.slice(0, 3) || [],
       competitive_relevance: article.deep_analysis?.competitive_relevance || 'medium',
       has_full_content: article.has_full_content || false,
-      content_quality: article.content_quality || 'enhanced_summary'
+      content_quality: article.content_quality || 'enhanced_summary',
+      is_trade_source: article.is_trade_source || false
     }));
 
     console.log('📊 Article summaries prepared:', articleSummaries.length);
+
+    // Check if we're in "article-only" mode (no pre-extracted events)
+    const articleOnlyMode = topEvents.length === 0 && enrichedArticles.length > 0;
+    if (articleOnlyMode) {
+      console.log('📰 ARTICLE-ONLY MODE: No pre-extracted events, synthesis will work directly from articles');
+    }
 
     // Extract all unique entities from events for clarity
     const allEntities = [...new Set(topEvents.map(e => e.entity).filter(Boolean))];
@@ -862,14 +873,15 @@ ${discoveryTargets.stakeholders.slice(0, 10).join(', ')}
 
 **TODAY'S DATE:** ${new Date().toISOString().split('T')[0]}
 
-PRE-ANALYZED ARTICLES (${context.totalArticlesAnalyzed} articles processed - ~10 with full content, ~${context.totalArticlesAnalyzed - 10} with enhanced summaries):
+PRE-ANALYZED ARTICLES (${enrichedArticles.length} articles processed${articleOnlyMode ? ' - USE THESE FOR key_developments' : ''}):
 ${articleSummaries.map((article, i) => {
   const contentQuality = article.has_full_content ? '✓ FULL' : '◆ SUMMARY';
+  const tradeFlag = article.is_trade_source ? ' [TRADE]' : '';
   return `
-${i+1}. [${contentQuality}] ${article.headline}
-   Category: ${article.category} | Relevance: ${article.relevance}/100 | Sentiment: ${article.sentiment}
-   Key Insight: ${article.key_insight}
-   Entities: ${article.entities_mentioned.join(', ') || 'None identified'}`;
+${i+1}. [${contentQuality}]${tradeFlag} ${article.headline}
+   Source: ${article.source} | URL: ${article.url}
+   Published: ${article.published_at} | Relevance: ${article.relevance}/100
+   Summary: ${article.key_insight}`;
 }).join('') || 'No enriched articles available'}
 
 ⚠️ Content Quality Legend:
@@ -878,11 +890,25 @@ ${i+1}. [${contentQuality}] ${article.headline}
   Summary articles provide headlines and context but not full article text.
   Use these to identify trends and cross-reference events across multiple sources.
 
+${articleOnlyMode ? `
+⚠️ **ARTICLE-ONLY MODE**
+No pre-extracted events available. Synthesize intelligence directly from the ${enrichedArticles.length} articles above.
+
+YOUR TASK:
+1. Read each article title and summary
+2. Identify which articles relate to competitors: ${discoveryTargets.competitors.slice(0, 10).join(', ')}
+3. Identify which articles relate to stakeholders: ${discoveryTargets.stakeholders.slice(0, 10).join(', ')}
+4. Synthesize the key developments, competitor moves, and market trends from the articles
+5. Create key_developments entries directly from the articles
+
+IMPORTANT: Each article IS a potential development. Use the article title as the "event" and the source/URL from the article.
+` : `
 PRE-EXTRACTED EVENTS (These ${topEvents.length} events include ${orgSlots} org, ${competitorSlots} competitor, ${stakeholderSlots} stakeholder, ${otherSlots} industry/regulatory - **SORTED BY RECENCY**):
 ${topEvents.map((e, i) =>
   `${i+1}. [${e.type?.toUpperCase()}] ${e.entity}: ${e.description} (${formatEventDate(e.date)})
    Source: ${e.source || 'Unknown'} | URL: ${e.url || 'N/A'} | Article: "${e.article_title || 'N/A'}"`
 ).join('\n\n')}
+`}
 
 ⚠️ **CRITICAL RECENCY RULES:**
 - PRIORITIZE events from last 7 days (Today, Yesterday, X days ago) in your executive_summary
@@ -890,7 +916,7 @@ ${topEvents.map((e, i) =>
 - If an event is >1 month old (X months ago), ONLY include in executive_summary if it represents a major strategic shift
 - The executive_summary should FOCUS on what's happening NOW, not historical context
 
-THE ABOVE EVENTS ARE YOUR ONLY SOURCE OF TRUTH - They represent real news from today's monitoring.
+${articleOnlyMode ? 'THE ARTICLES ABOVE ARE YOUR ONLY SOURCE OF TRUTH.' : 'THE ABOVE EVENTS ARE YOUR ONLY SOURCE OF TRUTH - They represent real news from today\'s monitoring.'}
 
 ${keyQuotes.length > 0 ? `KEY QUOTES:\n${keyQuotes.map(q =>
   `"${q.text}" - ${q.source || 'Unknown'}`
@@ -911,12 +937,17 @@ Every claim in your synthesis MUST reference the source article:
 - Synthesis without citations will be rejected
 
 🚨 PRIORITY #1: COMPREHENSIVE COVERAGE (USE ALL THE INTELLIGENCE)
-You have ${topEvents.length} events from enrichment. Your job is to SYNTHESIZE ALL OF THEM into a coherent narrative:
+${articleOnlyMode ? `You have ${enrichedArticles.length} articles to synthesize into a coherent narrative:
+- Each article passed relevance filtering and is worth including
+- DO NOT cherry-pick 2-3 "big stories" and ignore the rest
+- SYNTHESIZE means: identify patterns, group similar developments, surface the narrative
+- Create key_developments entries from articles - use article title as "event", article source as "source", article URL as "url"
+- Your executive_summary should reflect the VOLUME of intelligence: ${enrichedArticles.length} articles is significant activity` : `You have ${topEvents.length} events from enrichment. Your job is to SYNTHESIZE ALL OF THEM into a coherent narrative:
 - Enrichment already filtered for relevance - these ${topEvents.length} events ALL passed quality checks
 - DO NOT cherry-pick 2-3 "big stories" and ignore the rest
 - SYNTHESIZE means: identify patterns, group similar developments, surface the narrative
 - Example: Instead of "Weber Shandwick won Carhartt" (1 event), write "Account mobility accelerated this week, with Weber Shandwick securing Carhartt [Source: PRWeek, "Agency Wins"], FleishmanHillard winning Bay Area Host Committee [Source: PR Daily, "Host Committee News"], and Zeno Group losing a 5-year relationship [Source: AdAge, "Account Review"]" (synthesizing 3+ events WITH CITATIONS)
-- Your executive_summary should reflect the VOLUME of intelligence: ${topEvents.length} events is significant activity
+- Your executive_summary should reflect the VOLUME of intelligence: ${topEvents.length} events is significant activity`}
 - Competitors to watch: ${discoveryTargets.competitors.slice(0, 15).join(', ')}
 
 ⚠️ PRIORITY #2: RECENCY (TODAY > THIS WEEK > OLD NEWS)
@@ -940,7 +971,14 @@ You have ${topEvents.length} events from enrichment. Your job is to SYNTHESIZE A
 - NO academic language, NO generic trends, NO excuses for "quiet periods"
 
 STANDARD REQUIREMENTS:
-1. Your executive_summary should COMPREHENSIVELY synthesize the ${topEvents.length} events:
+${articleOnlyMode ? `1. Your executive_summary should COMPREHENSIVELY synthesize the ${enrichedArticles.length} articles:
+   - Identify articles about competitors and what they reveal
+   - Identify articles about stakeholders and regulatory changes
+   - Identify industry trends and market developments
+2. SYNTHESIZE don't summarize: Group related articles, identify patterns, surface themes
+3. Each key_development should come from an article - use article.title as "event", article.source as "source", article.url as "url"
+4. Reference articles by describing them, not by number
+5. Every claim must come from the articles above - no external knowledge` : `1. Your executive_summary should COMPREHENSIVELY synthesize the ${topEvents.length} events:
    - Organization news (${orgSlots} events provided)
    - Competitor developments (${competitorSlots} events provided) ← CRITICAL CATEGORY
    - Stakeholder/regulatory news (${stakeholderSlots} events provided)
@@ -948,7 +986,7 @@ STANDARD REQUIREMENTS:
 2. SYNTHESIZE don't summarize: Group related events, identify patterns, surface themes
 3. Coverage should be PROPORTIONAL to event volume: if ${otherSlots} industry events, that category should be substantive
 4. Reference events by describing them, not by number
-5. Every claim must come from the events above - no external knowledge
+5. Every claim must come from the events above - no external knowledge`}
 
 ⚠️ CRITICAL SYNTHESIS RULES:
 - "competitive_moves" = Actions by ${organization?.name}'s INDUSTRY COMPETITORS (other ${organization?.industry} companies)
@@ -982,12 +1020,14 @@ Generate comprehensive intelligence synthesis as valid JSON:
 }
 
 CRITICAL INSTRUCTIONS FOR key_developments:
-- Include 15-25 entries covering ALL significant events from the ${topEvents.length} provided
+${articleOnlyMode ? `- Include 15-25 entries from the ${enrichedArticles.length} articles provided
+- Use article.title as "event", article.source as "source", article.url as "url"
+- Sort by relevance_score (highest first) and recency` : `- Include 15-25 entries covering ALL significant events from the ${topEvents.length} provided`}
 - Sort by recency: "today" first, then "this_week", then "older"
 - Each entry MUST have source attribution (source + url fields)
 - category options: competitor_move, stakeholder_action, market_trend, regulatory_change
-- Be specific in "event" - use actual names, numbers, quotes from the events
-- "impact" should explain WHY ${organization?.name} cares about this specific event
+- Be specific in "event" - use actual names, numbers, quotes from the ${articleOnlyMode ? 'articles' : 'events'}
+- "impact" should explain WHY ${organization?.name} cares about this specific ${articleOnlyMode ? 'article' : 'event'}
 
 ═══════════════════════════════════════════════════════════
 🚨 FINAL VERIFICATION CHECKLIST (Review Before Responding)
@@ -1441,7 +1481,8 @@ Remember: You're not gathering intelligence - you're SYNTHESIZING already-gather
       // POST-PROCESSING: Enrich URLs in key_developments using original event data
       // Claude often fails to copy URLs correctly, so we match by source/title and fix them
       const contextEvents = context.strategicInsights?.events || [];
-      if (result.synthesis?.key_developments && (contextEvents.length > 0 || enrichedArticles.length > 0)) {
+      const enrichedArticlesForUrls = enriched_data?.enriched_articles || [];
+      if (result.synthesis?.key_developments && (contextEvents.length > 0 || enrichedArticlesForUrls.length > 0)) {
         console.log('🔗 Enriching URLs in key_developments...');
 
         // Create URL lookup maps from both events and articles
@@ -1455,7 +1496,7 @@ Remember: You're not gathering intelligence - you're SYNTHESIZING already-gather
         });
 
         // From enriched articles (more complete)
-        enrichedArticles.forEach((a: any) => {
+        enrichedArticlesForUrls.forEach((a: any) => {
           if (a.title && a.url) {
             urlByTitle[a.title.toLowerCase().substring(0, 50)] = a.url;
             urlBySource[a.title.toLowerCase().substring(0, 30)] = a.url;
