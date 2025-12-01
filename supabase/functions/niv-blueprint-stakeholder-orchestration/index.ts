@@ -325,12 +325,13 @@ function buildOrchestrationPrompt(part1: any, part2: any, geoIntelligence?: any,
   let geoSection = ''
 
   if (campaign_intelligence) {
-    const topCompetitors = campaign_intelligence.competitiveIntelligence?.dominant_players?.slice(0, 5).map((c: any) =>
+    const topCompetitors = campaign_intelligence.competitiveIntelligence?.dominant_players?.slice(0, 10).map((c: any) =>
       `- ${c.name}: ${c.mentions} mentions across ${c.platforms.join(', ')}\n  Why they win: ${c.reasons.slice(0, 2).join('; ')}`
     ).join('\n') || 'None identified'
 
-    const topSources = campaign_intelligence.sourceStrategy?.priority_sources?.slice(0, 5).map((s: any) =>
-      `- ${s.domain}: Cited by ${s.platforms.join(', ')}`
+    // Get MORE sources (15) to ensure diversity in outlet selection
+    const topSources = campaign_intelligence.sourceStrategy?.priority_sources?.slice(0, 15).map((s: any, idx: number) =>
+      `${idx + 1}. ${s.domain}: Cited by ${s.platforms.join(', ')}`
     ).join('\n') || 'None identified'
 
     geoSection = `
@@ -374,10 +375,12 @@ ${topSources}
 
 [Schema recommendations will be added based on competitive analysis above]
 
-**INSTRUCTIONS:**
-- Create tactics that target the priority publications listed above
-- Position against the dominant competitors identified
-- Address the success patterns they're using
+**CRITICAL DIVERSITY INSTRUCTIONS:**
+- You MUST use at least 10 DIFFERENT publications across the entire campaign - NO outlet should appear more than 2 times total
+- Pick outlets from the full list above (1-15) - spread your pitches across different domains
+- If you only see 2-3 sources cited, EXPAND to include tier-1 industry publications like: Forbes, Bloomberg, Financial Times, The Economist, MIT Tech Review, Harvard Business Review, Fast Company, Entrepreneur, Inc Magazine, AdWeek, Campaign (UK), PRWeek, Ragan, The Drum, Digiday
+- For Saudi Arabia/MENA focus, include: Arab News, Gulf News, Zawya, MEED, The National (UAE), Al Arabiya English, Asharq Business
+- Every stakeholder/lever should target DIFFERENT outlets - check your work before finalizing
 `
   } else if (geoIntelligence) {
     // Legacy format
@@ -500,7 +503,12 @@ For EACH stakeholder's psychological influence levers (from Part 2), create a MU
    - Real publication targets
    - Specific people from the org (CEO, CMO, etc.)
 
-5. **AVOID DUPLICATION**: Each journalist/outlet should only be targeted ONCE across the entire plan. If multiple stakeholders/levers could use the same journalist, pick the BEST FIT and use different journalists for the others. Mix it up - use the full breadth of available media contacts.
+5. **MANDATORY OUTLET DIVERSITY**:
+   - HARD RULE: No outlet can appear more than 2 times in the ENTIRE campaign
+   - Track outlets as you generate: keep a mental list and check before adding each media pitch
+   - Use at least 12 UNIQUE outlets across the campaign
+   - Spread across: Global business (Bloomberg, Forbes, FT), Tech (TechCrunch, Wired, MIT Tech), Industry-specific (PRWeek, Campaign, AdWeek), Regional (Arab News, Gulf News, The National)
+   - If you catch yourself reusing an outlet, STOP and pick a different one
 
 6. **Timing Matters**: Sequence tactics logically (can't amplify what doesn't exist, can't pitch media without foundational content)
 
