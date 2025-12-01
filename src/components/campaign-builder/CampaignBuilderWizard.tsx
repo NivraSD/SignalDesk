@@ -835,11 +835,11 @@ export function CampaignBuilderWizard() {
           }
         ])
 
-        console.log('📦 GEO intelligence being sent to finalizer:', {
-          hasGeoIntelligence: !!geoIntelligence,
-          targetQueries: geoIntelligence?.targetQueries?.length || 0,
-          schemaOpportunities: geoIntelligence?.synthesis?.schemaOpportunities?.length || 0,
-          contentRecommendations: geoIntelligence?.synthesis?.contentRecommendations?.length || 0
+        console.log('📦 Campaign intelligence being sent to finalizer:', {
+          hasCampaignIntelligence: !!campaignIntelligence,
+          targetQueries: campaignIntelligence?.targetQueries?.length || 0,
+          dominantPlayers: campaignIntelligence?.competitiveIntelligence?.dominant_players?.length || 0,
+          prioritySources: campaignIntelligence?.sourceStrategy?.priority_sources?.length || 0
         })
 
         const finalizeResponse = await fetch('/api/finalize-blueprint', {
@@ -852,7 +852,7 @@ export function CampaignBuilderWizard() {
               name: organization.name,
               industry: organization.industry || 'Technology'
             },
-            geoIntelligence: geoIntelligence  // Pass GEO intelligence to finalizer
+            campaign_intelligence: campaignIntelligence  // Pass campaign intelligence to finalizer
           })
         })
 
@@ -917,10 +917,10 @@ export function CampaignBuilderWizard() {
             goal: session.campaignGoal,
             positioning: session.selectedPositioning,
 
-            geoIntelligence: {
-              targetQueries: result.geoIntelligence?.targetQueries?.slice(0, 5) || [],
-              platformAnalysis: result.geoIntelligence?.platformAnalysis || {},
-              recommendations: result.geoIntelligence?.recommendations?.slice(0, 3) || []
+            campaignIntelligence: {
+              targetQueries: result.campaign_intelligence?.targetQueries?.slice(0, 5) || [],
+              competitiveIntelligence: result.campaign_intelligence?.competitiveIntelligence || {},
+              sourceStrategy: result.campaign_intelligence?.sourceStrategy || {}
             },
 
             stakeholders: result.part1_stakeholderIdentification?.stakeholderProfiles?.map((s: any) => ({
@@ -1244,7 +1244,7 @@ export function CampaignBuilderWizard() {
     console.log('📊 Blueprint structure:', {
       hasPart3: !!session.blueprint?.part3_stakeholderOrchestration,
       planCount: session.blueprint?.part3_stakeholderOrchestration?.stakeholderOrchestrationPlans?.length || 0,
-      hasGeoIntelligence: !!(session.blueprint as any)?.geoIntelligence,
+      hasCampaignIntelligence: !!(session.blueprint as any)?.campaign_intelligence,
       blueprintKeys: Object.keys(session.blueprint || {})
     })
 

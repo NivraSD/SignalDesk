@@ -12,7 +12,8 @@ interface FinalizeRequest {
     name: string
     industry: string
   }
-  geoIntelligence?: any  // Optional: GEO-VECTOR augmentation
+  geoIntelligence?: any  // LEGACY: Old GEO-VECTOR format
+  campaign_intelligence?: any  // NEW: Rich competitive intelligence format
 }
 
 serve(async (req) => {
@@ -23,12 +24,21 @@ serve(async (req) => {
   try {
     const payload = await req.json() as FinalizeRequest
 
+    // Support both legacy geoIntelligence and new campaign_intelligence
+    const hasCampaignIntelligence = !!payload.campaign_intelligence || !!payload.geoIntelligence
+    const campaignIntelligence = payload.campaign_intelligence || payload.geoIntelligence
+
     console.log('🎯 Blueprint Finalizer starting:', {
       sessionId: payload.sessionId,
       org: payload.organizationContext?.name,
-      hasGeoIntelligence: !!payload.geoIntelligence,
-      geoSchemas: payload.geoIntelligence?.synthesis?.schemaOpportunities?.length || 0,
-      geoContent: payload.geoIntelligence?.synthesis?.contentRecommendations?.length || 0
+      hasCampaignIntelligence,
+      // New format fields
+      targetQueries: campaignIntelligence?.targetQueries?.length || 0,
+      dominantPlayers: campaignIntelligence?.competitiveIntelligence?.dominant_players?.length || 0,
+      prioritySources: campaignIntelligence?.sourceStrategy?.priority_sources?.length || 0,
+      // Legacy format fields
+      geoSchemas: campaignIntelligence?.synthesis?.schemaOpportunities?.length || 0,
+      geoContent: campaignIntelligence?.synthesis?.contentRecommendations?.length || 0
     })
 
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || ''
@@ -126,11 +136,11 @@ serve(async (req) => {
     // MERGE: Combine all parts into complete blueprint
     console.log('📦 Merging all parts into complete blueprint...')
 
-    if (payload.geoIntelligence) {
-      console.log('✅ Including GEO intelligence in final blueprint:', {
-        targetQueries: payload.geoIntelligence.targetQueries?.length || 0,
-        schemaOpportunities: payload.geoIntelligence.synthesis?.schemaOpportunities?.length || 0,
-        contentRecommendations: payload.geoIntelligence.synthesis?.contentRecommendations?.length || 0
+    if (hasCampaignIntelligence) {
+      console.log('✅ Including campaign intelligence in final blueprint:', {
+        targetQueries: campaignIntelligence?.targetQueries?.length || 0,
+        dominantPlayers: campaignIntelligence?.competitiveIntelligence?.dominant_players?.length || 0,
+        prioritySources: campaignIntelligence?.sourceStrategy?.priority_sources?.length || 0
       })
     }
 
@@ -167,19 +177,19 @@ serve(async (req) => {
         generateEndpoint: 'niv-campaign-pattern-generator'
       },
 
-      // GEO Intelligence (optional - only for GEO-VECTOR campaigns)
-      ...(payload.geoIntelligence ? { geoIntelligence: payload.geoIntelligence } : {}),
+      // Campaign Intelligence (competitive landscape, source strategy, target queries)
+      ...(hasCampaignIntelligence ? { campaign_intelligence: campaignIntelligence } : {}),
 
       // Metadata
       metadata: {
         generatedAt: new Date().toISOString(),
-        version: '2.0',
+        version: '2.1',
         architecture: 'async-multi-function',
         generatorsUsed: [
           'niv-campaign-blueprint-base',
           'niv-blueprint-stakeholder-orchestration',
           'niv-campaign-execution-generator',
-          ...(payload.geoIntelligence ? ['geo-query-discovery', 'geo-synthesis'] : [])
+          ...(hasCampaignIntelligence ? ['niv-geo-campaign-intelligence'] : [])
         ],
         generatorsAvailable: [
           'niv-campaign-counter-narrative-generator',
@@ -187,7 +197,7 @@ serve(async (req) => {
         ],
         totalTokensEstimate: 6000 + 14000 + 6000, // ~26k tokens
         organizationName: payload.organizationContext?.name,
-        campaignType: payload.geoIntelligence ? 'GEO-VECTOR' : 'VECTOR'
+        campaignType: hasCampaignIntelligence ? 'GEO-VECTOR' : 'VECTOR'
       }
     }
 
