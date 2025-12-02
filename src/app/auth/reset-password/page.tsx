@@ -1,7 +1,11 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { createAuthClient } from '@/lib/supabase/auth-client'
+import { Logo } from '@/components/ui/Logo'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
 
 export default function ResetPasswordPage() {
   const [email, setEmail] = useState('')
@@ -39,52 +43,137 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">Reset Password</h1>
-          <p className="text-gray-400">Enter your email to receive a reset link.</p>
-        </div>
+    <div className="grid-split">
+      {/* Left Side - Form */}
+      <div className="flex flex-col justify-center px-20 bg-white">
+        <div className="max-w-[360px]">
+          {/* Logo */}
+          <div className="mb-12">
+            <Link href="/">
+              <Logo variant="dark" size="md" />
+            </Link>
+          </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">
-              Email
-            </label>
-            <input
-              id="email"
+          {/* Header */}
+          <div className="mb-8">
+            <h1
+              className="text-3xl font-normal mb-2 headline-serif"
+              style={{ color: 'var(--charcoal)' }}
+            >
+              Reset password
+            </h1>
+            <p className="text-sm" style={{ color: 'var(--grey-500)' }}>
+              Enter your email and we'll send you a reset link.
+            </p>
+          </div>
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <Input
+              label="Email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              placeholder="name@company.com"
               required
-              className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
-              placeholder="you@example.com"
             />
+
+            {message && (
+              <div
+                className="p-3 rounded-lg text-sm"
+                style={{
+                  background: message.type === 'error' ? 'var(--error-muted)' : 'var(--success-muted)',
+                  border: `1px solid ${message.type === 'error' ? 'var(--error)' : 'var(--success)'}`,
+                  color: message.type === 'error' ? 'var(--error)' : 'var(--success)'
+                }}
+              >
+                {message.text}
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              variant="primary"
+              size="lg"
+              loading={loading}
+              className="w-full mt-2"
+            >
+              Send reset link
+            </Button>
+
+            <div className="text-center">
+              <Link
+                href="/auth/login"
+                className="text-sm text-[var(--burnt-orange)] hover:underline"
+              >
+                Back to sign in
+              </Link>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      {/* Right Side - Brand */}
+      <div
+        className="relative flex flex-col items-center justify-center overflow-hidden"
+        style={{ background: 'var(--charcoal)' }}
+      >
+        {/* Decorative Circles */}
+        <div
+          className="absolute rounded-full border opacity-10"
+          style={{
+            width: 400,
+            height: 400,
+            top: -100,
+            right: -100,
+            borderColor: 'var(--burnt-orange)'
+          }}
+        />
+        <div
+          className="absolute rounded-full border opacity-10"
+          style={{
+            width: 300,
+            height: 300,
+            bottom: -50,
+            left: -50,
+            borderColor: 'var(--burnt-orange)'
+          }}
+        />
+
+        {/* Content */}
+        <div className="relative z-10 text-center">
+          {/* Large Logo */}
+          <div className="mb-8">
+            <svg width="120" height="72" viewBox="0 0 120 72">
+              <path d="M15 0 H120 V72 H0 L15 0 Z" fill="#faf9f7" />
+              <text
+                x="60"
+                y="48"
+                textAnchor="middle"
+                fontFamily="Space Grotesk, sans-serif"
+                fontSize="32"
+                fontWeight="700"
+                fill="#1a1a1a"
+                letterSpacing="-1"
+              >
+                NIV
+              </text>
+              <path d="M102 0 H120 V18 L102 0 Z" fill="#c75d3a" />
+            </svg>
           </div>
 
-          {message && (
-            <div className={`p-3 rounded-lg ${
-              message.type === 'error'
-                ? 'bg-red-900/20 border border-red-700 text-red-300'
-                : 'bg-green-900/20 border border-green-700 text-green-300'
-            }`}>
-              {message.text}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
+          <h2
+            className="text-4xl font-normal mb-4 headline-serif"
+            style={{ color: 'var(--white)' }}
           >
-            {loading ? 'Sending...' : 'Send Reset Link'}
-          </button>
-        </form>
-
-        <div className="mt-6 text-center text-sm text-gray-400">
-          <a href="/auth/login" className="text-blue-400 hover:text-blue-300">
-            Back to sign in
-          </a>
+            We've got your <em style={{ color: 'var(--burnt-orange)', fontStyle: 'italic' }}>back</em>
+          </h2>
+          <p
+            className="text-base max-w-[360px]"
+            style={{ color: 'var(--grey-400)', lineHeight: 1.6 }}
+          >
+            Secure, simple password recovery. You'll be back to creating campaigns in no time.
+          </p>
         </div>
       </div>
     </div>
