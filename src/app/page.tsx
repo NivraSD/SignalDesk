@@ -1288,9 +1288,7 @@ export default function HomePage() {
           </div>
         </div>
         <div className="landing-nav-links">
-          <Link href="/platform" className="landing-nav-link">Platform</Link>
-          <a href="#capabilities" className="landing-nav-link">Solutions</a>
-          <span className="landing-nav-link">About</span>
+          <Link href="/platform" className="landing-nav-link">Platform Capabilities</Link>
           <button className="landing-nav-cta" onClick={() => router.push('/auth/signup')}>Get Started</button>
         </div>
       </nav>
