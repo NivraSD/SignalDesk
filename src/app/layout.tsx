@@ -1,21 +1,30 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Space_Grotesk, Inter, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-display",
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const inter = Inter({
+  variable: "--font-body",
   subsets: ["latin"],
+  weight: ["200", "300", "400", "500", "600"],
+});
+
+const playfairDisplay = Playfair_Display({
+  variable: "--font-serif",
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  style: ["normal", "italic"],
 });
 
 export const metadata: Metadata = {
-  title: "Nivria - Intelligence-Driven Communications Platform",
-  description: "Transform information into strategic action with real-time intelligence monitoring and AI-powered planning. Built for those who shape narratives.",
+  title: "NIV - The Influence Orchestration Operating System",
+  description: "Transform how organizations discover opportunities, generate strategies, and execute campaigns — with AI that learns and compounds over time.",
 };
 
 export default function RootLayout({
@@ -24,12 +33,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full overflow-hidden">
+    <html lang="en" className="h-full">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased h-full overflow-hidden`}
+        className={`${spaceGrotesk.variable} ${inter.variable} ${playfairDisplay.variable} antialiased h-full`}
         style={{
-          background: 'var(--charcoal)',
-          color: 'var(--pearl)'
+          background: 'var(--cream)',
+          color: 'var(--charcoal)'
         }}
       >
         <AuthProvider>

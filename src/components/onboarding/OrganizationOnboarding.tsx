@@ -1159,14 +1159,14 @@ export default function OrganizationOnboarding({
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="relative w-full max-w-4xl max-h-[90vh] bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl overflow-hidden"
+        className="relative w-full max-w-4xl max-h-[90vh] bg-[var(--grey-900)] border border-[var(--grey-700)] rounded-2xl shadow-2xl overflow-hidden"
       >
         {/* Header */}
-        <div className="px-8 py-6 border-b border-gray-700 bg-gray-800/50">
+        <div className="px-8 py-6 border-b border-[var(--grey-700)] bg-[var(--grey-800)]/50">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-bold text-white">Add New Organization</h2>
-              <p className="text-sm text-gray-400 mt-1">
+              <p className="text-sm text-[var(--grey-400)] mt-1">
                 Step {step} of {totalSteps}
               </p>
             </div>
@@ -1175,16 +1175,16 @@ export default function OrganizationOnboarding({
                 resetForm()
                 onClose()
               }}
-              className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+              className="p-2 hover:bg-[var(--grey-700)] rounded-lg transition-colors"
             >
-              <X className="w-5 h-5 text-gray-400" />
+              <X className="w-5 h-5 text-[var(--grey-400)]" />
             </button>
           </div>
 
           {/* Progress bar */}
-          <div className="mt-4 h-2 bg-gray-700 rounded-full overflow-hidden">
+          <div className="mt-4 h-2 bg-[var(--grey-700)] rounded-full overflow-hidden">
             <motion.div
-              className="h-full bg-cyan-500"
+              className="h-full bg-[var(--burnt-orange)]"
               initial={{ width: 0 }}
               animate={{ width: `${(step / totalSteps) * 100}%` }}
               transition={{ duration: 0.3 }}
@@ -1205,81 +1205,81 @@ export default function OrganizationOnboarding({
                 className="space-y-6"
               >
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-[var(--grey-300)] mb-2">
                     Organization Name *
                   </label>
                   <div className="relative">
-                    <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                    <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--grey-500)]" />
                     <input
                       type="text"
                       value={orgName}
                       onChange={(e) => setOrgName(e.target.value)}
-                      className="w-full pl-11 pr-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
+                      className="w-full pl-11 pr-4 py-3 bg-[var(--grey-800)] border border-[var(--grey-700)] rounded-lg text-white placeholder-[var(--grey-500)] focus:outline-none focus:border-[var(--burnt-orange)]"
                       placeholder="e.g., Anthropic"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-[var(--grey-300)] mb-2">
                     Website URL *
                   </label>
                   <div className="relative">
-                    <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                    <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--grey-500)]" />
                     <input
                       type="url"
                       value={website}
                       onChange={(e) => setWebsite(e.target.value)}
-                      className="w-full pl-11 pr-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
+                      className="w-full pl-11 pr-4 py-3 bg-[var(--grey-800)] border border-[var(--grey-700)] rounded-lg text-white placeholder-[var(--grey-500)] focus:outline-none focus:border-[var(--burnt-orange)]"
                       placeholder="https://example.com"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-[var(--grey-300)] mb-2">
                     About / Capabilities Page URL *
                   </label>
                   <div className="relative">
-                    <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                    <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--grey-500)]" />
                     <input
                       type="url"
                       value={aboutPage}
                       onChange={(e) => setAboutPage(e.target.value)}
-                      className="w-full pl-11 pr-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
+                      className="w-full pl-11 pr-4 py-3 bg-[var(--grey-800)] border border-[var(--grey-700)] rounded-lg text-white placeholder-[var(--grey-500)] focus:outline-none focus:border-[var(--burnt-orange)]"
                       placeholder="https://example.com/about"
                       required
                     />
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-[var(--grey-500)] mt-1">
                     Link to your About, Capabilities, or Services page for better strategic context discovery
                   </p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-[var(--grey-300)] mb-2">
                     Industry (optional)
                   </label>
                   <input
                     type="text"
                     value={industry}
                     onChange={(e) => setIndustry(e.target.value)}
-                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
+                    className="w-full px-4 py-3 bg-[var(--grey-800)] border border-[var(--grey-700)] rounded-lg text-white placeholder-[var(--grey-500)] focus:outline-none focus:border-[var(--burnt-orange)]"
                     placeholder="e.g., Artificial Intelligence"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-[var(--grey-500)] mt-1">
                     If not provided, we'll auto-detect the industry
                   </p>
                 </div>
 
-                <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-4">
+                <div className="bg-[var(--burnt-orange)]/10 border border-[var(--burnt-orange)]/30 rounded-lg p-4">
                   <div className="flex gap-3">
-                    <Sparkles className="w-5 h-5 text-cyan-400 flex-shrink-0 mt-0.5" />
+                    <Sparkles className="w-5 h-5 text-[var(--burnt-orange)] flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-sm text-cyan-300 font-medium">
+                      <p className="text-sm text-[var(--burnt-orange)] font-medium">
                         AI-Powered Discovery
                       </p>
-                      <p className="text-xs text-cyan-400/70 mt-1">
+                      <p className="text-xs text-[var(--burnt-orange)]/70 mt-1">
                         We'll analyze your organization and discover competitors
                         and key stakeholders automatically
                       </p>
@@ -1302,7 +1302,7 @@ export default function OrganizationOnboarding({
                   <h3 className="text-lg font-semibold text-white mb-2">
                     Discovered Competitors
                   </h3>
-                  <p className="text-sm text-gray-400 mb-4">
+                  <p className="text-sm text-[var(--grey-400)] mb-4">
                     Select which competitors you'd like to monitor. You can add custom ones too.
                   </p>
 
@@ -1317,21 +1317,21 @@ export default function OrganizationOnboarding({
                           onClick={() => toggleCompetitor(name)}
                           className={`px-4 py-3 rounded-lg border transition-all text-left ${
                             selectedCompetitors.has(name)
-                              ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300'
-                              : 'bg-gray-800 border-gray-700 text-gray-300 hover:border-gray-600'
+                              ? 'bg-[var(--burnt-orange)]/20 border-[var(--burnt-orange)] text-[var(--burnt-orange)]'
+                              : 'bg-[var(--grey-800)] border-[var(--grey-700)] text-[var(--grey-300)] hover:border-[var(--grey-600)]'
                           }`}
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex-1">
                               <span className="text-sm font-medium block mb-1">{name}</span>
                               {context && (
-                                <span className="text-xs text-gray-400 block leading-relaxed">
+                                <span className="text-xs text-[var(--grey-400)] block leading-relaxed">
                                   {context}
                                 </span>
                               )}
                             </div>
                             {selectedCompetitors.has(name) && (
-                              <Check className="w-4 h-4 text-cyan-400 ml-2 flex-shrink-0" />
+                              <Check className="w-4 h-4 text-[var(--burnt-orange)] ml-2 flex-shrink-0" />
                             )}
                           </div>
                         </button>
@@ -1345,12 +1345,12 @@ export default function OrganizationOnboarding({
                       {customCompetitors.map((competitor, index) => (
                         <div
                           key={index}
-                          className="flex items-center justify-between px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg"
+                          className="flex items-center justify-between px-4 py-2 bg-[var(--grey-800)] border border-[var(--grey-700)] rounded-lg"
                         >
-                          <span className="text-sm text-gray-300">{competitor}</span>
+                          <span className="text-sm text-[var(--grey-300)]">{competitor}</span>
                           <button
                             onClick={() => removeCustomCompetitor(index)}
-                            className="p-1 hover:bg-gray-700 rounded"
+                            className="p-1 hover:bg-[var(--grey-700)] rounded"
                           >
                             <Trash2 className="w-4 h-4 text-red-400" />
                           </button>
@@ -1367,19 +1367,19 @@ export default function OrganizationOnboarding({
                         onChange={(e) => setNewCompetitor(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && addCustomCompetitor()}
                         placeholder="Add custom competitor"
-                        className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
+                        className="flex-1 px-4 py-2 bg-[var(--grey-800)] border border-[var(--grey-700)] rounded-lg text-white placeholder-[var(--grey-500)] focus:outline-none focus:border-[var(--burnt-orange)]"
                       />
                       <button
                         onClick={addCustomCompetitor}
                         disabled={!newCompetitor.trim() || !canAddMoreTargets()}
-                        className="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg transition-colors flex items-center gap-2"
+                        className="px-4 py-2 bg-[var(--burnt-orange)] hover:bg-[var(--burnt-orange-light)] disabled:bg-[var(--grey-700)] disabled:text-[var(--grey-500)] text-white rounded-lg transition-colors flex items-center gap-2"
                         title={!canAddMoreTargets() ? `Maximum of ${MAX_TOTAL_TARGETS} targets reached` : ''}
                       >
                         <Plus className="w-4 h-4" />
                         Add
                       </button>
                     </div>
-                    <p className={`text-xs mt-2 ${getTotalTargets() >= MAX_TOTAL_TARGETS ? 'text-amber-400' : 'text-gray-500'}`}>
+                    <p className={`text-xs mt-2 ${getTotalTargets() >= MAX_TOTAL_TARGETS ? 'text-amber-400' : 'text-[var(--grey-500)]'}`}>
                       {getTotalTargets()}/{MAX_TOTAL_TARGETS} targets selected
                       {getTotalTargets() >= MAX_TOTAL_TARGETS && ' (Maximum reached)'}
                     </p>
@@ -1401,7 +1401,7 @@ export default function OrganizationOnboarding({
                   <h3 className="text-lg font-semibold text-white mb-2">
                     Key Stakeholders
                   </h3>
-                  <p className="text-sm text-gray-400 mb-4">
+                  <p className="text-sm text-[var(--grey-400)] mb-4">
                     Review stakeholders carefully. Only select those that are strategically relevant to your organization's narrative and reputation.
                   </p>
 
@@ -1425,21 +1425,21 @@ export default function OrganizationOnboarding({
                           onClick={() => toggleStakeholder(name)}
                           className={`px-4 py-3 rounded-lg border transition-all text-left ${
                             selectedStakeholders.has(name)
-                              ? 'bg-purple-500/20 border-purple-500 text-purple-300'
-                              : 'bg-gray-800 border-gray-700 text-gray-300 hover:border-gray-600'
+                              ? 'bg-[var(--burnt-orange-muted)] border-[var(--burnt-orange)] text-[var(--burnt-orange)]'
+                              : 'bg-[var(--grey-800)] border-[var(--grey-700)] text-[var(--grey-300)] hover:border-[var(--grey-600)]'
                           }`}
                         >
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex-1">
                               <span className="text-sm font-medium block mb-1">{name}</span>
                               {context && (
-                                <span className="text-xs text-gray-400 block leading-relaxed">
+                                <span className="text-xs text-[var(--grey-400)] block leading-relaxed">
                                   {context}
                                 </span>
                               )}
                             </div>
                             {selectedStakeholders.has(name) && (
-                              <Check className="w-4 h-4 text-purple-400 flex-shrink-0 mt-0.5" />
+                              <Check className="w-4 h-4 text-[var(--burnt-orange)] flex-shrink-0 mt-0.5" />
                             )}
                           </div>
                         </button>
@@ -1453,12 +1453,12 @@ export default function OrganizationOnboarding({
                       {customStakeholders.map((stakeholder, index) => (
                         <div
                           key={index}
-                          className="flex items-center justify-between px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg"
+                          className="flex items-center justify-between px-4 py-2 bg-[var(--grey-800)] border border-[var(--grey-700)] rounded-lg"
                         >
-                          <span className="text-sm text-gray-300">{stakeholder}</span>
+                          <span className="text-sm text-[var(--grey-300)]">{stakeholder}</span>
                           <button
                             onClick={() => removeCustomStakeholder(index)}
-                            className="p-1 hover:bg-gray-700 rounded"
+                            className="p-1 hover:bg-[var(--grey-700)] rounded"
                           >
                             <Trash2 className="w-4 h-4 text-red-400" />
                           </button>
@@ -1474,12 +1474,12 @@ export default function OrganizationOnboarding({
                       onChange={(e) => setNewStakeholder(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && addCustomStakeholder()}
                       placeholder="Add custom stakeholder"
-                      className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+                      className="flex-1 px-4 py-2 bg-[var(--grey-800)] border border-[var(--grey-700)] rounded-lg text-white placeholder-[var(--grey-500)] focus:outline-none focus:border-[var(--burnt-orange)]"
                     />
                     <button
                       onClick={addCustomStakeholder}
                       disabled={!newStakeholder.trim() || !canAddMoreTargets()}
-                      className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg transition-colors flex items-center gap-2"
+                      className="px-4 py-2 bg-[var(--burnt-orange)] hover:bg-[var(--burnt-orange-light)] disabled:bg-[var(--grey-700)] disabled:text-[var(--grey-500)] text-white rounded-lg transition-colors flex items-center gap-2"
                       title={!canAddMoreTargets() ? `Maximum of ${MAX_TOTAL_TARGETS} targets reached` : ''}
                     >
                       <Plus className="w-4 h-4" />
@@ -1489,18 +1489,18 @@ export default function OrganizationOnboarding({
                 </div>
 
                 {/* Strategic Context Section */}
-                <div className="mt-8 pt-8 border-t border-gray-700">
+                <div className="mt-8 pt-8 border-t border-[var(--grey-700)]">
                   <h3 className="text-lg font-semibold text-white mb-2">
                     Strategic Context
                   </h3>
-                  <p className="text-sm text-gray-400 mb-4">
+                  <p className="text-sm text-[var(--grey-400)] mb-4">
                     Review and refine how we understand your organization. This helps generate more relevant opportunities.
                   </p>
 
                   <div className="space-y-4">
                     {/* Target Customers */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                      <label className="block text-sm font-medium text-[var(--grey-300)] mb-2">
                         Target Customers
                       </label>
                       <input
@@ -1508,14 +1508,14 @@ export default function OrganizationOnboarding({
                         value={targetCustomers}
                         onChange={(e) => setTargetCustomers(e.target.value)}
                         placeholder="e.g., Marketing teams at Fortune 500 companies"
-                        className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                        className="w-full px-4 py-2 bg-[var(--grey-800)] border border-[var(--grey-700)] rounded-lg text-white placeholder-[var(--grey-500)] focus:outline-none focus:border-[var(--burnt-orange)]"
                       />
-                      <p className="text-xs text-gray-500 mt-1">Who does your organization primarily serve?</p>
+                      <p className="text-xs text-[var(--grey-500)] mt-1">Who does your organization primarily serve?</p>
                     </div>
 
                     {/* Brand Personality */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                      <label className="block text-sm font-medium text-[var(--grey-300)] mb-2">
                         Brand Personality
                       </label>
                       <input
@@ -1523,14 +1523,14 @@ export default function OrganizationOnboarding({
                         value={brandPersonality}
                         onChange={(e) => setBrandPersonality(e.target.value)}
                         placeholder="e.g., Data-driven and practical"
-                        className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                        className="w-full px-4 py-2 bg-[var(--grey-800)] border border-[var(--grey-700)] rounded-lg text-white placeholder-[var(--grey-500)] focus:outline-none focus:border-[var(--burnt-orange)]"
                       />
-                      <p className="text-xs text-gray-500 mt-1">What's your brand's tone and style?</p>
+                      <p className="text-xs text-[var(--grey-500)] mt-1">What's your brand's tone and style?</p>
                     </div>
 
                     {/* Strategic Priorities */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                      <label className="block text-sm font-medium text-[var(--grey-300)] mb-2">
                         Strategic Priorities
                       </label>
                       {strategicPriorities.length > 0 && (
@@ -1538,12 +1538,12 @@ export default function OrganizationOnboarding({
                           {strategicPriorities.map((priority, index) => (
                             <div
                               key={index}
-                              className="flex items-center gap-2 px-3 py-1 bg-blue-500/20 border border-blue-500/30 rounded-full text-sm text-blue-300"
+                              className="flex items-center gap-2 px-3 py-1 bg-[var(--burnt-orange-muted)] border border-[var(--burnt-orange)]/30 rounded-full text-sm text-[var(--burnt-orange)]"
                             >
                               <span>{priority}</span>
                               <button
                                 onClick={() => setStrategicPriorities(strategicPriorities.filter((_, i) => i !== index))}
-                                className="hover:text-blue-100"
+                                className="hover:text-white"
                               >
                                 <X className="w-3 h-3" />
                               </button>
@@ -1563,7 +1563,7 @@ export default function OrganizationOnboarding({
                             }
                           }}
                           placeholder="e.g., AI-powered analytics"
-                          className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                          className="flex-1 px-4 py-2 bg-[var(--grey-800)] border border-[var(--grey-700)] rounded-lg text-white placeholder-[var(--grey-500)] focus:outline-none focus:border-[var(--burnt-orange)]"
                         />
                         <button
                           onClick={() => {
@@ -1572,39 +1572,39 @@ export default function OrganizationOnboarding({
                               setNewPriority('')
                             }
                           }}
-                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-2"
+                          className="px-4 py-2 bg-[var(--burnt-orange)] hover:bg-[var(--burnt-orange-light)] text-white rounded-lg transition-colors flex items-center gap-2"
                         >
                           <Plus className="w-4 h-4" />
                           Add
                         </button>
                       </div>
-                      <p className="text-xs text-gray-500 mt-1">Current focus areas or strategic initiatives</p>
+                      <p className="text-xs text-[var(--grey-500)] mt-1">Current focus areas or strategic initiatives</p>
                     </div>
 
                     {/* Strategic Goals (Structured) */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                      <label className="block text-sm font-medium text-[var(--grey-300)] mb-2">
                         Strategic Goals
                       </label>
-                      <p className="text-xs text-gray-500 mb-3">Add specific goals with timeframes to help generate relevant opportunities</p>
+                      <p className="text-xs text-[var(--grey-500)] mb-3">Add specific goals with timeframes to help generate relevant opportunities</p>
 
                       {/* Display existing goals */}
                       {strategicGoals.length > 0 && (
                         <div className="space-y-2 mb-3">
                           {strategicGoals.map((goal, index) => (
-                            <div key={index} className="p-3 bg-gray-800 border border-gray-700 rounded-lg">
+                            <div key={index} className="p-3 bg-[var(--grey-800)] border border-[var(--grey-700)] rounded-lg">
                               <div className="flex items-start justify-between">
                                 <div className="flex-1">
                                   <div className="flex items-center gap-2 mb-1">
                                     <span className={`px-2 py-0.5 rounded text-xs font-medium ${
                                       goal.priority === 'high' ? 'bg-red-500/20 text-red-400' :
                                       goal.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
-                                      'bg-blue-500/20 text-blue-400'
+                                      'bg-[var(--burnt-orange-muted)] text-[var(--burnt-orange)]'
                                     }`}>
                                       {goal.priority}
                                     </span>
                                     {goal.timeframe && (
-                                      <span className="text-xs text-gray-500">{goal.timeframe}</span>
+                                      <span className="text-xs text-[var(--grey-500)]">{goal.timeframe}</span>
                                     )}
                                   </div>
                                   <div className="text-white text-sm">{goal.goal}</div>
@@ -1628,7 +1628,7 @@ export default function OrganizationOnboarding({
                           value={newGoal.goal}
                           onChange={(e) => setNewGoal({ ...newGoal, goal: e.target.value })}
                           placeholder="e.g., Expand into European markets"
-                          className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                          className="w-full px-4 py-2 bg-[var(--grey-800)] border border-[var(--grey-700)] rounded-lg text-white placeholder-[var(--grey-500)] focus:outline-none focus:border-[var(--burnt-orange)]"
                         />
                         <div className="grid grid-cols-2 gap-2">
                           <input
@@ -1636,12 +1636,12 @@ export default function OrganizationOnboarding({
                             value={newGoal.timeframe}
                             onChange={(e) => setNewGoal({ ...newGoal, timeframe: e.target.value })}
                             placeholder="Timeframe (e.g., 2025 Q2-Q4)"
-                            className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                            className="px-4 py-2 bg-[var(--grey-800)] border border-[var(--grey-700)] rounded-lg text-white placeholder-[var(--grey-500)] focus:outline-none focus:border-[var(--burnt-orange)]"
                           />
                           <select
                             value={newGoal.priority}
                             onChange={(e) => setNewGoal({ ...newGoal, priority: e.target.value as 'high' | 'medium' | 'low' })}
-                            className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                            className="px-4 py-2 bg-[var(--grey-800)] border border-[var(--grey-700)] rounded-lg text-white focus:outline-none focus:border-[var(--burnt-orange)]"
                           >
                             <option value="high">High Priority</option>
                             <option value="medium">Medium Priority</option>
@@ -1656,7 +1656,7 @@ export default function OrganizationOnboarding({
                             }
                           }}
                           disabled={!newGoal.goal.trim()}
-                          className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+                          className="w-full px-4 py-2 bg-[var(--burnt-orange)] hover:bg-[var(--burnt-orange-light)] disabled:bg-[var(--grey-700)] disabled:text-[var(--grey-500)] text-white rounded-lg transition-colors flex items-center justify-center gap-2"
                         >
                           <Plus className="w-4 h-4" />
                           Add Strategic Goal
@@ -1666,9 +1666,9 @@ export default function OrganizationOnboarding({
                   </div>
                 </div>
 
-                <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
-                  <div className="text-sm text-gray-400">
-                    <p className="font-medium text-gray-300 mb-2">Summary:</p>
+                <div className="bg-[var(--grey-800)]/50 border border-[var(--grey-700)] rounded-lg p-4">
+                  <div className="text-sm text-[var(--grey-400)]">
+                    <p className="font-medium text-[var(--grey-300)] mb-2">Summary:</p>
                     <ul className="space-y-1">
                       <li>• {selectedCompetitors.size + customCompetitors.length} competitors selected</li>
                       <li>• {selectedStakeholders.size + customStakeholders.length} stakeholders selected</li>
@@ -1695,13 +1695,13 @@ export default function OrganizationOnboarding({
               >
                 <div>
                   <div className="flex items-center gap-3 mb-2">
-                    <Globe className="w-6 h-6 text-cyan-400" />
+                    <Globe className="w-6 h-6 text-[var(--burnt-orange)]" />
                     <h3 className="text-xl font-semibold text-white">GEO Optimization Targets</h3>
                   </div>
-                  <p className="text-gray-400 text-sm">
+                  <p className="text-[var(--grey-400)] text-sm">
                     Configure how you want to appear in AI platforms like Claude, ChatGPT, and Gemini. These targets will generate intelligent test queries specific to your positioning goals.
                   </p>
-                  <p className="text-purple-400 text-xs mt-1">
+                  <p className="text-[var(--burnt-orange)] text-xs mt-1">
                     <Sparkles className="w-3 h-3 inline mr-1" />
                     Optional - Skip if you want to use general industry patterns
                   </p>
@@ -1709,16 +1709,16 @@ export default function OrganizationOnboarding({
 
                 {/* Service Lines */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-[var(--grey-300)] mb-2">
                     Service Lines / Specializations
-                    <span className="text-gray-500 text-xs ml-2">(What you want to be found for)</span>
+                    <span className="text-[var(--grey-500)] text-xs ml-2">(What you want to be found for)</span>
                   </label>
                   {serviceLines.length > 0 && (
                     <div className="flex flex-wrap gap-2 mb-3">
                       {serviceLines.map((line, idx) => (
                         <div
                           key={idx}
-                          className="px-3 py-1 bg-cyan-900/30 border border-cyan-700 rounded-full text-sm text-cyan-300 flex items-center gap-2"
+                          className="px-3 py-1 bg-[var(--burnt-orange-muted)] border border-[var(--burnt-orange)]/50 rounded-full text-sm text-[var(--burnt-orange)] flex items-center gap-2"
                         >
                           {line}
                           <button
@@ -1743,7 +1743,7 @@ export default function OrganizationOnboarding({
                         }
                       }}
                       placeholder="e.g., Crisis Communications, Litigation PR, M&A Communications"
-                      className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
+                      className="flex-1 px-4 py-2 bg-[var(--grey-800)] border border-[var(--grey-700)] rounded-lg text-white placeholder-[var(--grey-500)] focus:outline-none focus:border-[var(--burnt-orange)]"
                     />
                     <button
                       onClick={() => {
@@ -1753,7 +1753,7 @@ export default function OrganizationOnboarding({
                         }
                       }}
                       disabled={!newServiceLine.trim()}
-                      className="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg transition-colors"
+                      className="px-4 py-2 bg-[var(--burnt-orange)] hover:bg-[var(--burnt-orange-light)] disabled:bg-[var(--grey-700)] disabled:text-[var(--grey-500)] text-white rounded-lg transition-colors"
                     >
                       <Plus className="w-4 h-4" />
                     </button>
@@ -1762,21 +1762,21 @@ export default function OrganizationOnboarding({
 
                 {/* Geographic Focus */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-[var(--grey-300)] mb-2">
                     Geographic Focus Areas
-                    <span className="text-gray-500 text-xs ml-2">(Where you operate or want visibility)</span>
+                    <span className="text-[var(--grey-500)] text-xs ml-2">(Where you operate or want visibility)</span>
                   </label>
                   {geographicFocus.length > 0 && (
                     <div className="flex flex-wrap gap-2 mb-3">
                       {geographicFocus.map((geo, idx) => (
                         <div
                           key={idx}
-                          className="px-3 py-1 bg-blue-900/30 border border-blue-700 rounded-full text-sm text-blue-300 flex items-center gap-2"
+                          className="px-3 py-1 bg-[var(--burnt-orange-muted)] border border-[var(--burnt-orange)]/50 rounded-full text-sm text-[var(--burnt-orange)] flex items-center gap-2"
                         >
                           {geo}
                           <button
                             onClick={() => setGeographicFocus(geographicFocus.filter((_, i) => i !== idx))}
-                            className="hover:bg-blue-800 rounded-full p-0.5"
+                            className="hover:bg-[var(--burnt-orange)]/30 rounded-full p-0.5"
                           >
                             <X className="w-3 h-3" />
                           </button>
@@ -1796,7 +1796,7 @@ export default function OrganizationOnboarding({
                         }
                       }}
                       placeholder="e.g., Middle East, GCC, Dubai, UAE, Saudi Arabia"
-                      className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                      className="flex-1 px-4 py-2 bg-[var(--grey-800)] border border-[var(--grey-700)] rounded-lg text-white placeholder-[var(--grey-500)] focus:outline-none focus:border-[var(--burnt-orange)]"
                     />
                     <button
                       onClick={() => {
@@ -1806,7 +1806,7 @@ export default function OrganizationOnboarding({
                         }
                       }}
                       disabled={!newGeoFocus.trim()}
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg transition-colors"
+                      className="px-4 py-2 bg-[var(--burnt-orange)] hover:bg-[var(--burnt-orange-light)] disabled:bg-[var(--grey-700)] disabled:text-[var(--grey-500)] text-white rounded-lg transition-colors"
                     >
                       <Plus className="w-4 h-4" />
                     </button>
@@ -1815,9 +1815,9 @@ export default function OrganizationOnboarding({
 
                 {/* Industry Verticals */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-[var(--grey-300)] mb-2">
                     Industry Verticals
-                    <span className="text-gray-500 text-xs ml-2">(Industries you serve)</span>
+                    <span className="text-[var(--grey-500)] text-xs ml-2">(Industries you serve)</span>
                   </label>
                   {industryVerticals.length > 0 && (
                     <div className="flex flex-wrap gap-2 mb-3">
@@ -1849,7 +1849,7 @@ export default function OrganizationOnboarding({
                         }
                       }}
                       placeholder="e.g., Financial Services, Technology, Energy, Government"
-                      className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-green-500"
+                      className="flex-1 px-4 py-2 bg-[var(--grey-800)] border border-[var(--grey-700)] rounded-lg text-white placeholder-[var(--grey-500)] focus:outline-none focus:border-[var(--burnt-orange)]"
                     />
                     <button
                       onClick={() => {
@@ -1859,7 +1859,7 @@ export default function OrganizationOnboarding({
                         }
                       }}
                       disabled={!newIndustryVertical.trim()}
-                      className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg transition-colors"
+                      className="px-4 py-2 bg-[var(--burnt-orange)] hover:bg-[var(--burnt-orange-light)] disabled:bg-[var(--grey-700)] disabled:text-[var(--grey-500)] text-white rounded-lg transition-colors"
                     >
                       <Plus className="w-4 h-4" />
                     </button>
@@ -1868,21 +1868,21 @@ export default function OrganizationOnboarding({
 
                 {/* Priority Queries */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-[var(--grey-300)] mb-2">
                     Priority Queries
-                    <span className="text-gray-500 text-xs ml-2">(Specific searches you want to rank for)</span>
+                    <span className="text-[var(--grey-500)] text-xs ml-2">(Specific searches you want to rank for)</span>
                   </label>
                   {priorityQueries.length > 0 && (
                     <div className="space-y-2 mb-3">
                       {priorityQueries.map((query, idx) => (
                         <div
                           key={idx}
-                          className="px-3 py-2 bg-purple-900/30 border border-purple-700 rounded-lg text-sm text-purple-300 flex items-center justify-between"
+                          className="px-3 py-2 bg-[var(--burnt-orange-muted)] border border-[var(--burnt-orange)]/50 rounded-lg text-sm text-[var(--burnt-orange)] flex items-center justify-between"
                         >
                           <span>"{query}"</span>
                           <button
                             onClick={() => setPriorityQueries(priorityQueries.filter((_, i) => i !== idx))}
-                            className="hover:bg-purple-800 rounded p-1"
+                            className="hover:bg-[var(--burnt-orange)]/30 rounded p-1"
                           >
                             <X className="w-4 h-4" />
                           </button>
@@ -1902,7 +1902,7 @@ export default function OrganizationOnboarding({
                         }
                       }}
                       placeholder='e.g., "crisis PR agency Middle East", "litigation communications Dubai"'
-                      className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+                      className="flex-1 px-4 py-2 bg-[var(--grey-800)] border border-[var(--grey-700)] rounded-lg text-white placeholder-[var(--grey-500)] focus:outline-none focus:border-[var(--burnt-orange)]"
                     />
                     <button
                       onClick={() => {
@@ -1912,7 +1912,7 @@ export default function OrganizationOnboarding({
                         }
                       }}
                       disabled={!newPriorityQuery.trim()}
-                      className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg transition-colors"
+                      className="px-4 py-2 bg-[var(--burnt-orange)] hover:bg-[var(--burnt-orange-light)] disabled:bg-[var(--grey-700)] disabled:text-[var(--grey-500)] text-white rounded-lg transition-colors"
                     >
                       <Plus className="w-4 h-4" />
                     </button>
@@ -1920,16 +1920,16 @@ export default function OrganizationOnboarding({
                 </div>
 
                 {/* Summary */}
-                <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
-                  <div className="text-sm text-gray-400">
-                    <p className="font-medium text-gray-300 mb-2">GEO Targets Summary:</p>
+                <div className="bg-[var(--grey-800)]/50 border border-[var(--grey-700)] rounded-lg p-4">
+                  <div className="text-sm text-[var(--grey-400)]">
+                    <p className="font-medium text-[var(--grey-300)] mb-2">GEO Targets Summary:</p>
                     <ul className="space-y-1">
                       <li>• {serviceLines.length} service lines configured</li>
                       <li>• {geographicFocus.length} geographic regions</li>
                       <li>• {industryVerticals.length} industry verticals</li>
                       <li>• {priorityQueries.length} priority queries</li>
                       {(serviceLines.length > 0 || geographicFocus.length > 0) && (
-                        <li className="text-cyan-400 mt-2">
+                        <li className="text-[var(--burnt-orange)] mt-2">
                           ✓ Will generate ~{Math.min(30, (serviceLines.length * geographicFocus.length * 2) + priorityQueries.length)} intelligent test queries
                         </li>
                       )}
@@ -1952,16 +1952,16 @@ export default function OrganizationOnboarding({
                   <h3 className="text-lg font-semibold text-white mb-2">
                     Memory Vault Assets (Optional)
                   </h3>
-                  <p className="text-sm text-gray-400 mb-4">
+                  <p className="text-sm text-[var(--grey-400)] mb-4">
                     Upload brand guidelines, templates, or past campaigns to help NIV understand your brand voice
                   </p>
 
-                  <div className="border-2 border-dashed border-gray-700 rounded-lg p-8 text-center hover:border-gray-600 transition-colors">
-                    <Upload className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-                    <p className="text-sm text-gray-400 mb-2">
+                  <div className="border-2 border-dashed border-[var(--grey-700)] rounded-lg p-8 text-center hover:border-[var(--grey-600)] transition-colors">
+                    <Upload className="w-12 h-12 text-[var(--grey-500)] mx-auto mb-4" />
+                    <p className="text-sm text-[var(--grey-400)] mb-2">
                       Drag and drop files here, or click to browse
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-[var(--grey-500)]">
                       Supported: PDF, DOCX, TXT, MD
                     </p>
                     <input
@@ -1978,7 +1978,7 @@ export default function OrganizationOnboarding({
                     />
                     <label
                       htmlFor="file-upload"
-                      className="inline-block mt-4 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg cursor-pointer transition-colors"
+                      className="inline-block mt-4 px-4 py-2 bg-[var(--grey-800)] hover:bg-[var(--grey-700)] text-[var(--grey-300)] rounded-lg cursor-pointer transition-colors"
                     >
                       Choose Files
                     </label>
@@ -1989,15 +1989,15 @@ export default function OrganizationOnboarding({
                       {uploadedFiles.map((file, index) => (
                         <div
                           key={index}
-                          className="flex items-center justify-between px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg"
+                          className="flex items-center justify-between px-4 py-3 bg-[var(--grey-800)] border border-[var(--grey-700)] rounded-lg"
                         >
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-cyan-500/20 rounded-lg flex items-center justify-center">
-                              <Upload className="w-5 h-5 text-cyan-400" />
+                            <div className="w-10 h-10 bg-[var(--burnt-orange)]/20 rounded-lg flex items-center justify-center">
+                              <Upload className="w-5 h-5 text-[var(--burnt-orange)]" />
                             </div>
                             <div>
                               <p className="text-sm text-white font-medium">{file.name}</p>
-                              <p className="text-xs text-gray-500">
+                              <p className="text-xs text-[var(--grey-500)]">
                                 {(file.size / 1024).toFixed(1)} KB
                               </p>
                             </div>
@@ -2006,9 +2006,9 @@ export default function OrganizationOnboarding({
                             onClick={() => {
                               setUploadedFiles(uploadedFiles.filter((_, i) => i !== index))
                             }}
-                            className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                            className="p-2 hover:bg-[var(--grey-700)] rounded-lg transition-colors"
                           >
-                            <X className="w-4 h-4 text-gray-400" />
+                            <X className="w-4 h-4 text-[var(--grey-400)]" />
                           </button>
                         </div>
                       ))}
@@ -2016,14 +2016,14 @@ export default function OrganizationOnboarding({
                   )}
                 </div>
 
-                <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-4">
+                <div className="bg-[var(--burnt-orange)]/10 border border-[var(--burnt-orange)]/30 rounded-lg p-4">
                   <div className="flex gap-3">
-                    <Sparkles className="w-5 h-5 text-cyan-400 flex-shrink-0 mt-0.5" />
+                    <Sparkles className="w-5 h-5 text-[var(--burnt-orange)] flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-sm text-cyan-300 font-medium">
+                      <p className="text-sm text-[var(--burnt-orange)] font-medium">
                         Skip this step if you prefer
                       </p>
-                      <p className="text-xs text-cyan-400/70 mt-1">
+                      <p className="text-xs text-[var(--burnt-orange)]/70 mt-1">
                         You can always upload assets later from the Memory Vault module
                       </p>
                     </div>
@@ -2045,150 +2045,150 @@ export default function OrganizationOnboarding({
                   <h3 className="text-lg font-semibold text-white mb-2">
                     Building Your Optimal Schema
                   </h3>
-                  <p className="text-sm text-gray-400 mb-6">
+                  <p className="text-sm text-[var(--grey-400)] mb-6">
                     Running our 7-stage GEO-optimized pipeline to create the best possible schema for AI visibility.
                   </p>
 
                   <div className="space-y-3">
                     {/* Stage 1: Website Scraping */}
-                    <div className="flex items-center gap-4 p-3 bg-gray-800/50 rounded-lg">
+                    <div className="flex items-center gap-4 p-3 bg-[var(--grey-800)]/50 rounded-lg">
                       <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
                         schemaProgress.websiteScraping === 'completed' ? 'bg-green-500/20' :
-                        schemaProgress.websiteScraping === 'processing' ? 'bg-cyan-500/20' :
+                        schemaProgress.websiteScraping === 'processing' ? 'bg-[var(--burnt-orange)]/20' :
                         schemaProgress.websiteScraping === 'failed' ? 'bg-red-500/20' :
-                        'bg-gray-700'
+                        'bg-[var(--grey-700)]'
                       }`}>
                         {schemaProgress.websiteScraping === 'completed' ? (
                           <Check className="w-4 h-4 text-green-400" />
                         ) : schemaProgress.websiteScraping === 'processing' ? (
-                          <Loader className="w-4 h-4 text-cyan-400 animate-spin" />
+                          <Loader className="w-4 h-4 text-[var(--burnt-orange)] animate-spin" />
                         ) : schemaProgress.websiteScraping === 'failed' ? (
                           <X className="w-4 h-4 text-red-400" />
                         ) : (
-                          <Globe className="w-4 h-4 text-gray-500" />
+                          <Globe className="w-4 h-4 text-[var(--grey-500)]" />
                         )}
                       </div>
                       <div className="flex-1">
                         <p className="text-sm font-medium text-white">Website Scraping</p>
-                        <p className="text-xs text-gray-400">Collecting clean text from key pages</p>
+                        <p className="text-xs text-[var(--grey-400)]">Collecting clean text from key pages</p>
                       </div>
                     </div>
 
                     {/* Stage 2: Entity Extraction */}
-                    <div className="flex items-center gap-4 p-3 bg-gray-800/50 rounded-lg">
+                    <div className="flex items-center gap-4 p-3 bg-[var(--grey-800)]/50 rounded-lg">
                       <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
                         schemaProgress.entityExtraction === 'completed' ? 'bg-green-500/20' :
-                        schemaProgress.entityExtraction === 'processing' ? 'bg-cyan-500/20' :
+                        schemaProgress.entityExtraction === 'processing' ? 'bg-[var(--burnt-orange)]/20' :
                         schemaProgress.entityExtraction === 'failed' ? 'bg-red-500/20' :
-                        'bg-gray-700'
+                        'bg-[var(--grey-700)]'
                       }`}>
                         {schemaProgress.entityExtraction === 'completed' ? (
                           <Check className="w-4 h-4 text-green-400" />
                         ) : schemaProgress.entityExtraction === 'processing' ? (
-                          <Loader className="w-4 h-4 text-cyan-400 animate-spin" />
+                          <Loader className="w-4 h-4 text-[var(--burnt-orange)] animate-spin" />
                         ) : schemaProgress.entityExtraction === 'failed' ? (
                           <X className="w-4 h-4 text-red-400" />
                         ) : (
-                          <Sparkles className="w-4 h-4 text-gray-500" />
+                          <Sparkles className="w-4 h-4 text-[var(--grey-500)]" />
                         )}
                       </div>
                       <div className="flex-1">
                         <p className="text-sm font-medium text-white">Entity Extraction</p>
-                        <p className="text-xs text-gray-400">Identifying products, services, team, locations</p>
+                        <p className="text-xs text-[var(--grey-400)]">Identifying products, services, team, locations</p>
                       </div>
                     </div>
 
                     {/* Stage 3: Entity Enrichment */}
-                    <div className="flex items-center gap-4 p-3 bg-gray-800/50 rounded-lg">
+                    <div className="flex items-center gap-4 p-3 bg-[var(--grey-800)]/50 rounded-lg">
                       <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
                         schemaProgress.entityEnrichment === 'completed' ? 'bg-green-500/20' :
-                        schemaProgress.entityEnrichment === 'processing' ? 'bg-cyan-500/20' :
+                        schemaProgress.entityEnrichment === 'processing' ? 'bg-[var(--burnt-orange)]/20' :
                         schemaProgress.entityEnrichment === 'failed' ? 'bg-red-500/20' :
-                        'bg-gray-700'
+                        'bg-[var(--grey-700)]'
                       }`}>
                         {schemaProgress.entityEnrichment === 'completed' ? (
                           <Check className="w-4 h-4 text-green-400" />
                         ) : schemaProgress.entityEnrichment === 'processing' ? (
-                          <Loader className="w-4 h-4 text-cyan-400 animate-spin" />
+                          <Loader className="w-4 h-4 text-[var(--burnt-orange)] animate-spin" />
                         ) : schemaProgress.entityEnrichment === 'failed' ? (
                           <X className="w-4 h-4 text-red-400" />
                         ) : (
-                          <Sparkles className="w-4 h-4 text-gray-500" />
+                          <Sparkles className="w-4 h-4 text-[var(--grey-500)]" />
                         )}
                       </div>
                       <div className="flex-1">
                         <p className="text-sm font-medium text-white">Entity Enrichment</p>
-                        <p className="text-xs text-gray-400">Validating, deduplicating, and prioritizing</p>
+                        <p className="text-xs text-[var(--grey-400)]">Validating, deduplicating, and prioritizing</p>
                       </div>
                     </div>
 
                     {/* Stage 4: Schema Synthesis */}
-                    <div className="flex items-center gap-4 p-3 bg-gray-800/50 rounded-lg">
+                    <div className="flex items-center gap-4 p-3 bg-[var(--grey-800)]/50 rounded-lg">
                       <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
                         schemaProgress.schemaSynthesis === 'completed' ? 'bg-green-500/20' :
-                        schemaProgress.schemaSynthesis === 'processing' ? 'bg-cyan-500/20' :
+                        schemaProgress.schemaSynthesis === 'processing' ? 'bg-[var(--burnt-orange)]/20' :
                         schemaProgress.schemaSynthesis === 'failed' ? 'bg-red-500/20' :
-                        'bg-gray-700'
+                        'bg-[var(--grey-700)]'
                       }`}>
                         {schemaProgress.schemaSynthesis === 'completed' ? (
                           <Check className="w-4 h-4 text-green-400" />
                         ) : schemaProgress.schemaSynthesis === 'processing' ? (
-                          <Loader className="w-4 h-4 text-cyan-400 animate-spin" />
+                          <Loader className="w-4 h-4 text-[var(--burnt-orange)] animate-spin" />
                         ) : schemaProgress.schemaSynthesis === 'failed' ? (
                           <X className="w-4 h-4 text-red-400" />
                         ) : (
-                          <Building2 className="w-4 h-4 text-gray-500" />
+                          <Building2 className="w-4 h-4 text-[var(--grey-500)]" />
                         )}
                       </div>
                       <div className="flex-1">
                         <p className="text-sm font-medium text-white">Schema Synthesis</p>
-                        <p className="text-xs text-gray-400">Building basic schema.org graph</p>
+                        <p className="text-xs text-[var(--grey-400)]">Building basic schema.org graph</p>
                       </div>
                     </div>
 
                     {/* Stage 6: GEO Enhancement */}
-                    <div className="flex items-center gap-4 p-3 bg-gray-800/50 rounded-lg">
+                    <div className="flex items-center gap-4 p-3 bg-[var(--grey-800)]/50 rounded-lg">
                       <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
                         schemaProgress.schemaEnhancement === 'completed' ? 'bg-green-500/20' :
-                        schemaProgress.schemaEnhancement === 'processing' ? 'bg-cyan-500/20' :
+                        schemaProgress.schemaEnhancement === 'processing' ? 'bg-[var(--burnt-orange)]/20' :
                         schemaProgress.schemaEnhancement === 'failed' ? 'bg-red-500/20' :
-                        'bg-gray-700'
+                        'bg-[var(--grey-700)]'
                       }`}>
                         {schemaProgress.schemaEnhancement === 'completed' ? (
                           <Check className="w-4 h-4 text-green-400" />
                         ) : schemaProgress.schemaEnhancement === 'processing' ? (
-                          <Loader className="w-4 h-4 text-cyan-400 animate-spin" />
+                          <Loader className="w-4 h-4 text-[var(--burnt-orange)] animate-spin" />
                         ) : schemaProgress.schemaEnhancement === 'failed' ? (
                           <X className="w-4 h-4 text-red-400" />
                         ) : (
-                          <Sparkles className="w-4 h-4 text-gray-500" />
+                          <Sparkles className="w-4 h-4 text-[var(--grey-500)]" />
                         )}
                       </div>
                       <div className="flex-1">
                         <p className="text-sm font-medium text-white">GEO Enhancement</p>
-                        <p className="text-xs text-gray-400">Adding FAQs, awards, compelling descriptions</p>
+                        <p className="text-xs text-[var(--grey-400)]">Adding FAQs, awards, compelling descriptions</p>
                       </div>
                     </div>
                   </div>
 
                   {schemaProgress.message && (
-                    <div className="mt-4 p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-lg">
-                      <p className="text-sm text-cyan-300">{schemaProgress.message}</p>
+                    <div className="mt-4 p-4 bg-[var(--burnt-orange)]/10 border border-[var(--burnt-orange)]/30 rounded-lg">
+                      <p className="text-sm text-[var(--burnt-orange)]">{schemaProgress.message}</p>
                     </div>
                   )}
 
                   {/* Show existing schema detection results */}
                   {existingSchemaData && schemaProgress.schemaDiscovery === 'completed' && (
-                    <div className="mt-4 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                    <div className="mt-4 p-4 bg-[var(--burnt-orange-muted)] border border-[var(--burnt-orange)]/30 rounded-lg">
                       <div className="flex items-center gap-2 mb-2">
-                        <Sparkles className="w-4 h-4 text-blue-400" />
-                        <p className="text-sm font-medium text-blue-300">
+                        <Sparkles className="w-4 h-4 text-[var(--burnt-orange)]" />
+                        <p className="text-sm font-medium text-[var(--burnt-orange)]">
                           {existingSchemaData.has_existing_schema
                             ? '✓ Existing Schema Detected'
                             : '○ No Existing Schema Found'}
                         </p>
                       </div>
-                      <p className="text-xs text-blue-400/70">
+                      <p className="text-xs text-[var(--burnt-orange)]/70">
                         {existingSchemaData.has_existing_schema
                           ? `Your website already has a schema (version ${existingSchemaData.schema_version}). We'll enhance it with GEO optimizations.`
                           : 'Creating a brand new GEO-optimized schema.org markup from scratch.'}
@@ -2211,10 +2211,10 @@ export default function OrganizationOnboarding({
                         </p>
 
                         {/* Schema preview */}
-                        <div className="bg-gray-900/50 rounded-lg p-3 border border-gray-700">
-                          <p className="text-xs text-gray-400 mb-2 font-mono">Schema Preview:</p>
+                        <div className="bg-[var(--grey-900)]/50 rounded-lg p-3 border border-[var(--grey-700)]">
+                          <p className="text-xs text-[var(--grey-400)] mb-2 font-mono">Schema Preview:</p>
                           <div className="max-h-40 overflow-y-auto">
-                            <pre className="text-xs text-gray-300 font-mono whitespace-pre-wrap">
+                            <pre className="text-xs text-[var(--grey-300)] font-mono whitespace-pre-wrap">
                               {JSON.stringify(
                                 JSON.parse(generatedSchemaData.content || '{}'),
                                 null,
@@ -2224,23 +2224,23 @@ export default function OrganizationOnboarding({
                           </div>
                         </div>
 
-                        <p className="text-xs text-gray-500 mt-2">
+                        <p className="text-xs text-[var(--grey-500)] mt-2">
                           Full schema saved to Content Library → Schemas/Active/
                         </p>
                       </div>
 
                       {/* Optional Enhancements Section */}
-                      <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                      <div className="p-4 bg-[var(--burnt-orange-muted)] border border-[var(--burnt-orange)]/30 rounded-lg">
                         <div className="flex items-center justify-between mb-3">
                           <div>
-                            <p className="text-sm font-medium text-blue-300">🎯 Enhance Your Schema (Optional)</p>
-                            <p className="text-xs text-blue-400/70 mt-1">
+                            <p className="text-sm font-medium text-[var(--burnt-orange)]">🎯 Enhance Your Schema (Optional)</p>
+                            <p className="text-xs text-[var(--burnt-orange)]/70 mt-1">
                               Add more details to make your schema even more powerful
                             </p>
                           </div>
                           <button
                             onClick={() => setShowEnhancements(!showEnhancements)}
-                            className="text-blue-400 hover:text-blue-300 transition-colors"
+                            className="text-[var(--burnt-orange)] hover:text-[var(--burnt-orange)] transition-colors"
                           >
                             {showEnhancements ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
                           </button>
@@ -2250,7 +2250,7 @@ export default function OrganizationOnboarding({
                           <div className="space-y-4 mt-4">
                             {/* Awards/Media */}
                             <div>
-                              <label className="block text-sm font-medium text-gray-300 mb-2">
+                              <label className="block text-sm font-medium text-[var(--grey-300)] mb-2">
                                 📰 Awards/Media Highlights
                               </label>
 
@@ -2258,10 +2258,10 @@ export default function OrganizationOnboarding({
                               {awardsMedia.length > 0 && (
                                 <div className="space-y-2 mb-3">
                                   {awardsMedia.map((award, index) => (
-                                    <div key={index} className="flex items-start gap-2 p-2 bg-gray-800/50 rounded border border-gray-700">
+                                    <div key={index} className="flex items-start gap-2 p-2 bg-[var(--grey-800)]/50 rounded border border-[var(--grey-700)]">
                                       <div className="flex-1 min-w-0">
                                         <div className="text-sm text-white truncate">{award.description}</div>
-                                        <a href={award.url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-400 hover:text-blue-300 truncate block">
+                                        <a href={award.url} target="_blank" rel="noopener noreferrer" className="text-xs text-[var(--burnt-orange)] hover:text-[var(--burnt-orange)] truncate block">
                                           {award.url}
                                         </a>
                                       </div>
@@ -2283,14 +2283,14 @@ export default function OrganizationOnboarding({
                                   value={currentAwardUrl}
                                   onChange={(e) => setCurrentAwardUrl(e.target.value)}
                                   placeholder="Award/Media URL (e.g., link to article or award page)"
-                                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 text-sm"
+                                  className="w-full px-3 py-2 bg-[var(--grey-800)] border border-[var(--grey-700)] rounded-lg text-white placeholder-[var(--grey-500)] focus:outline-none focus:border-[var(--burnt-orange)] text-sm"
                                 />
                                 <input
                                   type="text"
                                   value={currentAwardDescription}
                                   onChange={(e) => setCurrentAwardDescription(e.target.value)}
                                   placeholder="Headline/Description (e.g., 'Best SaaS Product 2024 - TechCrunch')"
-                                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 text-sm"
+                                  className="w-full px-3 py-2 bg-[var(--grey-800)] border border-[var(--grey-700)] rounded-lg text-white placeholder-[var(--grey-500)] focus:outline-none focus:border-[var(--burnt-orange)] text-sm"
                                 />
                                 <button
                                   onClick={() => {
@@ -2304,7 +2304,7 @@ export default function OrganizationOnboarding({
                                     }
                                   }}
                                   disabled={!currentAwardUrl.trim() || !currentAwardDescription.trim()}
-                                  className="w-full px-3 py-2 bg-blue-600/20 hover:bg-blue-600/30 disabled:bg-gray-800 disabled:text-gray-600 text-blue-400 rounded-lg transition-colors text-sm font-medium flex items-center justify-center gap-2"
+                                  className="w-full px-3 py-2 bg-[var(--burnt-orange)]/20 hover:bg-[var(--burnt-orange)]/30 disabled:bg-[var(--grey-800)] disabled:text-[var(--grey-600)] text-[var(--burnt-orange)] rounded-lg transition-colors text-sm font-medium flex items-center justify-center gap-2"
                                 >
                                   <Plus className="w-4 h-4" />
                                   Add Award/Media Mention
@@ -2314,7 +2314,7 @@ export default function OrganizationOnboarding({
 
                             {/* Social Media */}
                             <div>
-                              <label className="block text-sm font-medium text-gray-300 mb-2">
+                              <label className="block text-sm font-medium text-[var(--grey-300)] mb-2">
                                 🔗 Social Media Profiles
                               </label>
                               <div className="grid grid-cols-2 gap-2">
@@ -2323,49 +2323,49 @@ export default function OrganizationOnboarding({
                                   value={socialProfiles.linkedin}
                                   onChange={(e) => setSocialProfiles({...socialProfiles, linkedin: e.target.value})}
                                   placeholder="LinkedIn URL"
-                                  className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 text-sm"
+                                  className="px-3 py-2 bg-[var(--grey-800)] border border-[var(--grey-700)] rounded-lg text-white placeholder-[var(--grey-500)] focus:outline-none focus:border-[var(--burnt-orange)] text-sm"
                                 />
                                 <input
                                   type="url"
                                   value={socialProfiles.twitter}
                                   onChange={(e) => setSocialProfiles({...socialProfiles, twitter: e.target.value})}
                                   placeholder="Twitter/X URL"
-                                  className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 text-sm"
+                                  className="px-3 py-2 bg-[var(--grey-800)] border border-[var(--grey-700)] rounded-lg text-white placeholder-[var(--grey-500)] focus:outline-none focus:border-[var(--burnt-orange)] text-sm"
                                 />
                                 <input
                                   type="url"
                                   value={socialProfiles.facebook}
                                   onChange={(e) => setSocialProfiles({...socialProfiles, facebook: e.target.value})}
                                   placeholder="Facebook URL"
-                                  className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 text-sm"
+                                  className="px-3 py-2 bg-[var(--grey-800)] border border-[var(--grey-700)] rounded-lg text-white placeholder-[var(--grey-500)] focus:outline-none focus:border-[var(--burnt-orange)] text-sm"
                                 />
                                 <input
                                   type="url"
                                   value={socialProfiles.instagram}
                                   onChange={(e) => setSocialProfiles({...socialProfiles, instagram: e.target.value})}
                                   placeholder="Instagram URL"
-                                  className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 text-sm"
+                                  className="px-3 py-2 bg-[var(--grey-800)] border border-[var(--grey-700)] rounded-lg text-white placeholder-[var(--grey-500)] focus:outline-none focus:border-[var(--burnt-orange)] text-sm"
                                 />
                               </div>
                             </div>
 
                             {/* Testimonials */}
                             <div>
-                              <label className="block text-sm font-medium text-gray-300 mb-2">
+                              <label className="block text-sm font-medium text-[var(--grey-300)] mb-2">
                                 💬 Customer Testimonials
                               </label>
                               <textarea
                                 value={testimonials}
                                 onChange={(e) => setTestimonials(e.target.value)}
                                 placeholder="Paste customer testimonials or review URLs (one per line)"
-                                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 text-sm"
+                                className="w-full px-3 py-2 bg-[var(--grey-800)] border border-[var(--grey-700)] rounded-lg text-white placeholder-[var(--grey-500)] focus:outline-none focus:border-[var(--burnt-orange)] text-sm"
                                 rows={3}
                               />
                             </div>
 
                             {/* Products/Pricing Page */}
                             <div>
-                              <label className="block text-sm font-medium text-gray-300 mb-2">
+                              <label className="block text-sm font-medium text-[var(--grey-300)] mb-2">
                                 🛍️ Products/Pricing Page URL
                               </label>
                               <input
@@ -2373,15 +2373,15 @@ export default function OrganizationOnboarding({
                                 value={productsPage}
                                 onChange={(e) => setProductsPage(e.target.value)}
                                 placeholder="https://example.com/products or /pricing"
-                                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 text-sm"
+                                className="w-full px-3 py-2 bg-[var(--grey-800)] border border-[var(--grey-700)] rounded-lg text-white placeholder-[var(--grey-500)] focus:outline-none focus:border-[var(--burnt-orange)] text-sm"
                               />
-                              <p className="text-xs text-gray-500 mt-1">We'll extract product details and pricing if available</p>
+                              <p className="text-xs text-[var(--grey-500)] mt-1">We'll extract product details and pricing if available</p>
                             </div>
 
                             <button
                               onClick={handleSchemaEnhancement}
                               disabled={enhancementLoading}
-                              className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors text-sm font-medium flex items-center justify-center gap-2"
+                              className="w-full px-4 py-2 bg-[var(--burnt-orange)] hover:bg-[var(--burnt-orange-light)] disabled:bg-[var(--grey-600)] disabled:cursor-not-allowed text-white rounded-lg transition-colors text-sm font-medium flex items-center justify-center gap-2"
                             >
                               {enhancementLoading ? (
                                 <>
@@ -2408,7 +2408,7 @@ export default function OrganizationOnboarding({
                             handleSchemaGeneration()
                           }}
                           disabled={!createdOrganization}
-                          className="flex-1 px-6 py-3 bg-cyan-600 hover:bg-cyan-700 disabled:bg-gray-700 disabled:text-gray-500 disabled:cursor-not-allowed text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+                          className="flex-1 px-6 py-3 bg-[var(--burnt-orange)] hover:bg-[var(--burnt-orange-light)] disabled:bg-[var(--grey-700)] disabled:text-[var(--grey-500)] disabled:cursor-not-allowed text-white rounded-lg transition-colors flex items-center justify-center gap-2"
                         >
                           <Sparkles className="w-5 h-5" />
                           Start Pipeline
@@ -2427,7 +2427,7 @@ export default function OrganizationOnboarding({
                             onClose()
                           }}
                           disabled={!createdOrganization}
-                          className="flex-1 px-6 py-3 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+                          className="flex-1 px-6 py-3 bg-[var(--grey-700)] hover:bg-[var(--grey-600)] disabled:bg-[var(--grey-800)] disabled:text-[var(--grey-600)] disabled:cursor-not-allowed text-white rounded-lg transition-colors"
                         >
                           Skip Schema Generation
                         </button>
@@ -2464,7 +2464,7 @@ export default function OrganizationOnboarding({
                           onClose()
                         }}
                         disabled={!createdOrganization}
-                        className="flex-1 px-6 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 disabled:bg-gray-800 disabled:text-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-all flex items-center justify-center gap-2 font-medium"
+                        className="flex-1 px-6 py-3 bg-[var(--burnt-orange)] hover:bg-[var(--burnt-orange-light)] disabled:bg-[var(--grey-800)] disabled:text-[var(--grey-600)] disabled:cursor-not-allowed text-white rounded-lg transition-all flex items-center justify-center gap-2 font-medium"
                       >
                         <Check className="w-5 h-5" />
                         Complete Onboarding
@@ -2487,7 +2487,7 @@ export default function OrganizationOnboarding({
                           onClose()
                         }}
                         disabled={!createdOrganization}
-                        className="flex-1 px-6 py-3 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+                        className="flex-1 px-6 py-3 bg-[var(--grey-700)] hover:bg-[var(--grey-600)] disabled:bg-[var(--grey-800)] disabled:text-[var(--grey-600)] disabled:cursor-not-allowed text-white rounded-lg transition-colors"
                       >
                         Continue Anyway
                       </button>
@@ -2516,13 +2516,13 @@ export default function OrganizationOnboarding({
 
         {/* Footer - Hide on steps 6 and 7 (GEO Discovery & Schema Generation) */}
         {step !== 6 && step !== 7 && (
-          <div className="px-8 py-4 border-t border-gray-700 bg-gray-800/50 flex items-center justify-between">
+          <div className="px-8 py-4 border-t border-[var(--grey-700)] bg-[var(--grey-800)]/50 flex items-center justify-between">
             <button
               onClick={() => {
                 if (step > 1) setStep(step - 1)
               }}
               disabled={step === 1 || loading}
-              className="px-4 py-2 text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+              className="px-4 py-2 text-[var(--grey-400)] hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
             >
               <ChevronLeft className="w-4 h-4" />
               Back
@@ -2542,7 +2542,7 @@ export default function OrganizationOnboarding({
                   }
                 }}
                 disabled={loading || (step === 1 && (!orgName || !website || !aboutPage))}
-                className="px-6 py-2 bg-cyan-600 hover:bg-cyan-700 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg transition-colors flex items-center gap-2"
+                className="px-6 py-2 bg-[var(--burnt-orange)] hover:bg-[var(--burnt-orange-light)] disabled:bg-[var(--grey-700)] disabled:text-[var(--grey-500)] text-white rounded-lg transition-colors flex items-center gap-2"
               >
                 {loading ? (
                   <>

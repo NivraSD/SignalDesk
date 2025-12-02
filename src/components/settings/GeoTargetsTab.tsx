@@ -201,7 +201,7 @@ export default function GeoTargetsTab({
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader className="w-8 h-8 text-blue-400 animate-spin" />
+        <Loader className="w-8 h-8 animate-spin" style={{ color: 'var(--burnt-orange)' }} />
       </div>
     )
   }
@@ -209,8 +209,8 @@ export default function GeoTargetsTab({
   return (
     <div className="p-6">
       <div className="mb-6">
-        <h3 className="text-lg font-semibold text-white">GEO Optimization Targets</h3>
-        <p className="text-sm text-gray-400">
+        <h3 className="text-lg font-medium text-white" style={{ fontFamily: 'var(--font-display)' }}>GEO Optimization Targets</h3>
+        <p className="text-sm" style={{ color: 'var(--grey-400)' }}>
           Configure what queries, positioning, and visibility goals matter for {organizationName}
         </p>
       </div>
@@ -232,7 +232,7 @@ export default function GeoTargetsTab({
       <div className="space-y-6">
         {/* Service Lines */}
         <div>
-          <label className="block text-sm font-medium text-gray-400 mb-2">
+          <label className="block text-sm font-medium mb-2" style={{ color: 'var(--grey-400)', fontFamily: 'var(--font-display)' }}>
             Service Lines / Specializations
           </label>
           <div className="flex gap-2 mb-2">
@@ -247,11 +247,13 @@ export default function GeoTargetsTab({
                 }
               }}
               placeholder="e.g., Crisis Communications"
-              className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
+              className="flex-1 px-4 py-2.5 rounded-lg text-white placeholder-[var(--grey-600)] focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)]"
+              style={{ background: 'var(--grey-800)', border: '1px solid var(--grey-700)' }}
             />
             <button
               onClick={() => addArrayItem('service_lines', newInputs.service_line)}
-              className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+              className="px-4 py-2 rounded-lg text-white transition-colors"
+              style={{ background: 'var(--burnt-orange)' }}
             >
               <Plus className="w-5 h-5" />
             </button>
@@ -260,12 +262,13 @@ export default function GeoTargetsTab({
             {geoTargets.service_lines.map((item, idx) => (
               <span
                 key={idx}
-                className="px-3 py-1 bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-lg text-sm flex items-center gap-2"
+                className="px-3 py-1 rounded-lg text-sm flex items-center gap-2"
+                style={{ background: 'var(--burnt-orange-muted)', color: 'var(--burnt-orange)', border: '1px solid var(--burnt-orange)' }}
               >
                 {item}
                 <button
                   onClick={() => removeArrayItem('service_lines', idx)}
-                  className="hover:text-blue-300"
+                  className="hover:opacity-70"
                 >
                   <CloseIcon className="w-3 h-3" />
                 </button>
@@ -276,7 +279,7 @@ export default function GeoTargetsTab({
 
         {/* Geographic Focus */}
         <div>
-          <label className="block text-sm font-medium text-gray-400 mb-2">
+          <label className="block text-sm font-medium mb-2" style={{ color: 'var(--grey-400)', fontFamily: 'var(--font-display)' }}>
             Geographic Focus Areas
           </label>
           <div className="flex gap-2 mb-2">
@@ -291,11 +294,13 @@ export default function GeoTargetsTab({
                 }
               }}
               placeholder="e.g., Middle East, UAE"
-              className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
+              className="flex-1 px-4 py-2.5 rounded-lg text-white placeholder-[var(--grey-600)] focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)]"
+              style={{ background: 'var(--grey-800)', border: '1px solid var(--grey-700)' }}
             />
             <button
               onClick={() => addArrayItem('geographic_focus', newInputs.geographic)}
-              className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+              className="px-4 py-2 rounded-lg text-white transition-colors"
+              style={{ background: 'var(--burnt-orange)' }}
             >
               <Plus className="w-5 h-5" />
             </button>
@@ -320,7 +325,7 @@ export default function GeoTargetsTab({
 
         {/* Industry Verticals */}
         <div>
-          <label className="block text-sm font-medium text-gray-400 mb-2">
+          <label className="block text-sm font-medium mb-2" style={{ color: 'var(--grey-400)', fontFamily: 'var(--font-display)' }}>
             Industry Verticals
           </label>
           <div className="flex gap-2 mb-2">
@@ -335,11 +340,13 @@ export default function GeoTargetsTab({
                 }
               }}
               placeholder="e.g., Financial Services"
-              className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
+              className="flex-1 px-4 py-2.5 rounded-lg text-white placeholder-[var(--grey-600)] focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)]"
+              style={{ background: 'var(--grey-800)', border: '1px solid var(--grey-700)' }}
             />
             <button
               onClick={() => addArrayItem('industry_verticals', newInputs.industry)}
-              className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+              className="px-4 py-2 rounded-lg text-white transition-colors"
+              style={{ background: 'var(--burnt-orange)' }}
             >
               <Plus className="w-5 h-5" />
             </button>
@@ -364,7 +371,7 @@ export default function GeoTargetsTab({
 
         {/* Priority Queries */}
         <div>
-          <label className="block text-sm font-medium text-gray-400 mb-2">
+          <label className="block text-sm font-medium mb-2" style={{ color: 'var(--grey-400)', fontFamily: 'var(--font-display)' }}>
             Priority Queries (High-Value Search Terms)
           </label>
           <div className="flex gap-2 mb-2">
@@ -379,11 +386,13 @@ export default function GeoTargetsTab({
                 }
               }}
               placeholder="e.g., crisis PR agency Middle East"
-              className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
+              className="flex-1 px-4 py-2.5 rounded-lg text-white placeholder-[var(--grey-600)] focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)]"
+              style={{ background: 'var(--grey-800)', border: '1px solid var(--grey-700)' }}
             />
             <button
               onClick={() => addArrayItem('priority_queries', newInputs.query)}
-              className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+              className="px-4 py-2 rounded-lg text-white transition-colors"
+              style={{ background: 'var(--burnt-orange)' }}
             >
               <Plus className="w-5 h-5" />
             </button>
@@ -408,10 +417,10 @@ export default function GeoTargetsTab({
 
         {/* Target Article Links */}
         <div>
-          <label className="block text-sm font-medium text-gray-400 mb-2">
+          <label className="block text-sm font-medium mb-2" style={{ color: 'var(--grey-400)', fontFamily: 'var(--font-display)' }}>
             Target Article Links (Schema.org NewsArticles)
           </label>
-          <p className="text-xs text-gray-500 mb-2">
+          <p className="text-xs mb-2" style={{ color: 'var(--grey-500)' }}>
             Add URLs of articles, press releases, or news coverage you want featured in your Schema.org markup. You can also add these later in the workspace.
           </p>
           <div className="flex gap-2 mb-2">
@@ -426,11 +435,13 @@ export default function GeoTargetsTab({
                 }
               }}
               placeholder="https://example.com/article-about-your-company"
-              className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
+              className="flex-1 px-4 py-2.5 rounded-lg text-white placeholder-[var(--grey-600)] focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)]"
+              style={{ background: 'var(--grey-800)', border: '1px solid var(--grey-700)' }}
             />
             <button
               onClick={() => addArrayItem('target_article_links', newInputs.article_link)}
-              className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+              className="px-4 py-2 rounded-lg text-white transition-colors"
+              style={{ background: 'var(--burnt-orange)' }}
             >
               <Plus className="w-5 h-5" />
             </button>
@@ -439,12 +450,13 @@ export default function GeoTargetsTab({
             {geoTargets.target_article_links.map((item, idx) => (
               <div
                 key={idx}
-                className="p-2 px-3 bg-blue-500/10 text-blue-400 border border-blue-500/30 rounded-lg text-sm flex items-center justify-between gap-2"
+                className="p-2 px-3 rounded-lg text-sm flex items-center justify-between gap-2"
+                style={{ background: 'var(--burnt-orange-muted)', color: 'var(--burnt-orange)', border: '1px solid var(--burnt-orange)' }}
               >
                 <span className="truncate flex-1">{item}</span>
                 <button
                   onClick={() => removeArrayItem('target_article_links', idx)}
-                  className="hover:text-blue-300 flex-shrink-0"
+                  className="hover:opacity-70 flex-shrink-0"
                 >
                   <CloseIcon className="w-4 h-4" />
                 </button>
@@ -455,7 +467,7 @@ export default function GeoTargetsTab({
 
         {/* GEO Competitors */}
         <div>
-          <label className="block text-sm font-medium text-gray-400 mb-2">
+          <label className="block text-sm font-medium mb-2" style={{ color: 'var(--grey-400)', fontFamily: 'var(--font-display)' }}>
             GEO Competitors (Benchmarking)
           </label>
           <div className="flex gap-2 mb-2">
@@ -470,11 +482,13 @@ export default function GeoTargetsTab({
                 }
               }}
               placeholder="e.g., Brunswick, FTI Consulting"
-              className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
+              className="flex-1 px-4 py-2.5 rounded-lg text-white placeholder-[var(--grey-600)] focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)]"
+              style={{ background: 'var(--grey-800)', border: '1px solid var(--grey-700)' }}
             />
             <button
               onClick={() => addArrayItem('geo_competitors', newInputs.competitor)}
-              className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+              className="px-4 py-2 rounded-lg text-white transition-colors"
+              style={{ background: 'var(--burnt-orange)' }}
             >
               <Plus className="w-5 h-5" />
             </button>
@@ -499,7 +513,7 @@ export default function GeoTargetsTab({
 
         {/* Target Platforms */}
         <div>
-          <label className="block text-sm font-medium text-gray-400 mb-2">
+          <label className="block text-sm font-medium mb-2" style={{ color: 'var(--grey-400)', fontFamily: 'var(--font-display)' }}>
             Target AI Platforms
           </label>
           <div className="flex flex-wrap gap-2">
@@ -509,8 +523,8 @@ export default function GeoTargetsTab({
                 onClick={() => togglePlatform(platform)}
                 className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
                   geoTargets.target_platforms.includes(platform)
-                    ? 'bg-blue-500/20 text-blue-400 border-blue-500'
-                    : 'bg-gray-800 text-gray-400 border-gray-700 hover:border-gray-600'
+                    ? 'bg-[var(--burnt-orange-muted)] text-[var(--burnt-orange)] border-[var(--burnt-orange)]'
+                    : 'bg-[var(--grey-800)] text-[var(--grey-400)] border-[var(--grey-700)] hover:border-[var(--grey-600)]'
                 }`}
               >
                 {platform.charAt(0).toUpperCase() + platform.slice(1)}
@@ -521,7 +535,7 @@ export default function GeoTargetsTab({
 
         {/* Query Types */}
         <div>
-          <label className="block text-sm font-medium text-gray-400 mb-2">
+          <label className="block text-sm font-medium mb-2" style={{ color: 'var(--grey-400)', fontFamily: 'var(--font-display)' }}>
             Query Types to Focus On
           </label>
           <div className="flex flex-wrap gap-2">
@@ -531,8 +545,8 @@ export default function GeoTargetsTab({
                 onClick={() => toggleQueryType(type)}
                 className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
                   geoTargets.query_types.includes(type)
-                    ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500'
-                    : 'bg-gray-800 text-gray-400 border-gray-700 hover:border-gray-600'
+                    ? 'bg-[var(--burnt-orange-muted)] text-[var(--burnt-orange)] border-[var(--burnt-orange)]'
+                    : 'bg-[var(--grey-800)] text-[var(--grey-400)] border-[var(--grey-700)] hover:border-[var(--grey-600)]'
                 }`}
               >
                 {type.charAt(0).toUpperCase() + type.slice(1)}
@@ -543,7 +557,7 @@ export default function GeoTargetsTab({
 
         {/* Positioning Goals */}
         <div>
-          <label className="block text-sm font-medium text-gray-400 mb-2">
+          <label className="block text-sm font-medium mb-2" style={{ color: 'var(--grey-400)', fontFamily: 'var(--font-display)' }}>
             Positioning Goals
           </label>
           <div className="grid grid-cols-2 gap-2 mb-2">
@@ -552,7 +566,8 @@ export default function GeoTargetsTab({
               value={newInputs.positioning_key}
               onChange={(e) => setNewInputs({ ...newInputs, positioning_key: e.target.value })}
               placeholder="Key (e.g., crisis_leadership)"
-              className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
+              className="px-4 py-2.5 rounded-lg text-white placeholder-[var(--grey-600)] focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)]"
+              style={{ background: 'var(--grey-800)', border: '1px solid var(--grey-700)' }}
             />
             <input
               type="text"
@@ -565,12 +580,14 @@ export default function GeoTargetsTab({
                 }
               }}
               placeholder="Value (e.g., Leading crisis firm in ME)"
-              className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
+              className="px-4 py-2.5 rounded-lg text-white placeholder-[var(--grey-600)] focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)]"
+              style={{ background: 'var(--grey-800)', border: '1px solid var(--grey-700)' }}
             />
           </div>
           <button
             onClick={addPositioningGoal}
-            className="mb-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors flex items-center gap-2"
+            className="mb-2 px-4 py-2 rounded-lg text-white transition-colors flex items-center gap-2"
+            style={{ background: 'var(--burnt-orange)', fontFamily: 'var(--font-display)' }}
           >
             <Plus className="w-4 h-4" />
             Add Positioning Goal
@@ -579,11 +596,12 @@ export default function GeoTargetsTab({
             {Object.entries(geoTargets.positioning_goals).map(([key, value]) => (
               <div
                 key={key}
-                className="p-3 bg-gray-800 border border-gray-700 rounded-lg flex items-start justify-between"
+                className="p-3 rounded-lg flex items-start justify-between"
+                style={{ background: 'var(--grey-900)', border: '1px solid var(--grey-800)' }}
               >
                 <div>
-                  <p className="text-sm font-medium text-blue-400">{key}</p>
-                  <p className="text-sm text-gray-300">{value}</p>
+                  <p className="text-sm font-medium" style={{ color: 'var(--burnt-orange)' }}>{key}</p>
+                  <p className="text-sm" style={{ color: 'var(--grey-300)' }}>{value}</p>
                 </div>
                 <button
                   onClick={() => removePositioningGoal(key)}
@@ -598,7 +616,7 @@ export default function GeoTargetsTab({
 
         {/* Negative Keywords */}
         <div>
-          <label className="block text-sm font-medium text-gray-400 mb-2">
+          <label className="block text-sm font-medium mb-2" style={{ color: 'var(--grey-400)', fontFamily: 'var(--font-display)' }}>
             Negative Keywords (Terms to Avoid)
           </label>
           <div className="flex gap-2 mb-2">
@@ -613,11 +631,13 @@ export default function GeoTargetsTab({
                 }
               }}
               placeholder="e.g., cheap, discount"
-              className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
+              className="flex-1 px-4 py-2.5 rounded-lg text-white placeholder-[var(--grey-600)] focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)]"
+              style={{ background: 'var(--grey-800)', border: '1px solid var(--grey-700)' }}
             />
             <button
               onClick={() => addArrayItem('negative_keywords', newInputs.negative)}
-              className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+              className="px-4 py-2 rounded-lg text-white transition-colors"
+              style={{ background: 'var(--burnt-orange)' }}
             >
               <Plus className="w-5 h-5" />
             </button>
@@ -626,12 +646,13 @@ export default function GeoTargetsTab({
             {geoTargets.negative_keywords.map((item, idx) => (
               <span
                 key={idx}
-                className="px-3 py-1 bg-gray-700/50 text-gray-400 border border-gray-600 rounded-lg text-sm flex items-center gap-2"
+                className="px-3 py-1 rounded-lg text-sm flex items-center gap-2"
+                style={{ background: 'var(--grey-800)', color: 'var(--grey-400)', border: '1px solid var(--grey-700)' }}
               >
                 {item}
                 <button
                   onClick={() => removeArrayItem('negative_keywords', idx)}
-                  className="hover:text-gray-300"
+                  className="hover:text-white"
                 >
                   <CloseIcon className="w-3 h-3" />
                 </button>
@@ -641,11 +662,12 @@ export default function GeoTargetsTab({
         </div>
 
         {/* Save Button */}
-        <div className="flex justify-end gap-3 pt-4 border-t border-gray-700">
+        <div className="flex justify-end gap-3 pt-4" style={{ borderTop: '1px solid var(--grey-800)' }}>
           <button
             onClick={saveGeoTargets}
             disabled={saving}
-            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+            className="px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 disabled:opacity-50"
+            style={{ background: 'var(--burnt-orange)', color: 'white', fontFamily: 'var(--font-display)' }}
           >
             {saving ? (
               <>

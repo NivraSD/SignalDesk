@@ -55,7 +55,7 @@ export default function CrisisPlanViewer({ onClose, plan: providedPlan }: Crisis
   if (loading) {
     return (
       <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-8">
+        <div className="bg-[var(--charcoal)] border border-zinc-800 rounded-xl p-8">
           <div className="text-white">Loading crisis plan...</div>
         </div>
       </div>
@@ -65,14 +65,14 @@ export default function CrisisPlanViewer({ onClose, plan: providedPlan }: Crisis
   if (!plan) {
     return (
       <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-6">
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-8 max-w-md">
+        <div className="bg-[var(--charcoal)] border border-zinc-800 rounded-xl p-8 max-w-md">
           <div className="text-center">
-            <FileText className="w-16 h-16 text-gray-500 mx-auto mb-4" />
-            <h3 className="text-xl font-bold text-white mb-2">No Crisis Plan Found</h3>
-            <p className="text-gray-400 mb-6">Generate a crisis plan to get started</p>
+            <FileText className="w-16 h-16 text-[var(--grey-500)] mx-auto mb-4" />
+            <h3 className="text-xl font-bold text-white mb-2" style={{ fontFamily: 'var(--font-display)' }}>No Crisis Plan Found</h3>
+            <p className="text-[var(--grey-400)] mb-6">Generate a crisis plan to get started</p>
             <button
               onClick={onClose}
-              className="px-6 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg transition-colors"
+              className="px-6 py-2 bg-[var(--burnt-orange)] hover:brightness-110 text-white rounded-lg transition-colors"
             >
               Close
             </button>
@@ -93,42 +93,42 @@ export default function CrisisPlanViewer({ onClose, plan: providedPlan }: Crisis
   const getSeverityColor = (severity: string) => {
     switch (severity?.toLowerCase()) {
       case 'critical': return 'text-red-500 bg-red-500/10 border-red-500'
-      case 'major': return 'text-orange-500 bg-orange-500/10 border-orange-500'
-      case 'moderate': return 'text-yellow-500 bg-yellow-500/10 border-yellow-500'
-      case 'minor': return 'text-blue-500 bg-blue-500/10 border-blue-500'
-      default: return 'text-gray-500 bg-gray-500/10 border-gray-500'
+      case 'major': return 'text-[var(--burnt-orange)] bg-[var(--burnt-orange)]/10 border-[var(--burnt-orange)]'
+      case 'moderate': return 'text-amber-500 bg-amber-500/10 border-amber-500'
+      case 'minor': return 'text-emerald-500 bg-emerald-500/10 border-emerald-500'
+      default: return 'text-[var(--grey-500)] bg-[var(--grey-500)]/10 border-[var(--grey-500)]'
     }
   }
 
   const getLikelihoodColor = (likelihood: string) => {
     switch (likelihood?.toLowerCase()) {
       case 'high': return 'text-red-400'
-      case 'medium': return 'text-yellow-400'
-      case 'low': return 'text-green-400'
-      default: return 'text-gray-400'
+      case 'medium': return 'text-amber-400'
+      case 'low': return 'text-emerald-400'
+      default: return 'text-[var(--grey-400)]'
     }
   }
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-6">
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-6xl max-h-[90vh] flex flex-col">
+      <div className="bg-[var(--charcoal)] border border-zinc-800 rounded-2xl w-full max-w-6xl max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-800">
+        <div className="px-6 py-4 border-b border-zinc-800">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-orange-500 rounded-lg flex items-center justify-center">
+              <div className="w-10 h-10 bg-[var(--burnt-orange)] rounded-lg flex items-center justify-center">
                 <Shield className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-white">Crisis Management Plan</h2>
-                <p className="text-sm text-gray-400">
+                <h2 className="text-xl font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>Crisis Management Plan</h2>
+                <p className="text-sm text-[var(--grey-400)]">
                   {plan.industry} • Generated {plan.generatedDate}
                 </p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-white transition-colors"
+              className="text-[var(--grey-400)] hover:text-white transition-colors"
             >
               <CloseIcon className="w-6 h-6" />
             </button>
@@ -136,7 +136,7 @@ export default function CrisisPlanViewer({ onClose, plan: providedPlan }: Crisis
         </div>
 
         {/* Tabs */}
-        <div className="px-6 py-3 border-b border-gray-800 flex gap-2 overflow-x-auto">
+        <div className="px-6 py-3 border-b border-zinc-800 flex gap-2 overflow-x-auto">
           {tabs.map((tab) => {
             const Icon = tab.icon
             return (
@@ -145,8 +145,8 @@ export default function CrisisPlanViewer({ onClose, plan: providedPlan }: Crisis
                 onClick={() => setActiveTab(tab.id)}
                 className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors whitespace-nowrap ${
                   activeTab === tab.id
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'
+                    ? 'bg-[var(--burnt-orange)] text-white'
+                    : 'bg-zinc-800 text-[var(--grey-400)] hover:text-white hover:bg-zinc-700'
                 }`}
               >
                 <Icon className="w-4 h-4" />
@@ -161,22 +161,22 @@ export default function CrisisPlanViewer({ onClose, plan: providedPlan }: Crisis
           {activeTab === 'overview' && (
             <div className="space-y-6">
               {plan.purpose && (
-                <div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
-                  <h3 className="text-lg font-bold text-white mb-4">Purpose of Plan</h3>
-                  <p className="text-gray-300 leading-relaxed">{plan.purpose}</p>
+                <div className="bg-zinc-800 border border-zinc-700 rounded-xl p-6">
+                  <h3 className="text-lg font-bold text-white mb-4" style={{ fontFamily: 'var(--font-display)' }}>Purpose of Plan</h3>
+                  <p className="text-[var(--grey-300)] leading-relaxed">{plan.purpose}</p>
                 </div>
               )}
 
               {plan.guidingPrinciples && plan.guidingPrinciples.length > 0 && (
-                <div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
-                  <h3 className="text-lg font-bold text-white mb-4">Guiding Principles</h3>
+                <div className="bg-zinc-800 border border-zinc-700 rounded-xl p-6">
+                  <h3 className="text-lg font-bold text-white mb-4" style={{ fontFamily: 'var(--font-display)' }}>Guiding Principles</h3>
                   <ul className="space-y-3">
                     {plan.guidingPrinciples.map((principle: string, idx: number) => (
                       <li key={idx} className="flex items-start gap-3">
-                        <div className="w-6 h-6 rounded-full bg-purple-500/10 border border-purple-500/30 flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <span className="text-xs font-bold text-purple-400">{idx + 1}</span>
+                        <div className="w-6 h-6 rounded-full bg-[var(--burnt-orange)]/10 border border-[var(--burnt-orange)]/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <span className="text-xs font-bold text-[var(--burnt-orange)]">{idx + 1}</span>
                         </div>
-                        <span className="text-gray-300 leading-relaxed">{principle}</span>
+                        <span className="text-[var(--grey-300)] leading-relaxed">{principle}</span>
                       </li>
                     ))}
                   </ul>
@@ -184,11 +184,11 @@ export default function CrisisPlanViewer({ onClose, plan: providedPlan }: Crisis
               )}
 
               {plan.keyConcerns?.length > 0 && (
-                <div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
-                  <h3 className="text-lg font-bold text-white mb-4">Key Concerns</h3>
+                <div className="bg-zinc-800 border border-zinc-700 rounded-xl p-6">
+                  <h3 className="text-lg font-bold text-white mb-4" style={{ fontFamily: 'var(--font-display)' }}>Key Concerns</h3>
                   <div className="flex flex-wrap gap-2">
                     {plan.keyConcerns.map((concern: string, idx: number) => (
-                      <span key={idx} className="px-3 py-1 bg-yellow-500/10 text-yellow-400 border border-yellow-500/30 rounded-full text-sm">
+                      <span key={idx} className="px-3 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded-full text-sm">
                         {concern}
                       </span>
                     ))}
@@ -197,9 +197,9 @@ export default function CrisisPlanViewer({ onClose, plan: providedPlan }: Crisis
               )}
 
               {plan.existingProtocols && (
-                <div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
-                  <h3 className="text-lg font-bold text-white mb-4">Existing Protocols</h3>
-                  <p className="text-gray-300 whitespace-pre-wrap">{plan.existingProtocols}</p>
+                <div className="bg-zinc-800 border border-zinc-700 rounded-xl p-6">
+                  <h3 className="text-lg font-bold text-white mb-4" style={{ fontFamily: 'var(--font-display)' }}>Existing Protocols</h3>
+                  <p className="text-[var(--grey-300)] whitespace-pre-wrap">{plan.existingProtocols}</p>
                 </div>
               )}
             </div>
@@ -208,27 +208,27 @@ export default function CrisisPlanViewer({ onClose, plan: providedPlan }: Crisis
           {activeTab === 'scenarios' && (
             <div className="space-y-4">
               {plan.scenarios?.map((scenario: any, idx: number) => (
-                <div key={idx} className="bg-gray-800 border border-gray-700 rounded-xl p-6">
+                <div key={idx} className="bg-zinc-800 border border-zinc-700 rounded-xl p-6">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
-                      <h3 className="text-lg font-bold text-white mb-2">{scenario.title}</h3>
-                      <p className="text-gray-300 mb-3">{scenario.description}</p>
+                      <h3 className="text-lg font-bold text-white mb-2" style={{ fontFamily: 'var(--font-display)' }}>{scenario.title}</h3>
+                      <p className="text-[var(--grey-300)] mb-3">{scenario.description}</p>
                     </div>
                     {scenario.isUniversal && (
-                      <span className="px-2 py-1 bg-blue-500/10 text-blue-400 border border-blue-500/30 rounded text-xs">
+                      <span className="px-2 py-1 bg-[var(--burnt-orange)]/10 text-[var(--burnt-orange)] border border-[var(--burnt-orange)]/30 rounded text-xs">
                         Universal
                       </span>
                     )}
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-400">Likelihood:</span>
+                      <span className="text-sm text-[var(--grey-400)]">Likelihood:</span>
                       <span className={`text-sm font-semibold ${getLikelihoodColor(scenario.likelihood)}`}>
                         {scenario.likelihood}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-400">Impact:</span>
+                      <span className="text-sm text-[var(--grey-400)]">Impact:</span>
                       <span className={`text-xs px-2 py-1 rounded border ${getSeverityColor(scenario.impact)}`}>
                         {scenario.impact}
                       </span>
@@ -242,31 +242,31 @@ export default function CrisisPlanViewer({ onClose, plan: providedPlan }: Crisis
           {activeTab === 'team' && (
             <div className="space-y-4">
               {plan.crisisTeam?.map((member: any, idx: number) => (
-                <div key={idx} className="bg-gray-800 border border-gray-700 rounded-xl p-6">
+                <div key={idx} className="bg-zinc-800 border border-zinc-700 rounded-xl p-6">
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <h3 className="text-lg font-bold text-white">{member.role}</h3>
-                      <p className="text-sm text-gray-400">{member.title}</p>
+                      <h3 className="text-lg font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>{member.role}</h3>
+                      <p className="text-sm text-[var(--grey-400)]">{member.title}</p>
                       {member.name && (
-                        <p className="text-sm text-purple-400 mt-1">{member.name}</p>
+                        <p className="text-sm text-[var(--burnt-orange)] mt-1">{member.name}</p>
                       )}
                       {member.contact && (
-                        <p className="text-sm text-gray-500 mt-1">{member.contact}</p>
+                        <p className="text-sm text-[var(--grey-500)] mt-1">{member.contact}</p>
                       )}
                     </div>
                     {member.name ? (
-                      <CheckCircle className="w-5 h-5 text-green-400" />
+                      <CheckCircle className="w-5 h-5 text-emerald-400" />
                     ) : (
-                      <AlertTriangle className="w-5 h-5 text-yellow-400" />
+                      <AlertTriangle className="w-5 h-5 text-amber-400" />
                     )}
                   </div>
                   {member.responsibilities?.length > 0 && (
                     <div className="mt-4">
-                      <div className="text-sm font-semibold text-gray-400 mb-2">Responsibilities:</div>
+                      <div className="text-sm font-semibold text-[var(--grey-400)] mb-2">Responsibilities:</div>
                       <ul className="space-y-1">
                         {member.responsibilities.map((resp: string, ridx: number) => (
-                          <li key={ridx} className="text-sm text-gray-300 flex items-start gap-2">
-                            <span className="text-purple-400 mt-1">•</span>
+                          <li key={ridx} className="text-sm text-[var(--grey-300)] flex items-start gap-2">
+                            <span className="text-[var(--burnt-orange)] mt-1">•</span>
                             <span>{resp}</span>
                           </li>
                         ))}
@@ -281,26 +281,26 @@ export default function CrisisPlanViewer({ onClose, plan: providedPlan }: Crisis
           {activeTab === 'stakeholders' && (
             <div className="space-y-4">
               {plan.stakeholders?.map((stakeholder: any, idx: number) => (
-                <div key={idx} className="bg-gray-800 border border-gray-700 rounded-xl p-6">
+                <div key={idx} className="bg-zinc-800 border border-zinc-700 rounded-xl p-6">
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <h3 className="text-lg font-bold text-white">{stakeholder.name}</h3>
-                      <p className="text-sm text-gray-400">{stakeholder.description}</p>
+                      <h3 className="text-lg font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>{stakeholder.name}</h3>
+                      <p className="text-sm text-[var(--grey-400)]">{stakeholder.description}</p>
                     </div>
                     <span className={`text-xs px-2 py-1 rounded border ${
                       stakeholder.impactLevel === 'High' ? 'text-red-400 bg-red-500/10 border-red-500' :
-                      stakeholder.impactLevel === 'Medium' ? 'text-yellow-400 bg-yellow-500/10 border-yellow-500' :
-                      'text-blue-400 bg-blue-500/10 border-blue-500'
+                      stakeholder.impactLevel === 'Medium' ? 'text-amber-400 bg-amber-500/10 border-amber-500' :
+                      'text-[var(--burnt-orange)] bg-[var(--burnt-orange)]/10 border-[var(--burnt-orange)]'
                     }`}>
                       {stakeholder.impactLevel} Impact
                     </span>
                   </div>
                   {stakeholder.concerns?.length > 0 && (
                     <div className="mt-4">
-                      <div className="text-sm font-semibold text-gray-400 mb-2">Primary Concerns:</div>
+                      <div className="text-sm font-semibold text-[var(--grey-400)] mb-2">Primary Concerns:</div>
                       <div className="flex flex-wrap gap-2">
                         {stakeholder.concerns.map((concern: string, cidx: number) => (
-                          <span key={cidx} className="px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded">
+                          <span key={cidx} className="px-2 py-1 bg-zinc-900 text-[var(--grey-300)] text-xs rounded">
                             {concern}
                           </span>
                         ))}
@@ -315,35 +315,35 @@ export default function CrisisPlanViewer({ onClose, plan: providedPlan }: Crisis
           {activeTab === 'communications' && (
             <div className="space-y-4">
               {plan.communicationPlans?.map((comm: any, idx: number) => (
-                <div key={idx} className="bg-gray-800 border border-gray-700 rounded-xl p-6">
-                  <h3 className="text-lg font-bold text-white mb-4">{comm.stakeholder}</h3>
+                <div key={idx} className="bg-zinc-800 border border-zinc-700 rounded-xl p-6">
+                  <h3 className="text-lg font-bold text-white mb-4" style={{ fontFamily: 'var(--font-display)' }}>{comm.stakeholder}</h3>
 
                   <div className="grid grid-cols-2 gap-4 mb-4">
                     <div>
-                      <div className="text-sm text-gray-400 mb-1">Primary Channel</div>
+                      <div className="text-sm text-[var(--grey-400)] mb-1">Primary Channel</div>
                       <div className="text-sm text-white">{comm.primaryChannel}</div>
                     </div>
                     <div>
-                      <div className="text-sm text-gray-400 mb-1">Secondary Channel</div>
+                      <div className="text-sm text-[var(--grey-400)] mb-1">Secondary Channel</div>
                       <div className="text-sm text-white">{comm.secondaryChannel}</div>
                     </div>
                     <div>
-                      <div className="text-sm text-gray-400 mb-1">Timing</div>
+                      <div className="text-sm text-[var(--grey-400)] mb-1">Timing</div>
                       <div className="text-sm text-white">{comm.timing}</div>
                     </div>
                     <div>
-                      <div className="text-sm text-gray-400 mb-1">Spokesperson</div>
+                      <div className="text-sm text-[var(--grey-400)] mb-1">Spokesperson</div>
                       <div className="text-sm text-white">{comm.spokesperson}</div>
                     </div>
                   </div>
 
                   {comm.keyMessages?.length > 0 && (
                     <div>
-                      <div className="text-sm font-semibold text-gray-400 mb-2">Key Messages:</div>
+                      <div className="text-sm font-semibold text-[var(--grey-400)] mb-2">Key Messages:</div>
                       <ul className="space-y-2">
                         {comm.keyMessages.map((message: string, midx: number) => (
-                          <li key={midx} className="text-sm text-gray-300 flex items-start gap-2">
-                            <MessageSquare className="w-4 h-4 text-purple-400 mt-0.5 flex-shrink-0" />
+                          <li key={midx} className="text-sm text-[var(--grey-300)] flex items-start gap-2">
+                            <MessageSquare className="w-4 h-4 text-[var(--burnt-orange)] mt-0.5 flex-shrink-0" />
                             <span>{message}</span>
                           </li>
                         ))}
@@ -357,10 +357,10 @@ export default function CrisisPlanViewer({ onClose, plan: providedPlan }: Crisis
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-800 flex justify-end">
+        <div className="px-6 py-4 border-t border-zinc-800 flex justify-end">
           <button
             onClick={onClose}
-            className="px-6 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+            className="px-6 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors"
           >
             Close
           </button>

@@ -384,15 +384,16 @@ export default function TargetManagementTab({
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-lg font-semibold text-white">Intelligence Targets</h3>
-          <p className="text-sm text-gray-400">
+          <h3 className="text-lg font-medium text-white" style={{ fontFamily: 'var(--font-display)' }}>Intelligence Targets</h3>
+          <p className="text-sm" style={{ color: 'var(--grey-400)' }}>
             Monitor competitors, topics, keywords, influencers, and stakeholders
           </p>
         </div>
         <button
           onClick={runDiscovery}
           disabled={runningDiscovery || loading}
-          className="px-4 py-2 bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+          className="px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 disabled:opacity-50"
+          style={{ background: 'var(--burnt-orange)', color: 'white', fontFamily: 'var(--font-display)' }}
         >
           {runningDiscovery ? (
             <>
@@ -419,7 +420,7 @@ export default function TargetManagementTab({
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <Loader className="w-8 h-8 text-cyan-400 animate-spin" />
+          <Loader className="w-8 h-8 animate-spin" style={{ color: 'var(--burnt-orange)' }} />
         </div>
       ) : (
         <>
@@ -427,7 +428,8 @@ export default function TargetManagementTab({
           {!showAddForm && (
             <button
               onClick={() => setShowAddForm(true)}
-              className="mb-6 w-full px-4 py-3 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 rounded-lg text-cyan-400 font-medium flex items-center justify-center gap-2 transition-colors"
+              className="mb-6 w-full px-4 py-3 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
+              style={{ background: 'var(--burnt-orange-muted)', color: 'var(--burnt-orange)', border: '1px solid var(--burnt-orange)', fontFamily: 'var(--font-display)' }}
             >
               <Plus className="w-5 h-5" />
               Add New Target
@@ -441,26 +443,29 @@ export default function TargetManagementTab({
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
-                className="mb-6 p-4 bg-gray-800 border border-gray-700 rounded-lg"
+                className="mb-6 p-4 rounded-lg"
+                style={{ background: 'var(--grey-900)', border: '1px solid var(--grey-800)' }}
               >
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">Name</label>
+                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--grey-400)', fontFamily: 'var(--font-display)' }}>Name</label>
                     <input
                       type="text"
                       value={newTarget.name}
                       onChange={(e) => setNewTarget({ ...newTarget, name: e.target.value })}
                       placeholder="Enter target name..."
-                      className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-cyan-500 focus:outline-none"
+                      className="w-full px-4 py-2.5 rounded-lg text-white placeholder-[var(--grey-600)] focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)]"
+                      style={{ background: 'var(--grey-800)', border: '1px solid var(--grey-700)' }}
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-400 mb-2">Type</label>
+                      <label className="block text-sm font-medium mb-2" style={{ color: 'var(--grey-400)', fontFamily: 'var(--font-display)' }}>Type</label>
                       <select
                         value={newTarget.type}
                         onChange={(e) => setNewTarget({ ...newTarget, type: e.target.value as any })}
-                        className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white focus:border-cyan-500 focus:outline-none"
+                        className="w-full px-4 py-2.5 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)]"
+                        style={{ background: 'var(--grey-800)', border: '1px solid var(--grey-700)' }}
                       >
                         <option value="competitor">Competitor</option>
                         <option value="topic">Topic</option>
@@ -469,11 +474,12 @@ export default function TargetManagementTab({
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-400 mb-2">Priority</label>
+                      <label className="block text-sm font-medium mb-2" style={{ color: 'var(--grey-400)', fontFamily: 'var(--font-display)' }}>Priority</label>
                       <select
                         value={newTarget.priority}
                         onChange={(e) => setNewTarget({ ...newTarget, priority: e.target.value as any })}
-                        className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white focus:border-cyan-500 focus:outline-none"
+                        className="w-full px-4 py-2.5 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)]"
+                        style={{ background: 'var(--grey-800)', border: '1px solid var(--grey-700)' }}
                       >
                         <option value="low">Low</option>
                         <option value="medium">Medium</option>
@@ -486,7 +492,8 @@ export default function TargetManagementTab({
                     <button
                       onClick={addTarget}
                       disabled={saving || !newTarget.name.trim()}
-                      className="flex-1 px-4 py-2 bg-cyan-500 hover:bg-cyan-600 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                      className="flex-1 px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                      style={{ background: 'var(--burnt-orange)', color: 'white', fontFamily: 'var(--font-display)' }}
                     >
                       {saving ? <Loader className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                       Add Target
@@ -496,7 +503,8 @@ export default function TargetManagementTab({
                         setShowAddForm(false)
                         setNewTarget({ name: '', type: 'competitor', priority: 'medium' })
                       }}
-                      className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors"
+                      className="px-4 py-2 rounded-lg font-medium transition-colors"
+                      style={{ background: 'var(--grey-800)', color: 'var(--grey-300)' }}
                     >
                       Cancel
                     </button>
@@ -509,25 +517,26 @@ export default function TargetManagementTab({
           {/* Targets List */}
           {targets.length === 0 ? (
             <div className="text-center py-12">
-              <Target className="w-16 h-16 text-gray-700 mx-auto mb-4" />
-              <p className="text-gray-400 mb-2">No targets yet</p>
-              <p className="text-sm text-gray-500">Add targets to start monitoring</p>
+              <Target className="w-16 h-16 mx-auto mb-4" style={{ color: 'var(--grey-700)' }} />
+              <p className="mb-2" style={{ color: 'var(--grey-400)' }}>No targets yet</p>
+              <p className="text-sm" style={{ color: 'var(--grey-500)' }}>Add targets to start monitoring</p>
             </div>
           ) : (
             <div className="space-y-6">
               {Object.entries(groupedTargets).map(([type, typeTargets]) => (
                 <div key={type}>
-                  <h3 className="text-lg font-semibold text-white mb-3 capitalize flex items-center gap-2">
+                  <h3 className="text-lg font-medium text-white mb-3 capitalize flex items-center gap-2" style={{ fontFamily: 'var(--font-display)' }}>
                     <span className={`px-3 py-1 rounded-lg border text-sm ${getTypeColor(type)}`}>
                       {type}s
                     </span>
-                    <span className="text-gray-500 text-sm">({typeTargets.length})</span>
+                    <span className="text-sm" style={{ color: 'var(--grey-500)' }}>({typeTargets.length})</span>
                   </h3>
                   <div className="space-y-2">
                     {typeTargets.map((target) => (
                       <div
                         key={target.id}
-                        className="p-4 bg-gray-800 border border-gray-700 rounded-lg hover:border-gray-600 transition-colors"
+                        className="p-4 rounded-lg transition-colors"
+                        style={{ background: 'var(--grey-900)', border: '1px solid var(--grey-800)' }}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
@@ -537,20 +546,21 @@ export default function TargetManagementTab({
                                 value={target.priority}
                                 onChange={(e) => updateTargetPriority(target.id, e.target.value as IntelligenceTarget['priority'])}
                                 disabled={saving}
-                                className={`px-2 py-1 text-xs font-medium rounded border bg-gray-900 focus:outline-none focus:ring-2 focus:ring-cyan-500 disabled:opacity-50 ${getPriorityColor(target.priority)}`}
+                                className={`px-2 py-1 text-xs font-medium rounded focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)] disabled:opacity-50 ${getPriorityColor(target.priority)}`}
+                                style={{ background: 'var(--grey-800)', border: '1px solid var(--grey-700)' }}
                               >
-                                <option value="low" className="bg-gray-900 text-gray-400">LOW</option>
-                                <option value="medium" className="bg-gray-900 text-yellow-400">MEDIUM</option>
-                                <option value="high" className="bg-gray-900 text-orange-400">HIGH</option>
-                                <option value="critical" className="bg-gray-900 text-red-400">CRITICAL</option>
+                                <option value="low" style={{ background: 'var(--grey-900)' }} className="text-gray-400">LOW</option>
+                                <option value="medium" style={{ background: 'var(--grey-900)' }} className="text-yellow-400">MEDIUM</option>
+                                <option value="high" style={{ background: 'var(--grey-900)' }} className="text-orange-400">HIGH</option>
+                                <option value="critical" style={{ background: 'var(--grey-900)' }} className="text-red-400">CRITICAL</option>
                               </select>
                               {target.prediction_count !== undefined && target.prediction_count > 0 && (
-                                <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full">
+                                <span className="text-xs px-2 py-1 rounded-full" style={{ background: 'var(--burnt-orange-muted)', color: 'var(--burnt-orange)' }}>
                                   🔮 {target.prediction_count}
                                 </span>
                               )}
                             </div>
-                            <p className="text-sm text-gray-500 mt-1">
+                            <p className="text-sm mt-1" style={{ color: 'var(--grey-500)' }}>
                               Added {new Date(target.created_at).toLocaleDateString()}
                             </p>
                           </div>
@@ -587,29 +597,33 @@ export default function TargetManagementTab({
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-3xl max-h-[70vh] overflow-hidden flex flex-col"
+              className="rounded-xl w-full max-w-3xl max-h-[70vh] overflow-hidden flex flex-col"
+              style={{ background: 'var(--charcoal)', border: '1px solid var(--grey-800)' }}
             >
-              <div className="p-6 border-b border-gray-700">
+              <div className="p-6" style={{ borderBottom: '1px solid var(--grey-800)' }}>
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-bold text-white">Discovery Results</h3>
+                  <h3 className="text-xl font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>Discovery Results</h3>
                   <button
                     onClick={() => setShowDiscoveryResults(false)}
-                    className="p-2 hover:bg-gray-800 rounded-lg"
+                    className="p-2 rounded-lg transition-colors"
+                    style={{ color: 'var(--grey-400)' }}
                   >
-                    <CloseIcon className="w-5 h-5 text-gray-400" />
+                    <CloseIcon className="w-5 h-5" />
                   </button>
                 </div>
                 <div className="flex gap-2">
                   <button
                     onClick={selectAllDiscoveryItems}
-                    className="px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 rounded-lg text-cyan-400 text-sm font-medium"
+                    className="px-3 py-1.5 rounded-lg text-sm font-medium"
+                    style={{ background: 'var(--burnt-orange-muted)', color: 'var(--burnt-orange)', border: '1px solid var(--burnt-orange)' }}
                   >
                     Select All
                   </button>
                   <button
                     onClick={() => setSelectedDiscoveryItems(new Set())}
                     disabled={selectedDiscoveryItems.size === 0}
-                    className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 disabled:bg-gray-900 disabled:text-gray-600 border border-gray-700 rounded-lg text-gray-300 text-sm font-medium"
+                    className="px-3 py-1.5 rounded-lg text-sm font-medium disabled:opacity-50"
+                    style={{ background: 'var(--grey-800)', color: 'var(--grey-300)', border: '1px solid var(--grey-700)' }}
                   >
                     Deselect All
                   </button>
@@ -620,7 +634,7 @@ export default function TargetManagementTab({
                 {/* Show competitors, topics, stakeholders similar to original */}
                 {discoveredItems.competitors && discoveredItems.competitors.length > 0 && (
                   <div>
-                    <h4 className="text-sm font-semibold text-white mb-2">Competitors ({discoveredItems.competitors.length})</h4>
+                    <h4 className="text-sm font-medium text-white mb-2" style={{ fontFamily: 'var(--font-display)' }}>Competitors ({discoveredItems.competitors.length})</h4>
                     <div className="grid grid-cols-2 gap-2">
                       {discoveredItems.competitors.map((comp: string) => {
                         const exists = targets.some(t => t.name.toLowerCase() === comp.toLowerCase() && t.type === 'competitor')
@@ -631,7 +645,7 @@ export default function TargetManagementTab({
                             onClick={() => !exists && toggleDiscoveryItem(comp)}
                             disabled={exists}
                             className={`p-2 rounded border text-sm ${
-                              exists ? 'bg-gray-800 border-gray-700 text-gray-500' :
+                              exists ? 'bg-[var(--grey-800)] border-[var(--grey-700)] text-[var(--grey-500)]' :
                               isSelected ? 'bg-red-500/20 border-red-500 text-red-300' :
                               'bg-red-500/10 border-red-500/30 text-red-300 hover:bg-red-500/20'
                             }`}
@@ -646,7 +660,7 @@ export default function TargetManagementTab({
 
                 {discoveredItems.topics && discoveredItems.topics.length > 0 && (
                   <div className="mt-4">
-                    <h4 className="text-sm font-semibold text-white mb-2">Topics ({discoveredItems.topics.length})</h4>
+                    <h4 className="text-sm font-medium text-white mb-2" style={{ fontFamily: 'var(--font-display)' }}>Topics ({discoveredItems.topics.length})</h4>
                     <div className="grid grid-cols-2 gap-2">
                       {discoveredItems.topics.map((topic: string) => {
                         const exists = targets.some(t => t.name.toLowerCase() === topic.toLowerCase() && t.type === 'topic')
@@ -657,9 +671,9 @@ export default function TargetManagementTab({
                             onClick={() => !exists && toggleDiscoveryItem(topic)}
                             disabled={exists}
                             className={`p-2 rounded border text-sm ${
-                              exists ? 'bg-gray-800 border-gray-700 text-gray-500' :
-                              isSelected ? 'bg-blue-500/20 border-blue-500 text-blue-300' :
-                              'bg-blue-500/10 border-blue-500/30 text-blue-300 hover:bg-blue-500/20'
+                              exists ? 'bg-[var(--grey-800)] border-[var(--grey-700)] text-[var(--grey-500)]' :
+                              isSelected ? 'bg-[var(--burnt-orange-muted)] border-[var(--burnt-orange)] text-[var(--burnt-orange)]' :
+                              'bg-[var(--burnt-orange-muted)]/50 border-[var(--burnt-orange)]/30 text-[var(--burnt-orange)] hover:bg-[var(--burnt-orange-muted)]'
                             }`}
                           >
                             {topic}
@@ -674,7 +688,7 @@ export default function TargetManagementTab({
                   <>
                     {discoveredItems.stakeholders.regulators && discoveredItems.stakeholders.regulators.length > 0 && (
                       <div className="mt-4">
-                        <h4 className="text-sm font-semibold text-white mb-2">Regulators ({discoveredItems.stakeholders.regulators.length})</h4>
+                        <h4 className="text-sm font-medium text-white mb-2" style={{ fontFamily: 'var(--font-display)' }}>Regulators ({discoveredItems.stakeholders.regulators.length})</h4>
                         <div className="grid grid-cols-2 gap-2">
                           {discoveredItems.stakeholders.regulators.map((stakeholder: string) => {
                             const exists = targets.some(t =>
@@ -688,7 +702,7 @@ export default function TargetManagementTab({
                                 onClick={() => !exists && toggleDiscoveryItem(stakeholder)}
                                 disabled={exists}
                                 className={`p-2 rounded border text-sm ${
-                                  exists ? 'bg-gray-800 border-gray-700 text-gray-500' :
+                                  exists ? 'bg-[var(--grey-800)] border-[var(--grey-700)] text-[var(--grey-500)]' :
                                   isSelected ? 'bg-purple-500/20 border-purple-500 text-purple-300' :
                                   'bg-purple-500/10 border-purple-500/30 text-purple-300 hover:bg-purple-500/20'
                                 }`}
@@ -703,7 +717,7 @@ export default function TargetManagementTab({
 
                     {discoveredItems.stakeholders.influencers && discoveredItems.stakeholders.influencers.length > 0 && (
                       <div className="mt-4">
-                        <h4 className="text-sm font-semibold text-white mb-2">Influencers ({discoveredItems.stakeholders.influencers.length})</h4>
+                        <h4 className="text-sm font-medium text-white mb-2" style={{ fontFamily: 'var(--font-display)' }}>Influencers ({discoveredItems.stakeholders.influencers.length})</h4>
                         <div className="grid grid-cols-2 gap-2">
                           {discoveredItems.stakeholders.influencers.map((stakeholder: string) => {
                             const exists = targets.some(t =>
@@ -717,7 +731,7 @@ export default function TargetManagementTab({
                                 onClick={() => !exists && toggleDiscoveryItem(stakeholder)}
                                 disabled={exists}
                                 className={`p-2 rounded border text-sm ${
-                                  exists ? 'bg-gray-800 border-gray-700 text-gray-500' :
+                                  exists ? 'bg-[var(--grey-800)] border-[var(--grey-700)] text-[var(--grey-500)]' :
                                   isSelected ? 'bg-purple-500/20 border-purple-500 text-purple-300' :
                                   'bg-purple-500/10 border-purple-500/30 text-purple-300 hover:bg-purple-500/20'
                                 }`}
@@ -732,7 +746,7 @@ export default function TargetManagementTab({
 
                     {discoveredItems.stakeholders.major_customers && discoveredItems.stakeholders.major_customers.length > 0 && (
                       <div className="mt-4">
-                        <h4 className="text-sm font-semibold text-white mb-2">Major Customers ({discoveredItems.stakeholders.major_customers.length})</h4>
+                        <h4 className="text-sm font-medium text-white mb-2" style={{ fontFamily: 'var(--font-display)' }}>Major Customers ({discoveredItems.stakeholders.major_customers.length})</h4>
                         <div className="grid grid-cols-2 gap-2">
                           {discoveredItems.stakeholders.major_customers.map((stakeholder: string) => {
                             const exists = targets.some(t =>
@@ -746,7 +760,7 @@ export default function TargetManagementTab({
                                 onClick={() => !exists && toggleDiscoveryItem(stakeholder)}
                                 disabled={exists}
                                 className={`p-2 rounded border text-sm ${
-                                  exists ? 'bg-gray-800 border-gray-700 text-gray-500' :
+                                  exists ? 'bg-[var(--grey-800)] border-[var(--grey-700)] text-[var(--grey-500)]' :
                                   isSelected ? 'bg-purple-500/20 border-purple-500 text-purple-300' :
                                   'bg-purple-500/10 border-purple-500/30 text-purple-300 hover:bg-purple-500/20'
                                 }`}
@@ -762,11 +776,12 @@ export default function TargetManagementTab({
                 )}
               </div>
 
-              <div className="p-6 border-t border-gray-700 flex gap-3">
+              <div className="p-6 flex gap-3" style={{ borderTop: '1px solid var(--grey-800)' }}>
                 <button
                   onClick={saveSelectedDiscoveryItems}
                   disabled={saving}
-                  className="flex-1 px-4 py-2 bg-cyan-500 hover:bg-cyan-600 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg font-medium flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-2 rounded-lg font-medium flex items-center justify-center gap-2 disabled:opacity-50"
+                  style={{ background: 'var(--burnt-orange)', color: 'white', fontFamily: 'var(--font-display)' }}
                 >
                   {saving ? (
                     <>
@@ -787,7 +802,8 @@ export default function TargetManagementTab({
                 </button>
                 <button
                   onClick={() => setShowDiscoveryResults(false)}
-                  className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg font-medium"
+                  className="px-4 py-2 rounded-lg font-medium"
+                  style={{ background: 'var(--grey-800)', color: 'var(--grey-300)' }}
                 >
                   Cancel
                 </button>

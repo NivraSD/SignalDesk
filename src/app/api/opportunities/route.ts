@@ -27,15 +27,15 @@ export async function GET(request: NextRequest) {
           process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
         )
         
-        // Calculate timestamp for 2 hours ago
-        const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
-        
+        // Calculate timestamp for 7 days ago
+        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+
         let query = supabase
           .from('opportunities')
           .select('*')
           .order('score', { ascending: false })
           .limit(20)
-          .gte('created_at', twoHoursAgo) // Only get opportunities from last 2 hours
+          .gte('created_at', sevenDaysAgo) // Get opportunities from last 7 days
         
         // Filter by organization if provided
         if (organizationId) {
@@ -67,15 +67,15 @@ export async function GET(request: NextRequest) {
     // Use service role key which bypasses RLS
     const supabase = createClient(supabaseUrl, supabaseKey)
     
-    // Calculate timestamp for 2 hours ago
-    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
-    
+    // Calculate timestamp for 7 days ago
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+
     let query = supabase
       .from('opportunities')
       .select('*')
       .order('score', { ascending: false })
       .limit(20)
-      .gte('created_at', twoHoursAgo) // Only get opportunities from last 2 hours
+      .gte('created_at', sevenDaysAgo) // Get opportunities from last 7 days
     
     // Filter by organization if provided
     if (organizationId) {
@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
     const { data, error } = await query
     
     console.log('🔴 Database query result:', {
-      timeFilter: `>= ${twoHoursAgo}`,
+      timeFilter: `>= ${sevenDaysAgo}`,
       dataCount: data?.length || 0,
       firstItem: data?.[0],
       error: error

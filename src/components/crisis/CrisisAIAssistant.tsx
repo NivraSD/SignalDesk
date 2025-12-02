@@ -108,16 +108,17 @@ export default function CrisisAIAssistant({ crisis, onUpdate }: CrisisAIAssistan
   ]
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl flex flex-col h-full max-h-[800px]">
+    <div className="bg-[var(--charcoal)] border border-zinc-800 rounded-xl flex flex-col h-full max-h-[800px]">
       {/* Header */}
-      <div className="p-4 border-b border-gray-800 flex-shrink-0">
+      <div className="p-4 border-b border-zinc-800 flex-shrink-0">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
-            <Bot className="w-6 h-6 text-white" />
+          <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center relative">
+            <span className="text-sm font-bold text-[var(--charcoal)]" style={{ fontFamily: 'var(--font-display)' }}>NIV</span>
+            <div className="absolute top-0 right-0 w-0 h-0 border-l-[10px] border-l-transparent border-t-[10px] border-t-[var(--burnt-orange)]" />
           </div>
           <div>
-            <h3 className="font-bold text-white">Crisis AI Advisor</h3>
-            <p className="text-xs text-gray-400">Directive, actionable guidance</p>
+            <h3 className="font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>NIV Crisis Advisor</h3>
+            <p className="text-xs text-[var(--grey-400)]">Available 24/7</p>
           </div>
         </div>
       </div>
@@ -126,18 +127,18 @@ export default function CrisisAIAssistant({ crisis, onUpdate }: CrisisAIAssistan
       <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
         {conversation.length === 0 && (
           <div className="text-center py-12">
-            <Bot className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-            <h4 className="text-lg font-semibold text-white mb-2">AI Crisis Advisor Ready</h4>
-            <p className="text-sm text-gray-400 mb-6">
+            <Bot className="w-12 h-12 text-[var(--grey-600)] mx-auto mb-4" />
+            <h4 className="text-lg font-semibold text-white mb-2" style={{ fontFamily: 'var(--font-display)' }}>AI Crisis Advisor Ready</h4>
+            <p className="text-sm text-[var(--grey-400)] mb-6">
               Ask me what to do. I'll give you one specific action at a time.
             </p>
             <div className="space-y-2">
-              <div className="text-xs text-gray-500 uppercase font-semibold mb-2">Quick Actions</div>
+              <div className="text-xs text-[var(--grey-500)] uppercase font-semibold mb-2">Quick Actions</div>
               {quickQuestions.map((action, idx) => (
                 <button
                   key={idx}
                   onClick={() => setMessage(action)}
-                  className="block w-full text-left px-4 py-2 bg-gray-800/50 hover:bg-gray-800 rounded-lg text-sm text-gray-300 transition-colors"
+                  className="block w-full text-left px-4 py-2 bg-zinc-800/50 hover:bg-zinc-800 rounded-lg text-sm text-[var(--grey-300)] transition-colors"
                 >
                   {action}
                 </button>
@@ -150,11 +151,11 @@ export default function CrisisAIAssistant({ crisis, onUpdate }: CrisisAIAssistan
           <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div className={`max-w-[80%] rounded-lg px-4 py-2 ${
               msg.role === 'user'
-                ? 'bg-blue-600 text-white rounded-tr-none'
-                : 'bg-gray-800 text-gray-100 rounded-tl-none'
+                ? 'bg-[var(--burnt-orange)] text-white rounded-tr-none'
+                : 'bg-zinc-800 text-[var(--grey-100)] rounded-tl-none'
             }`}>
               <div className="text-sm whitespace-pre-wrap">{msg.content}</div>
-              <div className="text-xs text-gray-500 mt-2">
+              <div className="text-xs text-[var(--grey-500)] mt-2">
                 {new Date(msg.timestamp).toLocaleTimeString()}
               </div>
             </div>
@@ -163,8 +164,8 @@ export default function CrisisAIAssistant({ crisis, onUpdate }: CrisisAIAssistan
 
         {loading && (
           <div className="flex justify-start">
-            <div className="bg-gray-800 text-gray-100 rounded-lg rounded-tl-none px-4 py-3">
-              <Loader2 className="w-5 h-5 animate-spin text-blue-400" />
+            <div className="bg-zinc-800 text-[var(--grey-100)] rounded-lg rounded-tl-none px-4 py-3">
+              <Loader2 className="w-5 h-5 animate-spin text-[var(--burnt-orange)]" />
             </div>
           </div>
         )}
@@ -183,7 +184,7 @@ export default function CrisisAIAssistant({ crisis, onUpdate }: CrisisAIAssistan
       </div>
 
       {/* Input */}
-      <div className="p-4 border-t border-gray-800 flex-shrink-0">
+      <div className="p-4 border-t border-zinc-800 flex-shrink-0">
         <div className="flex space-x-2">
           <input
             type="text"
@@ -191,13 +192,13 @@ export default function CrisisAIAssistant({ crisis, onUpdate }: CrisisAIAssistan
             onChange={(e) => setMessage(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
             placeholder="Ask for guidance..."
-            className="flex-1 bg-gray-800 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 bg-zinc-800 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)]"
             disabled={loading}
           />
           <button
             onClick={sendMessage}
             disabled={!message.trim() || loading}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:cursor-not-allowed text-white rounded-lg transition-colors flex items-center space-x-2"
+            className="px-4 py-2 bg-[var(--burnt-orange)] hover:brightness-110 disabled:bg-zinc-700 disabled:cursor-not-allowed text-white rounded-lg transition-colors flex items-center space-x-2"
           >
             {loading ? (
               <Loader2 className="w-5 h-5 animate-spin" />
@@ -214,7 +215,7 @@ export default function CrisisAIAssistant({ crisis, onUpdate }: CrisisAIAssistan
               <button
                 key={idx}
                 onClick={() => setMessage(action)}
-                className="text-xs px-3 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-full transition-colors flex items-center space-x-1"
+                className="text-xs px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-[var(--grey-300)] rounded-full transition-colors flex items-center space-x-1"
               >
                 <Sparkles className="w-3 h-3" />
                 <span>{action}</span>

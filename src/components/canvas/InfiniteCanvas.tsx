@@ -16,7 +16,7 @@ import MemoryVaultModule from '@/components/modules/MemoryVaultModule'
 import ExecuteTabProduction from '@/components/execute/ExecuteTabProduction'
 import StrategicPlanningModule from '@/components/modules/StrategicPlanningModule'
 import StrategicPlanningModuleV3Complete from '@/components/modules/StrategicPlanningModuleV3Complete'
-import CrisisCommandCenter from '@/components/modules/CrisisCommandCenter'
+import CrisisModule from '@/components/modules/CrisisModule'
 import NivCrisisConsultant from '@/components/modules/NivCrisisConsultant'
 import WorkspaceCanvasComponent from '@/components/workspace/WorkspaceCanvasComponent'
 import StrategicCampaignPlanner from '@/components/prototype/StrategicCampaignPlanner'
@@ -414,7 +414,7 @@ export default function InfiniteCanvas({ children }: { children?: React.ReactNod
       case 'memoryvault':
         return <MemoryVaultModule />
       case 'crisis':
-        return <CrisisCommandCenter />
+        return <CrisisModule />
       case 'niv-crisis':
         return <NivCrisisConsultant />
       default:

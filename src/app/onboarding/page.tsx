@@ -68,10 +68,10 @@ export default function OnboardingPage() {
 
   if (checkingOrgs) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-[var(--grey-900)] flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-400">Checking your account...</p>
+          <div className="w-12 h-12 border-4 border-[var(--burnt-orange)] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-[var(--grey-400)]">Checking your account...</p>
         </div>
       </div>
     )
@@ -82,7 +82,7 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div className="min-h-screen bg-[var(--grey-900)]">
       <OrganizationOnboarding
         isOpen={true}
         onClose={() => {

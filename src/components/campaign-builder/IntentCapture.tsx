@@ -95,7 +95,8 @@ export function IntentCapture({ onSubmit, isLoading }: IntentCaptureProps) {
             <button
               onClick={handleSubmit}
               disabled={goal.trim().length < 10 || isLoading}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="px-6 py-2 text-white rounded-lg font-medium hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              style={{ background: 'var(--burnt-orange)', fontFamily: 'var(--font-display)' }}
             >
               {isLoading ? (
                 <span className="flex items-center gap-2">

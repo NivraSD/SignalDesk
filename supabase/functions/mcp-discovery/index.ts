@@ -183,6 +183,24 @@ async function createOrganizationProfile(args: any) {
   console.log(`   Mode: ${gap_filling_mode ? 'GAP-FILLING' : 'FULL PROFILE'}`);
   console.log(`   Industry hint: ${industry_hint || 'Auto-detect'}`);
 
+  // Fetch existing company profile to get company size info
+  let existingProfile: any = null;
+  if (organization_id) {
+    try {
+      const { data: org } = await supabase
+        .from('organizations')
+        .select('company_profile')
+        .eq('id', organization_id)
+        .single();
+      existingProfile = org?.company_profile || null;
+      if (existingProfile?.company_size) {
+        console.log(`   Existing company size: ${existingProfile.company_size.employees || 'unknown'} employees, ${existingProfile.company_size.revenue_tier || 'unknown'} revenue`);
+      }
+    } catch (e) {
+      console.log(`   No existing profile found`);
+    }
+  }
+
   if (gap_filling_mode && gap_context) {
     console.log(`   Gap type: ${gap_context.gap_type}`);
     console.log(`   Missing entities: ${gap_context.missing_entities?.length || 0}`);
@@ -209,6 +227,11 @@ async function createOrganizationProfile(args: any) {
 
     // Get industry competitors from our registry (merged with user targets)
     const industryData = await gatherIndustryData(organization_name, industry_hint, website, about_page, userTargets);
+
+    // Add company size info from existing profile
+    if (existingProfile?.company_size) {
+      industryData.company_size = existingProfile.company_size;
+    }
 
     // Build initial description from website for semantic source matching
     // Prioritize about_page for richer strategic context, fallback to website homepage
@@ -804,6 +827,8 @@ COMPANY PROFILE:
 ${product_lines.length > 0 ? `- Key Product Lines: ${product_lines.join(', ')}` : ''}
 ${key_markets.length > 0 ? `- Key Markets: ${key_markets.join(', ')}` : ''}
 ${business_model ? `- Business Model: ${business_model}` : ''}
+${industryData.company_size?.employees ? `- Company Size: ${industryData.company_size.employees} employees` : ''}
+${industryData.company_size?.revenue_tier ? `- Revenue Tier: ${industryData.company_size.revenue_tier}` : ''}
 
 🎯 CRITICAL: Use the product lines and markets above to generate SPECIFIC search queries.
    For example, if product lines include "CRM Software" and "Sales Automation",
@@ -933,14 +958,16 @@ NOW, provide your COMPREHENSIVE profile in this JSON format:
       "Competitor 2 Name",
       "Competitor 3 Name",
       "List 10-15 ACTUAL competitors who serve the SAME customers with SIMILAR products/services",
-      "⚠️ CRITICAL: Identify competitors based on BUSINESS MODEL and CUSTOMER BASE, not just industry category",
-      "Example: For 'Buck Mason' (premium menswear brand), competitors are Bonobos, Everlane, Todd Snyder - NOT Walmart, Target, Home Depot",
-      "Example: For 'Edelman' (strategic communications firm), competitors are Weber Shandwick, FleishmanHillard - NOT AT&T, Verizon",
+      "⚠️ CRITICAL: Identify competitors based on BUSINESS MODEL, CUSTOMER BASE, AND COMPANY SIZE",
+      "🎯 SIZE MATCHING: Find competitors of SIMILAR SIZE - a 50-person agency competes with other 50-200 person shops, NOT WPP/Publicis giants",
+      "🎯 NICHE MATCHING: Match the specific specialty - experiential agencies compete with experiential agencies, not general creative shops",
+      "Example: For a mid-size experiential marketing agency, competitors are: Set Creative, TBA Global, NVE Experience Agency, Sparks, MAS Event + Design, Inspira Marketing - NOT Momentum (owned by Interpublic) or Jack Morton (owned by Interpublic)",
+      "Example: For 'Buck Mason' (premium menswear brand), competitors are Bonobos, Everlane, Todd Snyder - NOT Walmart, Target",
       "Use CURRENT company names (if rebranded, use new name: 'BrandTech Group' not 'You & Mr Jones')"
     ],
-    "indirect_competitors": ["5-10 companies that could become competitors"],
-    "emerging_threats": ["3-5 startups or new entrants to watch"],
-    "competitive_dynamics": "2-3 sentences on key competitive factors in this market"
+    "indirect_competitors": ["5-10 companies that could become competitors - include larger holding company shops as aspirational/indirect"],
+    "emerging_threats": ["3-5 startups or new entrants to watch in the same niche"],
+    "competitive_dynamics": "2-3 sentences on key competitive factors in this market, including how size/scale affects competition"
   },
 
   "stakeholders": {
@@ -1075,21 +1102,30 @@ ${industryData.competitors.length > 0 ? `\nKnown competitors: ${industryData.com
 📚 EXAMPLES OF GOOD PROFILES
 ═══════════════════════════════════════════════════════════
 
-✅ GOOD Example (Creative Agency):
+✅ GOOD Example (Mid-Size Experiential Marketing Agency ~100 employees):
 {
   "competition": {
-    "direct_competitors": ["Wieden+Kennedy", "Droga5", "72andSunny", "TBWA", "Mother", "R/GA", "Anomaly", "Deutsch", "BrandTech Group", "Sid Lee"]
+    "direct_competitors": ["Set Creative", "TBA Global", "NVE Experience Agency", "Inspira Marketing", "MAS Event + Design", "agencyEA", "The Eventive Group", "Pro Motion", "Concord", "BeCore"],
+    "indirect_competitors": ["Momentum Worldwide", "Jack Morton", "George P. Johnson"],
+    "competitive_dynamics": "Mid-size experiential agencies compete on creativity and client relationships. Holding company shops have scale but less agility. Independent shops win through specialized expertise."
   },
   "stakeholders": {
     "regulators": [],
-    "key_analysts": ["Scott Galloway - NYU Marketing Professor", "Ann Handley - Chief Content Officer MarketingProfs", "Mark Ritson - Marketing Week columnist", "Bob Hoffman - The Ad Contrarian"],
+    "key_analysts": ["Scott Galloway - NYU Marketing Professor", "Ann Handley - Chief Content Officer MarketingProfs", "Event Marketer Magazine editors", "BizBash editorial team"],
     "activists": []
   },
   "monitoring_guidance": {
     "analysts": {
-      "what_to_track": ["industry trend commentary", "agency critiques and praise", "thought leadership on marketing evolution", "predictions about advertising future"],
+      "what_to_track": ["industry trend commentary", "agency critiques and praise", "thought leadership on marketing evolution", "event industry awards and recognition"],
       "why": "These voices shape client perceptions of agencies and influence hiring decisions"
     }
+  }
+}
+
+✅ GOOD Example (Large Creative Agency - WPP/Publicis/Omnicom level):
+{
+  "competition": {
+    "direct_competitors": ["Wieden+Kennedy", "Droga5", "72andSunny", "TBWA", "Mother", "R/GA", "Anomaly", "Deutsch", "BrandTech Group", "Sid Lee"]
   }
 }
 
@@ -1743,10 +1779,30 @@ async function saveProfile(organizationId: string, profile: any) {
     console.log(`   Profile has ${Object.keys(profile.sources || {}).length} source categories`);
     console.log(`   Source categories: ${Object.keys(profile.sources || {}).join(', ')}`);
 
+    // Extract company profile fields that the UI needs at the top level
+    const companyProfileData = profile.company_profile || {};
+
+    // Merge the full profile with UI-expected flat fields at top level
+    const profileToSave = {
+      ...profile,
+      // UI-expected flat fields (for CompanyProfileTab)
+      leadership: companyProfileData.leadership || profile.leadership || [],
+      headquarters: companyProfileData.headquarters || profile.headquarters || {},
+      company_size: companyProfileData.company_size || profile.company_size || {},
+      founded: companyProfileData.founded || profile.founded || '',
+      parent_company: companyProfileData.parent_company || profile.parent_company || '',
+      product_lines: companyProfileData.product_lines || profile.product_lines || profile.service_lines || [],
+      key_markets: companyProfileData.key_markets || profile.key_markets || profile.market?.key_markets || [],
+      business_model: companyProfileData.business_model || profile.business_model || profile.description || '',
+      strategic_goals: companyProfileData.strategic_goals || profile.strategic_goals || profile.strategic_context?.strategic_priorities || []
+    };
+
+    console.log(`   UI fields being saved: product_lines=${profileToSave.product_lines?.length}, key_markets=${profileToSave.key_markets?.length}, business_model=${!!profileToSave.business_model}`);
+
     const { data, error } = await supabase
       .from('organizations')
       .update({
-        company_profile: profile,
+        company_profile: profileToSave,
         updated_at: new Date().toISOString()
       })
       .eq('id', organizationId)
@@ -1764,9 +1820,173 @@ async function saveProfile(organizationId: string, profile: any) {
 
     console.log('✅ Profile saved successfully to organizations.company_profile');
     console.log(`   Verified sources in saved profile: ${Object.keys(data[0].company_profile?.sources || {}).length} categories`);
+
+    // Also create intelligence_targets from the profile
+    await createIntelligenceTargets(organizationId, profile);
   } catch (e) {
     console.error('❌ Error saving profile:', e);
     throw e;
+  }
+}
+
+// Create intelligence_targets from company profile (competitors, stakeholders, topics)
+async function createIntelligenceTargets(organizationId: string, profile: any) {
+  try {
+    console.log('🎯 Creating intelligence targets from profile...');
+
+    const targets: Array<{
+      organization_id: string;
+      name: string;
+      type: string;
+      priority: string;
+      monitoring_context: any;
+      active: boolean;
+    }> = [];
+
+    // Add competitors
+    const directCompetitors = profile.competition?.direct_competitors || [];
+    const indirectCompetitors = profile.competition?.indirect_competitors || [];
+    const emergingThreats = profile.competition?.emerging_threats || [];
+
+    directCompetitors.forEach((name: string) => {
+      if (name && typeof name === 'string') {
+        targets.push({
+          organization_id: organizationId,
+          name: name.trim(),
+          type: 'competitor',
+          priority: 'high',
+          monitoring_context: { category: 'direct_competitor' },
+          active: true
+        });
+      }
+    });
+
+    indirectCompetitors.forEach((name: string) => {
+      if (name && typeof name === 'string') {
+        targets.push({
+          organization_id: organizationId,
+          name: name.trim(),
+          type: 'competitor',
+          priority: 'medium',
+          monitoring_context: { category: 'indirect_competitor' },
+          active: true
+        });
+      }
+    });
+
+    emergingThreats.forEach((name: string) => {
+      if (name && typeof name === 'string') {
+        targets.push({
+          organization_id: organizationId,
+          name: name.trim(),
+          type: 'competitor',
+          priority: 'high',
+          monitoring_context: { category: 'emerging_threat' },
+          active: true
+        });
+      }
+    });
+
+    // Add stakeholders
+    const regulators = profile.stakeholders?.regulators || [];
+    const keyAnalysts = profile.stakeholders?.key_analysts || [];
+    const majorInvestors = profile.stakeholders?.major_investors || [];
+    const majorCustomers = profile.stakeholders?.major_customers || [];
+
+    regulators.forEach((name: string) => {
+      if (name && typeof name === 'string') {
+        targets.push({
+          organization_id: organizationId,
+          name: name.trim(),
+          type: 'stakeholder',
+          priority: 'high',
+          monitoring_context: { category: 'regulator' },
+          active: true
+        });
+      }
+    });
+
+    keyAnalysts.forEach((name: string) => {
+      if (name && typeof name === 'string') {
+        targets.push({
+          organization_id: organizationId,
+          name: name.trim(),
+          type: 'influencer',
+          priority: 'medium',
+          monitoring_context: { category: 'analyst' },
+          active: true
+        });
+      }
+    });
+
+    majorInvestors.forEach((name: string) => {
+      if (name && typeof name === 'string') {
+        targets.push({
+          organization_id: organizationId,
+          name: name.trim(),
+          type: 'stakeholder',
+          priority: 'medium',
+          monitoring_context: { category: 'investor' },
+          active: true
+        });
+      }
+    });
+
+    majorCustomers.forEach((name: string) => {
+      if (name && typeof name === 'string') {
+        targets.push({
+          organization_id: organizationId,
+          name: name.trim(),
+          type: 'stakeholder',
+          priority: 'medium',
+          monitoring_context: { category: 'customer' },
+          active: true
+        });
+      }
+    });
+
+    // Add key topics/keywords
+    const hotTopics = profile.trending?.hot_topics || [];
+    const keywords = profile.keywords || profile.monitoring_config?.keywords || [];
+
+    [...hotTopics, ...keywords].forEach((topic: string) => {
+      if (topic && typeof topic === 'string') {
+        targets.push({
+          organization_id: organizationId,
+          name: topic.trim(),
+          type: 'topic',
+          priority: 'medium',
+          monitoring_context: { category: 'keyword' },
+          active: true
+        });
+      }
+    });
+
+    if (targets.length === 0) {
+      console.log('⚠️ No intelligence targets to create from profile');
+      return;
+    }
+
+    console.log(`   Creating ${targets.length} intelligence targets...`);
+
+    // Upsert targets (avoid duplicates)
+    for (const target of targets) {
+      const { error } = await supabase
+        .from('intelligence_targets')
+        .upsert(target, {
+          onConflict: 'organization_id,name',
+          ignoreDuplicates: true
+        });
+
+      if (error && !error.message.includes('duplicate')) {
+        console.warn(`   ⚠️ Failed to create target "${target.name}":`, error.message);
+      }
+    }
+
+    console.log(`✅ Created ${targets.length} intelligence targets`);
+  } catch (e) {
+    console.error('❌ Error creating intelligence targets:', e);
+    // Don't throw - this is non-blocking
   }
 }
 

@@ -101,7 +101,6 @@ export async function PUT(req: NextRequest) {
       )
     }
 
-    console.log('Updating company profile for org:', id)
 
     // First fetch the current company_profile to preserve intelligence data
     const { data: currentOrg } = await supabase
@@ -133,6 +132,7 @@ export async function PUT(req: NextRequest) {
         }
       })
     }
+
 
     // Update using service role key to bypass any schema cache issues
     const { data, error } = await supabase

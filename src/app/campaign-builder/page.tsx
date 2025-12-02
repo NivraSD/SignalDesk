@@ -1,13 +1,18 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { CampaignBuilderWizard } from '@/components/campaign-builder/CampaignBuilderWizard'
 import { CampaignHistory } from '@/components/campaign-builder/CampaignHistory'
 import { useAppStore } from '@/stores/useAppStore'
 
-export default function CampaignBuilderPage() {
+function CampaignBuilderContent() {
+  const searchParams = useSearchParams()
   const { organization } = useAppStore()
   const [view, setView] = useState<'builder' | 'history'>('builder')
+
+  // Get initial objective from URL params (from modal)
+  const initialObjective = searchParams.get('objective') || undefined
 
   return (
     <div className="flex flex-col h-screen bg-black overflow-hidden">
@@ -63,7 +68,7 @@ export default function CampaignBuilderPage() {
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-7xl mx-auto">
           {view === 'builder' ? (
-            <CampaignBuilderWizard />
+            <CampaignBuilderWizard initialObjective={initialObjective} />
           ) : (
             <div className="p-8">
               <CampaignHistory
@@ -78,5 +83,17 @@ export default function CampaignBuilderPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function CampaignBuilderPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center h-screen bg-black">
+        <div className="text-white">Loading...</div>
+      </div>
+    }>
+      <CampaignBuilderContent />
+    </Suspense>
   )
 }

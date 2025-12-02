@@ -126,7 +126,6 @@ export default function CompanyProfileTab({
       setError(null)
       setSuccess(false)
 
-      console.log('Saving profile:', profile)
 
       // Use API route instead of client-side Supabase to avoid schema cache issues
       const response = await fetch(`/api/organizations/profile?id=${organizationId}`, {
@@ -135,7 +134,6 @@ export default function CompanyProfileTab({
         body: JSON.stringify({ company_profile: profile })
       })
 
-      console.log('Response status:', response.status)
 
       if (!response.ok) {
         const text = await response.text()
@@ -144,7 +142,6 @@ export default function CompanyProfileTab({
       }
 
       const data = await response.json()
-      console.log('Response data:', data)
 
       if (!data.success) {
         throw new Error(data.error || 'Failed to save profile')
@@ -225,17 +222,14 @@ export default function CompanyProfileTab({
   }
 
   const generateFromSchema = async () => {
-    console.log('🔄 Generate from schema clicked', { organizationId })
     try {
       setGenerating(true)
       setError(null)
       setSuccess(false)
 
-      console.log('📡 Fetching:', `/api/organizations/generate-profile?id=${organizationId}`)
       const response = await fetch(`/api/organizations/generate-profile?id=${organizationId}`, {
         method: 'POST'
       })
-      console.log('📡 Response status:', response.status)
 
       if (!response.ok) {
         const text = await response.text()
@@ -248,18 +242,36 @@ export default function CompanyProfileTab({
         throw new Error(data.error || 'Failed to generate profile')
       }
 
+
       // Merge generated profile with existing data
-      setProfile(prev => ({
-        leadership: data.profile.leadership || prev.leadership,
-        headquarters: data.profile.headquarters || prev.headquarters,
-        company_size: data.profile.company_size || prev.company_size,
-        founded: data.profile.founded || prev.founded,
-        parent_company: data.profile.parent_company || prev.parent_company,
-        product_lines: data.profile.product_lines?.length ? data.profile.product_lines : prev.product_lines,
-        key_markets: data.profile.key_markets?.length ? data.profile.key_markets : prev.key_markets,
-        business_model: data.profile.business_model || prev.business_model,
-        strategic_goals: data.profile.strategic_goals?.length ? data.profile.strategic_goals : prev.strategic_goals
-      }))
+      const mergedProfile = {
+        leadership: data.profile.leadership || profile.leadership,
+        headquarters: data.profile.headquarters || profile.headquarters,
+        company_size: data.profile.company_size || profile.company_size,
+        founded: data.profile.founded || profile.founded,
+        parent_company: data.profile.parent_company || profile.parent_company,
+        product_lines: data.profile.product_lines?.length ? data.profile.product_lines : profile.product_lines,
+        key_markets: data.profile.key_markets?.length ? data.profile.key_markets : profile.key_markets,
+        business_model: data.profile.business_model || profile.business_model,
+        strategic_goals: data.profile.strategic_goals?.length ? data.profile.strategic_goals : profile.strategic_goals
+      }
+
+      setProfile(mergedProfile)
+
+      // Auto-save after generating
+      const saveResponse = await fetch(`/api/organizations/profile?id=${organizationId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ company_profile: mergedProfile })
+      })
+
+      if (!saveResponse.ok) {
+        const text = await saveResponse.text()
+        console.error('Auto-save failed:', text)
+        throw new Error(`Failed to save generated profile: ${text}`)
+      }
+
+      await saveResponse.json()
 
       setSuccess(true)
       setTimeout(() => setSuccess(false), 3000)
@@ -274,7 +286,7 @@ export default function CompanyProfileTab({
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader className="w-8 h-8 text-cyan-500 animate-spin" />
+        <Loader className="w-8 h-8 animate-spin" style={{ color: 'var(--burnt-orange)' }} />
       </div>
     )
   }
@@ -283,19 +295,19 @@ export default function CompanyProfileTab({
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-white">Company Profile</h3>
-          <p className="text-sm text-gray-400">
+          <h3 className="text-lg font-medium text-white" style={{ fontFamily: 'var(--font-display)' }}>Company Profile</h3>
+          <p className="text-sm" style={{ color: 'var(--grey-400)' }}>
             Essential company facts used in opportunities, content, and campaigns
           </p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={(e) => {
-              console.log('🔘 BUTTON CLICKED', e)
               generateFromSchema()
             }}
             disabled={generating}
-            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg font-medium flex items-center gap-2"
+            className="px-4 py-2 rounded-lg font-medium flex items-center gap-2 disabled:opacity-50"
+            style={{ background: 'var(--grey-800)', color: 'var(--grey-300)', fontFamily: 'var(--font-display)' }}
           >
             {generating ? <Loader className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
             Generate from Schema
@@ -303,7 +315,8 @@ export default function CompanyProfileTab({
           <button
             onClick={saveProfile}
             disabled={saving}
-            className="px-4 py-2 bg-cyan-500 hover:bg-cyan-600 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg font-medium flex items-center gap-2"
+            className="px-4 py-2 rounded-lg font-medium flex items-center gap-2 disabled:opacity-50"
+            style={{ background: 'var(--burnt-orange)', color: 'white', fontFamily: 'var(--font-display)' }}
           >
             {saving ? <Loader className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Save Profile
@@ -338,25 +351,25 @@ export default function CompanyProfileTab({
       </AnimatePresence>
 
       {/* Leadership Team */}
-      <div className="p-6 bg-gray-900 border border-gray-700 rounded-lg">
+      <div className="p-6 rounded-xl" style={{ background: 'var(--grey-900)', border: '1px solid var(--grey-800)' }}>
         <div className="flex items-center gap-2 mb-4">
-          <Users className="w-5 h-5 text-cyan-400" />
-          <h4 className="text-white font-semibold">Leadership Team</h4>
+          <Users className="w-5 h-5" style={{ color: 'var(--burnt-orange)' }} />
+          <h4 className="text-white font-medium" style={{ fontFamily: 'var(--font-display)' }}>Leadership Team</h4>
         </div>
-        <p className="text-sm text-gray-400 mb-4">
+        <p className="text-sm mb-4" style={{ color: 'var(--grey-400)' }}>
           Add key executives and their actual titles. This prevents AI from making up fake roles.
         </p>
 
         <div className="space-y-3 mb-4">
           {(profile.leadership || []).map((leader, idx) => (
-            <div key={idx} className="p-3 bg-gray-800 border border-gray-700 rounded-lg">
+            <div key={idx} className="p-3 rounded-lg" style={{ background: 'var(--grey-800)', border: '1px solid var(--grey-700)' }}>
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="text-white font-medium">{leader.name}</div>
-                  <div className="text-sm text-gray-400">{leader.title}</div>
-                  {leader.email && <div className="text-xs text-gray-500 mt-1">{leader.email}</div>}
+                  <div className="text-sm" style={{ color: 'var(--grey-400)' }}>{leader.title}</div>
+                  {leader.email && <div className="text-xs mt-1" style={{ color: 'var(--grey-500)' }}>{leader.email}</div>}
                   {leader.linkedin && (
-                    <a href={leader.linkedin} target="_blank" rel="noopener noreferrer" className="text-xs text-cyan-400 hover:text-cyan-300 mt-1 inline-block">
+                    <a href={leader.linkedin} target="_blank" rel="noopener noreferrer" className="text-xs mt-1 inline-block" style={{ color: 'var(--burnt-orange)' }}>
                       LinkedIn Profile
                     </a>
                   )}
@@ -378,34 +391,39 @@ export default function CompanyProfileTab({
             placeholder="Name"
             value={newLeader.name}
             onChange={(e) => setNewLeader(prev => ({ ...prev, name: e.target.value }))}
-            className="px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
+            className="px-3 py-2.5 rounded-lg text-white placeholder-[var(--grey-600)] focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)]"
+            style={{ background: 'var(--grey-800)', border: '1px solid var(--grey-700)' }}
           />
           <input
             type="text"
             placeholder="Title"
             value={newLeader.title}
             onChange={(e) => setNewLeader(prev => ({ ...prev, title: e.target.value }))}
-            className="px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
+            className="px-3 py-2.5 rounded-lg text-white placeholder-[var(--grey-600)] focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)]"
+            style={{ background: 'var(--grey-800)', border: '1px solid var(--grey-700)' }}
           />
           <input
             type="email"
             placeholder="Email (optional)"
             value={newLeader.email || ''}
             onChange={(e) => setNewLeader(prev => ({ ...prev, email: e.target.value }))}
-            className="px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
+            className="px-3 py-2.5 rounded-lg text-white placeholder-[var(--grey-600)] focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)]"
+            style={{ background: 'var(--grey-800)', border: '1px solid var(--grey-700)' }}
           />
           <input
             type="url"
             placeholder="LinkedIn URL (optional)"
             value={newLeader.linkedin || ''}
             onChange={(e) => setNewLeader(prev => ({ ...prev, linkedin: e.target.value }))}
-            className="px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
+            className="px-3 py-2.5 rounded-lg text-white placeholder-[var(--grey-600)] focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)]"
+            style={{ background: 'var(--grey-800)', border: '1px solid var(--grey-700)' }}
           />
         </div>
         <button
           onClick={addLeader}
           disabled={!newLeader.name || !newLeader.title}
-          className="mt-3 w-full px-4 py-2 bg-gray-800 hover:bg-gray-700 disabled:bg-gray-800 disabled:text-gray-600 text-white rounded-lg flex items-center justify-center gap-2"
+          className="mt-3 w-full px-4 py-2 rounded-lg flex items-center justify-center gap-2 disabled:opacity-50"
+          style={{ background: 'var(--grey-800)', color: 'var(--grey-300)' }}
         >
           <Plus className="w-4 h-4" />
           Add Leader
@@ -413,10 +431,10 @@ export default function CompanyProfileTab({
       </div>
 
       {/* Headquarters */}
-      <div className="p-6 bg-gray-900 border border-gray-700 rounded-lg">
+      <div className="p-6 rounded-xl" style={{ background: 'var(--grey-900)', border: '1px solid var(--grey-800)' }}>
         <div className="flex items-center gap-2 mb-4">
-          <MapPin className="w-5 h-5 text-cyan-400" />
-          <h4 className="text-white font-semibold">Headquarters</h4>
+          <MapPin className="w-5 h-5" style={{ color: 'var(--burnt-orange)' }} />
+          <h4 className="text-white font-medium" style={{ fontFamily: 'var(--font-display)' }}>Headquarters</h4>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
@@ -428,7 +446,8 @@ export default function CompanyProfileTab({
               ...prev,
               headquarters: { ...prev.headquarters, address: e.target.value }
             }))}
-            className="px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
+            className="px-3 py-2.5 rounded-lg text-white placeholder-[var(--grey-600)] focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)]"
+            style={{ background: 'var(--grey-800)', border: '1px solid var(--grey-700)' }}
           />
           <input
             type="text"
@@ -438,7 +457,8 @@ export default function CompanyProfileTab({
               ...prev,
               headquarters: { ...prev.headquarters, city: e.target.value }
             }))}
-            className="px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
+            className="px-3 py-2.5 rounded-lg text-white placeholder-[var(--grey-600)] focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)]"
+            style={{ background: 'var(--grey-800)', border: '1px solid var(--grey-700)' }}
           />
           <input
             type="text"
@@ -448,7 +468,8 @@ export default function CompanyProfileTab({
               ...prev,
               headquarters: { ...prev.headquarters, state: e.target.value }
             }))}
-            className="px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
+            className="px-3 py-2.5 rounded-lg text-white placeholder-[var(--grey-600)] focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)]"
+            style={{ background: 'var(--grey-800)', border: '1px solid var(--grey-700)' }}
           />
           <input
             type="text"
@@ -458,28 +479,30 @@ export default function CompanyProfileTab({
               ...prev,
               headquarters: { ...prev.headquarters, country: e.target.value }
             }))}
-            className="px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
+            className="px-3 py-2.5 rounded-lg text-white placeholder-[var(--grey-600)] focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)]"
+            style={{ background: 'var(--grey-800)', border: '1px solid var(--grey-700)' }}
           />
         </div>
       </div>
 
       {/* Company Size & Details */}
-      <div className="p-6 bg-gray-900 border border-gray-700 rounded-lg">
+      <div className="p-6 rounded-xl" style={{ background: 'var(--grey-900)', border: '1px solid var(--grey-800)' }}>
         <div className="flex items-center gap-2 mb-4">
-          <Building2 className="w-5 h-5 text-cyan-400" />
-          <h4 className="text-white font-semibold">Company Details</h4>
+          <Building2 className="w-5 h-5" style={{ color: 'var(--burnt-orange)' }} />
+          <h4 className="text-white font-medium" style={{ fontFamily: 'var(--font-display)' }}>Company Details</h4>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Employee Count</label>
+            <label className="block text-sm mb-1" style={{ color: 'var(--grey-400)' }}>Employee Count</label>
             <select
               value={profile.company_size?.employees || ''}
               onChange={(e) => setProfile(prev => ({
                 ...prev,
                 company_size: { ...prev.company_size, employees: e.target.value }
               }))}
-              className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:border-cyan-500"
+              className="w-full px-3 py-2.5 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)]"
+              style={{ background: 'var(--grey-800)', border: '1px solid var(--grey-700)' }}
             >
               <option value="">Select range</option>
               <option value="1-10">1-10</option>
@@ -493,14 +516,15 @@ export default function CompanyProfileTab({
           </div>
 
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Revenue Tier</label>
+            <label className="block text-sm mb-1" style={{ color: 'var(--grey-400)' }}>Revenue Tier</label>
             <select
               value={profile.company_size?.revenue_tier || ''}
               onChange={(e) => setProfile(prev => ({
                 ...prev,
                 company_size: { ...prev.company_size, revenue_tier: e.target.value }
               }))}
-              className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:border-cyan-500"
+              className="w-full px-3 py-2.5 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)]"
+              style={{ background: 'var(--grey-800)', border: '1px solid var(--grey-700)' }}
             >
               <option value="">Select range</option>
               <option value="<$1M">&lt;$1M</option>
@@ -514,49 +538,52 @@ export default function CompanyProfileTab({
           </div>
 
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Founded</label>
+            <label className="block text-sm mb-1" style={{ color: 'var(--grey-400)' }}>Founded</label>
             <input
               type="text"
               placeholder="Year"
               value={profile.founded || ''}
               onChange={(e) => setProfile(prev => ({ ...prev, founded: e.target.value }))}
-              className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
+              className="w-full px-3 py-2.5 rounded-lg text-white placeholder-[var(--grey-600)] focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)]"
+              style={{ background: 'var(--grey-800)', border: '1px solid var(--grey-700)' }}
             />
           </div>
 
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Parent Company</label>
+            <label className="block text-sm mb-1" style={{ color: 'var(--grey-400)' }}>Parent Company</label>
             <input
               type="text"
               placeholder="If applicable"
               value={profile.parent_company || ''}
               onChange={(e) => setProfile(prev => ({ ...prev, parent_company: e.target.value }))}
-              className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
+              className="w-full px-3 py-2.5 rounded-lg text-white placeholder-[var(--grey-600)] focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)]"
+              style={{ background: 'var(--grey-800)', border: '1px solid var(--grey-700)' }}
             />
           </div>
 
           <div className="col-span-2">
-            <label className="block text-sm text-gray-400 mb-1">Business Model</label>
+            <label className="block text-sm mb-1" style={{ color: 'var(--grey-400)' }}>Business Model</label>
             <input
               type="text"
               placeholder="e.g., B2B SaaS, Consumer marketplace, etc."
               value={profile.business_model || ''}
               onChange={(e) => setProfile(prev => ({ ...prev, business_model: e.target.value }))}
-              className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
+              className="w-full px-3 py-2.5 rounded-lg text-white placeholder-[var(--grey-600)] focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)]"
+              style={{ background: 'var(--grey-800)', border: '1px solid var(--grey-700)' }}
             />
           </div>
         </div>
       </div>
 
       {/* Product Lines */}
-      <div className="p-6 bg-gray-900 border border-gray-700 rounded-lg">
-        <h4 className="text-white font-semibold mb-4">Key Product Lines</h4>
+      <div className="p-6 rounded-xl" style={{ background: 'var(--grey-900)', border: '1px solid var(--grey-800)' }}>
+        <h4 className="text-white font-medium mb-4" style={{ fontFamily: 'var(--font-display)' }}>Key Product Lines</h4>
 
         <div className="flex flex-wrap gap-2 mb-3">
           {(profile.product_lines || []).map((product, idx) => (
-            <span key={idx} className="px-3 py-1 bg-gray-800 border border-gray-700 rounded-full text-sm text-white flex items-center gap-2">
+            <span key={idx} className="px-3 py-1 rounded-full text-sm text-white flex items-center gap-2" style={{ background: 'var(--grey-800)', border: '1px solid var(--grey-700)' }}>
               {product}
-              <button onClick={() => removeProduct(idx)} className="text-gray-400 hover:text-red-400">
+              <button onClick={() => removeProduct(idx)} className="hover:text-red-400" style={{ color: 'var(--grey-400)' }}>
                 <CloseIcon className="w-3 h-3" />
               </button>
             </span>
@@ -570,12 +597,14 @@ export default function CompanyProfileTab({
             value={newProduct}
             onChange={(e) => setNewProduct(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && addProduct()}
-            className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
+            className="flex-1 px-3 py-2.5 rounded-lg text-white placeholder-[var(--grey-600)] focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)]"
+            style={{ background: 'var(--grey-800)', border: '1px solid var(--grey-700)' }}
           />
           <button
             onClick={addProduct}
             disabled={!newProduct.trim()}
-            className="px-4 py-2 bg-gray-800 hover:bg-gray-700 disabled:bg-gray-800 disabled:text-gray-600 text-white rounded flex items-center gap-2"
+            className="px-4 py-2 rounded-lg flex items-center gap-2 disabled:opacity-50"
+            style={{ background: 'var(--burnt-orange)', color: 'white' }}
           >
             <Plus className="w-4 h-4" />
           </button>
@@ -583,14 +612,14 @@ export default function CompanyProfileTab({
       </div>
 
       {/* Key Markets */}
-      <div className="p-6 bg-gray-900 border border-gray-700 rounded-lg">
-        <h4 className="text-white font-semibold mb-4">Key Markets</h4>
+      <div className="p-6 rounded-xl" style={{ background: 'var(--grey-900)', border: '1px solid var(--grey-800)' }}>
+        <h4 className="text-white font-medium mb-4" style={{ fontFamily: 'var(--font-display)' }}>Key Markets</h4>
 
         <div className="flex flex-wrap gap-2 mb-3">
           {(profile.key_markets || []).map((market, idx) => (
-            <span key={idx} className="px-3 py-1 bg-gray-800 border border-gray-700 rounded-full text-sm text-white flex items-center gap-2">
+            <span key={idx} className="px-3 py-1 rounded-full text-sm text-white flex items-center gap-2" style={{ background: 'var(--grey-800)', border: '1px solid var(--grey-700)' }}>
               {market}
-              <button onClick={() => removeMarket(idx)} className="text-gray-400 hover:text-red-400">
+              <button onClick={() => removeMarket(idx)} className="hover:text-red-400" style={{ color: 'var(--grey-400)' }}>
                 <CloseIcon className="w-3 h-3" />
               </button>
             </span>
@@ -604,12 +633,14 @@ export default function CompanyProfileTab({
             value={newMarket}
             onChange={(e) => setNewMarket(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && addMarket()}
-            className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
+            className="flex-1 px-3 py-2.5 rounded-lg text-white placeholder-[var(--grey-600)] focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)]"
+            style={{ background: 'var(--grey-800)', border: '1px solid var(--grey-700)' }}
           />
           <button
             onClick={addMarket}
             disabled={!newMarket.trim()}
-            className="px-4 py-2 bg-gray-800 hover:bg-gray-700 disabled:bg-gray-800 disabled:text-gray-600 text-white rounded flex items-center gap-2"
+            className="px-4 py-2 rounded-lg flex items-center gap-2 disabled:opacity-50"
+            style={{ background: 'var(--burnt-orange)', color: 'white' }}
           >
             <Plus className="w-4 h-4" />
           </button>
@@ -617,30 +648,30 @@ export default function CompanyProfileTab({
       </div>
 
       {/* Strategic Goals */}
-      <div className="p-6 bg-gray-900 border border-gray-700 rounded-lg">
+      <div className="p-6 rounded-xl" style={{ background: 'var(--grey-900)', border: '1px solid var(--grey-800)' }}>
         <div className="flex items-center gap-2 mb-4">
-          <Target className="w-5 h-5 text-cyan-400" />
-          <h4 className="text-white font-semibold">Strategic Goals</h4>
+          <Target className="w-5 h-5" style={{ color: 'var(--burnt-orange)' }} />
+          <h4 className="text-white font-medium" style={{ fontFamily: 'var(--font-display)' }}>Strategic Goals</h4>
         </div>
-        <p className="text-sm text-gray-400 mb-4">
+        <p className="text-sm mb-4" style={{ color: 'var(--grey-400)' }}>
           Define your organization's strategic goals. These will be used to generate more relevant opportunities and content.
         </p>
 
         <div className="space-y-3 mb-4">
           {(profile.strategic_goals || []).map((goal, idx) => (
-            <div key={idx} className="p-3 bg-gray-800 border border-gray-700 rounded-lg">
+            <div key={idx} className="p-3 rounded-lg" style={{ background: 'var(--grey-800)', border: '1px solid var(--grey-700)' }}>
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <span className={`px-2 py-0.5 rounded text-xs font-medium ${
                       goal.priority === 'high' ? 'bg-red-500/20 text-red-400' :
                       goal.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
-                      'bg-blue-500/20 text-blue-400'
+                      'bg-[var(--burnt-orange-muted)] text-[var(--burnt-orange)]'
                     }`}>
                       {goal.priority}
                     </span>
                     {goal.timeframe && (
-                      <span className="text-xs text-gray-500">{goal.timeframe}</span>
+                      <span className="text-xs" style={{ color: 'var(--grey-500)' }}>{goal.timeframe}</span>
                     )}
                   </div>
                   <div className="text-white">{goal.goal}</div>
@@ -664,7 +695,8 @@ export default function CompanyProfileTab({
                 placeholder="Strategic goal (e.g., Expand into European markets)"
                 value={newGoal.goal}
                 onChange={(e) => setNewGoal(prev => ({ ...prev, goal: e.target.value }))}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
+                className="w-full px-3 py-2.5 rounded-lg text-white placeholder-[var(--grey-600)] focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)]"
+                style={{ background: 'var(--grey-800)', border: '1px solid var(--grey-700)' }}
               />
             </div>
             <input
@@ -672,12 +704,14 @@ export default function CompanyProfileTab({
               placeholder="Timeframe (e.g., 2025 Q2-Q4)"
               value={newGoal.timeframe}
               onChange={(e) => setNewGoal(prev => ({ ...prev, timeframe: e.target.value }))}
-              className="px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
+              className="px-3 py-2.5 rounded-lg text-white placeholder-[var(--grey-600)] focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)]"
+              style={{ background: 'var(--grey-800)', border: '1px solid var(--grey-700)' }}
             />
             <select
               value={newGoal.priority}
               onChange={(e) => setNewGoal(prev => ({ ...prev, priority: e.target.value as 'high' | 'medium' | 'low' }))}
-              className="px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:border-cyan-500"
+              className="px-3 py-2.5 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)]"
+              style={{ background: 'var(--grey-800)', border: '1px solid var(--grey-700)' }}
             >
               <option value="high">High Priority</option>
               <option value="medium">Medium Priority</option>
@@ -687,7 +721,8 @@ export default function CompanyProfileTab({
           <button
             onClick={addGoal}
             disabled={!newGoal.goal.trim()}
-            className="w-full px-4 py-2 bg-gray-800 hover:bg-gray-700 disabled:bg-gray-800 disabled:text-gray-600 text-white rounded-lg flex items-center justify-center gap-2"
+            className="w-full px-4 py-2 rounded-lg flex items-center justify-center gap-2 disabled:opacity-50"
+            style={{ background: 'var(--grey-800)', color: 'var(--grey-300)' }}
           >
             <Plus className="w-4 h-4" />
             Add Strategic Goal

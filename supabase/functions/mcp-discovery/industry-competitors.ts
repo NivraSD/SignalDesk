@@ -57,8 +57,47 @@ export const INDUSTRY_COMPETITORS_DETAILED = {
 
   marketing_advertising: {
     general: [
-      'WPP', 'Omnicom', 'Publicis', 'Interpublic', 'Dentsu', 
+      'WPP', 'Omnicom', 'Publicis', 'Interpublic', 'Dentsu',
       'Havas', 'Accenture Interactive', 'Deloitte Digital', 'IBM iX', 'Cognizant'
+    ],
+
+    // Experiential & Event Marketing (mix of holding company + mid-size independents)
+    experiential_marketing: [
+      // Holding company shops
+      'Momentum Worldwide', 'George P. Johnson', 'Jack Morton', 'Sparks',
+      // Mid-size independents
+      'Set Creative', 'TBA Global', 'NVE Experience Agency', 'Inspira Marketing', 'MAS Event + Design',
+      'agencyEA', 'BeCore', 'Pro Motion', 'The Eventive Group', 'Giant Spoon', 'MKG', 'Wasserman', 'Imagination'
+    ],
+
+    integrated_marketing: [
+      'Droga5', 'Wieden+Kennedy', '72andSunny', 'Anomaly', 'GSD&M',
+      'Mother', 'Goodby Silverstein', 'Crispin Porter Bogusky', 'R/GA', 'TBWA'
+    ],
+
+    brand_experience: [
+      'Superfly', 'IMG Live', 'AEG Presents', 'C3 Presents', 'Civic Entertainment',
+      'Factory 360', 'Mirrorball', 'agencyEA', 'Eventive Marketing', 'XA'
+    ],
+
+    event_marketing: [
+      'Freeman', 'Encore', 'GES', 'PSAV', 'Hargrove',
+      'Czarnowski', 'Nth Degree', 'Opus Agency', '23 Stories', 'Cramer'
+    ],
+
+    sports_marketing: [
+      'Octagon', 'CAA Sports', 'Wasserman', 'Excel Sports', 'Lagardère Sports',
+      'Endeavor', 'Learfield IMG College', 'GMR Marketing', 'rEvolution', 'The Marketing Arm'
+    ],
+
+    creative_agency: [
+      'Droga5', 'Wieden+Kennedy', '72andSunny', 'BBDO', 'DDB',
+      'Ogilvy', 'McCann', 'Leo Burnett', 'Grey', 'FCB'
+    ],
+
+    media_agency: [
+      'GroupM', 'Dentsu Media', 'Publicis Media', 'IPG Mediabrands', 'Havas Media',
+      'Horizon Media', 'Assembly', 'OMD', 'Mindshare', 'Zenith'
     ],
 
     digital_marketing: [
@@ -72,8 +111,13 @@ export const INDUSTRY_COMPETITORS_DETAILED = {
     ],
 
     influencer_marketing: [
-      'AspireIQ', 'GRIN', 'CreatorIQ', 'Klear', 'IZEA', 
+      'AspireIQ', 'GRIN', 'CreatorIQ', 'Klear', 'IZEA',
       'Mavrck', 'Later', 'Captiv8', 'Upfluence', 'HypeAuditor'
+    ],
+
+    social_media_marketing: [
+      'VaynerMedia', 'Sprinklr', 'Hootsuite', 'Sprout Social', 'Khoros',
+      'Social Chain', 'Obviously', 'Viral Nation', 'The Social Standard', 'Socialfly'
     ],
 
     performance_marketing: [
@@ -81,14 +125,29 @@ export const INDUSTRY_COMPETITORS_DETAILED = {
       'Jellyfish', 'Reprise Digital', 'Rise Interactive', 'WebFX', 'Directive'
     ],
 
+    shopper_marketing: [
+      'The Mars Agency', 'Geometry', 'TracyLocke', 'Integer', 'TPN',
+      'Saatchi & Saatchi X', 'IN Connected Marketing', 'Match Marketing', 'Catapult', 'Arc Worldwide'
+    ],
+
     public_relations: [
-      'Edelman', 'Weber Shandwick', 'FleishmanHillard', 'Ketchum', 'Burson Cohn & Wolfe',
+      'Edelman', 'Weber Shandwick', 'FleishmanHillard', 'Ketchum', 'Burson',
       'Ogilvy PR', 'Porter Novelli', 'Ruder Finn', 'ICR', 'Brunswick'
     ],
 
     strategic_communications: [
       'Edelman', 'Weber Shandwick', 'FleishmanHillard', 'Brunswick', 'Finsbury Glover Hering',
       'ICR', 'Sard Verbinnen', 'Joele Frank', 'Kekst CNC', 'Prosek Partners'
+    ],
+
+    healthcare_marketing: [
+      'Syneos Health', 'Inizio', 'Real Chemistry', 'Fingerpaint', 'Area 23',
+      'Havas Health', 'Publicis Health', 'McCann Health', 'Klick Health', 'W2O Group'
+    ],
+
+    b2b_marketing: [
+      'Merkle B2B', 'Dun & Bradstreet', 'ZoomInfo', 'Demandbase', 'Terminus',
+      '6sense', 'Madison Logic', 'RollWorks', 'Triblio', 'MRP'
     ]
   },
 
@@ -356,7 +415,26 @@ export function getIndustryCompetitors(
     'pr': 'marketing_advertising',
     'strategic_communications': 'marketing_advertising',
     'corporate_communications': 'marketing_advertising',
-    'communications_firm': 'marketing_advertising'
+    'communications_firm': 'marketing_advertising',
+
+    // Marketing agency variations
+    'marketing': 'marketing_advertising',
+    'advertising': 'marketing_advertising',
+    'integrated_marketing': 'marketing_advertising',
+    'experiential_marketing': 'marketing_advertising',
+    'experiential': 'marketing_advertising',
+    'event_marketing': 'marketing_advertising',
+    'brand_experience': 'marketing_advertising',
+    'brand_activation': 'marketing_advertising',
+    'sports_marketing': 'marketing_advertising',
+    'digital_agency': 'marketing_advertising',
+    'creative_agency': 'marketing_advertising',
+    'media_agency': 'marketing_advertising',
+    'shopper_marketing': 'marketing_advertising',
+    'b2b_marketing': 'marketing_advertising',
+    'healthcare_marketing': 'marketing_advertising',
+    'social_media_marketing': 'marketing_advertising',
+    'agency': 'marketing_advertising'
   };
   
   let industryKey = industry.toLowerCase().replace(/[\s\-]+/g, '_');
@@ -440,6 +518,25 @@ export function discoverSubCategory(organization: string, industry: string, desc
       social_media: ['social network', 'social platform', 'community', 'messaging'],
       gaming: ['gaming', 'video game', 'esports', 'game development'],
       ecommerce_platforms: ['ecommerce', 'online store', 'marketplace', 'shopping platform']
+    },
+    marketing_advertising: {
+      experiential_marketing: ['experiential', 'brand experience', 'live experience', 'immersive', 'activation', 'pop-up', 'live marketing', 'consumer experience'],
+      integrated_marketing: ['integrated', 'full-service', '360', 'omnichannel', 'multichannel', 'cross-channel'],
+      brand_experience: ['brand activation', 'brand experience', 'consumer engagement', 'live brand'],
+      event_marketing: ['event', 'trade show', 'conference', 'exhibition', 'convention', 'live event', 'corporate event'],
+      sports_marketing: ['sports', 'athlete', 'sponsorship', 'stadium', 'team', 'league', 'esports'],
+      creative_agency: ['creative', 'advertising', 'campaign', 'brand identity', 'creative services'],
+      media_agency: ['media buying', 'media planning', 'programmatic', 'media strategy'],
+      digital_marketing: ['digital', 'online marketing', 'web marketing', 'digital strategy'],
+      content_marketing: ['content', 'editorial', 'storytelling', 'branded content'],
+      influencer_marketing: ['influencer', 'creator', 'ambassador', 'talent', 'celebrity'],
+      social_media_marketing: ['social media', 'social strategy', 'community management'],
+      performance_marketing: ['performance', 'growth marketing', 'acquisition', 'CPA', 'ROI-driven'],
+      shopper_marketing: ['shopper', 'retail marketing', 'in-store', 'point of sale', 'CPG'],
+      public_relations: ['PR', 'public relations', 'media relations', 'press', 'earned media', 'publicity'],
+      strategic_communications: ['corporate communications', 'reputation', 'crisis', 'investor relations'],
+      healthcare_marketing: ['healthcare', 'pharma marketing', 'medical marketing', 'HCP'],
+      b2b_marketing: ['B2B', 'business-to-business', 'enterprise marketing', 'demand gen', 'ABM']
     },
     healthcare: {
       pharma_big: ['pharmaceutical', 'drug', 'medicine', 'therapeutic'],

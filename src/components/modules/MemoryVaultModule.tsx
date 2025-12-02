@@ -1,12 +1,14 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   Database, Search, Sparkles, Upload, FileText, Image,
   Brain, Tag, Clock, Folder, TrendingUp, Activity,
   Filter, X, ChevronRight, ChevronDown, Download, Trash2, Eye,
   BarChart3, Zap, CheckCircle, AlertCircle, Loader, Edit,
-  FolderPlus, MoreVertical, Move, Copy, FolderOpen, File, ExternalLink, Target
+  FolderPlus, MoreVertical, Move, Copy, FolderOpen, File, ExternalLink, Target,
+  ArrowLeft
 } from 'lucide-react'
 import { useAppStore } from '@/stores/useAppStore'
 import { createClient } from '@supabase/supabase-js'
@@ -162,7 +164,12 @@ const FOLDER_TEMPLATES = [
   { name: 'Schemas', icon: '🏗️', color: 'text-indigo-400' }
 ]
 
-export default function MemoryVaultModule() {
+interface MemoryVaultModuleProps {
+  onOpenInStudio?: (item: ContentItem) => void
+}
+
+export default function MemoryVaultModule({ onOpenInStudio }: MemoryVaultModuleProps = {}) {
+  const router = useRouter()
   const { organization } = useAppStore()
   const [activeTab, setActiveTab] = useState<TabType>('library')
   const [searchQuery, setSearchQuery] = useState('')
@@ -874,26 +881,20 @@ export default function MemoryVaultModule() {
     }
   }
 
-  // Open in workspace
+  // Open in Studio for editing
   const handleOpenInWorkspace = (item: ContentItem) => {
-    // Dispatch event to open in workspace
-    const event = new CustomEvent('addComponentToCanvas', {
-      detail: { moduleId: 'workspace', action: 'window' }
-    })
-    window.dispatchEvent(event)
-
-    setTimeout(() => {
-      const contentEvent = new CustomEvent('openInWorkspace', {
-        detail: {
-          id: item.id,
-          type: item.content_type,
-          title: item.title,
-          content: typeof item.content === 'string' ? item.content : JSON.stringify(item.content, null, 2),
-          metadata: { folder: item.folder }
-        }
+    // Use callback if provided (stays within dashboard), otherwise navigate
+    if (onOpenInStudio) {
+      onOpenInStudio(item)
+    } else {
+      // Fallback: Navigate to Studio with content ID and folder for save-back capability
+      const params = new URLSearchParams({
+        contentId: item.id,
+        folder: item.folder || '',
+        type: item.content_type
       })
-      window.dispatchEvent(contentEvent)
-    }, 300)
+      router.push(`/studio?${params.toString()}`)
+    }
   }
 
   // Export content - NEW: Word, PowerPoint, Google Docs/Slides
@@ -930,39 +931,90 @@ export default function MemoryVaultModule() {
 
         console.log('✅ Word document exported')
       } else if (format === 'powerpoint') {
-        // Use Gamma to generate PowerPoint
+        // Use Gamma to generate PowerPoint via Supabase Edge Function
         console.log('Generating PowerPoint via Gamma...')
-        const response = await fetch('/api/gamma/generate-presentation', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+
+        // Start generation
+        const { data: startResult, error: startError } = await supabase.functions.invoke('gamma-presentation', {
+          body: {
             title: item.title,
             content: textContent,
-            organizationId: selectedOrganization
-          })
+            organization_id: organization?.id,
+            capture: true, // Save to campaign_presentations and Memory Vault
+            options: {
+              numCards: 10,
+              imageSource: 'ai'
+            }
+          }
         })
 
-        if (!response.ok) throw new Error('Failed to generate presentation')
+        if (startError) throw new Error(`Failed to start presentation generation: ${startError.message}`)
+        if (!startResult?.generationId) throw new Error('No generation ID returned')
 
-        const result = await response.json()
+        console.log('📝 Generation started:', startResult.generationId)
+        alert('Presentation generation started! This takes 30-60 seconds. You will be notified when complete.')
 
-        // Trigger PPTX download if available
-        if (result.pptx_url) {
-          const a = document.createElement('a')
-          a.href = result.pptx_url
-          a.download = `${item.title.replace(/[^a-z0-9]/gi, '_')}.pptx`
-          a.target = '_blank'
-          document.body.appendChild(a)
-          a.click()
-          document.body.removeChild(a)
+        // Poll for completion (Gamma takes 30-60 seconds)
+        const pollInterval = 5000 // 5 seconds
+        const maxAttempts = 24 // 2 minutes max
+        let attempts = 0
+
+        const pollForCompletion = async () => {
+          attempts++
+          console.log(`🔄 Polling attempt ${attempts}/${maxAttempts}...`)
+
+          const { data: statusResult, error: statusError } = await supabase.functions.invoke('gamma-presentation', {
+            body: {
+              generationId: startResult.generationId,
+              capture: true,
+              organization_id: organization?.id
+            }
+          })
+
+          if (statusError) {
+            console.error('Status check error:', statusError)
+            if (attempts < maxAttempts) {
+              setTimeout(pollForCompletion, pollInterval)
+            }
+            return
+          }
+
+          if (statusResult?.status === 'completed') {
+            console.log('✅ Presentation completed!')
+
+            // Open Gamma URL if available
+            if (statusResult.gammaUrl) {
+              window.open(statusResult.gammaUrl, '_blank')
+            }
+
+            // Download PPTX if available
+            if (statusResult.exportUrls?.pptx) {
+              const a = document.createElement('a')
+              a.href = statusResult.exportUrls.pptx
+              a.download = `${item.title.replace(/[^a-z0-9]/gi, '_')}.pptx`
+              a.target = '_blank'
+              document.body.appendChild(a)
+              a.click()
+              document.body.removeChild(a)
+            }
+
+            alert('✅ Presentation ready! Opening in Gamma...')
+          } else if (statusResult?.status === 'error') {
+            console.error('Generation failed:', statusResult.message)
+            alert(`Presentation generation failed: ${statusResult.message}`)
+          } else if (attempts < maxAttempts) {
+            // Still pending, keep polling
+            setTimeout(pollForCompletion, pollInterval)
+          } else {
+            console.log('⏱️ Polling timed out - check Memory Vault later')
+            alert('Generation is taking longer than expected. Check Memory Vault in a few minutes.')
+          }
         }
 
-        // Also open Gamma editor
-        if (result.gamma_url) {
-          window.open(result.gamma_url, '_blank')
-        }
+        // Start polling after initial delay
+        setTimeout(pollForCompletion, pollInterval)
 
-        console.log('✅ PowerPoint generated via Gamma')
+        console.log('✅ PowerPoint generation initiated via Gamma')
       } else if (format === 'google-docs') {
         // Export to Google Docs
         console.log('Exporting to Google Docs...')
@@ -1176,19 +1228,308 @@ export default function MemoryVaultModule() {
   }
 
   return (
-    <div className="h-full flex flex-col bg-gray-950">
-      {/* Header */}
-      <div className="flex-shrink-0 border-b border-gray-800 bg-gray-900/50 backdrop-blur-sm">
-        <div className="p-4">
+    <div
+      className="h-full flex-1 overflow-hidden"
+      style={{
+        display: 'grid',
+        gridTemplateColumns: '260px 1fr',
+        minHeight: 0
+      }}
+    >
+      {/* Vault Sidebar - White/Light */}
+      <div
+        className="flex flex-col border-r overflow-hidden"
+        style={{
+          background: 'var(--white)',
+          borderColor: 'var(--grey-200)'
+        }}
+      >
+        {/* Sidebar Header */}
+        <div className="p-5 border-b" style={{ borderColor: 'var(--grey-200)' }}>
+          <div
+            className="text-[0.7rem] uppercase tracking-wider mb-1"
+            style={{ color: 'var(--burnt-orange)', fontFamily: 'var(--font-display)' }}
+          >
+            Memory Vault
+          </div>
+          <div
+            className="text-lg font-semibold"
+            style={{ color: 'var(--charcoal)', fontFamily: 'var(--font-display)' }}
+          >
+            Folders
+          </div>
+        </div>
+
+        {/* Tabs as Sidebar Sections */}
+        <div className="flex-1 overflow-y-auto p-3">
+          {/* Library/Assets/Analytics Tab Switcher */}
+          <div className="space-y-1 mb-4">
+            <button
+              onClick={() => setActiveTab('library')}
+              className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm transition-colors"
+              style={{
+                background: activeTab === 'library' ? 'var(--burnt-orange-muted)' : 'transparent',
+                color: activeTab === 'library' ? 'var(--burnt-orange)' : 'var(--grey-600)',
+                fontFamily: 'var(--font-body)'
+              }}
+            >
+              <FileText className="w-4 h-4 opacity-70" />
+              <span className="flex-1 text-left">Content Library</span>
+              <span className="text-xs" style={{ color: 'var(--grey-400)' }}>
+                {contentItems.length}
+              </span>
+            </button>
+            <button
+              onClick={() => setActiveTab('assets')}
+              className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm transition-colors"
+              style={{
+                background: activeTab === 'assets' ? 'var(--burnt-orange-muted)' : 'transparent',
+                color: activeTab === 'assets' ? 'var(--burnt-orange)' : 'var(--grey-600)',
+                fontFamily: 'var(--font-body)'
+              }}
+            >
+              <Sparkles className="w-4 h-4 opacity-70" />
+              <span className="flex-1 text-left">Brand Assets</span>
+              <span className="text-xs" style={{ color: 'var(--grey-400)' }}>
+                {brandAssets.length}
+              </span>
+            </button>
+            <button
+              onClick={() => setActiveTab('analytics')}
+              className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm transition-colors"
+              style={{
+                background: activeTab === 'analytics' ? 'var(--burnt-orange-muted)' : 'transparent',
+                color: activeTab === 'analytics' ? 'var(--burnt-orange)' : 'var(--grey-600)',
+                fontFamily: 'var(--font-body)'
+              }}
+            >
+              <BarChart3 className="w-4 h-4 opacity-70" />
+              <span className="flex-1 text-left">Analytics</span>
+            </button>
+          </div>
+
+          {/* Folder List (when Library tab is active) */}
+          {activeTab === 'library' && (
+            <>
+              <div
+                className="mt-4 pt-4 border-t"
+                style={{ borderColor: 'var(--grey-200)' }}
+              >
+                <div
+                  className="px-3 py-2 text-xs uppercase tracking-wider"
+                  style={{ color: 'var(--grey-400)', fontFamily: 'var(--font-display)' }}
+                >
+                  Content Folders
+                </div>
+              </div>
+              <div className="space-y-0.5">
+                {/* All Items */}
+                <button
+                  onClick={() => {
+                    setSelectedFolder(null)
+                    setSelectedContent(null)
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm transition-colors"
+                  style={{
+                    background: selectedFolder === null && !selectedContent ? 'var(--burnt-orange-muted)' : 'transparent',
+                    color: selectedFolder === null && !selectedContent ? 'var(--burnt-orange)' : 'var(--grey-600)',
+                    fontFamily: 'var(--font-body)'
+                  }}
+                >
+                  <Folder className="w-4 h-4 opacity-70" />
+                  <span className="flex-1 text-left">All Items</span>
+                  <span className="text-xs" style={{ color: 'var(--grey-400)' }}>
+                    {contentItems.length}
+                  </span>
+                </button>
+                {/* Template Folders with Sub-folders */}
+                {FOLDER_TEMPLATES.map((folder) => {
+                  const folderItems = contentItems.filter(item =>
+                    item.folder?.startsWith(folder.name)
+                  )
+                  const isExpanded = expandedFolders.has(folder.name)
+                  const hasItems = folderItems.length > 0
+
+                  // Group items by sub-folder (e.g., "Opportunities/My Opportunity" -> "My Opportunity")
+                  const subFolders = new Map<string, ContentItem[]>()
+                  const rootItems: ContentItem[] = []
+
+                  folderItems.forEach(item => {
+                    if (!item.folder) return
+                    const parts = item.folder.split('/')
+                    if (parts.length > 1) {
+                      // Has sub-folder
+                      const subFolderName = parts[1]
+                      if (!subFolders.has(subFolderName)) {
+                        subFolders.set(subFolderName, [])
+                      }
+                      subFolders.get(subFolderName)!.push(item)
+                    } else {
+                      // Direct in root folder
+                      rootItems.push(item)
+                    }
+                  })
+
+                  return (
+                    <div key={folder.name}>
+                      {/* Folder Header */}
+                      <button
+                        onClick={() => {
+                          if (hasItems) {
+                            setExpandedFolders(prev => {
+                              const next = new Set(prev)
+                              if (next.has(folder.name)) {
+                                next.delete(folder.name)
+                              } else {
+                                next.add(folder.name)
+                              }
+                              return next
+                            })
+                          }
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm transition-colors hover:bg-[var(--grey-100)]"
+                        style={{
+                          color: 'var(--grey-600)',
+                          fontFamily: 'var(--font-body)'
+                        }}
+                      >
+                        {/* Chevron */}
+                        {hasItems ? (
+                          <ChevronRight
+                            className={`w-3.5 h-3.5 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                            style={{ color: 'var(--grey-400)' }}
+                          />
+                        ) : (
+                          <span className="w-3.5" />
+                        )}
+                        <span className="text-sm">{folder.icon}</span>
+                        <span className="flex-1 text-left">{folder.name}</span>
+                        <span className="text-xs" style={{ color: 'var(--grey-400)' }}>
+                          {folderItems.length}
+                        </span>
+                      </button>
+
+                      {/* Expanded Sub-folders and Items */}
+                      {isExpanded && hasItems && (
+                        <div className="ml-5 border-l border-[var(--grey-200)] pl-2 space-y-0.5 py-1">
+                          {/* Sub-folders (e.g., individual opportunities) */}
+                          {Array.from(subFolders.entries()).map(([subFolderName, items]) => {
+                            const subFolderKey = `${folder.name}/${subFolderName}`
+                            const isSubExpanded = expandedFolders.has(subFolderKey)
+
+                            return (
+                              <div key={subFolderKey}>
+                                <button
+                                  onClick={() => {
+                                    setExpandedFolders(prev => {
+                                      const next = new Set(prev)
+                                      if (next.has(subFolderKey)) {
+                                        next.delete(subFolderKey)
+                                      } else {
+                                        next.add(subFolderKey)
+                                      }
+                                      return next
+                                    })
+                                  }}
+                                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-xs transition-colors hover:bg-[var(--grey-100)]"
+                                  style={{
+                                    color: 'var(--grey-600)',
+                                    fontFamily: 'var(--font-body)'
+                                  }}
+                                >
+                                  <ChevronRight
+                                    className={`w-3 h-3 transition-transform ${isSubExpanded ? 'rotate-90' : ''}`}
+                                    style={{ color: 'var(--grey-400)' }}
+                                  />
+                                  <Folder className="w-3 h-3" style={{ color: 'var(--grey-400)' }} />
+                                  <span className="flex-1 text-left truncate">{subFolderName}</span>
+                                  <span className="text-[10px]" style={{ color: 'var(--grey-400)' }}>
+                                    {items.length}
+                                  </span>
+                                </button>
+
+                                {/* Items inside sub-folder */}
+                                {isSubExpanded && (
+                                  <div className="ml-4 border-l border-[var(--grey-200)] pl-2 space-y-0.5 py-1">
+                                    {items.map(item => (
+                                      <button
+                                        key={item.id}
+                                        onClick={() => {
+                                          setSelectedContent(item)
+                                          setSelectedFolder(subFolderKey)
+                                        }}
+                                        className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-xs transition-colors hover:bg-[var(--grey-100)]"
+                                        style={{
+                                          background: selectedContent?.id === item.id ? 'var(--burnt-orange-muted)' : 'transparent',
+                                          color: selectedContent?.id === item.id ? 'var(--burnt-orange)' : 'var(--grey-500)',
+                                          fontFamily: 'var(--font-body)'
+                                        }}
+                                      >
+                                        <FileText className="w-3 h-3 flex-shrink-0" />
+                                        <span className="flex-1 text-left truncate">{item.title}</span>
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          })}
+
+                          {/* Root items (items directly in folder, not in sub-folder) */}
+                          {rootItems.map(item => (
+                            <button
+                              key={item.id}
+                              onClick={() => {
+                                setSelectedContent(item)
+                                setSelectedFolder(folder.name)
+                              }}
+                              className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-xs transition-colors hover:bg-[var(--grey-100)]"
+                              style={{
+                                background: selectedContent?.id === item.id ? 'var(--burnt-orange-muted)' : 'transparent',
+                                color: selectedContent?.id === item.id ? 'var(--burnt-orange)' : 'var(--grey-500)',
+                                fontFamily: 'var(--font-body)'
+                              }}
+                            >
+                              <FileText className="w-3 h-3 flex-shrink-0" />
+                              <span className="flex-1 text-left truncate">{item.title}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Main Content Area - Charcoal */}
+      <div
+        className="flex-1 flex flex-col overflow-hidden"
+        style={{ background: 'var(--charcoal)' }}
+      >
+        {/* Header */}
+        <div className="flex-shrink-0 p-6 border-b border-zinc-800">
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-gradient-to-br from-orange-500 to-pink-500">
-                <Database className="w-5 h-5 text-white" />
+            <div>
+              <div
+                className="text-[0.65rem] uppercase tracking-[0.15em] text-[var(--burnt-orange)] flex items-center gap-2 mb-2"
+                style={{ fontFamily: 'var(--font-display)' }}
+              >
+                <Database className="w-3 h-3" />
+                Vault
               </div>
-              <div>
-                <h2 className="text-xl font-bold text-white">Memory Vault V2</h2>
-                <p className="text-xs text-gray-400">Intelligent Content & Brand Management</p>
-              </div>
+              <h1
+                className="text-[1.5rem] font-normal text-white"
+                style={{ fontFamily: 'var(--font-serif)' }}
+              >
+                Memory Vault
+              </h1>
+              <p className="text-[var(--grey-400)] text-sm mt-1">
+                Your organization's institutional knowledge that compounds over time
+              </p>
             </div>
 
             <div className="flex gap-2">
@@ -1203,15 +1544,15 @@ export default function MemoryVaultModule() {
               {/* Folder Creation Dialog */}
               {showNewFolderDialog && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                  <div className="bg-gray-900 rounded-lg p-6 w-96 border border-gray-800">
-                    <h3 className="text-lg font-semibold text-white mb-4">Create New Folder</h3>
+                  <div className="bg-[var(--charcoal)] rounded-xl p-6 w-96 border border-zinc-800">
+                    <h3 className="text-lg font-semibold text-white mb-4" style={{ fontFamily: 'var(--font-display)' }}>Create New Folder</h3>
                     <input
                       type="text"
                       value={newFolderName}
                       onChange={(e) => setNewFolderName(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleCreateBrandFolder()}
                       placeholder="Folder name (e.g., Photos, Templates)"
-                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-orange-500 mb-4"
+                      className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-[var(--grey-500)] focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)] mb-4"
                       autoFocus
                     />
                     <div className="flex gap-2 justify-end">
@@ -1220,14 +1561,14 @@ export default function MemoryVaultModule() {
                           setShowNewFolderDialog(false)
                           setNewFolderName('')
                         }}
-                        className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors"
+                        className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-[var(--grey-300)] rounded-lg transition-colors"
                       >
                         Cancel
                       </button>
                       <button
                         onClick={handleCreateBrandFolder}
                         disabled={!newFolderName.trim()}
-                        className="px-4 py-2 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 rounded-lg transition-colors disabled:opacity-50"
+                        className="px-4 py-2 bg-[var(--burnt-orange)] hover:brightness-110 text-white rounded-lg transition-colors disabled:opacity-50"
                       >
                         Create Folder
                       </button>
@@ -1239,15 +1580,15 @@ export default function MemoryVaultModule() {
               {/* Upload to Content Library Dialog */}
               {showUploadDialog && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                  <div className="bg-gray-900 rounded-lg p-6 w-96 border border-gray-800">
-                    <h3 className="text-lg font-semibold text-white mb-4">Upload to Content Library</h3>
-                    <p className="text-sm text-gray-400 mb-4">
+                  <div className="bg-[var(--charcoal)] rounded-xl p-6 w-96 border border-zinc-800">
+                    <h3 className="text-lg font-semibold text-white mb-4" style={{ fontFamily: 'var(--font-display)' }}>Upload to Content Library</h3>
+                    <p className="text-sm text-[var(--grey-400)] mb-4">
                       Select which folder to upload to:
                     </p>
                     <select
                       value={uploadTargetFolder}
                       onChange={(e) => setUploadTargetFolder(e.target.value)}
-                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-orange-500 mb-4"
+                      className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)] mb-4"
                     >
                       {FOLDER_TEMPLATES.map(template => (
                         <option key={template.name} value={template.name}>
@@ -1261,13 +1602,13 @@ export default function MemoryVaultModule() {
                           setShowUploadDialog(false)
                           if (fileInputRef.current) fileInputRef.current.value = ''
                         }}
-                        className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors"
+                        className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-[var(--grey-300)] rounded-lg transition-colors"
                       >
                         Cancel
                       </button>
                       <button
                         onClick={handleContentLibraryUpload}
-                        className="px-4 py-2 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 rounded-lg transition-colors"
+                        className="px-4 py-2 bg-[var(--burnt-orange)] hover:brightness-110 text-white rounded-lg transition-colors"
                       >
                         Upload
                       </button>
@@ -1279,68 +1620,55 @@ export default function MemoryVaultModule() {
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploadingAsset}
-                className="flex items-center gap-2 px-4 py-2 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 rounded-lg transition-colors border border-orange-500/20 disabled:opacity-50"
+                className="flex items-center gap-2 px-4 py-2 bg-[var(--burnt-orange)] hover:brightness-110 text-white rounded-lg transition-colors disabled:opacity-50"
               >
                 <Upload className="w-4 h-4" />
-                {uploadingAsset ? 'Uploading...' : 'Upload Asset'}
+                {uploadingAsset ? 'Uploading...' : 'Upload'}
               </button>
               <button
                 onClick={fetchContent}
-                className="p-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors"
+                className="p-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors"
                 title="Refresh"
               >
-                <Activity className="w-4 h-4 text-gray-400" />
+                <Activity className="w-4 h-4 text-[var(--grey-400)]" />
               </button>
             </div>
           </div>
 
-          {/* Tabs */}
-          <div className="flex gap-2">
-            <button
-              onClick={() => setActiveTab('library')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
-                activeTab === 'library'
-                  ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
-                  : 'bg-gray-800/50 text-gray-400 hover:bg-gray-800 hover:text-gray-300'
-              }`}
+          {/* Search Bar */}
+          {activeTab === 'library' && (
+            <div
+              className="flex rounded-lg overflow-hidden shadow-lg max-w-2xl"
+              style={{ background: 'var(--white)' }}
             >
-              <FileText className="w-4 h-4" />
-              Content Library
-              <span className="px-2 py-0.5 rounded-full bg-gray-900 text-xs">
-                {contentItems.length}
-              </span>
-            </button>
-            <button
-              onClick={() => setActiveTab('assets')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
-                activeTab === 'assets'
-                  ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
-                  : 'bg-gray-800/50 text-gray-400 hover:bg-gray-800 hover:text-gray-300'
-              }`}
-            >
-              <Sparkles className="w-4 h-4" />
-              Brand Assets
-              <span className="px-2 py-0.5 rounded-full bg-gray-900 text-xs">
-                {brandAssets.length}
-              </span>
-            </button>
-            <button
-              onClick={() => setActiveTab('analytics')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
-                activeTab === 'analytics'
-                  ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
-                  : 'bg-gray-800/50 text-gray-400 hover:bg-gray-800 hover:text-gray-300'
-              }`}
-            >
-              <BarChart3 className="w-4 h-4" />
-              Analytics
-            </button>
-          </div>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search across all memories, campaigns, learnings..."
+                className="flex-1 px-5 py-4 border-none outline-none text-sm"
+                style={{
+                  background: 'var(--white)',
+                  color: 'var(--charcoal)',
+                  fontFamily: 'var(--font-body)'
+                }}
+              />
+              <button
+                className="px-8 py-4 text-sm font-medium transition-colors"
+                style={{
+                  background: 'var(--burnt-orange)',
+                  color: 'var(--white)',
+                  fontFamily: 'var(--font-display)'
+                }}
+              >
+                Search
+              </button>
+            </div>
+          )}
         </div>
-      </div>
 
-      {/* Content Area */}
-      <div className="flex-1 overflow-hidden">
+        {/* Content Area */}
+        <div className="flex-1 overflow-hidden">
         {activeTab === 'library' && (
           <ContentLibraryTab
             folderTree={folderTree}
@@ -1372,6 +1700,8 @@ export default function MemoryVaultModule() {
             setEditingResultFor={setEditingResultFor}
             executingAction={executingAction}
             getResultFieldForType={getResultFieldForType}
+            selectedFolder={selectedFolder}
+            contentItems={contentItems}
           />
         )}
 
@@ -1396,6 +1726,7 @@ export default function MemoryVaultModule() {
             onRefresh={fetchAnalytics}
           />
         )}
+        </div>
       </div>
 
       {/* Move Dialog */}
@@ -1414,28 +1745,28 @@ export default function MemoryVaultModule() {
       {/* New Folder Dialog */}
       {showNewFolderDialog && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-gray-900 rounded-lg p-6 w-96 border border-gray-800">
-            <h3 className="text-lg font-bold mb-4 text-white">Create New Folder</h3>
+          <div className="bg-[var(--charcoal)] rounded-xl p-6 w-96 border border-zinc-800">
+            <h3 className="text-lg font-bold mb-4 text-white" style={{ fontFamily: 'var(--font-display)' }}>Create New Folder</h3>
             <div className="space-y-4">
               <div>
-                <label className="text-sm text-gray-400 mb-2 block">Folder Name</label>
+                <label className="text-sm text-[var(--grey-400)] mb-2 block">Folder Name</label>
                 <input
                   type="text"
                   value={newFolderName}
                   onChange={(e) => setNewFolderName(e.target.value)}
                   placeholder="Enter folder name"
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)]"
                   autoFocus
                 />
               </div>
               <div>
-                <label className="text-sm text-gray-400 mb-2 block">Quick Create</label>
+                <label className="text-sm text-[var(--grey-400)] mb-2 block">Quick Create</label>
                 <div className="grid grid-cols-2 gap-2">
                   {FOLDER_TEMPLATES.map(template => (
                     <button
                       key={template.name}
                       onClick={() => setNewFolderName(template.name)}
-                      className="px-3 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-left transition-colors flex items-center gap-2"
+                      className="px-3 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-left transition-colors flex items-center gap-2"
                     >
                       <span className="text-lg">{template.icon}</span>
                       <span className={`text-sm ${template.color}`}>{template.name}</span>
@@ -1450,14 +1781,14 @@ export default function MemoryVaultModule() {
                   setShowNewFolderDialog(false)
                   setNewFolderName('')
                 }}
-                className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors text-gray-300"
+                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors text-[var(--grey-300)]"
               >
                 Cancel
               </button>
               <button
                 onClick={handleCreateFolder}
                 disabled={!newFolderName.trim()}
-                className="px-4 py-2 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 rounded-lg transition-colors disabled:opacity-50 border border-orange-500/30"
+                className="px-4 py-2 bg-[var(--burnt-orange)] hover:brightness-110 text-white rounded-lg transition-colors disabled:opacity-50"
               >
                 Create Folder
               </button>
@@ -1469,7 +1800,7 @@ export default function MemoryVaultModule() {
       {/* Context Menu */}
       {contextMenu && (
         <div
-          className="fixed z-50 bg-gray-900 border border-gray-700 rounded-lg shadow-xl py-1 min-w-[180px]"
+          className="fixed z-50 bg-[var(--charcoal)] border border-zinc-800 rounded-lg shadow-xl py-1 min-w-[180px]"
           style={{ left: contextMenu.x, top: contextMenu.y }}
           onMouseLeave={() => setContextMenu(null)}
         >
@@ -1478,7 +1809,7 @@ export default function MemoryVaultModule() {
               handleOpenInWorkspace(contextMenu.item)
               setContextMenu(null)
             }}
-            className="w-full px-4 py-2 hover:bg-gray-800 text-left flex items-center gap-2 text-sm text-gray-300"
+            className="w-full px-4 py-2 hover:bg-zinc-800 text-left flex items-center gap-2 text-sm text-[var(--grey-300)]"
           >
             <Edit className="w-4 h-4" />
             Open in Workspace
@@ -1489,7 +1820,7 @@ export default function MemoryVaultModule() {
               setShowMoveDialog(true)
               setContextMenu(null)
             }}
-            className="w-full px-4 py-2 hover:bg-gray-800 text-left flex items-center gap-2 text-sm text-gray-300"
+            className="w-full px-4 py-2 hover:bg-zinc-800 text-left flex items-center gap-2 text-sm text-[var(--grey-300)]"
           >
             <Move className="w-4 h-4" />
             Move to Folder
@@ -1500,12 +1831,12 @@ export default function MemoryVaultModule() {
               setShowExportDialog(true)
               setContextMenu(null)
             }}
-            className="w-full px-4 py-2 hover:bg-gray-800 text-left flex items-center gap-2 text-sm text-gray-300"
+            className="w-full px-4 py-2 hover:bg-zinc-800 text-left flex items-center gap-2 text-sm text-[var(--grey-300)]"
           >
             <Download className="w-4 h-4" />
             Export
           </button>
-          <div className="border-t border-gray-800 my-1" />
+          <div className="border-t border-zinc-800 my-1" />
           <button
             onClick={() => {
               handleDeleteContent(contextMenu.item.id)
@@ -1522,9 +1853,9 @@ export default function MemoryVaultModule() {
       {/* Export Dialog */}
       {showExportDialog && itemToExport && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-gray-900 rounded-lg p-6 w-[480px] max-h-[80vh] overflow-y-auto border border-gray-800">
-            <h3 className="text-lg font-bold mb-2 text-white">Export Content</h3>
-            <p className="text-sm text-gray-400 mb-4">Exporting: {itemToExport.title}</p>
+          <div className="bg-[var(--charcoal)] rounded-xl p-6 w-[480px] max-h-[80vh] overflow-y-auto border border-zinc-800">
+            <h3 className="text-lg font-bold mb-2 text-white" style={{ fontFamily: 'var(--font-display)' }}>Export Content</h3>
+            <p className="text-sm text-[var(--grey-400)] mb-4">Exporting: {itemToExport.title}</p>
 
             {/* Mode Tabs */}
             <div className="grid grid-cols-2 gap-2 mb-4">
@@ -1532,8 +1863,8 @@ export default function MemoryVaultModule() {
                 onClick={() => setExportMode('basic')}
                 className={`px-4 py-2 rounded-lg font-medium transition-all ${
                   exportMode === 'basic'
-                    ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
-                    : 'bg-gray-800/50 text-gray-400 hover:bg-gray-800'
+                    ? 'bg-[var(--burnt-orange)]/20 text-[var(--burnt-orange)] border border-[var(--burnt-orange)]/30'
+                    : 'bg-zinc-800/50 text-[var(--grey-400)] hover:bg-zinc-800'
                 }`}
               >
                 Basic Export
@@ -1542,96 +1873,208 @@ export default function MemoryVaultModule() {
                 onClick={() => setExportMode('attach')}
                 className={`px-4 py-2 rounded-lg font-medium transition-all ${
                   exportMode === 'attach'
-                    ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
-                    : 'bg-gray-800/50 text-gray-400 hover:bg-gray-800'
+                    ? 'bg-[var(--burnt-orange)]/20 text-[var(--burnt-orange)] border border-[var(--burnt-orange)]/30'
+                    : 'bg-zinc-800/50 text-[var(--grey-400)] hover:bg-zinc-800'
                 }`}
               >
                 Use Template
               </button>
             </div>
 
-            {/* Basic Export Options - NEW: Word, PowerPoint, Google Docs/Slides */}
+            {/* Export Options */}
             {exportMode === 'basic' && (
               <div className="space-y-2 mb-6">
-                <button
-                  onClick={async () => {
-                    await handleExport(itemToExport, 'word')
-                    setShowExportDialog(false)
-                    setItemToExport(null)
-                    setExportMode('basic')
-                  }}
-                  disabled={mergingTemplate}
-                  className="w-full px-4 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <div className="font-medium text-white">📄 Microsoft Word (.docx)</div>
-                  <div className="text-xs text-gray-400">Download as formatted Word document</div>
-                </button>
-                <button
-                  onClick={async () => {
-                    await handleExport(itemToExport, 'powerpoint')
-                    setShowExportDialog(false)
-                    setItemToExport(null)
-                    setExportMode('basic')
-                  }}
-                  disabled={mergingTemplate}
-                  className="w-full px-4 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <div className="font-medium text-white">📊 PowerPoint (.pptx)</div>
-                  <div className="text-xs text-gray-400">Generate presentation via Gamma</div>
-                </button>
-                <button
-                  onClick={async () => {
-                    await handleExport(itemToExport, 'google-docs')
-                    setShowExportDialog(false)
-                    setItemToExport(null)
-                    setExportMode('basic')
-                  }}
-                  disabled={mergingTemplate}
-                  className="w-full px-4 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <div className="font-medium text-white">📝 Google Docs</div>
-                  <div className="text-xs text-gray-400">Open in Google Docs (content copied to clipboard)</div>
-                </button>
-                <button
-                  onClick={async () => {
-                    await handleExport(itemToExport, 'google-slides')
-                    setShowExportDialog(false)
-                    setItemToExport(null)
-                    setExportMode('basic')
-                  }}
-                  disabled={mergingTemplate}
-                  className="w-full px-4 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <div className="font-medium text-white">🎤 Google Slides</div>
-                  <div className="text-xs text-gray-400">Open in Google Slides (content copied to clipboard)</div>
-                </button>
-                <button
-                  onClick={() => {
-                    // Export as formatted JSON (useful for schemas)
-                    const content = typeof itemToExport.content === 'string'
-                      ? itemToExport.content
-                      : JSON.stringify(itemToExport.content, null, 2)
+                {/* Gamma Presentation Export Options */}
+                {(itemToExport.content_type === 'presentation' || itemToExport.content_type === 'presentation_outline') && itemToExport.metadata?.gamma_url ? (
+                  <>
+                    {/* Download PPTX if available */}
+                    {itemToExport.metadata?.pptx_url && (
+                      <a
+                        href={itemToExport.metadata.pptx_url}
+                        download
+                        onClick={() => {
+                          setShowExportDialog(false)
+                          setItemToExport(null)
+                          setExportMode('basic')
+                        }}
+                        className="w-full px-4 py-3 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors text-left block"
+                      >
+                        <div className="font-medium text-white">📊 PowerPoint (.pptx)</div>
+                        <div className="text-xs text-[var(--grey-400)]">Download existing presentation</div>
+                      </a>
+                    )}
+                    {/* Export to PDF via Gamma */}
+                    <button
+                      onClick={async () => {
+                        try {
+                          setMergingTemplate(true)
+                          // Use Gamma's PDF export endpoint
+                          const gammaId = itemToExport.metadata?.gamma_id
+                          if (gammaId) {
+                            const { data, error } = await supabase.functions.invoke('gamma-presentation', {
+                              body: {
+                                action: 'export',
+                                gamma_id: gammaId,
+                                format: 'pdf'
+                              }
+                            })
+                            if (error) throw error
+                            if (data?.exportUrl) {
+                              window.open(data.exportUrl, '_blank')
+                            } else {
+                              // Fallback: open Gamma URL for manual PDF export
+                              window.open(itemToExport.metadata?.gamma_url + '/export/pdf', '_blank')
+                            }
+                          } else {
+                            // Fallback: open Gamma for export
+                            window.open(itemToExport.metadata?.gamma_url, '_blank')
+                            alert('Open the presentation in Gamma and use Export → PDF')
+                          }
+                        } catch (error) {
+                          console.error('PDF export error:', error)
+                          // Fallback
+                          window.open(itemToExport.metadata?.gamma_url, '_blank')
+                          alert('Open the presentation in Gamma and use Export → PDF')
+                        } finally {
+                          setMergingTemplate(false)
+                          setShowExportDialog(false)
+                          setItemToExport(null)
+                          setExportMode('basic')
+                        }
+                      }}
+                      disabled={mergingTemplate}
+                      className="w-full px-4 py-3 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <div className="font-medium text-white">📕 PDF</div>
+                      <div className="text-xs text-[var(--grey-400)]">Export presentation as PDF</div>
+                    </button>
+                    {/* Export to Google Slides */}
+                    <button
+                      onClick={async () => {
+                        try {
+                          setMergingTemplate(true)
+                          const gammaId = itemToExport.metadata?.gamma_id
+                          if (gammaId) {
+                            const { data, error } = await supabase.functions.invoke('gamma-presentation', {
+                              body: {
+                                action: 'export',
+                                gamma_id: gammaId,
+                                format: 'google-slides'
+                              }
+                            })
+                            if (error) throw error
+                            if (data?.exportUrl) {
+                              window.open(data.exportUrl, '_blank')
+                            } else {
+                              window.open(itemToExport.metadata?.gamma_url, '_blank')
+                              alert('Open the presentation in Gamma and use Export → Google Slides')
+                            }
+                          } else {
+                            window.open(itemToExport.metadata?.gamma_url, '_blank')
+                            alert('Open the presentation in Gamma and use Export → Google Slides')
+                          }
+                        } catch (error) {
+                          console.error('Google Slides export error:', error)
+                          window.open(itemToExport.metadata?.gamma_url, '_blank')
+                          alert('Open the presentation in Gamma and use Export → Google Slides')
+                        } finally {
+                          setMergingTemplate(false)
+                          setShowExportDialog(false)
+                          setItemToExport(null)
+                          setExportMode('basic')
+                        }
+                      }}
+                      disabled={mergingTemplate}
+                      className="w-full px-4 py-3 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <div className="font-medium text-white">🎤 Google Slides</div>
+                      <div className="text-xs text-[var(--grey-400)]">Export to Google Slides</div>
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    {/* Standard Export Options for non-Gamma content */}
+                    <button
+                      onClick={async () => {
+                        await handleExport(itemToExport, 'word')
+                        setShowExportDialog(false)
+                        setItemToExport(null)
+                        setExportMode('basic')
+                      }}
+                      disabled={mergingTemplate}
+                      className="w-full px-4 py-3 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <div className="font-medium text-white">📄 Microsoft Word (.docx)</div>
+                      <div className="text-xs text-[var(--grey-400)]">Download as formatted Word document</div>
+                    </button>
+                    <button
+                      onClick={async () => {
+                        await handleExport(itemToExport, 'powerpoint')
+                        setShowExportDialog(false)
+                        setItemToExport(null)
+                        setExportMode('basic')
+                      }}
+                      disabled={mergingTemplate}
+                      className="w-full px-4 py-3 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <div className="font-medium text-white">📊 PowerPoint (.pptx)</div>
+                      <div className="text-xs text-[var(--grey-400)]">Generate presentation via Gamma</div>
+                    </button>
+                    <button
+                      onClick={async () => {
+                        await handleExport(itemToExport, 'google-docs')
+                        setShowExportDialog(false)
+                        setItemToExport(null)
+                        setExportMode('basic')
+                      }}
+                      disabled={mergingTemplate}
+                      className="w-full px-4 py-3 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <div className="font-medium text-white">📝 Google Docs</div>
+                      <div className="text-xs text-[var(--grey-400)]">Open in Google Docs (content copied to clipboard)</div>
+                    </button>
+                    <button
+                      onClick={async () => {
+                        await handleExport(itemToExport, 'google-slides')
+                        setShowExportDialog(false)
+                        setItemToExport(null)
+                        setExportMode('basic')
+                      }}
+                      disabled={mergingTemplate}
+                      className="w-full px-4 py-3 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <div className="font-medium text-white">🎤 Google Slides</div>
+                      <div className="text-xs text-[var(--grey-400)]">Open in Google Slides (content copied to clipboard)</div>
+                    </button>
+                    <button
+                      onClick={() => {
+                        // Export as formatted JSON (useful for schemas)
+                        const content = typeof itemToExport.content === 'string'
+                          ? itemToExport.content
+                          : JSON.stringify(itemToExport.content, null, 2)
 
-                    const blob = new Blob([content], { type: 'application/json' })
-                    const url = URL.createObjectURL(blob)
-                    const a = document.createElement('a')
-                    a.href = url
-                    a.download = `${itemToExport.title.replace(/[^a-z0-9]/gi, '_')}.json`
-                    document.body.appendChild(a)
-                    a.click()
-                    document.body.removeChild(a)
-                    URL.revokeObjectURL(url)
+                        const blob = new Blob([content], { type: 'application/json' })
+                        const url = URL.createObjectURL(blob)
+                        const a = document.createElement('a')
+                        a.href = url
+                        a.download = `${itemToExport.title.replace(/[^a-z0-9]/gi, '_')}.json`
+                        document.body.appendChild(a)
+                        a.click()
+                        document.body.removeChild(a)
+                        URL.revokeObjectURL(url)
 
-                    setShowExportDialog(false)
-                    setItemToExport(null)
-                    setExportMode('basic')
-                  }}
-                  disabled={mergingTemplate}
-                  className="w-full px-4 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <div className="font-medium text-white">📋 JSON (.json)</div>
-                  <div className="text-xs text-gray-400">Download formatted JSON (recommended for schemas)</div>
-                </button>
+                        setShowExportDialog(false)
+                        setItemToExport(null)
+                        setExportMode('basic')
+                      }}
+                      disabled={mergingTemplate}
+                      className="w-full px-4 py-3 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <div className="font-medium text-white">📋 JSON (.json)</div>
+                      <div className="text-xs text-[var(--grey-400)]">Download formatted JSON (recommended for schemas)</div>
+                    </button>
+                  </>
+                )}
               </div>
             )}
 
@@ -1644,15 +2087,15 @@ export default function MemoryVaultModule() {
                   </p>
                 </div>
                 <div>
-                  <label className="text-sm text-gray-400 mb-2 block">Select Brand Template</label>
+                  <label className="text-sm text-[var(--grey-400)] mb-2 block">Select Brand Template</label>
                   {brandAssets.filter(a => a.asset_type.startsWith('template-')).length === 0 ? (
-                    <div className="text-center py-8 bg-gray-800/30 rounded-lg border border-gray-800">
-                      <FileText className="w-8 h-8 mx-auto mb-2 text-gray-600" />
-                      <p className="text-gray-500 text-sm mb-2">No templates available</p>
-                      <p className="text-xs text-gray-600">Upload .docx or .pptx templates to Brand Assets</p>
+                    <div className="text-center py-8 bg-zinc-800/30 rounded-lg border border-zinc-800">
+                      <FileText className="w-8 h-8 mx-auto mb-2 text-[var(--grey-600)]" />
+                      <p className="text-[var(--grey-500)] text-sm mb-2">No templates available</p>
+                      <p className="text-xs text-[var(--grey-600)]">Upload .docx or .pptx templates to Brand Assets</p>
                     </div>
                   ) : (
-                    <div className="space-y-2 max-h-64 overflow-y-auto border border-gray-800 rounded-lg p-2">
+                    <div className="space-y-2 max-h-64 overflow-y-auto border border-zinc-800 rounded-lg p-2">
                       {brandAssets
                         .filter(a => a.asset_type.startsWith('template-') && a.status === 'active')
                         .map(template => (
@@ -1661,15 +2104,15 @@ export default function MemoryVaultModule() {
                             onClick={() => setSelectedTemplateId(template.id)}
                             className={`w-full px-3 py-2 rounded-lg transition-all text-left ${
                               selectedTemplateId === template.id
-                                ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
-                                : 'bg-gray-800/50 hover:bg-gray-800 text-gray-300 border border-transparent'
+                                ? 'bg-[var(--burnt-orange)]/20 text-[var(--burnt-orange)] border border-[var(--burnt-orange)]/30'
+                                : 'bg-zinc-800/50 hover:bg-zinc-800 text-[var(--grey-300)] border border-transparent'
                             }`}
                           >
                             <div className="flex items-center gap-2 mb-1">
                               <FileText className="w-4 h-4" />
                               <span className="font-medium text-sm">{template.name}</span>
                             </div>
-                            <div className="text-xs text-gray-500">
+                            <div className="text-xs text-[var(--grey-500)]">
                               {template.asset_type} • Used {template.usage_count}x
                             </div>
                           </button>
@@ -1708,13 +2151,14 @@ export default function MemoryVaultModule() {
                 setSelectedTemplateId('')
                 setExportMode('basic')
               }}
-              className="w-full px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors text-gray-300"
+              className="w-full px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors text-[var(--grey-300)]"
             >
               Cancel
             </button>
           </div>
         </div>
       )}
+
     </div>
   )
 }
@@ -1740,7 +2184,9 @@ function ContentLibraryTab({
   editingResultFor,
   setEditingResultFor,
   executingAction,
-  getResultFieldForType
+  getResultFieldForType,
+  selectedFolder,
+  contentItems
 }: {
   folderTree: FolderNode[]
   selectedContent: ContentItem | null
@@ -1762,6 +2208,8 @@ function ContentLibraryTab({
   setEditingResultFor: (id: string | null) => void
   executingAction: boolean
   getResultFieldForType: (contentType: string) => { label: string; placeholder: string; resultType: string }
+  selectedFolder: string | null
+  contentItems: ContentItem[]
 }) {
   // Local state for result form
   const [resultValue, setResultValue] = useState('')
@@ -1803,24 +2251,24 @@ function ContentLibraryTab({
         {/* Folder Header */}
         <button
           onClick={() => onToggleFolder(node.path)}
-          className="w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-800/50 rounded-lg transition-colors group"
+          className="w-full flex items-center gap-2 px-3 py-2 hover:bg-zinc-800/50 rounded-lg transition-colors group"
           style={{ paddingLeft: `${depth * 12 + 12}px` }}
         >
           <ChevronRight
-            className={`w-4 h-4 text-gray-500 transition-transform ${
+            className={`w-4 h-4 text-[var(--grey-500)] transition-transform ${
               node.expanded ? 'rotate-90' : ''
             }`}
           />
           {node.expanded ? (
-            <FolderOpen className={`w-4 h-4 ${template?.color || 'text-gray-400'}`} />
+            <FolderOpen className={`w-4 h-4 ${template?.color || 'text-[var(--grey-400)]'}`} />
           ) : (
-            <Folder className={`w-4 h-4 ${template?.color || 'text-gray-400'}`} />
+            <Folder className={`w-4 h-4 ${template?.color || 'text-[var(--grey-400)]'}`} />
           )}
-          <span className="flex-1 text-left text-sm font-medium text-gray-300">
+          <span className="flex-1 text-left text-sm font-medium text-[var(--grey-300)]">
             {template?.icon && <span className="mr-1">{template.icon}</span>}
             {node.name}
           </span>
-          <span className="text-xs text-gray-500">
+          <span className="text-xs text-[var(--grey-500)]">
             {node.items.length + node.children.reduce((sum, c) => sum + c.items.length, 0)}
           </span>
         </button>
@@ -1837,13 +2285,13 @@ function ContentLibraryTab({
                 key={item.id}
                 onClick={() => onSelectContent(item)}
                 onContextMenu={(e) => onContextMenu(e, item)}
-                className={`w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-800/50 rounded-lg transition-colors group ${
-                  selectedContent?.id === item.id ? 'bg-orange-500/10 border-l-2 border-orange-500' : ''
+                className={`w-full flex items-center gap-2 px-3 py-2 hover:bg-zinc-800/50 rounded-lg transition-colors group ${
+                  selectedContent?.id === item.id ? 'bg-[var(--burnt-orange)]/10 border-l-2 border-[var(--burnt-orange)]' : ''
                 }`}
                 style={{ paddingLeft: `${(depth + 1) * 12 + 24}px` }}
               >
-                <File className="w-3.5 h-3.5 text-gray-500" />
-                <span className="flex-1 text-left text-sm text-gray-300 truncate">
+                <File className="w-3.5 h-3.5 text-[var(--grey-500)]" />
+                <span className="flex-1 text-left text-sm text-[var(--grey-300)] truncate">
                   {item.title}
                 </span>
                 <StatusBadge status={item.intelligence_status} size="xs" />
@@ -1855,78 +2303,97 @@ function ContentLibraryTab({
     )
   }
 
+  // Filter items by selected folder
+  const filteredItems = contentItems.filter(item => {
+    // First filter by search
+    const matchesSearch = !searchQuery ||
+      item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.content_type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.themes?.some(t => t.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      item.topics?.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()))
+
+    if (!matchesSearch) return false
+
+    // Then filter by folder
+    if (!selectedFolder) return true
+    return item.folder?.startsWith(selectedFolder)
+  })
+
   return (
-    <div className="h-full flex">
-      {/* Folder Tree Sidebar */}
-      <div className="w-80 border-r border-gray-800 bg-gray-900/30 flex flex-col">
-        {/* Search & Actions */}
-        <div className="p-3 border-b border-gray-800 space-y-2">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="Search content..."
-              className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500"
-            />
-          </div>
-          <button
-            onClick={onCreateFolder}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 rounded-lg transition-colors border border-orange-500/20 text-sm font-medium"
-          >
-            <FolderPlus className="w-4 h-4" />
-            New Folder
-          </button>
-        </div>
+    <div className="h-full overflow-y-auto">
+      {selectedContent ? (
+          <div className="p-6">
+            {/* Back Button */}
+            <button
+              onClick={() => onSelectContent(null)}
+              className="flex items-center gap-2 mb-6 px-3 py-2 rounded-lg text-sm transition-colors hover:bg-[var(--grey-800)]"
+              style={{ color: 'var(--grey-400)' }}
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span style={{ fontFamily: 'var(--font-display)' }}>Back to {selectedFolder || 'All Items'}</span>
+            </button>
 
-        {/* Folder Tree */}
-        <div className="flex-1 overflow-y-auto p-2">
-          {loading ? (
-            <div className="flex items-center justify-center h-32">
-              <Loader className="w-5 h-5 animate-spin text-gray-500" />
-            </div>
-          ) : (
-            <div className="space-y-1">
-              {folderTree.map(node => renderFolderNode(node, 0))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Detail View */}
-      <div className="flex-1 overflow-y-auto">
-        {selectedContent ? (
-          <div className="p-6 max-w-4xl mx-auto">
-            {/* Header */}
-            <div className="mb-6">
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex-1">
-                  <h2 className="text-2xl font-bold text-white mb-2">{selectedContent.title}</h2>
-                  <div className="flex items-center gap-3 text-sm text-gray-400">
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5" />
-                      {new Date(selectedContent.created_at).toLocaleString()}
-                    </span>
-                    <span className="px-2 py-1 bg-gray-800 rounded text-xs font-medium">
-                      {selectedContent.content_type}
-                    </span>
-                    {selectedContent.folder && (
-                      <span className="flex items-center gap-1 text-xs">
-                        <Folder className="w-3.5 h-3.5" />
-                        {selectedContent.folder}
-                      </span>
-                    )}
+            {/* Content Card */}
+            <div
+              className="rounded-xl border overflow-hidden"
+              style={{ background: 'var(--grey-900)', borderColor: 'var(--grey-800)' }}
+            >
+              {/* Card Header */}
+              <div
+                className="px-6 py-5 border-b"
+                style={{ borderColor: 'var(--grey-800)' }}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div
+                        className="w-10 h-10 rounded-lg flex items-center justify-center"
+                        style={{ background: 'var(--burnt-orange-muted)' }}
+                      >
+                        <FileText className="w-5 h-5" style={{ color: 'var(--burnt-orange)' }} />
+                      </div>
+                      <div>
+                        <h2
+                          className="text-xl font-semibold"
+                          style={{ color: 'var(--white)', fontFamily: 'var(--font-display)' }}
+                        >
+                          {selectedContent.title}
+                        </h2>
+                        <div className="flex items-center gap-3 mt-1">
+                          <span
+                            className="px-2 py-0.5 rounded text-xs font-medium capitalize"
+                            style={{ background: 'var(--burnt-orange-muted)', color: 'var(--burnt-orange)' }}
+                          >
+                            {selectedContent.content_type.replace(/_/g, ' ')}
+                          </span>
+                          <span className="flex items-center gap-1 text-xs" style={{ color: 'var(--grey-500)' }}>
+                            <Clock className="w-3 h-3" />
+                            {new Date(selectedContent.created_at).toLocaleDateString()}
+                          </span>
+                          {selectedContent.folder && (
+                            <span className="flex items-center gap-1 text-xs" style={{ color: 'var(--grey-500)' }}>
+                              <Folder className="w-3 h-3" />
+                              {selectedContent.folder}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div className="flex gap-2">
+                  {/* Action Buttons */}
+                  <div className="flex gap-2">
                   {/* File Preview/Download Button */}
                   {selectedContent.file_url && (
                     <a
                       href={selectedContent.file_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-2 px-3 py-2 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 rounded-lg transition-colors border border-cyan-500/20"
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors"
+                      style={{
+                        background: 'var(--burnt-orange)',
+                        color: 'var(--white)',
+                        fontFamily: 'var(--font-display)'
+                      }}
                       title="View/Download File"
                     >
                       <Eye className="w-4 h-4" />
@@ -1940,35 +2407,61 @@ function ContentLibraryTab({
                       href={selectedContent.metadata.gamma_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-2 px-3 py-2 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 rounded-lg transition-colors border border-purple-500/20"
-                      title="View Gamma Presentation"
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors"
+                      style={{
+                        background: 'var(--burnt-orange)',
+                        color: 'var(--white)',
+                        fontFamily: 'var(--font-display)'
+                      }}
+                      title="Open in Gamma"
                     >
                       <ExternalLink className="w-4 h-4" />
-                      <span className="text-sm font-medium">View Gamma</span>
+                      <span className="text-sm font-medium">Open in Gamma</span>
                     </a>
                   )}
                   {(selectedContent.content_type === 'presentation' || selectedContent.content_type === 'presentation_outline') && selectedContent.metadata?.pptx_url && (
                     <a
                       href={selectedContent.metadata.pptx_url}
                       download
-                      className="flex items-center gap-2 px-3 py-2 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 rounded-lg transition-colors border border-orange-500/20"
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors border"
+                      style={{
+                        background: 'var(--grey-800)',
+                        borderColor: 'var(--grey-700)',
+                        color: 'var(--grey-300)',
+                        fontFamily: 'var(--font-display)'
+                      }}
                       title="Download PPTX"
                     >
                       <Download className="w-4 h-4" />
                       <span className="text-sm font-medium">Download PPTX</span>
                     </a>
                   )}
-                  <button
-                    onClick={() => onOpenInWorkspace(selectedContent)}
-                    className="flex items-center gap-2 px-3 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-lg transition-colors border border-blue-500/20"
-                    title="Open in Workspace"
-                  >
-                    <Edit className="w-4 h-4" />
-                    <span className="text-sm font-medium">Edit</span>
-                  </button>
+                  {/* Edit button - only show for non-gamma content */}
+                  {!((selectedContent.content_type === 'presentation' || selectedContent.content_type === 'presentation_outline') && selectedContent.metadata?.gamma_url) && (
+                    <button
+                      onClick={() => onOpenInWorkspace(selectedContent)}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors border"
+                      style={{
+                        background: 'var(--grey-800)',
+                        borderColor: 'var(--grey-700)',
+                        color: 'var(--grey-300)',
+                        fontFamily: 'var(--font-display)'
+                      }}
+                      title="Open in Studio"
+                    >
+                      <Edit className="w-4 h-4" />
+                      <span className="text-sm font-medium">Edit</span>
+                    </button>
+                  )}
                   <button
                     onClick={() => onExport(selectedContent)}
-                    className="flex items-center gap-2 px-3 py-2 bg-green-500/10 hover:bg-green-500/20 text-green-400 rounded-lg transition-colors border border-green-500/20"
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors border"
+                    style={{
+                      background: 'var(--grey-800)',
+                      borderColor: 'var(--grey-700)',
+                      color: 'var(--grey-300)',
+                      fontFamily: 'var(--font-display)'
+                    }}
                     title="Export"
                   >
                     <Download className="w-4 h-4" />
@@ -1976,7 +2469,12 @@ function ContentLibraryTab({
                   </button>
                   <button
                     onClick={() => onMoveContent(selectedContent)}
-                    className="p-2 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 rounded-lg transition-colors"
+                    className="p-2 rounded-lg transition-colors border"
+                    style={{
+                      background: 'var(--grey-800)',
+                      borderColor: 'var(--grey-700)',
+                      color: 'var(--grey-400)'
+                    }}
                     title="Move to Folder"
                   >
                     <Move className="w-4 h-4" />
@@ -1988,171 +2486,318 @@ function ContentLibraryTab({
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
+                  </div>
                 </div>
               </div>
+              </div>
 
-              <StatusBadge status={selectedContent.intelligence_status} size="lg" />
-            </div>
+              {/* Card Body */}
+              <div className="px-6 py-5">
+                <StatusBadge status={selectedContent.intelligence_status} size="lg" />
 
             {/* Execution Tracking Section */}
-            <div className="mb-6 p-4 bg-gradient-to-br from-emerald-500/5 to-emerald-500/10 border border-emerald-500/20 rounded-lg">
-              <h3 className="font-semibold text-emerald-400 mb-4 flex items-center gap-2">
-                <CheckCircle className="w-4 h-4" />
-                Execution Tracking
-                {selectedContent.executed && (
-                  <span className="text-xs px-2 py-0.5 bg-emerald-500/20 text-emerald-300 rounded-full border border-emerald-500/30">
-                    ✓ Complete
-                  </span>
-                )}
-              </h3>
-
-              {/* Action Buttons */}
-              <div className="flex gap-2 mb-4">
-                <button
-                  onClick={() => onOpenInWorkspace(selectedContent)}
-                  className="px-3 py-1 rounded text-xs font-medium bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-1"
-                >
-                  <Eye className="w-3 h-3" />
-                  View Content
-                </button>
-                {!selectedContent.executed && (
-                  <button
-                    onClick={() => onToggleExecuted(selectedContent, true)}
-                    disabled={executingAction}
-                    className="px-3 py-1 rounded text-xs font-medium bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
-                  >
-                    Mark as Complete
-                  </button>
-                )}
-                {selectedContent.executed && (
-                  <button
-                    onClick={() => setEditingResultFor(editingResultFor === selectedContent.id ? null : selectedContent.id)}
-                    className="px-3 py-1 rounded text-xs font-medium bg-purple-600 text-white hover:bg-purple-700"
-                  >
-                    {editingResultFor === selectedContent.id ? 'Hide Result' : 'Result'}
-                  </button>
-                )}
-              </div>
-
-              {/* Result Form (collapsible) */}
-              {selectedContent.executed && editingResultFor === selectedContent.id && (
-                <div className="space-y-3 p-3 bg-gray-900/50 rounded-lg border border-gray-800">
-                  <div>
-                    <label className="text-xs text-gray-400 mb-1 block">
-                      {getResultFieldForType(selectedContent.content_type).label}
-                    </label>
-                    <input
-                      type="text"
-                      value={resultValue}
-                      onChange={(e) => setResultValue(e.target.value)}
-                      placeholder={getResultFieldForType(selectedContent.content_type).placeholder}
-                      className="w-full px-3 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+            <div
+              className="mb-6 rounded-xl border overflow-hidden"
+              style={{ background: 'var(--grey-900)', borderColor: 'var(--grey-800)' }}
+            >
+              {/* Section Header */}
+              <div
+                className="px-5 py-4 border-b flex items-center justify-between"
+                style={{ borderColor: 'var(--grey-800)' }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className="w-1.5 h-1.5 rounded-full"
+                      style={{ background: 'var(--burnt-orange)' }}
                     />
+                    <span
+                      className="text-xs font-medium uppercase tracking-wider"
+                      style={{ color: 'var(--burnt-orange)', fontFamily: 'var(--font-display)' }}
+                    >
+                      Execution Tracking
+                    </span>
                   </div>
-                  <div>
-                    <label className="text-xs text-gray-400 mb-1 block">Notes</label>
-                    <textarea
-                      value={resultNotes}
-                      onChange={(e) => setResultNotes(e.target.value)}
-                      placeholder="Additional context or details..."
-                      className="w-full px-3 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 min-h-[60px]"
-                    />
-                  </div>
-                  <button
-                    onClick={() => onUpdateResult(selectedContent, resultValue, resultNotes)}
-                    disabled={executingAction}
-                    className="w-full px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded text-sm font-medium disabled:opacity-50"
-                  >
-                    {executingAction ? 'Saving...' : 'Save Result'}
-                  </button>
-                </div>
-              )}
-
-              {/* Feedback Section */}
-              <div className="mt-4">
-                <label className="text-xs text-gray-400 mb-1 block">Additional Feedback</label>
-                <textarea
-                  value={feedbackText}
-                  onChange={(e) => setFeedbackText(e.target.value)}
-                  onBlur={() => {
-                    if (feedbackText !== selectedContent.feedback) {
-                      onUpdateFeedback(selectedContent, feedbackText)
-                    }
-                  }}
-                  placeholder="Share your thoughts on this content's performance or usage..."
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 min-h-[80px]"
-                />
-                <p className="text-xs text-gray-500 mt-1">Auto-saves when you click away</p>
-              </div>
-
-              {/* Current Status Display */}
-              {selectedContent.result && (
-                <div className="mt-4 p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg">
-                  <p className="text-xs text-purple-300 mb-1 font-medium">Current Result:</p>
-                  <p className="text-sm text-white">{selectedContent.result.value}</p>
-                  {selectedContent.result.notes && (
-                    <p className="text-xs text-gray-400 mt-1">{selectedContent.result.notes}</p>
+                  {selectedContent.executed && (
+                    <span
+                      className="text-xs px-2 py-0.5 rounded-full"
+                      style={{ background: 'var(--burnt-orange-muted)', color: 'var(--burnt-orange)' }}
+                    >
+                      ✓ Complete
+                    </span>
                   )}
                 </div>
-              )}
+              </div>
+
+              {/* Section Body */}
+              <div className="p-5">
+                {/* Action Buttons */}
+                <div className="flex gap-2 mb-4">
+                  <button
+                    onClick={() => onOpenInWorkspace(selectedContent)}
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors"
+                    style={{
+                      background: 'var(--burnt-orange)',
+                      color: 'var(--white)',
+                      fontFamily: 'var(--font-display)'
+                    }}
+                  >
+                    <Eye className="w-3 h-3" />
+                    View Content
+                  </button>
+                  {!selectedContent.executed && (
+                    <button
+                      onClick={() => onToggleExecuted(selectedContent, true)}
+                      disabled={executingAction}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+                      style={{
+                        background: 'var(--grey-800)',
+                        color: 'var(--grey-300)',
+                        fontFamily: 'var(--font-display)'
+                      }}
+                    >
+                      Mark as Complete
+                    </button>
+                  )}
+                  {selectedContent.executed && (
+                    <button
+                      onClick={() => setEditingResultFor(editingResultFor === selectedContent.id ? null : selectedContent.id)}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                      style={{
+                        background: 'var(--grey-800)',
+                        color: 'var(--grey-300)',
+                        fontFamily: 'var(--font-display)'
+                      }}
+                    >
+                      {editingResultFor === selectedContent.id ? 'Hide Result' : 'Result'}
+                    </button>
+                  )}
+                </div>
+
+                {/* Result Form (collapsible) */}
+                {selectedContent.executed && editingResultFor === selectedContent.id && (
+                  <div
+                    className="space-y-3 p-4 rounded-lg border mb-4"
+                    style={{ background: 'var(--charcoal)', borderColor: 'var(--grey-800)' }}
+                  >
+                    <div>
+                      <label
+                        className="text-xs mb-1.5 block"
+                        style={{ color: 'var(--grey-400)', fontFamily: 'var(--font-display)' }}
+                      >
+                        {getResultFieldForType(selectedContent.content_type).label}
+                      </label>
+                      <input
+                        type="text"
+                        value={resultValue}
+                        onChange={(e) => setResultValue(e.target.value)}
+                        placeholder={getResultFieldForType(selectedContent.content_type).placeholder}
+                        className="w-full px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2"
+                        style={{
+                          background: 'var(--grey-800)',
+                          borderColor: 'var(--grey-700)',
+                          color: 'var(--white)'
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label
+                        className="text-xs mb-1.5 block"
+                        style={{ color: 'var(--grey-400)', fontFamily: 'var(--font-display)' }}
+                      >
+                        Notes
+                      </label>
+                      <textarea
+                        value={resultNotes}
+                        onChange={(e) => setResultNotes(e.target.value)}
+                        placeholder="Additional context or details..."
+                        className="w-full px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 min-h-[60px]"
+                        style={{
+                          background: 'var(--grey-800)',
+                          borderColor: 'var(--grey-700)',
+                          color: 'var(--white)'
+                        }}
+                      />
+                    </div>
+                    <button
+                      onClick={() => onUpdateResult(selectedContent, resultValue, resultNotes)}
+                      disabled={executingAction}
+                      className="w-full px-3 py-2 rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
+                      style={{
+                        background: 'var(--burnt-orange)',
+                        color: 'var(--white)',
+                        fontFamily: 'var(--font-display)'
+                      }}
+                    >
+                      {executingAction ? 'Saving...' : 'Save Result'}
+                    </button>
+                  </div>
+                )}
+
+                {/* Feedback Section */}
+                <div>
+                  <label
+                    className="text-xs mb-1.5 block"
+                    style={{ color: 'var(--grey-400)', fontFamily: 'var(--font-display)' }}
+                  >
+                    Additional Feedback
+                  </label>
+                  <textarea
+                    value={feedbackText}
+                    onChange={(e) => setFeedbackText(e.target.value)}
+                    onBlur={() => {
+                      if (feedbackText !== selectedContent.feedback) {
+                        onUpdateFeedback(selectedContent, feedbackText)
+                      }
+                    }}
+                    placeholder="Share your thoughts on this content's performance or usage..."
+                    className="w-full px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 min-h-[80px]"
+                    style={{
+                      background: 'var(--grey-800)',
+                      borderColor: 'var(--grey-700)',
+                      color: 'var(--white)'
+                    }}
+                  />
+                  <p className="text-xs mt-1.5" style={{ color: 'var(--grey-500)' }}>
+                    Auto-saves when you click away
+                  </p>
+                </div>
+
+                {/* Current Status Display */}
+                {selectedContent.result && (
+                  <div
+                    className="mt-4 p-4 rounded-lg border"
+                    style={{ background: 'var(--burnt-orange-muted)', borderColor: 'var(--burnt-orange)' }}
+                  >
+                    <p
+                      className="text-xs mb-1 font-medium"
+                      style={{ color: 'var(--burnt-orange)', fontFamily: 'var(--font-display)' }}
+                    >
+                      Current Result:
+                    </p>
+                    <p className="text-sm" style={{ color: 'var(--white)' }}>{selectedContent.result.value}</p>
+                    {selectedContent.result.notes && (
+                      <p className="text-xs mt-1" style={{ color: 'var(--grey-400)' }}>{selectedContent.result.notes}</p>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Intelligence Section */}
             {selectedContent.intelligence_status === 'complete' && (
               <div className="grid grid-cols-2 gap-4 mb-6">
                 {selectedContent.themes && selectedContent.themes.length > 0 && (
-                  <div className="p-4 bg-gradient-to-br from-blue-500/5 to-blue-500/10 border border-blue-500/20 rounded-lg">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Brain className="w-4 h-4 text-blue-400" />
-                      <h3 className="font-semibold text-blue-400">Themes</h3>
+                  <div
+                    className="rounded-xl border overflow-hidden"
+                    style={{ background: 'var(--grey-900)', borderColor: 'var(--grey-800)' }}
+                  >
+                    <div
+                      className="px-4 py-3 border-b flex items-center gap-2"
+                      style={{ borderColor: 'var(--grey-800)' }}
+                    >
+                      <span
+                        className="w-1.5 h-1.5 rounded-full"
+                        style={{ background: 'var(--burnt-orange)' }}
+                      />
+                      <Brain className="w-4 h-4" style={{ color: 'var(--burnt-orange)' }} />
+                      <span
+                        className="text-xs font-medium uppercase tracking-wider"
+                        style={{ color: 'var(--burnt-orange)', fontFamily: 'var(--font-display)' }}
+                      >
+                        Themes
+                      </span>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedContent.themes.map((theme, i) => (
-                        <span
-                          key={i}
-                          className="px-2 py-1 bg-blue-500/20 text-blue-300 rounded text-sm border border-blue-500/30"
-                        >
-                          {theme}
-                        </span>
-                      ))}
+                    <div className="p-4">
+                      <div className="flex flex-wrap gap-2">
+                        {selectedContent.themes.map((theme, i) => (
+                          <span
+                            key={i}
+                            className="px-2.5 py-1 rounded-lg text-sm"
+                            style={{ background: 'var(--grey-800)', color: 'var(--grey-300)' }}
+                          >
+                            {theme}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 )}
 
                 {selectedContent.topics && selectedContent.topics.length > 0 && (
-                  <div className="p-4 bg-gradient-to-br from-purple-500/5 to-purple-500/10 border border-purple-500/20 rounded-lg">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Tag className="w-4 h-4 text-purple-400" />
-                      <h3 className="font-semibold text-purple-400">Topics</h3>
+                  <div
+                    className="rounded-xl border overflow-hidden"
+                    style={{ background: 'var(--grey-900)', borderColor: 'var(--grey-800)' }}
+                  >
+                    <div
+                      className="px-4 py-3 border-b flex items-center gap-2"
+                      style={{ borderColor: 'var(--grey-800)' }}
+                    >
+                      <span
+                        className="w-1.5 h-1.5 rounded-full"
+                        style={{ background: 'var(--burnt-orange)' }}
+                      />
+                      <Tag className="w-4 h-4" style={{ color: 'var(--burnt-orange)' }} />
+                      <span
+                        className="text-xs font-medium uppercase tracking-wider"
+                        style={{ color: 'var(--burnt-orange)', fontFamily: 'var(--font-display)' }}
+                      >
+                        Topics
+                      </span>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedContent.topics.map((topic, i) => (
-                        <span
-                          key={i}
-                          className="px-2 py-1 bg-purple-500/20 text-purple-300 rounded text-sm border border-purple-500/30"
-                        >
-                          {topic}
-                        </span>
-                      ))}
+                    <div className="p-4">
+                      <div className="flex flex-wrap gap-2">
+                        {selectedContent.topics.map((topic, i) => (
+                          <span
+                            key={i}
+                            className="px-2.5 py-1 rounded-lg text-sm"
+                            style={{ background: 'var(--grey-800)', color: 'var(--grey-300)' }}
+                          >
+                            {topic}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 )}
 
                 {selectedContent.entities && Object.keys(selectedContent.entities).length > 0 && (
-                  <div className="col-span-2 p-4 bg-gradient-to-br from-green-500/5 to-green-500/10 border border-green-500/20 rounded-lg">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Sparkles className="w-4 h-4 text-green-400" />
-                      <h3 className="font-semibold text-green-400">Entities</h3>
+                  <div
+                    className="col-span-2 rounded-xl border overflow-hidden"
+                    style={{ background: 'var(--grey-900)', borderColor: 'var(--grey-800)' }}
+                  >
+                    <div
+                      className="px-4 py-3 border-b flex items-center gap-2"
+                      style={{ borderColor: 'var(--grey-800)' }}
+                    >
+                      <span
+                        className="w-1.5 h-1.5 rounded-full"
+                        style={{ background: 'var(--burnt-orange)' }}
+                      />
+                      <Sparkles className="w-4 h-4" style={{ color: 'var(--burnt-orange)' }} />
+                      <span
+                        className="text-xs font-medium uppercase tracking-wider"
+                        style={{ color: 'var(--burnt-orange)', fontFamily: 'var(--font-display)' }}
+                      >
+                        Entities
+                      </span>
                     </div>
-                    <div className="grid grid-cols-3 gap-3">
-                      {Object.entries(selectedContent.entities).map(([key, value]) => (
-                        <div key={key}>
-                          <div className="text-xs text-gray-500 mb-1 capitalize">{key}</div>
-                          <div className="text-sm text-gray-300">
-                            {Array.isArray(value) ? value.join(', ') : String(value)}
+                    <div className="p-4">
+                      <div className="grid grid-cols-3 gap-4">
+                        {Object.entries(selectedContent.entities).map(([key, value]) => (
+                          <div key={key}>
+                            <div
+                              className="text-xs mb-1 capitalize"
+                              style={{ color: 'var(--grey-500)', fontFamily: 'var(--font-display)' }}
+                            >
+                              {key}
+                            </div>
+                            <div className="text-sm" style={{ color: 'var(--grey-300)' }}>
+                              {Array.isArray(value) ? value.join(', ') : String(value)}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -2161,82 +2806,222 @@ function ContentLibraryTab({
 
             {/* File Metadata */}
             {selectedContent.file_url && selectedContent.metadata && (
-              <div className="mb-6 p-4 bg-cyan-500/5 border border-cyan-500/20 rounded-lg">
-                <h3 className="font-semibold text-cyan-400 mb-3 flex items-center gap-2">
-                  <FileText className="w-4 h-4" />
-                  File Information
-                </h3>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  {selectedContent.metadata.fileName && (
-                    <div>
-                      <div className="text-xs text-gray-500 mb-1">File Name</div>
-                      <div className="text-gray-300">{selectedContent.metadata.fileName}</div>
-                    </div>
-                  )}
-                  {selectedContent.metadata.fileSize && (
-                    <div>
-                      <div className="text-xs text-gray-500 mb-1">File Size</div>
-                      <div className="text-gray-300">
-                        {(selectedContent.metadata.fileSize / 1024 / 1024).toFixed(2)} MB
+              <div
+                className="mb-6 rounded-xl border overflow-hidden"
+                style={{ background: 'var(--grey-900)', borderColor: 'var(--grey-800)' }}
+              >
+                <div
+                  className="px-4 py-3 border-b flex items-center gap-2"
+                  style={{ borderColor: 'var(--grey-800)' }}
+                >
+                  <span
+                    className="w-1.5 h-1.5 rounded-full"
+                    style={{ background: 'var(--burnt-orange)' }}
+                  />
+                  <FileText className="w-4 h-4" style={{ color: 'var(--burnt-orange)' }} />
+                  <span
+                    className="text-xs font-medium uppercase tracking-wider"
+                    style={{ color: 'var(--burnt-orange)', fontFamily: 'var(--font-display)' }}
+                  >
+                    File Information
+                  </span>
+                </div>
+                <div className="p-4">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    {selectedContent.metadata.fileName && (
+                      <div>
+                        <div
+                          className="text-xs mb-1"
+                          style={{ color: 'var(--grey-500)', fontFamily: 'var(--font-display)' }}
+                        >
+                          File Name
+                        </div>
+                        <div style={{ color: 'var(--grey-300)' }}>{selectedContent.metadata.fileName}</div>
                       </div>
-                    </div>
-                  )}
-                  {selectedContent.metadata.mimeType && (
-                    <div>
-                      <div className="text-xs text-gray-500 mb-1">Type</div>
-                      <div className="text-gray-300">{selectedContent.metadata.mimeType}</div>
-                    </div>
-                  )}
-                  {selectedContent.metadata.uploadedAt && (
-                    <div>
-                      <div className="text-xs text-gray-500 mb-1">Uploaded</div>
-                      <div className="text-gray-300">
-                        {new Date(selectedContent.metadata.uploadedAt).toLocaleString()}
+                    )}
+                    {selectedContent.metadata.fileSize && (
+                      <div>
+                        <div
+                          className="text-xs mb-1"
+                          style={{ color: 'var(--grey-500)', fontFamily: 'var(--font-display)' }}
+                        >
+                          File Size
+                        </div>
+                        <div style={{ color: 'var(--grey-300)' }}>
+                          {(selectedContent.metadata.fileSize / 1024 / 1024).toFixed(2)} MB
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                    {selectedContent.metadata.mimeType && (
+                      <div>
+                        <div
+                          className="text-xs mb-1"
+                          style={{ color: 'var(--grey-500)', fontFamily: 'var(--font-display)' }}
+                        >
+                          Type
+                        </div>
+                        <div style={{ color: 'var(--grey-300)' }}>{selectedContent.metadata.mimeType}</div>
+                      </div>
+                    )}
+                    {selectedContent.metadata.uploadedAt && (
+                      <div>
+                        <div
+                          className="text-xs mb-1"
+                          style={{ color: 'var(--grey-500)', fontFamily: 'var(--font-display)' }}
+                        >
+                          Uploaded
+                        </div>
+                        <div style={{ color: 'var(--grey-300)' }}>
+                          {new Date(selectedContent.metadata.uploadedAt).toLocaleString()}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
 
             {/* Content */}
-            <div className="p-4 bg-gray-900/50 border border-gray-800 rounded-lg">
-              <h3 className="font-semibold text-gray-300 mb-3 flex items-center gap-2">
-                <FileText className="w-4 h-4" />
-                Content
-              </h3>
-              <div className="text-gray-300 whitespace-pre-wrap text-sm leading-relaxed">
-                {selectedContent.content_type === 'image' && selectedContent.metadata?.imageUrl ? (
-                  <div className="space-y-3">
-                    <img
-                      src={selectedContent.metadata.imageUrl}
-                      alt={selectedContent.metadata.prompt || selectedContent.title}
-                      className="max-w-full h-auto rounded-lg border border-gray-700"
-                    />
-                    {selectedContent.metadata.prompt && (
-                      <div className="text-xs text-gray-500 italic">
-                        Prompt: {selectedContent.metadata.prompt}
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  typeof selectedContent.content === 'string'
-                    ? selectedContent.content
-                    : JSON.stringify(selectedContent.content, null, 2)
-                )}
+            <div
+              className="rounded-xl border overflow-hidden"
+              style={{ background: 'var(--grey-900)', borderColor: 'var(--grey-800)' }}
+            >
+              <div
+                className="px-4 py-3 border-b flex items-center gap-2"
+                style={{ borderColor: 'var(--grey-800)' }}
+              >
+                <span
+                  className="w-1.5 h-1.5 rounded-full"
+                  style={{ background: 'var(--burnt-orange)' }}
+                />
+                <FileText className="w-4 h-4" style={{ color: 'var(--burnt-orange)' }} />
+                <span
+                  className="text-xs font-medium uppercase tracking-wider"
+                  style={{ color: 'var(--burnt-orange)', fontFamily: 'var(--font-display)' }}
+                >
+                  Content
+                </span>
               </div>
+              <div className="p-5">
+                <div
+                  className="whitespace-pre-wrap text-sm leading-relaxed"
+                  style={{ color: 'var(--grey-300)' }}
+                >
+                  {selectedContent.content_type === 'image' && selectedContent.metadata?.imageUrl ? (
+                    <div className="space-y-3">
+                      <img
+                        src={selectedContent.metadata.imageUrl}
+                        alt={selectedContent.metadata.prompt || selectedContent.title}
+                        className="max-w-full h-auto rounded-lg border"
+                        style={{ borderColor: 'var(--grey-800)' }}
+                      />
+                      {selectedContent.metadata.prompt && (
+                        <div
+                          className="text-xs italic"
+                          style={{ color: 'var(--grey-500)' }}
+                        >
+                          Prompt: {selectedContent.metadata.prompt}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    typeof selectedContent.content === 'string'
+                      ? selectedContent.content
+                      : JSON.stringify(selectedContent.content, null, 2)
+                  )}
+                </div>
+              </div>
+            </div>
             </div>
           </div>
         ) : (
-          <div className="h-full flex items-center justify-center text-gray-500">
-            <div className="text-center">
-              <FileText className="w-16 h-16 mx-auto mb-4 opacity-30" />
-              <p className="text-lg font-medium">Select a file to view details</p>
-              <p className="text-sm text-gray-600 mt-1">Or right-click for actions</p>
+          // Card Grid View
+          <div className="p-6">
+            {/* Section Header */}
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div
+                  className="text-lg font-semibold"
+                  style={{ color: 'var(--white)', fontFamily: 'var(--font-display)' }}
+                >
+                  {selectedFolder || 'All Items'}
+                </div>
+                <div
+                  className="px-2 py-1 rounded text-xs font-medium"
+                  style={{ background: 'var(--grey-800)', color: 'var(--grey-400)' }}
+                >
+                  {filteredItems.length} items
+                </div>
+              </div>
             </div>
+
+            {filteredItems.length > 0 ? (
+              <div
+                className="grid gap-4"
+                style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}
+              >
+                {filteredItems.map(item => (
+                  <button
+                    key={item.id}
+                    onClick={() => onSelectContent(item)}
+                    onContextMenu={(e) => onContextMenu(e, item)}
+                    className="text-left p-5 rounded-xl border transition-all hover:border-[var(--burnt-orange)]"
+                    style={{
+                      background: 'var(--grey-900)',
+                      borderColor: 'var(--grey-800)'
+                    }}
+                  >
+                    {/* Card Icon */}
+                    <div
+                      className="w-10 h-10 rounded-lg flex items-center justify-center mb-3"
+                      style={{ background: 'var(--burnt-orange-muted)' }}
+                    >
+                      <FileText className="w-5 h-5" style={{ color: 'var(--burnt-orange)' }} />
+                    </div>
+
+                    {/* Card Title */}
+                    <div
+                      className="font-medium text-sm mb-1 line-clamp-2"
+                      style={{ color: 'var(--white)', fontFamily: 'var(--font-display)' }}
+                    >
+                      {item.title}
+                    </div>
+
+                    {/* Card Description */}
+                    <div
+                      className="text-xs line-clamp-2 mb-3"
+                      style={{ color: 'var(--grey-500)', lineHeight: '1.4' }}
+                    >
+                      {typeof item.content === 'string'
+                        ? item.content.slice(0, 100) + (item.content.length > 100 ? '...' : '')
+                        : item.content_type}
+                    </div>
+
+                    {/* Card Meta */}
+                    <div
+                      className="text-xs flex items-center gap-2"
+                      style={{ color: 'var(--grey-600)' }}
+                    >
+                      <span className="capitalize">{item.content_type.replace(/_/g, ' ')}</span>
+                      <span>·</span>
+                      <span>{new Date(item.created_at).toLocaleDateString()}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="h-64 flex items-center justify-center text-[var(--grey-500)]">
+                <div className="text-center">
+                  <FileText className="w-16 h-16 mx-auto mb-4 opacity-30" />
+                  <p className="text-lg font-medium">No content found</p>
+                  <p className="text-sm text-[var(--grey-600)] mt-1">
+                    {searchQuery ? 'Try a different search term' : 'This folder is empty'}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         )}
-      </div>
     </div>
   )
 }
@@ -2259,8 +3044,8 @@ function MoveDialog({
     <div key={node.path}>
       <button
         onClick={() => setSelectedPath(node.path)}
-        className={`w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-800/50 rounded-lg transition-colors text-left ${
-          selectedPath === node.path ? 'bg-orange-500/20 text-orange-400' : 'text-gray-300'
+        className={`w-full flex items-center gap-2 px-3 py-2 hover:bg-zinc-800/50 rounded-lg transition-colors text-left ${
+          selectedPath === node.path ? 'bg-[var(--burnt-orange)]/20 text-[var(--burnt-orange)]' : 'text-[var(--grey-300)]'
         }`}
         style={{ paddingLeft: `${depth * 16 + 12}px` }}
       >
@@ -2273,25 +3058,25 @@ function MoveDialog({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-gray-900 rounded-lg p-6 w-[480px] max-h-[600px] border border-gray-800 flex flex-col">
-        <h3 className="text-lg font-bold mb-2 text-white">Move to Folder</h3>
-        <p className="text-sm text-gray-400 mb-4">Moving: {item.title}</p>
+      <div className="bg-[var(--charcoal)] rounded-xl p-6 w-[480px] max-h-[600px] border border-zinc-800 flex flex-col">
+        <h3 className="text-lg font-bold mb-2 text-white" style={{ fontFamily: 'var(--font-display)' }}>Move to Folder</h3>
+        <p className="text-sm text-[var(--grey-400)] mb-4">Moving: {item.title}</p>
 
-        <div className="flex-1 overflow-y-auto border border-gray-800 rounded-lg p-2 mb-4">
+        <div className="flex-1 overflow-y-auto border border-zinc-800 rounded-lg p-2 mb-4">
           {folderTree.map(node => renderFolderOption(node, 0))}
         </div>
 
         <div className="flex gap-2 justify-end">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors text-gray-300"
+            className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors text-[var(--grey-300)]"
           >
             Cancel
           </button>
           <button
             onClick={() => onMove(item, selectedPath)}
             disabled={!selectedPath}
-            className="px-4 py-2 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 rounded-lg transition-colors disabled:opacity-50 border border-orange-500/30"
+            className="px-4 py-2 bg-[var(--burnt-orange)]/20 hover:bg-[var(--burnt-orange)]/30 text-[var(--burnt-orange)] rounded-lg transition-colors disabled:opacity-50 border border-[var(--burnt-orange)]/30"
           >
             Move Here
           </button>
@@ -2332,14 +3117,14 @@ function BrandAssetsTab({
     : assets.filter(a => !a.folder) // Root level assets
   return (
     <div className="h-full flex">
-      <div className="w-80 border-r border-gray-800 bg-gray-900/30 overflow-y-auto p-4">
+      <div className="w-80 border-r border-zinc-800 bg-[var(--charcoal)]/30 overflow-y-auto p-4">
         {/* Folder Navigation */}
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-semibold text-gray-400">Folders</h3>
+            <h3 className="text-sm font-semibold text-[var(--grey-400)]">Folders</h3>
             <button
               onClick={onCreateFolder}
-              className="p-1 hover:bg-gray-800 rounded text-gray-400 hover:text-white transition-colors"
+              className="p-1 hover:bg-zinc-800 rounded text-[var(--grey-400)] hover:text-white transition-colors"
               title="New Folder"
             >
               <FolderPlus className="w-4 h-4" />
@@ -2350,8 +3135,8 @@ function BrandAssetsTab({
               onClick={() => onFolderChange(null)}
               className={`w-full text-left px-3 py-2 rounded-lg transition-colors text-sm flex items-center gap-2 ${
                 currentFolder === null
-                  ? 'bg-orange-500/20 text-orange-400'
-                  : 'text-gray-400 hover:bg-gray-800/50'
+                  ? 'bg-[var(--burnt-orange)]/20 text-[var(--burnt-orange)]'
+                  : 'text-[var(--grey-400)] hover:bg-zinc-800/50'
               }`}
             >
               <Folder className="w-4 h-4" />
@@ -2363,8 +3148,8 @@ function BrandAssetsTab({
                 onClick={() => onFolderChange(folder)}
                 className={`w-full text-left px-3 py-2 rounded-lg transition-colors text-sm flex items-center gap-2 ${
                   currentFolder === folder
-                    ? 'bg-orange-500/20 text-orange-400'
-                    : 'text-gray-400 hover:bg-gray-800/50'
+                    ? 'bg-[var(--burnt-orange)]/20 text-[var(--burnt-orange)]'
+                    : 'text-[var(--grey-400)] hover:bg-zinc-800/50'
                 }`}
               >
                 <Folder className="w-4 h-4" />
@@ -2376,19 +3161,19 @@ function BrandAssetsTab({
 
         {/* Assets List */}
         <div className="space-y-2">
-          <h3 className="text-sm font-semibold text-gray-400 mb-2">
+          <h3 className="text-sm font-semibold text-[var(--grey-400)] mb-2">
             {currentFolder || 'Root'} Assets
           </h3>
           {filteredAssets.length === 0 ? (
             <div className="text-center py-8">
-              <Sparkles className="w-8 h-8 mx-auto mb-2 text-gray-600" />
-              <p className="text-gray-500 text-sm mb-4">
+              <Sparkles className="w-8 h-8 mx-auto mb-2 text-[var(--grey-600)]" />
+              <p className="text-[var(--grey-500)] text-sm mb-4">
                 {currentFolder ? `No assets in ${currentFolder}` : 'No assets in root'}
               </p>
               <button
                 onClick={onUpload}
                 disabled={uploading}
-                className="px-4 py-2 bg-orange-500/20 text-orange-400 rounded-lg hover:bg-orange-500/30 transition-colors text-sm disabled:opacity-50"
+                className="px-4 py-2 bg-[var(--burnt-orange)]/20 text-[var(--burnt-orange)] rounded-lg hover:bg-[var(--burnt-orange)]/30 transition-colors text-sm disabled:opacity-50"
               >
                 Upload Asset
               </button>
@@ -2400,8 +3185,8 @@ function BrandAssetsTab({
                 onClick={() => onSelectAsset(asset)}
                 className={`w-full text-left p-3 rounded-lg transition-all ${
                   selectedAsset?.id === asset.id
-                    ? 'bg-orange-500/20 border border-orange-500/30'
-                    : 'bg-gray-800/30 hover:bg-gray-800/50 border border-transparent'
+                    ? 'bg-[var(--burnt-orange)]/20 border border-[var(--burnt-orange)]/30'
+                    : 'bg-zinc-800/30 hover:bg-zinc-800/50 border border-transparent'
                 }`}
               >
                 <div className="flex items-start justify-between gap-2 mb-1">
@@ -2415,7 +3200,7 @@ function BrandAssetsTab({
                   </div>
                   <StatusBadge status={asset.status} size="sm" />
                 </div>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-[var(--grey-500)]">
                   {asset.asset_type} • Used {asset.usage_count}x
                 </p>
               </button>
@@ -2439,8 +3224,8 @@ function BrandAssetsTab({
                   <span className="text-sm font-medium">Delete</span>
                 </button>
               </div>
-              <div className="flex items-center gap-3 text-sm text-gray-400">
-                <span className="px-2 py-0.5 bg-gray-800 rounded">
+              <div className="flex items-center gap-3 text-sm text-[var(--grey-400)]">
+                <span className="px-2 py-0.5 bg-zinc-800 rounded">
                   {selectedAsset.asset_type}
                 </span>
                 <span>Used {selectedAsset.usage_count} times</span>
@@ -2456,10 +3241,10 @@ function BrandAssetsTab({
                     <div className="grid grid-cols-2 gap-4">
                       {Object.entries(selectedAsset.brand_voice_profile).map(([key, value]) => (
                         <div key={key}>
-                          <div className="text-xs text-gray-500 mb-1 capitalize">
+                          <div className="text-xs text-[var(--grey-500)] mb-1 capitalize">
                             {key.replace(/_/g, ' ')}
                           </div>
-                          <div className="text-sm text-gray-300">{String(value)}</div>
+                          <div className="text-sm text-[var(--grey-300)]">{String(value)}</div>
                         </div>
                       ))}
                     </div>
@@ -2469,7 +3254,7 @@ function BrandAssetsTab({
                 {selectedAsset.extracted_guidelines && (
                   <div className="p-4 bg-gradient-to-br from-blue-500/5 to-blue-500/10 border border-blue-500/20 rounded-lg">
                     <h3 className="font-semibold text-blue-400 mb-3">Extracted Guidelines</h3>
-                    <pre className="text-sm text-gray-300 whitespace-pre-wrap">
+                    <pre className="text-sm text-[var(--grey-300)] whitespace-pre-wrap">
                       {JSON.stringify(selectedAsset.extracted_guidelines, null, 2)}
                     </pre>
                   </div>
@@ -2480,14 +3265,14 @@ function BrandAssetsTab({
             {selectedAsset.status === 'analyzing' && (
               <div className="flex items-center justify-center h-32">
                 <div className="text-center">
-                  <Loader className="w-8 h-8 mx-auto mb-2 animate-spin text-orange-500" />
-                  <p className="text-gray-400">Analyzing asset with Claude...</p>
+                  <Loader className="w-8 h-8 mx-auto mb-2 animate-spin text-[var(--burnt-orange)]" />
+                  <p className="text-[var(--grey-400)]">Analyzing asset with Claude...</p>
                 </div>
               </div>
             )}
           </div>
         ) : (
-          <div className="h-full flex items-center justify-center text-gray-500">
+          <div className="h-full flex items-center justify-center text-[var(--grey-500)]">
             <div className="text-center">
               <Sparkles className="w-12 h-12 mx-auto mb-3 opacity-50" />
               <p>Select an asset to view details</p>
@@ -2515,12 +3300,12 @@ function AnalyticsTab({
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-2xl font-bold text-white">Campaign Performance</h2>
-            <p className="text-sm text-gray-400 mt-1">Track execution and results across your content</p>
+            <p className="text-sm text-[var(--grey-400)] mt-1">Track execution and results across your content</p>
           </div>
           <button
             onClick={onRefresh}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors disabled:opacity-50"
           >
             <Activity className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             Refresh
@@ -2534,7 +3319,7 @@ function AnalyticsTab({
               <CheckCircle className="w-5 h-5" />
               Content Execution
             </h3>
-            <span className="text-sm text-gray-400">
+            <span className="text-sm text-[var(--grey-400)]">
               {data.executionRate}% completion rate
             </span>
           </div>
@@ -2542,9 +3327,9 @@ function AnalyticsTab({
             <div className="flex-1">
               <div className="flex items-end gap-3 mb-2">
                 <span className="text-4xl font-bold text-white">{data.executedContent}</span>
-                <span className="text-2xl text-gray-400 pb-1">/ {data.totalContent}</span>
+                <span className="text-2xl text-[var(--grey-400)] pb-1">/ {data.totalContent}</span>
               </div>
-              <p className="text-sm text-gray-400">pieces executed</p>
+              <p className="text-sm text-[var(--grey-400)]">pieces executed</p>
             </div>
             <div className="w-32 h-32 relative">
               <svg className="w-full h-full transform -rotate-90">
@@ -2555,7 +3340,7 @@ function AnalyticsTab({
                   stroke="currentColor"
                   strokeWidth="8"
                   fill="none"
-                  className="text-gray-800"
+                  className="text-zinc-800"
                 />
                 <circle
                   cx="64"
@@ -2585,16 +3370,16 @@ function AnalyticsTab({
                 <Target className="w-5 h-5" />
                 Campaign Attribution
               </h3>
-              <span className="text-sm text-gray-400">
+              <span className="text-sm text-[var(--grey-400)]">
                 AI-powered media tracking
               </span>
             </div>
 
             {data.attribution.totalCoverage === 0 ? (
               <div className="text-center py-8">
-                <Target className="w-16 h-16 mx-auto mb-4 text-gray-600 opacity-50" />
-                <h3 className="text-lg font-medium text-gray-400 mb-2">No Attributions Yet</h3>
-                <p className="text-sm text-gray-500 max-w-md mx-auto">
+                <Target className="w-16 h-16 mx-auto mb-4 text-[var(--grey-600)] opacity-50" />
+                <h3 className="text-lg font-medium text-[var(--grey-400)] mb-2">No Attributions Yet</h3>
+                <p className="text-sm text-[var(--grey-500)] max-w-md mx-auto">
                   Campaign attribution tracking is ready. When you export content and media coverage is detected,
                   AI-powered attribution will appear here automatically.
                 </p>
@@ -2603,31 +3388,31 @@ function AnalyticsTab({
               <>
             {/* Top-level metrics */}
             <div className="grid grid-cols-4 gap-4 mb-6">
-              <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-800">
-                <div className="text-sm text-gray-400 mb-1">Total Coverage</div>
+              <div className="bg-[var(--charcoal)]/50 p-4 rounded-lg border border-zinc-800">
+                <div className="text-sm text-[var(--grey-400)] mb-1">Total Coverage</div>
                 <div className="text-3xl font-bold text-white">{data.attribution.totalCoverage}</div>
                 <div className="text-xs text-blue-300 mt-1">
                   {data.attribution.highConfidenceMatches} high confidence
                 </div>
               </div>
-              <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-800">
-                <div className="text-sm text-gray-400 mb-1">Total Reach</div>
+              <div className="bg-[var(--charcoal)]/50 p-4 rounded-lg border border-zinc-800">
+                <div className="text-sm text-[var(--grey-400)] mb-1">Total Reach</div>
                 <div className="text-3xl font-bold text-white">
                   {(data.attribution.totalReach / 1000000).toFixed(1)}M
                 </div>
                 <div className="text-xs text-purple-300 mt-1">estimated audience</div>
               </div>
-              <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-800">
-                <div className="text-sm text-gray-400 mb-1">Avg Confidence</div>
+              <div className="bg-[var(--charcoal)]/50 p-4 rounded-lg border border-zinc-800">
+                <div className="text-sm text-[var(--grey-400)] mb-1">Avg Confidence</div>
                 <div className="text-3xl font-bold text-white">
                   {(data.attribution.avgConfidence * 100).toFixed(0)}%
                 </div>
                 <div className="text-xs text-emerald-300 mt-1">match accuracy</div>
               </div>
-              <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-800">
-                <div className="text-sm text-gray-400 mb-1">Verification</div>
+              <div className="bg-[var(--charcoal)]/50 p-4 rounded-lg border border-zinc-800">
+                <div className="text-sm text-[var(--grey-400)] mb-1">Verification</div>
                 <div className="text-3xl font-bold text-white">{data.attribution.verifiedCount}</div>
-                <div className="text-xs text-orange-300 mt-1">
+                <div className="text-xs text-[var(--burnt-orange)] mt-1">
                   {data.attribution.pendingVerification} pending
                 </div>
               </div>
@@ -2635,7 +3420,7 @@ function AnalyticsTab({
 
             {/* Sentiment Breakdown */}
             <div className="mb-6">
-              <h4 className="text-sm font-medium text-gray-400 mb-3">Sentiment Analysis</h4>
+              <h4 className="text-sm font-medium text-[var(--grey-400)] mb-3">Sentiment Analysis</h4>
               <div className="grid grid-cols-3 gap-3">
                 <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3">
                   <div className="flex items-center justify-between">
@@ -2644,18 +3429,18 @@ function AnalyticsTab({
                       {data.attribution.sentimentBreakdown.positive}
                     </span>
                   </div>
-                  <div className="text-xs text-gray-500 mt-1">
+                  <div className="text-xs text-[var(--grey-500)] mt-1">
                     {((data.attribution.sentimentBreakdown.positive / data.attribution.totalCoverage) * 100).toFixed(0)}% of total
                   </div>
                 </div>
-                <div className="bg-gray-500/10 border border-gray-500/30 rounded-lg p-3">
+                <div className="bg-zinc-500/10 border border-zinc-500/30 rounded-lg p-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-400">Neutral</span>
+                    <span className="text-sm text-[var(--grey-400)]">Neutral</span>
                     <span className="text-lg font-bold text-white">
                       {data.attribution.sentimentBreakdown.neutral}
                     </span>
                   </div>
-                  <div className="text-xs text-gray-500 mt-1">
+                  <div className="text-xs text-[var(--grey-500)] mt-1">
                     {((data.attribution.sentimentBreakdown.neutral / data.attribution.totalCoverage) * 100).toFixed(0)}% of total
                   </div>
                 </div>
@@ -2666,7 +3451,7 @@ function AnalyticsTab({
                       {data.attribution.sentimentBreakdown.negative}
                     </span>
                   </div>
-                  <div className="text-xs text-gray-500 mt-1">
+                  <div className="text-xs text-[var(--grey-500)] mt-1">
                     {((data.attribution.sentimentBreakdown.negative / data.attribution.totalCoverage) * 100).toFixed(0)}% of total
                   </div>
                 </div>
@@ -2676,24 +3461,24 @@ function AnalyticsTab({
             {/* Top Outlets */}
             {data.attribution.topOutlets.length > 0 && (
               <div className="mb-6">
-                <h4 className="text-sm font-medium text-gray-400 mb-3">Top Outlets</h4>
+                <h4 className="text-sm font-medium text-[var(--grey-400)] mb-3">Top Outlets</h4>
                 <div className="space-y-2">
                   {data.attribution.topOutlets.slice(0, 5).map((outlet, idx) => (
-                    <div key={idx} className="flex items-center justify-between bg-gray-900/50 rounded-lg p-3 border border-gray-800">
+                    <div key={idx} className="flex items-center justify-between bg-[var(--charcoal)]/50 rounded-lg p-3 border border-zinc-800">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 text-sm font-bold">
                           {idx + 1}
                         </div>
                         <div>
                           <div className="font-medium text-white">{outlet.outlet}</div>
-                          <div className="text-xs text-gray-500">
+                          <div className="text-xs text-[var(--grey-500)]">
                             {(outlet.reach / 1000).toFixed(0)}K reach
                           </div>
                         </div>
                       </div>
                       <div className="text-right">
                         <div className="text-lg font-bold text-white">{outlet.count}</div>
-                        <div className="text-xs text-gray-500">mentions</div>
+                        <div className="text-xs text-[var(--grey-500)]">mentions</div>
                       </div>
                     </div>
                   ))}
@@ -2704,10 +3489,10 @@ function AnalyticsTab({
             {/* Recent Attribution Timeline */}
             {data.attribution.timeline.length > 0 && (
               <div>
-                <h4 className="text-sm font-medium text-gray-400 mb-3">Recent Attributions</h4>
+                <h4 className="text-sm font-medium text-[var(--grey-400)] mb-3">Recent Attributions</h4>
                 <div className="space-y-2 max-h-64 overflow-y-auto">
                   {data.attribution.timeline.slice(0, 10).map((item, idx) => (
-                    <div key={idx} className="bg-gray-900/50 rounded-lg p-3 border border-gray-800 hover:bg-gray-800/50 transition-colors">
+                    <div key={idx} className="bg-[var(--charcoal)]/50 rounded-lg p-3 border border-zinc-800 hover:bg-zinc-800/50 transition-colors">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1">
                           <a
@@ -2727,7 +3512,7 @@ function AnalyticsTab({
                                 ? 'bg-emerald-500/20 text-emerald-300'
                                 : item.match_type === 'semantic'
                                 ? 'bg-purple-500/20 text-purple-300'
-                                : 'bg-orange-500/20 text-orange-300'
+                                : 'bg-[var(--burnt-orange)]/20 text-[var(--burnt-orange)]'
                             }`}>
                               {item.match_type === 'exact_phrase' ? 'Exact Match' :
                                item.match_type === 'semantic' ? 'Semantic Match' : 'Contextual Match'}
@@ -2737,11 +3522,11 @@ function AnalyticsTab({
                                 ? 'bg-emerald-500/20 text-emerald-300'
                                 : item.sentiment === 'negative'
                                 ? 'bg-red-500/20 text-red-300'
-                                : 'bg-gray-500/20 text-gray-300'
+                                : 'bg-zinc-500/20 text-[var(--grey-300)]'
                             }`}>
                               {item.sentiment}
                             </span>
-                            <span className="text-xs text-gray-500">
+                            <span className="text-xs text-[var(--grey-500)]">
                               {new Date(item.date).toLocaleDateString()}
                             </span>
                           </div>
@@ -2750,7 +3535,7 @@ function AnalyticsTab({
                           <div className="text-sm font-medium text-white">
                             {(item.confidence * 100).toFixed(0)}%
                           </div>
-                          <div className="text-xs text-gray-500">confidence</div>
+                          <div className="text-xs text-[var(--grey-500)]">confidence</div>
                         </div>
                       </div>
                     </div>
@@ -2765,35 +3550,35 @@ function AnalyticsTab({
 
         {/* Activity Over Time */}
         <div className="grid grid-cols-3 gap-4 mb-6">
-          <div className="p-4 bg-gray-900/50 border border-gray-800 rounded-lg">
+          <div className="p-4 bg-[var(--charcoal)]/50 border border-zinc-800 rounded-lg">
             <div className="flex items-center gap-2 mb-2">
               <Clock className="w-4 h-4 text-blue-400" />
-              <h4 className="text-sm font-medium text-gray-400">Last 24 Hours</h4>
+              <h4 className="text-sm font-medium text-[var(--grey-400)]">Last 24 Hours</h4>
             </div>
             <div className="text-3xl font-bold text-white">{data.activityToday}</div>
-            <p className="text-xs text-gray-500 mt-1">pieces executed</p>
+            <p className="text-xs text-[var(--grey-500)] mt-1">pieces executed</p>
           </div>
-          <div className="p-4 bg-gray-900/50 border border-gray-800 rounded-lg">
+          <div className="p-4 bg-[var(--charcoal)]/50 border border-zinc-800 rounded-lg">
             <div className="flex items-center gap-2 mb-2">
               <TrendingUp className="w-4 h-4 text-purple-400" />
-              <h4 className="text-sm font-medium text-gray-400">Last 7 Days</h4>
+              <h4 className="text-sm font-medium text-[var(--grey-400)]">Last 7 Days</h4>
             </div>
             <div className="text-3xl font-bold text-white">{data.activityThisWeek}</div>
-            <p className="text-xs text-gray-500 mt-1">pieces executed</p>
+            <p className="text-xs text-[var(--grey-500)] mt-1">pieces executed</p>
           </div>
-          <div className="p-4 bg-gray-900/50 border border-gray-800 rounded-lg">
+          <div className="p-4 bg-[var(--charcoal)]/50 border border-zinc-800 rounded-lg">
             <div className="flex items-center gap-2 mb-2">
-              <BarChart3 className="w-4 h-4 text-orange-400" />
-              <h4 className="text-sm font-medium text-gray-400">Last 30 Days</h4>
+              <BarChart3 className="w-4 h-4 text-[var(--burnt-orange)]" />
+              <h4 className="text-sm font-medium text-[var(--grey-400)]">Last 30 Days</h4>
             </div>
             <div className="text-3xl font-bold text-white">{data.activityThisMonth}</div>
-            <p className="text-xs text-gray-500 mt-1">pieces executed</p>
+            <p className="text-xs text-[var(--grey-500)] mt-1">pieces executed</p>
           </div>
         </div>
 
         {/* Content Performance */}
         {data.performanceByType.length > 0 && (
-          <div className="p-6 bg-gray-900/50 border border-gray-800 rounded-lg mb-6">
+          <div className="p-6 bg-[var(--charcoal)]/50 border border-zinc-800 rounded-lg mb-6">
             <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-purple-400" />
               Content Performance
@@ -2803,29 +3588,29 @@ function AnalyticsTab({
                 <div key={perf.type} className="border-l-2 border-purple-500/30 pl-4">
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="font-medium text-white capitalize">{perf.type.replace(/-/g, ' ')}</h4>
-                    <span className="text-sm text-gray-400">{perf.executed} executed</span>
+                    <span className="text-sm text-[var(--grey-400)]">{perf.executed} executed</span>
                   </div>
                   {perf.results.length > 0 ? (
                     <div className="space-y-1.5">
                       {perf.results.slice(0, 3).map((result, idx) => (
-                        <div key={idx} className="text-sm bg-gray-800/50 rounded px-3 py-2">
+                        <div key={idx} className="text-sm bg-zinc-800/50 rounded px-3 py-2">
                           <div className="flex items-center justify-between">
-                            <span className="text-gray-300 text-xs truncate flex-1">{result.label}</span>
+                            <span className="text-[var(--grey-300)] text-xs truncate flex-1">{result.label}</span>
                             <span className="text-purple-300 font-medium ml-2">{result.value}</span>
                           </div>
                           {result.notes && (
-                            <div className="text-xs text-gray-500 mt-1">{result.notes}</div>
+                            <div className="text-xs text-[var(--grey-500)] mt-1">{result.notes}</div>
                           )}
                         </div>
                       ))}
                       {perf.results.length > 3 && (
-                        <div className="text-xs text-gray-500 text-center py-1">
+                        <div className="text-xs text-[var(--grey-500)] text-center py-1">
                           +{perf.results.length - 3} more results
                         </div>
                       )}
                     </div>
                   ) : (
-                    <div className="text-sm text-gray-500">No results recorded yet</div>
+                    <div className="text-sm text-[var(--grey-500)]">No results recorded yet</div>
                   )}
                 </div>
               ))}
@@ -2835,28 +3620,28 @@ function AnalyticsTab({
 
         {/* Recent Activity */}
         {data.recentExecutions.length > 0 && (
-          <div className="p-6 bg-gray-900/50 border border-gray-800 rounded-lg">
+          <div className="p-6 bg-[var(--charcoal)]/50 border border-zinc-800 rounded-lg">
             <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
-              <Activity className="w-5 h-5 text-orange-400" />
+              <Activity className="w-5 h-5 text-[var(--burnt-orange)]" />
               Recent Activity
             </h3>
             <div className="space-y-2">
               {data.recentExecutions.map(item => (
-                <div key={item.id} className="p-3 bg-gray-800/50 rounded-lg hover:bg-gray-800 transition-colors">
+                <div key={item.id} className="p-3 bg-zinc-800/50 rounded-lg hover:bg-zinc-800 transition-colors">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1">
                       <div className="font-medium text-white text-sm">{item.title}</div>
                       <div className="flex items-center gap-2 mt-1 flex-wrap">
-                        <span className="text-xs px-2 py-0.5 bg-gray-700 rounded text-gray-300 capitalize">
+                        <span className="text-xs px-2 py-0.5 bg-zinc-700 rounded text-[var(--grey-300)] capitalize">
                           {item.content_type.replace(/-/g, ' ')}
                         </span>
                         {item.folder && (
-                          <span className="text-xs text-gray-500 flex items-center gap-1">
+                          <span className="text-xs text-[var(--grey-500)] flex items-center gap-1">
                             <Folder className="w-3 h-3" />
                             {item.folder.split('/').pop()}
                           </span>
                         )}
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-[var(--grey-500)]">
                           {new Date(item.executed_at).toLocaleDateString()}
                         </span>
                       </div>
@@ -2876,9 +3661,9 @@ function AnalyticsTab({
         {/* Empty State */}
         {data.executedContent === 0 && (
           <div className="text-center py-12">
-            <TrendingUp className="w-16 h-16 mx-auto mb-4 text-gray-600 opacity-50" />
-            <h3 className="text-lg font-medium text-gray-400 mb-2">No Content Executed Yet</h3>
-            <p className="text-sm text-gray-500">Mark content as complete to start tracking campaign performance</p>
+            <TrendingUp className="w-16 h-16 mx-auto mb-4 text-[var(--grey-600)] opacity-50" />
+            <h3 className="text-lg font-medium text-[var(--grey-400)] mb-2">No Content Executed Yet</h3>
+            <p className="text-sm text-[var(--grey-500)]">Mark content as complete to start tracking campaign performance</p>
           </div>
         )}
       </div>
@@ -2925,8 +3710,8 @@ function MetricCard({
         )}
       </div>
       <div className="text-2xl font-bold text-white mb-1">{value}</div>
-      <div className="text-xs text-gray-400">{title}</div>
-      <div className="text-xs text-gray-500 mt-1">Target: {target}</div>
+      <div className="text-xs text-[var(--grey-400)]">{title}</div>
+      <div className="text-xs text-[var(--grey-500)] mt-1">Target: {target}</div>
     </div>
   )
 }

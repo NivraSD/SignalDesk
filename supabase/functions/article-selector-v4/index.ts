@@ -23,6 +23,15 @@ const INDUSTRY_MAPPINGS: Record<string, string[]> = {
                  'manufacturing', 'industrial', 'technology', 'healthcare', 'retail', 'food',
                  'policy', 'international', 'politics', 'asia', 'europe', 'investing', 'economics'],
   public_relations: ['public_relations', 'marketing', 'advertising', 'corporate_communications', 'media'],
+  marketing: ['marketing', 'advertising', 'public_relations', 'media', 'events', 'experiential',
+              'experiential_marketing', 'brand', 'brand_activation', 'retail', 'technology', 'consumer'],
+  // Marketing industry aliases - all map to same tags
+  'integrated marketing': ['marketing', 'advertising', 'public_relations', 'media', 'events', 'experiential',
+              'experiential_marketing', 'brand', 'brand_activation', 'retail', 'technology', 'consumer'],
+  'experiential marketing': ['marketing', 'advertising', 'public_relations', 'media', 'events', 'experiential',
+              'experiential_marketing', 'brand', 'brand_activation', 'retail', 'technology', 'consumer'],
+  'marketing & communications': ['marketing', 'advertising', 'public_relations', 'media', 'events', 'experiential',
+              'experiential_marketing', 'brand', 'brand_activation', 'retail', 'technology', 'consumer'],
   technology: ['technology', 'ai', 'startups', 'venture_capital', 'science', 'engineering',
                'consumer_electronics', 'gaming', 'machine_learning', 'emerging_tech'],
   finance: ['finance', 'banking', 'fintech', 'investing', 'payments', 'crypto', 'blockchain',
@@ -194,8 +203,28 @@ Return ONLY a JSON array of ${articles.length} integers.`;
 
     console.log(`   📊 Claude response (first 200 chars): ${content.substring(0, 200)}`);
 
-    // Parse the JSON array
-    const scores = JSON.parse(content);
+    // Parse the JSON array - Claude sometimes adds explanatory text after the array
+    // Extract just the JSON array portion
+    let jsonContent = content;
+    const arrayMatch = content.match(/^\s*\[[\s\S]*?\]/);
+    if (arrayMatch) {
+      jsonContent = arrayMatch[0];
+    }
+
+    let scores;
+    try {
+      scores = JSON.parse(jsonContent);
+    } catch (parseError) {
+      // Try to extract array from response if direct parse fails
+      const bracketStart = content.indexOf('[');
+      const bracketEnd = content.lastIndexOf(']');
+      if (bracketStart !== -1 && bracketEnd !== -1 && bracketEnd > bracketStart) {
+        const extracted = content.substring(bracketStart, bracketEnd + 1);
+        scores = JSON.parse(extracted);
+      } else {
+        throw parseError;
+      }
+    }
 
     if (!Array.isArray(scores)) {
       console.error(`   ❌ Claude returned non-array: ${typeof scores}`);
@@ -278,6 +307,8 @@ serve(async (req) => {
       industry = 'trading';
     } else if (industryRaw.includes('public_relations') || industryRaw.includes('pr ') || industryRaw.includes('communications')) {
       industry = 'public_relations';
+    } else if (industryRaw.includes('marketing') || industryRaw.includes('experiential') || industryRaw.includes('advertising') || industryRaw.includes('agency')) {
+      industry = 'marketing';
     }
 
     // Build intelligence context for Claude
@@ -322,7 +353,7 @@ serve(async (req) => {
     // STEP 3: Get articles - time window can be configured per-org or uses default
     // Some industries have less frequent trade news and need longer windows
     // ================================================================
-    const defaultHours = 72;
+    const defaultHours = 168; // 7 days
     const hoursBack = profileData.intelligence_settings?.time_window_hours || defaultHours;
     const cutoffTime = new Date(Date.now() - hoursBack * 60 * 60 * 1000).toISOString();
 
@@ -336,6 +367,9 @@ serve(async (req) => {
 
     const defaultTradeSources: Record<string, string[]> = {
       public_relations: ['PRWeek', 'PR Daily', 'PRovoke Media', 'Ragan', "O'Dwyer's", 'AdWeek', 'AdAge', 'Campaign'],
+      marketing: ['Ad Age', 'AdWeek', 'Campaign', 'The Drum', 'Marketing Week', 'Marketing Dive',
+                  'Event Marketer', 'BizBash', 'Chief Marketer', 'Digiday', 'Brand Innovators',
+                  'AgencySpy', 'Little Black Book', 'Creativity Online', 'PSFK'],
       technology: ['TechCrunch', 'Wired', 'The Verge', 'Ars Technica', 'VentureBeat', 'The Information'],
       finance: ['Financial Times', 'Barrons', 'Seeking Alpha', 'Bloomberg'],
       healthcare: ['STAT News', 'FierceHealthcare', 'MedCity News', 'Endpoints News'],

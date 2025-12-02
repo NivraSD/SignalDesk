@@ -100,23 +100,23 @@ export function ResearchPresentation({
         className="text-center space-y-2"
       >
         <div className="flex items-center justify-center gap-2">
-          <svg className="w-6 h-6 text-emerald-500 animate-pulse" fill="currentColor" viewBox="0 0 24 24">
+          <svg className="w-6 h-6 animate-pulse" style={{ color: 'var(--burnt-orange)' }} fill="currentColor" viewBox="0 0 24 24">
             <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <h2 className="text-2xl font-bold text-white">Campaign Research Complete</h2>
+          <h2 className="text-2xl font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>Campaign Research Complete</h2>
         </div>
-        <p className="text-gray-400">
+        <p style={{ color: 'var(--grey-400)' }}>
           Executive-level intelligence synthesis across stakeholders, narratives, channels, and historical patterns
         </p>
 
         {research.synthesisQuality && (
           <div className="flex items-center justify-center gap-4 mt-4 text-sm">
             <div className="flex items-center gap-2">
-              <span className="text-gray-400">Completeness:</span>
+              <span style={{ color: 'var(--grey-400)' }}>Completeness:</span>
               <span className="text-white font-medium">{Math.round((research.synthesisQuality.completeness || 0) * 100)}%</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-gray-400">Confidence:</span>
+              <span style={{ color: 'var(--grey-400)' }}>Confidence:</span>
               <span className="text-white font-medium">{Math.round((research.synthesisQuality.confidence || 0) * 100)}%</span>
             </div>
           </div>
@@ -129,22 +129,24 @@ export function ResearchPresentation({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-gradient-to-r from-blue-900/20 to-purple-900/20 border border-blue-500/30 rounded-lg p-6"
+          className="rounded-lg p-6"
+          style={{ background: 'var(--burnt-orange-muted)', border: '1px solid var(--burnt-orange)' }}
         >
-          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <span>💡</span> Key Strategic Insights
+          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2" style={{ fontFamily: 'var(--font-display)' }}>
+            <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold" style={{ background: 'var(--burnt-orange)', color: 'var(--white)' }}>!</div>
+            Key Strategic Insights
           </h3>
           <div className="space-y-3">
             {research.keyInsights.map((insight, i) => (
               <div key={i} className="flex gap-3">
                 <div className={`flex-shrink-0 w-2 h-2 rounded-full mt-2 ${
                   insight.significance === 'critical' ? 'bg-red-500' :
-                  insight.significance === 'high' ? 'bg-amber-500' : 'bg-blue-500'
-                }`} />
+                  insight.significance === 'high' ? 'bg-amber-500' : ''
+                }`} style={insight.significance !== 'critical' && insight.significance !== 'high' ? { background: 'var(--burnt-orange)' } : {}} />
                 <div className="flex-1">
                   <p className="text-white text-sm">{insight.insight}</p>
-                  <p className="text-gray-400 text-xs mt-1">
-                    <span className="text-blue-400">Action:</span> {insight.actionImplication}
+                  <p className="text-xs mt-1" style={{ color: 'var(--grey-400)' }}>
+                    <span style={{ color: 'var(--burnt-orange)' }}>Action:</span> {insight.actionImplication}
                   </p>
                 </div>
               </div>
@@ -158,24 +160,27 @@ export function ResearchPresentation({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden"
+        className="rounded-lg overflow-hidden"
+        style={{ background: 'var(--grey-900)', border: '1px solid var(--grey-800)' }}
       >
         <button
           onClick={() => toggleSection('stakeholders')}
-          className="w-full p-4 text-left hover:bg-zinc-800/50 transition-colors"
+          className="w-full p-4 text-left transition-colors hover:brightness-110"
+          style={{ background: 'var(--grey-900)' }}
         >
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-3">
-              <span className="text-2xl">👥</span>
+              <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold" style={{ background: 'var(--burnt-orange)', color: 'var(--white)' }}>1</div>
               <div>
-                <h3 className="font-semibold text-white">Stakeholder Intelligence</h3>
-                <p className="text-sm text-gray-400 mt-1">
+                <h3 className="font-semibold text-white" style={{ fontFamily: 'var(--font-display)' }}>Stakeholder Intelligence</h3>
+                <p className="text-sm mt-1" style={{ color: 'var(--grey-400)' }}>
                   {research.stakeholders?.length || 0} stakeholder groups with deep psychological profiling
                 </p>
               </div>
             </div>
             <svg
-              className={`w-5 h-5 text-gray-400 transition-transform ${expandedSections.has('stakeholders') ? 'rotate-180' : ''}`}
+              className={`w-5 h-5 transition-transform ${expandedSections.has('stakeholders') ? 'rotate-180' : ''}`}
+              style={{ color: 'var(--grey-400)' }}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -189,18 +194,19 @@ export function ResearchPresentation({
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
-            className="px-4 pb-4 border-t border-zinc-800"
+            className="px-4 pb-4"
+            style={{ borderTop: '1px solid var(--grey-800)' }}
           >
             <div className="pt-4 space-y-4">
               {research.stakeholders.map((stakeholder, i) => (
-                <div key={i} className="bg-zinc-800/50 rounded-lg p-4">
-                  <h4 className="font-medium text-white mb-2">{stakeholder.name}</h4>
-                  <p className="text-sm text-gray-400 mb-3">Size: {stakeholder.size?.toLocaleString()} people</p>
+                <div key={i} className="rounded-lg p-4" style={{ background: 'var(--grey-800)' }}>
+                  <h4 className="font-medium text-white mb-2" style={{ fontFamily: 'var(--font-display)' }}>{stakeholder.name}</h4>
+                  <p className="text-sm mb-3" style={{ color: 'var(--grey-400)' }}>Size: {stakeholder.size?.toLocaleString()} people</p>
 
                   <div className="grid grid-cols-2 gap-3 text-xs">
                     <div>
-                      <p className="text-emerald-400 font-medium mb-1">Values</p>
-                      <ul className="text-gray-300 space-y-0.5">
+                      <p className="font-medium mb-1" style={{ color: 'var(--burnt-orange)' }}>Values</p>
+                      <ul className="space-y-0.5" style={{ color: 'var(--grey-300)' }}>
                         {stakeholder.psychology?.values?.slice(0, 3).map((v, idx) => (
                           <li key={idx}>• {v}</li>
                         ))}
@@ -208,7 +214,7 @@ export function ResearchPresentation({
                     </div>
                     <div>
                       <p className="text-red-400 font-medium mb-1">Fears</p>
-                      <ul className="text-gray-300 space-y-0.5">
+                      <ul className="space-y-0.5" style={{ color: 'var(--grey-300)' }}>
                         {stakeholder.psychology?.fears?.slice(0, 3).map((f, idx) => (
                           <li key={idx}>• {f}</li>
                         ))}
@@ -217,8 +223,8 @@ export function ResearchPresentation({
                   </div>
 
                   <div className="mt-3 text-xs">
-                    <p className="text-gray-400">
-                      <span className="text-blue-400">Current Perception:</span> {stakeholder.currentPerceptions?.ofOrganization}
+                    <p style={{ color: 'var(--grey-400)' }}>
+                      <span style={{ color: 'var(--burnt-orange)' }}>Current Perception:</span> {stakeholder.currentPerceptions?.ofOrganization}
                     </p>
                   </div>
                 </div>
@@ -233,24 +239,27 @@ export function ResearchPresentation({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
-        className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden"
+        className="rounded-lg overflow-hidden"
+        style={{ background: 'var(--grey-900)', border: '1px solid var(--grey-800)' }}
       >
         <button
           onClick={() => toggleSection('narratives')}
-          className="w-full p-4 text-left hover:bg-zinc-800/50 transition-colors"
+          className="w-full p-4 text-left transition-colors hover:brightness-110"
+          style={{ background: 'var(--grey-900)' }}
         >
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-3">
-              <span className="text-2xl">📰</span>
+              <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold" style={{ background: 'var(--burnt-orange)', color: 'var(--white)' }}>2</div>
               <div>
-                <h3 className="font-semibold text-white">Narrative Landscape</h3>
-                <p className="text-sm text-gray-400 mt-1">
+                <h3 className="font-semibold text-white" style={{ fontFamily: 'var(--font-display)' }}>Narrative Landscape</h3>
+                <p className="text-sm mt-1" style={{ color: 'var(--grey-400)' }}>
                   {research.narrativeLandscape?.dominantNarratives?.length || 0} dominant narratives, {research.narrativeLandscape?.narrativeVacuums?.length || 0} opportunities
                 </p>
               </div>
             </div>
             <svg
-              className={`w-5 h-5 text-gray-400 transition-transform ${expandedSections.has('narratives') ? 'rotate-180' : ''}`}
+              className={`w-5 h-5 transition-transform ${expandedSections.has('narratives') ? 'rotate-180' : ''}`}
+              style={{ color: 'var(--grey-400)' }}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -264,16 +273,17 @@ export function ResearchPresentation({
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
-            className="px-4 pb-4 border-t border-zinc-800"
+            className="px-4 pb-4"
+            style={{ borderTop: '1px solid var(--grey-800)' }}
           >
             <div className="pt-4 space-y-4">
               <div>
-                <h4 className="text-sm font-medium text-white mb-2">Dominant Narratives</h4>
+                <h4 className="text-sm font-medium text-white mb-2" style={{ fontFamily: 'var(--font-display)' }}>Dominant Narratives</h4>
                 <div className="space-y-2">
                   {research.narrativeLandscape.dominantNarratives?.map((narrative, i) => (
-                    <div key={i} className="bg-zinc-800/50 rounded p-3 text-sm">
+                    <div key={i} className="rounded p-3 text-sm" style={{ background: 'var(--grey-800)' }}>
                       <p className="text-white">{narrative.narrative}</p>
-                      <p className="text-gray-400 text-xs mt-1">
+                      <p className="text-xs mt-1" style={{ color: 'var(--grey-400)' }}>
                         Source: {narrative.source} • Resonance: {narrative.resonance}
                       </p>
                     </div>
@@ -283,12 +293,12 @@ export function ResearchPresentation({
 
               {research.narrativeLandscape.narrativeVacuums && research.narrativeLandscape.narrativeVacuums.length > 0 && (
                 <div>
-                  <h4 className="text-sm font-medium text-emerald-400 mb-2">Narrative Opportunities</h4>
+                  <h4 className="text-sm font-medium mb-2" style={{ color: 'var(--burnt-orange)', fontFamily: 'var(--font-display)' }}>Narrative Opportunities</h4>
                   <div className="space-y-2">
                     {research.narrativeLandscape.narrativeVacuums.map((vacuum, i) => (
-                      <div key={i} className="bg-emerald-900/20 border border-emerald-500/30 rounded p-3 text-sm">
+                      <div key={i} className="rounded p-3 text-sm" style={{ background: 'var(--burnt-orange-muted)', border: '1px solid var(--burnt-orange)' }}>
                         <p className="text-white font-medium">{vacuum.opportunity}</p>
-                        <p className="text-gray-300 text-xs mt-1">{vacuum.rationale}</p>
+                        <p className="text-xs mt-1" style={{ color: 'var(--grey-300)' }}>{vacuum.rationale}</p>
                       </div>
                     ))}
                   </div>
@@ -304,24 +314,27 @@ export function ResearchPresentation({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
-        className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden"
+        className="rounded-lg overflow-hidden"
+        style={{ background: 'var(--grey-900)', border: '1px solid var(--grey-800)' }}
       >
         <button
           onClick={() => toggleSection('channels')}
-          className="w-full p-4 text-left hover:bg-zinc-800/50 transition-colors"
+          className="w-full p-4 text-left transition-colors hover:brightness-110"
+          style={{ background: 'var(--grey-900)' }}
         >
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-3">
-              <span className="text-2xl">📡</span>
+              <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold" style={{ background: 'var(--burnt-orange)', color: 'var(--white)' }}>3</div>
               <div>
-                <h3 className="font-semibold text-white">Channel Intelligence</h3>
-                <p className="text-sm text-gray-400 mt-1">
+                <h3 className="font-semibold text-white" style={{ fontFamily: 'var(--font-display)' }}>Channel Intelligence</h3>
+                <p className="text-sm mt-1" style={{ color: 'var(--grey-400)' }}>
                   {research.channelIntelligence?.journalists?.length || 0} journalists, {research.channelIntelligence?.publications?.length || 0} publications
                 </p>
               </div>
             </div>
             <svg
-              className={`w-5 h-5 text-gray-400 transition-transform ${expandedSections.has('channels') ? 'rotate-180' : ''}`}
+              className={`w-5 h-5 transition-transform ${expandedSections.has('channels') ? 'rotate-180' : ''}`}
+              style={{ color: 'var(--grey-400)' }}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -335,29 +348,30 @@ export function ResearchPresentation({
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
-            className="px-4 pb-4 border-t border-zinc-800"
+            className="px-4 pb-4"
+            style={{ borderTop: '1px solid var(--grey-800)' }}
           >
             <div className="pt-4 space-y-4 text-sm">
               <div>
-                <h4 className="text-white font-medium mb-2">Top Journalists</h4>
+                <h4 className="text-white font-medium mb-2" style={{ fontFamily: 'var(--font-display)' }}>Top Journalists</h4>
                 <div className="space-y-2">
                   {research.channelIntelligence.journalists?.slice(0, 5).map((j, i) => (
-                    <div key={i} className="flex justify-between items-start bg-zinc-800/50 rounded p-2">
+                    <div key={i} className="flex justify-between items-start rounded p-2" style={{ background: 'var(--grey-800)' }}>
                       <div>
                         <p className="text-white">{j.name}</p>
-                        <p className="text-gray-400 text-xs">{j.outlet} • {j.beat}</p>
+                        <p className="text-xs" style={{ color: 'var(--grey-400)' }}>{j.outlet} • {j.beat}</p>
                       </div>
-                      <span className="text-xs px-2 py-1 bg-blue-900/50 text-blue-300 rounded">{j.tier}</span>
+                      <span className="text-xs px-2 py-1 rounded" style={{ background: 'var(--burnt-orange-muted)', color: 'var(--burnt-orange)' }}>{j.tier}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
               <div>
-                <h4 className="text-white font-medium mb-2">Key Publications</h4>
+                <h4 className="text-white font-medium mb-2" style={{ fontFamily: 'var(--font-display)' }}>Key Publications</h4>
                 <div className="flex flex-wrap gap-2">
                   {research.channelIntelligence.publications?.map((p, i) => (
-                    <span key={i} className="px-3 py-1 bg-zinc-800 rounded text-xs text-gray-300">
+                    <span key={i} className="px-3 py-1 rounded text-xs" style={{ background: 'var(--grey-800)', color: 'var(--grey-300)' }}>
                       {p.name}
                     </span>
                   ))}
@@ -373,24 +387,27 @@ export function ResearchPresentation({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5 }}
-        className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden"
+        className="rounded-lg overflow-hidden"
+        style={{ background: 'var(--grey-900)', border: '1px solid var(--grey-800)' }}
       >
         <button
           onClick={() => toggleSection('historical')}
-          className="w-full p-4 text-left hover:bg-zinc-800/50 transition-colors"
+          className="w-full p-4 text-left transition-colors hover:brightness-110"
+          style={{ background: 'var(--grey-900)' }}
         >
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-3">
-              <span className="text-2xl">📊</span>
+              <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold" style={{ background: 'var(--burnt-orange)', color: 'var(--white)' }}>4</div>
               <div>
-                <h3 className="font-semibold text-white">Historical Insights</h3>
-                <p className="text-sm text-gray-400 mt-1">
+                <h3 className="font-semibold text-white" style={{ fontFamily: 'var(--font-display)' }}>Historical Insights</h3>
+                <p className="text-sm mt-1" style={{ color: 'var(--grey-400)' }}>
                   {research.historicalInsights?.successfulCampaigns?.length || 0} case studies, {research.historicalInsights?.patternRecommendations?.length || 0} patterns
                 </p>
               </div>
             </div>
             <svg
-              className={`w-5 h-5 text-gray-400 transition-transform ${expandedSections.has('historical') ? 'rotate-180' : ''}`}
+              className={`w-5 h-5 transition-transform ${expandedSections.has('historical') ? 'rotate-180' : ''}`}
+              style={{ color: 'var(--grey-400)' }}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -404,21 +421,22 @@ export function ResearchPresentation({
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
-            className="px-4 pb-4 border-t border-zinc-800"
+            className="px-4 pb-4"
+            style={{ borderTop: '1px solid var(--grey-800)' }}
           >
             <div className="pt-4 space-y-4 text-sm">
               {research.historicalInsights.successfulCampaigns && research.historicalInsights.successfulCampaigns.length > 0 && (
                 <div>
-                  <h4 className="text-white font-medium mb-2">Successful Campaigns</h4>
+                  <h4 className="text-white font-medium mb-2" style={{ fontFamily: 'var(--font-display)' }}>Successful Campaigns</h4>
                   <div className="space-y-2">
                     {research.historicalInsights.successfulCampaigns.map((campaign, i) => (
-                      <div key={i} className="bg-zinc-800/50 rounded p-3">
+                      <div key={i} className="rounded p-3" style={{ background: 'var(--grey-800)' }}>
                         <p className="text-white font-medium">{campaign.campaign}</p>
-                        <p className="text-gray-300 text-xs mt-1">{campaign.approach}</p>
+                        <p className="text-xs mt-1" style={{ color: 'var(--grey-300)' }}>{campaign.approach}</p>
                         {campaign.keyLessons && (
                           <ul className="mt-2 space-y-1">
                             {campaign.keyLessons.map((lesson: string, idx: number) => (
-                              <li key={idx} className="text-gray-400 text-xs">• {lesson}</li>
+                              <li key={idx} className="text-xs" style={{ color: 'var(--grey-400)' }}>• {lesson}</li>
                             ))}
                           </ul>
                         )}
@@ -430,12 +448,12 @@ export function ResearchPresentation({
 
               {research.historicalInsights.patternRecommendations && research.historicalInsights.patternRecommendations.length > 0 && (
                 <div>
-                  <h4 className="text-amber-400 font-medium mb-2">Pattern Recommendations</h4>
+                  <h4 className="font-medium mb-2" style={{ color: 'var(--burnt-orange)', fontFamily: 'var(--font-display)' }}>Pattern Recommendations</h4>
                   <div className="space-y-2">
                     {research.historicalInsights.patternRecommendations.map((pattern, i) => (
-                      <div key={i} className="bg-amber-900/20 border border-amber-500/30 rounded p-3">
+                      <div key={i} className="rounded p-3" style={{ background: 'var(--burnt-orange-muted)', border: '1px solid var(--burnt-orange)' }}>
                         <p className="text-white font-medium">{pattern.pattern}</p>
-                        <p className="text-gray-300 text-xs mt-1">{pattern.implementation}</p>
+                        <p className="text-xs mt-1" style={{ color: 'var(--grey-300)' }}>{pattern.implementation}</p>
                       </div>
                     ))}
                   </div>
@@ -457,14 +475,20 @@ export function ResearchPresentation({
             value={refinementInput}
             onChange={(e) => setRefinementInput(e.target.value)}
             placeholder="What would you like me to refine or explore further? (e.g., 'Tell me more about tech early adopters', 'Research competitor X in detail')"
-            className="w-full h-24 bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-colors resize-none"
+            className="w-full h-24 rounded-lg px-4 py-3 text-white resize-none focus:outline-none transition-colors"
+            style={{
+              background: 'var(--grey-900)',
+              border: '1px solid var(--grey-800)',
+              color: 'var(--white)'
+            }}
             disabled={isRefining}
           />
           <div className="flex gap-2">
             <button
               onClick={handleRefineSubmit}
               disabled={!refinementInput.trim() || isRefining}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="px-4 py-2 text-white rounded-lg font-medium hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              style={{ background: 'var(--burnt-orange)', fontFamily: 'var(--font-display)' }}
             >
               {isRefining ? 'Refining...' : 'Refine Research'}
             </button>
@@ -473,7 +497,8 @@ export function ResearchPresentation({
                 setShowRefinementInput(false)
                 setRefinementInput('')
               }}
-              className="px-4 py-2 bg-zinc-800 text-white rounded-lg font-medium hover:bg-zinc-700 transition-all"
+              className="px-4 py-2 text-white rounded-lg font-medium transition-all hover:brightness-110"
+              style={{ background: 'var(--grey-800)', fontFamily: 'var(--font-display)' }}
             >
               Cancel
             </button>
@@ -487,12 +512,14 @@ export function ResearchPresentation({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.8 }}
-          className="flex items-center justify-between pt-4 border-t border-zinc-800"
+          className="flex items-center justify-between pt-4"
+          style={{ borderTop: '1px solid var(--grey-800)' }}
         >
           <button
             onClick={() => setShowRefinementInput(true)}
             disabled={isRefining}
-            className="flex items-center gap-2 px-4 py-2 text-gray-400 hover:text-white transition-colors"
+            className="flex items-center gap-2 px-4 py-2 transition-colors hover:text-white"
+            style={{ color: 'var(--grey-400)', fontFamily: 'var(--font-display)' }}
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -503,7 +530,8 @@ export function ResearchPresentation({
           <button
             onClick={onProceed}
             disabled={isRefining}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+            className="px-6 py-3 text-white rounded-lg font-medium hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+            style={{ background: 'var(--burnt-orange)', fontFamily: 'var(--font-display)' }}
           >
             Proceed to Positioning
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -518,7 +546,8 @@ export function ResearchPresentation({
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="flex items-center justify-center gap-2 py-4 text-blue-400"
+          className="flex items-center justify-center gap-2 py-4"
+          style={{ color: 'var(--burnt-orange)' }}
         >
           <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />

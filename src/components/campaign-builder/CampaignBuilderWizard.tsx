@@ -27,7 +27,12 @@ interface SessionState {
   blueprint?: any
 }
 
-export function CampaignBuilderWizard() {
+interface CampaignBuilderWizardProps {
+  initialObjective?: string
+  onViewInPlanner?: (planData: { blueprint: any; sessionId: string; campaignType: string }) => void
+}
+
+export function CampaignBuilderWizard({ initialObjective, onViewInPlanner }: CampaignBuilderWizardProps = {}) {
   const { organization } = useAppStore()
   const [session, setSession] = useState<SessionState | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -139,16 +144,24 @@ export function CampaignBuilderWizard() {
     }
   }, [organization])
 
+  // Auto-submit initial objective if provided from modal
+  useEffect(() => {
+    if (initialObjective && organization && !session && !isLoading) {
+      console.log('🚀 Auto-submitting initial objective from modal:', initialObjective)
+      handleGoalSubmit(initialObjective)
+    }
+  }, [initialObjective, organization, session, isLoading])
+
   // No polling needed - research runs in frontend!
 
   // Stage indicators for progress tracking
   const stages = [
-    { id: 'intent', label: 'Goal', icon: '🎯' },
-    { id: 'research', label: 'Research', icon: '🔍' },
-    { id: 'positioning', label: 'Positioning', icon: '🎨' },
-    { id: 'approach', label: 'Approach', icon: '⚡' },
-    { id: 'blueprint', label: 'Blueprint', icon: '📋' },
-    { id: 'execution', label: 'Execute', icon: '🚀' }
+    { id: 'intent', label: 'Goal', number: 1 },
+    { id: 'research', label: 'Research', number: 2 },
+    { id: 'positioning', label: 'Positioning', number: 3 },
+    { id: 'approach', label: 'Approach', number: 4 },
+    { id: 'blueprint', label: 'Blueprint', number: 5 },
+    { id: 'execution', label: 'Execute', number: 6 }
   ]
 
   const getCurrentStageIndex = () => {
@@ -1248,15 +1261,23 @@ export function CampaignBuilderWizard() {
       blueprintKeys: Object.keys(session.blueprint || {})
     })
 
-    // Store blueprint data in sessionStorage for canvas to pick up
-    const planDataToStore = {
+    // Prepare plan data
+    const planData = {
       blueprint: session.blueprint,
       sessionId: session.sessionId,
       orgId: organization.id,
       campaignType: session.selectedApproach || 'VECTOR_CAMPAIGN'
     }
 
-    sessionStorage.setItem('pendingPlanData', JSON.stringify(planDataToStore))
+    // If onViewInPlanner callback is provided (when embedded in CampaignsModule), use it
+    if (onViewInPlanner) {
+      console.log('✅ Using onViewInPlanner callback to switch to Planner view')
+      onViewInPlanner(planData)
+      return
+    }
+
+    // Fallback: Store in sessionStorage and redirect (for standalone page usage)
+    sessionStorage.setItem('pendingPlanData', JSON.stringify(planData))
 
     // VERIFY it was saved
     const verification = sessionStorage.getItem('pendingPlanData')
@@ -1264,10 +1285,10 @@ export function CampaignBuilderWizard() {
     console.log('📋 Stored data verification:', {
       wasStored: !!verification,
       dataSize: verification ? verification.length : 0,
-      sessionId: planDataToStore.sessionId,
-      orgId: planDataToStore.orgId,
-      campaignType: planDataToStore.campaignType,
-      hasBlueprint: !!planDataToStore.blueprint
+      sessionId: planData.sessionId,
+      orgId: planData.orgId,
+      campaignType: planData.campaignType,
+      hasBlueprint: !!planData.blueprint
     })
     console.log('🔄 Navigating to dashboard with window.location.href...')
 
@@ -1341,11 +1362,11 @@ export function CampaignBuilderWizard() {
           // Show real-time progress during research
           return (
             <div className="max-w-3xl mx-auto space-y-6">
-              <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-8">
-                <h2 className="text-2xl font-bold text-white mb-6 text-center">
-                  🔍 Conducting Campaign Research
+              <div className="bg-[var(--grey-900)] border border-[var(--grey-800)] rounded-lg p-8">
+                <h2 className="text-2xl font-bold text-white mb-6 text-center" style={{ fontFamily: 'var(--font-display)' }}>
+                  Conducting Campaign Research
                 </h2>
-                <p className="text-gray-400 text-center mb-8">
+                <p className="text-[var(--grey-400)] text-center mb-8">
                   Running comprehensive research pipeline across multiple dimensions...
                 </p>
 
@@ -1353,11 +1374,11 @@ export function CampaignBuilderWizard() {
                 <div className="space-y-4">
                   {/* Discovery */}
                   <div className="flex items-center gap-4">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                      researchProgress.stages.discovery === 'completed' ? 'bg-emerald-600' :
-                      researchProgress.stages.discovery === 'running' ? 'bg-blue-600 animate-pulse' :
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm ${
+                      researchProgress.stages.discovery === 'completed' ? 'bg-[var(--burnt-orange)]' :
+                      researchProgress.stages.discovery === 'running' ? 'bg-[var(--burnt-orange)] animate-pulse' :
                       researchProgress.stages.discovery === 'failed' ? 'bg-red-600' :
-                      'bg-zinc-700'
+                      'bg-[var(--grey-700)]'
                     }`}>
                       {researchProgress.stages.discovery === 'completed' ? '✓' :
                        researchProgress.stages.discovery === 'running' ? '⋯' :
@@ -1365,17 +1386,17 @@ export function CampaignBuilderWizard() {
                     </div>
                     <div className="flex-1">
                       <div className="font-medium text-white">Organization Discovery</div>
-                      <div className="text-sm text-gray-400">Creating organization profile</div>
+                      <div className="text-sm text-[var(--grey-400)]">Creating organization profile</div>
                     </div>
                   </div>
 
                   {/* Intelligence Gathering */}
                   <div className="flex items-center gap-4">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                      researchProgress.stages['intelligence-gathering'] === 'completed' ? 'bg-emerald-600' :
-                      researchProgress.stages['intelligence-gathering'] === 'running' ? 'bg-blue-600 animate-pulse' :
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm ${
+                      researchProgress.stages['intelligence-gathering'] === 'completed' ? 'bg-[var(--burnt-orange)]' :
+                      researchProgress.stages['intelligence-gathering'] === 'running' ? 'bg-[var(--burnt-orange)] animate-pulse' :
                       researchProgress.stages['intelligence-gathering'] === 'failed' ? 'bg-red-600' :
-                      'bg-zinc-700'
+                      'bg-[var(--grey-700)]'
                     }`}>
                       {researchProgress.stages['intelligence-gathering'] === 'completed' ? '✓' :
                        researchProgress.stages['intelligence-gathering'] === 'running' ? '⋯' :
@@ -1383,17 +1404,17 @@ export function CampaignBuilderWizard() {
                     </div>
                     <div className="flex-1">
                       <div className="font-medium text-white">Intelligence Gathering</div>
-                      <div className="text-sm text-gray-400">Stakeholders • Narratives • Channels • Historical Patterns</div>
+                      <div className="text-sm text-[var(--grey-400)]">Stakeholders • Narratives • Channels • Historical Patterns</div>
                     </div>
                   </div>
 
                   {/* Synthesis */}
                   <div className="flex items-center gap-4">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                      researchProgress.stages.synthesis === 'completed' ? 'bg-emerald-600' :
-                      researchProgress.stages.synthesis === 'running' ? 'bg-blue-600 animate-pulse' :
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm ${
+                      researchProgress.stages.synthesis === 'completed' ? 'bg-[var(--burnt-orange)]' :
+                      researchProgress.stages.synthesis === 'running' ? 'bg-[var(--burnt-orange)] animate-pulse' :
                       researchProgress.stages.synthesis === 'failed' ? 'bg-red-600' :
-                      'bg-zinc-700'
+                      'bg-[var(--grey-700)]'
                     }`}>
                       {researchProgress.stages.synthesis === 'completed' ? '✓' :
                        researchProgress.stages.synthesis === 'running' ? '⋯' :
@@ -1401,17 +1422,17 @@ export function CampaignBuilderWizard() {
                     </div>
                     <div className="flex-1">
                       <div className="font-medium text-white">Intelligence Synthesis</div>
-                      <div className="text-sm text-gray-400">Generating Campaign Intelligence Brief</div>
+                      <div className="text-sm text-[var(--grey-400)]">Generating Campaign Intelligence Brief</div>
                     </div>
                   </div>
 
                   {/* Saving */}
                   <div className="flex items-center gap-4">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                      researchProgress.stages.saving === 'completed' ? 'bg-emerald-600' :
-                      researchProgress.stages.saving === 'running' ? 'bg-blue-600 animate-pulse' :
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm ${
+                      researchProgress.stages.saving === 'completed' ? 'bg-[var(--burnt-orange)]' :
+                      researchProgress.stages.saving === 'running' ? 'bg-[var(--burnt-orange)] animate-pulse' :
                       researchProgress.stages.saving === 'failed' ? 'bg-red-600' :
-                      'bg-zinc-700'
+                      'bg-[var(--grey-700)]'
                     }`}>
                       {researchProgress.stages.saving === 'completed' ? '✓' :
                        researchProgress.stages.saving === 'running' ? '⋯' :
@@ -1419,14 +1440,14 @@ export function CampaignBuilderWizard() {
                     </div>
                     <div className="flex-1">
                       <div className="font-medium text-white">Saving Results</div>
-                      <div className="text-sm text-gray-400">Storing research findings</div>
+                      <div className="text-sm text-[var(--grey-400)]">Storing research findings</div>
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-6 text-center text-sm text-gray-500">
+                <div className="mt-6 text-center text-sm text-[var(--grey-500)]">
                   {researchProgress.currentStage && (
-                    <p>Currently running: <span className="text-blue-400">{researchProgress.currentStage}</span></p>
+                    <p>Currently running: <span className="text-[var(--burnt-orange)]">{researchProgress.currentStage}</span></p>
                   )}
                 </div>
               </div>
@@ -1440,70 +1461,64 @@ export function CampaignBuilderWizard() {
         if (isLoading) {
           return (
             <div className="max-w-3xl mx-auto space-y-6">
-              <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-8">
-                <h3 className="text-xl font-semibold text-white text-center mb-6">Generating Positioning Options</h3>
+              <div className="bg-[var(--grey-900)] border border-[var(--grey-800)] rounded-lg p-8">
+                <h3 className="text-xl font-semibold text-white text-center mb-6" style={{ fontFamily: 'var(--font-display)' }}>Generating Positioning Options</h3>
 
                 <div className="space-y-4">
                   {/* Analysis Stage */}
                   <div className="flex items-center gap-4">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm ${
                       positioningProgress.stage === 'complete' || positioningProgress.stage === 'framing' || positioningProgress.stage === 'generation'
-                        ? 'bg-emerald-600'
+                        ? 'bg-[var(--burnt-orange)]'
                         : positioningProgress.stage === 'analysis'
-                        ? 'bg-blue-600 animate-pulse'
-                        : 'bg-zinc-700'
+                        ? 'bg-[var(--burnt-orange)] animate-pulse'
+                        : 'bg-[var(--grey-700)]'
                     }`}>
-                      <span className="text-white">
-                        {positioningProgress.stage === 'complete' || positioningProgress.stage === 'framing' || positioningProgress.stage === 'generation' ? '✓' : positioningProgress.stage === 'analysis' ? '⋯' : '○'}
-                      </span>
+                      {positioningProgress.stage === 'complete' || positioningProgress.stage === 'framing' || positioningProgress.stage === 'generation' ? '✓' : positioningProgress.stage === 'analysis' ? '⋯' : '○'}
                     </div>
                     <div className="flex-1">
                       <div className="font-medium text-white">Analyzing Research Data</div>
-                      <div className="text-sm text-gray-400">Processing stakeholder insights and market dynamics</div>
+                      <div className="text-sm text-[var(--grey-400)]">Processing stakeholder insights and market dynamics</div>
                     </div>
                   </div>
 
                   {/* Strategic Framing */}
                   <div className="flex items-center gap-4">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm ${
                       positioningProgress.stage === 'complete' || positioningProgress.stage === 'generation'
-                        ? 'bg-emerald-600'
+                        ? 'bg-[var(--burnt-orange)]'
                         : positioningProgress.stage === 'framing'
-                        ? 'bg-blue-600 animate-pulse'
-                        : 'bg-zinc-700'
+                        ? 'bg-[var(--burnt-orange)] animate-pulse'
+                        : 'bg-[var(--grey-700)]'
                     }`}>
-                      <span className="text-white">
-                        {positioningProgress.stage === 'complete' || positioningProgress.stage === 'generation' ? '✓' : positioningProgress.stage === 'framing' ? '⋯' : '○'}
-                      </span>
+                      {positioningProgress.stage === 'complete' || positioningProgress.stage === 'generation' ? '✓' : positioningProgress.stage === 'framing' ? '⋯' : '○'}
                     </div>
                     <div className="flex-1">
                       <div className="font-medium text-white">Strategic Framing</div>
-                      <div className="text-sm text-gray-400">Developing positioning angles and narratives</div>
+                      <div className="text-sm text-[var(--grey-400)]">Developing positioning angles and narratives</div>
                     </div>
                   </div>
 
                   {/* Option Generation */}
                   <div className="flex items-center gap-4">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm ${
                       positioningProgress.stage === 'complete'
-                        ? 'bg-emerald-600'
+                        ? 'bg-[var(--burnt-orange)]'
                         : positioningProgress.stage === 'generation'
-                        ? 'bg-blue-600 animate-pulse'
-                        : 'bg-zinc-700'
+                        ? 'bg-[var(--burnt-orange)] animate-pulse'
+                        : 'bg-[var(--grey-700)]'
                     }`}>
-                      <span className="text-white">
-                        {positioningProgress.stage === 'complete' ? '✓' : positioningProgress.stage === 'generation' ? '⋯' : '○'}
-                      </span>
+                      {positioningProgress.stage === 'complete' ? '✓' : positioningProgress.stage === 'generation' ? '⋯' : '○'}
                     </div>
                     <div className="flex-1">
                       <div className="font-medium text-white">Creating Options</div>
-                      <div className="text-sm text-gray-400">Generating 3-4 distinct positioning strategies</div>
+                      <div className="text-sm text-[var(--grey-400)]">Generating 3-4 distinct positioning strategies</div>
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-6 text-center text-sm text-gray-500">
-                  <p>Currently: <span className="text-blue-400">
+                <div className="mt-6 text-center text-sm text-[var(--grey-500)]">
+                  <p>Currently: <span className="text-[var(--burnt-orange)]">
                     {positioningProgress.stage === 'analysis' ? 'Analyzing research data' :
                      positioningProgress.stage === 'framing' ? 'Strategic framing' :
                      positioningProgress.stage === 'generation' ? 'Creating options' : 'Complete'}
@@ -1518,7 +1533,7 @@ export function CampaignBuilderWizard() {
         if (!session.positioningOptions || session.positioningOptions.length === 0) {
           return (
             <div className="max-w-3xl mx-auto space-y-6">
-              <div className="bg-zinc-900 border border-red-500/50 rounded-lg p-8 text-center">
+              <div className="bg-[var(--grey-900)] border border-red-500/50 rounded-lg p-8 text-center">
                 <p className="text-red-400">No positioning options available. Please try again.</p>
               </div>
             </div>
@@ -1528,8 +1543,8 @@ export function CampaignBuilderWizard() {
         return (
           <div className="max-w-4xl mx-auto space-y-6">
             <div className="text-center space-y-2">
-              <h2 className="text-2xl font-bold text-white">Select Your Positioning</h2>
-              <p className="text-gray-400">
+              <h2 className="text-2xl font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>Select Your Positioning</h2>
+              <p className="text-[var(--grey-400)]">
                 Based on the research, choose the positioning that best aligns with your campaign goals.
               </p>
             </div>
@@ -1540,35 +1555,35 @@ export function CampaignBuilderWizard() {
                   key={option.id}
                   onClick={() => handlePositioningSelect(option)}
                   disabled={isLoading}
-                  className="w-full p-6 bg-zinc-900 border border-zinc-800 rounded-lg hover:border-blue-500 transition-all text-left disabled:opacity-50 disabled:cursor-not-allowed group relative"
+                  className="w-full p-6 bg-[var(--grey-900)] border border-[var(--grey-800)] rounded-lg hover:border-[var(--burnt-orange)] transition-all text-left disabled:opacity-50 disabled:cursor-not-allowed group relative"
                 >
                   {/* Loading Spinner Overlay */}
                   {isLoading && (
-                    <div className="absolute inset-0 bg-zinc-900/90 rounded-lg flex items-center justify-center">
-                      <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
+                    <div className="absolute inset-0 bg-[var(--grey-900)]/90 rounded-lg flex items-center justify-center">
+                      <div className="animate-spin h-8 w-8 border-4 border-[var(--burnt-orange)] border-t-transparent rounded-full"></div>
                     </div>
                   )}
 
                   {/* Header */}
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
-                      <h3 className="text-xl font-bold text-white group-hover:text-blue-400 transition-colors">
+                      <h3 className="text-xl font-bold text-white group-hover:text-[var(--burnt-orange)] transition-colors">
                         {option.name}
                       </h3>
-                      <p className="text-sm italic text-gray-300 mt-1">{option.tagline}</p>
+                      <p className="text-sm italic text-[var(--grey-300)] mt-1">{option.tagline}</p>
                     </div>
-                    <div className="ml-4 px-3 py-1 bg-blue-900/30 border border-blue-500/50 rounded-full">
-                      <span className="text-sm font-semibold text-blue-400">{option.confidenceScore}% Confidence</span>
+                    <div className="ml-4 px-3 py-1 bg-[var(--burnt-orange-muted)] border border-[var(--burnt-orange)]/50 rounded-full">
+                      <span className="text-sm font-semibold text-[var(--burnt-orange)]">{option.confidenceScore}% Confidence</span>
                     </div>
                   </div>
 
                   {/* Description */}
-                  <p className="text-gray-400 mb-4">{option.description}</p>
+                  <p className="text-[var(--grey-400)] mb-4">{option.description}</p>
 
                   {/* Rationale */}
                   <div className="mb-4">
-                    <h4 className="text-xs font-semibold text-gray-500 uppercase mb-1">Why This Works</h4>
-                    <p className="text-sm text-gray-300">{option.rationale}</p>
+                    <h4 className="text-xs font-semibold text-[var(--grey-500)] uppercase mb-1">Why This Works</h4>
+                    <p className="text-sm text-[var(--grey-300)]">{option.rationale}</p>
                   </div>
 
                   {/* Grid Layout for Details */}
@@ -1576,11 +1591,11 @@ export function CampaignBuilderWizard() {
                     {/* Target Audiences */}
                     {option.targetAudiences && option.targetAudiences.length > 0 && (
                       <div>
-                        <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Target Audiences</h4>
+                        <h4 className="text-xs font-semibold text-[var(--grey-500)] uppercase mb-2">Target Audiences</h4>
                         <ul className="space-y-1">
                           {option.targetAudiences.map((audience: string, idx: number) => (
-                            <li key={idx} className="text-sm text-gray-300 flex items-start">
-                              <span className="text-blue-400 mr-2">•</span>
+                            <li key={idx} className="text-sm text-[var(--grey-300)] flex items-start">
+                              <span className="text-[var(--burnt-orange)] mr-2">•</span>
                               <span>{audience}</span>
                             </li>
                           ))}
@@ -1591,11 +1606,11 @@ export function CampaignBuilderWizard() {
                     {/* Key Messages */}
                     {option.keyMessages && option.keyMessages.length > 0 && (
                       <div>
-                        <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Key Messages</h4>
+                        <h4 className="text-xs font-semibold text-[var(--grey-500)] uppercase mb-2">Key Messages</h4>
                         <ul className="space-y-1">
                           {option.keyMessages.map((message: string, idx: number) => (
-                            <li key={idx} className="text-sm text-gray-300 flex items-start">
-                              <span className="text-green-400 mr-2">•</span>
+                            <li key={idx} className="text-sm text-[var(--grey-300)] flex items-start">
+                              <span className="text-[var(--burnt-orange)] mr-2">•</span>
                               <span>{message}</span>
                             </li>
                           ))}
@@ -1606,11 +1621,11 @@ export function CampaignBuilderWizard() {
                     {/* Differentiators */}
                     {option.differentiators && option.differentiators.length > 0 && (
                       <div>
-                        <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Differentiators</h4>
+                        <h4 className="text-xs font-semibold text-[var(--grey-500)] uppercase mb-2">Differentiators</h4>
                         <ul className="space-y-1">
                           {option.differentiators.map((diff: string, idx: number) => (
-                            <li key={idx} className="text-sm text-gray-300 flex items-start">
-                              <span className="text-purple-400 mr-2">•</span>
+                            <li key={idx} className="text-sm text-[var(--grey-300)] flex items-start">
+                              <span className="text-[var(--burnt-orange)] mr-2">•</span>
                               <span>{diff}</span>
                             </li>
                           ))}
@@ -1621,11 +1636,11 @@ export function CampaignBuilderWizard() {
                     {/* Opportunities */}
                     {option.opportunities && option.opportunities.length > 0 && (
                       <div>
-                        <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Opportunities</h4>
+                        <h4 className="text-xs font-semibold text-[var(--grey-500)] uppercase mb-2">Opportunities</h4>
                         <ul className="space-y-1">
                           {option.opportunities.map((opp: string, idx: number) => (
-                            <li key={idx} className="text-sm text-gray-300 flex items-start">
-                              <span className="text-emerald-400 mr-2">•</span>
+                            <li key={idx} className="text-sm text-[var(--grey-300)] flex items-start">
+                              <span className="text-[var(--burnt-orange)] mr-2">•</span>
                               <span>{opp}</span>
                             </li>
                           ))}
@@ -1636,11 +1651,11 @@ export function CampaignBuilderWizard() {
 
                   {/* Risks */}
                   {option.risks && option.risks.length > 0 && (
-                    <div className="mt-4 pt-4 border-t border-zinc-800">
-                      <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Potential Risks</h4>
+                    <div className="mt-4 pt-4 border-t border-[var(--grey-800)]">
+                      <h4 className="text-xs font-semibold text-[var(--grey-500)] uppercase mb-2">Potential Risks</h4>
                       <ul className="space-y-1">
                         {option.risks.map((risk: string, idx: number) => (
-                          <li key={idx} className="text-sm text-gray-400 flex items-start">
+                          <li key={idx} className="text-sm text-[var(--grey-400)] flex items-start">
                             <span className="text-yellow-500 mr-2">⚠</span>
                             <span>{risk}</span>
                           </li>
@@ -1657,19 +1672,19 @@ export function CampaignBuilderWizard() {
       case 'approach':
         return (
           <div className="max-w-5xl mx-auto space-y-6">
-            <h2 className="text-2xl font-bold text-white text-center">Choose Your Campaign Type</h2>
-            <p className="text-gray-400 text-center">
+            <h2 className="text-2xl font-bold text-white text-center" style={{ fontFamily: 'var(--font-display)' }}>Choose Your Campaign Type</h2>
+            <p className="text-[var(--grey-400)] text-center">
               Select between traditional PR, advanced VECTOR orchestration, or AI-optimized GEO-VECTOR campaigns.
             </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <button
                 onClick={() => handleApproachSelect('PR')}
                 disabled={isLoading}
-                className="p-6 bg-zinc-900 border border-zinc-800 rounded-lg hover:border-blue-500 transition-all text-left disabled:opacity-50"
+                className="p-6 bg-[var(--grey-900)] border border-[var(--grey-800)] rounded-lg hover:border-[var(--burnt-orange)] transition-all text-left disabled:opacity-50"
               >
-                <h3 className="text-xl font-bold text-white mb-2">📰 PR Campaign</h3>
-                <p className="text-sm text-gray-400 mb-4">Traditional media approach</p>
-                <ul className="text-sm text-gray-300 space-y-1">
+                <h3 className="text-xl font-bold text-white mb-2" style={{ fontFamily: 'var(--font-display)' }}>PR Campaign</h3>
+                <p className="text-sm text-[var(--grey-400)] mb-4">Traditional media approach</p>
+                <ul className="text-sm text-[var(--grey-300)] space-y-1">
                   <li>• Press releases</li>
                   <li>• Media outreach</li>
                   <li>• Event-based awareness</li>
@@ -1680,11 +1695,11 @@ export function CampaignBuilderWizard() {
               <button
                 onClick={() => handleApproachSelect('VECTOR')}
                 disabled={isLoading}
-                className="p-6 bg-zinc-900 border border-zinc-800 rounded-lg hover:border-purple-500 transition-all text-left disabled:opacity-50"
+                className="p-6 bg-[var(--grey-900)] border border-[var(--grey-800)] rounded-lg hover:border-[var(--burnt-orange)] transition-all text-left disabled:opacity-50"
               >
-                <h3 className="text-xl font-bold text-white mb-2">🎯 VECTOR Campaign</h3>
-                <p className="text-sm text-gray-400 mb-4">Human influence orchestration</p>
-                <ul className="text-sm text-gray-300 space-y-1">
+                <h3 className="text-xl font-bold text-white mb-2" style={{ fontFamily: 'var(--font-display)' }}>VECTOR Campaign</h3>
+                <p className="text-sm text-[var(--grey-400)] mb-4">Human influence orchestration</p>
+                <ul className="text-sm text-[var(--grey-300)] space-y-1">
                   <li>• Multi-stakeholder mapping</li>
                   <li>• Psychological profiling</li>
                   <li>• Sequential strategy</li>
@@ -1695,11 +1710,11 @@ export function CampaignBuilderWizard() {
               <button
                 onClick={() => handleApproachSelect('GEO_VECTOR')}
                 disabled={isLoading}
-                className="p-6 bg-zinc-900 border border-zinc-800 rounded-lg hover:border-emerald-500 transition-all text-left disabled:opacity-50"
+                className="p-6 bg-[var(--grey-900)] border border-[var(--grey-800)] rounded-lg hover:border-[var(--burnt-orange)] transition-all text-left disabled:opacity-50"
               >
-                <h3 className="text-xl font-bold text-white mb-2">🤖 GEO-VECTOR</h3>
-                <p className="text-sm text-gray-400 mb-4">AI platform optimization</p>
-                <ul className="text-sm text-gray-300 space-y-1">
+                <h3 className="text-xl font-bold text-white mb-2" style={{ fontFamily: 'var(--font-display)' }}>GEO-VECTOR</h3>
+                <p className="text-sm text-[var(--grey-400)] mb-4">AI platform optimization</p>
+                <ul className="text-sm text-[var(--grey-300)] space-y-1">
                   <li>• ChatGPT, Claude, Perplexity</li>
                   <li>• Schema optimization (75%)</li>
                   <li>• Industry-adaptive content</li>
@@ -1754,11 +1769,11 @@ export function CampaignBuilderWizard() {
           // Show real-time progress during blueprint generation
           return (
             <div className="max-w-3xl mx-auto space-y-6">
-              <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-8">
-                <h2 className="text-2xl font-bold text-white mb-6 text-center">
-                  📋 Generating Campaign Blueprint
+              <div className="bg-[var(--grey-900)] border border-[var(--grey-800)] rounded-lg p-8">
+                <h2 className="text-2xl font-bold text-white mb-6 text-center" style={{ fontFamily: 'var(--font-display)' }}>
+                  Generating Campaign Blueprint
                 </h2>
-                <p className="text-gray-400 text-center mb-8">
+                <p className="text-[var(--grey-400)] text-center mb-8">
                   Creating your {session.selectedApproach === 'PR_CAMPAIGN' ? 'PR Campaign' :
                                 session.selectedApproach === 'GEO_VECTOR_CAMPAIGN' ? 'GEO-VECTOR' :
                                 'VECTOR Campaign'} blueprint across multiple stages...
@@ -1769,27 +1784,27 @@ export function CampaignBuilderWizard() {
                   /* GEO-VECTOR Progress - 6 stages */
                   <div className="space-y-3">
                     {[
-                      { key: 'geo_query', title: '🔍 Query Discovery', desc: 'Identifying target AI queries for brand ownership' },
-                      { key: 'geo_platform', title: '🤖 Platform Testing', desc: 'Testing across ChatGPT, Claude, Perplexity, Gemini (20 tests)' },
-                      { key: 'geo_synthesis', title: '📊 GEO Synthesis', desc: 'Analyzing citation patterns and generating recommendations' },
-                      { key: 'blueprint_base', title: '📋 Blueprint Base', desc: 'Creating VECTOR framework (stakeholders + goals)' },
-                      { key: 'orchestration', title: '🎯 Orchestration', desc: 'Multi-stakeholder tactical planning (60-90s)' },
-                      { key: 'finalization', title: '✨ Finalization', desc: 'Merging GEO insights with VECTOR blueprint' }
+                      { key: 'geo_query', title: 'Query Discovery', desc: 'Identifying target AI queries for brand ownership' },
+                      { key: 'geo_platform', title: 'Platform Testing', desc: 'Testing across ChatGPT, Claude, Perplexity, Gemini (20 tests)' },
+                      { key: 'geo_synthesis', title: 'GEO Synthesis', desc: 'Analyzing citation patterns and generating recommendations' },
+                      { key: 'blueprint_base', title: 'Blueprint Base', desc: 'Creating VECTOR framework (stakeholders + goals)' },
+                      { key: 'orchestration', title: 'Orchestration', desc: 'Multi-stakeholder tactical planning (60-90s)' },
+                      { key: 'finalization', title: 'Finalization', desc: 'Merging GEO insights with VECTOR blueprint' }
                     ].map((stage, idx) => {
                       const isCompleted = idx < (conversationHistory.filter(m => m.role === 'assistant' && m.content.includes('GEO Step')).length)
                       const isRunning = idx === (conversationHistory.filter(m => m.role === 'assistant' && m.content.includes('GEO Step')).length)
                       return (
                         <div key={stage.key} className="flex items-center gap-4">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                            isCompleted ? 'bg-emerald-600' :
-                            isRunning ? 'bg-blue-600 animate-pulse' :
-                            'bg-zinc-700'
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm ${
+                            isCompleted ? 'bg-[var(--burnt-orange)]' :
+                            isRunning ? 'bg-[var(--burnt-orange)] animate-pulse' :
+                            'bg-[var(--grey-700)]'
                           }`}>
-                            {isCompleted ? '✓' : isRunning ? '⋯' : '○'}
+                            {isCompleted ? '✓' : isRunning ? '⋯' : idx + 1}
                           </div>
                           <div className="flex-1">
                             <div className="font-medium text-white text-sm">{stage.title}</div>
-                            <div className="text-xs text-gray-400">{stage.desc}</div>
+                            <div className="text-xs text-[var(--grey-400)]">{stage.desc}</div>
                           </div>
                         </div>
                       )
@@ -1799,82 +1814,82 @@ export function CampaignBuilderWizard() {
                   /* Regular VECTOR Progress - 4 stages */
                   <div className="space-y-4">
                     <div className="flex items-center gap-4">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                        blueprintProgress.stages.base === 'completed' ? 'bg-emerald-600' :
-                        blueprintProgress.stages.base === 'running' ? 'bg-blue-600 animate-pulse' :
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm ${
+                        blueprintProgress.stages.base === 'completed' ? 'bg-[var(--burnt-orange)]' :
+                        blueprintProgress.stages.base === 'running' ? 'bg-[var(--burnt-orange)] animate-pulse' :
                         blueprintProgress.stages.base === 'failed' ? 'bg-red-600' :
-                        'bg-zinc-700'
+                        'bg-[var(--grey-700)]'
                       }`}>
                         {blueprintProgress.stages.base === 'completed' ? '✓' :
                          blueprintProgress.stages.base === 'running' ? '⋯' :
-                         blueprintProgress.stages.base === 'failed' ? '✗' : '○'}
+                         blueprintProgress.stages.base === 'failed' ? '✗' : '1'}
                       </div>
                       <div className="flex-1">
                         <div className="font-medium text-white">Blueprint Foundation</div>
-                        <div className="text-sm text-gray-400">Overview • Goal Framework • Stakeholder Mapping</div>
+                        <div className="text-sm text-[var(--grey-400)]">Overview • Goal Framework • Stakeholder Mapping</div>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-4">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                        blueprintProgress.stages.orchestration === 'completed' ? 'bg-emerald-600' :
-                        blueprintProgress.stages.orchestration === 'running' ? 'bg-blue-600 animate-pulse' :
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm ${
+                        blueprintProgress.stages.orchestration === 'completed' ? 'bg-[var(--burnt-orange)]' :
+                        blueprintProgress.stages.orchestration === 'running' ? 'bg-[var(--burnt-orange)] animate-pulse' :
                         blueprintProgress.stages.orchestration === 'failed' ? 'bg-red-600' :
-                        'bg-zinc-700'
+                        'bg-[var(--grey-700)]'
                       }`}>
                         {blueprintProgress.stages.orchestration === 'completed' ? '✓' :
                          blueprintProgress.stages.orchestration === 'running' ? '⋯' :
-                         blueprintProgress.stages.orchestration === 'failed' ? '✗' : '○'}
+                         blueprintProgress.stages.orchestration === 'failed' ? '✗' : '2'}
                       </div>
                       <div className="flex-1">
                         <div className="font-medium text-white">Stakeholder Orchestration</div>
-                        <div className="text-sm text-gray-400">Four-Pillar Strategy • Influence Levers</div>
+                        <div className="text-sm text-[var(--grey-400)]">Four-Pillar Strategy • Influence Levers</div>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-4">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                        blueprintProgress.stages.execution === 'completed' ? 'bg-emerald-600' :
-                        blueprintProgress.stages.execution === 'running' ? 'bg-blue-600 animate-pulse' :
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm ${
+                        blueprintProgress.stages.execution === 'completed' ? 'bg-[var(--burnt-orange)]' :
+                        blueprintProgress.stages.execution === 'running' ? 'bg-[var(--burnt-orange)] animate-pulse' :
                         blueprintProgress.stages.execution === 'failed' ? 'bg-red-600' :
-                        'bg-zinc-700'
+                        'bg-[var(--grey-700)]'
                       }`}>
                         {blueprintProgress.stages.execution === 'completed' ? '✓' :
                          blueprintProgress.stages.execution === 'running' ? '⋯' :
-                         blueprintProgress.stages.execution === 'failed' ? '✗' : '○'}
+                         blueprintProgress.stages.execution === 'failed' ? '✗' : '3'}
                       </div>
                       <div className="flex-1">
                         <div className="font-medium text-white">Execution Requirements</div>
-                        <div className="text-sm text-gray-400">Timeline • Resources • Dependencies</div>
+                        <div className="text-sm text-[var(--grey-400)]">Timeline • Resources • Dependencies</div>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-4">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                        blueprintProgress.stages.merging === 'completed' ? 'bg-emerald-600' :
-                        blueprintProgress.stages.merging === 'running' ? 'bg-blue-600 animate-pulse' :
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm ${
+                        blueprintProgress.stages.merging === 'completed' ? 'bg-[var(--burnt-orange)]' :
+                        blueprintProgress.stages.merging === 'running' ? 'bg-[var(--burnt-orange)] animate-pulse' :
                         blueprintProgress.stages.merging === 'failed' ? 'bg-red-600' :
-                        'bg-zinc-700'
+                        'bg-[var(--grey-700)]'
                       }`}>
                         {blueprintProgress.stages.merging === 'completed' ? '✓' :
                          blueprintProgress.stages.merging === 'running' ? '⋯' :
-                         blueprintProgress.stages.merging === 'failed' ? '✗' : '○'}
+                         blueprintProgress.stages.merging === 'failed' ? '✗' : '4'}
                       </div>
                       <div className="flex-1">
                         <div className="font-medium text-white">Finalizing Blueprint</div>
-                        <div className="text-sm text-gray-400">Merging all components</div>
+                        <div className="text-sm text-[var(--grey-400)]">Merging all components</div>
                       </div>
                     </div>
                   </div>
                 )}
 
-                <div className="mt-6 text-center text-sm text-gray-500">
+                <div className="mt-6 text-center text-sm text-[var(--grey-500)]">
                   {session.selectedApproach === 'GEO_VECTOR_CAMPAIGN' ? (
                     <p className="mt-2">Expected time: ~2-4 minutes (GEO testing takes longer)</p>
                   ) : (
                     <>
                       {blueprintProgress.currentStage && (
-                        <p>Currently running: <span className="text-blue-400">{blueprintProgress.currentStage}</span></p>
+                        <p>Currently running: <span className="text-[var(--burnt-orange)]">{blueprintProgress.currentStage}</span></p>
                       )}
                       <p className="mt-2">Expected time: ~60-90 seconds</p>
                     </>
@@ -1896,11 +1911,11 @@ export function CampaignBuilderWizard() {
 
           return (
             <div className="max-w-3xl mx-auto space-y-6">
-              <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-8">
-                <h2 className="text-2xl font-bold text-white mb-6 text-center">
-                  🚀 Generating Campaign Content
+              <div className="bg-[var(--grey-900)] border border-[var(--grey-800)] rounded-lg p-8">
+                <h2 className="text-2xl font-bold text-white mb-6 text-center" style={{ fontFamily: 'var(--font-display)' }}>
+                  Generating Campaign Content
                 </h2>
-                <p className="text-gray-400 text-center mb-8">
+                <p className="text-[var(--grey-400)] text-center mb-8">
                   Creating all content pieces from your {session?.selectedApproach === 'PR_CAMPAIGN' ? 'PR' :
                                                                session?.selectedApproach === 'GEO_VECTOR_CAMPAIGN' ? 'GEO-VECTOR' :
                                                                'VECTOR'} blueprint...
@@ -1909,18 +1924,18 @@ export function CampaignBuilderWizard() {
                 {/* Progress Bar */}
                 <div className="mb-6">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-gray-400">Progress</span>
-                    <span className="text-sm text-gray-400">
+                    <span className="text-sm text-[var(--grey-400)]">Progress</span>
+                    <span className="text-sm text-[var(--grey-400)]">
                       {contentProgress.current} / {contentProgress.total} pieces
                     </span>
                   </div>
-                  <div className="h-3 bg-zinc-800 rounded-full overflow-hidden">
+                  <div className="h-3 bg-[var(--grey-800)] rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-gradient-to-r from-blue-600 to-purple-600 transition-all duration-500"
-                      style={{ width: `${progressPercentage}%` }}
+                      className="h-full transition-all duration-500"
+                      style={{ width: `${progressPercentage}%`, background: 'var(--burnt-orange)' }}
                     />
                   </div>
-                  <p className="text-sm text-blue-400 mt-2 text-center animate-pulse">
+                  <p className="text-sm text-[var(--burnt-orange)] mt-2 text-center animate-pulse">
                     {contentProgress.currentPiece}
                   </p>
                 </div>
@@ -1928,26 +1943,26 @@ export function CampaignBuilderWizard() {
                 {/* Stages */}
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center animate-pulse">
+                    <div className="w-8 h-8 rounded-full bg-[var(--burnt-orange)] flex items-center justify-center animate-pulse text-white text-sm">
                       ⋯
                     </div>
                     <div className="flex-1">
                       <div className="font-medium text-white">Content Generation</div>
-                      <div className="text-sm text-gray-400">Using NIV Content Intelligence v2</div>
+                      <div className="text-sm text-[var(--grey-400)]">Using NIV Content Intelligence v2</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center">
-                      ○
+                    <div className="w-8 h-8 rounded-full bg-[var(--grey-700)] flex items-center justify-center text-[var(--grey-500)] text-sm">
+                      2
                     </div>
                     <div className="flex-1">
-                      <div className="font-medium text-gray-500">Saving to Memory Vault</div>
-                      <div className="text-sm text-gray-600">Pending content generation...</div>
+                      <div className="font-medium text-[var(--grey-500)]">Saving to Memory Vault</div>
+                      <div className="text-sm text-[var(--grey-600)]">Pending content generation...</div>
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-6 text-center text-sm text-gray-500">
+                <div className="mt-6 text-center text-sm text-[var(--grey-500)]">
                   <p>Expected time: ~{Math.ceil(contentProgress.total * 2.5)}-{Math.ceil(contentProgress.total * 4)} seconds</p>
                 </div>
               </div>
@@ -1961,27 +1976,27 @@ export function CampaignBuilderWizard() {
           return (
             <div className="max-w-4xl mx-auto space-y-6">
               <div className="text-center space-y-4">
-                <div className="text-6xl">✅</div>
-                <h2 className="text-3xl font-bold text-white">Content Generation Complete!</h2>
-                <p className="text-gray-400">{executionMessage.content}</p>
-                <p className="text-sm text-gray-500">
+                <div className="w-16 h-16 rounded-full bg-[var(--burnt-orange)] flex items-center justify-center mx-auto text-white text-2xl">✓</div>
+                <h2 className="text-3xl font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>Content Generation Complete!</h2>
+                <p className="text-[var(--grey-400)]">{executionMessage.content}</p>
+                <p className="text-sm text-[var(--grey-500)]">
                   All content has been saved to your Memory Vault
                 </p>
               </div>
 
               {/* Quick Preview */}
-              <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-white mb-4">Generated Content Preview</h3>
+              <div className="bg-[var(--grey-900)] border border-[var(--grey-800)] rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-white mb-4" style={{ fontFamily: 'var(--font-display)' }}>Generated Content Preview</h3>
                 <div className="space-y-2">
                   {executionMessage.data.map((content: any, i: number) => (
                     <div key={i} className="flex items-center gap-3 text-sm">
-                      <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                      <span className="text-gray-300">{content.content_type}</span>
+                      <div className="w-2 h-2 rounded-full bg-[var(--burnt-orange)]" />
+                      <span className="text-[var(--grey-300)]">{content.content_type}</span>
                       {content.target_stakeholder && (
-                        <span className="text-gray-500">→ {content.target_stakeholder}</span>
+                        <span className="text-[var(--grey-500)]">→ {content.target_stakeholder}</span>
                       )}
                       {content.phase && (
-                        <span className="text-xs px-2 py-0.5 rounded bg-purple-500/10 border border-purple-500/20 text-purple-400">
+                        <span className="text-xs px-2 py-0.5 rounded bg-[var(--burnt-orange-muted)] border border-[var(--burnt-orange)]/20 text-[var(--burnt-orange)]">
                           {content.phase}
                         </span>
                       )}
@@ -1994,7 +2009,8 @@ export function CampaignBuilderWizard() {
               <div className="flex flex-col gap-3">
                 <a
                   href="/memory-vault"
-                  className="w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 transition-all text-center flex items-center justify-center gap-2"
+                  className="w-full px-6 py-4 text-white rounded-lg font-semibold hover:brightness-110 transition-all text-center flex items-center justify-center gap-2"
+                  style={{ background: 'var(--burnt-orange)', fontFamily: 'var(--font-display)' }}
                 >
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
@@ -2018,7 +2034,8 @@ export function CampaignBuilderWizard() {
                       document.body.removeChild(a)
                       URL.revokeObjectURL(url)
                     }}
-                    className="px-4 py-3 bg-zinc-800 text-white rounded-lg font-medium hover:bg-zinc-700 transition-all flex items-center justify-center gap-2"
+                    className="px-4 py-3 bg-[var(--grey-800)] text-white rounded-lg font-medium hover:bg-[var(--grey-700)] transition-all flex items-center justify-center gap-2"
+                    style={{ fontFamily: 'var(--font-display)' }}
                   >
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -2033,7 +2050,8 @@ export function CampaignBuilderWizard() {
                       setConversationHistory([])
                       setError(null)
                     }}
-                    className="px-4 py-3 bg-zinc-800 text-white rounded-lg font-medium hover:bg-zinc-700 transition-all flex items-center justify-center gap-2"
+                    className="px-4 py-3 bg-[var(--grey-800)] text-white rounded-lg font-medium hover:bg-[var(--grey-700)] transition-all flex items-center justify-center gap-2"
+                    style={{ fontFamily: 'var(--font-display)' }}
                   >
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -2049,8 +2067,8 @@ export function CampaignBuilderWizard() {
         // Fallback if no content yet
         return (
           <div className="max-w-3xl mx-auto space-y-6 text-center py-20">
-            <h2 className="text-2xl font-bold text-white">Campaign Execution</h2>
-            <p className="text-gray-400">Content generation in progress...</p>
+            <h2 className="text-2xl font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>Campaign Execution</h2>
+            <p className="text-[var(--grey-400)]">Content generation in progress...</p>
           </div>
         )
 
@@ -2060,7 +2078,7 @@ export function CampaignBuilderWizard() {
   }
 
   return (
-    <div className="bg-black py-8 px-4">
+    <div className="bg-[var(--charcoal)] py-8 px-4">
       {/* Progress Indicator */}
       <div className="max-w-5xl mx-auto mb-8">
         <div className="flex items-center justify-between">
@@ -2078,29 +2096,36 @@ export function CampaignBuilderWizard() {
                   className={`flex flex-col items-center ${isClickable ? 'cursor-pointer' : 'cursor-default'} group`}
                 >
                   <motion.div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center text-xl transition-all ${
+                    className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
                       isComplete
-                        ? 'bg-emerald-600 group-hover:bg-emerald-500 group-hover:ring-2 group-hover:ring-emerald-400'
+                        ? 'bg-[var(--burnt-orange)] group-hover:brightness-110 group-hover:ring-2 group-hover:ring-[var(--burnt-orange-muted)]'
                         : isActive
-                        ? 'bg-blue-600'
-                        : 'bg-zinc-800'
+                        ? 'bg-[var(--burnt-orange)] ring-2 ring-[var(--burnt-orange-muted)]'
+                        : 'bg-[var(--grey-800)] text-[var(--grey-500)]'
                     }`}
-                    animate={isActive ? { scale: [1, 1.1, 1] } : {}}
+                    style={{
+                      color: isComplete || isActive ? 'var(--white)' : 'var(--grey-500)',
+                      fontFamily: 'var(--font-display)'
+                    }}
+                    animate={isActive ? { scale: [1, 1.05, 1] } : {}}
                     transition={{ duration: 2, repeat: Infinity }}
                   >
-                    {isComplete ? '✓' : stage.icon}
+                    {isComplete ? '✓' : stage.number}
                   </motion.div>
-                  <span className={`text-xs mt-1 ${isActive ? 'text-white' : isComplete ? 'text-emerald-400 group-hover:text-emerald-300' : 'text-gray-500'}`}>
+                  <span
+                    className={`text-xs mt-1.5 ${isActive ? 'text-white font-medium' : isComplete ? 'text-[var(--burnt-orange)] group-hover:brightness-110' : 'text-[var(--grey-500)]'}`}
+                    style={{ fontFamily: 'var(--font-display)' }}
+                  >
                     {stage.label}
                   </span>
                   {isClickable && (
-                    <span className="text-[10px] text-gray-600 group-hover:text-gray-400 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="text-[10px] text-[var(--grey-600)] group-hover:text-[var(--grey-400)] mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                       (click to review)
                     </span>
                   )}
                 </button>
                 {index < stages.length - 1 && (
-                  <div className={`h-0.5 w-8 md:w-16 mx-2 ${isComplete ? 'bg-emerald-600' : 'bg-zinc-800'}`} />
+                  <div className={`h-0.5 w-8 md:w-16 mx-2 ${isComplete ? 'bg-[var(--burnt-orange)]' : 'bg-[var(--grey-800)]'}`} />
                 )}
               </div>
             )

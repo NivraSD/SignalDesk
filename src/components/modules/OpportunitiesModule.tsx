@@ -575,26 +575,42 @@ ${opp.execution_plan?.success_metrics?.map((m: any) => `- ${JSON.stringify(m)}`)
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-gray-800">
+      <div className="px-6 py-4 border-b border-[var(--grey-800)]">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Target className="w-5 h-5 text-purple-400" />
-            <h2 className="text-lg font-semibold text-white">Opportunity Engine V2</h2>
-            <span className="px-2 py-1 text-xs bg-purple-500/20 text-purple-400 rounded-full">
-              {opportunities.length} Active
-            </span>
+          <div>
+            <div
+              className="text-[0.65rem] uppercase tracking-[0.15em] text-[var(--burnt-orange)] flex items-center gap-2 mb-2"
+              style={{ fontFamily: 'var(--font-display)' }}
+            >
+              <Target className="w-3 h-3" />
+              Opportunities
+            </div>
+            <div className="flex items-center gap-4">
+              <h1
+                className="text-[1.5rem] font-normal text-white"
+                style={{ fontFamily: 'var(--font-serif)' }}
+              >
+                Opportunity Engine
+              </h1>
+              <span className="px-2 py-1 text-xs bg-[var(--burnt-orange-muted)] text-[var(--burnt-orange)] rounded-full">
+                {opportunities.length} Active
+              </span>
+            </div>
+            <p className="text-[var(--grey-400)] text-sm mt-1">
+              Strategic opportunities detected from market signals and intelligence analysis
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={clearOpportunities}
               disabled={clearing || opportunities.length === 0}
-              className="px-3 py-1 text-xs bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-3 py-1 text-xs bg-[var(--grey-800)] hover:bg-[var(--grey-700)] text-[var(--grey-400)] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {clearing ? 'Clearing...' : 'Clear All'}
             </button>
             <button
               onClick={fetchOpportunities}
-              className="px-3 py-1 text-xs bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 rounded-lg transition-colors"
+              className="px-3 py-1 text-xs bg-[var(--burnt-orange-muted)] hover:bg-[var(--burnt-orange)]/30 text-[var(--burnt-orange)] rounded-lg transition-colors"
             >
               Refresh
             </button>
@@ -602,149 +618,96 @@ ${opp.execution_plan?.success_metrics?.map((m: any) => `- ${JSON.stringify(m)}`)
         </div>
       </div>
 
-      {/* Main Content - Two Columns */}
-      <div className="flex-1 overflow-hidden flex">
-        {/* LEFT COLUMN: Opportunities List */}
-        <div className="w-2/5 border-r border-gray-800 overflow-y-auto">
-          <div className="p-4 space-y-3">
-            {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
-              </div>
-            ) : opportunities.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-gray-400">
-                <Target className="w-12 h-12 mb-4 opacity-50" />
-                <p className="text-sm">No opportunities detected</p>
-                <p className="text-xs mt-2">Run Intelligence Module to detect opportunities</p>
-              </div>
-            ) : (
-              opportunities.map((opp) => (
+      {/* Main Content - Full Width */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="p-6">
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 text-[var(--burnt-orange)] animate-spin" />
+            </div>
+          ) : opportunities.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-[var(--grey-400)]">
+              <Target className="w-12 h-12 mb-4 opacity-50" />
+              <p className="text-sm">No opportunities detected</p>
+              <p className="text-xs mt-2">Run Intelligence Module to detect opportunities</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {opportunities.map((opp) => (
                 <motion.div
                   key={opp.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className={`p-4 bg-gray-900/50 rounded-lg border cursor-pointer transition-all ${
+                  className={`bg-[var(--grey-900)] rounded-xl border transition-all ${
                     selectedOpp?.id === opp.id
-                      ? 'border-purple-500/50 bg-purple-500/5'
-                      : 'border-gray-800 hover:border-gray-700'
+                      ? 'border-[var(--burnt-orange)]/50'
+                      : 'border-[var(--grey-800)]'
                   }`}
-                  onClick={() => setSelectedOpp(opp)}
                 >
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex-1">
-                      <h3 className="text-sm font-semibold text-white line-clamp-2 mb-1">
-                        {opp.title}
-                      </h3>
-                      <p className="text-xs text-gray-400 line-clamp-2">
-                        {opp.description}
-                      </p>
-                      {opp.version === 2 && opp.execution_plan && (
-                        <div className="text-xs text-gray-500 mt-1">
-                          {opp.execution_plan.stakeholder_campaigns.reduce((sum, c) => sum + c.content_items.length, 0)} content items
+                  {/* Opportunity Header - Always Visible */}
+                  <div
+                    className="p-5 cursor-pointer hover:bg-[var(--grey-800)]/30 transition-colors rounded-t-xl"
+                    onClick={() => setSelectedOpp(selectedOpp?.id === opp.id ? null : opp)}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 pr-4">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-lg font-semibold text-white" style={{ fontFamily: 'var(--font-display)' }}>
+                            {opp.title}
+                          </h3>
+                          <span className={`px-2 py-0.5 text-xs rounded-full border ${getUrgencyColor(opp.urgency)}`}>
+                            {opp.urgency.toUpperCase()}
+                          </span>
+                          {opp.executed && (
+                            <span className="px-2 py-0.5 text-xs bg-[var(--burnt-orange-muted)] text-[var(--burnt-orange)] rounded border border-[var(--burnt-orange)]/30">
+                              ✓ EXECUTED
+                            </span>
+                          )}
                         </div>
-                      )}
-                    </div>
-                    <div className={`text-2xl font-bold ${getScoreColor(opp.score)}`}>
-                      {opp.score}
+                        <p className="text-sm text-[var(--grey-400)] line-clamp-2">
+                          {opp.description}
+                        </p>
+                        <div className="flex items-center gap-4 mt-3">
+                          <span className="text-xs text-[var(--grey-500)]">{opp.category}</span>
+                          {opp.version === 2 && opp.execution_plan && (
+                            <span className="text-xs text-[var(--grey-500)]">
+                              {opp.execution_plan.stakeholder_campaigns.reduce((sum, c) => sum + c.content_items.length, 0)} content items
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-2">
+                        <div className={`text-3xl font-bold ${getScoreColor(opp.score)}`} style={{ fontFamily: 'var(--font-display)' }}>
+                          {opp.score}
+                        </div>
+                        <ChevronRight className={`w-5 h-5 text-[var(--grey-500)] transition-transform ${selectedOpp?.id === opp.id ? 'rotate-90' : ''}`} />
+                      </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 mt-3">
-                    <span className={`px-2 py-0.5 text-xs rounded-full border ${getUrgencyColor(opp.urgency)}`}>
-                      {opp.urgency.toUpperCase()}
-                    </span>
-                    <span className="text-xs text-gray-500">{opp.category}</span>
-                    {opp.executed && (
-                      <span className="px-2 py-0.5 text-xs bg-green-500/20 text-green-400 rounded border border-green-500/30">
-                        ✓ EXECUTED
-                      </span>
-                    )}
-                  </div>
-
-                  {!opp.executed && opp.version === 2 && opp.execution_plan && (
-                    <div className="mt-3 w-full">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          executeOpportunity(opp)
-                        }}
-                        disabled={executing === opp.id}
-                        className="w-full px-3 py-1.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-medium rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                  {/* Expanded Details */}
+                  <AnimatePresence>
+                    {selectedOpp?.id === opp.id && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden border-t border-[var(--grey-800)]"
                       >
-                        {executing === opp.id ? (
-                          <>
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                            {generationProgress.current || 'Executing...'}
-                          </>
-                        ) : (
-                          <>
-                            <Zap className="w-3 h-3" />
-                            Execute Campaign
-                          </>
-                        )}
-                      </button>
-                      {executing === opp.id && generationProgress.progress !== undefined && (
-                        <div className="mt-2">
-                          <div className="w-full bg-gray-800 rounded-full h-1.5">
-                            <div
-                              className="bg-gradient-to-r from-purple-500 to-pink-500 h-1.5 rounded-full transition-all duration-300"
-                              style={{ width: `${generationProgress.progress}%` }}
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </motion.div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* RIGHT COLUMN: Selected Opportunity Details */}
-        <div className="flex-1 overflow-y-auto">
-          {selectedOpp ? (
-            <div className="p-6">
-              {/* Header */}
-              <div className="mb-6">
-                <h2 className="text-2xl font-bold text-white mb-2">{selectedOpp.title}</h2>
-                <p className="text-gray-400 mb-4">{selectedOpp.description}</p>
-
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <Target className="w-4 h-4 text-purple-400" />
-                    <span className="text-sm text-gray-300">Score: </span>
-                    <span className={`text-lg font-bold ${getScoreColor(selectedOpp.score)}`}>
-                      {selectedOpp.score}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4 text-orange-400" />
-                    <span className={`px-2 py-0.5 text-xs rounded-full border ${getUrgencyColor(selectedOpp.urgency)}`}>
-                      {selectedOpp.urgency.toUpperCase()}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-blue-400" />
-                    <span className="text-sm text-blue-400">
-                      {selectedOpp.strategic_context?.time_window || 'TBD'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* V2: Strategic Context */}
-              {selectedOpp.version === 2 && selectedOpp.strategic_context && (
+                        <div className="p-5">
+                          {/* V2: Strategic Context */}
+                          {opp.version === 2 && opp.strategic_context && (
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-white mb-4">Strategic Context</h3>
+                  <h3 className="text-lg font-semibold text-white mb-4" style={{ fontFamily: 'var(--font-display)' }}>Strategic Context</h3>
 
                   {/* Trigger Events */}
-                  <div className="mb-4 p-4 bg-gray-900/50 rounded-lg border border-gray-800">
-                    <h4 className="text-sm font-semibold text-purple-400 mb-2">Trigger Events</h4>
+                  <div className="mb-4 p-4 bg-[var(--grey-800)] rounded-lg border border-[var(--grey-700)]">
+                    <h4 className="text-sm font-semibold text-white mb-2 uppercase tracking-wide">Trigger Events</h4>
                     <ul className="space-y-1">
-                      {selectedOpp.strategic_context.trigger_events.map((event, idx) => (
-                        <li key={idx} className="text-sm text-gray-300 flex items-start gap-2">
-                          <ChevronRight className="w-3 h-3 text-gray-500 mt-0.5 flex-shrink-0" />
+                      {opp.strategic_context.trigger_events.map((event, idx) => (
+                        <li key={idx} className="text-sm text-[var(--grey-300)] flex items-start gap-2">
+                          <ChevronRight className="w-3 h-3 text-[var(--burnt-orange)] mt-0.5 flex-shrink-0" />
                           <span>{event}</span>
                         </li>
                       ))}
@@ -752,43 +715,43 @@ ${opp.execution_plan?.success_metrics?.map((m: any) => `- ${JSON.stringify(m)}`)
                   </div>
 
                   {/* Why Now */}
-                  <div className="mb-4 p-4 bg-gray-900/50 rounded-lg border border-gray-800">
-                    <h4 className="text-sm font-semibold text-blue-400 mb-2">Why Now</h4>
-                    <p className="text-sm text-gray-300">{selectedOpp.strategic_context.why_now}</p>
+                  <div className="mb-4 p-4 bg-[var(--grey-800)] rounded-lg border border-[var(--grey-700)]">
+                    <h4 className="text-sm font-semibold text-white mb-2 uppercase tracking-wide">Why Now</h4>
+                    <p className="text-sm text-[var(--grey-300)]">{opp.strategic_context.why_now}</p>
                   </div>
 
                   {/* Competitive Advantage */}
-                  <div className="mb-4 p-4 bg-gray-900/50 rounded-lg border border-gray-800">
-                    <h4 className="text-sm font-semibold text-green-400 mb-2">Competitive Advantage</h4>
-                    <p className="text-sm text-gray-300">{selectedOpp.strategic_context.competitive_advantage}</p>
+                  <div className="mb-4 p-4 bg-[var(--grey-800)] rounded-lg border border-[var(--grey-700)]">
+                    <h4 className="text-sm font-semibold text-white mb-2 uppercase tracking-wide">Competitive Advantage</h4>
+                    <p className="text-sm text-[var(--grey-300)]">{opp.strategic_context.competitive_advantage}</p>
                   </div>
 
                   {/* Expected Impact */}
-                  <div className="mb-4 p-4 bg-gray-900/50 rounded-lg border border-gray-800">
-                    <h4 className="text-sm font-semibold text-orange-400 mb-2">Expected Impact</h4>
-                    <p className="text-sm text-gray-300">{selectedOpp.strategic_context.expected_impact}</p>
+                  <div className="mb-4 p-4 bg-[var(--grey-800)] rounded-lg border border-[var(--grey-700)]">
+                    <h4 className="text-sm font-semibold text-white mb-2 uppercase tracking-wide">Expected Impact</h4>
+                    <p className="text-sm text-[var(--grey-300)]">{opp.strategic_context.expected_impact}</p>
                   </div>
 
                   {/* Media Targeting */}
-                  {selectedOpp.strategic_context.media_targeting && (
-                    <div className="mb-4 p-4 bg-gradient-to-br from-pink-900/20 to-purple-900/20 rounded-lg border border-pink-500/30">
-                      <h4 className="text-sm font-semibold text-pink-400 mb-3 flex items-center gap-2">
-                        <Users className="w-4 h-4" />
+                  {opp.strategic_context.media_targeting && (
+                    <div className="mb-4 p-4 bg-[var(--burnt-orange-muted)] rounded-lg border border-[var(--burnt-orange)]/30">
+                      <h4 className="text-sm font-semibold text-white mb-3 flex items-center gap-2 uppercase tracking-wide">
+                        <Users className="w-4 h-4 text-[var(--burnt-orange)]" />
                         Media Targeting Strategy
                       </h4>
 
                       {/* Reasoning */}
-                      <div className="mb-3 p-3 bg-gray-900/50 rounded border border-gray-800">
-                        <p className="text-xs text-gray-400 mb-1">Why these journalists care:</p>
-                        <p className="text-sm text-gray-300">{selectedOpp.strategic_context.media_targeting.reasoning}</p>
+                      <div className="mb-3 p-3 bg-[var(--grey-900)] rounded border border-[var(--grey-800)]">
+                        <p className="text-xs text-[var(--grey-400)] mb-1">Why these journalists care:</p>
+                        <p className="text-sm text-[var(--grey-300)]">{opp.strategic_context.media_targeting.reasoning}</p>
                       </div>
 
                       {/* Journalist Types */}
                       <div className="mb-3">
-                        <p className="text-xs text-gray-400 mb-2">Target Journalist Types:</p>
+                        <p className="text-xs text-[var(--grey-400)] mb-2">Target Journalist Types:</p>
                         <div className="flex flex-wrap gap-2">
-                          {selectedOpp.strategic_context.media_targeting.primary_journalist_types.map((type, idx) => (
-                            <span key={idx} className="px-2 py-1 text-xs bg-pink-500/20 text-pink-300 rounded border border-pink-500/30">
+                          {opp.strategic_context.media_targeting.primary_journalist_types.map((type, idx) => (
+                            <span key={idx} className="px-2 py-1 text-xs bg-[var(--burnt-orange)]/20 text-[var(--burnt-orange)] rounded border border-[var(--burnt-orange)]/30">
                               {type}
                             </span>
                           ))}
@@ -796,18 +759,18 @@ ${opp.execution_plan?.success_metrics?.map((m: any) => `- ${JSON.stringify(m)}`)
                       </div>
 
                       {/* Target Outlets */}
-                      {selectedOpp.strategic_context.media_targeting.target_outlets && selectedOpp.strategic_context.media_targeting.target_outlets.length > 0 && (
+                      {opp.strategic_context.media_targeting.target_outlets && opp.strategic_context.media_targeting.target_outlets.length > 0 && (
                         <div className="mb-3">
-                          <p className="text-xs text-gray-400 mb-2">Priority Outlets:</p>
+                          <p className="text-xs text-[var(--grey-400)] mb-2">Priority Outlets:</p>
                           <div className="flex flex-wrap gap-2">
-                            {selectedOpp.strategic_context.media_targeting.target_outlets.slice(0, 6).map((outlet, idx) => (
-                              <span key={idx} className="px-2 py-1 text-xs bg-purple-500/20 text-purple-300 rounded border border-purple-500/30">
+                            {opp.strategic_context.media_targeting.target_outlets.slice(0, 6).map((outlet, idx) => (
+                              <span key={idx} className="px-2 py-1 text-xs bg-[var(--grey-800)] text-[var(--grey-300)] rounded border border-[var(--grey-700)]">
                                 {outlet}
                               </span>
                             ))}
-                            {selectedOpp.strategic_context.media_targeting.target_outlets.length > 6 && (
-                              <span className="px-2 py-1 text-xs bg-gray-800 text-gray-400 rounded border border-gray-700">
-                                +{selectedOpp.strategic_context.media_targeting.target_outlets.length - 6} more
+                            {opp.strategic_context.media_targeting.target_outlets.length > 6 && (
+                              <span className="px-2 py-1 text-xs bg-[var(--grey-800)] text-[var(--grey-400)] rounded border border-[var(--grey-700)]">
+                                +{opp.strategic_context.media_targeting.target_outlets.length - 6} more
                               </span>
                             )}
                           </div>
@@ -815,12 +778,12 @@ ${opp.execution_plan?.success_metrics?.map((m: any) => `- ${JSON.stringify(m)}`)
                       )}
 
                       {/* Industries */}
-                      {selectedOpp.strategic_context.media_targeting.target_industries && selectedOpp.strategic_context.media_targeting.target_industries.length > 0 && (
+                      {opp.strategic_context.media_targeting.target_industries && opp.strategic_context.media_targeting.target_industries.length > 0 && (
                         <div className="mb-3">
-                          <p className="text-xs text-gray-400 mb-2">Database Industries:</p>
+                          <p className="text-xs text-[var(--grey-400)] mb-2">Database Industries:</p>
                           <div className="flex flex-wrap gap-2">
-                            {selectedOpp.strategic_context.media_targeting.target_industries.map((industry, idx) => (
-                              <span key={idx} className="px-2 py-1 text-xs bg-blue-500/20 text-blue-300 rounded border border-blue-500/30">
+                            {opp.strategic_context.media_targeting.target_industries.map((industry, idx) => (
+                              <span key={idx} className="px-2 py-1 text-xs bg-[var(--grey-800)] text-[var(--grey-300)] rounded border border-[var(--grey-700)]">
                                 {industry}
                               </span>
                             ))}
@@ -829,12 +792,12 @@ ${opp.execution_plan?.success_metrics?.map((m: any) => `- ${JSON.stringify(m)}`)
                       )}
 
                       {/* Beat Keywords */}
-                      {selectedOpp.strategic_context.media_targeting.beat_keywords && selectedOpp.strategic_context.media_targeting.beat_keywords.length > 0 && (
+                      {opp.strategic_context.media_targeting.beat_keywords && opp.strategic_context.media_targeting.beat_keywords.length > 0 && (
                         <div>
-                          <p className="text-xs text-gray-400 mb-2">Beat Keywords:</p>
+                          <p className="text-xs text-[var(--grey-400)] mb-2">Beat Keywords:</p>
                           <div className="flex flex-wrap gap-1.5">
-                            {selectedOpp.strategic_context.media_targeting.beat_keywords.map((keyword, idx) => (
-                              <span key={idx} className="px-2 py-0.5 text-xs bg-gray-800 text-gray-400 rounded border border-gray-700">
+                            {opp.strategic_context.media_targeting.beat_keywords.map((keyword, idx) => (
+                              <span key={idx} className="px-2 py-0.5 text-xs bg-[var(--grey-800)] text-[var(--grey-400)] rounded border border-[var(--grey-700)]">
                                 {keyword}
                               </span>
                             ))}
@@ -847,43 +810,43 @@ ${opp.execution_plan?.success_metrics?.map((m: any) => `- ${JSON.stringify(m)}`)
               )}
 
               {/* V2: Execution Plan */}
-              {selectedOpp.version === 2 && selectedOpp.execution_plan && (
+              {opp.version === 2 && opp.execution_plan && (
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-white mb-4">Execution Plan</h3>
+                  <h3 className="text-lg font-semibold text-white mb-4" style={{ fontFamily: 'var(--font-display)' }}>Execution Plan</h3>
 
                   {/* Stakeholder Campaigns */}
-                  {selectedOpp.execution_plan.stakeholder_campaigns.map((campaign, idx) => (
-                    <div key={idx} className="mb-4 p-4 bg-gradient-to-br from-purple-900/20 to-pink-900/20 rounded-lg border border-purple-500/30">
+                  {opp.execution_plan.stakeholder_campaigns.map((campaign, idx) => (
+                    <div key={idx} className="mb-4 p-4 bg-[var(--grey-800)] rounded-lg border border-[var(--grey-700)]">
                       <div className="flex items-center gap-2 mb-3">
-                        <Users className="w-4 h-4 text-purple-400" />
-                        <h4 className="text-sm font-semibold text-purple-300">
+                        <Users className="w-4 h-4 text-[var(--burnt-orange)]" />
+                        <h4 className="text-sm font-semibold text-white">
                           {campaign.stakeholder_name}
                         </h4>
-                        <span className="px-2 py-0.5 text-xs bg-purple-500/20 text-purple-400 rounded">
+                        <span className="px-2 py-0.5 text-xs bg-[var(--burnt-orange-muted)] text-[var(--burnt-orange)] rounded">
                           Priority {campaign.stakeholder_priority}
                         </span>
                       </div>
 
-                      <div className="text-xs text-gray-400 mb-3">
+                      <div className="text-xs text-[var(--grey-400)] mb-3">
                         Lever: {campaign.lever_name}
                       </div>
 
                       {/* Content Items */}
                       <div className="space-y-2">
                         {campaign.content_items.map((item, itemIdx) => (
-                          <div key={itemIdx} className="p-3 bg-gray-900/50 rounded border border-gray-800">
+                          <div key={itemIdx} className="p-3 bg-[var(--grey-900)] rounded border border-[var(--grey-800)]">
                             <div className="flex items-center justify-between mb-2">
                               <span className="text-xs font-medium text-white">{item.type}</span>
                               <span className={`px-2 py-0.5 text-xs rounded ${
-                                item.urgency === 'immediate' ? 'bg-red-500/20 text-red-400' :
-                                item.urgency === 'this_week' ? 'bg-yellow-500/20 text-yellow-400' :
-                                'bg-green-500/20 text-green-400'
+                                item.urgency === 'immediate' ? 'bg-[var(--burnt-orange-muted)] text-[var(--burnt-orange)]' :
+                                item.urgency === 'this_week' ? 'bg-[var(--grey-700)] text-[var(--grey-300)]' :
+                                'bg-[var(--grey-800)] text-[var(--grey-400)]'
                               }`}>
                                 {item.urgency}
                               </span>
                             </div>
-                            <div className="text-xs text-gray-400 mb-2">{item.topic}</div>
-                            <div className="text-xs text-gray-500">
+                            <div className="text-xs text-[var(--grey-400)] mb-2">{item.topic}</div>
+                            <div className="text-xs text-[var(--grey-500)]">
                               {item.brief?.angle && `Angle: ${item.brief.angle}`}
                             </div>
                           </div>
@@ -893,12 +856,12 @@ ${opp.execution_plan?.success_metrics?.map((m: any) => `- ${JSON.stringify(m)}`)
                   ))}
 
                   {/* Success Metrics */}
-                  {selectedOpp.execution_plan.success_metrics && selectedOpp.execution_plan.success_metrics.length > 0 && (
-                    <div className="p-4 bg-gray-900/50 rounded-lg border border-gray-800">
-                      <h4 className="text-sm font-semibold text-green-400 mb-2">Success Metrics</h4>
+                  {opp.execution_plan.success_metrics && opp.execution_plan.success_metrics.length > 0 && (
+                    <div className="p-4 bg-[var(--grey-800)] rounded-lg border border-[var(--grey-700)]">
+                      <h4 className="text-sm font-semibold text-white mb-2 uppercase tracking-wide">Success Metrics</h4>
                       <ul className="space-y-1">
-                        {selectedOpp.execution_plan.success_metrics.map((metric: any, idx) => (
-                          <li key={idx} className="text-xs text-gray-400">
+                        {opp.execution_plan.success_metrics.map((metric: any, idx) => (
+                          <li key={idx} className="text-xs text-[var(--grey-400)]">
                             • {metric.metric}: {metric.target}
                           </li>
                         ))}
@@ -909,47 +872,47 @@ ${opp.execution_plan?.success_metrics?.map((m: any) => `- ${JSON.stringify(m)}`)
               )}
 
               {/* Generated Content Section */}
-              {(selectedOpp.executed || (executing === selectedOpp.id)) && (
+              {(opp.executed || (executing === opp.id)) && (
                 <div className="mb-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-white">Generated Content</h3>
-                    <span className="px-2 py-1 text-xs bg-purple-500/20 text-purple-400 rounded">
+                    <h3 className="text-lg font-semibold text-white" style={{ fontFamily: 'var(--font-display)' }}>Generated Content</h3>
+                    <span className="px-2 py-1 text-xs bg-[var(--burnt-orange-muted)] text-[var(--burnt-orange)] rounded">
                       {generatedContent.length} pieces
                     </span>
                   </div>
                   {generatedContent.length === 0 ? (
-                    <div className="p-4 bg-gray-900/50 rounded-lg border border-gray-800 text-center">
-                      <p className="text-sm text-gray-500">
-                        {executing === selectedOpp.id ? 'Generating content...' : 'No content generated yet'}
+                    <div className="p-4 bg-[var(--grey-800)] rounded-lg border border-[var(--grey-700)] text-center">
+                      <p className="text-sm text-[var(--grey-500)]">
+                        {executing === opp.id ? 'Generating content...' : 'No content generated yet'}
                       </p>
                     </div>
                   ) : (
                   <div className="space-y-2">
                     {generatedContent.map((content, idx) => (
-                      <div key={idx} className="p-4 bg-gray-900/50 rounded-lg border border-gray-800">
+                      <div key={idx} className="p-4 bg-[var(--grey-800)] rounded-lg border border-[var(--grey-700)]">
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <h4 className="text-sm font-medium text-white mb-1">{content.title}</h4>
-                            <div className="flex items-center gap-2 text-xs text-gray-400 mb-1">
-                              <span className="px-2 py-0.5 bg-purple-500/20 text-purple-400 rounded">
+                            <div className="flex items-center gap-2 text-xs text-[var(--grey-400)] mb-1">
+                              <span className="px-2 py-0.5 bg-[var(--burnt-orange-muted)] text-[var(--burnt-orange)] rounded">
                                 {content.content_type}
                               </span>
                               {content.metadata?.stakeholder && (
-                                <span className="text-gray-500">→ {content.metadata.stakeholder}</span>
+                                <span className="text-[var(--grey-500)]">→ {content.metadata.stakeholder}</span>
                               )}
                               {content.metadata?.channel && (
-                                <span className="px-2 py-0.5 bg-gray-500/20 text-gray-400 rounded">
+                                <span className="px-2 py-0.5 bg-[var(--grey-700)] text-[var(--grey-400)] rounded">
                                   {content.metadata.channel}
                                 </span>
                               )}
                             </div>
                             {content.metadata?.purpose && (
-                              <p className="text-xs text-gray-500 mt-1">{content.metadata.purpose}</p>
+                              <p className="text-xs text-[var(--grey-500)] mt-1">{content.metadata.purpose}</p>
                             )}
                           </div>
                           <button
                             onClick={() => setViewingContent(content)}
-                            className="px-3 py-1 text-xs bg-purple-500/20 text-purple-400 rounded hover:bg-purple-500/30 transition-colors flex items-center gap-1"
+                            className="px-3 py-1 text-xs bg-[var(--burnt-orange-muted)] text-[var(--burnt-orange)] rounded hover:bg-[var(--burnt-orange)]/30 transition-colors flex items-center gap-1"
                           >
                             <Eye className="w-3 h-3" />
                             View
@@ -963,13 +926,13 @@ ${opp.execution_plan?.success_metrics?.map((m: any) => `- ${JSON.stringify(m)}`)
               )}
 
               {/* Presentation Link */}
-              {selectedOpp.executed && selectedOpp.presentation_url && (
+              {opp.executed && opp.presentation_url && (
                 <div className="mb-6">
                   <a
-                    href={selectedOpp.presentation_url}
+                    href={opp.presentation_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-colors"
+                    className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-[var(--burnt-orange)] text-white rounded-lg hover:bg-[var(--burnt-orange-light)] transition-colors"
                   >
                     <ExternalLink className="w-4 h-4" />
                     View Gamma Presentation
@@ -978,14 +941,14 @@ ${opp.execution_plan?.success_metrics?.map((m: any) => `- ${JSON.stringify(m)}`)
               )}
 
               {/* Execute Button */}
-              {!selectedOpp.executed && selectedOpp.version === 2 && selectedOpp.execution_plan && (
+              {!opp.executed && opp.version === 2 && opp.execution_plan && (
                 <div className="space-y-3">
                   <button
-                    onClick={() => executeOpportunity(selectedOpp)}
-                    disabled={executing === selectedOpp.id}
-                    className="w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all disabled:opacity-50 flex items-center justify-center gap-3"
+                    onClick={() => executeOpportunity(opp)}
+                    disabled={executing === opp.id}
+                    className="w-full py-3 bg-[var(--burnt-orange)] text-white font-semibold rounded-lg hover:bg-[var(--burnt-orange-light)] transition-all disabled:opacity-50 flex items-center justify-center gap-3"
                   >
-                    {executing === selectedOpp.id ? (
+                    {executing === opp.id ? (
                       <>
                         <Loader2 className="w-5 h-5 animate-spin" />
                         {generationProgress.current || 'Executing...'}
@@ -997,28 +960,27 @@ ${opp.execution_plan?.success_metrics?.map((m: any) => `- ${JSON.stringify(m)}`)
                       </>
                     )}
                   </button>
-                  {executing === selectedOpp.id && generationProgress.progress !== undefined && (
+                  {executing === opp.id && generationProgress.progress !== undefined && (
                     <div className="space-y-2">
-                      <div className="w-full bg-gray-800 rounded-full h-2">
+                      <div className="w-full bg-[var(--grey-800)] rounded-full h-2">
                         <div
-                          className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-300"
+                          className="bg-[var(--burnt-orange)] h-2 rounded-full transition-all duration-300"
                           style={{ width: `${generationProgress.progress}%` }}
                         />
                       </div>
-                      <div className="text-xs text-gray-400 text-center">
+                      <div className="text-xs text-[var(--grey-400)] text-center">
                         {generationProgress.progress}% complete
                       </div>
                     </div>
                   )}
                 </div>
               )}
-            </div>
-          ) : (
-            <div className="h-full flex items-center justify-center">
-              <div className="text-center">
-                <Target className="w-12 h-12 text-gray-700 mx-auto mb-3" />
-                <p className="text-gray-500">Select an opportunity to view details</p>
-              </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              ))}
             </div>
           )}
         </div>
@@ -1038,33 +1000,33 @@ ${opp.execution_plan?.success_metrics?.map((m: any) => `- ${JSON.stringify(m)}`)
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-gray-900 rounded-xl border border-gray-800 max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+              className="bg-[var(--grey-900)] rounded-xl border border-[var(--grey-800)] max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Modal Header */}
-              <div className="px-6 py-4 border-b border-gray-800 flex items-start justify-between">
+              <div className="px-6 py-4 border-b border-[var(--grey-800)] flex items-start justify-between">
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-white mb-2">{viewingContent.title}</h3>
                   <div className="flex items-center gap-2 text-xs">
-                    <span className="px-2 py-0.5 bg-purple-500/20 text-purple-400 rounded">
+                    <span className="px-2 py-0.5 bg-[var(--burnt-orange-muted)] text-[var(--burnt-orange)] rounded">
                       {viewingContent.content_type}
                     </span>
                     {viewingContent.metadata?.stakeholder && (
-                      <span className="text-gray-400">Stakeholder: {viewingContent.metadata.stakeholder}</span>
+                      <span className="text-[var(--grey-400)]">Stakeholder: {viewingContent.metadata.stakeholder}</span>
                     )}
                     {viewingContent.metadata?.channel && (
-                      <span className="px-2 py-0.5 bg-gray-500/20 text-gray-400 rounded capitalize">
+                      <span className="px-2 py-0.5 bg-[var(--grey-800)] text-[var(--grey-400)] rounded capitalize">
                         {viewingContent.metadata.channel}
                       </span>
                     )}
                   </div>
                   {viewingContent.metadata?.purpose && (
-                    <p className="text-xs text-gray-500 mt-2">{viewingContent.metadata.purpose}</p>
+                    <p className="text-xs text-[var(--grey-500)] mt-2">{viewingContent.metadata.purpose}</p>
                   )}
                 </div>
                 <button
                   onClick={() => setViewingContent(null)}
-                  className="ml-4 p-2 text-gray-400 hover:text-white transition-colors"
+                  className="ml-4 p-2 text-[var(--grey-400)] hover:text-white transition-colors"
                 >
                   ✕
                 </button>
@@ -1073,15 +1035,15 @@ ${opp.execution_plan?.success_metrics?.map((m: any) => `- ${JSON.stringify(m)}`)
               {/* Modal Content */}
               <div className="flex-1 overflow-y-auto p-6">
                 <div className="prose prose-invert max-w-none">
-                  <div className="text-gray-300 whitespace-pre-wrap font-mono text-sm leading-relaxed">
+                  <div className="text-[var(--grey-300)] whitespace-pre-wrap font-mono text-sm leading-relaxed">
                     {viewingContent.content}
                   </div>
                 </div>
               </div>
 
               {/* Modal Footer */}
-              <div className="px-6 py-4 border-t border-gray-800 flex items-center justify-between">
-                <div className="text-xs text-gray-500">
+              <div className="px-6 py-4 border-t border-[var(--grey-800)] flex items-center justify-between">
+                <div className="text-xs text-[var(--grey-500)]">
                   {viewingContent.metadata?.generated_at && (
                     <span>Generated: {new Date(viewingContent.metadata.generated_at).toLocaleString()}</span>
                   )}
@@ -1093,13 +1055,13 @@ ${opp.execution_plan?.success_metrics?.map((m: any) => `- ${JSON.stringify(m)}`)
                       // Could add a toast notification here
                       console.log('Content copied to clipboard')
                     }}
-                    className="px-3 py-1.5 text-xs bg-purple-500/20 text-purple-400 rounded hover:bg-purple-500/30 transition-colors"
+                    className="px-3 py-1.5 text-xs bg-[var(--burnt-orange-muted)] text-[var(--burnt-orange)] rounded hover:bg-[var(--burnt-orange)]/30 transition-colors"
                   >
                     Copy Content
                   </button>
                   <button
                     onClick={() => setViewingContent(null)}
-                    className="px-3 py-1.5 text-xs bg-gray-700 text-gray-300 rounded hover:bg-gray-600 transition-colors"
+                    className="px-3 py-1.5 text-xs bg-[var(--grey-700)] text-[var(--grey-300)] rounded hover:bg-[var(--grey-600)] transition-colors"
                   >
                     Close
                   </button>

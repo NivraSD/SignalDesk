@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { X as CloseIcon, Building2, Target, Globe, Loader, Save, AlertCircle, RefreshCw, CheckCircle, FileText, Copy, Users } from 'lucide-react'
+import { X as CloseIcon, Building2, Target, Globe, Loader2, Save, AlertCircle, RefreshCw, CheckCircle, FileText, Copy, Users } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import TargetManagementTab from './TargetManagementTab'
 import GeoTargetsTab from './GeoTargetsTab'
@@ -90,7 +90,7 @@ export default function OrganizationSettings({
         id: organizationId,
         ...orgData
       }
-      console.log('📤 Sending to API:', payload)
+      console.log('Sending to API:', payload)
 
       const response = await fetch('/api/organizations/update', {
         method: 'PUT',
@@ -98,9 +98,9 @@ export default function OrganizationSettings({
         body: JSON.stringify(payload)
       })
 
-      console.log('📡 Response status:', response.status)
+      console.log('Response status:', response.status)
       const data = await response.json()
-      console.log('📦 Response data:', data)
+      console.log('Response data:', data)
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to update organization')
@@ -127,7 +127,7 @@ export default function OrganizationSettings({
           organization: updatedOrg
         })
 
-        console.log('✅ Updated global organization state:', updatedOrg)
+        console.log('Updated global organization state:', updatedOrg)
 
         // Also update localStorage directly to persist immediately
         const stored = localStorage.getItem('signaldesk-v3-storage')
@@ -135,7 +135,7 @@ export default function OrganizationSettings({
           const parsedStore = JSON.parse(stored)
           parsedStore.state.organization = updatedOrg
           localStorage.setItem('signaldesk-v3-storage', JSON.stringify(parsedStore))
-          console.log('✅ Updated localStorage with new organization data')
+          console.log('Updated localStorage with new organization data')
         }
       }
 
@@ -182,7 +182,7 @@ export default function OrganizationSettings({
         return
       }
 
-      console.log('🎯 Generating schema via API route...')
+      console.log('Generating schema via API route...')
 
       // Call our API route which proxies the Edge Functions (avoids CORS issues)
       const response = await fetch(`/api/organizations/generate-schema?id=${organizationId}`, {
@@ -202,7 +202,7 @@ export default function OrganizationSettings({
       }
 
       const data = await response.json()
-      console.log('✅ Schema generated successfully:', data)
+      console.log('Schema generated successfully:', data)
 
       setSuccess('Schema generated and saved successfully!')
 
@@ -233,7 +233,7 @@ export default function OrganizationSettings({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
       onClick={onClose}
     >
       <motion.div
@@ -241,47 +241,62 @@ export default function OrganizationSettings({
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
-        className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl"
+        className="bg-[var(--charcoal)] border border-[var(--grey-800)] rounded-xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl"
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-700">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-[var(--grey-800)]">
+          <div className="flex items-center gap-4">
+            <div
+              className="w-11 h-11 rounded-xl flex items-center justify-center"
+              style={{ background: 'var(--burnt-orange)' }}
+            >
               <Building2 className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-white">Organization Settings</h2>
-              <p className="text-sm text-gray-400">{organizationName}</p>
+              <div
+                className="text-[0.65rem] uppercase tracking-[0.15em] text-[var(--burnt-orange)] mb-1"
+                style={{ fontFamily: 'var(--font-display)' }}
+              >
+                Settings
+              </div>
+              <h2
+                className="text-[1.25rem] font-normal text-white"
+                style={{ fontFamily: 'var(--font-serif)' }}
+              >
+                {organizationName}
+              </h2>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+            className="p-2 hover:bg-[var(--grey-800)] rounded-lg transition-colors"
           >
-            <CloseIcon className="w-5 h-5 text-gray-400" />
+            <CloseIcon className="w-5 h-5 text-[var(--grey-400)]" />
           </button>
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-gray-700 px-6">
+        <div className="flex border-b border-[var(--grey-800)] px-6">
           {tabs.map((tab) => {
             const Icon = tab.icon
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-3 font-medium transition-colors relative ${
+                className={`flex items-center gap-2 px-4 py-3.5 text-[0.85rem] font-medium transition-colors relative ${
                   activeTab === tab.id
-                    ? 'text-blue-400'
-                    : 'text-gray-400 hover:text-gray-300'
+                    ? 'text-[var(--burnt-orange)]'
+                    : 'text-[var(--grey-500)] hover:text-[var(--grey-300)]'
                 }`}
+                style={{ fontFamily: 'var(--font-display)' }}
               >
                 <Icon className="w-4 h-4" />
                 {tab.name}
                 {activeTab === tab.id && (
                   <motion.div
-                    layoutId="activeTab"
-                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500"
+                    layoutId="activeOrgTab"
+                    className="absolute bottom-0 left-0 right-0 h-0.5"
+                    style={{ background: 'var(--burnt-orange)' }}
                   />
                 )}
               </button>
@@ -294,31 +309,36 @@ export default function OrganizationSettings({
           {activeTab === 'about' && (
             <div className="p-6">
               {error && (
-                <div className="mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg flex items-start gap-3">
+                <div
+                  className="mb-4 p-4 rounded-lg flex items-start gap-3"
+                  style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)' }}
+                >
                   <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
-                  <div className="flex-1">
-                    <p className="text-red-400 text-sm">{error}</p>
-                  </div>
+                  <p className="text-red-400 text-sm">{error}</p>
                 </div>
               )}
 
               {success && (
-                <div className="mb-4 p-4 bg-green-500/10 border border-green-500/30 rounded-lg flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
-                  <div className="flex-1">
-                    <p className="text-green-400 text-sm">{success}</p>
-                  </div>
+                <div
+                  className="mb-4 p-4 rounded-lg flex items-start gap-3"
+                  style={{ background: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.3)' }}
+                >
+                  <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
+                  <p className="text-green-400 text-sm">{success}</p>
                 </div>
               )}
 
               {loading ? (
                 <div className="flex items-center justify-center py-12">
-                  <Loader className="w-8 h-8 text-blue-400 animate-spin" />
+                  <Loader2 className="w-8 h-8 animate-spin" style={{ color: 'var(--burnt-orange)' }} />
                 </div>
               ) : (
                 <div className="space-y-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">
+                    <label
+                      className="block text-sm font-medium mb-2"
+                      style={{ color: 'var(--grey-400)', fontFamily: 'var(--font-display)' }}
+                    >
                       Organization Name
                     </label>
                     <input
@@ -326,12 +346,16 @@ export default function OrganizationSettings({
                       value={orgData.name}
                       onChange={(e) => setOrgData({ ...orgData, name: e.target.value })}
                       placeholder="Enter organization name..."
-                      className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
+                      className="w-full px-4 py-2.5 rounded-lg text-white placeholder-[var(--grey-600)] focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)]"
+                      style={{ background: 'var(--grey-900)', border: '1px solid var(--grey-700)' }}
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">
+                    <label
+                      className="block text-sm font-medium mb-2"
+                      style={{ color: 'var(--grey-400)', fontFamily: 'var(--font-display)' }}
+                    >
                       Domain / Website URL
                       <span className="text-red-400 ml-1">*</span>
                     </label>
@@ -340,15 +364,19 @@ export default function OrganizationSettings({
                       value={orgData.domain}
                       onChange={(e) => setOrgData({ ...orgData, domain: e.target.value })}
                       placeholder="https://example.com"
-                      className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
+                      className="w-full px-4 py-2.5 rounded-lg text-white placeholder-[var(--grey-600)] focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)]"
+                      style={{ background: 'var(--grey-900)', border: '1px solid var(--grey-700)' }}
                     />
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs mt-1.5" style={{ color: 'var(--grey-500)' }}>
                       Required for GEO schema extraction and intelligence monitoring
                     </p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">
+                    <label
+                      className="block text-sm font-medium mb-2"
+                      style={{ color: 'var(--grey-400)', fontFamily: 'var(--font-display)' }}
+                    >
                       Industry
                     </label>
                     <input
@@ -356,18 +384,23 @@ export default function OrganizationSettings({
                       value={orgData.industry}
                       onChange={(e) => setOrgData({ ...orgData, industry: e.target.value })}
                       placeholder="e.g. Technology, Healthcare, Finance..."
-                      className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
+                      className="w-full px-4 py-2.5 rounded-lg text-white placeholder-[var(--grey-600)] focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)]"
+                      style={{ background: 'var(--grey-900)', border: '1px solid var(--grey-700)' }}
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">
+                    <label
+                      className="block text-sm font-medium mb-2"
+                      style={{ color: 'var(--grey-400)', fontFamily: 'var(--font-display)' }}
+                    >
                       Company Size
                     </label>
                     <select
                       value={orgData.size}
                       onChange={(e) => setOrgData({ ...orgData, size: e.target.value })}
-                      className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                      className="w-full px-4 py-2.5 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)]"
+                      style={{ background: 'var(--grey-900)', border: '1px solid var(--grey-700)' }}
                     >
                       <option value="">Select size...</option>
                       <option value="1-10">1-10 employees</option>
@@ -381,11 +414,16 @@ export default function OrganizationSettings({
                   </div>
 
                   {/* Schema.org Setup Section */}
-                  <div className="pt-6 border-t border-gray-700">
+                  <div className="pt-6 border-t border-[var(--grey-800)]">
                     <div className="flex items-center justify-between mb-4">
                       <div>
-                        <h3 className="text-sm font-medium text-gray-300">AI Presence Architecture</h3>
-                        <p className="text-xs text-gray-500 mt-1">
+                        <h3
+                          className="text-sm font-medium text-white"
+                          style={{ fontFamily: 'var(--font-display)' }}
+                        >
+                          AI Presence Architecture
+                        </h3>
+                        <p className="text-xs mt-1" style={{ color: 'var(--grey-500)' }}>
                           Comprehensive schema.org optimization for maximum AI visibility
                         </p>
                       </div>
@@ -393,7 +431,12 @@ export default function OrganizationSettings({
                         {schemaData?.has_schema && (
                           <button
                             onClick={() => setShowSchemaViewer(!showSchemaViewer)}
-                            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-all flex items-center gap-2 text-sm font-medium"
+                            className="px-4 py-2 rounded-lg transition-all flex items-center gap-2 text-sm font-medium"
+                            style={{
+                              background: 'var(--grey-800)',
+                              color: 'var(--grey-300)',
+                              fontFamily: 'var(--font-display)'
+                            }}
                           >
                             <FileText className="w-4 h-4" />
                             {showSchemaViewer ? 'Hide' : 'View'} Schema
@@ -404,15 +447,19 @@ export default function OrganizationSettings({
                           disabled={schemaExtracting || !orgData.domain}
                           className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 text-sm font-medium ${
                             schemaExtracting
-                              ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
-                              : schemaData?.has_schema
-                              ? 'bg-blue-500/10 text-blue-400 border border-blue-500/30 hover:bg-blue-500/20'
-                              : 'bg-blue-500 text-white hover:bg-blue-600'
+                              ? 'opacity-50 cursor-not-allowed'
+                              : ''
                           }`}
+                          style={{
+                            background: schemaData?.has_schema ? 'var(--burnt-orange-muted)' : 'var(--burnt-orange)',
+                            color: schemaData?.has_schema ? 'var(--burnt-orange)' : 'white',
+                            border: schemaData?.has_schema ? '1px solid var(--burnt-orange)' : 'none',
+                            fontFamily: 'var(--font-display)'
+                          }}
                         >
                           {schemaExtracting ? (
                             <>
-                              <Loader className="w-4 h-4 animate-spin" />
+                              <Loader2 className="w-4 h-4 animate-spin" />
                               Generating...
                             </>
                           ) : (
@@ -427,25 +474,28 @@ export default function OrganizationSettings({
 
                     {schemaData?.has_schema && schemaData.schema && (
                       <div className="space-y-3">
-                        <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
+                        <div
+                          className="p-4 rounded-lg"
+                          style={{ background: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.3)' }}
+                        >
                           <div className="flex items-start gap-3">
                             <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
                             <div className="flex-1">
                               <p className="font-medium text-green-400 mb-1">Schema Package Active</p>
-                              <p className="text-sm text-gray-300 mb-3">
+                              <p className="text-sm mb-3" style={{ color: 'var(--grey-300)' }}>
                                 Comprehensive AI-optimized schema with {schemaData.schema.intelligence?.fields?.length || 0} fields
                               </p>
                               <div className="grid grid-cols-3 gap-3 text-xs">
                                 <div>
-                                  <div className="text-gray-500 mb-1">Schema Type</div>
+                                  <div style={{ color: 'var(--grey-500)' }} className="mb-1">Schema Type</div>
                                   <div className="text-white font-medium">{schemaData.schema.metadata?.schema_type || 'Organization'}</div>
                                 </div>
                                 <div>
-                                  <div className="text-gray-500 mb-1">Generated By</div>
+                                  <div style={{ color: 'var(--grey-500)' }} className="mb-1">Generated By</div>
                                   <div className="text-white font-medium">{schemaData.schema.metadata?.generated_by === 'geo-schema-optimizer' ? 'AI Optimizer' : 'Extracted'}</div>
                                 </div>
                                 <div>
-                                  <div className="text-gray-500 mb-1">Last Updated</div>
+                                  <div style={{ color: 'var(--grey-500)' }} className="mb-1">Last Updated</div>
                                   <div className="text-white font-medium">
                                     {schemaData.schema.updated_at
                                       ? new Date(schemaData.schema.updated_at).toLocaleDateString()
@@ -459,9 +509,17 @@ export default function OrganizationSettings({
                         </div>
 
                         {showSchemaViewer && (
-                          <div className="p-4 bg-gray-900/50 rounded-lg border border-gray-700">
+                          <div
+                            className="p-4 rounded-lg"
+                            style={{ background: 'var(--grey-900)', border: '1px solid var(--grey-700)' }}
+                          >
                             <div className="flex items-center justify-between mb-3">
-                              <h4 className="text-sm font-medium text-gray-300">Schema Preview</h4>
+                              <h4
+                                className="text-sm font-medium"
+                                style={{ color: 'var(--grey-300)', fontFamily: 'var(--font-display)' }}
+                              >
+                                Schema Preview
+                              </h4>
                               <button
                                 onClick={() => {
                                   const schemaContent = typeof schemaData.schema.content === 'string'
@@ -471,13 +529,17 @@ export default function OrganizationSettings({
                                   setSuccess('Schema copied to clipboard!')
                                   setTimeout(() => setSuccess(null), 2000)
                                 }}
-                                className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                                className="text-xs flex items-center gap-1"
+                                style={{ color: 'var(--burnt-orange)' }}
                               >
                                 <Copy className="w-3 h-3" />
                                 Copy JSON
                               </button>
                             </div>
-                            <pre className="text-xs text-gray-400 overflow-x-auto max-h-96 overflow-y-auto">
+                            <pre
+                              className="text-xs overflow-x-auto max-h-96 overflow-y-auto"
+                              style={{ color: 'var(--grey-400)' }}
+                            >
                               {typeof schemaData.schema.content === 'string'
                                 ? JSON.stringify(JSON.parse(schemaData.schema.content), null, 2)
                                 : JSON.stringify(schemaData.schema.content, null, 2)
@@ -489,9 +551,12 @@ export default function OrganizationSettings({
                     )}
 
                     {!schemaData?.has_schema && !schemaLoading && (
-                      <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg flex items-start gap-3">
+                      <div
+                        className="p-4 rounded-lg flex items-start gap-3"
+                        style={{ background: 'rgba(234, 179, 8, 0.1)', border: '1px solid rgba(234, 179, 8, 0.3)' }}
+                      >
                         <AlertCircle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
-                        <div className="text-sm text-gray-300">
+                        <div className="text-sm" style={{ color: 'var(--grey-300)' }}>
                           <p className="font-medium text-yellow-400 mb-1">No Schema Package</p>
                           <p>Click "Generate Schema" to create a comprehensive, AI-optimized schema package. Our system will analyze your industry and create strategic structured data that 70% of companies don't have.</p>
                         </div>
@@ -499,21 +564,31 @@ export default function OrganizationSettings({
                     )}
                   </div>
 
-                  <div className="flex justify-end gap-3 pt-4 border-t border-gray-700">
+                  <div className="flex justify-end gap-3 pt-4 border-t border-[var(--grey-800)]">
                     <button
                       onClick={onClose}
-                      className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
+                      className="px-4 py-2 rounded-lg font-medium transition-colors"
+                      style={{
+                        background: 'var(--grey-800)',
+                        color: 'var(--grey-300)',
+                        fontFamily: 'var(--font-display)'
+                      }}
                     >
                       Cancel
                     </button>
                     <button
                       onClick={saveOrganizationData}
                       disabled={saving || !orgData.name || !orgData.domain}
-                      className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+                      className="px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 disabled:opacity-50"
+                      style={{
+                        background: 'var(--burnt-orange)',
+                        color: 'white',
+                        fontFamily: 'var(--font-display)'
+                      }}
                     >
                       {saving ? (
                         <>
-                          <Loader className="w-4 h-4 animate-spin" />
+                          <Loader2 className="w-4 h-4 animate-spin" />
                           Saving...
                         </>
                       ) : (
