@@ -1062,6 +1062,7 @@ export default function HomePage() {
           font-weight: 400;
           line-height: 1.15;
           letter-spacing: -0.02em;
+          color: var(--white);
         }
 
         .landing-cta-headline em {
