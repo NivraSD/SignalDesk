@@ -1271,8 +1271,10 @@ export default function HomePage() {
             <text x="40" y="33" textAnchor="middle" fontFamily="Space Grotesk, sans-serif" fontSize="22" fontWeight="700" fill="#faf9f7" letterSpacing="-0.5">NIV</text>
             <path d="M68 0 H80 V12 L68 0 Z" fill="#c75d3a" />
           </svg>
-          <span style={{ color: 'rgba(0,0,0,0.2)', fontSize: '24px', fontWeight: 200 }}>|</span>
-          <span style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '14px', color: 'rgba(0,0,0,0.4)', letterSpacing: '1px' }}>by nivria</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '6px', alignSelf: 'flex-end' }}>
+            <span style={{ color: 'rgba(0,0,0,0.2)', fontSize: '28px', fontWeight: 200, lineHeight: 1 }}>|</span>
+            <span style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '14px', color: 'rgba(0,0,0,0.4)', letterSpacing: '1px' }}>by nivria</span>
+          </div>
         </div>
         <div className="landing-nav-links">
           <span className="landing-nav-link">Platform</span>
@@ -1633,8 +1635,10 @@ export default function HomePage() {
               <text x="40" y="33" textAnchor="middle" fontFamily="Space Grotesk, sans-serif" fontSize="22" fontWeight="700" fill="#1a1a1a" letterSpacing="-0.5">NIV</text>
               <path d="M68 0 H80 V12 L68 0 Z" fill="#c75d3a" />
             </svg>
-            <span style={{ color: 'var(--grey-600)', fontSize: '18px', fontWeight: 200 }}>|</span>
-            <span style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '12px', color: 'var(--grey-500)', letterSpacing: '1px' }}>by nivria</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '4px', alignSelf: 'flex-end' }}>
+              <span style={{ color: 'var(--grey-600)', fontSize: '22px', fontWeight: 200, lineHeight: 1 }}>|</span>
+              <span style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '12px', color: 'var(--grey-500)', letterSpacing: '1px' }}>by nivria</span>
+            </div>
           </div>
           <div className="landing-footer-links">
             <a href="#" className="landing-footer-link">Platform</a>

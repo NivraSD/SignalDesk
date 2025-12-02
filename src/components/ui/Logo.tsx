@@ -48,12 +48,19 @@ export function Logo({
       </svg>
 
       {showByline && (
-        <>
+        <div
+          className="flex items-center gap-3"
+          style={{
+            marginTop: size === 'sm' ? 4 : size === 'md' ? 6 : 8,
+            alignSelf: 'flex-end'
+          }}
+        >
           <span
             style={{
               color: dividerColor,
-              fontSize: bylineSize + 6,
-              fontWeight: 200
+              fontSize: bylineSize + 8,
+              fontWeight: 200,
+              lineHeight: 1
             }}
           >
             |
@@ -68,7 +75,7 @@ export function Logo({
           >
             by nivria
           </span>
-        </>
+        </div>
       )}
     </div>
   )
