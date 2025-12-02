@@ -1,1627 +1,987 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
-  Activity,
-  Zap,
-  Sparkles,
-  Globe,
-  Shield,
-  Database,
-  ArrowRight,
   Brain,
   Target,
-  FileText,
-  Users,
-  TrendingUp,
-  AlertTriangle,
-  Search,
+  Palette,
   Layers,
+  Globe,
+  Shield,
   MessageSquare,
-  CheckCircle,
-  Clock,
-  BarChart3,
-  Presentation,
-  Image as ImageIcon,
-  Video,
+  Database,
+  ChevronRight,
+  AlertTriangle,
+  TrendingUp,
+  Users,
+  FileText,
   Mail,
-  Mic,
+  Megaphone,
+  Check,
+  Clock,
+  Zap,
+  Search,
+  Folder,
   BookOpen,
-  RefreshCw,
-  ExternalLink
+  Hash
 } from 'lucide-react'
 
-export default function PlatformPage() {
+export default function PlatformCapabilities() {
   const router = useRouter()
 
   return (
-    <div className="platform-container">
-      <style jsx>{`
-        .platform-container {
-          width: 100%;
-          min-height: 100vh;
-          background: #faf9f7;
-        }
-
-        /* Navigation */
-        .platform-nav {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          z-index: 100;
-          padding: 24px 60px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          background: linear-gradient(to bottom, #faf9f7 70%, transparent);
-        }
-
-        .platform-nav-logo {
-          display: flex;
-          align-items: center;
-          gap: 14px;
-          text-decoration: none;
-          cursor: pointer;
-        }
-
-        .platform-nav-cta {
-          color: var(--white);
-          background: var(--charcoal);
-          text-decoration: none;
-          font-size: 0.85rem;
-          font-weight: 500;
-          padding: 12px 28px;
-          border-radius: 6px;
-          transition: background 0.2s;
-          cursor: pointer;
-          border: none;
-        }
-
-        .platform-nav-cta:hover {
-          background: var(--burnt-orange);
-        }
-
-        /* Hero */
-        .platform-hero {
-          padding: 180px 60px 80px;
-          text-align: center;
-          max-width: 1000px;
-          margin: 0 auto;
-        }
-
-        .platform-hero-tagline {
-          font-size: 0.85rem;
-          font-weight: 600;
-          letter-spacing: 2px;
-          color: var(--burnt-orange);
-          margin-bottom: 24px;
-          text-transform: uppercase;
-        }
-
-        .platform-hero-headline {
-          font-family: var(--font-serif);
-          font-size: clamp(2.8rem, 6vw, 4.5rem);
-          font-weight: 400;
-          line-height: 1.05;
-          letter-spacing: -0.02em;
-          color: var(--charcoal);
-          margin-bottom: 32px;
-        }
-
-        .platform-hero-headline .italic {
-          font-style: italic;
-          color: var(--burnt-orange);
-        }
-
-        .platform-hero-intro {
-          font-size: 1.25rem;
-          line-height: 1.7;
-          color: var(--grey-600);
-          max-width: 700px;
-          margin: 0 auto;
-        }
-
-        /* Sections */
-        .platform-sections {
-          padding: 60px 60px 120px;
-        }
-
-        .platform-section {
-          max-width: 1400px;
-          margin: 0 auto 140px;
-        }
-
-        .platform-section-header {
-          display: flex;
-          align-items: flex-start;
-          gap: 20px;
-          margin-bottom: 40px;
-        }
-
-        .platform-section-icon {
-          width: 56px;
-          height: 56px;
-          border-radius: 14px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
-        }
-
-        .platform-section-text {
-          flex: 1;
-        }
-
-        .platform-section-tagline {
-          font-size: 0.75rem;
-          font-weight: 700;
-          letter-spacing: 3px;
-          text-transform: uppercase;
-          margin-bottom: 8px;
-        }
-
-        .platform-section-title {
-          font-family: var(--font-serif);
-          font-size: 2.2rem;
-          font-weight: 400;
-          color: var(--charcoal);
-          margin-bottom: 8px;
-        }
-
-        .platform-section-headline {
-          font-size: 1.05rem;
-          color: var(--grey-500);
-          max-width: 600px;
-        }
-
-        .platform-section-content {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 40px;
-          align-items: start;
-        }
-
-        .platform-section-features {
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-        }
-
-        .platform-feature {
-          display: flex;
-          gap: 14px;
-          padding: 16px 20px;
-          background: var(--white);
-          border: 1px solid var(--grey-200);
-          border-radius: 12px;
-          transition: all 0.2s;
-        }
-
-        .platform-feature:hover {
-          border-color: var(--grey-300);
-          box-shadow: 0 4px 12px rgba(0,0,0,0.04);
-        }
-
-        .platform-feature-icon {
-          width: 36px;
-          height: 36px;
-          border-radius: 8px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
-        }
-
-        .platform-feature-text {
-          flex: 1;
-        }
-
-        .platform-feature-label {
-          font-weight: 600;
-          font-size: 0.9rem;
-          color: var(--charcoal);
-          margin-bottom: 2px;
-        }
-
-        .platform-feature-detail {
-          font-size: 0.8rem;
-          color: var(--grey-500);
-          line-height: 1.4;
-        }
-
-        .platform-differentiator {
-          padding: 20px 24px;
-          background: var(--charcoal);
-          border-radius: 12px;
-          color: var(--white);
-          font-size: 0.9rem;
-          font-weight: 500;
-          line-height: 1.6;
-          margin-top: 20px;
-        }
-
-        .platform-differentiator::before {
-          content: '→ ';
-          color: var(--burnt-orange);
-        }
-
-        /* Visual Panels */
-        .platform-visual {
-          background: var(--charcoal);
-          border-radius: 16px;
-          overflow: hidden;
-          min-height: 400px;
-        }
-
-        .platform-visual-header {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          padding: 16px 20px;
-          background: rgba(255,255,255,0.03);
-          border-bottom: 1px solid rgba(255,255,255,0.08);
-        }
-
-        .platform-visual-dot {
-          width: 10px;
-          height: 10px;
-          border-radius: 50%;
-        }
-
-        .platform-visual-dot.red { background: #ef4444; }
-        .platform-visual-dot.yellow { background: #f59e0b; }
-        .platform-visual-dot.green { background: #10b981; }
-
-        .platform-visual-title {
-          margin-left: auto;
-          font-size: 0.75rem;
-          color: var(--grey-400);
-          letter-spacing: 0.5px;
-        }
-
-        .platform-visual-content {
-          padding: 24px;
-        }
-
-        /* Intelligence Brief Mockup */
-        .intel-brief {
-          font-family: var(--font-sans);
-        }
-
-        .intel-brief-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 20px;
-          padding-bottom: 16px;
-          border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .intel-brief-title {
-          font-size: 1.1rem;
-          font-weight: 600;
-          color: var(--white);
-        }
-
-        .intel-brief-date {
-          font-size: 0.75rem;
-          color: var(--grey-400);
-        }
-
-        .intel-brief-section {
-          margin-bottom: 20px;
-        }
-
-        .intel-brief-section-title {
-          font-size: 0.7rem;
-          font-weight: 700;
-          letter-spacing: 1px;
-          text-transform: uppercase;
-          color: var(--burnt-orange);
-          margin-bottom: 10px;
-        }
-
-        .intel-brief-item {
-          background: rgba(255,255,255,0.04);
-          border-radius: 8px;
-          padding: 12px 14px;
-          margin-bottom: 8px;
-          border-left: 3px solid;
-        }
-
-        .intel-brief-item.high { border-color: #ef4444; }
-        .intel-brief-item.medium { border-color: #f59e0b; }
-        .intel-brief-item.low { border-color: #10b981; }
-
-        .intel-brief-item-title {
-          font-size: 0.85rem;
-          color: var(--white);
-          font-weight: 500;
-          margin-bottom: 4px;
-        }
-
-        .intel-brief-item-meta {
-          font-size: 0.7rem;
-          color: var(--grey-400);
-        }
-
-        /* Opportunity Card Mockup */
-        .opp-card {
-          background: rgba(255,255,255,0.03);
-          border-radius: 12px;
-          border: 1px solid rgba(255,255,255,0.08);
-          overflow: hidden;
-        }
-
-        .opp-card-header {
-          padding: 20px;
-          border-bottom: 1px solid rgba(255,255,255,0.08);
-        }
-
-        .opp-card-title {
-          font-family: var(--font-serif);
-          font-size: 1.2rem;
-          color: var(--white);
-          margin-bottom: 8px;
-          line-height: 1.3;
-        }
-
-        .opp-card-desc {
-          font-size: 0.8rem;
-          color: var(--grey-400);
-          line-height: 1.5;
-        }
-
-        .opp-card-badges {
-          display: flex;
-          gap: 8px;
-          margin-top: 12px;
-        }
-
-        .opp-card-badge {
-          font-size: 0.65rem;
-          font-weight: 600;
-          padding: 4px 10px;
-          border-radius: 100px;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-
-        .opp-card-badge.high {
-          background: rgba(239, 68, 68, 0.2);
-          color: #f87171;
-        }
-
-        .opp-card-badge.score {
-          background: rgba(16, 185, 129, 0.2);
-          color: #34d399;
-        }
-
-        .opp-card-score {
-          position: absolute;
-          top: 20px;
-          right: 20px;
-          font-family: var(--font-serif);
-          font-size: 2.5rem;
-          color: var(--burnt-orange);
-          font-weight: 400;
-        }
-
-        .opp-card-body {
-          padding: 20px;
-        }
-
-        .opp-card-section-title {
-          font-size: 0.7rem;
-          font-weight: 700;
-          letter-spacing: 1px;
-          text-transform: uppercase;
-          color: var(--grey-400);
-          margin-bottom: 10px;
-        }
-
-        .opp-card-context {
-          background: rgba(255,255,255,0.04);
-          border-radius: 8px;
-          padding: 14px;
-        }
-
-        .opp-card-context-title {
-          font-size: 0.75rem;
-          font-weight: 600;
-          color: var(--white);
-          margin-bottom: 6px;
-        }
-
-        .opp-card-context-text {
-          font-size: 0.75rem;
-          color: var(--grey-400);
-          line-height: 1.5;
-        }
-
-        .opp-card-cta {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          margin-top: 16px;
-          padding: 12px;
-          background: var(--burnt-orange);
-          border-radius: 8px;
-          color: var(--white);
-          font-size: 0.85rem;
-          font-weight: 600;
-        }
-
-        /* Content Types Grid */
-        .content-types-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 12px;
-        }
-
-        .content-type-card {
-          background: rgba(255,255,255,0.04);
-          border-radius: 10px;
-          padding: 16px;
-          text-align: center;
-          border: 1px solid rgba(255,255,255,0.06);
-          transition: all 0.2s;
-        }
-
-        .content-type-card:hover {
-          background: rgba(255,255,255,0.08);
-          border-color: rgba(255,255,255,0.12);
-        }
-
-        .content-type-icon {
-          width: 40px;
-          height: 40px;
-          margin: 0 auto 10px;
-          border-radius: 10px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .content-type-label {
-          font-size: 0.75rem;
-          color: var(--grey-300);
-          font-weight: 500;
-        }
-
-        /* Campaign Flow */
-        .campaign-flow {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-        }
-
-        .campaign-stage {
-          display: flex;
-          align-items: center;
-          gap: 14px;
-          padding: 14px 16px;
-          background: rgba(255,255,255,0.04);
-          border-radius: 10px;
-          border: 1px solid rgba(255,255,255,0.06);
-        }
-
-        .campaign-stage-num {
-          width: 28px;
-          height: 28px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 0.75rem;
-          font-weight: 700;
-          flex-shrink: 0;
-        }
-
-        .campaign-stage-text {
-          flex: 1;
-        }
-
-        .campaign-stage-title {
-          font-size: 0.85rem;
-          color: var(--white);
-          font-weight: 600;
-          margin-bottom: 2px;
-        }
-
-        .campaign-stage-desc {
-          font-size: 0.7rem;
-          color: var(--grey-400);
-        }
-
-        .campaign-stage-status {
-          font-size: 0.65rem;
-          font-weight: 600;
-          padding: 4px 10px;
-          border-radius: 100px;
-          background: rgba(16, 185, 129, 0.2);
-          color: #34d399;
-        }
-
-        /* GEO Schema */
-        .geo-schema {
-          background: rgba(255,255,255,0.03);
-          border-radius: 12px;
-          padding: 20px;
-          border: 1px solid rgba(255,255,255,0.08);
-          font-family: 'SF Mono', 'Monaco', monospace;
-          font-size: 0.7rem;
-          color: var(--grey-300);
-          line-height: 1.6;
-        }
-
-        .geo-schema-key {
-          color: #60a5fa;
-        }
-
-        .geo-schema-string {
-          color: #34d399;
-        }
-
-        .geo-schema-bracket {
-          color: var(--grey-500);
-        }
-
-        .geo-llms {
-          display: flex;
-          gap: 12px;
-          margin-top: 16px;
-        }
-
-        .geo-llm {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 8px;
-          padding: 14px;
-          background: rgba(255,255,255,0.04);
-          border-radius: 10px;
-          border: 1px solid rgba(255,255,255,0.06);
-        }
-
-        .geo-llm-name {
-          font-size: 0.7rem;
-          color: var(--grey-300);
-          font-weight: 500;
-        }
-
-        .geo-llm-score {
-          font-size: 1.1rem;
-          font-weight: 700;
-          color: var(--burnt-orange);
-        }
-
-        /* Crisis Panel */
-        .crisis-panel {
-          background: linear-gradient(135deg, rgba(239,68,68,0.1) 0%, rgba(239,68,68,0.02) 100%);
-          border-radius: 12px;
-          padding: 24px;
-          border: 1px solid rgba(239,68,68,0.2);
-        }
-
-        .crisis-header {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          margin-bottom: 20px;
-        }
-
-        .crisis-status {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          font-size: 0.75rem;
-          font-weight: 600;
-          color: #34d399;
-        }
-
-        .crisis-status-dot {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          background: #34d399;
-          animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
-        }
-
-        .crisis-title {
-          font-size: 1rem;
-          font-weight: 600;
-          color: var(--white);
-        }
-
-        .crisis-scenarios {
-          display: grid;
-          grid-template-columns: repeat(2, 1fr);
-          gap: 10px;
-        }
-
-        .crisis-scenario {
-          background: rgba(255,255,255,0.04);
-          border-radius: 8px;
-          padding: 12px;
-          border: 1px solid rgba(255,255,255,0.06);
-        }
-
-        .crisis-scenario-title {
-          font-size: 0.75rem;
-          color: var(--white);
-          font-weight: 500;
-          margin-bottom: 4px;
-        }
-
-        .crisis-scenario-status {
-          font-size: 0.65rem;
-          color: #34d399;
-        }
-
-        /* NIV Chat */
-        .niv-chat {
-          display: flex;
-          flex-direction: column;
-          height: 100%;
-        }
-
-        .niv-messages {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-          padding: 20px;
-        }
-
-        .niv-message {
-          max-width: 85%;
-          padding: 12px 16px;
-          border-radius: 12px;
-          font-size: 0.85rem;
-          line-height: 1.5;
-        }
-
-        .niv-message.user {
-          align-self: flex-end;
-          background: var(--burnt-orange);
-          color: var(--white);
-          border-bottom-right-radius: 4px;
-        }
-
-        .niv-message.assistant {
-          align-self: flex-start;
-          background: rgba(255,255,255,0.08);
-          color: var(--grey-200);
-          border-bottom-left-radius: 4px;
-        }
-
-        .niv-input {
-          display: flex;
-          gap: 10px;
-          padding: 16px 20px;
-          background: rgba(255,255,255,0.03);
-          border-top: 1px solid rgba(255,255,255,0.08);
-        }
-
-        .niv-input-field {
-          flex: 1;
-          background: rgba(255,255,255,0.06);
-          border: 1px solid rgba(255,255,255,0.1);
-          border-radius: 8px;
-          padding: 10px 14px;
-          color: var(--white);
-          font-size: 0.85rem;
-        }
-
-        .niv-input-field::placeholder {
-          color: var(--grey-500);
-        }
-
-        .niv-send-btn {
-          width: 40px;
-          height: 40px;
-          border-radius: 8px;
-          background: var(--burnt-orange);
-          border: none;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-        }
-
-        /* CTA Section */
-        .platform-cta {
-          background: var(--charcoal);
-          padding: 100px 60px;
-          text-align: center;
-        }
-
-        .platform-cta-headline {
-          font-family: var(--font-serif);
-          font-size: clamp(2rem, 5vw, 3.5rem);
-          font-weight: 400;
-          color: var(--white);
-          margin-bottom: 24px;
-        }
-
-        .platform-cta-headline .italic {
-          font-style: italic;
-          color: var(--burnt-orange);
-        }
-
-        .platform-cta-text {
-          font-size: 1.1rem;
-          color: var(--grey-400);
-          margin-bottom: 40px;
-          max-width: 600px;
-          margin-left: auto;
-          margin-right: auto;
-        }
-
-        .platform-cta-button {
-          display: inline-flex;
-          align-items: center;
-          gap: 12px;
-          padding: 18px 40px;
-          background: var(--burnt-orange);
-          color: var(--white);
-          border: none;
-          border-radius: 8px;
-          font-size: 1rem;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-
-        .platform-cta-button:hover {
-          background: #b5522f;
-          transform: translateY(-2px);
-        }
-
-        @media (max-width: 1024px) {
-          .platform-section-content {
-            grid-template-columns: 1fr;
-            gap: 30px;
-          }
-
-          .platform-visual {
-            min-height: 350px;
-          }
-        }
-
-        @media (max-width: 768px) {
-          .platform-nav {
-            padding: 16px 24px;
-          }
-
-          .platform-hero {
-            padding: 140px 24px 60px;
-          }
-
-          .platform-sections {
-            padding: 40px 24px 80px;
-          }
-
-          .platform-cta {
-            padding: 60px 24px;
-          }
-
-          .content-types-grid {
-            grid-template-columns: repeat(2, 1fr);
-          }
-
-          .crisis-scenarios {
-            grid-template-columns: 1fr;
-          }
-        }
-      `}</style>
-
+    <div className="min-h-screen bg-[#0a0a0a]">
       {/* Navigation */}
-      <nav className="platform-nav">
-        <Link href="/" className="platform-nav-logo">
-          <svg width="80" height="48" viewBox="0 0 80 48">
-            <path d="M10 0 H80 V48 H0 L10 0 Z" fill="#1a1a1a" />
-            <text x="40" y="33" textAnchor="middle" fontFamily="Space Grotesk, sans-serif" fontSize="22" fontWeight="700" fill="#faf9f7" letterSpacing="-0.5">NIV</text>
-            <path d="M68 0 H80 V12 L68 0 Z" fill="#c75d3a" />
-          </svg>
-          <span style={{ color: 'var(--grey-400)', fontSize: '12px', letterSpacing: '1px', marginTop: '6px' }}>by nivria</span>
-        </Link>
-
-        <button onClick={() => router.push('/auth/signup')} className="platform-nav-cta">
-          Get Started
-        </button>
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0a0a0a]/90 backdrop-blur-md border-b border-[#1a1a1a]">
+        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
+              <span className="text-[#0a0a0a] font-bold text-sm" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>NIV</span>
+            </div>
+            <span className="text-white font-medium" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>SignalDesk</span>
+          </Link>
+          <button
+            onClick={() => router.push('/auth/signup')}
+            className="px-5 py-2 bg-[#c75d3a] text-white text-sm font-medium rounded-lg hover:bg-[#e07b5a] transition-colors"
+            style={{ fontFamily: 'Space Grotesk, sans-serif' }}
+          >
+            Get Started
+          </button>
+        </div>
       </nav>
 
-      {/* Hero */}
-      <section className="platform-hero">
-        <p className="platform-hero-tagline">Platform Capabilities</p>
-        <h1 className="platform-hero-headline">
-          The intelligence-to-action <span className="italic">loop</span>
-        </h1>
-        <p className="platform-hero-intro">
-          NIV transforms scattered signals into strategic action. Monitor your landscape, detect opportunities, execute campaigns, and optimize for AI search — all in one platform.
-        </p>
+      {/* Hero Section */}
+      <section className="pt-32 pb-20 px-6">
+        <div className="max-w-4xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#c75d3a]/10 border border-[#c75d3a]/30 rounded-full mb-6">
+            <span className="text-[#c75d3a] text-xs font-medium tracking-wider uppercase" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>Platform Capabilities</span>
+          </div>
+          <h1 className="text-5xl md:text-6xl text-white mb-6 leading-tight" style={{ fontFamily: 'Playfair Display, serif' }}>
+            Strategic Intelligence,<br /><em className="text-[#c75d3a]">Automated</em>
+          </h1>
+          <p className="text-xl text-[#9e9e9e] max-w-2xl mx-auto" style={{ fontFamily: 'Inter, sans-serif' }}>
+            From signal detection to campaign execution, NIV orchestrates your entire communications strategy with AI-powered precision.
+          </p>
+        </div>
       </section>
 
-      {/* Sections */}
-      <div className="platform-sections">
-
-        {/* Intelligence Hub */}
-        <section className="platform-section">
-          <div className="platform-section-header">
-            <div className="platform-section-icon" style={{ background: 'rgba(59, 130, 246, 0.1)' }}>
-              <Activity size={28} style={{ color: '#3b82f6' }} />
-            </div>
-            <div className="platform-section-text">
-              <p className="platform-section-tagline" style={{ color: '#3b82f6' }}>MONITOR</p>
-              <h2 className="platform-section-title">Intelligence Hub</h2>
-              <p className="platform-section-headline">100+ sources synthesized into executive-ready briefings. Know what matters before it matters.</p>
-            </div>
-          </div>
-
-          <div className="platform-section-content">
-            <div className="platform-section-features">
-              <div className="platform-feature">
-                <div className="platform-feature-icon" style={{ background: 'rgba(59, 130, 246, 0.1)' }}>
-                  <Globe size={18} style={{ color: '#3b82f6' }} />
-                </div>
-                <div className="platform-feature-text">
-                  <div className="platform-feature-label">Multi-source surveillance</div>
-                  <div className="platform-feature-detail">Industry news, competitors, stakeholders across premium and niche outlets</div>
-                </div>
+      {/* Section 1: Intelligence Hub */}
+      <section className="py-24 px-6 border-t border-[#1a1a1a]">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-16 items-start">
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <Brain className="w-5 h-5 text-[#c75d3a]" />
+                <span className="text-[#c75d3a] text-xs font-semibold tracking-[0.2em] uppercase" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>Intelligence Hub</span>
               </div>
-              <div className="platform-feature">
-                <div className="platform-feature-icon" style={{ background: 'rgba(59, 130, 246, 0.1)' }}>
-                  <FileText size={18} style={{ color: '#3b82f6' }} />
-                </div>
-                <div className="platform-feature-text">
-                  <div className="platform-feature-label">Executive synthesis</div>
-                  <div className="platform-feature-detail">Daily briefings that cut through noise to what matters for YOUR organization</div>
-                </div>
-              </div>
-              <div className="platform-feature">
-                <div className="platform-feature-icon" style={{ background: 'rgba(59, 130, 246, 0.1)' }}>
-                  <TrendingUp size={18} style={{ color: '#3b82f6' }} />
-                </div>
-                <div className="platform-feature-text">
-                  <div className="platform-feature-label">Predictive signals</div>
-                  <div className="platform-feature-detail">Pattern detection identifies emerging trends before they become obvious</div>
-                </div>
-              </div>
-              <div className="platform-differentiator">
-                Not just monitoring — it THINKS about what matters to your organization
-              </div>
+              <h2 className="text-4xl text-white mb-6" style={{ fontFamily: 'Playfair Display, serif' }}>
+                Executive Intelligence Briefs
+              </h2>
+              <p className="text-[#9e9e9e] text-lg mb-8" style={{ fontFamily: 'Inter, sans-serif' }}>
+                NIV continuously monitors market signals, competitor movements, and industry developments to deliver actionable executive briefings with strategic recommendations.
+              </p>
+              <ul className="space-y-3">
+                {['Real-time signal analysis', 'Competitive intelligence', 'Strategic implications', 'Priority action items'].map((item, i) => (
+                  <li key={i} className="flex items-center gap-3 text-[#bdbdbd]">
+                    <div className="w-5 h-5 rounded-full bg-[#c75d3a]/10 flex items-center justify-center">
+                      <Check className="w-3 h-3 text-[#c75d3a]" />
+                    </div>
+                    {item}
+                  </li>
+                ))}
+              </ul>
             </div>
 
-            <div className="platform-visual">
-              <div className="platform-visual-header">
-                <div className="platform-visual-dot red" />
-                <div className="platform-visual-dot yellow" />
-                <div className="platform-visual-dot green" />
-                <span className="platform-visual-title">Executive Intelligence Brief</span>
-              </div>
-              <div className="platform-visual-content">
-                <div className="intel-brief">
-                  <div className="intel-brief-header">
-                    <span className="intel-brief-title">Daily Intelligence Report</span>
-                    <span className="intel-brief-date">Dec 2, 2024</span>
+            {/* Intelligence Brief Mockup */}
+            <div className="bg-[#1a1a1a] rounded-2xl border border-[#2e2e2e] overflow-hidden">
+              {/* Brief Header */}
+              <div className="p-6 border-b border-[#2e2e2e]">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <div className="text-[#c75d3a] text-xs font-semibold tracking-[0.15em] uppercase mb-1" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>Executive Intelligence Brief</div>
+                    <div className="text-[#757575] text-sm">December 2, 2024 • 47 signals analyzed</div>
                   </div>
-                  <div className="intel-brief-section">
-                    <div className="intel-brief-section-title">Priority Signals</div>
-                    <div className="intel-brief-item high">
-                      <div className="intel-brief-item-title">Competitor announces strategic pivot</div>
-                      <div className="intel-brief-item-meta">HIGH PRIORITY • 3 sources • Action required</div>
-                    </div>
-                    <div className="intel-brief-item medium">
-                      <div className="intel-brief-item-title">Industry regulation update pending</div>
-                      <div className="intel-brief-item-meta">MEDIUM • 5 sources • Monitor closely</div>
-                    </div>
-                    <div className="intel-brief-item low">
-                      <div className="intel-brief-item-title">Market sentiment shifting positive</div>
-                      <div className="intel-brief-item-meta">OPPORTUNITY • 8 sources • Consider action</div>
-                    </div>
-                  </div>
-                  <div className="intel-brief-section">
-                    <div className="intel-brief-section-title">Stakeholder Activity</div>
-                    <div className="intel-brief-item medium">
-                      <div className="intel-brief-item-title">Key journalist covering your space</div>
-                      <div className="intel-brief-item-meta">Bloomberg • 2 recent articles • Outreach suggested</div>
-                    </div>
+                  <div className="px-3 py-1 bg-[#c75d3a]/10 rounded-full">
+                    <span className="text-[#c75d3a] text-xs font-medium">LIVE</span>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-        </section>
 
-        {/* Opportunity Engine */}
-        <section className="platform-section">
-          <div className="platform-section-header">
-            <div className="platform-section-icon" style={{ background: 'rgba(245, 158, 11, 0.1)' }}>
-              <Zap size={28} style={{ color: '#f59e0b' }} />
-            </div>
-            <div className="platform-section-text">
-              <p className="platform-section-tagline" style={{ color: '#f59e0b' }}>DETECT</p>
-              <h2 className="platform-section-title">Opportunity Engine</h2>
-              <p className="platform-section-headline">AI identifies strategic moments and hands you ready-to-execute campaign blueprints.</p>
-            </div>
-          </div>
+              {/* Executive Summary */}
+              <div className="p-6 border-b border-[#2e2e2e]">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-2 h-2 rounded-full bg-[#c75d3a]"></div>
+                  <span className="text-white text-sm font-semibold" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>EXECUTIVE SUMMARY</span>
+                </div>
+                <p className="text-[#bdbdbd] leading-relaxed" style={{ fontFamily: 'Playfair Display, serif', fontStyle: 'italic' }}>
+                  "Market conditions have shifted significantly this quarter with three major competitors announcing AI partnerships. Your positioning as an innovation leader creates a <span className="text-[#c75d3a]">72-hour window</span> to establish thought leadership before the narrative solidifies..."
+                </p>
+              </div>
 
-          <div className="platform-section-content">
-            <div className="platform-section-features">
-              <div className="platform-feature">
-                <div className="platform-feature-icon" style={{ background: 'rgba(245, 158, 11, 0.1)' }}>
-                  <Target size={18} style={{ color: '#f59e0b' }} />
+              {/* Key Developments */}
+              <div className="p-6 border-b border-[#2e2e2e]">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-2 h-2 rounded-full bg-[#c75d3a]"></div>
+                  <span className="text-white text-sm font-semibold" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>KEY DEVELOPMENTS</span>
                 </div>
-                <div className="platform-feature-text">
-                  <div className="platform-feature-label">Auto-generated opportunities</div>
-                  <div className="platform-feature-detail">AI identifies strategic moments from your intelligence feed</div>
-                </div>
-              </div>
-              <div className="platform-feature">
-                <div className="platform-feature-icon" style={{ background: 'rgba(245, 158, 11, 0.1)' }}>
-                  <Layers size={18} style={{ color: '#f59e0b' }} />
-                </div>
-                <div className="platform-feature-text">
-                  <div className="platform-feature-label">Full campaign blueprints</div>
-                  <div className="platform-feature-detail">Complete execution plans with stakeholder targeting and content strategies</div>
-                </div>
-              </div>
-              <div className="platform-feature">
-                <div className="platform-feature-icon" style={{ background: 'rgba(245, 158, 11, 0.1)' }}>
-                  <Zap size={18} style={{ color: '#f59e0b' }} />
-                </div>
-                <div className="platform-feature-text">
-                  <div className="platform-feature-label">One-click activation</div>
-                  <div className="platform-feature-detail">From opportunity detection to live campaign execution instantly</div>
-                </div>
-              </div>
-              <div className="platform-differentiator">
-                Other tools alert you. NIV hands you a ready-to-execute campaign.
-              </div>
-            </div>
-
-            <div className="platform-visual">
-              <div className="platform-visual-header">
-                <div className="platform-visual-dot red" />
-                <div className="platform-visual-dot yellow" />
-                <div className="platform-visual-dot green" />
-                <span className="platform-visual-title">Opportunity Engine</span>
-              </div>
-              <div className="platform-visual-content">
-                <div className="opp-card" style={{ position: 'relative' }}>
-                  <div className="opp-card-header">
-                    <div className="opp-card-title">Market Positioning: Capitalize on Competitor Weakness</div>
-                    <div className="opp-card-desc">Recent competitor missteps create perfect window for thought leadership positioning and market share capture.</div>
-                    <div className="opp-card-badges">
-                      <span className="opp-card-badge high">HIGH URGENCY</span>
-                      <span className="opp-card-badge score">3 STAKEHOLDER GROUPS</span>
+                <div className="space-y-3">
+                  <div className="bg-[#212121] rounded-lg p-4 border border-[#2e2e2e]">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="px-2 py-0.5 bg-red-500/10 text-red-400 text-xs rounded">COMPETITIVE</span>
+                      <span className="text-[#757575] text-xs">TODAY</span>
                     </div>
-                    <div className="opp-card-score">88</div>
+                    <p className="text-[#e0e0e0] text-sm">TechRival announces Azure AI integration partnership</p>
+                    <p className="text-[#757575] text-xs mt-1">Impact: Threatens market positioning</p>
                   </div>
-                  <div className="opp-card-body">
-                    <div className="opp-card-section-title">Strategic Context</div>
-                    <div className="opp-card-context">
-                      <div className="opp-card-context-title">WHY NOW</div>
-                      <div className="opp-card-context-text">Competitor's recent announcement creates 2-3 week window for counter-positioning. Market sentiment shifting in your favor.</div>
+                  <div className="bg-[#212121] rounded-lg p-4 border border-[#2e2e2e]">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 text-xs rounded">INDUSTRY</span>
+                      <span className="text-[#757575] text-xs">2 DAYS AGO</span>
                     </div>
-                    <div className="opp-card-cta">
-                      <Zap size={16} />
-                      Execute Campaign
-                    </div>
+                    <p className="text-[#e0e0e0] text-sm">New regulatory framework published for AI compliance</p>
+                    <p className="text-[#757575] text-xs mt-1">Impact: Creates thought leadership opportunity</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Priority Signals Sidebar */}
+              <div className="p-6 bg-[#212121]">
+                <div className="flex items-center gap-2 mb-4">
+                  <AlertTriangle className="w-4 h-4 text-[#c75d3a]" />
+                  <span className="text-white text-sm font-semibold" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>PRIORITY SIGNALS</span>
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <div className="text-red-400 text-xs font-semibold mb-1">IMMEDIATE THREATS</div>
+                    <ul className="text-[#9e9e9e] text-sm space-y-1">
+                      <li className="flex items-start gap-2"><span className="text-red-400">•</span>Competitor narrative gaining Tier-1 traction</li>
+                      <li className="flex items-start gap-2"><span className="text-red-400">•</span>Key analyst shifting perspective</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <div className="text-[#c75d3a] text-xs font-semibold mb-1">OPPORTUNITIES</div>
+                    <ul className="text-[#9e9e9e] text-sm space-y-1">
+                      <li className="flex items-start gap-2"><span className="text-[#c75d3a]">•</span>Industry award nomination window open</li>
+                      <li className="flex items-start gap-2"><span className="text-[#c75d3a]">•</span>Speaking slot available at TechConf</li>
+                    </ul>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Studio */}
-        <section className="platform-section">
-          <div className="platform-section-header">
-            <div className="platform-section-icon" style={{ background: 'rgba(139, 92, 246, 0.1)' }}>
-              <Sparkles size={28} style={{ color: '#8b5cf6' }} />
+      {/* Section 2: Opportunity Engine */}
+      <section className="py-24 px-6 bg-[#0d0d0d] border-t border-[#1a1a1a]">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-16 items-start">
+            {/* Opportunity Card Mockup */}
+            <div className="bg-[#1a1a1a] rounded-2xl border border-[#2e2e2e] overflow-hidden">
+              {/* Card Header */}
+              <div className="p-6 border-b border-[#2e2e2e]">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-4">
+                    <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-green-500/20 to-green-600/10 border border-green-500/30 flex items-center justify-center">
+                      <span className="text-green-400 text-2xl font-bold" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>92</span>
+                    </div>
+                    <div>
+                      <h3 className="text-white text-lg font-semibold mb-1" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>AI Partnership Response Strategy</h3>
+                      <p className="text-[#9e9e9e] text-sm">Position as the established leader in enterprise AI before competitor narrative solidifies</p>
+                      <div className="flex items-center gap-3 mt-2">
+                        <span className="text-[#757575] text-xs">leadership</span>
+                        <span className="text-[#757575] text-xs">•</span>
+                        <span className="text-[#757575] text-xs">12 content items</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-1 bg-red-500/10 text-red-400 text-xs font-semibold rounded border border-red-500/30">HIGH</span>
+                    <span className="px-2 py-1 bg-[#c75d3a]/10 text-[#c75d3a] text-xs font-semibold rounded border border-[#c75d3a]/30">EXECUTED</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Strategic Context */}
+              <div className="p-6 border-b border-[#2e2e2e]">
+                <div className="text-white text-sm font-semibold mb-4" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>STRATEGIC CONTEXT</div>
+
+                <div className="bg-[#212121] rounded-lg p-4 border border-[#2e2e2e] mb-3">
+                  <div className="text-[#757575] text-xs font-semibold mb-2">TRIGGER EVENTS</div>
+                  <ul className="text-[#bdbdbd] text-sm space-y-1">
+                    <li className="flex items-start gap-2"><ChevronRight className="w-3 h-3 text-[#c75d3a] mt-1 flex-shrink-0" />TechRival announces Azure AI integration</li>
+                    <li className="flex items-start gap-2"><ChevronRight className="w-3 h-3 text-[#c75d3a] mt-1 flex-shrink-0" />Industry report shows 40% AI adoption increase</li>
+                    <li className="flex items-start gap-2"><ChevronRight className="w-3 h-3 text-[#c75d3a] mt-1 flex-shrink-0" />Key analyst publishes competitive comparison</li>
+                  </ul>
+                </div>
+
+                <div className="bg-[#c75d3a]/5 rounded-lg p-4 border border-[#c75d3a]/20">
+                  <div className="text-[#c75d3a] text-xs font-semibold mb-2">WHY NOW</div>
+                  <p className="text-[#bdbdbd] text-sm">72-hour window before competitor narrative becomes the default industry framing. Early movers will shape the conversation and capture media attention.</p>
+                </div>
+              </div>
+
+              {/* Content to be Generated */}
+              <div className="p-6 bg-[#212121]">
+                <div className="text-white text-sm font-semibold mb-4" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>CONTENT TO BE GENERATED</div>
+                <div className="space-y-2">
+                  {[
+                    { icon: FileText, type: 'Press Release', target: 'Industry Analysts', timing: 'immediate', timingColor: 'text-[#c75d3a] bg-[#c75d3a]/10' },
+                    { icon: Hash, type: 'Social Thread', target: 'Tech Community', timing: 'immediate', timingColor: 'text-[#c75d3a] bg-[#c75d3a]/10' },
+                    { icon: Mail, type: 'Media Pitch', target: 'Tier-1 Journalists', timing: 'this_week', timingColor: 'text-[#757575] bg-[#3d3d3d]' },
+                    { icon: BookOpen, type: 'Thought Leadership', target: 'Enterprise Buyers', timing: 'this_week', timingColor: 'text-[#757575] bg-[#3d3d3d]' },
+                    { icon: Megaphone, type: 'Talking Points', target: 'Executive Team', timing: 'immediate', timingColor: 'text-[#c75d3a] bg-[#c75d3a]/10' },
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-center justify-between p-3 bg-[#1a1a1a] rounded-lg border border-[#2e2e2e]">
+                      <div className="flex items-center gap-3">
+                        <item.icon className="w-4 h-4 text-[#c75d3a]" />
+                        <span className="text-white text-sm">{item.type}</span>
+                        <span className="text-[#757575] text-xs">→</span>
+                        <span className="text-[#9e9e9e] text-sm">{item.target}</span>
+                      </div>
+                      <span className={`px-2 py-0.5 text-xs rounded ${item.timingColor}`}>{item.timing}</span>
+                    </div>
+                  ))}
+                </div>
+                <button className="w-full mt-4 py-3 bg-[#c75d3a] text-white font-semibold rounded-lg hover:bg-[#e07b5a] transition-colors flex items-center justify-center gap-2">
+                  <Zap className="w-4 h-4" />
+                  Execute Campaign - Generate All Content
+                </button>
+              </div>
             </div>
-            <div className="platform-section-text">
-              <p className="platform-section-tagline" style={{ color: '#8b5cf6' }}>CREATE</p>
-              <h2 className="platform-section-title">Studio</h2>
-              <p className="platform-section-headline">40+ content types. Press releases to presentations. All informed by your intelligence.</p>
+
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <Target className="w-5 h-5 text-[#c75d3a]" />
+                <span className="text-[#c75d3a] text-xs font-semibold tracking-[0.2em] uppercase" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>Opportunity Engine</span>
+              </div>
+              <h2 className="text-4xl text-white mb-6" style={{ fontFamily: 'Playfair Display, serif' }}>
+                One-Click Campaign Execution
+              </h2>
+              <p className="text-[#9e9e9e] text-lg mb-8" style={{ fontFamily: 'Inter, sans-serif' }}>
+                NIV identifies strategic opportunities from market signals and creates complete execution plans. One click generates all campaign content—press releases, social posts, pitches, and more.
+              </p>
+              <ul className="space-y-3">
+                {['Automatic opportunity scoring', 'Strategic context analysis', 'Multi-stakeholder campaign plans', 'Full content generation'].map((item, i) => (
+                  <li key={i} className="flex items-center gap-3 text-[#bdbdbd]">
+                    <div className="w-5 h-5 rounded-full bg-[#c75d3a]/10 flex items-center justify-center">
+                      <Check className="w-3 h-3 text-[#c75d3a]" />
+                    </div>
+                    {item}
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
+        </div>
+      </section>
 
-          <div className="platform-section-content">
-            <div className="platform-section-features">
-              <div className="platform-feature">
-                <div className="platform-feature-icon" style={{ background: 'rgba(139, 92, 246, 0.1)' }}>
-                  <FileText size={18} style={{ color: '#8b5cf6' }} />
-                </div>
-                <div className="platform-feature-text">
-                  <div className="platform-feature-label">40+ content types</div>
-                  <div className="platform-feature-detail">Press releases, bylines, social posts, talking points, media plans, and more</div>
-                </div>
+      {/* Section 3: Studio */}
+      <section className="py-24 px-6 border-t border-[#1a1a1a]">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-16 items-start">
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <Palette className="w-5 h-5 text-[#c75d3a]" />
+                <span className="text-[#c75d3a] text-xs font-semibold tracking-[0.2em] uppercase" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>Studio</span>
               </div>
-              <div className="platform-feature">
-                <div className="platform-feature-icon" style={{ background: 'rgba(139, 92, 246, 0.1)' }}>
-                  <Presentation size={18} style={{ color: '#8b5cf6' }} />
-                </div>
-                <div className="platform-feature-text">
-                  <div className="platform-feature-label">Executive presentations</div>
-                  <div className="platform-feature-detail">Board-ready decks generated with your data and strategic insights</div>
-                </div>
-              </div>
-              <div className="platform-feature">
-                <div className="platform-feature-icon" style={{ background: 'rgba(139, 92, 246, 0.1)' }}>
-                  <Video size={18} style={{ color: '#8b5cf6' }} />
-                </div>
-                <div className="platform-feature-text">
-                  <div className="platform-feature-label">Visual generation</div>
-                  <div className="platform-feature-detail">Images, videos, and presentations with AI-powered creation</div>
-                </div>
-              </div>
-              <div className="platform-differentiator">
-                Not templates — strategically-informed content that knows your voice
+              <h2 className="text-4xl text-white mb-6" style={{ fontFamily: 'Playfair Display, serif' }}>
+                AI-Powered Content Creation
+              </h2>
+              <p className="text-[#9e9e9e] text-lg mb-8" style={{ fontFamily: 'Inter, sans-serif' }}>
+                Generate any type of communications content with organizational context. From press releases to executive statements, NIV creates on-brand content informed by your Memory Vault.
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                {[
+                  { label: 'Written', items: 'Press Release, Blog, Thought Leadership' },
+                  { label: 'Social', items: 'LinkedIn, Twitter Thread, Instagram' },
+                  { label: 'Executive', items: 'Statements, Board Decks, Investor Updates' },
+                  { label: 'Media', items: 'Pitches, Media Lists, Interview Prep' },
+                ].map((cat, i) => (
+                  <div key={i} className="p-4 bg-[#1a1a1a] rounded-lg border border-[#2e2e2e]">
+                    <div className="text-[#c75d3a] text-xs font-semibold mb-2" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>{cat.label}</div>
+                    <div className="text-[#9e9e9e] text-sm">{cat.items}</div>
+                  </div>
+                ))}
               </div>
             </div>
 
-            <div className="platform-visual">
-              <div className="platform-visual-header">
-                <div className="platform-visual-dot red" />
-                <div className="platform-visual-dot yellow" />
-                <div className="platform-visual-dot green" />
-                <span className="platform-visual-title">Content Types</span>
-              </div>
-              <div className="platform-visual-content">
-                <div className="content-types-grid">
-                  <div className="content-type-card">
-                    <div className="content-type-icon" style={{ background: 'rgba(59, 130, 246, 0.15)' }}>
-                      <FileText size={20} style={{ color: '#3b82f6' }} />
-                    </div>
-                    <div className="content-type-label">Press Release</div>
+            {/* Studio Content Examples Mockup */}
+            <div className="space-y-4">
+              {/* Press Release Example */}
+              <div className="bg-[#1a1a1a] rounded-xl border border-[#2e2e2e] overflow-hidden">
+                <div className="px-4 py-3 border-b border-[#2e2e2e] flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-[#c75d3a]" />
+                    <span className="text-white text-sm font-medium">Press Release</span>
                   </div>
-                  <div className="content-type-card">
-                    <div className="content-type-icon" style={{ background: 'rgba(139, 92, 246, 0.15)' }}>
-                      <Presentation size={20} style={{ color: '#8b5cf6' }} />
-                    </div>
-                    <div className="content-type-label">Presentation</div>
-                  </div>
-                  <div className="content-type-card">
-                    <div className="content-type-icon" style={{ background: 'rgba(236, 72, 153, 0.15)' }}>
-                      <MessageSquare size={20} style={{ color: '#ec4899' }} />
-                    </div>
-                    <div className="content-type-label">Social Post</div>
-                  </div>
-                  <div className="content-type-card">
-                    <div className="content-type-icon" style={{ background: 'rgba(16, 185, 129, 0.15)' }}>
-                      <Mail size={20} style={{ color: '#10b981' }} />
-                    </div>
-                    <div className="content-type-label">Media Pitch</div>
-                  </div>
-                  <div className="content-type-card">
-                    <div className="content-type-icon" style={{ background: 'rgba(245, 158, 11, 0.15)' }}>
-                      <BookOpen size={20} style={{ color: '#f59e0b' }} />
-                    </div>
-                    <div className="content-type-label">Byline Article</div>
-                  </div>
-                  <div className="content-type-card">
-                    <div className="content-type-icon" style={{ background: 'rgba(239, 68, 68, 0.15)' }}>
-                      <Mic size={20} style={{ color: '#ef4444' }} />
-                    </div>
-                    <div className="content-type-label">Talking Points</div>
-                  </div>
-                  <div className="content-type-card">
-                    <div className="content-type-icon" style={{ background: 'rgba(6, 182, 212, 0.15)' }}>
-                      <ImageIcon size={20} style={{ color: '#06b6d4' }} />
-                    </div>
-                    <div className="content-type-label">Image</div>
-                  </div>
-                  <div className="content-type-card">
-                    <div className="content-type-icon" style={{ background: 'rgba(168, 85, 247, 0.15)' }}>
-                      <Video size={20} style={{ color: '#a855f7' }} />
-                    </div>
-                    <div className="content-type-label">Video</div>
-                  </div>
-                  <div className="content-type-card">
-                    <div className="content-type-icon" style={{ background: 'rgba(34, 197, 94, 0.15)' }}>
-                      <BarChart3 size={20} style={{ color: '#22c55e' }} />
-                    </div>
-                    <div className="content-type-label">Media Plan</div>
-                  </div>
+                  <span className="text-[#757575] text-xs">Generated</span>
+                </div>
+                <div className="p-5">
+                  <div className="text-[#757575] text-xs tracking-wider mb-3">FOR IMMEDIATE RELEASE</div>
+                  <h4 className="text-white text-lg font-semibold mb-3" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                    Acme Corp Announces Industry-First AI Integration Platform, Transforming Enterprise Workflows
+                  </h4>
+                  <p className="text-[#9e9e9e] text-sm leading-relaxed mb-3">
+                    <span className="text-[#bdbdbd]">SAN FRANCISCO – December 2, 2024</span> – Acme Corp, the leading provider of enterprise automation solutions, today announced the launch of AIFlow, a groundbreaking platform that seamlessly integrates artificial intelligence...
+                  </p>
+                  <p className="text-[#9e9e9e] text-sm leading-relaxed italic" style={{ fontFamily: 'Playfair Display, serif' }}>
+                    "This represents a fundamental shift in how enterprises approach automation," said Jane Smith, CEO of Acme Corp. "We've spent two years developing technology that..."
+                  </p>
                 </div>
               </div>
-            </div>
-          </div>
-        </section>
 
-        {/* Campaign Builder */}
-        <section className="platform-section">
-          <div className="platform-section-header">
-            <div className="platform-section-icon" style={{ background: 'rgba(16, 185, 129, 0.1)' }}>
-              <Target size={28} style={{ color: '#10b981' }} />
-            </div>
-            <div className="platform-section-text">
-              <p className="platform-section-tagline" style={{ color: '#10b981' }}>ORCHESTRATE</p>
-              <h2 className="platform-section-title">Campaign Builder</h2>
-              <p className="platform-section-headline">VECTOR and GEO-VECTOR campaigns. From intent to execution with strategic refinement at every stage.</p>
-            </div>
-          </div>
+              {/* Two Column: LinkedIn + Executive Statement */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-[#1a1a1a] rounded-xl border border-[#2e2e2e] overflow-hidden">
+                  <div className="px-4 py-3 border-b border-[#2e2e2e] flex items-center gap-2">
+                    <Hash className="w-4 h-4 text-[#c75d3a]" />
+                    <span className="text-white text-sm font-medium">LinkedIn Post</span>
+                  </div>
+                  <div className="p-4">
+                    <p className="text-[#bdbdbd] text-sm leading-relaxed">
+                      🚀 Excited to share that we've just launched AIFlow — transforming how enterprises work.
+                      <br /><br />
+                      After 18 months of development with Fortune 500 beta partners, we've proven that AI automation can deliver 40% efficiency gains...
+                    </p>
+                  </div>
+                </div>
 
-          <div className="platform-section-content">
-            <div className="platform-section-features">
-              <div className="platform-feature">
-                <div className="platform-feature-icon" style={{ background: 'rgba(16, 185, 129, 0.1)' }}>
-                  <Target size={18} style={{ color: '#10b981' }} />
-                </div>
-                <div className="platform-feature-text">
-                  <div className="platform-feature-label">VECTOR campaigns</div>
-                  <div className="platform-feature-detail">Multi-stage campaign planning: intent → research → positioning → blueprint → execution</div>
-                </div>
-              </div>
-              <div className="platform-feature">
-                <div className="platform-feature-icon" style={{ background: 'rgba(16, 185, 129, 0.1)' }}>
-                  <Globe size={18} style={{ color: '#10b981' }} />
-                </div>
-                <div className="platform-feature-text">
-                  <div className="platform-feature-label">GEO-VECTOR campaigns</div>
-                  <div className="platform-feature-detail">AI search optimization — own the narrative in ChatGPT, Gemini, and Perplexity</div>
-                </div>
-              </div>
-              <div className="platform-feature">
-                <div className="platform-feature-icon" style={{ background: 'rgba(16, 185, 129, 0.1)' }}>
-                  <RefreshCw size={18} style={{ color: '#10b981' }} />
-                </div>
-                <div className="platform-feature-text">
-                  <div className="platform-feature-label">Refinement loops</div>
-                  <div className="platform-feature-detail">Iterate and improve at every stage — research, positioning, blueprint, execution</div>
-                </div>
-              </div>
-              <div className="platform-differentiator">
-                The only platform with native AI search optimization built into campaign planning
-              </div>
-            </div>
-
-            <div className="platform-visual">
-              <div className="platform-visual-header">
-                <div className="platform-visual-dot red" />
-                <div className="platform-visual-dot yellow" />
-                <div className="platform-visual-dot green" />
-                <span className="platform-visual-title">Campaign Flow</span>
-              </div>
-              <div className="platform-visual-content">
-                <div className="campaign-flow">
-                  <div className="campaign-stage">
-                    <div className="campaign-stage-num" style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#10b981' }}>1</div>
-                    <div className="campaign-stage-text">
-                      <div className="campaign-stage-title">Intent Capture</div>
-                      <div className="campaign-stage-desc">Define your campaign goal and objectives</div>
-                    </div>
-                    <span className="campaign-stage-status">COMPLETE</span>
+                <div className="bg-[#1a1a1a] rounded-xl border border-[#2e2e2e] overflow-hidden">
+                  <div className="px-4 py-3 border-b border-[#2e2e2e] flex items-center gap-2">
+                    <Users className="w-4 h-4 text-[#c75d3a]" />
+                    <span className="text-white text-sm font-medium">Executive Statement</span>
                   </div>
-                  <div className="campaign-stage">
-                    <div className="campaign-stage-num" style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#10b981' }}>2</div>
-                    <div className="campaign-stage-text">
-                      <div className="campaign-stage-title">Strategic Research</div>
-                      <div className="campaign-stage-desc">Stakeholder analysis, narrative landscape, channel intelligence</div>
-                    </div>
-                    <span className="campaign-stage-status">COMPLETE</span>
-                  </div>
-                  <div className="campaign-stage">
-                    <div className="campaign-stage-num" style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#10b981' }}>3</div>
-                    <div className="campaign-stage-text">
-                      <div className="campaign-stage-title">Positioning Options</div>
-                      <div className="campaign-stage-desc">Multiple strategic angles with strengths and risks</div>
-                    </div>
-                    <span className="campaign-stage-status">COMPLETE</span>
-                  </div>
-                  <div className="campaign-stage">
-                    <div className="campaign-stage-num" style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b' }}>4</div>
-                    <div className="campaign-stage-text">
-                      <div className="campaign-stage-title">Blueprint Generation</div>
-                      <div className="campaign-stage-desc">Full campaign blueprint with stakeholder-specific tactics</div>
-                    </div>
-                    <span className="campaign-stage-status" style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b' }}>IN PROGRESS</span>
-                  </div>
-                  <div className="campaign-stage">
-                    <div className="campaign-stage-num" style={{ background: 'rgba(255, 255, 255, 0.1)', color: 'var(--grey-400)' }}>5</div>
-                    <div className="campaign-stage-text">
-                      <div className="campaign-stage-title">Content Execution</div>
-                      <div className="campaign-stage-desc">Generate all campaign content with one click</div>
-                    </div>
+                  <div className="p-4">
+                    <p className="text-[#bdbdbd] text-sm leading-relaxed italic" style={{ fontFamily: 'Playfair Display, serif' }}>
+                      "Our commitment to innovation has never been stronger. Today marks a pivotal moment in our company's journey toward redefining what's possible..."
+                    </p>
+                    <p className="text-[#757575] text-xs mt-3">— Jane Smith, CEO</p>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* GEO Intelligence */}
-        <section className="platform-section">
-          <div className="platform-section-header">
-            <div className="platform-section-icon" style={{ background: 'rgba(6, 182, 212, 0.1)' }}>
-              <Globe size={28} style={{ color: '#06b6d4' }} />
+      {/* Section 4: VECTOR Campaign Builder */}
+      <section className="py-24 px-6 bg-[#0d0d0d] border-t border-[#1a1a1a]">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <Layers className="w-5 h-5 text-[#c75d3a]" />
+              <span className="text-[#c75d3a] text-xs font-semibold tracking-[0.2em] uppercase" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>VECTOR Campaign Builder</span>
             </div>
-            <div className="platform-section-text">
-              <p className="platform-section-tagline" style={{ color: '#06b6d4' }}>OPTIMIZE</p>
-              <h2 className="platform-section-title">GEO Intelligence</h2>
-              <p className="platform-section-headline">Schema generation + PR credibility building. Own the AI search landscape.</p>
-            </div>
+            <h2 className="text-4xl text-white mb-6" style={{ fontFamily: 'Playfair Display, serif' }}>
+              Multi-Stakeholder Influence Orchestration
+            </h2>
+            <p className="text-[#9e9e9e] text-lg max-w-3xl mx-auto" style={{ fontFamily: 'Inter, sans-serif' }}>
+              VECTOR campaigns coordinate messaging across stakeholder groups through four strategic phases, leveraging psychological insights to maximize influence and narrative control.
+            </p>
           </div>
 
-          <div className="platform-section-content">
-            <div className="platform-section-features">
-              <div className="platform-feature">
-                <div className="platform-feature-icon" style={{ background: 'rgba(6, 182, 212, 0.1)' }}>
-                  <Layers size={18} style={{ color: '#06b6d4' }} />
+          {/* VECTOR Matrix Mockup */}
+          <div className="bg-[#1a1a1a] rounded-2xl border border-[#2e2e2e] overflow-hidden">
+            {/* Campaign Header */}
+            <div className="p-6 border-b border-[#2e2e2e]">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-white text-xl font-semibold mb-1" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>VECTOR CAMPAIGN: AI Leadership Positioning</h3>
+                  <p className="text-[#757575] text-sm">23 content pieces • 3 stakeholder groups • 8-week timeline</p>
                 </div>
-                <div className="platform-feature-text">
-                  <div className="platform-feature-label">Schema engineering</div>
-                  <div className="platform-feature-detail">Structure your narrative for AI model consumption and retrieval</div>
-                </div>
-              </div>
-              <div className="platform-feature">
-                <div className="platform-feature-icon" style={{ background: 'rgba(6, 182, 212, 0.1)' }}>
-                  <Search size={18} style={{ color: '#06b6d4' }} />
-                </div>
-                <div className="platform-feature-text">
-                  <div className="platform-feature-label">AI visibility tracking</div>
-                  <div className="platform-feature-detail">See how ChatGPT, Gemini, Perplexity, and Claude perceive your brand</div>
+                <div className="px-4 py-2 bg-[#c75d3a]/10 rounded-lg border border-[#c75d3a]/30">
+                  <div className="text-[#c75d3a] text-xs font-semibold mb-0.5">PATTERN</div>
+                  <div className="text-white text-sm font-medium">CASCADE</div>
                 </div>
               </div>
-              <div className="platform-feature">
-                <div className="platform-feature-icon" style={{ background: 'rgba(6, 182, 212, 0.1)' }}>
-                  <Target size={18} style={{ color: '#06b6d4' }} />
-                </div>
-                <div className="platform-feature-text">
-                  <div className="platform-feature-label">PR-to-AI coordination</div>
-                  <div className="platform-feature-detail">Every release optimized for LLM retrieval and citation</div>
-                </div>
-              </div>
-              <div className="platform-differentiator">
-                First platform combining AI schema generation with PR credibility-building to dominate AI search
-              </div>
+              <p className="text-[#9e9e9e] text-sm mt-3 italic">"Influencer groups shift first, creating validation for mass adoption"</p>
             </div>
 
-            <div className="platform-visual">
-              <div className="platform-visual-header">
-                <div className="platform-visual-dot red" />
-                <div className="platform-visual-dot yellow" />
-                <div className="platform-visual-dot green" />
-                <span className="platform-visual-title">GEO Schema</span>
+            {/* Matrix */}
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-[#2e2e2e]">
+                    <th className="p-4 text-left text-[#757575] text-xs font-semibold" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>STAKEHOLDER</th>
+                    <th className="p-4 text-center text-[#757575] text-xs font-semibold border-l border-[#2e2e2e]" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                      <div>AWARENESS</div>
+                      <div className="text-[#555555] font-normal mt-1">Week 1-2</div>
+                    </th>
+                    <th className="p-4 text-center text-[#757575] text-xs font-semibold border-l border-[#2e2e2e]" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                      <div>CONSIDERATION</div>
+                      <div className="text-[#555555] font-normal mt-1">Week 3-4</div>
+                    </th>
+                    <th className="p-4 text-center text-[#757575] text-xs font-semibold border-l border-[#2e2e2e]" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                      <div>CONVERSION</div>
+                      <div className="text-[#555555] font-normal mt-1">Week 5-6</div>
+                    </th>
+                    <th className="p-4 text-center text-[#757575] text-xs font-semibold border-l border-[#2e2e2e]" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                      <div>ADVOCACY</div>
+                      <div className="text-[#555555] font-normal mt-1">Week 7+</div>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    {
+                      name: 'Industry Analysts',
+                      bias: 'Authority bias, early-adopter identity',
+                      cells: [
+                        ['Thought leadership', 'Embargo briefings'],
+                        ['Deep-dive briefings', '1:1 analyst calls'],
+                        ['Case studies', 'Demo access'],
+                        ['Speaking circuit', 'Quote inclusions']
+                      ]
+                    },
+                    {
+                      name: 'Enterprise Buyers',
+                      bias: 'Loss aversion, social proof from analysts',
+                      cells: [
+                        ['PR coverage', 'LinkedIn campaign'],
+                        ['Webinar series', 'White papers'],
+                        ['ROI calculator', 'Free trial'],
+                        ['Customer stories', 'Reference program']
+                      ]
+                    },
+                    {
+                      name: 'Tech Community',
+                      bias: 'Technical credibility, innovation identity',
+                      cells: [
+                        ['Social threads', 'Reddit AMA'],
+                        ['Technical blogs', 'API documentation'],
+                        ['GitHub access', 'Beta program'],
+                        ['Community champions', 'Open source']
+                      ]
+                    }
+                  ].map((row, i) => (
+                    <tr key={i} className="border-b border-[#2e2e2e] last:border-b-0">
+                      <td className="p-4">
+                        <div className="text-white text-sm font-medium mb-1">{row.name}</div>
+                        <div className="text-[#555555] text-xs">{row.bias}</div>
+                      </td>
+                      {row.cells.map((cell, j) => (
+                        <td key={j} className="p-4 border-l border-[#2e2e2e]">
+                          <ul className="space-y-1">
+                            {cell.map((item, k) => (
+                              <li key={k} className="text-[#9e9e9e] text-xs flex items-center gap-1">
+                                <span className="text-[#c75d3a]">•</span> {item}
+                              </li>
+                            ))}
+                          </ul>
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Psychological Leverage Footer */}
+            <div className="p-6 bg-[#212121] border-t border-[#2e2e2e]">
+              <div className="text-white text-sm font-semibold mb-3" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>PSYCHOLOGICAL LEVERAGE</div>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="text-[#9e9e9e] text-sm"><span className="text-[#c75d3a]">Analysts:</span> Authority bias, early-adopter identity</div>
+                <div className="text-[#9e9e9e] text-sm"><span className="text-[#c75d3a]">Buyers:</span> Loss aversion, social proof validation</div>
+                <div className="text-[#9e9e9e] text-sm"><span className="text-[#c75d3a]">Community:</span> Technical credibility, innovation identity</div>
               </div>
-              <div className="platform-visual-content">
-                <div className="geo-schema">
-                  <span className="geo-schema-bracket">{'{'}</span><br/>
-                  &nbsp;&nbsp;<span className="geo-schema-key">"@context"</span>: <span className="geo-schema-string">"https://schema.org"</span>,<br/>
-                  &nbsp;&nbsp;<span className="geo-schema-key">"@type"</span>: <span className="geo-schema-string">"Organization"</span>,<br/>
-                  &nbsp;&nbsp;<span className="geo-schema-key">"name"</span>: <span className="geo-schema-string">"Your Company"</span>,<br/>
-                  &nbsp;&nbsp;<span className="geo-schema-key">"description"</span>: <span className="geo-schema-string">"Industry leader in..."</span>,<br/>
-                  &nbsp;&nbsp;<span className="geo-schema-key">"expertise"</span>: [<span className="geo-schema-string">"Domain 1"</span>, <span className="geo-schema-string">"Domain 2"</span>],<br/>
-                  &nbsp;&nbsp;<span className="geo-schema-key">"credentialEvidence"</span>: [...]<br/>
-                  <span className="geo-schema-bracket">{'}'}</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Section 5: GEO Intelligence */}
+      <section className="py-24 px-6 border-t border-[#1a1a1a]">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-16 items-start">
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <Globe className="w-5 h-5 text-[#c75d3a]" />
+                <span className="text-[#c75d3a] text-xs font-semibold tracking-[0.2em] uppercase" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>GEO Intelligence</span>
+              </div>
+              <h2 className="text-4xl text-white mb-6" style={{ fontFamily: 'Playfair Display, serif' }}>
+                AI Platform Visibility
+              </h2>
+              <p className="text-[#9e9e9e] text-lg mb-8" style={{ fontFamily: 'Inter, sans-serif' }}>
+                Optimize your organization's presence in AI-powered search and recommendation systems. GEO generates Schema.org structured data and tracks visibility across major AI platforms.
+              </p>
+              <ul className="space-y-3">
+                {['Schema.org structured data generation', 'Multi-platform AI visibility tracking', 'Competitive visibility analysis', 'Optimization recommendations'].map((item, i) => (
+                  <li key={i} className="flex items-center gap-3 text-[#bdbdbd]">
+                    <div className="w-5 h-5 rounded-full bg-[#c75d3a]/10 flex items-center justify-center">
+                      <Check className="w-3 h-3 text-[#c75d3a]" />
+                    </div>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* GEO Mockup */}
+            <div className="space-y-4">
+              {/* Schema Preview */}
+              <div className="bg-[#1a1a1a] rounded-xl border border-[#2e2e2e] overflow-hidden">
+                <div className="px-4 py-3 border-b border-[#2e2e2e] flex items-center justify-between">
+                  <span className="text-white text-sm font-medium">Generated Schema</span>
+                  <div className="flex items-center gap-2">
+                    <Check className="w-3 h-3 text-green-400" />
+                    <span className="text-green-400 text-xs">Validated</span>
+                  </div>
                 </div>
-                <div className="geo-llms">
-                  <div className="geo-llm">
-                    <span className="geo-llm-name">ChatGPT</span>
-                    <span className="geo-llm-score">78%</span>
-                  </div>
-                  <div className="geo-llm">
-                    <span className="geo-llm-name">Gemini</span>
-                    <span className="geo-llm-score">72%</span>
-                  </div>
-                  <div className="geo-llm">
-                    <span className="geo-llm-name">Perplexity</span>
-                    <span className="geo-llm-score">85%</span>
-                  </div>
-                  <div className="geo-llm">
-                    <span className="geo-llm-name">Claude</span>
-                    <span className="geo-llm-score">81%</span>
+                <div className="p-4 font-mono text-xs overflow-x-auto">
+                  <pre className="text-[#9e9e9e]">
+{`<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Acme Corp",
+  "description": "Enterprise AI automation leader",
+  "url": "https://acme.com",
+  "founder": {
+    "@type": "Person",
+    "name": "Jane Smith",
+    "jobTitle": "CEO"
+  },
+  "knowsAbout": [
+    "Artificial Intelligence",
+    "Enterprise Automation"
+  ]
+}
+</script>`}
+                  </pre>
+                </div>
+                <div className="px-4 py-3 bg-[#212121] border-t border-[#2e2e2e] flex items-center gap-4">
+                  <span className="text-[#757575] text-xs">✓ 12 entities defined</span>
+                  <span className="text-[#757575] text-xs">✓ Rich snippets eligible</span>
+                </div>
+              </div>
+
+              {/* AI Platform Visibility */}
+              <div className="bg-[#1a1a1a] rounded-xl border border-[#2e2e2e] p-6">
+                <div className="text-white text-sm font-semibold mb-4" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>AI PLATFORM VISIBILITY</div>
+                <div className="grid grid-cols-2 gap-4">
+                  {[
+                    { name: 'ChatGPT', logo: '🤖', score: 72, trend: '+12%', color: 'text-green-400' },
+                    { name: 'Gemini', logo: '✨', score: 58, trend: '+8%', color: 'text-green-400' },
+                    { name: 'Perplexity', logo: '🔍', score: 84, trend: '+23%', color: 'text-green-400' },
+                    { name: 'Claude', logo: '🧠', score: 45, trend: '-3%', color: 'text-red-400' },
+                  ].map((platform, i) => (
+                    <div key={i} className="bg-[#212121] rounded-lg p-4 border border-[#2e2e2e]">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xl">{platform.logo}</span>
+                          <span className="text-white text-sm font-medium">{platform.name}</span>
+                        </div>
+                        <span className={`text-xs ${platform.color}`}>{platform.trend} MTD</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="flex-1 h-2 bg-[#3d3d3d] rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-[#c75d3a] rounded-full"
+                            style={{ width: `${platform.score}%` }}
+                          ></div>
+                        </div>
+                        <span className="text-white text-sm font-semibold">{platform.score}%</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4 pt-4 border-t border-[#2e2e2e]">
+                  <div className="text-[#757575] text-xs mb-2">TOP QUERIES WHERE YOU APPEAR:</div>
+                  <div className="space-y-1">
+                    <div className="text-[#9e9e9e] text-sm">"best enterprise AI tools" — <span className="text-[#c75d3a]">Position #3</span></div>
+                    <div className="text-[#9e9e9e] text-sm">"AI automation platforms" — <span className="text-[#c75d3a]">Position #5</span></div>
+                    <div className="text-[#757575] text-sm">"machine learning for business" — <span className="text-red-400">Not ranking</span></div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Crisis Command */}
-        <section className="platform-section">
-          <div className="platform-section-header">
-            <div className="platform-section-icon" style={{ background: 'rgba(239, 68, 68, 0.1)' }}>
-              <Shield size={28} style={{ color: '#ef4444' }} />
-            </div>
-            <div className="platform-section-text">
-              <p className="platform-section-tagline" style={{ color: '#ef4444' }}>PROTECT</p>
-              <h2 className="platform-section-title">Crisis Command</h2>
-              <p className="platform-section-headline">AI-generated crisis plans. Real-time command center. Strategic guidance under pressure.</p>
-            </div>
-          </div>
-
-          <div className="platform-section-content">
-            <div className="platform-section-features">
-              <div className="platform-feature">
-                <div className="platform-feature-icon" style={{ background: 'rgba(239, 68, 68, 0.1)' }}>
-                  <FileText size={18} style={{ color: '#ef4444' }} />
-                </div>
-                <div className="platform-feature-text">
-                  <div className="platform-feature-label">Crisis plan generator</div>
-                  <div className="platform-feature-detail">Scenario-specific response playbooks generated by AI</div>
-                </div>
-              </div>
-              <div className="platform-feature">
-                <div className="platform-feature-icon" style={{ background: 'rgba(239, 68, 68, 0.1)' }}>
-                  <Activity size={18} style={{ color: '#ef4444' }} />
-                </div>
-                <div className="platform-feature-text">
-                  <div className="platform-feature-label">Command center</div>
-                  <div className="platform-feature-detail">Real-time coordination hub for crisis response</div>
-                </div>
-              </div>
-              <div className="platform-feature">
-                <div className="platform-feature-icon" style={{ background: 'rgba(239, 68, 68, 0.1)' }}>
-                  <Brain size={18} style={{ color: '#ef4444' }} />
-                </div>
-                <div className="platform-feature-text">
-                  <div className="platform-feature-label">Crisis AI advisor</div>
-                  <div className="platform-feature-detail">Strategic guidance from NIV when you need it most</div>
-                </div>
-              </div>
-              <div className="platform-differentiator">
-                Crisis prep + crisis response in one system — not two separate tools
-              </div>
-            </div>
-
-            <div className="platform-visual">
-              <div className="platform-visual-header">
-                <div className="platform-visual-dot red" />
-                <div className="platform-visual-dot yellow" />
-                <div className="platform-visual-dot green" />
-                <span className="platform-visual-title">Crisis Command Center</span>
-              </div>
-              <div className="platform-visual-content">
-                <div className="crisis-panel">
-                  <div className="crisis-header">
-                    <Shield size={20} style={{ color: '#ef4444' }} />
-                    <span className="crisis-title">Crisis Readiness Status</span>
-                    <div className="crisis-status" style={{ marginLeft: 'auto' }}>
-                      <div className="crisis-status-dot" />
-                      PROTECTED
+      {/* Section 6: Crisis Command */}
+      <section className="py-24 px-6 bg-[#0d0d0d] border-t border-[#1a1a1a]">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-16 items-start">
+            {/* Crisis Mockup */}
+            <div className="bg-[#1a1a1a] rounded-2xl border border-[#2e2e2e] overflow-hidden">
+              {/* Header */}
+              <div className="p-6 border-b border-[#2e2e2e]">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-[#c75d3a] rounded-lg flex items-center justify-center">
+                      <Shield className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-white text-lg font-semibold" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>Crisis Command</h3>
+                      <p className="text-[#757575] text-sm">Readiness Dashboard</p>
                     </div>
                   </div>
-                  <div className="crisis-scenarios">
-                    <div className="crisis-scenario">
-                      <div className="crisis-scenario-title">Data Breach Protocol</div>
-                      <div className="crisis-scenario-status">Playbook ready</div>
+                </div>
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[#9e9e9e] text-sm">Overall Readiness</span>
+                    <span className="text-white text-sm font-semibold">78%</span>
+                  </div>
+                  <div className="h-2 bg-[#3d3d3d] rounded-full overflow-hidden">
+                    <div className="h-full bg-[#c75d3a] rounded-full" style={{ width: '78%' }}></div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Crisis Scenarios */}
+              <div className="p-6 border-b border-[#2e2e2e]">
+                <div className="text-white text-sm font-semibold mb-4" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>CRISIS SCENARIOS</div>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { severity: 'CRITICAL', color: 'red', title: 'Data Breach Response', desc: 'Unauthorized access to customer data detected', likelihood: 'HIGH' },
+                    { severity: 'HIGH', color: 'orange', title: 'Executive Misconduct', desc: 'Allegations of improper conduct by senior leader', likelihood: 'MEDIUM' },
+                    { severity: 'HIGH', color: 'orange', title: 'Product Safety Recall', desc: 'Product defect requiring public announcement', likelihood: 'LOW' },
+                    { severity: 'MODERATE', color: 'yellow', title: 'Social Media Backlash', desc: 'Viral negative content threatening brand', likelihood: 'HIGH' },
+                  ].map((scenario, i) => (
+                    <div key={i} className="bg-[#212121] rounded-lg p-4 border border-[#2e2e2e] hover:border-[#c75d3a]/50 transition-colors cursor-pointer">
+                      <div className={`text-xs font-semibold mb-2 ${
+                        scenario.color === 'red' ? 'text-red-400' :
+                        scenario.color === 'orange' ? 'text-[#c75d3a]' : 'text-yellow-400'
+                      }`}>
+                        {scenario.color === 'red' ? '🔴' : scenario.color === 'orange' ? '🟠' : '🟡'} {scenario.severity}
+                      </div>
+                      <h4 className="text-white text-sm font-medium mb-1">{scenario.title}</h4>
+                      <p className="text-[#757575] text-xs mb-2">{scenario.desc}</p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[#555555] text-xs">Likelihood: {scenario.likelihood}</span>
+                        <span className="text-[#c75d3a] text-xs">View →</span>
+                      </div>
                     </div>
-                    <div className="crisis-scenario">
-                      <div className="crisis-scenario-title">Executive Crisis</div>
-                      <div className="crisis-scenario-status">Playbook ready</div>
-                    </div>
-                    <div className="crisis-scenario">
-                      <div className="crisis-scenario-title">Product Recall</div>
-                      <div className="crisis-scenario-status">Playbook ready</div>
-                    </div>
-                    <div className="crisis-scenario">
-                      <div className="crisis-scenario-title">Social Media Storm</div>
-                      <div className="crisis-scenario-status">Playbook ready</div>
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </div>
-            </div>
-          </div>
-        </section>
 
-        {/* NIV Advisor */}
-        <section className="platform-section">
-          <div className="platform-section-header">
-            <div className="platform-section-icon" style={{ background: 'rgba(139, 92, 246, 0.1)' }}>
-              <Brain size={28} style={{ color: '#8b5cf6' }} />
-            </div>
-            <div className="platform-section-text">
-              <p className="platform-section-tagline" style={{ color: '#8b5cf6' }}>ADVISE</p>
-              <h2 className="platform-section-title">NIV Advisor</h2>
-              <p className="platform-section-headline">Your AI strategist. Research, strategy, content — all in one conversation.</p>
-            </div>
-          </div>
-
-          <div className="platform-section-content">
-            <div className="platform-section-features">
-              <div className="platform-feature">
-                <div className="platform-feature-icon" style={{ background: 'rgba(139, 92, 246, 0.1)' }}>
-                  <Search size={18} style={{ color: '#8b5cf6' }} />
-                </div>
-                <div className="platform-feature-text">
-                  <div className="platform-feature-label">Strategic research</div>
-                  <div className="platform-feature-detail">Ask NIV to research competitors, stakeholders, or market trends</div>
-                </div>
-              </div>
-              <div className="platform-feature">
-                <div className="platform-feature-icon" style={{ background: 'rgba(139, 92, 246, 0.1)' }}>
-                  <Target size={18} style={{ color: '#8b5cf6' }} />
-                </div>
-                <div className="platform-feature-text">
-                  <div className="platform-feature-label">Strategy development</div>
-                  <div className="platform-feature-detail">Collaborative strategy sessions with AI-powered insights</div>
-                </div>
-              </div>
-              <div className="platform-feature">
-                <div className="platform-feature-icon" style={{ background: 'rgba(139, 92, 246, 0.1)' }}>
-                  <Database size={18} style={{ color: '#8b5cf6' }} />
-                </div>
-                <div className="platform-feature-text">
-                  <div className="platform-feature-label">Memory Vault integration</div>
-                  <div className="platform-feature-detail">NIV learns from every interaction and your organizational history</div>
-                </div>
-              </div>
-              <div className="platform-differentiator">
-                The more you use NIV, the smarter it gets about YOUR organization
-              </div>
-            </div>
-
-            <div className="platform-visual">
-              <div className="platform-visual-header">
-                <div className="platform-visual-dot red" />
-                <div className="platform-visual-dot yellow" />
-                <div className="platform-visual-dot green" />
-                <span className="platform-visual-title">NIV Advisor</span>
-              </div>
-              <div className="niv-chat">
-                <div className="niv-messages">
-                  <div className="niv-message user">
-                    Help me develop a thought leadership strategy for our CEO around AI governance
-                  </div>
-                  <div className="niv-message assistant">
-                    Based on your intelligence feed and competitive positioning, I see a strong opportunity here. Let me outline three strategic angles for CEO thought leadership on AI governance...
-                  </div>
-                  <div className="niv-message user">
-                    What media outlets should we target?
-                  </div>
-                  <div className="niv-message assistant">
-                    Given your stakeholder map and the AI governance narrative landscape, I recommend a tiered approach: Tier 1 for credibility (WSJ, FT), Tier 2 for reach (TechCrunch, Wired), and industry-specific for depth...
-                  </div>
-                </div>
-                <div className="niv-input">
-                  <input type="text" className="niv-input-field" placeholder="Ask NIV anything..." />
-                  <button className="niv-send-btn">
-                    <ArrowRight size={18} style={{ color: 'white' }} />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Memory Vault */}
-        <section className="platform-section">
-          <div className="platform-section-header">
-            <div className="platform-section-icon" style={{ background: 'rgba(236, 72, 153, 0.1)' }}>
-              <Database size={28} style={{ color: '#ec4899' }} />
-            </div>
-            <div className="platform-section-text">
-              <p className="platform-section-tagline" style={{ color: '#ec4899' }}>REMEMBER</p>
-              <h2 className="platform-section-title">Memory Vault</h2>
-              <p className="platform-section-headline">Semantic search. Organizational playbooks. The platform that learns.</p>
-            </div>
-          </div>
-
-          <div className="platform-section-content">
-            <div className="platform-section-features">
-              <div className="platform-feature">
-                <div className="platform-feature-icon" style={{ background: 'rgba(236, 72, 153, 0.1)' }}>
-                  <Search size={18} style={{ color: '#ec4899' }} />
-                </div>
-                <div className="platform-feature-text">
-                  <div className="platform-feature-label">Semantic search</div>
-                  <div className="platform-feature-detail">Find anything by meaning, not just keywords — powered by embeddings</div>
-                </div>
-              </div>
-              <div className="platform-feature">
-                <div className="platform-feature-icon" style={{ background: 'rgba(236, 72, 153, 0.1)' }}>
-                  <BookOpen size={18} style={{ color: '#ec4899' }} />
-                </div>
-                <div className="platform-feature-text">
-                  <div className="platform-feature-label">Organizational playbook</div>
-                  <div className="platform-feature-detail">Your strategies, frameworks, and approaches — refined over time</div>
-                </div>
-              </div>
-              <div className="platform-feature">
-                <div className="platform-feature-icon" style={{ background: 'rgba(236, 72, 153, 0.1)' }}>
-                  <Layers size={18} style={{ color: '#ec4899' }} />
-                </div>
-                <div className="platform-feature-text">
-                  <div className="platform-feature-label">Content fingerprinting</div>
-                  <div className="platform-feature-detail">Never duplicate — always build on what works</div>
-                </div>
-              </div>
-              <div className="platform-differentiator">
-                The more you use it, the smarter it gets about YOUR organization
-              </div>
-            </div>
-
-            <div className="platform-visual">
-              <div className="platform-visual-header">
-                <div className="platform-visual-dot red" />
-                <div className="platform-visual-dot yellow" />
-                <div className="platform-visual-dot green" />
-                <span className="platform-visual-title">Memory Vault</span>
-              </div>
-              <div className="platform-visual-content">
-                <div style={{ marginBottom: '20px' }}>
-                  <div style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
-                    <input
-                      type="text"
-                      placeholder="Search by meaning..."
-                      style={{
-                        flex: 1,
-                        background: 'rgba(255,255,255,0.06)',
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        borderRadius: '8px',
-                        padding: '12px 16px',
-                        color: 'white',
-                        fontSize: '0.9rem'
-                      }}
-                    />
-                    <button style={{
-                      background: 'var(--burnt-orange)',
-                      border: 'none',
-                      borderRadius: '8px',
-                      padding: '0 20px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      cursor: 'pointer'
-                    }}>
-                      <Search size={18} style={{ color: 'white' }} />
-                    </button>
-                  </div>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--grey-400)' }}>
-                    1,247 items indexed • Semantic search enabled • Last sync: 2 min ago
-                  </div>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  {['Press Releases', 'Strategic Frameworks', 'Campaign Blueprints', 'Media Lists', 'Presentations'].map((folder, i) => (
-                    <div key={i} style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      padding: '12px 14px',
-                      background: 'rgba(255,255,255,0.04)',
-                      borderRadius: '8px',
-                      border: '1px solid rgba(255,255,255,0.06)'
-                    }}>
-                      <Database size={16} style={{ color: '#ec4899' }} />
-                      <span style={{ flex: 1, fontSize: '0.85rem', color: 'var(--grey-200)' }}>{folder}</span>
-                      <span style={{ fontSize: '0.7rem', color: 'var(--grey-500)' }}>{Math.floor(Math.random() * 200) + 50} items</span>
+              {/* Crisis Team */}
+              <div className="p-6 bg-[#212121]">
+                <div className="text-white text-sm font-semibold mb-3" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>CRISIS TEAM READINESS</div>
+                <div className="space-y-2">
+                  {[
+                    { role: 'Crisis Lead (CEO)', assigned: true },
+                    { role: 'Comms Lead (VP Comms)', assigned: true },
+                    { role: 'Legal Counsel', assigned: true },
+                    { role: 'Technical Lead', assigned: false },
+                    { role: 'HR Representative', assigned: false },
+                  ].map((member, i) => (
+                    <div key={i} className="flex items-center justify-between">
+                      <span className="text-[#9e9e9e] text-sm">{member.role}</span>
+                      {member.assigned ? (
+                        <span className="text-green-400 text-xs flex items-center gap-1">
+                          <Check className="w-3 h-3" /> Assigned
+                        </span>
+                      ) : (
+                        <span className="text-[#757575] text-xs flex items-center gap-1">
+                          <AlertTriangle className="w-3 h-3 text-yellow-400" /> Not Assigned
+                        </span>
+                      )}
                     </div>
                   ))}
                 </div>
               </div>
             </div>
+
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <Shield className="w-5 h-5 text-[#c75d3a]" />
+                <span className="text-[#c75d3a] text-xs font-semibold tracking-[0.2em] uppercase" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>Crisis Command</span>
+              </div>
+              <h2 className="text-4xl text-white mb-6" style={{ fontFamily: 'Playfair Display, serif' }}>
+                Crisis Readiness & Response
+              </h2>
+              <p className="text-[#9e9e9e] text-lg mb-8" style={{ fontFamily: 'Inter, sans-serif' }}>
+                Pre-built crisis playbooks tailored to your organization. NIV generates comprehensive crisis plans with scenario-specific response protocols, stakeholder communications, and real-time AI guidance during active situations.
+              </p>
+              <ul className="space-y-3">
+                {['AI-generated crisis plans', 'Scenario-specific playbooks', 'Team role assignments', 'Real-time crisis AI assistant'].map((item, i) => (
+                  <li key={i} className="flex items-center gap-3 text-[#bdbdbd]">
+                    <div className="w-5 h-5 rounded-full bg-[#c75d3a]/10 flex items-center justify-center">
+                      <Check className="w-3 h-3 text-[#c75d3a]" />
+                    </div>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
-        </section>
-
-      </div>
-
-      {/* CTA */}
-      <section className="platform-cta">
-        <h2 className="platform-cta-headline">
-          Ready to close the <span className="italic">loop</span>?
-        </h2>
-        <p className="platform-cta-text">
-          See how NIV transforms intelligence into action for your organization.
-        </p>
-        <button onClick={() => router.push('/auth/signup')} className="platform-cta-button">
-          Start Free Trial
-          <ArrowRight size={20} />
-        </button>
+        </div>
       </section>
+
+      {/* Section 7: NIV Advisor */}
+      <section className="py-24 px-6 border-t border-[#1a1a1a]">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-16 items-start">
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <MessageSquare className="w-5 h-5 text-[#c75d3a]" />
+                <span className="text-[#c75d3a] text-xs font-semibold tracking-[0.2em] uppercase" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>NIV Advisor</span>
+              </div>
+              <h2 className="text-4xl text-white mb-6" style={{ fontFamily: 'Playfair Display, serif' }}>
+                Your AI Communications Partner
+              </h2>
+              <p className="text-[#9e9e9e] text-lg mb-8" style={{ fontFamily: 'Inter, sans-serif' }}>
+                NIV is your always-available strategic advisor. Ask anything about your organization, get recommendations on opportunities, generate content, or navigate crisis situations—all with full organizational context.
+              </p>
+              <ul className="space-y-3">
+                {['Organizational context awareness', 'Strategic recommendations', 'Any content type generation', 'Memory across conversations'].map((item, i) => (
+                  <li key={i} className="flex items-center gap-3 text-[#bdbdbd]">
+                    <div className="w-5 h-5 rounded-full bg-[#c75d3a]/10 flex items-center justify-center">
+                      <Check className="w-3 h-3 text-[#c75d3a]" />
+                    </div>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* NIV Chat Mockup */}
+            <div className="bg-[#1a1a1a] rounded-2xl border border-[#2e2e2e] overflow-hidden">
+              {/* NIV Header with Badge */}
+              <div className="p-6 border-b border-[#2e2e2e] flex items-center gap-4">
+                <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center relative">
+                  <span className="text-[#1a1a1a] font-bold text-lg" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>NIV</span>
+                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-[#c75d3a] rounded-full"></div>
+                </div>
+                <div>
+                  <h3 className="text-white text-lg font-semibold" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>NIV Advisor</h3>
+                  <p className="text-[#757575] text-sm">Neural Intelligence Vehicle</p>
+                </div>
+              </div>
+
+              {/* Chat Messages */}
+              <div className="p-6 space-y-4 max-h-96">
+                {/* User Message */}
+                <div className="flex justify-end">
+                  <div className="bg-[#3d3d3d] rounded-2xl rounded-tr-md px-4 py-3 max-w-[80%]">
+                    <p className="text-white text-sm">What opportunities should I prioritize this week?</p>
+                  </div>
+                </div>
+
+                {/* NIV Response */}
+                <div className="flex justify-start">
+                  <div className="bg-[#212121] rounded-2xl rounded-tl-md px-4 py-3 max-w-[90%] border border-[#2e2e2e]">
+                    <p className="text-[#bdbdbd] text-sm mb-4">Based on my analysis of 47 signals from the past 48 hours, I recommend prioritizing:</p>
+
+                    <div className="space-y-3 mb-4">
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-green-500/10 border border-green-500/30 flex items-center justify-center flex-shrink-0">
+                          <span className="text-green-400 text-xs font-bold">92</span>
+                        </div>
+                        <div>
+                          <div className="text-white text-sm font-medium">AI Partnership Response</div>
+                          <div className="text-[#757575] text-xs">72-hour window before narrative solidifies</div>
+                          <div className="text-[#c75d3a] text-xs mt-1">→ Execute now for maximum impact</div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-center flex-shrink-0">
+                          <span className="text-yellow-400 text-xs font-bold">78</span>
+                        </div>
+                        <div>
+                          <div className="text-white text-sm font-medium">Earnings Narrative Setup</div>
+                          <div className="text-[#757575] text-xs">Q4 results release in 2 weeks</div>
+                          <div className="text-[#9e9e9e] text-xs mt-1">→ Begin analyst briefings this week</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <p className="text-[#bdbdbd] text-sm mb-3">Should I generate a campaign for the AI response?</p>
+
+                    <div className="flex flex-wrap gap-2">
+                      <button className="px-3 py-1.5 bg-[#c75d3a] text-white text-xs rounded-lg">Generate Campaign</button>
+                      <button className="px-3 py-1.5 bg-[#3d3d3d] text-[#bdbdbd] text-xs rounded-lg">Show Details</button>
+                      <button className="px-3 py-1.5 bg-[#3d3d3d] text-[#bdbdbd] text-xs rounded-lg">Other</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Input */}
+              <div className="p-4 border-t border-[#2e2e2e]">
+                <div className="flex items-center gap-3 bg-[#212121] rounded-xl px-4 py-3 border border-[#2e2e2e]">
+                  <MessageSquare className="w-5 h-5 text-[#555555]" />
+                  <input
+                    type="text"
+                    placeholder="Ask NIV anything about your organization..."
+                    className="flex-1 bg-transparent text-white text-sm placeholder-[#555555] outline-none"
+                  />
+                  <button className="px-4 py-1.5 bg-[#c75d3a] text-white text-xs rounded-lg">Send</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Section 8: Memory Vault */}
+      <section className="py-24 px-6 bg-[#0d0d0d] border-t border-[#1a1a1a]">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-16 items-start">
+            {/* Memory Vault Mockup */}
+            <div className="bg-[#1a1a1a] rounded-2xl border border-[#2e2e2e] overflow-hidden">
+              {/* Header */}
+              <div className="p-6 border-b border-[#2e2e2e]">
+                <div className="flex items-center gap-3 mb-4">
+                  <Database className="w-5 h-5 text-[#c75d3a]" />
+                  <h3 className="text-white text-lg font-semibold" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>Memory Vault</h3>
+                </div>
+                <div className="flex items-center gap-3 bg-[#212121] rounded-xl px-4 py-3 border border-[#2e2e2e]">
+                  <Search className="w-5 h-5 text-[#555555]" />
+                  <input
+                    type="text"
+                    placeholder="Search your organizational knowledge..."
+                    className="flex-1 bg-transparent text-white text-sm placeholder-[#555555] outline-none"
+                  />
+                </div>
+                <div className="text-[#555555] text-xs mt-2">Semantic search powered by AI</div>
+              </div>
+
+              {/* Content */}
+              <div className="flex">
+                {/* Folders */}
+                <div className="w-48 border-r border-[#2e2e2e] p-4">
+                  <div className="text-[#757575] text-xs font-semibold mb-3" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>FOLDERS</div>
+                  <div className="space-y-1">
+                    {[
+                      { name: 'Campaigns', count: 12, expanded: true, children: ['Q4 Launch', 'AI Response'] },
+                      { name: 'Intelligence', count: 24, expanded: false },
+                      { name: 'Content', count: 89, expanded: false },
+                      { name: 'Crisis Plans', count: 3, expanded: false },
+                      { name: 'Org Profile', count: 1, expanded: false },
+                    ].map((folder, i) => (
+                      <div key={i}>
+                        <div className="flex items-center gap-2 py-1.5 px-2 rounded hover:bg-[#212121] cursor-pointer">
+                          <Folder className="w-4 h-4 text-[#c75d3a]" />
+                          <span className="text-[#bdbdbd] text-sm flex-1">{folder.name}</span>
+                          <span className="text-[#555555] text-xs">{folder.count}</span>
+                        </div>
+                        {folder.expanded && folder.children && (
+                          <div className="ml-6 space-y-1 mt-1">
+                            {folder.children.map((child, j) => (
+                              <div key={j} className="flex items-center gap-2 py-1 px-2 text-[#757575] text-xs hover:text-[#bdbdbd] cursor-pointer">
+                                <span>└</span> {child}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Recent Items */}
+                <div className="flex-1 p-4">
+                  <div className="text-[#757575] text-xs font-semibold mb-3" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>RECENT & HIGH-SALIENCE</div>
+                  <div className="space-y-2">
+                    {[
+                      { icon: FileText, title: 'AI Partnership Response Blueprint', type: 'campaign', time: '2 hours ago', score: 92 },
+                      { icon: Brain, title: 'Executive Intelligence Brief', type: 'intelligence', time: 'today', meta: '47 signals' },
+                      { icon: FileText, title: 'Q4 Launch Press Release', type: 'press-release', time: 'yesterday' },
+                      { icon: Shield, title: 'Crisis Management Plan', type: 'crisis-plan', time: 'last week' },
+                    ].map((item, i) => (
+                      <div key={i} className="bg-[#212121] rounded-lg p-3 border border-[#2e2e2e] hover:border-[#c75d3a]/30 cursor-pointer transition-colors">
+                        <div className="flex items-start gap-3">
+                          <item.icon className="w-4 h-4 text-[#c75d3a] mt-0.5" />
+                          <div className="flex-1 min-w-0">
+                            <div className="text-white text-sm font-medium truncate">{item.title}</div>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-[#c75d3a] text-xs">{item.type}</span>
+                              <span className="text-[#555555] text-xs">•</span>
+                              <span className="text-[#555555] text-xs">{item.time}</span>
+                              {item.score && (
+                                <>
+                                  <span className="text-[#555555] text-xs">•</span>
+                                  <span className="text-green-400 text-xs">Score: {item.score}</span>
+                                </>
+                              )}
+                              {item.meta && (
+                                <>
+                                  <span className="text-[#555555] text-xs">•</span>
+                                  <span className="text-[#555555] text-xs">{item.meta}</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="px-6 py-3 bg-[#212121] border-t border-[#2e2e2e]">
+                <span className="text-[#555555] text-xs">234 items • 12 folders • 1.2GB</span>
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <Database className="w-5 h-5 text-[#c75d3a]" />
+                <span className="text-[#c75d3a] text-xs font-semibold tracking-[0.2em] uppercase" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>Memory Vault</span>
+              </div>
+              <h2 className="text-4xl text-white mb-6" style={{ fontFamily: 'Playfair Display, serif' }}>
+                Organizational Intelligence
+              </h2>
+              <p className="text-[#9e9e9e] text-lg mb-8" style={{ fontFamily: 'Inter, sans-serif' }}>
+                Everything NIV learns about your organization is stored and searchable. Campaigns, content, intelligence briefs, and crisis plans—all accessible through AI-powered semantic search.
+              </p>
+              <ul className="space-y-3">
+                {['Semantic search with embeddings', 'Automatic content organization', 'Salience-based ranking', 'Content deduplication'].map((item, i) => (
+                  <li key={i} className="flex items-center gap-3 text-[#bdbdbd]">
+                    <div className="w-5 h-5 rounded-full bg-[#c75d3a]/10 flex items-center justify-center">
+                      <Check className="w-3 h-3 text-[#c75d3a]" />
+                    </div>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-24 px-6 border-t border-[#1a1a1a]">
+        <div className="max-w-3xl mx-auto text-center">
+          <h2 className="text-4xl text-white mb-6" style={{ fontFamily: 'Playfair Display, serif' }}>
+            Ready to transform your <em className="text-[#c75d3a]">communications strategy</em>?
+          </h2>
+          <p className="text-[#9e9e9e] text-lg mb-8" style={{ fontFamily: 'Inter, sans-serif' }}>
+            Join forward-thinking organizations using NIV to detect opportunities, execute campaigns, and stay ahead of the narrative.
+          </p>
+          <button
+            onClick={() => router.push('/auth/signup')}
+            className="px-8 py-4 bg-[#c75d3a] text-white text-lg font-medium rounded-xl hover:bg-[#e07b5a] transition-colors"
+            style={{ fontFamily: 'Space Grotesk, sans-serif' }}
+          >
+            Get Started with NIV
+          </button>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="py-12 px-6 border-t border-[#1a1a1a]">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
+              <span className="text-[#0a0a0a] font-bold text-sm" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>NIV</span>
+            </div>
+            <span className="text-[#757575] text-sm">© 2024 SignalDesk</span>
+          </div>
+          <div className="flex items-center gap-6">
+            <Link href="/" className="text-[#757575] text-sm hover:text-white transition-colors">Home</Link>
+            <Link href="/auth/login" className="text-[#757575] text-sm hover:text-white transition-colors">Login</Link>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }
