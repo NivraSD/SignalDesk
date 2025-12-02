@@ -867,6 +867,15 @@ export default function HomePage() {
           border: none;
         }
 
+        .landing-feature-item.dark .landing-feature-title,
+        .landing-feature-item.dark .landing-feature-desc,
+        .landing-feature-item.grey .landing-feature-title,
+        .landing-feature-item.grey .landing-feature-desc,
+        .landing-feature-item.orange .landing-feature-title,
+        .landing-feature-item.orange .landing-feature-desc {
+          color: var(--white);
+        }
+
         .landing-feature-title {
           font-family: var(--font-display);
           font-size: 1.1rem;
