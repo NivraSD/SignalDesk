@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { createAuthClient } from '@/lib/supabase/auth-client'
 
 export default function HomePage() {
@@ -1287,8 +1288,8 @@ export default function HomePage() {
           </div>
         </div>
         <div className="landing-nav-links">
-          <span className="landing-nav-link">Platform</span>
-          <span className="landing-nav-link">Solutions</span>
+          <Link href="/platform" className="landing-nav-link">Platform</Link>
+          <a href="#capabilities" className="landing-nav-link">Solutions</a>
           <span className="landing-nav-link">About</span>
           <button className="landing-nav-cta" onClick={() => router.push('/auth/signup')}>Get Started</button>
         </div>
