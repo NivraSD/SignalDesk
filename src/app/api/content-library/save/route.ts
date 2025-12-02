@@ -6,6 +6,51 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
+/**
+ * Generate embedding for content using Voyage AI voyage-3-large
+ */
+async function generateEmbedding(text: string): Promise<number[] | null> {
+  try {
+    // Prepare text: title + first 2000 chars of content for optimal embedding
+    const truncatedText = text.substring(0, 2000)
+
+    const { data, error } = await supabase.functions.invoke('generate-embeddings', {
+      body: { text: truncatedText }
+    })
+
+    if (error) {
+      console.error('❌ Embedding generation error:', error)
+      return null
+    }
+
+    if (!data?.embedding) {
+      console.error('❌ No embedding returned from function')
+      return null
+    }
+
+    console.log(`✅ Generated ${data.dimensions}D embedding using ${data.model}`)
+    return data.embedding
+  } catch (err) {
+    console.error('❌ Exception generating embedding:', err)
+    return null
+  }
+}
+
+/**
+ * Generate content fingerprint for deduplication
+ */
+function generateFingerprint(content: string, title: string): string {
+  // Simple fingerprint based on content hash
+  const text = `${title}::${content}`.toLowerCase().replace(/\s+/g, ' ').trim()
+  let hash = 0
+  for (let i = 0; i < text.length; i++) {
+    const char = text.charCodeAt(i)
+    hash = ((hash << 5) - hash) + char
+    hash = hash & hash // Convert to 32-bit integer
+  }
+  return `fp_${Math.abs(hash).toString(16)}`
+}
+
 export async function POST(request: NextRequest) {
   const startTime = Date.now()
 
@@ -37,11 +82,23 @@ export async function POST(request: NextRequest) {
 
     // If ID provided, UPDATE existing content
     if (contentId) {
+      // Prepare updated content for embedding
+      const updateTitle = content.title || metadata?.title || `Content - ${new Date().toLocaleDateString()}`
+      const updateContent = typeof content.content === 'string' ? content.content : JSON.stringify(content.content)
+
+      // Regenerate embedding for updated content
+      const textForEmbedding = `${updateTitle}\n\n${updateContent}`
+      console.log(`🔮 Regenerating embedding for update: ${updateTitle.substring(0, 50)}...`)
+      const embedding = await generateEmbedding(textForEmbedding)
+
+      // Generate new fingerprint
+      const fingerprint = generateFingerprint(updateContent, updateTitle)
+
       const { data: updatedContent, error: updateError } = await supabase
         .from('content_library')
         .update({
-          title: content.title || metadata?.title || `Content - ${new Date().toLocaleDateString()}`,
-          content: typeof content.content === 'string' ? content.content : JSON.stringify(content.content),
+          title: updateTitle,
+          content: updateContent,
           metadata: {
             ...metadata,
             ...content.metadata,
@@ -51,7 +108,12 @@ export async function POST(request: NextRequest) {
           },
           folder: folder || 'Unsorted',
           updated_at: new Date().toISOString(),
-          last_accessed_at: new Date().toISOString()
+          last_accessed_at: new Date().toISOString(),
+          // Update embedding fields
+          embedding: embedding,
+          embedding_model: embedding ? 'voyage-3-large' : null,
+          embedding_updated_at: embedding ? new Date().toISOString() : null,
+          fingerprint: fingerprint
         })
         .eq('id', contentId)
         .select()
@@ -66,44 +128,122 @@ export async function POST(request: NextRequest) {
       }
 
       const updateTime = Date.now() - startTime
-      console.log(`✅ Content updated in ${updateTime}ms: ${updatedContent.id}`)
+      console.log(`✅ Content updated in ${updateTime}ms: ${updatedContent.id}${embedding ? ' (with embedding)' : ' (no embedding)'}`)
 
       return NextResponse.json({
         success: true,
         id: updatedContent.id,
-        message: 'Content updated in Content Library',
+        message: 'Content updated in Memory Vault',
         location: 'content_library',
+        hasEmbedding: !!embedding,
+        fingerprint: fingerprint,
         saveTime: `${updateTime}ms`,
         data: updatedContent
       })
     }
 
     // Otherwise INSERT new content
-    const { data: savedContent, error: saveError } = await supabase
+    // Prepare title and content for embedding/fingerprint
+    const contentTitle = content.title || metadata?.title || `Content - ${new Date().toLocaleDateString()}`
+    const contentBody = typeof content.content === 'string' ? content.content : JSON.stringify(content.content)
+
+    // Generate fingerprint for deduplication
+    const fingerprint = generateFingerprint(contentBody, contentTitle)
+    console.log(`🔑 Generated fingerprint: ${fingerprint}`)
+
+    // Check for duplicate content using fingerprint (gracefully handle if column doesn't exist)
+    try {
+      const { data: existingContent, error: dupCheckError } = await supabase
+        .from('content_library')
+        .select('id, title')
+        .eq('fingerprint', fingerprint)
+        .eq('organization_id', content.organization_id || metadata?.organizationId)
+        .maybeSingle()
+
+      // Only return duplicate if we found one and no error
+      if (!dupCheckError && existingContent) {
+        console.log(`⚠️ Duplicate content detected: ${existingContent.id} - ${existingContent.title}`)
+        return NextResponse.json({
+          success: true,
+          id: existingContent.id,
+          message: 'Content already exists in Memory Vault',
+          location: 'content_library',
+          isDuplicate: true,
+          data: existingContent
+        })
+      }
+    } catch (dupError) {
+      // Fingerprint column may not exist yet, continue with save
+      console.warn('⚠️ Fingerprint check skipped:', dupError)
+    }
+
+    // Generate embedding for semantic search
+    const textForEmbedding = `${contentTitle}\n\n${contentBody}`
+    console.log(`🔮 Generating embedding for: ${contentTitle.substring(0, 50)}...`)
+    const embedding = await generateEmbedding(textForEmbedding)
+
+    // Build insert data - core fields that should always exist
+    const insertData: Record<string, unknown> = {
+      organization_id: content.organization_id || metadata?.organizationId || null,
+      content_type: content.type || 'general',
+      title: contentTitle,
+      content: contentBody,
+      metadata: {
+        ...metadata,
+        ...content.metadata,
+        framework_data: content.framework_data,
+        opportunity_data: content.opportunity_data,
+        generatedAt: content.timestamp || new Date().toISOString(),
+        fingerprint: fingerprint // Store in metadata as backup
+      },
+      tags: [content.type].filter(Boolean),
+      status: 'saved',
+      created_by: 'niv',
+      folder: folder || 'Unsorted',
+      last_accessed_at: new Date().toISOString()
+    }
+
+    // Add embedding fields if embedding was generated
+    if (embedding) {
+      insertData.embedding = embedding
+      insertData.embedding_model = 'voyage-3-large'
+      insertData.embedding_updated_at = new Date().toISOString()
+      console.log(`✅ Generated ${Array.isArray(embedding) ? embedding.length : 0}D embedding`)
+    } else {
+      console.log(`⚠️ No embedding generated - semantic search will not be available for this content`)
+    }
+
+    // Add optional fields if they exist in schema
+    insertData.intelligence_status = 'pending'
+    insertData.salience_score = 1.0
+    insertData.access_count = 0
+    insertData.fingerprint = fingerprint
+
+    // Try to insert with all fields
+    let savedContent: Record<string, unknown> | null = null
+    let saveError: { message?: string; code?: string } | null = null
+
+    const { data: result, error: err } = await supabase
       .from('content_library')
-      .insert({
-        organization_id: content.organization_id || metadata?.organizationId || null,
-        content_type: content.type || 'general',
-        title: content.title || metadata?.title || `Content - ${new Date().toLocaleDateString()}`,
-        content: typeof content.content === 'string' ? content.content : JSON.stringify(content.content),
-        metadata: {
-          ...metadata,
-          ...content.metadata,
-          framework_data: content.framework_data,
-          opportunity_data: content.opportunity_data,
-          generatedAt: content.timestamp || new Date().toISOString()
-        },
-        tags: [content.type].filter(Boolean),
-        status: 'saved',
-        intelligence_status: 'pending', // NEW: Will be processed async
-        created_by: 'niv',
-        folder: folder || 'Unsorted', // Default to Unsorted until intelligence assigns better folder
-        salience_score: 1.0, // NEW: Start with maximum salience
-        last_accessed_at: new Date().toISOString(),
-        access_count: 0
-      })
+      .insert(insertData)
       .select()
       .single()
+
+    savedContent = result
+    saveError = err
+
+    // If fingerprint column doesn't exist, retry without it
+    if (saveError?.message?.includes('fingerprint')) {
+      console.warn('⚠️ Fingerprint column not found, retrying without it...')
+      delete insertData.fingerprint
+      const { data: retryResult, error: retryErr } = await supabase
+        .from('content_library')
+        .insert(insertData)
+        .select()
+        .single()
+      savedContent = retryResult
+      saveError = retryErr
+    }
 
     if (saveError) {
       console.error('❌ Content library save error:', saveError)
@@ -147,14 +287,17 @@ export async function POST(request: NextRequest) {
     }
 
     const saveTime = Date.now() - startTime
-    console.log(`✅ Content saved in ${saveTime}ms: ${savedContent.id}`)
+    const savedContentId = savedContent?.id as string
+    console.log(`✅ Content saved in ${saveTime}ms: ${savedContentId}${embedding ? ' (with embedding)' : ' (no embedding)'}`)
 
     // CRITICAL: Queue background intelligence job (fire-and-forget)
     // This MUST NOT block the response
-    queueIntelligenceJob(savedContent.id).catch((err) => {
-      console.error('Failed to queue intelligence job:', err)
-      // Don't fail the save if queueing fails
-    })
+    if (savedContentId) {
+      queueIntelligenceJob(savedContentId).catch((err) => {
+        console.error('Failed to queue intelligence job:', err)
+        // Don't fail the save if queueing fails
+      })
+    }
 
     // Log performance metric
     logPerformanceMetric('save_time', saveTime).catch(() => {})
@@ -162,10 +305,12 @@ export async function POST(request: NextRequest) {
     // Return success IMMEDIATELY (target < 200ms total)
     return NextResponse.json({
       success: true,
-      id: savedContent.id,
-      message: 'Content saved to Content Library',
+      id: savedContentId,
+      message: 'Content saved to Memory Vault',
       location: 'content_library',
       intelligenceStatus: 'pending',
+      hasEmbedding: !!embedding,
+      fingerprint: fingerprint,
       saveTime: `${saveTime}ms`,
       data: savedContent
     })
