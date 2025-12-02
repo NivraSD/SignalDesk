@@ -148,13 +148,13 @@ const StudioWorkspace = forwardRef<StudioWorkspaceRef, StudioWorkspaceProps>(({
   // Extract URL for visual content
   const getVisualUrl = () => {
     if (!content) return null
-    if (content.content?.url) return content.content.url
-    if (content.content?.imageUrl) return content.content.imageUrl
-    if (content.content?.videoUrl) return content.content.videoUrl
-    if (content.content?.presentationUrl) return content.content.presentationUrl
-    if (content.metadata?.url) return content.metadata.url
-    if (content.metadata?.imageUrl) return content.metadata.imageUrl
-    return null
+    return content.content?.url ||
+      content.content?.imageUrl ||
+      content.content?.videoUrl ||
+      content.content?.presentationUrl ||
+      content.metadata?.url ||
+      content.metadata?.imageUrl ||
+      null
   }
 
   return (

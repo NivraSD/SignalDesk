@@ -392,27 +392,33 @@ export default function StudioNIVPanel({
   const handleGenerationComplete = (response: any) => {
     response.generatedContent?.forEach((item: any, index: number) => {
       setTimeout(() => {
+        // Handle image items specially - they have imageUrl instead of content
+        const isImage = item.type === 'image'
+        const imageUrl = item.imageUrl || item.url
+
+        const uniqueId = `${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`
         const contentItem: ContentItem = {
-          id: `content-${Date.now()}-${index}`,
+          id: `content-${uniqueId}`,
           type: item.type || item.contentType,
-          content: item.content,
+          content: isImage ? { imageUrl } : item.content,
           title: item.title || item.message,
-          metadata: item.metadata,
+          metadata: isImage ? { type: 'image', imageUrl, prompt: item.imagePrompt } : item.metadata,
           saved: false,
           timestamp: Date.now()
         }
 
         setMessages(prev => [...prev, {
-          id: `msg-${Date.now()}-${index}`,
+          id: `msg-${uniqueId}`,
           role: 'assistant',
           content: item.message || `Created ${item.type}`,
           timestamp: new Date(),
+          metadata: isImage ? { type: 'image', imageUrl } : undefined,
           contentItem,
           showActions: true
         }])
 
-        // Send first item to workspace
-        if (index === 0) {
+        // Send to workspace - prioritize images, otherwise send first item
+        if (isImage || index === 0) {
           onContentGenerated(contentItem)
         }
       }, index * 200)
