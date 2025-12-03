@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     type: 'website',
     images: [
       {
-        url: '/opengraph-image',
+        url: '/api/og',
         width: 1200,
         height: 630,
         alt: 'NIV - The Influence Orchestration Operating System',
@@ -46,7 +46,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'NIV - The Influence Orchestration Operating System',
     description: 'Transform how organizations discover opportunities, generate strategies, and execute campaigns — with AI that learns and compounds over time.',
-    images: ['/twitter-image'],
+    images: ['/api/og'],
   },
 };
 
