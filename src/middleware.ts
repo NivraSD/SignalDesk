@@ -35,7 +35,7 @@ export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname
 
   // Public paths that don't require authentication
-  const publicPaths = ['/auth/login', '/auth/signup', '/auth/reset-password', '/auth/callback', '/auth/error', '/auth/update-password']
+  const publicPaths = ['/auth/login', '/auth/signup', '/auth/reset-password', '/auth/callback', '/auth/error', '/auth/update-password', '/platform']
   const isPublicPath = publicPaths.some(publicPath => path.startsWith(publicPath))
 
   // API routes handle their own authentication - don't redirect them
