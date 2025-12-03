@@ -1288,7 +1288,7 @@ export default function HomePage() {
           </div>
         </div>
         <div className="landing-nav-links">
-          <Link href="/platform" className="landing-nav-link">Platform Capabilities</Link>
+          <Link href="/contact?demo=true" className="landing-nav-link">Schedule Demo</Link>
           <button className="landing-nav-cta" onClick={() => router.push('/auth/signup')}>Get Started</button>
         </div>
       </nav>
@@ -1630,7 +1630,7 @@ export default function HomePage() {
           <h2 className="landing-cta-headline">Ready to seize <em>opportunities others miss?</em></h2>
           <div className="landing-cta-actions">
             <button className="landing-cta-btn" onClick={() => router.push('/auth/signup')}>Start Free Trial</button>
-            <button className="landing-cta-btn landing-cta-btn-outline" onClick={() => router.push('/auth/login')}>Schedule Demo</button>
+            <button className="landing-cta-btn landing-cta-btn-outline" onClick={() => router.push('/contact?demo=true')}>Schedule Demo</button>
           </div>
         </div>
       </section>
@@ -1650,10 +1650,8 @@ export default function HomePage() {
             </div>
           </div>
           <div className="landing-footer-links">
-            <a href="#" className="landing-footer-link">Platform</a>
             <a href="#" className="landing-footer-link">Pricing</a>
-            <a href="#" className="landing-footer-link">About</a>
-            <a href="#" className="landing-footer-link">Contact</a>
+            <a href="/contact" className="landing-footer-link">Contact</a>
             <a href="#" className="landing-footer-link">Privacy</a>
           </div>
           <div className="landing-footer-copy">© 2025 Nivria</div>
