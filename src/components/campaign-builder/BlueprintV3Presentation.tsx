@@ -1064,7 +1064,7 @@ export function BlueprintV3Presentation({
               <div className="p-3 bg-[var(--burnt-orange-muted)] border border-[var(--burnt-orange)] rounded">
                 <p className="text-sm text-[var(--burnt-orange)]">
                   This execution inventory shows all content organized by stakeholder priority.
-                  Click "View in Strategic Planning" below to execute and track these items.
+                  Click "View Materials" below to see and execute these items.
                 </p>
               </div>
 
@@ -1379,7 +1379,7 @@ export function BlueprintV3Presentation({
               className="px-6 py-3 text-white rounded-lg font-medium hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
               style={{ background: 'var(--burnt-orange)', fontFamily: 'var(--font-display)' }}
             >
-              View in Strategic Planning
+              View Materials
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
               </svg>

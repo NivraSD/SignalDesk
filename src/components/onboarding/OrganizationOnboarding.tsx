@@ -1159,10 +1159,10 @@ export default function OrganizationOnboarding({
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="relative w-full max-w-4xl max-h-[90vh] bg-[var(--grey-900)] border border-[var(--grey-700)] rounded-2xl shadow-2xl overflow-hidden"
+        className="relative w-full max-w-4xl max-h-[90vh] bg-[var(--grey-900)] border border-[var(--grey-700)] rounded-2xl shadow-2xl overflow-hidden flex flex-col"
       >
         {/* Header */}
-        <div className="px-8 py-6 border-b border-[var(--grey-700)] bg-[var(--grey-800)]/50">
+        <div className="px-8 py-6 border-b border-[var(--grey-700)] bg-[var(--grey-800)]/50 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-bold text-white">Add New Organization</h2>
@@ -1193,7 +1193,7 @@ export default function OrganizationOnboarding({
         </div>
 
         {/* Content */}
-        <div className="px-8 py-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+        <div className="px-8 py-6 overflow-y-auto flex-1 min-h-0">
           <AnimatePresence mode="wait">
             {/* Step 1: Basic Info */}
             {step === 1 && (
@@ -2043,12 +2043,15 @@ export default function OrganizationOnboarding({
               >
                 <div>
                   <h3 className="text-lg font-semibold text-white mb-2">
-                    Building Your Optimal Schema
+                    Build Your Optimal Schema
                   </h3>
                   <p className="text-sm text-[var(--grey-400)] mb-6">
-                    Running our 7-stage GEO-optimized pipeline to create the best possible schema for AI visibility.
+                    {schemaGenerationStarted
+                      ? 'Running our 7-stage GEO-optimized pipeline to create the best possible schema for AI visibility.'
+                      : 'Click Build to generate a GEO-optimized schema that makes your organization visible to AI systems like ChatGPT, Claude, and Perplexity.'}
                   </p>
 
+                  {schemaGenerationStarted && (
                   <div className="space-y-3">
                     {/* Stage 1: Website Scraping */}
                     <div className="flex items-center gap-4 p-3 bg-[var(--grey-800)]/50 rounded-lg">
@@ -2170,8 +2173,9 @@ export default function OrganizationOnboarding({
                       </div>
                     </div>
                   </div>
+                  )}
 
-                  {schemaProgress.message && (
+                  {schemaGenerationStarted && schemaProgress.message && (
                     <div className="mt-4 p-4 bg-[var(--burnt-orange)]/10 border border-[var(--burnt-orange)]/30 rounded-lg">
                       <p className="text-sm text-[var(--burnt-orange)]">{schemaProgress.message}</p>
                     </div>
@@ -2235,14 +2239,24 @@ export default function OrganizationOnboarding({
                           <div>
                             <p className="text-sm font-medium text-[var(--burnt-orange)]">🎯 Enhance Your Schema (Optional)</p>
                             <p className="text-xs text-[var(--burnt-orange)]/70 mt-1">
-                              Add more details to make your schema even more powerful
+                              Add awards, media highlights, and custom keywords
                             </p>
                           </div>
                           <button
                             onClick={() => setShowEnhancements(!showEnhancements)}
-                            className="text-[var(--burnt-orange)] hover:text-[var(--burnt-orange)] transition-colors"
+                            className="px-4 py-2 bg-[var(--burnt-orange)] hover:bg-[var(--burnt-orange-light)] text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
                           >
-                            {showEnhancements ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+                            {showEnhancements ? (
+                              <>
+                                Hide
+                                <ChevronDown className="w-4 h-4" />
+                              </>
+                            ) : (
+                              <>
+                                Add Enhancements
+                                <ChevronRight className="w-4 h-4" />
+                              </>
+                            )}
                           </button>
                         </div>
 
@@ -2408,10 +2422,10 @@ export default function OrganizationOnboarding({
                             handleSchemaGeneration()
                           }}
                           disabled={!createdOrganization}
-                          className="flex-1 px-6 py-3 bg-[var(--burnt-orange)] hover:bg-[var(--burnt-orange-light)] disabled:bg-[var(--grey-700)] disabled:text-[var(--grey-500)] disabled:cursor-not-allowed text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+                          className="flex-1 px-6 py-3 bg-[var(--burnt-orange)] hover:bg-[var(--burnt-orange-light)] disabled:bg-[var(--grey-700)] disabled:text-[var(--grey-500)] disabled:cursor-not-allowed text-white rounded-lg transition-colors flex items-center justify-center gap-2 font-medium"
                         >
                           <Sparkles className="w-5 h-5" />
-                          Start Pipeline
+                          Build
                         </button>
                         <button
                           onClick={() => {
@@ -2429,13 +2443,13 @@ export default function OrganizationOnboarding({
                           disabled={!createdOrganization}
                           className="flex-1 px-6 py-3 bg-[var(--grey-700)] hover:bg-[var(--grey-600)] disabled:bg-[var(--grey-800)] disabled:text-[var(--grey-600)] disabled:cursor-not-allowed text-white rounded-lg transition-colors"
                         >
-                          Skip Schema Generation
+                          Skip
                         </button>
                       </>
                     )}
 
-                    {/* Show completion button when schema generation completes successfully */}
-                    {schemaProgress.schemaSynthesis === 'completed' && (
+                    {/* Show completion button when full schema generation completes (including enhancement) */}
+                    {(schemaProgress.schemaEnhancement === 'completed' || schemaProgress.schemaEnhancement === 'failed') && schemaProgress.schemaSynthesis === 'completed' && (
                       <button
                         onClick={async () => {
                           if (createdOrganization) {
@@ -2516,7 +2530,7 @@ export default function OrganizationOnboarding({
 
         {/* Footer - Hide on steps 6 and 7 (GEO Discovery & Schema Generation) */}
         {step !== 6 && step !== 7 && (
-          <div className="px-8 py-4 border-t border-[var(--grey-700)] bg-[var(--grey-800)]/50 flex items-center justify-between">
+          <div className="px-8 py-4 border-t border-[var(--grey-700)] bg-[var(--grey-800)]/50 flex items-center justify-between flex-shrink-0">
             <button
               onClick={() => {
                 if (step > 1) setStep(step - 1)
