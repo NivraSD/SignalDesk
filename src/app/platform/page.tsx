@@ -24,7 +24,8 @@ import {
   Search,
   Folder,
   BookOpen,
-  Hash
+  Hash,
+  Presentation
 } from 'lucide-react'
 
 export default function PlatformCapabilities() {
@@ -381,8 +382,146 @@ export default function PlatformCapabilities() {
         </div>
       </section>
 
-      {/* Section 4: VECTOR Campaign Builder */}
+      {/* Section 4: Presentations */}
       <section className="py-24 px-6 bg-[#0d0d0d] border-t border-[#1a1a1a]">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-16 items-start">
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <Presentation className="w-5 h-5 text-[#c75d3a]" />
+                <span className="text-[#c75d3a] text-xs font-semibold tracking-[0.2em] uppercase" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>Presentations</span>
+              </div>
+              <h2 className="text-4xl text-white mb-6" style={{ fontFamily: 'Playfair Display, serif' }}>
+                From Insight to <em className="text-[#c75d3a]">Presentation</em> in Minutes
+              </h2>
+              <p className="text-[#9e9e9e] text-lg mb-8" style={{ fontFamily: 'Inter, sans-serif' }}>
+                Work with NIV to create beautiful, professional presentations on any topic. Whether it's a campaign blueprint, executive briefing, board deck, or strategic analysis—NIV transforms your ideas into polished, ready-to-present materials.
+              </p>
+              <ul className="space-y-3 mb-8">
+                {['Campaign blueprints & strategies', 'Executive briefings & board decks', 'Competitive analyses & market reports', 'Crisis communication plans', 'Any custom topic you need'].map((item, i) => (
+                  <li key={i} className="flex items-center gap-3 text-[#bdbdbd]">
+                    <div className="w-5 h-5 rounded-full bg-[#c75d3a]/10 flex items-center justify-center">
+                      <Check className="w-3 h-3 text-[#c75d3a]" />
+                    </div>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+
+              {/* How it works */}
+              <div className="bg-[#1a1a1a] rounded-xl border border-[#2e2e2e] p-6">
+                <div className="text-white text-sm font-semibold mb-4" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>HOW IT WORKS</div>
+                <div className="space-y-4">
+                  {[
+                    { step: '1', title: 'Describe what you need', desc: 'Tell NIV what presentation you want to create' },
+                    { step: '2', title: 'NIV researches & structures', desc: 'AI gathers insights and builds your narrative' },
+                    { step: '3', title: 'Review & refine together', desc: 'Iterate with NIV until it\'s perfect' },
+                    { step: '4', title: 'Export & present', desc: 'Download or present directly from NIV' },
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-start gap-4">
+                      <div className="w-8 h-8 rounded-full bg-[#c75d3a]/10 border border-[#c75d3a]/30 flex items-center justify-center flex-shrink-0">
+                        <span className="text-[#c75d3a] text-sm font-bold">{item.step}</span>
+                      </div>
+                      <div>
+                        <div className="text-white text-sm font-medium">{item.title}</div>
+                        <div className="text-[#757575] text-xs">{item.desc}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Presentation Visual Mockup */}
+            <div className="space-y-4">
+              {/* Main Presentation Slide */}
+              <div className="bg-[#1a1a1a] rounded-2xl border border-[#2e2e2e] overflow-hidden">
+                {/* Slide Header */}
+                <div className="px-4 py-3 border-b border-[#2e2e2e] flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Presentation className="w-4 h-4 text-[#c75d3a]" />
+                    <span className="text-white text-sm font-medium">Campaign Blueprint</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[#757575] text-xs">Slide 1 of 8</span>
+                    <div className="flex gap-1">
+                      <div className="w-2 h-2 rounded-full bg-[#c75d3a]"></div>
+                      <div className="w-2 h-2 rounded-full bg-[#3d3d3d]"></div>
+                      <div className="w-2 h-2 rounded-full bg-[#3d3d3d]"></div>
+                      <div className="w-2 h-2 rounded-full bg-[#3d3d3d]"></div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Slide Content */}
+                <div className="p-8 bg-gradient-to-br from-[#1a1a1a] to-[#212121]">
+                  <div className="text-[#c75d3a] text-xs font-semibold tracking-[0.15em] uppercase mb-2" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>STRATEGIC BLUEPRINT</div>
+                  <h3 className="text-white text-2xl font-semibold mb-4" style={{ fontFamily: 'Playfair Display, serif' }}>
+                    AI Leadership <em className="text-[#c75d3a]">Positioning</em> Campaign
+                  </h3>
+                  <p className="text-[#9e9e9e] text-sm mb-6">Establish thought leadership in enterprise AI before competitor narratives solidify</p>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="bg-[#2a2a2a] rounded-lg p-4 border border-[#3d3d3d]">
+                      <div className="text-[#c75d3a] text-2xl font-bold mb-1" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>72hr</div>
+                      <div className="text-[#757575] text-xs">Window</div>
+                    </div>
+                    <div className="bg-[#2a2a2a] rounded-lg p-4 border border-[#3d3d3d]">
+                      <div className="text-white text-2xl font-bold mb-1" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>23</div>
+                      <div className="text-[#757575] text-xs">Content Pieces</div>
+                    </div>
+                    <div className="bg-[#2a2a2a] rounded-lg p-4 border border-[#3d3d3d]">
+                      <div className="text-white text-2xl font-bold mb-1" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>3</div>
+                      <div className="text-[#757575] text-xs">Stakeholder Groups</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Slide Thumbnails */}
+              <div className="grid grid-cols-4 gap-3">
+                {[
+                  { title: 'Executive Summary', active: false },
+                  { title: 'Market Analysis', active: false },
+                  { title: 'Strategic Approach', active: false },
+                  { title: 'Timeline & KPIs', active: false },
+                ].map((slide, i) => (
+                  <div key={i} className={`bg-[#1a1a1a] rounded-lg border ${slide.active ? 'border-[#c75d3a]' : 'border-[#2e2e2e]'} p-3 cursor-pointer hover:border-[#c75d3a]/50 transition-colors`}>
+                    <div className="bg-[#212121] rounded h-12 mb-2 flex items-center justify-center">
+                      <div className="w-8 h-1 bg-[#3d3d3d] rounded"></div>
+                    </div>
+                    <div className="text-[#9e9e9e] text-xs truncate">{slide.title}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* NIV Chat Integration */}
+              <div className="bg-[#1a1a1a] rounded-xl border border-[#2e2e2e] p-4">
+                <div className="flex items-start gap-3">
+                  <svg width="32" height="32" viewBox="0 0 72 72" className="flex-shrink-0">
+                    <rect width="72" height="72" rx="16" fill="#faf9f7" />
+                    <text x="10" y="50" fontFamily="Space Grotesk, sans-serif" fontWeight="700" fontSize="36" fill="#1a1a1a">NIV</text>
+                    <polygon points="58,0 72,0 72,14" fill="#c75d3a" />
+                  </svg>
+                  <div className="flex-1">
+                    <p className="text-[#bdbdbd] text-sm mb-3">
+                      I've created an 8-slide blueprint based on your AI partnership response strategy. Want me to add a competitive analysis section or adjust the timeline?
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      <button className="px-3 py-1.5 bg-[#c75d3a] text-white text-xs rounded-lg">Add Competitive Analysis</button>
+                      <button className="px-3 py-1.5 bg-[#3d3d3d] text-[#bdbdbd] text-xs rounded-lg">Adjust Timeline</button>
+                      <button className="px-3 py-1.5 bg-[#3d3d3d] text-[#bdbdbd] text-xs rounded-lg">Export PDF</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Section 5: VECTOR Campaign Builder */}
+      <section className="py-24 px-6 border-t border-[#1a1a1a]">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <div className="flex items-center justify-center gap-2 mb-4">
