@@ -33,11 +33,20 @@ export const metadata: Metadata = {
     siteName: 'NIV by nivria',
     locale: 'en_US',
     type: 'website',
+    images: [
+      {
+        url: '/opengraph-image',
+        width: 1200,
+        height: 630,
+        alt: 'NIV - The Influence Orchestration Operating System',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'NIV - The Influence Orchestration Operating System',
     description: 'Transform how organizations discover opportunities, generate strategies, and execute campaigns — with AI that learns and compounds over time.',
+    images: ['/twitter-image'],
   },
 };
 
