@@ -99,7 +99,8 @@ function ContactFormContent() {
               fontFamily: 'var(--font-headline)',
               fontSize: '32px',
               fontWeight: 400,
-              marginBottom: '16px'
+              marginBottom: '16px',
+              color: 'var(--white)'
             }}>
               Message <em style={{ color: 'var(--burnt-orange)', fontStyle: 'italic' }}>sent</em>
             </h1>
@@ -129,7 +130,8 @@ function ContactFormContent() {
               fontSize: '40px',
               fontWeight: 400,
               marginBottom: '16px',
-              textAlign: 'center'
+              textAlign: 'center',
+              color: 'var(--white)'
             }}>
               {isDemo ? (
                 <>Schedule a <em style={{ color: 'var(--burnt-orange)', fontStyle: 'italic' }}>demo</em></>
