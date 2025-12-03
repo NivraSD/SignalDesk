@@ -25,6 +25,20 @@ const playfairDisplay = Playfair_Display({
 export const metadata: Metadata = {
   title: "NIV - The Influence Orchestration Operating System",
   description: "Transform how organizations discover opportunities, generate strategies, and execute campaigns — with AI that learns and compounds over time.",
+  metadataBase: new URL('https://nivria.ai'),
+  openGraph: {
+    title: 'NIV - The Influence Orchestration Operating System',
+    description: 'Transform how organizations discover opportunities, generate strategies, and execute campaigns — with AI that learns and compounds over time.',
+    url: 'https://nivria.ai',
+    siteName: 'NIV by nivria',
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'NIV - The Influence Orchestration Operating System',
+    description: 'Transform how organizations discover opportunities, generate strategies, and execute campaigns — with AI that learns and compounds over time.',
+  },
 };
 
 export default function RootLayout({
