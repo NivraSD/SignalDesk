@@ -68,6 +68,7 @@ export default function CompanyProfileTab({
   const [newGoal, setNewGoal] = useState<StrategicGoal>({ goal: '', timeframe: '', priority: 'medium' })
 
   useEffect(() => {
+    console.log('📂 [CompanyProfileTab] Mount/organizationId changed:', organizationId)
     if (organizationId) {
       loadProfile()
     }
@@ -77,6 +78,8 @@ export default function CompanyProfileTab({
     try {
       setLoading(true)
       setError(null)
+
+      console.log('📂 Loading company profile for org:', organizationId)
 
       // Use API route instead of client-side Supabase to avoid schema cache issues
       const response = await fetch(`/api/organizations/profile?id=${organizationId}`)
@@ -89,16 +92,25 @@ export default function CompanyProfileTab({
       }
 
       const data = await response.json()
+      console.log('📂 Profile API response:', { success: data.success, hasProfile: !!data.organization?.company_profile })
 
-      if (!response.ok || !data.success) {
+      if (!data.success) {
         // If profile doesn't exist yet or error, use empty profile
-        console.warn('Company profile not loaded, using empty profile')
+        console.warn('Company profile not loaded:', data.error || 'using empty profile')
         setLoading(false)
         return
       }
 
       if (data.organization?.company_profile) {
         const cp = data.organization.company_profile
+        console.log('📂 [CompanyProfileTab] Setting profile from API response:', {
+          leadership: cp.leadership?.length || 0,
+          product_lines: cp.product_lines?.length || 0,
+          key_markets: cp.key_markets?.length || 0,
+          strategic_goals: cp.strategic_goals?.length || 0,
+          business_model: cp.business_model || 'not set',
+          founded: cp.founded || 'not set'
+        })
         setProfile({
           leadership: cp.leadership || [],
           headquarters: cp.headquarters || {},
@@ -110,6 +122,8 @@ export default function CompanyProfileTab({
           business_model: cp.business_model || '',
           strategic_goals: cp.strategic_goals || []
         })
+      } else {
+        console.log('📂 [CompanyProfileTab] No company_profile in API response, using empty defaults')
       }
     } catch (err: any) {
       console.error('Failed to load profile:', err)
@@ -126,6 +140,14 @@ export default function CompanyProfileTab({
       setError(null)
       setSuccess(false)
 
+      console.log('📂 [CompanyProfileTab] Saving profile:', {
+        organizationId,
+        leadership: profile.leadership?.length || 0,
+        product_lines: profile.product_lines?.length || 0,
+        key_markets: profile.key_markets?.length || 0,
+        strategic_goals: profile.strategic_goals?.length || 0,
+        business_model: profile.business_model || 'not set'
+      })
 
       // Use API route instead of client-side Supabase to avoid schema cache issues
       const response = await fetch(`/api/organizations/profile?id=${organizationId}`, {
@@ -147,10 +169,11 @@ export default function CompanyProfileTab({
         throw new Error(data.error || 'Failed to save profile')
       }
 
+      console.log('📂 [CompanyProfileTab] Profile saved successfully')
       setSuccess(true)
       setTimeout(() => setSuccess(false), 3000)
     } catch (err: any) {
-      console.error('Failed to save profile:', err)
+      console.error('📂 [CompanyProfileTab] Failed to save profile:', err)
       setError(err.message)
     } finally {
       setSaving(false)
@@ -227,6 +250,8 @@ export default function CompanyProfileTab({
       setError(null)
       setSuccess(false)
 
+      console.log('📂 [CompanyProfileTab] Generating profile from schema for org:', organizationId)
+
       const response = await fetch(`/api/organizations/generate-profile?id=${organizationId}`, {
         method: 'POST'
       })
@@ -256,9 +281,16 @@ export default function CompanyProfileTab({
         strategic_goals: data.profile.strategic_goals?.length ? data.profile.strategic_goals : profile.strategic_goals
       }
 
+      console.log('📂 [CompanyProfileTab] Generated profile:', {
+        leadership: mergedProfile.leadership?.length || 0,
+        product_lines: mergedProfile.product_lines?.length || 0,
+        key_markets: mergedProfile.key_markets?.length || 0,
+        business_model: mergedProfile.business_model || 'not set'
+      })
       setProfile(mergedProfile)
 
       // Auto-save after generating
+      console.log('📂 [CompanyProfileTab] Auto-saving generated profile...')
       const saveResponse = await fetch(`/api/organizations/profile?id=${organizationId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -267,11 +299,12 @@ export default function CompanyProfileTab({
 
       if (!saveResponse.ok) {
         const text = await saveResponse.text()
-        console.error('Auto-save failed:', text)
+        console.error('📂 [CompanyProfileTab] Auto-save failed:', text)
         throw new Error(`Failed to save generated profile: ${text}`)
       }
 
-      await saveResponse.json()
+      const saveData = await saveResponse.json()
+      console.log('📂 [CompanyProfileTab] Auto-save successful:', saveData.success)
 
       setSuccess(true)
       setTimeout(() => setSuccess(false), 3000)

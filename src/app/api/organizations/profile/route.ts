@@ -15,6 +15,8 @@ export async function GET(req: NextRequest) {
     const searchParams = req.nextUrl.searchParams
     const id = searchParams.get('id')
 
+    console.log('📂 [GET] Loading company profile for org:', id)
+
     if (!id) {
       return NextResponse.json(
         { success: false, error: 'Organization ID is required' },
@@ -30,7 +32,7 @@ export async function GET(req: NextRequest) {
       .single()
 
     if (error) {
-      console.error('Failed to get organization:', error)
+      console.error('📂 [GET] Failed to get organization:', error)
       return NextResponse.json(
         { success: false, error: error.message },
         { status: 500 }
@@ -38,11 +40,22 @@ export async function GET(req: NextRequest) {
     }
 
     if (!org) {
+      console.log('📂 [GET] Organization not found:', id)
       return NextResponse.json(
         { success: false, error: 'Organization not found' },
         { status: 404 }
       )
     }
+
+    console.log('📂 [GET] Raw company_profile from DB:', {
+      hasCompanyProfile: !!org.company_profile,
+      keys: org.company_profile ? Object.keys(org.company_profile) : [],
+      leadership: org.company_profile?.leadership?.length || 0,
+      product_lines: org.company_profile?.product_lines?.length || 0,
+      key_markets: org.company_profile?.key_markets?.length || 0,
+      strategic_goals: org.company_profile?.strategic_goals?.length || 0,
+      business_model: org.company_profile?.business_model || 'not set'
+    })
 
     // Extract simple profile fields from company_profile
     // These are the fields the UI needs for the Company Profile tab
@@ -57,6 +70,14 @@ export async function GET(req: NextRequest) {
       business_model: org.company_profile?.business_model || '',
       strategic_goals: org.company_profile?.strategic_goals || []
     }
+
+    console.log('📂 [GET] Returning simpleProfile:', {
+      leadership: simpleProfile.leadership.length,
+      product_lines: simpleProfile.product_lines.length,
+      key_markets: simpleProfile.key_markets.length,
+      strategic_goals: simpleProfile.strategic_goals.length,
+      business_model: simpleProfile.business_model || 'not set'
+    })
 
     return NextResponse.json({
       success: true,
@@ -84,6 +105,8 @@ export async function PUT(req: NextRequest) {
     const searchParams = req.nextUrl.searchParams
     const id = searchParams.get('id')
 
+    console.log('📂 [PUT] Saving company profile for org:', id)
+
     if (!id) {
       return NextResponse.json(
         { success: false, error: 'Organization ID is required' },
@@ -94,20 +117,34 @@ export async function PUT(req: NextRequest) {
     const body = await req.json()
     const { company_profile: newProfile } = body
 
+    console.log('📂 [PUT] Incoming profile data:', {
+      leadership: newProfile?.leadership?.length || 0,
+      product_lines: newProfile?.product_lines?.length || 0,
+      key_markets: newProfile?.key_markets?.length || 0,
+      strategic_goals: newProfile?.strategic_goals?.length || 0,
+      business_model: newProfile?.business_model || 'not set'
+    })
+
     if (!newProfile) {
+      console.error('📂 [PUT] No company_profile in request body')
       return NextResponse.json(
         { success: false, error: 'company_profile is required' },
         { status: 400 }
       )
     }
 
-
     // First fetch the current company_profile to preserve intelligence data
-    const { data: currentOrg } = await supabase
+    const { data: currentOrg, error: fetchError } = await supabase
       .from('organizations')
       .select('company_profile')
       .eq('id', id)
       .single()
+
+    if (fetchError) {
+      console.error('📂 [PUT] Failed to fetch current org:', fetchError)
+    }
+
+    console.log('📂 [PUT] Current company_profile keys:', currentOrg?.company_profile ? Object.keys(currentOrg.company_profile) : [])
 
     // Merge the new profile fields at the top level, preserving all other fields
     // This updates leadership, headquarters, etc. without touching intelligence_context, monitoring_config, etc.
@@ -133,6 +170,13 @@ export async function PUT(req: NextRequest) {
       })
     }
 
+    console.log('📂 [PUT] Merged profile to save:', {
+      leadership: updatedCompanyProfile.leadership?.length || 0,
+      product_lines: updatedCompanyProfile.product_lines?.length || 0,
+      key_markets: updatedCompanyProfile.key_markets?.length || 0,
+      strategic_goals: updatedCompanyProfile.strategic_goals?.length || 0,
+      business_model: updatedCompanyProfile.business_model || 'not set'
+    })
 
     // Update using service role key to bypass any schema cache issues
     const { data, error } = await supabase
@@ -143,14 +187,14 @@ export async function PUT(req: NextRequest) {
       .single()
 
     if (error) {
-      console.error('Failed to update company profile:', error)
+      console.error('📂 [PUT] Failed to update company profile:', error)
       return NextResponse.json(
         { success: false, error: error.message },
         { status: 500 }
       )
     }
 
-    console.log('Successfully updated company profile')
+    console.log('📂 [PUT] Successfully saved company profile. Returned data has company_profile:', !!data?.company_profile)
 
     return NextResponse.json({
       success: true,
