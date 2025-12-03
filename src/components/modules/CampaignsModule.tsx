@@ -31,8 +31,9 @@ import { useAppStore } from '@/stores/useAppStore'
 import { CampaignBuilderWizard } from '@/components/campaign-builder/CampaignBuilderWizard'
 import { supabase } from '@/lib/supabase/client'
 
-const CAMPAIGNS_STORAGE_KEY = 'signaldesk_active_campaigns'
-const CALENDAR_ITEMS_STORAGE_KEY = 'signaldesk_calendar_items'
+// Storage keys are scoped by organization to prevent data leakage
+const getCampaignsStorageKey = (orgId: string) => `signaldesk_active_campaigns_${orgId}`
+const getCalendarItemsStorageKey = (orgId: string) => `signaldesk_calendar_items_${orgId}`
 const CONTENT_ITEMS_STORAGE_PREFIX = 'signaldesk_content_items_'
 
 interface Campaign {
@@ -131,9 +132,15 @@ export default function CampaignsModule() {
   const [resultValue, setResultValue] = useState('')
   const [resultNotes, setResultNotes] = useState('')
 
-  // Load campaigns from localStorage on mount
+  // Load campaigns from localStorage on mount and when organization changes
   useEffect(() => {
-    const savedCampaigns = localStorage.getItem(CAMPAIGNS_STORAGE_KEY)
+    if (!organization?.id) {
+      setCampaigns([])
+      setCalendarItems([])
+      return
+    }
+
+    const savedCampaigns = localStorage.getItem(getCampaignsStorageKey(organization.id))
     if (savedCampaigns) {
       try {
         const parsed = JSON.parse(savedCampaigns)
@@ -141,10 +148,13 @@ export default function CampaignsModule() {
         console.log('📋 Loaded campaigns from localStorage:', parsed.length)
       } catch (e) {
         console.error('Failed to parse saved campaigns:', e)
+        setCampaigns([])
       }
+    } else {
+      setCampaigns([])
     }
 
-    const savedCalendarItems = localStorage.getItem(CALENDAR_ITEMS_STORAGE_KEY)
+    const savedCalendarItems = localStorage.getItem(getCalendarItemsStorageKey(organization.id))
     if (savedCalendarItems) {
       try {
         const parsed = JSON.parse(savedCalendarItems)
@@ -152,23 +162,28 @@ export default function CampaignsModule() {
         console.log('📅 Loaded calendar items from localStorage:', parsed.length)
       } catch (e) {
         console.error('Failed to parse saved calendar items:', e)
+        setCalendarItems([])
       }
+    } else {
+      setCalendarItems([])
     }
-  }, [])
+  }, [organization?.id])
 
   // Save campaigns to localStorage whenever they change
   useEffect(() => {
+    if (!organization?.id) return
     if (campaigns.length > 0) {
-      localStorage.setItem(CAMPAIGNS_STORAGE_KEY, JSON.stringify(campaigns))
+      localStorage.setItem(getCampaignsStorageKey(organization.id), JSON.stringify(campaigns))
       console.log('💾 Saved campaigns to localStorage:', campaigns.length)
     }
-  }, [campaigns])
+  }, [campaigns, organization?.id])
 
   // Save calendar items to localStorage
   useEffect(() => {
-    localStorage.setItem(CALENDAR_ITEMS_STORAGE_KEY, JSON.stringify(calendarItems))
+    if (!organization?.id) return
+    localStorage.setItem(getCalendarItemsStorageKey(organization.id), JSON.stringify(calendarItems))
     console.log('📅 Saved calendar items to localStorage:', calendarItems.length)
-  }, [calendarItems])
+  }, [calendarItems, organization?.id])
 
   // Parse blueprint into content items when a campaign is selected
   // Also load any saved content from localStorage
