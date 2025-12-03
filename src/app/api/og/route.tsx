@@ -14,7 +14,6 @@ export async function GET() {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          fontFamily: 'system-ui, sans-serif',
         }}
       >
         {/* Logo container */}
@@ -25,80 +24,100 @@ export async function GET() {
             marginBottom: '50px',
           }}
         >
-          {/* NIV box */}
+          {/* Parallelogram NIV logo */}
           <div
             style={{
               display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '180px',
-              height: '108px',
-              background: '#faf9f7',
-              borderRadius: '12px',
+              position: 'relative',
+              width: '160px',
+              height: '96px',
             }}
           >
-            <span
-              style={{
-                fontSize: '52px',
-                fontWeight: 700,
-                color: '#1a1a1a',
-                letterSpacing: '-1px',
-              }}
+            {/* Parallelogram shape using SVG */}
+            <svg
+              width="160"
+              height="96"
+              viewBox="0 0 100 60"
+              style={{ position: 'absolute', top: 0, left: 0 }}
             >
-              NIV
-            </span>
-          </div>
-          {/* Divider and by nivria */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              marginLeft: '24px',
-            }}
-          >
+              <path d="M12 0 H100 V60 H0 L12 0 Z" fill="#faf9f7" />
+              <path d="M85 0 H100 V15 L85 0 Z" fill="#c75d3a" />
+            </svg>
+            {/* NIV text overlay */}
             <div
               style={{
-                width: '2px',
-                height: '60px',
-                background: 'rgba(255, 255, 255, 0.3)',
                 display: 'flex',
-              }}
-            />
-            <span
-              style={{
-                fontSize: '28px',
-                color: 'rgba(255, 255, 255, 0.5)',
-                letterSpacing: '2px',
-                marginLeft: '20px',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
-              by nivria
-            </span>
+              <span
+                style={{
+                  fontSize: '44px',
+                  fontWeight: 700,
+                  color: '#1a1a1a',
+                  letterSpacing: '-1px',
+                }}
+              >
+                NIV
+              </span>
+            </div>
           </div>
+          {/* Divider */}
+          <div
+            style={{
+              display: 'flex',
+              width: '2px',
+              height: '60px',
+              background: 'rgba(255, 255, 255, 0.3)',
+              marginLeft: '24px',
+            }}
+          />
+          {/* by nivria */}
+          <span
+            style={{
+              display: 'flex',
+              fontSize: '24px',
+              color: 'rgba(255, 255, 255, 0.5)',
+              letterSpacing: '1px',
+              marginLeft: '20px',
+            }}
+          >
+            by nivria
+          </span>
         </div>
 
         {/* Tagline line 1 */}
         <div
           style={{
             display: 'flex',
-            fontSize: '48px',
+            fontSize: '52px',
             fontWeight: 400,
             color: '#faf9f7',
-            marginBottom: '8px',
+            marginBottom: '4px',
+            fontFamily: 'Georgia, Times New Roman, serif',
+            letterSpacing: '-0.02em',
           }}
         >
           <span>The </span>
-          <span style={{ fontStyle: 'italic', color: '#c75d3a', marginLeft: '12px', marginRight: '12px' }}>influence</span>
-          <span> orchestration</span>
+          <span style={{ fontStyle: 'italic', color: '#c75d3a', marginLeft: '14px', marginRight: '14px' }}>influence</span>
+          <span>orchestration</span>
         </div>
 
         {/* Tagline line 2 */}
         <div
           style={{
             display: 'flex',
-            fontSize: '48px',
+            fontSize: '52px',
             fontWeight: 400,
             color: '#faf9f7',
+            fontFamily: 'Georgia, Times New Roman, serif',
+            letterSpacing: '-0.02em',
           }}
         >
           operating system
