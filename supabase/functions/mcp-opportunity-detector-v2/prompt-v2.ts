@@ -60,11 +60,16 @@ MONITORING DATE: ${currentDate}
 
 ORGANIZATION: ${organizationName}
 INDUSTRY: ${organizationProfile.industry}
-WHAT ${organizationName} DOES: ${organizationProfile.description || 'No description available'}
+WHAT ${organizationName} DOES: ${organizationProfile.description || 'No description available - focus only on what is explicitly stated about this company'}
+${organizationProfile.core_offerings?.length > 0 ? `CORE OFFERINGS/SERVICES: ${organizationProfile.core_offerings.join(', ')}` : ''}
+${organizationProfile.differentiators?.length > 0 ? `KEY DIFFERENTIATORS: ${organizationProfile.differentiators.join(', ')}` : ''}
 KEY COMPETITORS: ${discoveryTargets.competitors.slice(0, 10).join(', ')}
 ${targetCustomers ? `\nTARGET CUSTOMERS: ${targetCustomers}` : ''}
+${organizationProfile.target_audiences?.length > 0 ? `TARGET AUDIENCES: ${organizationProfile.target_audiences.join(', ')}` : ''}
 ${brandPersonality ? `BRAND PERSONALITY: ${brandPersonality}` : ''}
 ${strategicPriorities.length > 0 ? `STRATEGIC PRIORITIES: ${strategicPriorities.join(', ')}` : ''}
+
+⚠️ CRITICAL: DO NOT invent or assume capabilities that are NOT listed above. If no description/offerings are provided, ONLY suggest generic PR opportunities (media relations, thought leadership, event commentary) - DO NOT suggest product capabilities, AI features, or technical solutions unless explicitly listed.
 
 INTELLIGENCE DATA FROM TODAY'S MONITORING:
 

@@ -135,7 +135,7 @@ async function extractIntelligenceData(enrichedData: any, organizationName: stri
   // Fetch organization company_profile for strategic goals
   const { data: org } = await supabase
     .from('organizations')
-    .select('company_profile')
+    .select('company_profile, industry')
     .eq('id', organizationId)
     .single();
 
@@ -176,9 +176,14 @@ async function extractIntelligenceData(enrichedData: any, organizationName: stri
     organizationProfile: {
       strengths: profile?.strengths || [],
       weaknesses: profile?.weaknesses || [],
-      industry: profile?.industry || '',
+      industry: org?.industry || org?.company_profile?.industry || profile?.industry || '',
       competitors: discoveryTargets.competitors,
-      strategic_goals: org?.company_profile?.strategic_goals || []
+      strategic_goals: org?.company_profile?.strategic_goals || [],
+      // Include description from organizations.company_profile (set during onboarding)
+      description: org?.company_profile?.description || profile?.description || '',
+      core_offerings: org?.company_profile?.service_lines || org?.company_profile?.product_lines || [],
+      differentiators: org?.company_profile?.strategic_context?.strategic_priorities || [],
+      target_audiences: org?.company_profile?.strategic_context?.target_customers ? [org.company_profile.strategic_context.target_customers] : []
     }
   };
 }
