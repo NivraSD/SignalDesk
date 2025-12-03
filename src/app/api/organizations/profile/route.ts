@@ -148,24 +148,26 @@ export async function PUT(req: NextRequest) {
 
     // Merge the new profile fields at the top level, preserving all other fields
     // This updates leadership, headquarters, etc. without touching intelligence_context, monitoring_config, etc.
-    // Store both flat UI fields AND nested intelligence data
+    // IMPORTANT: Preserve existing data if new value is empty (defensive merge)
+    const existing = currentOrg?.company_profile || {}
+
     const updatedCompanyProfile = {
-      ...(currentOrg?.company_profile || {}),
-      // Flat UI fields for CompanyProfileTab
-      leadership: newProfile.leadership,
-      headquarters: newProfile.headquarters,
-      company_size: newProfile.company_size,
-      founded: newProfile.founded,
-      parent_company: newProfile.parent_company,
-      product_lines: newProfile.product_lines,
-      key_markets: newProfile.key_markets,
-      business_model: newProfile.business_model,
-      strategic_goals: newProfile.strategic_goals,
+      ...existing,
+      // Flat UI fields for CompanyProfileTab - only update if new value has content
+      leadership: newProfile.leadership?.length > 0 ? newProfile.leadership : existing.leadership || [],
+      headquarters: Object.keys(newProfile.headquarters || {}).length > 0 ? newProfile.headquarters : existing.headquarters || {},
+      company_size: Object.keys(newProfile.company_size || {}).length > 0 ? newProfile.company_size : existing.company_size || {},
+      founded: newProfile.founded || existing.founded || '',
+      parent_company: newProfile.parent_company || existing.parent_company || '',
+      product_lines: newProfile.product_lines?.length > 0 ? newProfile.product_lines : existing.product_lines || [],
+      key_markets: newProfile.key_markets?.length > 0 ? newProfile.key_markets : existing.key_markets || [],
+      business_model: newProfile.business_model || existing.business_model || '',
+      strategic_goals: newProfile.strategic_goals?.length > 0 ? newProfile.strategic_goals : existing.strategic_goals || [],
       // Also update nested intelligence fields if they exist (for backward compatibility)
-      ...(currentOrg?.company_profile?.market && {
+      ...(existing.market && {
         market: {
-          ...currentOrg.company_profile.market,
-          key_markets: newProfile.key_markets?.length ? newProfile.key_markets : currentOrg.company_profile.market.key_markets
+          ...existing.market,
+          key_markets: newProfile.key_markets?.length ? newProfile.key_markets : existing.market.key_markets
         }
       })
     }

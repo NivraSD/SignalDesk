@@ -57,19 +57,42 @@ export async function PUT(
     const params = await context.params
     const { id } = params
     const body = await req.json()
-    const { company_profile } = body
+    const { company_profile: newProfile } = body
 
-    if (!company_profile) {
+    if (!newProfile) {
       return NextResponse.json(
         { success: false, error: 'company_profile is required' },
         { status: 400 }
       )
     }
 
+    // First fetch existing profile to preserve data
+    const { data: currentOrg } = await supabase
+      .from('organizations')
+      .select('company_profile')
+      .eq('id', id)
+      .single()
+
+    const existing = currentOrg?.company_profile || {}
+
+    // Defensive merge - preserve existing data if new value is empty
+    const updatedCompanyProfile = {
+      ...existing,
+      leadership: newProfile.leadership?.length > 0 ? newProfile.leadership : existing.leadership || [],
+      headquarters: Object.keys(newProfile.headquarters || {}).length > 0 ? newProfile.headquarters : existing.headquarters || {},
+      company_size: Object.keys(newProfile.company_size || {}).length > 0 ? newProfile.company_size : existing.company_size || {},
+      founded: newProfile.founded || existing.founded || '',
+      parent_company: newProfile.parent_company || existing.parent_company || '',
+      product_lines: newProfile.product_lines?.length > 0 ? newProfile.product_lines : existing.product_lines || [],
+      key_markets: newProfile.key_markets?.length > 0 ? newProfile.key_markets : existing.key_markets || [],
+      business_model: newProfile.business_model || existing.business_model || '',
+      strategic_goals: newProfile.strategic_goals?.length > 0 ? newProfile.strategic_goals : existing.strategic_goals || []
+    }
+
     // Update using service role key to bypass any schema cache issues
     const { data, error } = await supabase
       .from('organizations')
-      .update({ company_profile })
+      .update({ company_profile: updatedCompanyProfile })
       .eq('id', id)
       .select()
       .single()
