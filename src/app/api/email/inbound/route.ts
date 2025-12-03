@@ -4,7 +4,7 @@ import { Resend } from 'resend'
 const resend = new Resend(process.env.RESEND_API_KEY)
 
 // Email address to forward all inbound emails to
-const FORWARD_TO_EMAIL = process.env.EMAIL_FORWARD_TO || 'jonleibo@me.com'
+const FORWARD_TO_EMAIL = process.env.EMAIL_FORWARD_TO || 'j83621235@gmail.com'
 
 export async function POST(req: NextRequest) {
   try {
