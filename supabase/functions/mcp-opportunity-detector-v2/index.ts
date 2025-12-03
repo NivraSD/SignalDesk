@@ -155,6 +155,18 @@ async function extractIntelligenceData(enrichedData: any, organizationName: stri
     competitors: discoveryTargets.competitors.length
   });
 
+  // Log company_profile data being used
+  console.log('🏢 Company Profile Data:', {
+    has_company_profile: !!org?.company_profile,
+    industry: org?.industry || org?.company_profile?.industry || 'not set',
+    strategic_goals_count: org?.company_profile?.strategic_goals?.length || 0,
+    description: org?.company_profile?.description ? `${org.company_profile.description.substring(0, 50)}...` : 'not set',
+    service_lines: org?.company_profile?.service_lines?.length || 0,
+    product_lines: org?.company_profile?.product_lines?.length || 0,
+    has_strategic_context: !!org?.company_profile?.strategic_context,
+    leadership_count: org?.company_profile?.leadership?.length || 0
+  });
+
   // Structure data for Claude
   return {
     events: {
