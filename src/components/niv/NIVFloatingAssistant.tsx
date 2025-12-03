@@ -106,7 +106,7 @@ export default function NIVFloatingAssistant() {
     <div
       style={{
         position: 'fixed',
-        bottom: '80px',
+        bottom: '24px',
         right: '24px',
         zIndex: 1000
       }}
@@ -118,9 +118,9 @@ export default function NIVFloatingAssistant() {
             position: 'absolute',
             bottom: '88px',
             right: 0,
-            width: '550px',
-            maxHeight: 'calc(100vh - 200px)',
-            height: '650px',
+            width: '525px',
+            maxHeight: 'calc(100vh - 150px)',
+            height: '700px',
             background: 'var(--charcoal)',
             borderRadius: '16px',
             boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',

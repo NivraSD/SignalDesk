@@ -129,7 +129,7 @@ function StudioContent() {
         className="h-full overflow-hidden"
         style={{
           display: 'grid',
-          gridTemplateColumns: '260px 1fr 380px',
+          gridTemplateColumns: '260px 1fr 400px',
           minHeight: 0
         }}
       >
@@ -152,7 +152,7 @@ function StudioContent() {
         </div>
 
         {/* Right - NIV Panel (Dark) */}
-        <div className="overflow-hidden p-6 bg-[var(--charcoal)] border-l border-zinc-800">
+        <div className="overflow-hidden p-6 pb-[5vh] bg-[var(--charcoal)] border-l border-zinc-800">
           <StudioNIVPanel
             selectedContentType={selectedContentType}
             onContentGenerated={handleContentGenerated}
