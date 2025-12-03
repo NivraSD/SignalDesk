@@ -582,7 +582,7 @@ async function detectOpportunitiesV2(
 
   const prompt = buildOpportunityDetectionPromptV2({
     organizationName,
-    events: allEvents.slice(0, 25), // Reduced from 40 to prevent timeout
+    events: allEvents.slice(0, 15), // Reduced from 25 to prevent timeout - focus on highest priority events
     topics: extractedData.topics.slice(0, 8), // Limit topics
     quotes: extractedData.quotes.slice(0, 8), // Limit quotes
     entities: extractedData.entities.slice(0, 12), // Limit entities
@@ -604,7 +604,7 @@ async function detectOpportunitiesV2(
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 20000, // Reduced from 32k to prevent timeout - still plenty for execution plans
+        max_tokens: 12000, // Reduced from 20k to prevent timeout - enough for 3-5 opportunities
         temperature: 0.7,
         system: OPPORTUNITY_SYSTEM_PROMPT_V2,
         messages: [{
