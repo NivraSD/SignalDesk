@@ -957,103 +957,108 @@ ${articleOnlyMode ? `You have ${enrichedArticles.length} articles to synthesize 
 - NEVER lead with "5 days ago" when today's data exists
 - Check EVERY event date before writing
 
-⚠️ PRIORITY #3: BUSINESS RELEVANCE
+⚠️ PRIORITY #3: COMMUNICATIONS RELEVANCE
 - ${organization?.name} is a ${synthesisMetadata?.companyProfile?.business_model || 'company'}
-- Focus on: ${synthesisMetadata?.companyProfile?.key_markets?.join(', ') || 'their markets'}
-- IGNORE: Stories that don't affect ${organization?.name}'s business
-- Think: "Would their CEO care about this in TODAY's 9am meeting?"
+- Focus on: Stories they can INSERT THEMSELVES INTO, narratives to SHAPE, positioning to CLAIM
+- IGNORE: Stories with no PR angle or communications play
+- Think: "What would a top PR agency tell them to DO with this information?"
 
-⚠️ PRIORITY #4: EXECUTIVE FORMAT (SCANNABLE, ACTIONABLE)
-- Lead with the competitive landscape summary in 2-3 sentences
-- Then: Recent competitor moves (mention EACH one)
-- Then: Regulatory/stakeholder developments
-- Then: Opportunities and threats
-- NO academic language, NO generic trends, NO excuses for "quiet periods"
+⚠️ PRIORITY #4: PR ACTION FORMAT (SCANNABLE, ACTIONABLE)
+- Lead with TOP PR OPPORTUNITIES - what can they newsjack, pitch, or position against?
+- Then: Competitor communications activity (what are rivals saying/doing in media?)
+- Then: Narrative risks and reputation signals
+- Then: Specific recommended actions (pitches, statements, thought leadership topics)
+- NO business analysis, NO market trends without PR angle, NO passive "monitoring" recommendations
 
 STANDARD REQUIREMENTS:
-${articleOnlyMode ? `1. Your executive_summary should COMPREHENSIVELY synthesize the ${enrichedArticles.length} articles:
-   - Identify articles about competitors and what they reveal
-   - Identify articles about stakeholders and regulatory changes
-   - Identify industry trends and market developments
-2. SYNTHESIZE don't summarize: Group related articles, identify patterns, surface themes
-3. Each key_development should come from an article - use article.title as "event", article.source as "source", article.url as "url"
+${articleOnlyMode ? `1. Your executive_summary should identify PR OPPORTUNITIES from the ${enrichedArticles.length} articles:
+   - What stories can ${organization?.name} INSERT THEMSELVES INTO?
+   - What competitor activity creates POSITIONING opportunities?
+   - What narratives are FORMING that they can shape?
+2. SYNTHESIZE into ACTIONS: Don't just report news - recommend communications plays
+3. Each pr_opportunity should have a SPECIFIC action (pitch angle, statement topic, media target)
 4. Reference articles by describing them, not by number
-5. Every claim must come from the articles above - no external knowledge` : `1. Your executive_summary should COMPREHENSIVELY synthesize the ${topEvents.length} events:
-   - Organization news (${orgSlots} events provided)
-   - Competitor developments (${competitorSlots} events provided) ← CRITICAL CATEGORY
-   - Stakeholder/regulatory news (${stakeholderSlots} events provided)
-   - Industry trends (${otherSlots} events provided)
-2. SYNTHESIZE don't summarize: Group related events, identify patterns, surface themes
-3. Coverage should be PROPORTIONAL to event volume: if ${otherSlots} industry events, that category should be substantive
+5. Every recommendation must come from the articles above - no outside knowledge` : `1. Your executive_summary should identify PR OPPORTUNITIES from the ${topEvents.length} events:
+   - What stories can ${organization?.name} INSERT THEMSELVES INTO?
+   - What competitor activity (${competitorSlots} events) creates POSITIONING opportunities?
+   - What stakeholder/regulatory news (${stakeholderSlots} events) needs proactive response?
+2. SYNTHESIZE into ACTIONS: Don't just report news - recommend communications plays
+3. Every pr_opportunity must have a SPECIFIC action (not just "monitor" or "be aware")
 4. Reference events by describing them, not by number
-5. Every claim must come from the events above - no external knowledge`}
+5. Every recommendation must come from the events above - no outside knowledge`}
 
-⚠️ CRITICAL SYNTHESIS RULES:
-- "competitive_moves" = Actions by ${organization?.name}'s INDUSTRY COMPETITORS (other ${organization?.industry} companies)
-- "stakeholder_dynamics" = News about regulators/investors/analysts we're monitoring (may be outside our industry)
-- DO NOT put regulatory news in "competitive_moves" unless it directly affects ${organization?.industry} competition
-- Example: For a PR firm, SEC enforcement on broker-dealers goes in "stakeholder_dynamics", NOT "competitive_moves"
-- Example: For a PR firm, Edelman winning a client is a "competitive_move", SEC updating disclosure rules is "stakeholder_dynamics"
+⚠️ CRITICAL - THINK COMMUNICATIONS, NOT BUSINESS:
+- "newsjacking_opportunity" = Stories ${organization?.name} can insert themselves into RIGHT NOW
+- "positioning_play" = Competitor moves/missteps that create differentiation opportunities
+- "thought_leadership_hook" = Emerging topics where ${organization?.name} can establish/reinforce authority
+- "narrative_risk" = Stories or sentiment shifts that could affect reputation
+- "media_moment" = Breaking coverage where timely outreach could earn placement
 
-Generate comprehensive intelligence synthesis as valid JSON:
+Generate your PR INTELLIGENCE BRIEF as valid JSON:
 
 {
   "synthesis": {
-    "executive_summary": "A 2-3 paragraph narrative overview that synthesizes the key patterns and themes from today's ${topEvents.length} events. Focus on what matters most to ${organization?.name}. Include source citations like [Source: Article Title]. Group related developments rather than listing individual events. Use \\n\\n to separate paragraphs.",
+    "executive_summary": "A 2-3 paragraph COMMUNICATIONS-FOCUSED overview. Lead with the TOP PR OPPORTUNITIES from today's news. What stories can ${organization?.name} insert themselves into? What narratives are forming? What should the comms team DO? Include source citations like [Source: Article Title]. Use \\n\\n to separate paragraphs.",
 
-    "key_developments": [
+    "pr_opportunities": [
       {
-        "category": "competitor_move",
-        "event": "Specific action taken (include names, numbers, details)",
-        "impact": "Why this matters to ${organization?.name}",
+        "type": "newsjacking_opportunity | positioning_play | thought_leadership_hook | media_moment",
+        "headline": "The news event or story",
+        "opportunity": "Specific PR action ${organization?.name} can take (pitch angle, statement topic, byline idea, media target)",
+        "urgency": "immediate | this_week | ongoing",
         "source": "Article title",
-        "url": "Article URL",
-        "recency": "today",
-        "entity": "Company/entity name"
+        "url": "Article URL"
       }
     ],
 
-    "strategic_implications": "What ${organization?.name} should know and do based on these developments. Be specific and actionable.",
+    "narrative_risks": [
+      {
+        "signal": "What's happening in the news/discourse",
+        "risk": "How this could affect ${organization?.name}'s reputation or positioning",
+        "recommendation": "Proactive communications response",
+        "source": "Article title"
+      }
+    ],
 
-    "watching_closely": ["Entity names, topics, or trends to monitor based on the intelligence"]
+    "competitor_comms": [
+      {
+        "competitor": "Competitor name",
+        "activity": "What they announced/said/did",
+        "our_angle": "How ${organization?.name} can respond or differentiate",
+        "source": "Article title"
+      }
+    ],
+
+    "recommended_actions": [
+      "Specific, actionable communications recommendations based on today's intelligence"
+    ],
+
+    "watching_closely": ["Emerging narratives, stakeholders, or topics to monitor"]
   }
 }
 
-CRITICAL INSTRUCTIONS FOR key_developments:
-${articleOnlyMode ? `- Include 15-25 entries from the ${enrichedArticles.length} articles provided
-- Use article.title as "event", article.source as "source", article.url as "url"
-- Sort by relevance_score (highest first) and recency` : `- Include 15-25 entries covering ALL significant events from the ${topEvents.length} provided`}
-- Sort by recency: "today" first, then "this_week", then "older"
-- Each entry MUST have source attribution (source + url fields)
-- category options: competitor_move, stakeholder_action, market_trend, regulatory_change
-- Be specific in "event" - use actual names, numbers, quotes from the ${articleOnlyMode ? 'articles' : 'events'}
-- "impact" should explain WHY ${organization?.name} cares about this specific ${articleOnlyMode ? 'article' : 'event'}
+CRITICAL INSTRUCTIONS:
+${articleOnlyMode ? `- Include 10-15 pr_opportunities from the ${enrichedArticles.length} articles provided` : `- Include 10-15 pr_opportunities from the ${topEvents.length} events`}
+- EVERY opportunity must have a SPECIFIC recommended action (not just "monitor" or "be aware")
+- Think: "If I were ${organization?.name}'s PR agency, what would I tell them to DO tomorrow morning?"
+- urgency levels: "immediate" = act today, "this_week" = plan this week, "ongoing" = add to editorial calendar
+- narrative_risks should flag reputation concerns EARLY - before they become crises
+- competitor_comms should always include "our_angle" - how to respond or differentiate
 
 ═══════════════════════════════════════════════════════════
-🚨 FINAL VERIFICATION CHECKLIST (Review Before Responding)
+🚨 FINAL PR STRATEGY CHECK
 ═══════════════════════════════════════════════════════════
 
-Before you generate your synthesis, verify:
+Before you respond, verify your synthesis answers:
 
-✅ GROUNDING CHECK: Can you point to the specific article/event for EVERY claim?
-   - If YES: Include it in your synthesis
-   - If NO: Remove it - you're speculating
+✅ "What can ${organization?.name}'s comms team DO with this intelligence?"
+✅ "What stories can they insert themselves into?"
+✅ "What narratives should they shape or counter?"
+✅ "What positioning opportunities exist?"
+✅ "What risks should they get ahead of?"
 
-✅ CONTEXT ALIGNMENT: Does each insight relate to the company's:
-   - Competitors listed above?
-   - Stakeholders listed above?
-   - Strategic interests in their profile?
-   - If NOT: It's not relevant intelligence for them
-
-✅ DATA FIDELITY: Are you:
-   - Synthesizing what the articles actually say?
-   - Or adding your own interpretation/assumptions?
-   - ONLY the articles' content should inform your synthesis
-
-REMEMBER: You are aligning DATA (the articles) with CONTEXT (the company profile).
-Your value is in making connections the company might miss - NOT in adding information they don't have.
-
-If the articles don't provide enough information about a topic, say "Limited intelligence on X in current monitoring data" rather than filling gaps with assumptions.`;
+If an insight doesn't lead to a COMMUNICATIONS ACTION, it doesn't belong in this brief.
+This is not a business intelligence report - it's a PR ACTION BRIEF.`;
     
   } else {
     // Standard synthesis of pre-analyzed data
@@ -1145,16 +1150,24 @@ Provide a concise executive synthesis focusing on:
       model: 'claude-sonnet-4-20250514',  // Back to Sonnet 4 - was working before
       max_tokens: 4000,
       temperature: 0.3,  // Lower temperature for more focused, strategic output
-      system: `You are writing a DAILY INDUSTRY INTELLIGENCE BRIEF for ${organization?.name}'s executive team.
+      system: `You are a STRATEGIC COMMUNICATIONS ANALYST writing a DAILY PR & NARRATIVE INTELLIGENCE BRIEF for ${organization?.name}'s communications team.
 
-MISSION: Report on the ${organization?.industry || 'industry'} landscape TODAY - market trends, competitor moves, regulatory shifts, thought leadership, and strategic opportunities.
+MISSION: Identify PR OPPORTUNITIES, NARRATIVE HOOKS, POSITIONING MOMENTS, and MEDIA ANGLES from today's news landscape. Think like a senior PR strategist, not a business analyst.
+
+YOUR LENS - ALWAYS ASK:
+- "What story can ${organization?.name} INSERT ITSELF INTO?"
+- "What narrative is forming that we can SHAPE or COUNTER?"
+- "What MEDIA MOMENT can we capitalize on?"
+- "What THOUGHT LEADERSHIP opportunity exists?"
+- "What COMPETITIVE POSITIONING does this enable?"
+- "What CRISIS or REPUTATION SIGNAL should we monitor?"
 
 ABSOLUTE RULES:
-1. FOCUS ON INDUSTRY INTELLIGENCE - trends, events, regulatory changes, market shifts, thought leadership
-2. Competitor-specific news is ONE component, not the only component
+1. FOCUS ON COMMUNICATIONS VALUE - earned media potential, narrative opportunities, positioning hooks, share of voice
+2. THINK LIKE A PR PRO - every insight should answer "so what can we DO with this?"
 3. RECENT NEWS FIRST - Today > This week > Old (ignore 2+ weeks unless critical)
-4. BE SUBSTANTIVE - Report actual industry developments, not "limited intelligence detected"
-5. VALUE ALL SIGNALS - Industry news without specific competitor mentions is still valuable intelligence
+4. BE ACTIONABLE - each finding should suggest a communications play (pitch, statement, thought leadership, newsjacking)
+5. VALUE NARRATIVE SIGNALS - industry discourse, sentiment shifts, emerging storylines matter as much as hard news
 
 ${synthesisMetadata?.companyProfile ? `
 ═══════════════════════════════════════════════════════════
@@ -1174,14 +1187,16 @@ ${discoveryTargets.competitors.slice(0, 15).join(', ') || 'None specified'}
 KEY STAKEHOLDERS TO TRACK (regulators, analysts, investors):
 ${discoveryTargets.stakeholders.slice(0, 15).join(', ') || 'None specified'}
 
-⚠️ CRITICAL: Your synthesis should cover:
-- Industry trends and market shifts affecting ${organization?.industry || 'the industry'}
-- Competitor moves when available (but don't complain if not every competitor has news today)
-- Regulatory/policy changes
-- Thought leadership and industry discourse
-- Strategic opportunities for ${organization?.name}
+⚠️ CRITICAL - YOUR SYNTHESIS SHOULD SURFACE:
+- NEWSJACKING OPPORTUNITIES: Stories ${organization?.name} can insert themselves into with commentary, data, or expertise
+- NARRATIVE GAPS: Where ${organization?.name}'s perspective is missing from industry discourse
+- POSITIONING PLAYS: Competitor missteps or market shifts that create differentiation opportunities
+- THOUGHT LEADERSHIP HOOKS: Emerging topics where ${organization?.name} can establish authority
+- MEDIA MOMENTS: Breaking stories where timely outreach could earn coverage
+- REPUTATION SIGNALS: Early warnings of narrative risks or sentiment shifts
+- SHARE OF VOICE: How competitors are showing up in media vs ${organization?.name}
 
-Focus on what matters to a ${synthesisMetadata.companyProfile.business_model || 'company in this industry'}, not just competitor tracking.
+Think: "What would a world-class PR agency tell ${organization?.name} to DO with this intelligence?"
 ` : ''}
 
 WHAT YOU ARE RECEIVING:
@@ -1226,22 +1241,28 @@ Each event has a date stamp. Your executive_summary MUST prioritize by recency:
 "Warren Buffett's investment 5 months ago dominates the analysis..." [OLD NEWS - should be de-emphasized]
 
 YOUR TASK:
-You are the FINAL SYNTHESIS stage. Your job is to:
-1. Synthesize the pre-analyzed events into a coherent PR strategy PRIORITIZING RECENT EVENTS
-2. Connect the dots between different events to find patterns, weighing recent events more heavily
-3. Identify which RECENT events matter most for ${organization?.name}'s PR strategy
-4. Generate actionable PR recommendations based on THIS SPECIFIC DATA and its RECENCY
+You are the FINAL SYNTHESIS stage. Your job is to transform raw intelligence into COMMUNICATIONS STRATEGY:
+1. Identify the TOP PR OPPORTUNITIES from today's news - stories to newsjack, narratives to shape, moments to seize
+2. Surface POSITIONING PLAYS - how can ${organization?.name} differentiate based on what competitors are doing/saying?
+3. Flag NARRATIVE RISKS - emerging stories or sentiment shifts that could affect ${organization?.name}'s reputation
+4. Recommend SPECIFIC ACTIONS - pitch angles, statement topics, thought leadership pieces, media targets
+
+THINK LIKE A PR STRATEGIST:
+- "This competitor announcement creates an opening for us to position as..."
+- "This industry trend is perfect for a byline on..."
+- "This breaking story needs a rapid response because..."
+- "This stakeholder quote signals we should..."
+- "Media is covering X heavily - we can insert ourselves by..."
 
 CRITICAL RULES:
 - The events list IS your news - don't look for articles elsewhere
-- Every event has a date - USE IT to prioritize recent developments
-- If an event says "Google announced X (Today)" - that goes in executive_summary
-- If an event says "Investment closed (5 months ago)" - that should NOT dominate executive_summary
+- Every event has a date - USE IT to prioritize recent developments (today's news = today's opportunities)
 - You MUST base your entire analysis on these events AND their dates
 - Do NOT add outside knowledge - if it's not in the events, it didn't happen today
 - Reference specific RECENT events to show your analysis is grounded in today's monitoring
+- ALWAYS end with "what should ${organization?.name}'s comms team DO about this?"
 
-Remember: You're not gathering intelligence - you're SYNTHESIZING already-gathered, already-enriched intelligence WITH RECENCY AWARENESS.`,
+Remember: You're not writing a business report - you're writing a COMMUNICATIONS ACTION BRIEF.`,
       messages: [
         {
           role: 'user',
