@@ -35,11 +35,26 @@ export default function PlatformCapabilities() {
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0a0a0a]/90 backdrop-blur-md border-b border-[#1a1a1a]">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
-              <span className="text-[#0a0a0a] font-bold text-sm" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>NIV</span>
-            </div>
-            <span className="text-white font-medium" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>SignalDesk</span>
+          <Link href="/" className="flex items-baseline gap-3">
+            {/* NIV Parallelogram Logo */}
+            <svg width="80" height="48" viewBox="0 0 80 48">
+              <path d="M10 0 H80 V48 H0 L10 0 Z" fill="#faf9f7" />
+              <text
+                x="40"
+                y="33"
+                textAnchor="middle"
+                fontFamily="Space Grotesk, sans-serif"
+                fontSize="22"
+                fontWeight="700"
+                fill="#1a1a1a"
+                letterSpacing="-0.5"
+              >
+                NIV
+              </text>
+              <path d="M68 0 H80 V12 L68 0 Z" fill="#c75d3a" />
+            </svg>
+            <span style={{ color: 'rgba(255, 255, 255, 0.3)', fontSize: '24px', fontWeight: 200 }}>|</span>
+            <span style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '14px', color: 'rgba(255, 255, 255, 0.5)', letterSpacing: '1px' }}>by nivria</span>
           </Link>
           <button
             onClick={() => router.push('/auth/signup')}
@@ -58,7 +73,7 @@ export default function PlatformCapabilities() {
             <span className="text-[#c75d3a] text-xs font-medium tracking-wider uppercase" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>Platform Capabilities</span>
           </div>
           <h1 className="text-5xl md:text-6xl text-white mb-6 leading-tight" style={{ fontFamily: 'Playfair Display, serif' }}>
-            Strategic Intelligence,<br /><em className="text-[#c75d3a]">Automated</em>
+            Strategic Communications,<br /><em className="text-[#c75d3a]">Automated</em>
           </h1>
           <p className="text-xl text-[#9e9e9e] max-w-2xl mx-auto" style={{ fontFamily: 'Inter, sans-serif' }}>
             From signal detection to campaign execution, NIV orchestrates your entire communications strategy with AI-powered precision.
@@ -744,10 +759,21 @@ export default function PlatformCapabilities() {
             <div className="bg-[#1a1a1a] rounded-2xl border border-[#2e2e2e] overflow-hidden">
               {/* NIV Header with Badge */}
               <div className="p-6 border-b border-[#2e2e2e] flex items-center gap-4">
-                <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center relative">
-                  <span className="text-[#1a1a1a] font-bold text-lg" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>NIV</span>
-                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-[#c75d3a] rounded-full"></div>
-                </div>
+                {/* NIV Square Icon - Primary Icon (Light) */}
+                <svg width="56" height="56" viewBox="0 0 72 72">
+                  <rect width="72" height="72" rx="16" fill="#faf9f7" />
+                  <text
+                    x="10"
+                    y="50"
+                    fontFamily="Space Grotesk, sans-serif"
+                    fontWeight="700"
+                    fontSize="36"
+                    fill="#1a1a1a"
+                  >
+                    NIV
+                  </text>
+                  <polygon points="58,0 72,0 72,14" fill="#c75d3a" />
+                </svg>
                 <div>
                   <h3 className="text-white text-lg font-semibold" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>NIV Advisor</h3>
                   <p className="text-[#757575] text-sm">Neural Intelligence Vehicle</p>
@@ -970,11 +996,23 @@ export default function PlatformCapabilities() {
       {/* Footer */}
       <footer className="py-12 px-6 border-t border-[#1a1a1a]">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
-              <span className="text-[#0a0a0a] font-bold text-sm" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>NIV</span>
-            </div>
-            <span className="text-[#757575] text-sm">© 2024 SignalDesk</span>
+          <div className="flex items-center gap-2">
+            {/* NIV Square Icon - Footer size */}
+            <svg width="24" height="24" viewBox="0 0 24 24">
+              <rect width="24" height="24" rx="5" fill="#faf9f7" />
+              <text
+                x="3"
+                y="17"
+                fontFamily="Space Grotesk, sans-serif"
+                fontSize="12"
+                fontWeight="700"
+                fill="#1a1a1a"
+              >
+                NIV
+              </text>
+              <polygon points="19,0 24,0 24,5" fill="#c75d3a" />
+            </svg>
+            <span style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.5)' }}>NIV by nivria</span>
           </div>
           <div className="flex items-center gap-6">
             <Link href="/" className="text-[#757575] text-sm hover:text-white transition-colors">Home</Link>
