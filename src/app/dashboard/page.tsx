@@ -256,6 +256,8 @@ export default function Dashboard() {
       const synthesisData = pipelineData?.synthesis || pipelineData?.executiveSynthesis
       if (synthesisData) {
         setExecutiveSynthesis(synthesisData)
+        // Wait a moment for opportunities to be saved to database
+        await new Promise(resolve => setTimeout(resolve, 1500))
         // Reload opportunities and sidebar data after pipeline completes
         await loadOpportunities()
         await loadSidebarData()
