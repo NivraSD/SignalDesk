@@ -760,7 +760,7 @@ export default function StudioNIVPanel({
       </div>
 
       {/* Input */}
-      <div className="p-4 border-t border-zinc-800 flex-shrink-0">
+      <div className="p-4 pb-8 mb-[5vh] border-t border-zinc-800 flex-shrink-0">
         <div className="flex space-x-2">
           <input
             type="text"
