@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { createAuthClient } from '@/lib/supabase/auth-client'
 import { useAppStore } from '@/stores/useAppStore'
 import type { User } from '@supabase/supabase-js'
@@ -24,7 +24,7 @@ export function useAuth() {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
-  const { setUser: setStoreUser } = useAppStore()
+  const { setUser: setStoreUser, setOrganization } = useAppStore()
   const supabase = createAuthClient()
 
   useEffect(() => {
@@ -59,17 +59,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         })
       } else {
         setStoreUser(null)
+        setOrganization(null) // Clear organization on logout
       }
     })
 
     return () => {
       subscription.unsubscribe()
     }
-  }, [supabase, setStoreUser])
+  }, [supabase, setStoreUser, setOrganization])
 
   const signOut = async () => {
     await supabase.auth.signOut()
     setStoreUser(null)
+    setOrganization(null) // Clear organization to prevent cross-user data leakage
   }
 
   return (

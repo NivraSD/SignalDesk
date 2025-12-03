@@ -104,7 +104,21 @@ export default function Dashboard() {
         const data = await response.json()
         if (data.success && data.organizations) {
           setOrganizations(data.organizations)
-          if (!organization && data.organizations.length > 0) {
+
+          // CRITICAL: Validate persisted organization belongs to this user
+          // If not in the list, clear it (prevents cross-user data leakage)
+          let validOrg = organization
+          if (organization) {
+            const hasAccess = data.organizations.some((org: any) => org.id === organization.id)
+            if (!hasAccess) {
+              console.log(`⚠️ User doesn't have access to persisted org "${organization.name}", clearing`)
+              setOrganization(null)
+              validOrg = null
+            }
+          }
+
+          // Set first org if none selected and user has orgs
+          if (!validOrg && data.organizations.length > 0) {
             const firstOrg = data.organizations[0]
             setOrganization({
               id: firstOrg.id,
@@ -115,6 +129,12 @@ export default function Dashboard() {
               size: firstOrg.size,
               config: {}
             })
+          }
+        } else {
+          // No organizations - clear any persisted org
+          if (organization) {
+            console.log('⚠️ User has no organizations, clearing persisted org')
+            setOrganization(null)
           }
         }
       } catch (error) {
