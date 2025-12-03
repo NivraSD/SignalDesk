@@ -96,7 +96,7 @@ function ContactFormContent() {
               </svg>
             </div>
             <h1 style={{
-              fontFamily: 'var(--font-headline)',
+              fontFamily: 'var(--font-serif)',
               fontSize: '32px',
               fontWeight: 400,
               marginBottom: '16px',
@@ -126,7 +126,7 @@ function ContactFormContent() {
         ) : (
           <>
             <h1 style={{
-              fontFamily: 'var(--font-headline)',
+              fontFamily: 'var(--font-serif)',
               fontSize: '40px',
               fontWeight: 400,
               marginBottom: '16px',
