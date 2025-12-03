@@ -85,12 +85,27 @@ serve(async (req) => {
 
         const existingUrlSet = new Set((existingUrls || []).map(r => r.url));
 
-        // Insert new articles
+        // Insert new articles (filter out articles older than 7 days)
+        const maxAgeDays = 7;
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - maxAgeDays);
+
         let sourceNewArticles = 0;
+        let skippedOldArticles = 0;
+
         for (const article of articles) {
           if (existingUrlSet.has(article.url)) {
             duplicateArticles++;
             continue;
+          }
+
+          // Skip articles older than cutoff date
+          if (article.published_at) {
+            const pubDate = new Date(article.published_at);
+            if (pubDate < cutoffDate) {
+              skippedOldArticles++;
+              continue;
+            }
           }
 
           const { error: insertError } = await supabase
@@ -129,7 +144,8 @@ serve(async (req) => {
           .eq('id', source.id);
 
         sourcesSuccessful++;
-        console.log(`   ✅ ${source.source_name}: ${sourceNewArticles} new / ${articles.length} total`);
+        const oldSkipMsg = skippedOldArticles > 0 ? ` (${skippedOldArticles} old skipped)` : '';
+        console.log(`   ✅ ${source.source_name}: ${sourceNewArticles} new / ${articles.length} total${oldSkipMsg}`);
 
       } catch (error: any) {
         sourcesFailed++;
