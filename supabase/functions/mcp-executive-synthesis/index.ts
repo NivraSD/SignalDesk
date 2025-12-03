@@ -1479,6 +1479,10 @@ Remember: You're not writing a business report - you're writing a COMMUNICATIONS
       // Try to fix common JSON issues
       let fixedText = synthesisText.trim();
 
+      // Strip markdown code block markers if present (```json ... ```)
+      fixedText = fixedText.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '');
+      console.log('🔍 After stripping markdown, first 100 chars:', fixedText.substring(0, 100));
+
       // Extract JSON object if embedded in text
       const jsonMatch = fixedText.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
@@ -1493,12 +1497,25 @@ Remember: You're not writing a business report - you're writing a COMMUNICATIONS
           // Fix any other similar issues
           jsonStr = jsonStr.replace(/"\s*,\s*\n\s*"([^:]*?)"\s*:/g, ' $1":');
 
+          // Fix unescaped newlines in string values (common Claude issue)
+          jsonStr = jsonStr.replace(/("(?:[^"\\]|\\.)*")/g, (match) => {
+            return match.replace(/\n/g, '\\n').replace(/\r/g, '\\r');
+          });
+
           const extracted = JSON.parse(jsonStr);
           synthesis = extracted.synthesis || extracted;
           synthesisMetadata = extracted.metadata || null;
           console.log('✅ Successfully fixed and extracted JSON from response');
         } catch (extractError) {
           console.error('❌ Could not fix JSON, error:', extractError.message);
+          console.error('❌ JSON parse position:', extractError.message.match(/position (\d+)/)?.[1] || 'unknown');
+
+          // Log the problematic area
+          const posMatch = extractError.message.match(/position (\d+)/);
+          if (posMatch) {
+            const pos = parseInt(posMatch[1]);
+            console.error('❌ JSON context around error:', jsonMatch[0].substring(Math.max(0, pos - 50), pos + 50));
+          }
 
           // Last resort: Create a simplified structure from the text
           synthesis = {
