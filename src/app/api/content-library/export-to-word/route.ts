@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
 ${content}
 
 ───────────────────────────────────────────
-Generated from SignalDesk Memory Vault
+Generated from NIV Memory Vault
 ${new Date().toLocaleString()}
 ───────────────────────────────────────────`
 
