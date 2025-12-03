@@ -480,19 +480,76 @@ export default function PlatformCapabilities() {
 
               {/* Slide Thumbnails */}
               <div className="grid grid-cols-4 gap-3">
-                {[
-                  { title: 'Executive Summary', active: false },
-                  { title: 'Market Analysis', active: false },
-                  { title: 'Strategic Approach', active: false },
-                  { title: 'Timeline & KPIs', active: false },
-                ].map((slide, i) => (
-                  <div key={i} className={`bg-[#1a1a1a] rounded-lg border ${slide.active ? 'border-[#c75d3a]' : 'border-[#2e2e2e]'} p-3 cursor-pointer hover:border-[#c75d3a]/50 transition-colors`}>
-                    <div className="bg-[#212121] rounded h-12 mb-2 flex items-center justify-center">
-                      <div className="w-8 h-1 bg-[#3d3d3d] rounded"></div>
+                {/* Executive Summary */}
+                <div className="bg-[#1a1a1a] rounded-lg border border-[#2e2e2e] p-2 cursor-pointer hover:border-[#c75d3a]/50 transition-colors">
+                  <div className="bg-[#212121] rounded p-2 mb-2">
+                    <div className="w-full h-1 bg-[#c75d3a]/40 rounded mb-1.5"></div>
+                    <div className="w-3/4 h-0.5 bg-[#3d3d3d] rounded mb-1"></div>
+                    <div className="w-full h-0.5 bg-[#3d3d3d] rounded mb-1"></div>
+                    <div className="flex gap-1 mt-2">
+                      <div className="flex-1 h-4 bg-[#2a2a2a] rounded"></div>
+                      <div className="flex-1 h-4 bg-[#2a2a2a] rounded"></div>
                     </div>
-                    <div className="text-[#9e9e9e] text-xs truncate">{slide.title}</div>
                   </div>
-                ))}
+                  <div className="text-[#9e9e9e] text-xs truncate">Executive Summary</div>
+                </div>
+
+                {/* Market Analysis */}
+                <div className="bg-[#1a1a1a] rounded-lg border border-[#2e2e2e] p-2 cursor-pointer hover:border-[#c75d3a]/50 transition-colors">
+                  <div className="bg-[#212121] rounded p-2 mb-2">
+                    <div className="w-2/3 h-1 bg-[#c75d3a]/40 rounded mb-1.5"></div>
+                    <div className="flex items-end gap-0.5 h-6 mt-1">
+                      <div className="flex-1 bg-[#c75d3a]/30 rounded-t" style={{ height: '40%' }}></div>
+                      <div className="flex-1 bg-[#c75d3a]/40 rounded-t" style={{ height: '60%' }}></div>
+                      <div className="flex-1 bg-[#c75d3a]/50 rounded-t" style={{ height: '80%' }}></div>
+                      <div className="flex-1 bg-[#c75d3a]/60 rounded-t" style={{ height: '100%' }}></div>
+                    </div>
+                  </div>
+                  <div className="text-[#9e9e9e] text-xs truncate">Market Analysis</div>
+                </div>
+
+                {/* Strategic Approach */}
+                <div className="bg-[#1a1a1a] rounded-lg border border-[#2e2e2e] p-2 cursor-pointer hover:border-[#c75d3a]/50 transition-colors">
+                  <div className="bg-[#212121] rounded p-2 mb-2">
+                    <div className="w-3/4 h-1 bg-[#c75d3a]/40 rounded mb-1.5"></div>
+                    <div className="space-y-1 mt-1">
+                      <div className="flex items-center gap-1">
+                        <div className="w-1.5 h-1.5 rounded-full bg-[#c75d3a]/50"></div>
+                        <div className="flex-1 h-0.5 bg-[#3d3d3d] rounded"></div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <div className="w-1.5 h-1.5 rounded-full bg-[#c75d3a]/50"></div>
+                        <div className="flex-1 h-0.5 bg-[#3d3d3d] rounded"></div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <div className="w-1.5 h-1.5 rounded-full bg-[#c75d3a]/50"></div>
+                        <div className="flex-1 h-0.5 bg-[#3d3d3d] rounded"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-[#9e9e9e] text-xs truncate">Strategic Approach</div>
+                </div>
+
+                {/* Timeline & KPIs */}
+                <div className="bg-[#1a1a1a] rounded-lg border border-[#2e2e2e] p-2 cursor-pointer hover:border-[#c75d3a]/50 transition-colors">
+                  <div className="bg-[#212121] rounded p-2 mb-2">
+                    <div className="w-2/3 h-1 bg-[#c75d3a]/40 rounded mb-1.5"></div>
+                    <div className="flex items-center gap-0.5 mt-2">
+                      <div className="w-2 h-2 rounded-full bg-[#c75d3a]/50"></div>
+                      <div className="flex-1 h-0.5 bg-[#3d3d3d]"></div>
+                      <div className="w-2 h-2 rounded-full bg-[#3d3d3d]"></div>
+                      <div className="flex-1 h-0.5 bg-[#3d3d3d]"></div>
+                      <div className="w-2 h-2 rounded-full bg-[#3d3d3d]"></div>
+                    </div>
+                    <div className="flex gap-1 mt-1.5">
+                      <div className="flex-1 h-2 bg-[#2a2a2a] rounded text-center">
+                        <span className="text-[4px] text-[#555]">Q1</span>
+                      </div>
+                      <div className="flex-1 h-2 bg-[#2a2a2a] rounded"></div>
+                    </div>
+                  </div>
+                  <div className="text-[#9e9e9e] text-xs truncate">Timeline & KPIs</div>
+                </div>
               </div>
 
               {/* NIV Chat Integration */}
