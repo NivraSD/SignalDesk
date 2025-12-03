@@ -1106,21 +1106,46 @@ Provide a concise executive synthesis focusing on:
     sampleEntities: entities.slice(0, 10),
     eventTypes: eventTypes
   });
-  
+
+  // Helper function to make Claude API call with retry
+  const callClaudeWithRetry = async (requestBody: any, maxRetries = 2): Promise<Response> => {
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (response.ok) {
+        return response;
+      }
+
+      const status = response.status;
+      // Retry on 529 (overloaded), 500, 503 (server errors)
+      if ((status === 529 || status === 500 || status === 503) && attempt < maxRetries) {
+        const delayMs = (attempt + 1) * 5000 + Math.random() * 3000; // 5-8s, 10-13s
+        console.log(`⚠️ Claude API ${status} error (attempt ${attempt + 1}/${maxRetries + 1}) - retrying in ${Math.round(delayMs/1000)}s...`);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+        continue;
+      }
+
+      // Non-retryable error or max retries reached
+      return response;
+    }
+    throw new Error('Unexpected retry loop exit');
+  };
+
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',  // Back to Sonnet 4 - was working before
-        max_tokens: 4000,
-        temperature: 0.3,  // Lower temperature for more focused, strategic output
-        system: `You are writing a DAILY INDUSTRY INTELLIGENCE BRIEF for ${organization?.name}'s executive team.
+    const requestBody = {
+      model: 'claude-sonnet-4-20250514',  // Back to Sonnet 4 - was working before
+      max_tokens: 4000,
+      temperature: 0.3,  // Lower temperature for more focused, strategic output
+      system: `You are writing a DAILY INDUSTRY INTELLIGENCE BRIEF for ${organization?.name}'s executive team.
 
 MISSION: Report on the ${organization?.industry || 'industry'} landscape TODAY - market trends, competitor moves, regulatory shifts, thought leadership, and strategic opportunities.
 
@@ -1217,28 +1242,26 @@ CRITICAL RULES:
 - Reference specific RECENT events to show your analysis is grounded in today's monitoring
 
 Remember: You're not gathering intelligence - you're SYNTHESIZING already-gathered, already-enriched intelligence WITH RECENCY AWARENESS.`,
-        messages: [
-          {
-            role: 'user',
-            content: prompt
-          }
-        ]
-      })
-    });
-    
-    if (!response.ok) {
-      let errorMessage = `Claude API error: ${response.status}`;
-      try {
-        const errorData = await response.text();
-        console.error('❌ Claude API Error:', errorData);
-        if (errorData.includes('Internal Server Error')) {
-          errorMessage = 'Claude API internal error - retrying with smaller prompt';
-          // Could implement retry logic here with smaller data
+      messages: [
+        {
+          role: 'user',
+          content: prompt
         }
+      ]
+    };
+
+    const response = await callClaudeWithRetry(requestBody);
+
+    if (!response.ok) {
+      const status = response.status;
+      let errorData = '';
+      try {
+        errorData = await response.text();
+        console.error('❌ Claude API Error:', status, errorData);
       } catch (e) {
         console.error('Failed to parse error response:', e);
       }
-      throw new Error(errorMessage);
+      throw new Error(`Claude API error: ${status}`);
     }
     
     const data = await response.json();
