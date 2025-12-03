@@ -379,10 +379,10 @@ export default function NIVFloatingAssistant() {
       <button
         onClick={() => setIsOpen(!isOpen)}
         style={{
-          width: '70px',
-          height: '70px',
+          width: '60px',
+          height: '60px',
           background: 'var(--white)',
-          borderRadius: '18px',
+          borderRadius: '15px',
           border: 'none',
           display: 'flex',
           alignItems: 'center',
@@ -402,15 +402,15 @@ export default function NIVFloatingAssistant() {
             width: 0,
             height: 0,
             borderStyle: 'solid',
-            borderWidth: '0 18px 18px 0',
+            borderWidth: '0 15px 15px 0',
             borderColor: 'transparent var(--burnt-orange) transparent transparent',
-            borderTopRightRadius: '18px'
+            borderTopRightRadius: '15px'
           }}
         />
         <span
           style={{
             fontFamily: 'var(--font-display)',
-            fontSize: '22px',
+            fontSize: '19px',
             fontWeight: 700,
             color: 'var(--charcoal)',
             letterSpacing: '-0.5px'
@@ -422,10 +422,10 @@ export default function NIVFloatingAssistant() {
         <div
           style={{
             position: 'absolute',
-            top: '-4px',
-            left: '-4px',
-            width: '15px',
-            height: '15px',
+            top: '-3px',
+            left: '-3px',
+            width: '13px',
+            height: '13px',
             background: '#22c55e',
             borderRadius: '50%',
             border: '2px solid var(--white)'
