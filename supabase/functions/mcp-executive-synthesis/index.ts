@@ -761,11 +761,60 @@ CRITICAL:
       sample_relevance_scores: enrichedArticles.slice(0, 5).map(a => a.pr_relevance_score || a.relevance_score || 0)
     });
 
-    const articleSummaries = enrichedArticles.slice(0, 40).map((article, i) => ({
+    // Calculate recency for each article based on published_at
+    const calculateArticleRecency = (publishedAt: string | undefined): string => {
+      if (!publishedAt) return 'unknown';
+      try {
+        const pubDate = new Date(publishedAt);
+        const now = new Date();
+        const diffMs = now.getTime() - pubDate.getTime();
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+        if (diffDays <= 0) return 'today';
+        if (diffDays <= 1) return 'yesterday';
+        if (diffDays <= 7) return 'this_week';
+        if (diffDays <= 14) return 'last_2_weeks';
+        return 'older';
+      } catch (e) {
+        return 'unknown';
+      }
+    };
+
+    // Filter to prioritize recent articles and limit old ones
+    const articlesByRecency = enrichedArticles.map(article => ({
+      ...article,
+      calculated_recency: calculateArticleRecency(article.published_at)
+    }));
+
+    // Count by recency
+    const recencyCounts = {
+      today: articlesByRecency.filter(a => a.calculated_recency === 'today').length,
+      yesterday: articlesByRecency.filter(a => a.calculated_recency === 'yesterday').length,
+      this_week: articlesByRecency.filter(a => a.calculated_recency === 'this_week').length,
+      older: articlesByRecency.filter(a => ['last_2_weeks', 'older', 'unknown'].includes(a.calculated_recency)).length
+    };
+
+    console.log('📅 ARTICLE RECENCY BREAKDOWN:', recencyCounts);
+
+    // Sort by recency - today first, then yesterday, then this week, then older
+    const sortedArticles = articlesByRecency.sort((a, b) => {
+      const recencyOrder = { today: 0, yesterday: 1, this_week: 2, last_2_weeks: 3, older: 4, unknown: 5 };
+      return (recencyOrder[a.calculated_recency] || 5) - (recencyOrder[b.calculated_recency] || 5);
+    });
+
+    // Limit older articles - prioritize recent ones
+    const recentArticles = sortedArticles.filter(a => ['today', 'yesterday', 'this_week'].includes(a.calculated_recency));
+    const olderArticles = sortedArticles.filter(a => !['today', 'yesterday', 'this_week'].includes(a.calculated_recency)).slice(0, 5); // Max 5 older articles
+    const prioritizedArticles = [...recentArticles, ...olderArticles].slice(0, 40);
+
+    console.log(`📰 Prioritized ${prioritizedArticles.length} articles (${recentArticles.length} recent, ${olderArticles.length} older)`);
+
+    const articleSummaries = prioritizedArticles.map((article, i) => ({
       headline: article.title,
       url: article.url,  // Include URL for article-only mode
       source: article.source || article.source_name || 'Unknown',
       published_at: article.published_at,
+      recency: article.calculated_recency, // Add calculated recency
       category: article.pr_category || article.category,
       relevance: article.pr_relevance_score || article.relevance_score,
       sentiment: article.deep_analysis?.sentiment || 'neutral',
@@ -877,8 +926,11 @@ PRE-ANALYZED ARTICLES (${enrichedArticles.length} articles processed${articleOnl
 ${articleSummaries.map((article, i) => {
   const contentQuality = article.has_full_content ? '✓ FULL' : '◆ SUMMARY';
   const tradeFlag = article.is_trade_source ? ' [TRADE]' : '';
+  const recencyEmoji = article.recency === 'today' ? '🔥 TODAY' :
+                        article.recency === 'yesterday' ? '📅 YESTERDAY' :
+                        article.recency === 'this_week' ? '📆 THIS WEEK' : '⚠️ OLDER';
   return `
-${i+1}. [${contentQuality}]${tradeFlag} ${article.headline}
+${i+1}. [${recencyEmoji}] [${contentQuality}]${tradeFlag} ${article.headline}
    Source: ${article.source} | URL: ${article.url}
    Published: ${article.published_at} | Relevance: ${article.relevance}/100
    Summary: ${article.key_insight}`;
