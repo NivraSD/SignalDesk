@@ -987,78 +987,59 @@ ${articleOnlyMode ? `1. Your executive_summary should identify PR OPPORTUNITIES 
 4. Reference events by describing them, not by number
 5. Every recommendation must come from the events above - no outside knowledge`}
 
-⚠️ CRITICAL - THINK COMMUNICATIONS, NOT BUSINESS:
-- "newsjacking_opportunity" = Stories ${organization?.name} can insert themselves into RIGHT NOW
-- "positioning_play" = Competitor moves/missteps that create differentiation opportunities
-- "thought_leadership_hook" = Emerging topics where ${organization?.name} can establish/reinforce authority
-- "narrative_risk" = Stories or sentiment shifts that could affect reputation
-- "media_moment" = Breaking coverage where timely outreach could earn placement
+⚠️ CRITICAL - FOCUS ON PR IMPLICATIONS:
+- Every story needs a PR IMPLICATION - how does this affect ${organization?.name}'s communications strategy?
+- Categories should reflect PR relevance: competitor_news, industry_trend, stakeholder_move, narrative_shift, media_coverage
+- ALWAYS include the source URL - this is required for every key_development
 
-Generate your PR INTELLIGENCE BRIEF as valid JSON:
+Generate your COMMUNICATIONS INTELLIGENCE BRIEF as valid JSON:
 
 {
   "synthesis": {
-    "executive_summary": "A 2-3 paragraph COMMUNICATIONS-FOCUSED overview. Lead with the TOP PR OPPORTUNITIES from today's news. What stories can ${organization?.name} insert themselves into? What narratives are forming? What should the comms team DO? Include source citations like [Source: Article Title]. Use \\n\\n to separate paragraphs.",
+    "executive_summary": "A 2-3 paragraph overview focused on PR IMPLICATIONS. What do these stories mean for ${organization?.name}'s communications? What narratives are forming? What should the comms team be aware of? Include source citations like [Source: Article Title]. Use \\n\\n to separate paragraphs.",
 
-    "pr_opportunities": [
+    "key_developments": [
       {
-        "type": "newsjacking_opportunity | positioning_play | thought_leadership_hook | media_moment",
-        "headline": "The news event or story",
-        "opportunity": "Specific PR action ${organization?.name} can take (pitch angle, statement topic, byline idea, media target)",
-        "urgency": "immediate | this_week | ongoing",
-        "source": "Article title",
-        "url": "Article URL"
+        "category": "competitor_news | industry_trend | stakeholder_move | narrative_shift | media_coverage",
+        "event": "Clear description of what happened (who, what, when)",
+        "pr_implication": "What this means for ${organization?.name}'s PR/communications strategy - positioning, messaging, narrative, media relations",
+        "source": "Article title - REQUIRED",
+        "url": "Full article URL - REQUIRED (copy exactly from the article data)",
+        "recency": "today | this_week | older",
+        "entity": "Company or person involved"
       }
     ],
 
-    "narrative_risks": [
-      {
-        "signal": "What's happening in the news/discourse",
-        "risk": "How this could affect ${organization?.name}'s reputation or positioning",
-        "recommendation": "Proactive communications response",
-        "source": "Article title"
-      }
-    ],
+    "strategic_implications": "What ${organization?.name}'s communications team should know and consider based on these developments. Focus on narrative, positioning, and messaging implications.",
 
-    "competitor_comms": [
-      {
-        "competitor": "Competitor name",
-        "activity": "What they announced/said/did",
-        "our_angle": "How ${organization?.name} can respond or differentiate",
-        "source": "Article title"
-      }
-    ],
-
-    "recommended_actions": [
-      "Specific, actionable communications recommendations based on today's intelligence"
-    ],
-
-    "watching_closely": ["Emerging narratives, stakeholders, or topics to monitor"]
+    "watching_closely": ["Emerging narratives, competitors, or topics the PR team should monitor"]
   }
 }
 
 CRITICAL INSTRUCTIONS:
-${articleOnlyMode ? `- Include 10-15 pr_opportunities from the ${enrichedArticles.length} articles provided` : `- Include 10-15 pr_opportunities from the ${topEvents.length} events`}
-- EVERY opportunity must have a SPECIFIC recommended action (not just "monitor" or "be aware")
-- Think: "If I were ${organization?.name}'s PR agency, what would I tell them to DO tomorrow morning?"
-- urgency levels: "immediate" = act today, "this_week" = plan this week, "ongoing" = add to editorial calendar
-- narrative_risks should flag reputation concerns EARLY - before they become crises
-- competitor_comms should always include "our_angle" - how to respond or differentiate
+${articleOnlyMode ? `- Include 15-25 key_developments from the ${enrichedArticles.length} articles provided` : `- Include 15-25 key_developments from the ${topEvents.length} events`}
+- EVERY entry MUST have source and url fields - copy the URL exactly from the article/event data
+- "pr_implication" should explain how this affects ${organization?.name}'s communications (NOT business impact)
+- Sort by recency: "today" FIRST, then "this_week", then "older" - RECENT NEWS DOMINATES
+- Be specific in "event" - use actual names, numbers, quotes
+- Focus on stories that have PR/communications relevance
+
+⚠️ RECENCY IS CRITICAL:
+- If an event is from TODAY or THIS WEEK, it should appear BEFORE older events
+- Check the date on every event before including it
+- Old news (2+ weeks) should be minimal unless strategically important
+- Lead with what's happening NOW, not what happened months ago
 
 ═══════════════════════════════════════════════════════════
-🚨 FINAL PR STRATEGY CHECK
+🚨 FINAL CHECKLIST
 ═══════════════════════════════════════════════════════════
 
-Before you respond, verify your synthesis answers:
-
-✅ "What can ${organization?.name}'s comms team DO with this intelligence?"
-✅ "What stories can they insert themselves into?"
-✅ "What narratives should they shape or counter?"
-✅ "What positioning opportunities exist?"
-✅ "What risks should they get ahead of?"
-
-If an insight doesn't lead to a COMMUNICATIONS ACTION, it doesn't belong in this brief.
-This is not a business intelligence report - it's a PR ACTION BRIEF.`;
+Before responding, verify:
+✅ Every key_development has a source AND url field
+✅ Every key_development has a pr_implication (not business impact)
+✅ Recent stories (today/this_week) appear before older stories
+✅ The executive_summary focuses on PR/communications implications
+✅ You've included 15-25 developments with full details`;
     
   } else {
     // Standard synthesis of pre-analyzed data

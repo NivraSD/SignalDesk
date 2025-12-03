@@ -256,6 +256,9 @@ function Section({ title, icon: Icon, children }: { title: string; icon: any; ch
 
 // Development Card
 function DevelopmentCard({ development, index }: { development: any; index: number }) {
+  // Support both old (impact) and new (pr_implication) field names
+  const implication = development.pr_implication || development.impact || development.details
+
   return (
     <div className="bg-[var(--grey-800)] rounded-lg p-4">
       <div className="flex items-start gap-3 mb-2">
@@ -265,15 +268,31 @@ function DevelopmentCard({ development, index }: { development: any; index: numb
           </span>
         )}
         {development.recency && (
-          <span className="px-2 py-1 text-xs rounded bg-[var(--grey-700)] text-[var(--grey-400)]">
-            {development.recency}
+          <span className={`px-2 py-1 text-xs rounded ${
+            development.recency === 'today'
+              ? 'bg-green-900/30 text-green-400'
+              : development.recency === 'this_week'
+              ? 'bg-blue-900/30 text-blue-400'
+              : 'bg-[var(--grey-700)] text-[var(--grey-400)]'
+          }`}>
+            {development.recency === 'today' ? '🔥 Today' : development.recency === 'this_week' ? 'This Week' : development.recency}
+          </span>
+        )}
+        {development.entity && (
+          <span className="px-2 py-1 text-xs rounded bg-[var(--grey-700)] text-[var(--grey-300)]">
+            {development.entity}
           </span>
         )}
       </div>
       <h4 className="text-white font-medium mb-2">{development.event || development.headline}</h4>
-      <p className="text-[var(--grey-400)] text-sm">{development.impact || development.details}</p>
+      {implication && (
+        <div className="mb-2">
+          <span className="text-[var(--burnt-orange)] text-xs font-medium uppercase tracking-wide">PR Implication:</span>
+          <p className="text-[var(--grey-300)] text-sm mt-1">{implication}</p>
+        </div>
+      )}
       {development.source && (
-        <div className="mt-2 text-xs text-[var(--grey-500)]">
+        <div className="mt-3 pt-2 border-t border-[var(--grey-700)] text-xs text-[var(--grey-500)]">
           Source:{' '}
           {development.url && development.url.startsWith('http') ? (
             <a
