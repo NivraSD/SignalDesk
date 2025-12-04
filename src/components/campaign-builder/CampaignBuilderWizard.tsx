@@ -89,20 +89,42 @@ export function CampaignBuilderWizard({ initialObjective, onViewInPlanner }: Cam
   })
 
   // Load saved session from localStorage AFTER organization loads
+  // CRITICAL: Session storage is now org-scoped to prevent data leakage between organizations
   useEffect(() => {
     const loadSavedSession = async () => {
       // CRITICAL: Wait for organization to load before loading session
-      if (!organization) {
+      if (!organization?.id) {
         console.log('⏳ Waiting for organization to load before loading saved session...')
+        setSession(null) // Clear any existing session when no org
         return
       }
 
-      const savedSessionId = localStorage.getItem('campaignBuilderSessionId')
+      // Use org-scoped storage key
+      const storageKey = `campaignBuilderSessionId_${organization.id}`
+      const savedSessionId = localStorage.getItem(storageKey)
+
+      // Also clean up old non-scoped key if it exists
+      const oldKey = localStorage.getItem('campaignBuilderSessionId')
+      if (oldKey) {
+        console.log('🧹 Cleaning up old non-scoped campaignBuilderSessionId')
+        localStorage.removeItem('campaignBuilderSessionId')
+      }
+
       if (savedSessionId && !session) {
-        console.log('📂 Found saved sessionId in localStorage:', savedSessionId)
+        console.log('📂 Found saved sessionId for org:', organization.name, savedSessionId)
         try {
           const data = await CampaignBuilderService.getSession(savedSessionId)
+
+          // Validate session belongs to this organization
           if (data && data.blueprint) {
+            // Check if session org matches current org (if session has org_id)
+            if (data.organization_id && data.organization_id !== organization.id) {
+              console.warn('⚠️ Session belongs to different org, clearing')
+              localStorage.removeItem(storageKey)
+              setSession(null)
+              return
+            }
+
             console.log('✅ Loaded session from database:', {
               sessionId: data.id,
               stage: data.current_stage,
@@ -124,17 +146,22 @@ export function CampaignBuilderWizard({ initialObjective, onViewInPlanner }: Cam
             })
           } else {
             console.warn('⚠️ Session not found or incomplete, clearing localStorage')
-            localStorage.removeItem('campaignBuilderSessionId')
+            localStorage.removeItem(storageKey)
+            setSession(null)
           }
         } catch (err) {
           console.error('❌ Failed to load saved session:', err)
-          localStorage.removeItem('campaignBuilderSessionId')
+          localStorage.removeItem(storageKey)
+          setSession(null)
         }
+      } else if (!savedSessionId) {
+        // No saved session for this org, ensure we start fresh
+        setSession(null)
       }
     }
 
     loadSavedSession()
-  }, [organization]) // Re-run when organization changes
+  }, [organization?.id]) // Re-run when organization changes
 
   // Debug organization
   useEffect(() => {
@@ -1251,8 +1278,10 @@ export function CampaignBuilderWizard({ initialObjective, onViewInPlanner }: Cam
     }
 
     // Store sessionId in localStorage so we can return to this exact campaign
-    localStorage.setItem('campaignBuilderSessionId', session.sessionId)
-    console.log('💾 Saved sessionId to localStorage:', session.sessionId)
+    // CRITICAL: Use org-scoped key to prevent data leakage between organizations
+    const storageKey = `campaignBuilderSessionId_${organization.id}`
+    localStorage.setItem(storageKey, session.sessionId)
+    console.log('💾 Saved sessionId to localStorage for org:', organization.name, session.sessionId)
 
     console.log('📊 Blueprint structure:', {
       hasPart3: !!session.blueprint?.part3_stakeholderOrchestration,
