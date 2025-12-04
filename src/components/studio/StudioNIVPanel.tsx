@@ -761,24 +761,36 @@ export default function StudioNIVPanel({
 
       {/* Input */}
       <div className="p-4 pb-8 mb-[5vh] border-t border-zinc-800 flex-shrink-0">
-        <div className="flex space-x-2">
-          <input
-            type="text"
+        <div className="flex space-x-2 items-end">
+          <textarea
             value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
+            onChange={(e) => {
+              setInput(e.target.value)
+              // Auto-expand textarea
+              e.target.style.height = 'auto'
+              e.target.style.height = Math.min(e.target.scrollHeight, 200) + 'px'
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault()
+                handleSend()
+              }
+            }}
             placeholder={
               selectedContentType
                 ? `Tell me about your ${selectedContentType.replace(/-/g, ' ')}...`
                 : 'What would you like to create?'
             }
-            className="flex-1 bg-zinc-800 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)]"
+            className="flex-1 bg-zinc-800 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)] resize-none overflow-hidden"
+            style={{ minHeight: '40px', maxHeight: '200px' }}
             disabled={isThinking || isGenerating}
+            rows={1}
           />
           <button
             onClick={handleSend}
             disabled={!input.trim() || isThinking || isGenerating}
-            className="px-4 py-2 bg-[var(--burnt-orange)] hover:brightness-110 disabled:bg-zinc-700 disabled:cursor-not-allowed text-white rounded-lg transition-colors flex items-center space-x-2"
+            className="px-4 py-2 bg-[var(--burnt-orange)] hover:brightness-110 disabled:bg-zinc-700 disabled:cursor-not-allowed text-white rounded-lg transition-colors flex items-center space-x-2 flex-shrink-0"
+            style={{ height: '40px' }}
           >
             {isThinking || isGenerating ? (
               <Loader2 className="w-5 h-5 animate-spin" />

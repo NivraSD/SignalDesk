@@ -129,7 +129,7 @@ function StudioContent() {
         className="h-full overflow-hidden"
         style={{
           display: 'grid',
-          gridTemplateColumns: '260px 1fr 420px',
+          gridTemplateColumns: '260px 1fr 460px',
           minHeight: 0
         }}
       >
