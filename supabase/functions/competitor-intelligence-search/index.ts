@@ -12,7 +12,7 @@ const PERPLEXITY_API_KEY = Deno.env.get('PERPLEXITY_API_KEY');
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// Search for competitor news using Perplexity
+// Search for competitor news using Perplexity Search API
 async function searchCompetitorNews(competitorName: string, industry: string): Promise<any[]> {
   if (!PERPLEXITY_API_KEY) {
     console.error('❌ PERPLEXITY_API_KEY not configured');
@@ -20,9 +20,59 @@ async function searchCompetitorNews(competitorName: string, industry: string): P
   }
 
   // Build search query - focus on business news, announcements, wins
-  const query = `"${competitorName}" ${industry} news announcements wins clients 2024 2025`;
+  const query = `"${competitorName}" ${industry} agency news client wins campaigns 2024`;
 
   console.log(`   🔍 Searching: ${query.substring(0, 60)}...`);
+
+  try {
+    // Use the Search API endpoint (not chat/completions)
+    const response = await fetch('https://api.perplexity.ai/search', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        query: query,
+        search_recency_filter: 'month', // Last month only
+        max_results: 5
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`   ❌ Perplexity Search API error: ${response.status} - ${errorText}`);
+
+      // Fallback to Chat API if Search API fails
+      return await searchCompetitorNewsViaChatAPI(competitorName, industry);
+    }
+
+    const data = await response.json();
+    const results = data.results || [];
+
+    console.log(`   ✅ Found ${results.length} search results for ${competitorName}`);
+
+    // Transform search results to our format
+    return results.map((item: any) => ({
+      title: item.title || 'No title',
+      description: item.snippet || item.content || '',
+      source: extractDomain(item.url) || 'Unknown',
+      url: item.url || '',
+      date: item.date || item.last_updated || new Date().toISOString(),
+      category: inferCategory(item.title, item.snippet),
+      competitor: competitorName
+    }));
+
+  } catch (error: any) {
+    console.error(`   ❌ Search error for ${competitorName}:`, error.message);
+    // Try fallback
+    return await searchCompetitorNewsViaChatAPI(competitorName, industry);
+  }
+}
+
+// Fallback: Use Chat API with web search enabled
+async function searchCompetitorNewsViaChatAPI(competitorName: string, industry: string): Promise<any[]> {
+  console.log(`   🔄 Fallback to Chat API for ${competitorName}`);
 
   try {
     const response = await fetch('https://api.perplexity.ai/chat/completions', {
@@ -35,62 +85,71 @@ async function searchCompetitorNews(competitorName: string, industry: string): P
         model: 'sonar',
         messages: [{
           role: 'user',
-          content: `Find recent news about ${competitorName} in the ${industry} industry. Focus on:
-- Client wins and new business
-- Leadership changes
-- Campaigns and activations they've done
-- Awards and recognition
-- Strategic moves (acquisitions, partnerships, expansions)
+          content: `Find the 3 most recent news items about "${competitorName}" ${industry} agency from the last 3 months. Focus on client wins, campaigns, leadership changes, or awards.
 
-Return a JSON array of news items with this structure:
-[{
-  "title": "headline",
-  "description": "brief summary",
-  "source": "publication name",
-  "url": "article URL if available",
-  "date": "approximate date",
-  "category": "client_win|leadership|campaign|award|strategic_move"
-}]
+Return ONLY a JSON array (no other text):
+[{"title":"...", "description":"...", "source":"...", "url":"...", "category":"client_win|campaign|leadership|award"}]
 
-Only include items from the last 3 months. Return empty array [] if no recent news found.`
+If no news found, return: []`
         }],
         temperature: 0.1,
-        max_tokens: 2000
+        max_tokens: 1000,
+        return_citations: true
       })
     });
 
     if (!response.ok) {
-      console.error(`   ❌ Perplexity error: ${response.status}`);
+      console.error(`   ❌ Chat API error: ${response.status}`);
       return [];
     }
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || '';
-
-    // Extract citations if available
     const citations = data.citations || [];
 
     // Try to parse JSON from response
-    const jsonMatch = content.match(/\[[\s\S]*\]/);
+    const jsonMatch = content.match(/\[[\s\S]*?\]/);
     if (jsonMatch) {
       try {
         const results = JSON.parse(jsonMatch[0]);
-        console.log(`   ✅ Found ${results.length} news items for ${competitorName}`);
-        return results.map((item: any) => ({
+        console.log(`   ✅ Chat API found ${results.length} items for ${competitorName}`);
+        return results.map((item: any, idx: number) => ({
           ...item,
+          url: item.url || citations[idx] || '',
           competitor: competitorName,
-          citations
+          date: new Date().toISOString()
         }));
       } catch (e) {
-        console.error(`   ⚠️ Failed to parse JSON for ${competitorName}`);
+        console.error(`   ⚠️ Failed to parse Chat API JSON`);
       }
     }
 
     return [];
   } catch (error: any) {
-    console.error(`   ❌ Search error for ${competitorName}:`, error.message);
+    console.error(`   ❌ Chat API error for ${competitorName}:`, error.message);
     return [];
   }
+}
+
+// Helper: Extract domain from URL
+function extractDomain(url: string): string {
+  try {
+    const hostname = new URL(url).hostname;
+    return hostname.replace('www.', '');
+  } catch {
+    return '';
+  }
+}
+
+// Helper: Infer category from title/description
+function inferCategory(title: string, description: string): string {
+  const text = `${title} ${description}`.toLowerCase();
+  if (text.includes('win') || text.includes('client') || text.includes('account')) return 'client_win';
+  if (text.includes('campaign') || text.includes('activation') || text.includes('launch')) return 'campaign';
+  if (text.includes('ceo') || text.includes('hire') || text.includes('appoint') || text.includes('join')) return 'leadership';
+  if (text.includes('award') || text.includes('recognition') || text.includes('honor')) return 'award';
+  if (text.includes('acquire') || text.includes('merge') || text.includes('partner')) return 'strategic_move';
+  return 'general';
 }
 
 serve(async (req) => {

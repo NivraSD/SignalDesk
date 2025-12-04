@@ -16,6 +16,51 @@ const BASELINE_DAYS = 30;
 const MOMENTUM_THRESHOLD = 3; // Activity must be 3x baseline
 const MIN_MENTIONS_FOR_SIGNAL = 3; // Need at least 3 mentions
 
+// Helper: Save signal to predictions table for UI display
+async function saveToPredictions(orgId: string, target: any, prediction: {
+  title: string;
+  description: string;
+  confidence_score: number;
+  impact_level: string;
+  category: string;
+  time_horizon: string;
+  status: string;
+}) {
+  try {
+    // Check for existing similar prediction to avoid duplicates
+    const { data: existing } = await supabase
+      .from('predictions')
+      .select('id')
+      .eq('organization_id', orgId)
+      .eq('target_id', target.id)
+      .eq('title', prediction.title)
+      .single();
+
+    if (existing) {
+      console.log(`   ⏭️ Prediction already exists for ${target.name}, skipping`);
+      return;
+    }
+
+    const { error } = await supabase
+      .from('predictions')
+      .insert({
+        organization_id: orgId,
+        target_id: target.id,
+        target_name: target.name,
+        target_type: target.type,
+        ...prediction
+      });
+
+    if (error) {
+      console.error(`Failed to save prediction for ${target.name}:`, error.message);
+    } else {
+      console.log(`   💡 Created prediction: ${prediction.title}`);
+    }
+  } catch (e: any) {
+    console.error(`Error saving prediction:`, e.message);
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: corsHeaders });
@@ -204,6 +249,17 @@ async function detectMomentum(
     return null;
   }
 
+  // ALSO save to predictions table for UI display
+  await saveToPredictions(orgId, target, {
+    title: `${target.name}: Activity Surge Detected`,
+    description: `${target.name} activity increased ${multiplier.toFixed(1)}x above baseline (${currentCount} mentions vs ${baselineAvg.toFixed(1)} avg). ${predictionType === 'competitive_threat' ? 'This could signal a major competitive move.' : predictionType === 'crisis_building' ? 'Negative sentiment suggests potential crisis.' : 'This could present an opportunity.'}`,
+    confidence_score: signalStrength,
+    impact_level: signalStrength >= 80 ? 'high' : signalStrength >= 60 ? 'medium' : 'low',
+    category: predictionType === 'competitive_threat' ? 'competitor' : predictionType === 'crisis_building' ? 'risk' : 'market',
+    time_horizon: 'short_term',
+    status: 'pending'
+  });
+
   console.log(`   📈 MOMENTUM signal: ${target.name} (${multiplier.toFixed(1)}x, strength: ${signalStrength})`);
   return data;
 }
@@ -271,6 +327,17 @@ async function detectSentimentShift(target: any, mentions: any[], orgId: string)
     return null;
   }
 
+  // ALSO save to predictions table for UI display
+  await saveToPredictions(orgId, target, {
+    title: `${target.name}: ${trend === 'declining' ? 'Sentiment Declining' : 'Sentiment Improving'}`,
+    description: `Sentiment for ${target.name} has shifted ${trend === 'declining' ? 'negatively' : 'positively'} (${(sentimentChange * 100).toFixed(0)}% change). ${trend === 'declining' ? 'This may indicate emerging issues or negative press.' : 'This suggests improving perception or positive developments.'}`,
+    confidence_score: signalStrength,
+    impact_level: signalStrength >= 80 ? 'high' : signalStrength >= 60 ? 'medium' : 'low',
+    category: trend === 'declining' ? 'risk' : 'trend',
+    time_horizon: 'short_term',
+    status: 'pending'
+  });
+
   console.log(`   📊 SENTIMENT SHIFT signal: ${target.name} (${trend}, strength: ${signalStrength})`);
   return data;
 }
@@ -333,6 +400,17 @@ async function detectCategoryClustering(target: any, mentions: any[], orgId: str
     console.error(`Failed to save clustering signal:`, error);
     return null;
   }
+
+  // ALSO save to predictions table for UI display
+  await saveToPredictions(orgId, target, {
+    title: `${target.name}: ${dominantCat.charAt(0).toUpperCase() + dominantCat.slice(1)} Activity Concentration`,
+    description: `${target.name} showing ${count} ${dominantCat} events (${Math.round(dominanceRatio * 100)}% of recent activity). ${predictionType === 'crisis_building' ? 'This concentration may signal an emerging crisis or legal/regulatory issue.' : 'This pattern suggests significant market activity or strategic shift.'}`,
+    confidence_score: signalStrength,
+    impact_level: signalStrength >= 80 ? 'high' : signalStrength >= 60 ? 'medium' : 'low',
+    category: predictionType === 'crisis_building' ? 'risk' : 'market',
+    time_horizon: 'short_term',
+    status: 'pending'
+  });
 
   console.log(`   🎯 CLUSTERING signal: ${target.name} (${dominantCat} ${count}x, strength: ${signalStrength})`);
   return data;
