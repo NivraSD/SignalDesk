@@ -165,13 +165,16 @@ export default function CrisisModule() {
         .in('status', ['monitoring', 'active'])
         .order('started_at', { ascending: false })
         .limit(1)
-        .single()
+        .maybeSingle()
 
       if (data && !error) {
         setActiveCrisis(data)
+      } else {
+        setActiveCrisis(null)
       }
     } catch (err) {
       // No active crisis found
+      console.warn('Crisis check error:', err)
     }
   }
 

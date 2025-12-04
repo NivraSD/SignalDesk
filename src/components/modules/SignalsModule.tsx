@@ -22,12 +22,7 @@ import {
   X
 } from 'lucide-react'
 import { useAppStore } from '@/stores/useAppStore'
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+import { supabase } from '@/lib/supabase/client'
 
 interface SocialSignal {
   id: string
@@ -86,7 +81,23 @@ export default function SignalsModule() {
         .order('published_at', { ascending: false })
         .limit(100)
 
-      if (!error && signalsData) {
+      // Handle table not existing (404) or other errors gracefully
+      if (error) {
+        console.warn('Social signals not available:', error.message)
+        setSignals([])
+        setStats({
+          totalSignals: 0,
+          positiveSignals: 0,
+          negativeSignals: 0,
+          topPlatform: 'N/A',
+          avgEngagement: 0,
+          trendingTopics: []
+        })
+        setLoading(false)
+        return
+      }
+
+      if (signalsData) {
         setSignals(signalsData)
 
         // Calculate stats

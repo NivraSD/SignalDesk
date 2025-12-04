@@ -346,6 +346,115 @@ IMPORTANT:
 
     console.log(`   ✅ Analysis complete: ${parsed.signalsDetected} signals, risk level ${parsed.riskLevel}/10`);
 
+    // If risk level is significant (>=5), save to crisis_events table
+    const organization_id = args.organization_id;
+    if (parsed.riskLevel >= 5 && organization_id) {
+      console.log(`   ⚠️ Significant risk detected (${parsed.riskLevel}/10), saving to crisis_events...`);
+
+      // Map risk level to severity
+      const getSeverity = (riskLevel: number): string => {
+        if (riskLevel >= 8) return 'critical';
+        if (riskLevel >= 6) return 'high';
+        if (riskLevel >= 4) return 'medium';
+        return 'low';
+      };
+
+      // Check if there's already an active/monitoring crisis for this org
+      const { data: existingCrisis } = await supabase
+        .from('crisis_events')
+        .select('id, title, severity')
+        .eq('organization_id', organization_id)
+        .in('status', ['monitoring', 'active'])
+        .order('started_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (existingCrisis) {
+        // Update existing crisis with new signals
+        console.log(`   🔄 Updating existing crisis: ${existingCrisis.id}`);
+        const { error: updateError } = await supabase
+          .from('crisis_events')
+          .update({
+            severity: getSeverity(parsed.riskLevel),
+            description: parsed.warningSignals?.join('; ') || 'Crisis signals detected',
+            social_signals: parsed.evidence || [],
+            metadata: {
+              last_updated: new Date().toISOString(),
+              risk_level: parsed.riskLevel,
+              crisis_category: parsed.crisisCategory,
+              urgency: parsed.urgency,
+              affected_stakeholders: parsed.affectedStakeholders,
+              recommended_actions: parsed.recommendedActions
+            }
+          })
+          .eq('id', existingCrisis.id);
+
+        if (updateError) {
+          console.error(`   ❌ Failed to update crisis: ${updateError.message}`);
+        } else {
+          console.log(`   ✅ Crisis updated successfully`);
+          parsed.crisis_event_id = existingCrisis.id;
+          parsed.crisis_action = 'updated';
+        }
+      } else {
+        // Create new crisis event
+        const crisisTitle = parsed.crisisCategory
+          ? `${parsed.crisisCategory.charAt(0).toUpperCase() + parsed.crisisCategory.slice(1)} Alert: ${organization_name}`
+          : `Crisis Alert for ${organization_name}`;
+
+        const { data: newCrisis, error: insertError } = await supabase
+          .from('crisis_events')
+          .insert({
+            organization_id: organization_id,
+            crisis_type: parsed.crisisCategory || 'other',
+            severity: getSeverity(parsed.riskLevel),
+            status: parsed.riskLevel >= 7 ? 'active' : 'monitoring',
+            title: crisisTitle,
+            description: parsed.warningSignals?.join('; ') || 'Crisis signals detected from news monitoring',
+            started_at: new Date().toISOString(),
+            trigger_source: 'intelligence_pipeline',
+            timeline: [{
+              time: new Date().toISOString(),
+              event_type: 'detection',
+              content: `Crisis detected by intelligence pipeline with risk level ${parsed.riskLevel}/10`,
+              actor: 'system'
+            }],
+            decisions: [],
+            communications: [],
+            ai_interactions: [],
+            team_status: {},
+            tasks: parsed.recommendedActions?.map((action: string, idx: number) => ({
+              id: `task-${Date.now()}-${idx}`,
+              title: action,
+              status: 'pending',
+              priority: parsed.urgency || 'medium',
+              created_at: new Date().toISOString()
+            })) || [],
+            social_signals: parsed.evidence || [],
+            media_coverage: [],
+            stakeholder_sentiment: {},
+            metadata: {
+              risk_level: parsed.riskLevel,
+              crisis_category: parsed.crisisCategory,
+              urgency: parsed.urgency,
+              affected_stakeholders: parsed.affectedStakeholders,
+              recommended_actions: parsed.recommendedActions,
+              detected_by: 'mcp-crisis-detector'
+            }
+          })
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error(`   ❌ Failed to create crisis event: ${insertError.message}`);
+        } else {
+          console.log(`   ✅ Crisis event created: ${newCrisis?.id}`);
+          parsed.crisis_event_id = newCrisis?.id;
+          parsed.crisis_action = 'created';
+        }
+      }
+    }
+
     return parsed;
   } catch (parseError) {
     console.error('   ❌ Failed to parse Claude response:', parseError);

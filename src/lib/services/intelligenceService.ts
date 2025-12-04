@@ -8,11 +8,12 @@ export class IntelligenceService {
    * 1. mcp-discovery (create company profile)
    * 2. article-selector (AI-powered relevance scoring from V5 batch scraper)
    * 3. target-intelligence-collector (save mentions)
-   * 4. pattern-detector (detect patterns)
+   * 4. pattern-detector (detect patterns → predictions)
    * 5. connection-detector (find connections)
-   * 6. monitoring-stage-2-enrichment (extract events/entities)
-   * 7. mcp-executive-synthesis (generate executive summary)
-   * 8. mcp-opportunity-detector-v2 (detect opportunities)
+   * 6. crisis-detector (detect crisis signals → crisis_events)
+   * 7. monitoring-stage-2-enrichment (extract events/entities)
+   * 8. mcp-executive-synthesis (generate executive summary)
+   * 9. mcp-opportunity-detector-v2 (detect opportunities)
    */
   static async startPipeline(
     organizationId: string,
@@ -226,6 +227,31 @@ export class IntelligenceService {
                 console.log(`✅ Detected ${connectionResponse.data?.connections_detected || 0} connections`)
                 onProgress?.('connection-detector', 'completed', connectionResponse.data)
               }
+
+              // STEP 3.8: crisis-detector (Claude-powered crisis signal detection)
+              console.log('Starting crisis-detector (mcp-crisis)')
+              onProgress?.('crisis-detector', 'running')
+
+              const crisisResponse = await supabase.functions.invoke('mcp-crisis', {
+                body: {
+                  tool: 'detect_crisis_signals',
+                  arguments: {
+                    organization_id: organizationId,
+                    organization_name: orgName,
+                    articles: finalArticles,
+                    profile: profile,
+                    sensitivity: 'medium'
+                  }
+                }
+              })
+
+              if (crisisResponse.error) {
+                console.warn('⚠️ Crisis detection failed (non-blocking):', crisisResponse.error)
+              } else {
+                const crisisData = crisisResponse.data
+                console.log(`✅ Crisis detection: ${crisisData?.signalsDetected || 0} signals, risk level ${crisisData?.riskLevel || 0}/10`)
+                onProgress?.('crisis-detector', 'completed', crisisData)
+              }
             }
           }
 
@@ -380,11 +406,12 @@ export class IntelligenceService {
    * 1. Load existing profile from database
    * 2. article-selector (AI-powered relevance scoring from V5 batch scraper)
    * 3. target-intelligence-collector (save mentions)
-   * 4. pattern-detector (detect patterns)
+   * 4. pattern-detector (detect patterns → predictions)
    * 5. connection-detector (find connections)
-   * 6. monitoring-stage-2-enrichment (extract events/entities)
-   * 7. mcp-executive-synthesis (generate executive summary)
-   * 8. mcp-opportunity-detector-v2 (detect opportunities)
+   * 6. crisis-detector (detect crisis signals → crisis_events)
+   * 7. monitoring-stage-2-enrichment (extract events/entities)
+   * 8. mcp-executive-synthesis (generate executive summary)
+   * 9. mcp-opportunity-detector-v2 (detect opportunities)
    */
   static async runMonitoringPipeline(
     organizationId: string,
@@ -540,6 +567,31 @@ export class IntelligenceService {
             } else {
               console.log(`✅ Detected ${connectionResponse.data?.connections_detected || 0} connections`)
               onProgress?.('connection-detector', 'completed', connectionResponse.data)
+            }
+
+            // STEP 3.8: crisis-detector (Claude-powered crisis signal detection)
+            console.log('Starting crisis-detector (mcp-crisis)')
+            onProgress?.('crisis-detector', 'running')
+
+            const crisisResponse = await supabase.functions.invoke('mcp-crisis', {
+              body: {
+                tool: 'detect_crisis_signals',
+                arguments: {
+                  organization_id: organizationId,
+                  organization_name: organizationName,
+                  articles: finalArticles,
+                  profile: profile,
+                  sensitivity: 'medium'
+                }
+              }
+            })
+
+            if (crisisResponse.error) {
+              console.warn('⚠️ Crisis detection failed (non-blocking):', crisisResponse.error)
+            } else {
+              const crisisData = crisisResponse.data
+              console.log(`✅ Crisis detection: ${crisisData?.signalsDetected || 0} signals, risk level ${crisisData?.riskLevel || 0}/10`)
+              onProgress?.('crisis-detector', 'completed', crisisData)
             }
           }
         }
