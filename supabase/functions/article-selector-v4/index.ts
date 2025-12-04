@@ -32,6 +32,13 @@ const INDUSTRY_MAPPINGS: Record<string, string[]> = {
               'experiential_marketing', 'brand', 'brand_activation', 'retail', 'technology', 'consumer'],
   'marketing & communications': ['marketing', 'advertising', 'public_relations', 'media', 'events', 'experiential',
               'experiential_marketing', 'brand', 'brand_activation', 'retail', 'technology', 'consumer'],
+  // Consulting industry - covers management consulting, litigation support, forensic accounting
+  consulting: ['finance', 'legal', 'corporate', 'restructuring', 'litigation', 'accounting',
+               'private_equity', 'investing', 'banking', 'economics', 'regulation', 'policy'],
+  'business consulting': ['finance', 'legal', 'corporate', 'restructuring', 'litigation', 'accounting',
+               'private_equity', 'investing', 'banking', 'economics', 'regulation', 'policy'],
+  'management consulting': ['finance', 'legal', 'corporate', 'restructuring', 'litigation', 'accounting',
+               'private_equity', 'investing', 'banking', 'economics', 'regulation', 'policy'],
   technology: ['technology', 'ai', 'startups', 'venture_capital', 'science', 'engineering',
                'consumer_electronics', 'gaming', 'machine_learning', 'emerging_tech'],
   finance: ['finance', 'banking', 'fintech', 'investing', 'payments', 'crypto', 'blockchain',
@@ -100,6 +107,10 @@ function buildIntelligenceContext(profile: any, orgName: string): string {
     // Flag if this is an agency for different scoring logic
     if (ic.is_agency) {
       parts.push(`\nCOMPANY TYPE: Marketing/PR Agency - also interested in brand campaigns, cultural trends, and client industry developments`);
+    }
+    // Flag if this is a consulting firm
+    if (ic.is_consulting) {
+      parts.push(`\nCOMPANY TYPE: Consulting Firm - interested in restructuring, litigation, M&A, corporate crises, and regulatory developments`);
     }
   }
 
@@ -206,11 +217,30 @@ These are HIGHLY RELEVANT for agencies because:
 - Marketing technology developments
 - Advertising industry trends
 
+SPECIAL RULES FOR CONSULTING FIRMS:
+If the company is in consulting (management consulting, litigation support, forensic accounting, restructuring), use EXPANDED scoring:
+
+70-89 for consulting firms also includes:
+- RESTRUCTURING: Bankruptcies, corporate restructurings, distressed companies, turnarounds
+- LITIGATION: Major lawsuits, investigations, settlements, regulatory enforcement
+- M&A: Mergers, acquisitions, divestitures (consulting firms advise on these)
+- PRIVATE EQUITY: PE deals, portfolio company issues, fund activity
+- CORPORATE CRISES: Fraud cases, accounting scandals, executive misconduct
+- REGULATORY: SEC enforcement, DOJ investigations, compliance issues
+- COMPETITOR NEWS: News about AlixPartners, Kroll, BRG, PwC, Deloitte, KPMG, EY consulting
+
+50-69 for consulting firms also includes:
+- General corporate finance news
+- Legal industry developments
+- Accounting industry news
+- Economic trends affecting deal flow
+
 OTHER RULES:
 1. For non-agencies: "Could pitch to X clients" is NOT valid - that's stretching
 2. For agencies: Client intel IS valid if it's about major brand advertisers
 3. When in doubt about agency relevance, check if TOPICS OF INTEREST section exists
 4. Be skeptical of generic tech/AI that doesn't connect to marketing
+5. For consulting firms: Restructuring, litigation, and M&A news is HIGHLY relevant
 
 ARTICLES:
 ${articleList}
@@ -251,21 +281,30 @@ Return ONLY a JSON array of ${articles.length} integers. Most scores should be 0
     // Parse the JSON array - Claude sometimes adds explanatory text after the array
     // Extract just the JSON array portion
     let jsonContent = content;
-    const arrayMatch = content.match(/^\s*\[[\s\S]*?\]/);
-    if (arrayMatch) {
-      jsonContent = arrayMatch[0];
+
+    // First extract the array portion
+    const bracketStart = content.indexOf('[');
+    const bracketEnd = content.lastIndexOf(']');
+    if (bracketStart !== -1 && bracketEnd !== -1 && bracketEnd > bracketStart) {
+      jsonContent = content.substring(bracketStart, bracketEnd + 1);
     }
+
+    // Strip JavaScript-style comments (// ...) which Claude sometimes adds
+    // These are valid JS but not valid JSON
+    jsonContent = jsonContent.replace(/\/\/[^\n]*/g, '');
+
+    // Also strip any trailing commas before ] which can result from comment removal
+    jsonContent = jsonContent.replace(/,\s*\]/g, ']');
 
     let scores;
     try {
       scores = JSON.parse(jsonContent);
     } catch (parseError) {
-      // Try to extract array from response if direct parse fails
-      const bracketStart = content.indexOf('[');
-      const bracketEnd = content.lastIndexOf(']');
-      if (bracketStart !== -1 && bracketEnd !== -1 && bracketEnd > bracketStart) {
-        const extracted = content.substring(bracketStart, bracketEnd + 1);
-        scores = JSON.parse(extracted);
+      // Last resort: try to extract just numbers
+      const numberMatches = jsonContent.match(/\d+/g);
+      if (numberMatches && numberMatches.length === articles.length) {
+        scores = numberMatches.map(n => parseInt(n, 10));
+        console.log(`   ⚠️ Recovered ${scores.length} scores via number extraction`);
       } else {
         throw parseError;
       }
@@ -354,18 +393,34 @@ serve(async (req) => {
       industry = 'public_relations';
     } else if (industryRaw.includes('marketing') || industryRaw.includes('experiential') || industryRaw.includes('advertising') || industryRaw.includes('agency')) {
       industry = 'marketing';
+    } else if (industryRaw.includes('consulting') || industryRaw.includes('advisory') || industryRaw.includes('forensic') || industryRaw.includes('litigation')) {
+      industry = 'consulting';
     }
 
-    // Build intelligence context for Claude
+    // Auto-detect consulting firms based on industry and set flag before building context
+    const isConsultingFromIndustry = industry === 'consulting';
+    if (isConsultingFromIndustry && !profileData.intelligence_context?.is_consulting) {
+      if (!profileData.intelligence_context) {
+        profileData.intelligence_context = {};
+      }
+      profileData.intelligence_context.is_consulting = true;
+    }
+
+    // Build intelligence context for Claude (after setting consulting flag)
     const intelligenceContext = buildIntelligenceContext(profileData, org.name);
     console.log(`   Intelligence context built (${intelligenceContext.length} chars)`);
 
-    // Debug: Log agency detection details
+    // Debug: Log agency/consulting detection details
     const isAgencyProfile = profileData.intelligence_context?.is_agency;
+    const isConsultingProfile = profileData.intelligence_context?.is_consulting || isConsultingFromIndustry;
     const hasTopics = profileData.intelligence_context?.topics?.length > 0;
     console.log(`   Agency detection: is_agency=${isAgencyProfile}, has_topics=${hasTopics}, topics_count=${profileData.intelligence_context?.topics?.length || 0}`);
+    console.log(`   Consulting detection: is_consulting=${isConsultingProfile}, industry=${industry}`);
     if (isAgencyProfile) {
       console.log(`   📢 AGENCY MODE ENABLED - Using expanded scoring rules for brand campaigns, CMO moves, etc.`);
+    }
+    if (isConsultingProfile) {
+      console.log(`   📊 CONSULTING MODE ENABLED - Using expanded scoring for restructuring, litigation, M&A, etc.`);
     }
 
     // Extract competitors list for strict matching
@@ -427,7 +482,16 @@ serve(async (req) => {
       finance: ['Financial Times', 'Barrons', 'Seeking Alpha', 'Bloomberg'],
       healthcare: ['STAT News', 'FierceHealthcare', 'MedCity News', 'Endpoints News'],
       retail: ['Retail Dive', 'Modern Retail', 'Chain Store Age'],
-      trading: ['Financial Times', 'Nikkei Asia', 'Reuters', 'Bloomberg', 'FreightWaves']
+      trading: ['Financial Times', 'Nikkei Asia', 'Reuters', 'Bloomberg', 'FreightWaves'],
+      // Consulting industry - management consulting, litigation support, forensic accounting, restructuring
+      consulting: ['Consulting Magazine', 'Management Consulting News', 'Harvard Business Review',
+                   'Strategy+Business', 'McKinsey Insights', 'BCG Insights', 'Accounting Today',
+                   'Law.com', 'Law360', 'Reuters Legal', 'Bloomberg Law', 'The American Lawyer',
+                   'Wall Street Journal', 'Financial Times', 'Bloomberg', 'Reuters'],
+      'business consulting': ['Consulting Magazine', 'Management Consulting News', 'Harvard Business Review',
+                   'Strategy+Business', 'McKinsey Insights', 'BCG Insights', 'Accounting Today',
+                   'Law.com', 'Law360', 'Reuters Legal', 'Bloomberg Law', 'The American Lawyer',
+                   'Wall Street Journal', 'Financial Times', 'Bloomberg', 'Reuters']
     };
 
     // Only include actual trade publications for the industry
@@ -561,7 +625,7 @@ serve(async (req) => {
     // ================================================================
     const TARGET_ARTICLES = 100;
     const MAX_PER_SOURCE = 15;
-    const RELEVANCE_THRESHOLD = 70; // Require high relevance - story must cross over into company's industry
+    const RELEVANCE_THRESHOLD = 50; // Lower threshold to include moderately relevant articles
 
     // Trade articles get score 100, sorted by date
     const scoredTradeArticles = tradeArticles
