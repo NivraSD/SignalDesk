@@ -10,7 +10,6 @@ import {
   ChevronRight,
   ChevronDown,
   RefreshCw,
-  Zap,
   ExternalLink,
   Loader2,
   Link2,
@@ -345,7 +344,7 @@ export default function ConnectionsModule() {
                 <h4 className="text-[0.7rem] uppercase tracking-wide text-[var(--grey-500)] mb-2" style={{ fontFamily: 'var(--font-display)' }}>
                   Description
                 </h4>
-                <p className="text-[var(--grey-300)]">{selectedSignal.signal_description}</p>
+                <p className="text-white">{selectedSignal.signal_description}</p>
               </div>
 
               <div>
@@ -360,7 +359,7 @@ export default function ConnectionsModule() {
                   {selectedSignal.related_entities.map((entity, idx) => (
                     <div key={idx} className="p-3 bg-[var(--grey-800)] rounded-lg border border-[var(--grey-700)]">
                       <span className="text-[0.75rem] font-medium text-[var(--grey-400)]">Related: </span>
-                      <span className="text-[var(--grey-200)]">{entity.name}</span>
+                      <span className="text-white">{entity.name}</span>
                     </div>
                   ))}
                 </div>
@@ -414,7 +413,7 @@ export default function ConnectionsModule() {
             </div>
 
             {/* Modal Footer */}
-            <div className="px-6 py-4 border-t border-[var(--grey-800)] flex justify-end gap-3">
+            <div className="px-6 py-4 border-t border-[var(--grey-800)] flex justify-end">
               <button
                 onClick={() => setSelectedSignal(null)}
                 className="px-4 py-2 text-[var(--grey-400)] hover:text-white transition-colors"
@@ -422,15 +421,6 @@ export default function ConnectionsModule() {
               >
                 Close
               </button>
-              {!selectedSignal.prediction_generated && (
-                <button
-                  className="px-4 py-2 bg-[var(--burnt-orange)] text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-[var(--burnt-orange-light)] transition-colors"
-                  style={{ fontFamily: 'var(--font-display)' }}
-                >
-                  <Zap className="w-4 h-4" />
-                  Generate Prediction
-                </button>
-              )}
             </div>
           </div>
         </div>
