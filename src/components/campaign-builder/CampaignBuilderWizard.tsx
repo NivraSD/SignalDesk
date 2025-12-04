@@ -117,9 +117,10 @@ export function CampaignBuilderWizard({ initialObjective, onViewInPlanner }: Cam
 
           // Validate session belongs to this organization
           if (data && data.blueprint) {
-            // Check if session org matches current org (if session has org_id)
-            if (data.organization_id && data.organization_id !== organization.id) {
-              console.warn('⚠️ Session belongs to different org, clearing')
+            // STRICT CHECK: Session MUST have matching org_id
+            // Reject sessions without org_id or with different org_id
+            if (!data.org_id || data.org_id !== organization.id) {
+              console.warn('⚠️ Session org mismatch or missing - session org:', data.org_id, 'current org:', organization.id)
               localStorage.removeItem(storageKey)
               setSession(null)
               return
