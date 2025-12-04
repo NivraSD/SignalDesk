@@ -155,97 +155,71 @@ async function scoreArticlesWithClaude(
   // - Key questions to answer
   // - Market drivers and barriers
   // This makes scoring industry-agnostic - Claude uses the context to judge relevance
-  const prompt = `You are a STRICT intelligence analyst scoring news articles for relevance to a SPECIFIC COMPANY.
+  const prompt = `You are an INTELLIGENCE ANALYST helping a company's business development and strategy team find relevant news.
 
 ${intelligenceContext}
 
-SCORING FRAMEWORK - Be VERY strict. Most articles should score BELOW 50.
+YOUR JOB: Score each article based on whether the company's executives would want to know about it. Think like a business strategist, not a keyword matcher.
 
-90-100: DIRECT HITS (rare - only 1-2 articles typically)
-- Article explicitly mentions the company by name
-- Article explicitly mentions these competitors: ${competitorList}
-- M&A, major deals, leadership changes AT the company or competitors
+SCORING FRAMEWORK - Think about BUSINESS RELEVANCE, not just keyword matching.
 
-70-89: HIGHLY RELEVANT INDUSTRY NEWS
-- News DIRECTLY about the company's specific industry/sector
-- Trends or developments that DIRECTLY impact the company's service lines
-- Must have clear, obvious connection - not theoretical
+90-100: CRITICAL INTELLIGENCE
+- Article mentions the company by name OR its direct competitors: ${competitorList}
+- Major deals, leadership changes, or strategic moves at the company or competitors
+- News that requires immediate executive attention
 
-50-69: MODERATELY RELEVANT
-- About the company's target customers or key clients BY NAME
-- Regulatory changes that DIRECTLY affect the company's operations
-- NOT just "could theoretically be useful" - must have clear impact
+70-89: HIGH VALUE INTELLIGENCE
+- News about the company's TARGET CUSTOMERS or the industries they serve
+- Corporate crises, restructurings, investigations, or litigation (potential business opportunities)
+- Regulatory changes or enforcement actions in relevant sectors
+- M&A activity, PE deals, or major corporate transactions
+- Industry trends that affect the company's service lines
+- News about companies that COULD BE clients or are in the company's target market
 
-30-49: TANGENTIAL
-- Adjacent industries with indirect potential impact
-- General business trends that might eventually matter
+50-69: RELEVANT MARKET INTELLIGENCE
+- General industry news and market developments
+- Economic trends affecting the company's sectors
+- Technology or regulatory changes with business implications
+- Competitor industry developments (even if competitor not named)
 
-0-29: NOT RELEVANT (MOST articles should be here)
-- Generic tech/AI/startup news that doesn't mention the company's industry
-- Space, aerospace, defense, science breakthroughs
-- Stock market, economics, geopolitics
-- Any company/industry not directly connected to this company
-- "Interesting" news that has no business impact on this company
+30-49: BACKGROUND CONTEXT
+- Broader business trends with indirect relevance
+- Adjacent industry news
 
-CRITICAL RULE FOR TECH/AI STORIES:
-Tech and AI stories are ONLY relevant if they EXPLICITLY cross over into the company's industry.
-- "OpenAI launches new model" = NOT relevant to a marketing agency (score 0-20)
-- "AI is transforming experiential marketing" = RELEVANT to a marketing agency (score 70+)
-- "Chinese space company lands rocket" = NOT relevant to marketing (score 0-20)
-- "Brands are using AI for event activations" = RELEVANT to experiential marketing (score 70+)
+0-29: NOT RELEVANT
+- Consumer lifestyle, entertainment, sports (unless company serves those sectors)
+- Pure tech/science news with no business application
+- Local news with no corporate relevance
+- Topics completely outside the company's scope
 
-The story must ACTUALLY BE ABOUT the company's industry, not just tangentially related tech news.
+COMPANY TYPE SPECIFIC GUIDANCE:
 
-SPECIAL RULES FOR MARKETING/PR AGENCIES:
-If the company type is "Marketing/PR Agency" (check COMPANY TYPE section above), use EXPANDED scoring:
+FOR CONSULTING/ADVISORY FIRMS (restructuring, forensic, litigation, M&A advisory):
+Score 70+ for ANY of these - they represent BUSINESS OPPORTUNITIES:
+- Corporate bankruptcies, restructurings, distressed companies
+- Major lawsuits, class actions, regulatory investigations
+- Fraud cases, accounting scandals, executive misconduct
+- SEC/DOJ/FTC enforcement actions, settlements
+- M&A deals, PE transactions, divestitures
+- Corporate crises requiring communications support
+- Antitrust cases, damages disputes
+These are not just "interesting news" - they are POTENTIAL CLIENTS needing advisory services.
 
-70-89 for agencies also includes:
-- BRAND CAMPAIGNS: Major brand marketing campaigns, product launches with marketing angles
-- CMO MOVES: CMO appointments, marketing leadership changes at major companies
-- AGENCY NEWS: Agency reviews, RFPs, pitch wins/losses
-- CONSUMER TRENDS: Gen Z behavior, cultural trends affecting brand marketing
-- SPONSORSHIP: Major sponsorship deals, brand partnerships, experiential activations
-- CLIENT INTEL: Significant news about major brand advertisers (auto, tech, CPG, entertainment)
+FOR MARKETING/PR AGENCIES:
+Score 70+ for brand campaigns, CMO moves, agency reviews, consumer trends, sponsorships.
+Major brand advertiser news is highly relevant (auto, tech, CPG, entertainment).
 
-These are HIGHLY RELEVANT for agencies because:
-- Brand campaigns show what competitors AND clients are doing
-- CMO moves signal new business opportunities
-- Consumer trends inform client strategy
+FOR TRADING/COMMODITIES COMPANIES:
+Score 70+ for supply chain, commodity prices, trade policy, shipping, logistics.
 
-50-69 for agencies also includes:
-- General brand marketing industry news
-- Marketing technology developments
-- Advertising industry trends
-
-SPECIAL RULES FOR CONSULTING FIRMS:
-If the company is in consulting (management consulting, litigation support, forensic accounting, restructuring), use EXPANDED scoring:
-
-70-89 for consulting firms also includes:
-- RESTRUCTURING: Bankruptcies, corporate restructurings, distressed companies, turnarounds
-- LITIGATION: Major lawsuits, investigations, settlements, regulatory enforcement
-- M&A: Mergers, acquisitions, divestitures (consulting firms advise on these)
-- PRIVATE EQUITY: PE deals, portfolio company issues, fund activity
-- CORPORATE CRISES: Fraud cases, accounting scandals, executive misconduct
-- REGULATORY: SEC enforcement, DOJ investigations, compliance issues
-- COMPETITOR NEWS: News about AlixPartners, Kroll, BRG, PwC, Deloitte, KPMG, EY consulting
-
-50-69 for consulting firms also includes:
-- General corporate finance news
-- Legal industry developments
-- Accounting industry news
-- Economic trends affecting deal flow
-
-OTHER RULES:
-1. For non-agencies: "Could pitch to X clients" is NOT valid - that's stretching
-2. For agencies: Client intel IS valid if it's about major brand advertisers
-3. When in doubt about agency relevance, check if TOPICS OF INTEREST section exists
-4. Be skeptical of generic tech/AI that doesn't connect to marketing
-5. For consulting firms: Restructuring, litigation, and M&A news is HIGHLY relevant
+CRITICAL: Read the ABOUT section to understand what this company DOES.
+A restructuring firm cares about bankruptcies. A marketing agency cares about brand campaigns.
+Score based on BUSINESS VALUE, not keyword presence.
 
 ARTICLES:
 ${articleList}
 
-Return ONLY a JSON array of ${articles.length} integers. Most scores should be 0-40.`;
+Return ONLY a JSON array of ${articles.length} integers.`;
 
   try {
     console.log(`   📝 Scoring ${articles.length} articles with Claude...`);
