@@ -25,12 +25,15 @@ import {
   X,
   Play,
   Target,
-  Zap
+  Zap,
+  HelpCircle
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { Logo } from '@/components/ui/Logo'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useAppStore } from '@/stores/useAppStore'
+import { useProductTour } from '@/hooks/useProductTour'
+import '@/styles/tour.css'
 import OrganizationOnboarding from '@/components/onboarding/OrganizationOnboarding'
 import OrganizationSettings from '@/components/settings/OrganizationSettings'
 import { IntelligenceService } from '@/lib/services/intelligenceService'
@@ -68,6 +71,9 @@ export default function Dashboard() {
   const [organizations, setOrganizations] = useState<any[]>([])
   const [loadingOrgs, setLoadingOrgs] = useState(true)
   const [currentDate, setCurrentDate] = useState('')
+
+  // Product Tour
+  const { startTour, tourCompleted } = useProductTour({ autoStart: true })
 
   // Intelligence Pipeline State
   const [isRunningPipeline, setIsRunningPipeline] = useState(false)
@@ -276,10 +282,14 @@ export default function Dashboard() {
       const synthesisData = pipelineData?.synthesis || pipelineData?.executiveSynthesis
       if (synthesisData) {
         setExecutiveSynthesis(synthesisData)
-        // Wait a moment for opportunities to be saved to database
-        await new Promise(resolve => setTimeout(resolve, 1500))
+        // Wait for opportunities to be saved to database
+        // Increased from 1.5s to 5s because opportunity detector often times out
+        // but continues saving in the background
+        await new Promise(resolve => setTimeout(resolve, 5000))
         // Reload opportunities and sidebar data after pipeline completes
         await loadOpportunities()
+        // Reload again after another delay in case first load was too early
+        setTimeout(() => loadOpportunities(), 5000)
         await loadSidebarData()
       } else {
         setPipelineError('No synthesis data received from pipeline')
@@ -338,6 +348,7 @@ export default function Dashboard() {
             {navLinks.map((link) => (
               <button
                 key={link.id}
+                data-tour={`nav-${link.id}`}
                 onClick={() => setActiveModule(link.id)}
                 className={`px-4 py-2 text-[0.85rem] font-medium rounded-md transition-colors ${
                   activeModule === link.id
@@ -355,7 +366,7 @@ export default function Dashboard() {
         {/* Right: Org Switcher + Profile */}
         <div className="flex items-center gap-4">
           {/* Organization Switcher */}
-          <div className="relative">
+          <div className="relative" data-tour="org-switcher">
             <button
               onClick={() => setShowOrgMenu(!showOrgMenu)}
               className="flex items-center gap-2 px-3.5 py-2 border border-[var(--grey-200)] rounded-md bg-white text-[0.85rem] font-medium cursor-pointer"
@@ -460,6 +471,17 @@ export default function Dashboard() {
                   Settings
                 </button>
 
+                <button
+                  onClick={() => {
+                    setShowProfileMenu(false)
+                    startTour()
+                  }}
+                  className="w-full text-left px-4 py-3 hover:bg-[var(--grey-100)] text-sm flex items-center gap-2 text-[var(--charcoal)]"
+                >
+                  <HelpCircle className="w-4 h-4" />
+                  Take a Tour
+                </button>
+
                 <div className="border-t border-[var(--grey-200)]">
                   <button
                     onClick={handleSignOut}
@@ -530,11 +552,11 @@ export default function Dashboard() {
                 Intelligence
               </div>
 
-              <SidebarItem icon={BarChart3} label="Predictions" onClick={() => setActiveModule('predictions')} />
-              <SidebarItem icon={Activity} label="Signals" onClick={() => setActiveModule('signals')} />
+              <SidebarItem icon={BarChart3} label="Predictions" onClick={() => setActiveModule('predictions')} tourId="sidebar-predictions" />
+              <SidebarItem icon={Activity} label="Signals" onClick={() => setActiveModule('signals')} tourId="sidebar-signals" />
               <SidebarItem icon={Users} label="Targets" />
-              <SidebarItem icon={Globe} label="Geo Intel" onClick={() => setActiveModule('geointel')} />
-              <SidebarItem icon={ExternalLink} label="Connections" onClick={() => setActiveModule('connections')} />
+              <SidebarItem icon={Globe} label="Geo Intel" onClick={() => setActiveModule('geointel')} tourId="sidebar-geointel" />
+              <SidebarItem icon={ExternalLink} label="Connections" onClick={() => setActiveModule('connections')} tourId="sidebar-connections" />
             </div>
           </div>
         </aside>
@@ -678,17 +700,20 @@ function SidebarItem({
   label,
   badge,
   active = false,
-  onClick
+  onClick,
+  tourId
 }: {
   icon: any
   label: string
   badge?: number
   active?: boolean
   onClick?: () => void
+  tourId?: string
 }) {
   return (
     <button
       onClick={onClick}
+      data-tour={tourId}
       className={`
         w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[0.85rem] transition-all text-left mb-0.5
         ${active
@@ -1104,6 +1129,7 @@ ${opp.strategic_context?.trigger_events?.map((e: string) => `- ${e}`).join('\n')
                       : 'Select an organization to generate intelligence briefs.'}
                   </p>
                   <button
+                    data-tour="generate-brief"
                     onClick={onRunPipeline}
                     disabled={!organization}
                     className="px-4 py-2 bg-[var(--burnt-orange)] text-white rounded-md text-sm font-medium flex items-center gap-2 hover:bg-[var(--burnt-orange-light)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"

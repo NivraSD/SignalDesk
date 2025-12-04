@@ -1,0 +1,125 @@
+/* NIV Product Tour Styles */
+/* Customizes driver.js to match the NIV design system */
+
+/* Override driver.js popover styles */
+.niv-tour-popover {
+  background: #1a1a1a !important;
+  border: 1px solid #2a2a2a !important;
+  border-radius: 12px !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+  max-width: 340px !important;
+}
+
+.niv-tour-popover .driver-popover-arrow-side-bottom {
+  border-top-color: #1a1a1a !important;
+}
+
+.niv-tour-popover .driver-popover-arrow-side-top {
+  border-bottom-color: #1a1a1a !important;
+}
+
+.niv-tour-popover .driver-popover-arrow-side-left {
+  border-right-color: #1a1a1a !important;
+}
+
+.niv-tour-popover .driver-popover-arrow-side-right {
+  border-left-color: #1a1a1a !important;
+}
+
+.niv-tour-popover .driver-popover-title {
+  font-family: var(--font-display), sans-serif !important;
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  color: #ffffff !important;
+  margin-bottom: 8px !important;
+}
+
+.niv-tour-popover .driver-popover-description {
+  font-family: var(--font-body), sans-serif !important;
+  font-size: 0.875rem !important;
+  line-height: 1.5 !important;
+  color: #a3a3a3 !important;
+}
+
+.niv-tour-popover .driver-popover-progress-text {
+  font-family: var(--font-display), sans-serif !important;
+  font-size: 0.75rem !important;
+  color: #737373 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.niv-tour-popover .driver-popover-navigation-btns {
+  gap: 8px !important;
+}
+
+.niv-tour-popover .driver-popover-prev-btn {
+  background: transparent !important;
+  border: 1px solid #404040 !important;
+  color: #a3a3a3 !important;
+  font-family: var(--font-display), sans-serif !important;
+  font-size: 0.8rem !important;
+  font-weight: 500 !important;
+  padding: 8px 16px !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  transition: all 0.2s !important;
+}
+
+.niv-tour-popover .driver-popover-prev-btn:hover {
+  background: #2a2a2a !important;
+  border-color: #525252 !important;
+  color: #ffffff !important;
+}
+
+.niv-tour-popover .driver-popover-next-btn,
+.niv-tour-popover .driver-popover-close-btn {
+  background: #c45d35 !important;
+  border: none !important;
+  color: #ffffff !important;
+  font-family: var(--font-display), sans-serif !important;
+  font-size: 0.8rem !important;
+  font-weight: 500 !important;
+  padding: 8px 16px !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  transition: all 0.2s !important;
+}
+
+.niv-tour-popover .driver-popover-next-btn:hover,
+.niv-tour-popover .driver-popover-close-btn:hover {
+  background: #d96b42 !important;
+}
+
+/* Close button in header */
+.niv-tour-popover .driver-popover-close-btn {
+  background: transparent !important;
+  color: #737373 !important;
+  padding: 4px !important;
+  position: absolute !important;
+  top: 12px !important;
+  right: 12px !important;
+}
+
+.niv-tour-popover .driver-popover-close-btn:hover {
+  color: #ffffff !important;
+  background: transparent !important;
+}
+
+/* Overlay */
+.driver-overlay {
+  background: rgba(0, 0, 0, 0.8) !important;
+}
+
+/* Highlighted element */
+.driver-active-element {
+  box-shadow: 0 0 0 4px rgba(196, 93, 53, 0.3) !important;
+  border-radius: 8px !important;
+}
+
+/* Footer area */
+.niv-tour-popover .driver-popover-footer {
+  margin-top: 16px !important;
+  padding-top: 16px !important;
+  border-top: 1px solid #2a2a2a !important;
+}

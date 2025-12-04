@@ -61,12 +61,16 @@ export async function POST(request: NextRequest) {
     // Handle url being in different locations (url column, website column, or settings.url)
     const organizationUrl = org.url || org.website || org.settings?.url
 
-    // Fetch schema from Memory Vault
+    // Fetch schema from Memory Vault - check multiple possible folders
     console.log('🔍 Fetching schema for organization:', organizationId)
 
-    const { data: schemaData, error: schemaError } = await supabase
+    // Try 'Schemas' folder first (used by onboarding)
+    let schemaData = null
+    let schemaError = null
+
+    const { data: schemasFolder, error: schemasFolderError } = await supabase
       .from('content_library')
-      .select('content')
+      .select('content, folder')
       .eq('organization_id', organizationId)
       .eq('content_type', 'schema')
       .eq('folder', 'Schemas')
@@ -74,8 +78,48 @@ export async function POST(request: NextRequest) {
       .limit(1)
       .single()
 
+    if (schemasFolder) {
+      schemaData = schemasFolder
+      console.log('📊 Found schema in Schemas folder')
+    } else {
+      // Try 'Schemas/Active/' folder (used by schema-onboarding-orchestrator)
+      const { data: activeFolder, error: activeFolderError } = await supabase
+        .from('content_library')
+        .select('content, folder')
+        .eq('organization_id', organizationId)
+        .eq('content_type', 'schema')
+        .eq('folder', 'Schemas/Active/')
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .single()
+
+      if (activeFolder) {
+        schemaData = activeFolder
+        console.log('📊 Found schema in Schemas/Active/ folder')
+      } else {
+        // Last resort: try any schema folder using LIKE
+        const { data: anySchema, error: anyError } = await supabase
+          .from('content_library')
+          .select('content, folder')
+          .eq('organization_id', organizationId)
+          .eq('content_type', 'schema')
+          .ilike('folder', 'Schemas%')
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .single()
+
+        if (anySchema) {
+          schemaData = anySchema
+          console.log('📊 Found schema in folder:', anySchema.folder)
+        } else {
+          schemaError = anyError
+        }
+      }
+    }
+
     console.log('📊 Schema query result:', {
       hasData: !!schemaData,
+      folder: schemaData?.folder,
       error: schemaError,
       contentPreview: schemaData?.content ? JSON.stringify(schemaData.content).substring(0, 100) : null
     })

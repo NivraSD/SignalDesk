@@ -377,6 +377,7 @@ export default function NIVFloatingAssistant() {
 
       {/* Floating Bubble */}
       <button
+        data-tour="niv-assistant"
         onClick={() => setIsOpen(!isOpen)}
         style={{
           width: '60px',

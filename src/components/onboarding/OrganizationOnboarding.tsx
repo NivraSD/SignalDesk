@@ -919,11 +919,44 @@ export default function OrganizationOnboarding({
     setSchemaSaved(true) // Mark as saved
 
     // Auto-generate company profile from schema (MERGE with existing MCP Discovery data)
-    console.log('📋 Auto-generating company profile from schema...')
+    // Add delay to ensure database write is committed before querying
+    console.log('📋 Auto-generating company profile from schema (waiting for DB commit)...')
+    await new Promise(resolve => setTimeout(resolve, 1000)) // 1 second delay
+
     try {
-      const profileResponse = await fetch(`/api/organizations/generate-profile?id=${orgId}`, {
-        method: 'POST'
-      })
+      // Retry up to 3 times in case of timing issues
+      let profileResponse = null
+      let attempts = 0
+      const maxAttempts = 3
+
+      while (attempts < maxAttempts) {
+        attempts++
+        console.log(`📋 Generate profile attempt ${attempts}/${maxAttempts}...`)
+
+        profileResponse = await fetch(`/api/organizations/generate-profile?id=${orgId}`, {
+          method: 'POST'
+        })
+
+        if (profileResponse.ok) {
+          break
+        }
+
+        // If not found, wait and retry
+        const errorText = await profileResponse.text()
+        if (errorText.includes('No schema found') && attempts < maxAttempts) {
+          console.log('⏳ Schema not found yet, waiting...')
+          await new Promise(resolve => setTimeout(resolve, 1500))
+          continue
+        }
+
+        // For other errors, don't retry
+        console.warn('⚠️ Generate profile error:', errorText)
+        break
+      }
+
+      if (!profileResponse) {
+        throw new Error('No response from generate-profile')
+      }
 
       if (profileResponse.ok) {
         const profileData = await profileResponse.json()
@@ -934,14 +967,23 @@ export default function OrganizationOnboarding({
         const currentProfileResponse = await fetch(`/api/organizations/profile?id=${orgId}`)
         const currentProfileData = await currentProfileResponse.json()
 
+        const existing = currentProfileData.organization.company_profile || {}
+        const generated = profileData.profile || {}
+
         const mergedProfile = {
-          ...currentProfileData.organization.company_profile, // Keep all MCP Discovery data
-          ...profileData.profile, // Add schema-extracted data (leadership, headquarters, etc.)
-          // Ensure we don't overwrite critical MCP Discovery fields with empty values
-          industry: currentProfileData.organization.company_profile?.industry || profileData.profile.industry,
-          sub_industry: currentProfileData.organization.company_profile?.sub_industry || profileData.profile.sub_industry,
-          product_lines: currentProfileData.organization.company_profile?.product_lines || profileData.profile.product_lines,
-          mcp_discovery_data: currentProfileData.organization.company_profile?.mcp_discovery_data || profileData.profile.mcp_discovery_data
+          ...existing, // Keep all MCP Discovery data
+          ...generated, // Add schema-extracted data (leadership, headquarters, etc.)
+          // Ensure we don't overwrite fields with empty values - prefer existing if new is empty
+          industry: existing.industry || generated.industry,
+          sub_industry: existing.sub_industry || generated.sub_industry,
+          product_lines: (generated.product_lines?.length > 0) ? generated.product_lines : (existing.product_lines || []),
+          mcp_discovery_data: existing.mcp_discovery_data || generated.mcp_discovery_data,
+          // Also protect leadership and headquarters from being overwritten with empty values
+          leadership: (generated.leadership?.length > 0) ? generated.leadership : (existing.leadership || []),
+          headquarters: (Object.keys(generated.headquarters || {}).length > 0) ? generated.headquarters : (existing.headquarters || {}),
+          company_size: (Object.keys(generated.company_size || {}).length > 0) ? generated.company_size : (existing.company_size || {}),
+          key_markets: (generated.key_markets?.length > 0) ? generated.key_markets : (existing.key_markets || []),
+          strategic_goals: (generated.strategic_goals?.length > 0) ? generated.strategic_goals : (existing.strategic_goals || [])
         }
 
         // Save the MERGED profile
@@ -951,9 +993,8 @@ export default function OrganizationOnboarding({
           body: JSON.stringify({ company_profile: mergedProfile })
         })
         console.log('✅ Company profile merged and saved to organization')
-      } else {
-        console.warn('⚠️ Failed to auto-generate profile:', await profileResponse.text())
       }
+      // Note: error case already logged in retry loop above
     } catch (err) {
       console.error('❌ Profile auto-generation error:', err)
       // Don't fail if profile generation fails
