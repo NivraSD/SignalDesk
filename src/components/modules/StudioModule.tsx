@@ -84,7 +84,7 @@ export default function StudioModule({ initialContent, onClearInitialContent }: 
 
   return (
     <div
-      className="h-full overflow-hidden"
+      className="h-full w-full flex-1 overflow-hidden"
       style={{
         display: 'grid',
         gridTemplateColumns: '260px 1fr',
@@ -103,7 +103,7 @@ export default function StudioModule({ initialContent, onClearInitialContent }: 
       <div className="flex flex-col h-full overflow-hidden bg-[var(--charcoal)]">
         {/* Content Grid - Workspace + NIV Floating Card */}
         <div
-          className="flex-1 overflow-hidden gap-6 pl-6 py-6 pr-4"
+          className="flex-1 overflow-hidden gap-6 pl-6 py-6 pr-6"
           style={{
             display: 'grid',
             gridTemplateColumns: '1fr 460px'
