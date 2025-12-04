@@ -1352,6 +1352,93 @@ const CONTENT_GENERATION_TOOLS = [
         "context"
       ]
     }
+  },
+  {
+    name: "fetch_url_content",
+    description: "Fetch and extract content from a URL. Use this when user provides a URL to scrape for products, information, or data to use in schemas or content. Returns structured content including any products, FAQs, or key information found on the page.",
+    input_schema: {
+      type: "object",
+      properties: {
+        url: {
+          type: "string",
+          description: "The URL to fetch and extract content from"
+        },
+        extract_type: {
+          type: "string",
+          description: "Type of content to focus on extracting",
+          enum: ["products", "faqs", "general", "all"],
+          default: "all"
+        }
+      },
+      required: ["url"]
+    }
+  },
+  {
+    name: "get_schemas",
+    description: "Get all JSON-LD schemas for the organization. Returns existing schemas that can be viewed or edited.",
+    input_schema: {
+      type: "object",
+      properties: {
+        schema_type: {
+          type: "string",
+          description: "Filter by schema type (e.g., 'Organization', 'Product', 'FAQPage')"
+        }
+      },
+      required: []
+    }
+  },
+  {
+    name: "update_schema",
+    description: "Update/edit a JSON-LD schema. Use this to modify existing schemas - add products, update FAQs, change organization info, etc. Can add new fields, modify existing fields, or remove fields.",
+    input_schema: {
+      type: "object",
+      properties: {
+        schema_id: {
+          type: "string",
+          description: "The ID of the schema to update (from get_schemas)"
+        },
+        updates: {
+          type: "object",
+          description: "The updates to apply to the schema. Can be partial - only include fields you want to change.",
+          additionalProperties: true
+        },
+        action: {
+          type: "string",
+          description: "Type of update action",
+          enum: ["merge", "replace", "add_to_array"],
+          default: "merge"
+        },
+        array_field: {
+          type: "string",
+          description: "If action is 'add_to_array', specify which array field to add items to (e.g., 'itemListElement' for products)"
+        }
+      },
+      required: ["schema_id", "updates"]
+    }
+  },
+  {
+    name: "create_schema",
+    description: "Create a new JSON-LD schema. Use this to create new schemas like Organization, Product, FAQPage, etc.",
+    input_schema: {
+      type: "object",
+      properties: {
+        schema_type: {
+          type: "string",
+          description: "The type of schema to create (e.g., 'Organization', 'Product', 'FAQPage', 'ItemList')"
+        },
+        content: {
+          type: "object",
+          description: "The schema content. Should follow schema.org structure.",
+          additionalProperties: true
+        },
+        folder: {
+          type: "string",
+          description: "Folder to save schema in",
+          default: "Schemas"
+        }
+      },
+      required: ["schema_type", "content"]
+    }
   }
 ];
 // Store conversation states in memory
@@ -4286,6 +4373,483 @@ ${section.talking_points.map((point)=>`- ${point}`).join('\n')}
             'Content-Type': 'application/json'
           }
         });
+      }
+
+      // Handle fetch_url_content - scrape URL for products/content
+      if (toolUse && toolUse.name === 'fetch_url_content') {
+        console.log('🌐 Fetching URL content:', toolUse.input.url);
+        try {
+          const FIRECRAWL_API_KEY = Deno.env.get('FIRECRAWL_API_KEY') || 'fc-3048810124b640eb99293880a4ab25d0';
+
+          // Use Firecrawl to scrape the URL
+          const scrapeResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${FIRECRAWL_API_KEY}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              url: toolUse.input.url,
+              formats: ['markdown', 'html'],
+              onlyMainContent: true
+            })
+          });
+
+          if (!scrapeResponse.ok) {
+            throw new Error(`Failed to fetch URL: ${scrapeResponse.status}`);
+          }
+
+          const scrapeData = await scrapeResponse.json();
+          const pageContent = scrapeData.data?.markdown || scrapeData.data?.html || '';
+          const pageTitle = scrapeData.data?.metadata?.title || 'Unknown Page';
+
+          console.log(`✅ Scraped ${pageContent.length} characters from ${toolUse.input.url}`);
+
+          // Extract products if requested
+          let extractedProducts = [];
+          if (toolUse.input.extract_type === 'products' || toolUse.input.extract_type === 'all') {
+            // Use Claude to extract product information
+            const extractResponse = await fetch('https://api.anthropic.com/v1/messages', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'anthropic-version': '2023-06-01',
+                'x-api-key': ANTHROPIC_API_KEY
+              },
+              body: JSON.stringify({
+                model: 'claude-sonnet-4-20250514',
+                max_tokens: 4096,
+                messages: [{
+                  role: 'user',
+                  content: `Extract all products from this page content. Return a JSON array of products with this structure:
+{
+  "products": [
+    {
+      "name": "Product Name",
+      "description": "Brief description",
+      "price": "$XX.XX" or null,
+      "url": "product URL if available",
+      "image": "image URL if available"
+    }
+  ]
+}
+
+Page Content:
+${pageContent.substring(0, 15000)}
+
+Return ONLY valid JSON, no other text.`
+                }]
+              })
+            });
+
+            const extractData = await extractResponse.json();
+            const extractText = extractData.content?.[0]?.text || '{"products": []}';
+            try {
+              const jsonMatch = extractText.match(/\{[\s\S]*\}/);
+              if (jsonMatch) {
+                const parsed = JSON.parse(jsonMatch[0]);
+                extractedProducts = parsed.products || [];
+                console.log(`✅ Extracted ${extractedProducts.length} products`);
+              }
+            } catch (e) {
+              console.error('Failed to parse extracted products:', e);
+            }
+          }
+
+          // Build tool result for Claude
+          const toolResult = {
+            url: toolUse.input.url,
+            title: pageTitle,
+            content_length: pageContent.length,
+            products: extractedProducts,
+            summary: pageContent.substring(0, 2000)
+          };
+
+          // Continue conversation with tool result
+          const continuedMessages = [
+            ...conversationHistory.map((msg) => ({
+              role: msg.role,
+              content: msg.content
+            })),
+            {
+              role: 'assistant',
+              content: claudeResponseData.content
+            },
+            {
+              role: 'user',
+              content: [{
+                type: 'tool_result',
+                tool_use_id: toolUse.id,
+                content: JSON.stringify(toolResult, null, 2)
+              }]
+            }
+          ];
+
+          const continuedResponse = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'anthropic-version': '2023-06-01',
+              'x-api-key': ANTHROPIC_API_KEY
+            },
+            body: JSON.stringify({
+              model: 'claude-sonnet-4-20250514',
+              max_tokens: 4096,
+              tools: CONTENT_GENERATION_TOOLS,
+              messages: continuedMessages,
+              system: conversationContext
+            })
+          });
+
+          const continuedData = await continuedResponse.json();
+          const finalText = continuedData.content?.find((b) => b.type === 'text')?.text ||
+            `Found ${extractedProducts.length} products on ${pageTitle}`;
+
+          return new Response(JSON.stringify({
+            success: true,
+            mode: 'conversation',
+            message: finalText,
+            extractedData: {
+              products: extractedProducts,
+              url: toolUse.input.url,
+              title: pageTitle
+            },
+            conversationId
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+
+        } catch (error) {
+          console.error('❌ URL fetch error:', error);
+          return new Response(JSON.stringify({
+            success: false,
+            message: `Failed to fetch URL: ${error.message}`,
+            conversationId
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+      }
+
+      // Handle get_schemas - list organization schemas
+      if (toolUse && toolUse.name === 'get_schemas') {
+        console.log('📋 Getting organization schemas');
+        try {
+          let query = supabase
+            .from('content_library')
+            .select('id, title, content, metadata, folder, updated_at')
+            .eq('organization_id', organizationId)
+            .eq('content_type', 'schema')
+            .order('updated_at', { ascending: false });
+
+          if (toolUse.input.schema_type) {
+            query = query.eq('metadata->>schema_type', toolUse.input.schema_type);
+          }
+
+          const { data: schemas, error } = await query;
+
+          if (error) throw error;
+
+          console.log(`✅ Found ${schemas?.length || 0} schemas`);
+
+          // Format schemas for Claude
+          const schemaList = (schemas || []).map((s) => ({
+            id: s.id,
+            type: s.metadata?.schema_type || 'Unknown',
+            title: s.title,
+            folder: s.folder,
+            updated: s.updated_at,
+            preview: JSON.stringify(s.content).substring(0, 200) + '...'
+          }));
+
+          // Continue conversation with tool result
+          const continuedMessages = [
+            ...conversationHistory.map((msg) => ({
+              role: msg.role,
+              content: msg.content
+            })),
+            {
+              role: 'assistant',
+              content: claudeResponseData.content
+            },
+            {
+              role: 'user',
+              content: [{
+                type: 'tool_result',
+                tool_use_id: toolUse.id,
+                content: JSON.stringify({
+                  schemas: schemaList,
+                  total: schemaList.length
+                }, null, 2)
+              }]
+            }
+          ];
+
+          const continuedResponse = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'anthropic-version': '2023-06-01',
+              'x-api-key': ANTHROPIC_API_KEY
+            },
+            body: JSON.stringify({
+              model: 'claude-sonnet-4-20250514',
+              max_tokens: 4096,
+              tools: CONTENT_GENERATION_TOOLS,
+              messages: continuedMessages,
+              system: conversationContext
+            })
+          });
+
+          const continuedData = await continuedResponse.json();
+          const finalText = continuedData.content?.find((b) => b.type === 'text')?.text ||
+            `Found ${schemaList.length} schemas`;
+
+          return new Response(JSON.stringify({
+            success: true,
+            mode: 'conversation',
+            message: finalText,
+            schemas: schemaList,
+            conversationId
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+
+        } catch (error) {
+          console.error('❌ Get schemas error:', error);
+          return new Response(JSON.stringify({
+            success: false,
+            message: `Failed to get schemas: ${error.message}`,
+            conversationId
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+      }
+
+      // Handle update_schema - edit existing schema
+      if (toolUse && toolUse.name === 'update_schema') {
+        console.log('✏️ Updating schema:', toolUse.input.schema_id);
+        try {
+          // Get current schema
+          const { data: currentSchema, error: fetchError } = await supabase
+            .from('content_library')
+            .select('*')
+            .eq('id', toolUse.input.schema_id)
+            .eq('content_type', 'schema')
+            .single();
+
+          if (fetchError || !currentSchema) {
+            throw new Error('Schema not found');
+          }
+
+          let updatedContent = currentSchema.content;
+          const action = toolUse.input.action || 'merge';
+
+          if (action === 'merge') {
+            // Deep merge updates into existing content
+            updatedContent = { ...currentSchema.content, ...toolUse.input.updates };
+          } else if (action === 'replace') {
+            // Replace entire content
+            updatedContent = toolUse.input.updates;
+          } else if (action === 'add_to_array' && toolUse.input.array_field) {
+            // Add items to an array field
+            const arrayField = toolUse.input.array_field;
+            const existingArray = currentSchema.content[arrayField] || [];
+            const newItems = toolUse.input.updates[arrayField] || toolUse.input.updates;
+            updatedContent = {
+              ...currentSchema.content,
+              [arrayField]: [...existingArray, ...(Array.isArray(newItems) ? newItems : [newItems])]
+            };
+          }
+
+          // Update the schema
+          const { data: updated, error: updateError } = await supabase
+            .from('content_library')
+            .update({
+              content: updatedContent,
+              metadata: {
+                ...currentSchema.metadata,
+                version: (currentSchema.metadata?.version || 1) + 1,
+                last_updated: new Date().toISOString()
+              }
+            })
+            .eq('id', toolUse.input.schema_id)
+            .select()
+            .single();
+
+          if (updateError) throw updateError;
+
+          console.log(`✅ Schema updated successfully`);
+
+          // Continue conversation with tool result
+          const toolResult = {
+            success: true,
+            schema_id: toolUse.input.schema_id,
+            action: action,
+            message: 'Schema updated successfully',
+            updated_content_preview: JSON.stringify(updatedContent).substring(0, 500)
+          };
+
+          const continuedMessages = [
+            ...conversationHistory.map((msg) => ({
+              role: msg.role,
+              content: msg.content
+            })),
+            {
+              role: 'assistant',
+              content: claudeResponseData.content
+            },
+            {
+              role: 'user',
+              content: [{
+                type: 'tool_result',
+                tool_use_id: toolUse.id,
+                content: JSON.stringify(toolResult, null, 2)
+              }]
+            }
+          ];
+
+          const continuedResponse = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'anthropic-version': '2023-06-01',
+              'x-api-key': ANTHROPIC_API_KEY
+            },
+            body: JSON.stringify({
+              model: 'claude-sonnet-4-20250514',
+              max_tokens: 4096,
+              tools: CONTENT_GENERATION_TOOLS,
+              messages: continuedMessages,
+              system: conversationContext
+            })
+          });
+
+          const continuedData = await continuedResponse.json();
+          const finalText = continuedData.content?.find((b) => b.type === 'text')?.text ||
+            'Schema updated successfully';
+
+          return new Response(JSON.stringify({
+            success: true,
+            mode: 'schema_updated',
+            message: finalText,
+            schema_id: toolUse.input.schema_id,
+            conversationId
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+
+        } catch (error) {
+          console.error('❌ Update schema error:', error);
+          return new Response(JSON.stringify({
+            success: false,
+            message: `Failed to update schema: ${error.message}`,
+            conversationId
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+      }
+
+      // Handle create_schema - create new schema
+      if (toolUse && toolUse.name === 'create_schema') {
+        console.log('🆕 Creating new schema:', toolUse.input.schema_type);
+        try {
+          const schemaContent = {
+            '@context': 'https://schema.org',
+            '@type': toolUse.input.schema_type,
+            ...toolUse.input.content
+          };
+
+          const schemaId = crypto.randomUUID();
+          const { error: insertError } = await supabase
+            .from('content_library')
+            .insert({
+              id: schemaId,
+              organization_id: organizationId,
+              content_type: 'schema',
+              title: `${toolUse.input.schema_type} Schema`,
+              content: schemaContent,
+              folder: toolUse.input.folder || 'Schemas',
+              metadata: {
+                schema_type: toolUse.input.schema_type,
+                version: 1,
+                created_by: 'niv-content'
+              }
+            });
+
+          if (insertError) throw insertError;
+
+          console.log(`✅ Schema created: ${schemaId}`);
+
+          // Continue conversation with tool result
+          const toolResult = {
+            success: true,
+            schema_id: schemaId,
+            schema_type: toolUse.input.schema_type,
+            message: 'Schema created successfully'
+          };
+
+          const continuedMessages = [
+            ...conversationHistory.map((msg) => ({
+              role: msg.role,
+              content: msg.content
+            })),
+            {
+              role: 'assistant',
+              content: claudeResponseData.content
+            },
+            {
+              role: 'user',
+              content: [{
+                type: 'tool_result',
+                tool_use_id: toolUse.id,
+                content: JSON.stringify(toolResult, null, 2)
+              }]
+            }
+          ];
+
+          const continuedResponse = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'anthropic-version': '2023-06-01',
+              'x-api-key': ANTHROPIC_API_KEY
+            },
+            body: JSON.stringify({
+              model: 'claude-sonnet-4-20250514',
+              max_tokens: 4096,
+              tools: CONTENT_GENERATION_TOOLS,
+              messages: continuedMessages,
+              system: conversationContext
+            })
+          });
+
+          const continuedData = await continuedResponse.json();
+          const finalText = continuedData.content?.find((b) => b.type === 'text')?.text ||
+            `Created ${toolUse.input.schema_type} schema`;
+
+          return new Response(JSON.stringify({
+            success: true,
+            mode: 'schema_created',
+            message: finalText,
+            schema_id: schemaId,
+            conversationId
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+
+        } catch (error) {
+          console.error('❌ Create schema error:', error);
+          return new Response(JSON.stringify({
+            success: false,
+            message: `Failed to create schema: ${error.message}`,
+            conversationId
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
       }
     }
     // Otherwise return Claude's conversational response
