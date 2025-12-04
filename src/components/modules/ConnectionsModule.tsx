@@ -264,10 +264,10 @@ export default function ConnectionsModule() {
                         {signal.signal_title}
                       </h4>
                       <span className={`px-2 py-0.5 text-[0.65rem] rounded border ${getImpactColor(signal.client_impact_level)}`}>
-                        {signal.client_impact_level.toUpperCase()}
+                        {(signal.client_impact_level || 'medium').toUpperCase()}
                       </span>
                       <span className="px-2 py-0.5 text-[0.65rem] rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">
-                        {signal.signal_maturity}
+                        {signal.signal_maturity || 'emerging'}
                       </span>
                     </div>
 
@@ -318,10 +318,10 @@ export default function ConnectionsModule() {
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <span className={`px-2 py-0.5 text-[0.65rem] rounded border ${getImpactColor(selectedSignal.client_impact_level)}`}>
-                    {selectedSignal.client_impact_level.toUpperCase()} IMPACT
+                    {(selectedSignal.client_impact_level || 'medium').toUpperCase()} IMPACT
                   </span>
                   <span className="px-2 py-0.5 text-[0.65rem] rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">
-                    {selectedSignal.signal_maturity}
+                    {selectedSignal.signal_maturity || 'emerging'}
                   </span>
                 </div>
                 <h3

@@ -28,7 +28,7 @@ interface Prediction {
   evidence: string[];
   confidence_score: number;
   impact_level: 'high' | 'medium' | 'low';
-  category: 'competitor' | 'market' | 'risk' | 'opportunity' | 'trend';
+  category: 'competitive' | 'market' | 'crisis' | 'strategic' | 'regulatory' | 'technology' | 'partnership';
   time_horizon: '1-month' | '3-months' | '6-months';
   related_entities: string[];
 }
@@ -170,12 +170,14 @@ YOUR TASK: Generate 3-5 strategic predictions based on patterns you see in these
 4. Assess confidence based on: multiple sources confirming = high, single source = low
 5. Suggest time horizon: 1-month (imminent), 3-months (developing), 6-months (emerging)
 
-PREDICTION TYPES:
-- "competitor": Competitor moves that affect market position
+PREDICTION TYPES (use exact values):
+- "competitive": Competitor moves that affect market position
 - "market": Industry trends or market shifts
-- "risk": Threats requiring defensive action
-- "opportunity": Business development or growth opportunities
-- "trend": Emerging patterns worth monitoring
+- "crisis": Threats requiring defensive action
+- "strategic": Business development or growth opportunities
+- "regulatory": Regulatory, legal, or compliance developments
+- "technology": Technology shifts or innovations
+- "partnership": Alliance or partnership opportunities
 
 Return a JSON array of predictions:
 [
@@ -186,7 +188,7 @@ Return a JSON array of predictions:
     "evidence": ["Quote or fact from article [1]", "Supporting detail from article [3]"],
     "confidence_score": 75,
     "impact_level": "high|medium|low",
-    "category": "competitor|market|risk|opportunity|trend",
+    "category": "competitive|market|crisis|strategic|regulatory|technology|partnership",
     "time_horizon": "1-month|3-months|6-months",
     "related_entities": ["Company A", "Person B"]
   }
@@ -246,7 +248,7 @@ Return ONLY the JSON array, no other text.`;
       evidence: Array.isArray(p.evidence) ? p.evidence : [],
       confidence_score: Math.min(100, Math.max(0, p.confidence_score || 50)),
       impact_level: ['high', 'medium', 'low'].includes(p.impact_level) ? p.impact_level : 'medium',
-      category: ['competitor', 'market', 'risk', 'opportunity', 'trend'].includes(p.category) ? p.category : 'market',
+      category: ['competitive', 'market', 'crisis', 'strategic', 'regulatory', 'technology', 'partnership'].includes(p.category) ? p.category : 'market',
       time_horizon: ['1-month', '3-months', '6-months'].includes(p.time_horizon) ? p.time_horizon : '3-months',
       related_entities: Array.isArray(p.related_entities) ? p.related_entities : []
     }));
@@ -291,8 +293,8 @@ ${prediction.evidence.map(e => `• ${e}`).join('\n')}`;
         category: prediction.category,
         time_horizon: prediction.time_horizon,
         status: 'active',
-        // Store structured data in metadata
-        metadata: {
+        // Store structured data in the data jsonb column
+        data: {
           rationale: prediction.rationale,
           evidence: prediction.evidence,
           related_entities: prediction.related_entities,

@@ -256,15 +256,31 @@ Return ONLY the JSON array, no other text.`;
   }
 }
 
+// Map semantic connection types to valid DB signal_types
+function mapToDbSignalType(connectionType: string): string {
+  const mapping: Record<string, string> = {
+    'partnership': 'multi_party',
+    'competition': 'correlation',
+    'market_shift': 'momentum',
+    'supply_chain': 'multi_party',
+    'regulatory': 'sentiment_shift',
+    'personnel': 'correlation',
+    'acquisition': 'multi_party'
+  };
+  return mapping[connectionType] || 'correlation';
+}
+
 async function saveConnection(orgId: string, connection: Connection): Promise<boolean> {
   try {
+    const dbSignalType = mapToDbSignalType(connection.connection_type);
+
     // Check for existing similar connection
     const { data: existing } = await supabase
       .from('connection_signals')
       .select('id')
       .eq('organization_id', orgId)
       .eq('primary_entity_name', connection.primary_entity)
-      .eq('signal_type', connection.connection_type)
+      .eq('signal_type', dbSignalType)
       .single();
 
     if (existing) {
@@ -272,18 +288,18 @@ async function saveConnection(orgId: string, connection: Connection): Promise<bo
       const { error } = await supabase
         .from('connection_signals')
         .update({
+          signal_title: connection.title,
+          signal_description: connection.description,
           strength_score: connection.strength_score,
           confidence_score: connection.strength_score,
           related_entities: connection.connected_entities.map(name => ({ name })),
           pattern_data: {
-            title: connection.title,
-            description: connection.description,
             business_implication: connection.business_implication,
             evidence: connection.evidence,
             action_suggested: connection.action_suggested,
             generated_by: 'connection-detector-v2'
           },
-          signal_start_date: new Date().toISOString()
+          signal_detected_date: new Date().toISOString()
         })
         .eq('id', existing.id);
 
@@ -301,22 +317,22 @@ async function saveConnection(orgId: string, connection: Connection): Promise<bo
       .from('connection_signals')
       .insert({
         organization_id: orgId,
-        signal_type: connection.connection_type,
+        signal_type: dbSignalType,
+        signal_title: connection.title,
+        signal_description: connection.description,
         primary_entity_name: connection.primary_entity,
-        primary_entity_type: 'company',
         related_entities: connection.connected_entities.map(name => ({ name })),
         strength_score: connection.strength_score,
         confidence_score: connection.strength_score,
         pattern_data: {
-          title: connection.title,
-          description: connection.description,
+          semantic_type: connection.connection_type, // Store original type for UI
           business_implication: connection.business_implication,
           evidence: connection.evidence,
           action_suggested: connection.action_suggested,
           generated_by: 'connection-detector-v2'
         },
         signal_start_date: new Date().toISOString(),
-        status: 'active'
+        signal_detected_date: new Date().toISOString()
       });
 
     if (error) {

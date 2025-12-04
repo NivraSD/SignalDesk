@@ -142,7 +142,9 @@ export default function SignalsModule() {
 
       if (!error && data?.results) {
         // Save results to social_signals table
-        for (const signal of data.results) {
+        // data.results contains { signals: [...], platform_breakdown: {...}, sentiment_analysis: {...} }
+        const signals = data.results.signals || []
+        for (const signal of signals) {
           await supabase.from('social_signals').upsert({
             organization_id: organization?.id,
             platform: signal.platform,
@@ -150,8 +152,8 @@ export default function SignalsModule() {
             author: signal.author,
             url: signal.url,
             sentiment: signal.sentiment || 'neutral',
-            engagement_score: signal.engagement_score || 0,
-            created_at: signal.created_at || new Date().toISOString()
+            engagement_score: signal.engagement || signal.engagement_score || 0,
+            created_at: signal.timestamp || signal.created_at || new Date().toISOString()
           }, { onConflict: 'url' })
         }
         await loadSignals()
