@@ -102,9 +102,15 @@ export default function StudioModule({ initialContent, onClearInitialContent }: 
       {/* Main Content Area */}
       <div className="flex flex-col h-full overflow-hidden bg-[var(--charcoal)]">
         {/* Content Grid - Workspace + NIV Floating Card */}
-        <div className="flex-1 overflow-hidden grid grid-cols-3 gap-6 p-6">
-          {/* Workspace - spans 2 columns */}
-          <div className="col-span-2 overflow-hidden">
+        <div
+          className="flex-1 overflow-hidden gap-6 p-6"
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 460px'
+          }}
+        >
+          {/* Workspace */}
+          <div className="overflow-hidden">
             <StudioWorkspace
               content={workspaceContent}
               contentType={selectedContentType}
