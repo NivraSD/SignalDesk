@@ -151,6 +151,25 @@ export class IntelligenceService {
           }
         }
 
+          // STEP 3.4: competitor-intelligence-search (NEW: Active search for competitor news)
+          // This fills the gap when passive article collection doesn't capture niche competitors
+          console.log('Starting competitor-intelligence-search')
+          onProgress?.('competitor-intelligence-search', 'running')
+
+          const competitorSearchResponse = await supabase.functions.invoke('competitor-intelligence-search', {
+            body: {
+              organization_id: organizationId,
+              organization_name: orgName
+            }
+          })
+
+          if (competitorSearchResponse.error) {
+            console.warn('⚠️ Competitor intelligence search failed (non-blocking):', competitorSearchResponse.error)
+          } else {
+            console.log(`✅ Found ${competitorSearchResponse.data?.intelligence_found || 0} competitor intelligence items via active search`)
+            onProgress?.('competitor-intelligence-search', 'completed', competitorSearchResponse.data)
+          }
+
           // STEP 3.5: target-intelligence-collector (NEW: Save mentions to intelligence repository)
           if (finalArticles.length > 0) {
             console.log('Starting target-intelligence-collector')
@@ -441,6 +460,25 @@ export class IntelligenceService {
           onProgress?.('monitor-stage-2-relevance', 'completed', relevanceResponse.data)
         }
       }
+
+        // STEP 3.4: competitor-intelligence-search (NEW: Active search for competitor news)
+        // This fills the gap when passive article collection doesn't capture niche competitors
+        console.log('Starting competitor-intelligence-search')
+        onProgress?.('competitor-intelligence-search', 'running')
+
+        const competitorSearchResponse = await supabase.functions.invoke('competitor-intelligence-search', {
+          body: {
+            organization_id: organizationId,
+            organization_name: organizationName
+          }
+        })
+
+        if (competitorSearchResponse.error) {
+          console.warn('⚠️ Competitor intelligence search failed (non-blocking):', competitorSearchResponse.error)
+        } else {
+          console.log(`✅ Found ${competitorSearchResponse.data?.intelligence_found || 0} competitor intelligence items via active search`)
+          onProgress?.('competitor-intelligence-search', 'completed', competitorSearchResponse.data)
+        }
 
         // STEP 3.5: target-intelligence-collector (NEW: Save mentions to intelligence repository)
         if (finalArticles.length > 0) {

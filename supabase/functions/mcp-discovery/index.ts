@@ -1353,22 +1353,103 @@ REMEMBER:
   };
 
   // Generate intelligence context for downstream stages
-  // NEW ALLOCATION: 10 competitors, 5 stakeholders, 0 topics (proven effective)
+  // ENHANCED: Different intelligence models for agencies vs. other companies
   const generateIntelligenceContext = () => {
     // Handle both string arrays (old format) and object arrays (new format with monitoring_context)
     const extractNames = (items: any[]) => items.map(item => typeof item === 'string' ? item : item.name);
 
     const topCompetitors = extractNames((enhancedData.competition.direct_competitors || []).slice(0, 10));
-    const topRegulators = extractNames((enhancedData.stakeholders?.regulators || []).slice(0, 6)); // Allow up to 6 regulators
-    const topTopics = []; // Removed topics - 0% effectiveness in monitoring
+    const topRegulators = extractNames((enhancedData.stakeholders?.regulators || []).slice(0, 6));
     const keyStakeholders = extractNames([
-      ...(enhancedData.stakeholders?.key_analysts || []).slice(0, 3), // Up to 3 analysts
-      ...(enhancedData.stakeholders?.activists || []).slice(0, 2) // Up to 2 activists
-      // Removed investors/customers/partners - less relevant for monitoring
+      ...(enhancedData.stakeholders?.key_analysts || []).slice(0, 3),
+      ...(enhancedData.stakeholders?.activists || []).slice(0, 2)
     ].filter(Boolean));
 
-    return {
-      monitoring_prompt: `We are monitoring ${organization_name}, a ${enhancedData.industry} company${enhancedData.sub_industry ? ` specializing in ${enhancedData.sub_industry}` : ''}. Focus on:
+    // DETECT AGENCY TYPE - agencies need different intelligence model
+    const industryLower = (enhancedData.industry || '').toLowerCase();
+    const isAgency = industryLower.includes('marketing') ||
+                     industryLower.includes('advertising') ||
+                     industryLower.includes('pr ') ||
+                     industryLower.includes('public relations') ||
+                     industryLower.includes('communications') ||
+                     industryLower.includes('agency') ||
+                     industryLower.includes('experiential');
+
+    // AGENCY-SPECIFIC INTELLIGENCE TOPICS
+    // Agencies need to be smart about their clients' industries and brand marketing trends
+    const agencyIntelligenceTopics = isAgency ? [
+      // Client industry verticals (infer from target customers or use common agency verticals)
+      'Technology sector brand marketing',
+      'Automotive brand campaigns and launches',
+      'Entertainment and media brand activations',
+      'CPG and retail marketing innovation',
+      'Financial services brand experience',
+      // Brand marketing activity across industries
+      'Brand experience and experiential marketing',
+      'Sponsorship deals and activations',
+      'Product launch campaigns',
+      'CMO appointments and marketing leadership',
+      // Consumer and cultural trends
+      'Gen Z consumer behavior and preferences',
+      'Sustainability in brand marketing',
+      'AI and technology in marketing',
+      'Social media trends and platform changes',
+      // New business signals
+      'Companies increasing marketing spend',
+      'RFP and agency review announcements',
+      'Brand repositioning and rebranding'
+    ] : [];
+
+    // AGENCY-SPECIFIC KEY QUESTIONS
+    const agencyKeyQuestions = isAgency ? [
+      `What moves are ${topCompetitors.slice(0, 3).join(', ')} making?`,
+      `What brands are launching new campaigns or products?`,
+      `What cultural or consumer trends are shaping brand marketing?`,
+      `Which companies are conducting agency reviews or increasing marketing spend?`,
+      `What experiential and brand activation innovations are emerging?`,
+      `How are brands responding to cultural moments and current events?`
+    ] : [
+      `What moves are ${topCompetitors.slice(0, 3).join(', ')} making?`,
+      `How is ${organization_name} positioned relative to competitors?`,
+      `What regulatory changes affect the ${enhancedData.industry} industry?`,
+      `What market opportunities are emerging?`,
+      `What risks or threats are developing?`
+    ];
+
+    // AGENCY-SPECIFIC MONITORING PROMPT
+    const monitoringPrompt = isAgency
+      ? `We are monitoring ${organization_name}, a ${enhancedData.industry} agency. Focus on:
+
+        COMPETITOR INTELLIGENCE:
+        - Direct competitive movements from: ${topCompetitors.join(', ')}
+        - Agency wins, losses, and new capabilities
+
+        CLIENT INDUSTRY INTELLIGENCE (be smart about what clients care about):
+        - Technology sector: product launches, brand campaigns, executive moves
+        - Automotive: new vehicle launches, brand partnerships, sponsorships
+        - Entertainment/Media: content marketing, streaming, events
+        - Retail/CPG: consumer trends, brand activations, experiential
+        - Financial services: fintech disruption, brand trust, marketing innovation
+
+        BRAND MARKETING ACTIVITY:
+        - Major brand campaigns and activations across all industries
+        - Sponsorship deals and experiential marketing
+        - Product launches that need marketing support
+        - CMO moves and marketing leadership changes
+
+        CULTURAL & CONSUMER TRENDS:
+        - Gen Z and millennial behavior shifts
+        - Sustainability and purpose-driven marketing
+        - AI/technology impact on marketing
+        - Social media platform changes
+
+        NEW BUSINESS SIGNALS:
+        - Companies conducting agency reviews
+        - Marketing budget increases
+        - Brands repositioning or rebranding
+
+        ${enhancedData.description || ''}`
+      : `We are monitoring ${organization_name}, a ${enhancedData.industry} company${enhancedData.sub_industry ? ` specializing in ${enhancedData.sub_industry}` : ''}. Focus on:
         - Direct competitive movements from: ${topCompetitors.join(', ')}
         - Regulatory developments from: ${topRegulators.join(', ')}
         - Key stakeholder actions from: ${keyStakeholders.join(', ')}
@@ -1382,44 +1463,71 @@ REMEMBER:
         - Partnership and M&A activity
         - Technology innovations and disruptions
 
-        ${enhancedData.description || ''}`,
+        ${enhancedData.description || ''}`;
 
-      // FLATTEN: key_questions and analysis_perspective at top level for monitoring to find them
-      key_questions: [
-        `What moves are ${topCompetitors.slice(0, 3).join(', ')} making?`,
-        `How is ${organization_name} positioned relative to competitors?`,
-        `What regulatory changes affect the ${enhancedData.industry} industry?`,
-        `What market opportunities are emerging?`,
-        `What risks or threats are developing?`
+    // AGENCY-SPECIFIC RELEVANCE CRITERIA
+    const relevanceCriteria = isAgency ? {
+      must_include: [
+        'agency competitor actions',
+        'brand marketing campaigns',
+        'experiential activations'
       ],
+      should_include: [
+        'CMO and marketing leadership moves',
+        'agency reviews and pitches',
+        'cultural trends affecting marketing',
+        'client industry developments',
+        'sponsorship deals'
+      ],
+      scoring_weights: {
+        competitor_action: 35,
+        brand_campaign: 30,
+        cmo_move: 25,
+        cultural_trend: 20,
+        client_industry: 20,
+        organization_mention: 15
+      }
+    } : {
+      must_include: [
+        'organization mentions',
+        'direct competitor actions',
+        'regulatory changes'
+      ],
+      should_include: [
+        'market trends',
+        'stakeholder movements',
+        'technology updates',
+        'financial indicators'
+      ],
+      scoring_weights: {
+        organization_mention: 40,
+        competitor_action: 30,
+        regulatory_news: 25,
+        market_signal: 15,
+        stakeholder_mention: 10,
+        technology_update: 10
+      }
+    };
 
-      analysis_perspective: `Analyze from the perspective of ${organization_name}'s executive team making strategic decisions`,
-
-      relevance_criteria: {
-        must_include: [
-          'organization mentions',
-          'direct competitor actions',
-          'regulatory changes'
-        ],
-        should_include: [
-          'market trends',
-          'stakeholder movements',
-          'technology updates',
-          'financial indicators'
-        ],
-        scoring_weights: {
-          organization_mention: 40,
-          competitor_action: 30,
-          regulatory_news: 25,
-          market_signal: 15,
-          stakeholder_mention: 10,
-          technology_update: 10
-        }
-      },
-
-      topics: [], // Topics removed - 0% monitoring effectiveness
-
-      extraction_focus: [
+    return {
+      monitoring_prompt: monitoringPrompt,
+      key_questions: agencyKeyQuestions,
+      analysis_perspective: isAgency
+        ? `Analyze from the perspective of ${organization_name}'s strategy team identifying new business opportunities, competitive threats, and trends to help clients navigate`
+        : `Analyze from the perspective of ${organization_name}'s executive team making strategic decisions`,
+      relevance_criteria: relevanceCriteria,
+      topics: agencyIntelligenceTopics, // Re-enabled for agencies
+      is_agency: isAgency,
+      extraction_focus: isAgency ? [
+        'brand campaign details',
+        'agency wins and losses',
+        'CMO and marketing executive quotes',
+        'marketing spend and budget data',
+        'consumer insight and trend data',
+        'sponsorship deal values',
+        'experiential activation descriptions',
+        'cultural moment responses'
+      ] : [
         'executive quotes and statements',
         'financial metrics and percentages',
         'product names and launches',
@@ -1779,25 +1887,49 @@ async function saveProfile(organizationId: string, profile: any) {
     console.log(`   Profile has ${Object.keys(profile.sources || {}).length} source categories`);
     console.log(`   Source categories: ${Object.keys(profile.sources || {}).join(', ')}`);
 
-    // Extract company profile fields that the UI needs at the top level
+    // CRITICAL: First fetch existing company_profile to preserve user-generated fields
+    const { data: existingOrg } = await supabase
+      .from('organizations')
+      .select('company_profile')
+      .eq('id', organizationId)
+      .single();
+
+    const existingProfile = existingOrg?.company_profile || {};
+    console.log(`   Existing profile has: parent_company=${existingProfile.parent_company || 'empty'}, leadership=${existingProfile.leadership?.length || 0}, founded=${existingProfile.founded || 'empty'}`);
+
+    // Extract company profile fields from new profile
     const companyProfileData = profile.company_profile || {};
 
+    // PRESERVE existing user-generated fields if new values are empty
+    // These fields come from schema.org extraction or user edits, NOT from discovery
+    const preserveIfEmpty = (newVal: any, existingVal: any, defaultVal: any) => {
+      if (Array.isArray(newVal)) {
+        return newVal.length > 0 ? newVal : (existingVal || defaultVal);
+      }
+      if (typeof newVal === 'object' && newVal !== null) {
+        return Object.keys(newVal).length > 0 ? newVal : (existingVal || defaultVal);
+      }
+      return newVal || existingVal || defaultVal;
+    };
+
     // Merge the full profile with UI-expected flat fields at top level
+    // IMPORTANT: Preserve existing values for fields that discovery doesn't populate
     const profileToSave = {
       ...profile,
       // UI-expected flat fields (for CompanyProfileTab)
-      leadership: companyProfileData.leadership || profile.leadership || [],
-      headquarters: companyProfileData.headquarters || profile.headquarters || {},
-      company_size: companyProfileData.company_size || profile.company_size || {},
-      founded: companyProfileData.founded || profile.founded || '',
-      parent_company: companyProfileData.parent_company || profile.parent_company || '',
-      product_lines: companyProfileData.product_lines || profile.product_lines || profile.service_lines || [],
-      key_markets: companyProfileData.key_markets || profile.key_markets || profile.market?.key_markets || [],
-      business_model: companyProfileData.business_model || profile.business_model || profile.description || '',
-      strategic_goals: companyProfileData.strategic_goals || profile.strategic_goals || profile.strategic_context?.strategic_priorities || []
+      // PRESERVE existing leadership, headquarters, parent_company, founded - these come from user/schema, not discovery
+      leadership: preserveIfEmpty(companyProfileData.leadership || profile.leadership, existingProfile.leadership, []),
+      headquarters: preserveIfEmpty(companyProfileData.headquarters || profile.headquarters, existingProfile.headquarters, {}),
+      company_size: preserveIfEmpty(companyProfileData.company_size || profile.company_size, existingProfile.company_size, {}),
+      founded: preserveIfEmpty(companyProfileData.founded || profile.founded, existingProfile.founded, ''),
+      parent_company: preserveIfEmpty(companyProfileData.parent_company || profile.parent_company, existingProfile.parent_company, ''),
+      product_lines: preserveIfEmpty(companyProfileData.product_lines || profile.product_lines || profile.service_lines, existingProfile.product_lines, []),
+      key_markets: preserveIfEmpty(companyProfileData.key_markets || profile.key_markets || profile.market?.key_markets, existingProfile.key_markets, []),
+      business_model: preserveIfEmpty(companyProfileData.business_model || profile.business_model || profile.description, existingProfile.business_model, ''),
+      strategic_goals: preserveIfEmpty(companyProfileData.strategic_goals || profile.strategic_goals || profile.strategic_context?.strategic_priorities, existingProfile.strategic_goals, [])
     };
 
-    console.log(`   UI fields being saved: product_lines=${profileToSave.product_lines?.length}, key_markets=${profileToSave.key_markets?.length}, business_model=${!!profileToSave.business_model}`);
+    console.log(`   UI fields being saved: parent_company=${profileToSave.parent_company || 'empty'}, leadership=${profileToSave.leadership?.length}, product_lines=${profileToSave.product_lines?.length}, key_markets=${profileToSave.key_markets?.length}, business_model=${!!profileToSave.business_model}`);
 
     const { data, error } = await supabase
       .from('organizations')

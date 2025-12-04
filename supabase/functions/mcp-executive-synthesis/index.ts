@@ -280,19 +280,32 @@ async function synthesizeExecutiveIntelligence(args: any) {
         });
       }
 
-      // CRITICAL: Use company_profile from enriched_data (comes from discovery via enrichment)
-      companyProfile = profile?.company_profile || {};
+      // CRITICAL FIX: Fetch FRESH company_profile from database instead of stale pipeline data
+      // The enriched_data.profile is a snapshot from when the pipeline started and may be outdated
+      console.log('🔄 Fetching fresh company_profile from database...');
+      const { data: freshOrgData, error: orgFetchError } = await supabase
+        .from('organizations')
+        .select('company_profile')
+        .eq('id', organization_id)
+        .single();
 
-      if (companyProfile && Object.keys(companyProfile).length > 0) {
-        console.log('✅ Using company profile from discovery:', {
+      if (freshOrgData?.company_profile && Object.keys(freshOrgData.company_profile).length > 0) {
+        companyProfile = freshOrgData.company_profile;
+        console.log('✅ Using FRESH company profile from database:', {
+          parent_company: companyProfile.parent_company || 'NOT SET',
           has_business_model: !!companyProfile.business_model,
           product_lines: companyProfile.product_lines?.length || 0,
           key_markets: companyProfile.key_markets?.length || 0,
+          leadership: companyProfile.leadership?.length || 0,
           strategic_goals: companyProfile.strategic_goals?.length || 0
         });
+      } else if (orgFetchError) {
+        console.error('⚠️ Failed to fetch fresh company_profile:', orgFetchError.message);
+        // Fall back to enriched_data profile
+        companyProfile = profile?.company_profile || {};
       } else {
-        console.log('⚠️ No company profile in enriched data - using fallback from profile');
-        companyProfile = {
+        console.log('⚠️ No company profile in database - using fallback from enriched_data');
+        companyProfile = profile?.company_profile || {
           business_model: profile?.description || 'Not specified',
           product_lines: profile?.service_lines || [],
           key_markets: profile?.market?.key_markets || [],
@@ -761,40 +774,91 @@ CRITICAL:
       sample_relevance_scores: enrichedArticles.slice(0, 5).map(a => a.pr_relevance_score || a.relevance_score || 0)
     });
 
-    // Calculate recency for each article based on published_at
-    const calculateArticleRecency = (publishedAt: string | undefined): string => {
-      if (!publishedAt) return 'unknown';
-      try {
-        const pubDate = new Date(publishedAt);
-        const now = new Date();
-        const diffMs = now.getTime() - pubDate.getTime();
-        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-        if (diffDays <= 0) return 'today';
-        if (diffDays <= 1) return 'yesterday';
-        if (diffDays <= 7) return 'this_week';
-        if (diffDays <= 14) return 'last_2_weeks';
-        return 'older';
-      } catch (e) {
-        return 'unknown';
+    // Extract date from URL or title (for sources like Gartner, The Drum that embed dates)
+    const extractDateFromText = (text: string | undefined): Date | null => {
+      if (!text) return null;
+      // Match patterns like "2024-07-29", "2024_07_29", "2024 07 29", "2024/01/18"
+      const patterns = [
+        /(\d{4})[-_\s\/](\d{2})[-_\s\/](\d{2})/,  // 2024-07-29, 2024_07_29, 2024 07 29, 2024/01/18
+        /(\d{4})(\d{2})(\d{2})/,  // 20240729
+      ];
+      for (const pattern of patterns) {
+        const match = text.match(pattern);
+        if (match) {
+          const [, year, month, day] = match;
+          const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+          if (!isNaN(date.getTime())) return date;
+        }
       }
+      return null;
+    };
+
+    // Calculate recency for each article based on published_at, URL, or title
+    const calculateArticleRecency = (article: any): string => {
+      let pubDate: Date | null = null;
+
+      // Try published_at first
+      if (article.published_at) {
+        try {
+          pubDate = new Date(article.published_at);
+          if (isNaN(pubDate.getTime())) pubDate = null;
+        } catch (e) {
+          pubDate = null;
+        }
+      }
+
+      // If no published_at, try to extract from URL
+      if (!pubDate && article.url) {
+        pubDate = extractDateFromText(article.url);
+      }
+
+      // If still no date, try to extract from title
+      if (!pubDate && article.title) {
+        pubDate = extractDateFromText(article.title);
+      }
+
+      // If no date found anywhere, return unknown
+      if (!pubDate) return 'unknown';
+
+      const now = new Date();
+      const diffMs = now.getTime() - pubDate.getTime();
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+      if (diffDays <= 0) return 'today';
+      if (diffDays <= 1) return 'yesterday';
+      if (diffDays <= 7) return 'this_week';
+      if (diffDays <= 14) return 'last_2_weeks';
+      return 'older';
     };
 
     // Filter to prioritize recent articles and limit old ones
     const articlesByRecency = enrichedArticles.map(article => ({
       ...article,
-      calculated_recency: calculateArticleRecency(article.published_at)
+      calculated_recency: calculateArticleRecency(article)  // Now passes whole article for URL/title date extraction
     }));
 
-    // Count by recency
+    // Count by recency - now with separate unknown category
     const recencyCounts = {
       today: articlesByRecency.filter(a => a.calculated_recency === 'today').length,
       yesterday: articlesByRecency.filter(a => a.calculated_recency === 'yesterday').length,
       this_week: articlesByRecency.filter(a => a.calculated_recency === 'this_week').length,
-      older: articlesByRecency.filter(a => ['last_2_weeks', 'older', 'unknown'].includes(a.calculated_recency)).length
+      last_2_weeks: articlesByRecency.filter(a => a.calculated_recency === 'last_2_weeks').length,
+      older: articlesByRecency.filter(a => a.calculated_recency === 'older').length,
+      unknown: articlesByRecency.filter(a => a.calculated_recency === 'unknown').length
     };
 
     console.log('📅 ARTICLE RECENCY BREAKDOWN:', recencyCounts);
+
+    // Log sample of excluded articles for debugging
+    const excludedArticles = articlesByRecency.filter(a => ['older', 'unknown'].includes(a.calculated_recency));
+    if (excludedArticles.length > 0) {
+      console.log('🚫 EXCLUDED ARTICLES SAMPLE (first 5):', excludedArticles.slice(0, 5).map(a => ({
+        title: a.title?.substring(0, 40),
+        url: a.url?.substring(0, 60),
+        published_at: a.published_at,
+        recency: a.calculated_recency
+      })));
+    }
 
     // Sort by recency - today first, then yesterday, then this week, then older
     const sortedArticles = articlesByRecency.sort((a, b) => {
@@ -908,6 +972,7 @@ ${organization?.name} is YOUR CLIENT. You are writing TO them, not ABOUT them.
 
 ABOUT YOUR CLIENT:
 - Company: ${organization?.name}
+- Parent Company: ${companyProfile?.parent_company || 'Independent'}
 - Business: ${companyProfile?.business_model || profile?.description || 'Not specified'}
 - Markets: ${companyProfile?.key_markets?.join(', ') || 'Not specified'}
 - Industry: ${profile?.industry || organization?.industry || 'Unknown'}
@@ -1189,7 +1254,7 @@ Provide a concise executive synthesis focusing on:
   try {
     const requestBody = {
       model: 'claude-sonnet-4-20250514',  // Back to Sonnet 4 - was working before
-      max_tokens: 4000,
+      max_tokens: 8000,  // Increased from 4000 - was causing truncated JSON responses
       temperature: 0.3,  // Lower temperature for more focused, strategic output
       system: `You are a STRATEGIC COMMUNICATIONS ANALYST writing a DAILY PR & NARRATIVE INTELLIGENCE BRIEF for ${organization?.name}'s communications team.
 
@@ -1215,10 +1280,14 @@ ${synthesisMetadata?.companyProfile ? `
 ORGANIZATIONAL CONTEXT - WHO YOU'RE WORKING FOR
 ═══════════════════════════════════════════════════════════
 Company: ${organization?.name}
+${synthesisMetadata.companyProfile.parent_company ? `Parent Company: ${synthesisMetadata.companyProfile.parent_company}` : 'Independent Company'}
+Founded: ${synthesisMetadata.companyProfile.founded || 'Not specified'}
+Headquarters: ${synthesisMetadata.companyProfile.headquarters?.city ? `${synthesisMetadata.companyProfile.headquarters.city}, ${synthesisMetadata.companyProfile.headquarters.state || synthesisMetadata.companyProfile.headquarters.country}` : 'Not specified'}
+Leadership: ${synthesisMetadata.companyProfile.leadership?.map(l => `${l.name} (${l.title})`).join(', ') || 'Not specified'}
 Business Model: ${synthesisMetadata.companyProfile.business_model || 'Not specified'}
 Product Lines: ${synthesisMetadata.companyProfile.product_lines?.join(', ') || 'Not specified'}
 Key Markets: ${synthesisMetadata.companyProfile.key_markets?.join(', ') || 'Not specified'}
-Strategic Goals: ${synthesisMetadata.companyProfile.strategic_goals?.map(g => `${g.goal} (${g.timeframe})`).join('; ') || 'Not specified'}
+Strategic Goals: ${synthesisMetadata.companyProfile.strategic_goals?.map(g => typeof g === 'string' ? g : `${g.goal} (${g.timeframe})`).join('; ') || 'Not specified'}
 
 INDUSTRY FOCUS: ${organization?.industry || 'The industry'}
 

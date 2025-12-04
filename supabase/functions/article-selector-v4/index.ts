@@ -42,7 +42,8 @@ const INDUSTRY_MAPPINGS: Record<string, string[]> = {
   default: ['finance', 'technology', 'healthcare', 'retail', 'politics']
 };
 
-// Core business news sources to always include for any industry (treated like trade sources)
+// Core business news sources - included in source queries but NOT auto-selected as trade sources
+// These now go through Claude relevance scoring to filter out generic AI/tech news
 const CORE_BUSINESS_SOURCES = ['Reuters', 'Wall Street Journal', 'Bloomberg', 'Financial Times'];
 
 // Build intelligence context from company profile for Claude
@@ -92,6 +93,14 @@ function buildIntelligenceContext(profile: any, orgName: string): string {
     if (ic.analysis_perspective) {
       parts.push(`\nANALYSIS PERSPECTIVE: ${ic.analysis_perspective}`);
     }
+    // Agency-specific topics (brand marketing, cultural trends, client industries)
+    if (ic.topics?.length) {
+      parts.push(`\nTOPICS OF INTEREST:\n${ic.topics.map((t: string) => `- ${t}`).join('\n')}`);
+    }
+    // Flag if this is an agency for different scoring logic
+    if (ic.is_agency) {
+      parts.push(`\nCOMPANY TYPE: Marketing/PR Agency - also interested in brand campaigns, cultural trends, and client industry developments`);
+    }
   }
 
   if (profile.market) {
@@ -135,42 +144,78 @@ async function scoreArticlesWithClaude(
   // - Key questions to answer
   // - Market drivers and barriers
   // This makes scoring industry-agnostic - Claude uses the context to judge relevance
-  const prompt = `You are an intelligence analyst scoring news articles for relevance to a SPECIFIC COMPANY.
+  const prompt = `You are a STRICT intelligence analyst scoring news articles for relevance to a SPECIFIC COMPANY.
 
 ${intelligenceContext}
 
-SCORING FRAMEWORK - Use the company context above to judge relevance:
+SCORING FRAMEWORK - Be VERY strict. Most articles should score BELOW 50.
 
-90-100: DIRECT HITS
-- Article mentions the company by name
-- Article mentions these specific competitors: ${competitorList}
-- M&A, major deals, or leadership changes involving the company or competitors
+90-100: DIRECT HITS (rare - only 1-2 articles typically)
+- Article explicitly mentions the company by name
+- Article explicitly mentions these competitors: ${competitorList}
+- M&A, major deals, leadership changes AT the company or competitors
 
-75-89: INDUSTRY-SPECIFIC NEWS
-- From trade publications specific to the company's industry
-- About trends, events, or developments directly in the company's sector
-- News that answers the company's key intelligence questions
+70-89: HIGHLY RELEVANT INDUSTRY NEWS
+- News DIRECTLY about the company's specific industry/sector
+- Trends or developments that DIRECTLY impact the company's service lines
+- Must have clear, obvious connection - not theoretical
 
-50-74: ADJACENT RELEVANCE
-- Topics related to the company's service lines or target customers
-- News that could affect the company's market or clients
-- Regulatory or policy changes in relevant areas
+50-69: MODERATELY RELEVANT
+- About the company's target customers or key clients BY NAME
+- Regulatory changes that DIRECTLY affect the company's operations
+- NOT just "could theoretically be useful" - must have clear impact
 
-30-49: WEAK CONNECTION
-- General business news with tenuous link to the company's world
-- News from adjacent industries with no direct impact
+30-49: TANGENTIAL
+- Adjacent industries with indirect potential impact
+- General business trends that might eventually matter
 
-0-29: NOT RELEVANT
-- News from completely unrelated industries
-- Generic tech/AI/stock market news unless directly tied to company's sector
-- Sports, entertainment, politics unless specifically relevant
+0-29: NOT RELEVANT (MOST articles should be here)
+- Generic tech/AI/startup news that doesn't mention the company's industry
+- Space, aerospace, defense, science breakthroughs
+- Stock market, economics, geopolitics
+- Any company/industry not directly connected to this company
+- "Interesting" news that has no business impact on this company
 
-CRITICAL: Judge relevance based on the COMPANY CONTEXT above, not general business interest.
+CRITICAL RULE FOR TECH/AI STORIES:
+Tech and AI stories are ONLY relevant if they EXPLICITLY cross over into the company's industry.
+- "OpenAI launches new model" = NOT relevant to a marketing agency (score 0-20)
+- "AI is transforming experiential marketing" = RELEVANT to a marketing agency (score 70+)
+- "Chinese space company lands rocket" = NOT relevant to marketing (score 0-20)
+- "Brands are using AI for event activations" = RELEVANT to experiential marketing (score 70+)
+
+The story must ACTUALLY BE ABOUT the company's industry, not just tangentially related tech news.
+
+SPECIAL RULES FOR MARKETING/PR AGENCIES:
+If the company type is "Marketing/PR Agency" (check COMPANY TYPE section above), use EXPANDED scoring:
+
+70-89 for agencies also includes:
+- BRAND CAMPAIGNS: Major brand marketing campaigns, product launches with marketing angles
+- CMO MOVES: CMO appointments, marketing leadership changes at major companies
+- AGENCY NEWS: Agency reviews, RFPs, pitch wins/losses
+- CONSUMER TRENDS: Gen Z behavior, cultural trends affecting brand marketing
+- SPONSORSHIP: Major sponsorship deals, brand partnerships, experiential activations
+- CLIENT INTEL: Significant news about major brand advertisers (auto, tech, CPG, entertainment)
+
+These are HIGHLY RELEVANT for agencies because:
+- Brand campaigns show what competitors AND clients are doing
+- CMO moves signal new business opportunities
+- Consumer trends inform client strategy
+
+50-69 for agencies also includes:
+- General brand marketing industry news
+- Marketing technology developments
+- Advertising industry trends
+
+OTHER RULES:
+1. For non-agencies: "Could pitch to X clients" is NOT valid - that's stretching
+2. For agencies: Client intel IS valid if it's about major brand advertisers
+3. When in doubt about agency relevance, check if TOPICS OF INTEREST section exists
+4. Be skeptical of generic tech/AI that doesn't connect to marketing
 
 ARTICLES:
 ${articleList}
 
-Return ONLY a JSON array of ${articles.length} integers.`;
+Return ONLY a JSON array of ${articles.length} integers. Most scores should be 0-40.`;
 
   try {
     console.log(`   📝 Scoring ${articles.length} articles with Claude...`);
@@ -315,6 +360,14 @@ serve(async (req) => {
     const intelligenceContext = buildIntelligenceContext(profileData, org.name);
     console.log(`   Intelligence context built (${intelligenceContext.length} chars)`);
 
+    // Debug: Log agency detection details
+    const isAgencyProfile = profileData.intelligence_context?.is_agency;
+    const hasTopics = profileData.intelligence_context?.topics?.length > 0;
+    console.log(`   Agency detection: is_agency=${isAgencyProfile}, has_topics=${hasTopics}, topics_count=${profileData.intelligence_context?.topics?.length || 0}`);
+    if (isAgencyProfile) {
+      console.log(`   📢 AGENCY MODE ENABLED - Using expanded scoring rules for brand campaigns, CMO moves, etc.`);
+    }
+
     // Extract competitors list for strict matching
     const competitors: string[] = [
       ...(profileData.competition?.direct_competitors || []),
@@ -353,7 +406,7 @@ serve(async (req) => {
     // STEP 3: Get articles - time window can be configured per-org or uses default
     // Some industries have less frequent trade news and need longer windows
     // ================================================================
-    const defaultHours = 168; // 7 days
+    const defaultHours = 48; // 2 days
     const hoursBack = profileData.intelligence_settings?.time_window_hours || defaultHours;
     const cutoffTime = new Date(Date.now() - hoursBack * 60 * 60 * 1000).toISOString();
 
@@ -368,8 +421,8 @@ serve(async (req) => {
     const defaultTradeSources: Record<string, string[]> = {
       public_relations: ['PRWeek', 'PR Daily', 'PRovoke Media', 'Ragan', "O'Dwyer's", 'AdWeek', 'AdAge', 'Campaign'],
       marketing: ['Ad Age', 'AdWeek', 'Campaign', 'The Drum', 'Marketing Week', 'Marketing Dive',
-                  'Event Marketer', 'BizBash', 'Chief Marketer', 'Digiday', 'Brand Innovators',
-                  'AgencySpy', 'Little Black Book', 'Creativity Online', 'PSFK'],
+                  'Event Marketer', 'EventMarketer', 'BizBash', 'Chief Marketer', 'Digiday', 'Brand Innovators',
+                  'AgencySpy', 'Little Black Book', 'Creativity Online', 'PSFK', 'PR Daily', 'PRWeek'],
       technology: ['TechCrunch', 'Wired', 'The Verge', 'Ars Technica', 'VentureBeat', 'The Information'],
       finance: ['Financial Times', 'Barrons', 'Seeking Alpha', 'Bloomberg'],
       healthcare: ['STAT News', 'FierceHealthcare', 'MedCity News', 'Endpoints News'],
@@ -377,11 +430,14 @@ serve(async (req) => {
       trading: ['Financial Times', 'Nikkei Asia', 'Reuters', 'Bloomberg', 'FreightWaves']
     };
 
+    // Only include actual trade publications for the industry
+    // Core business sources (Reuters, WSJ, Bloomberg, FT) should be SCORED for relevance
+    // rather than auto-included, to filter out generic AI/tech news that isn't relevant
     const industryTradeSources = new Set([
       ...profileSources,
-      ...(defaultTradeSources[industry] || []),
-      ...CORE_BUSINESS_SOURCES,  // Always include Reuters, WSJ, Bloomberg, FT
-      'Forrester', 'Gartner'  // Research always relevant
+      ...(defaultTradeSources[industry] || [])
+      // REMOVED: CORE_BUSINESS_SOURCES - these now go through Claude scoring
+      // REMOVED: 'Forrester', 'Gartner' - disabled sources
     ]);
 
     const tradeSourceList = Array.from(industryTradeSources);
@@ -402,7 +458,7 @@ serve(async (req) => {
         source_registry(tier, industries)
       `)
       .in('source_name', sourceList)
-      .in('scrape_status', ['completed', 'failed'])
+      .in('scrape_status', ['completed', 'failed', 'pending'])
       .not('published_at', 'is', null)
       .gte('published_at', cutoffTime)
       .order('published_at', { ascending: false });
@@ -427,7 +483,7 @@ serve(async (req) => {
         source_registry(tier, industries)
       `)
       .in('source_name', tradeSourceList)
-      .in('scrape_status', ['completed', 'failed'])
+      .in('scrape_status', ['completed', 'failed', 'pending'])
       .is('published_at', null)
       .gte('created_at', cutoffTime)  // Use created_at as fallback
       .order('created_at', { ascending: false });
@@ -505,7 +561,7 @@ serve(async (req) => {
     // ================================================================
     const TARGET_ARTICLES = 100;
     const MAX_PER_SOURCE = 15;
-    const RELEVANCE_THRESHOLD = 60; // Raised from 50 - require at least medium relevance
+    const RELEVANCE_THRESHOLD = 70; // Require high relevance - story must cross over into company's industry
 
     // Trade articles get score 100, sorted by date
     const scoredTradeArticles = tradeArticles
