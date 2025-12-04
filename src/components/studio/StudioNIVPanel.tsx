@@ -626,7 +626,7 @@ export default function StudioNIVPanel({
             key={msg.id}
             className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
-            <div className={`max-w-[85%] ${msg.role === 'user' ? 'order-2' : 'order-1'}`}>
+            <div className={`max-w-full ${msg.role === 'user' ? 'order-2' : 'order-1'}`}>
               {msg.role === 'assistant' && (
                 <div className="flex items-center gap-2 mb-1">
                   <div
@@ -656,10 +656,12 @@ export default function StudioNIVPanel({
                 }}
               >
                 <p
-                  className="text-sm whitespace-pre-wrap"
+                  className="text-sm whitespace-pre-wrap break-words"
                   style={{
                     color: msg.role === 'user' ? 'var(--white)' : 'var(--grey-200)',
-                    lineHeight: 1.5
+                    lineHeight: 1.5,
+                    wordBreak: 'break-word',
+                    overflowWrap: 'break-word'
                   }}
                 >
                   {msg.content}
