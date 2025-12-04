@@ -189,38 +189,42 @@ export class IntelligenceService {
               console.log(`✅ Saved ${collectorResponse.data?.mentions_saved || 0} target mentions to intelligence repository`)
               onProgress?.('target-intelligence-collector', 'completed', collectorResponse.data)
 
-              // STEP 3.6: pattern-detector (NEW: Detect patterns and generate prediction signals)
+              // STEP 3.6: pattern-detector (Claude-powered prediction generation)
               console.log('Starting pattern-detector')
               onProgress?.('pattern-detector', 'running')
 
               const patternResponse = await supabase.functions.invoke('pattern-detector', {
                 body: {
-                  organization_id: organizationId
+                  organization_id: organizationId,
+                  articles: finalArticles,
+                  company_profile: profile
                 }
               })
 
               if (patternResponse.error) {
                 console.warn('⚠️ Pattern detection failed (non-blocking):', patternResponse.error)
               } else {
-                console.log(`✅ Generated ${patternResponse.data?.signals_generated || 0} prediction signals`)
+                console.log(`✅ Generated ${patternResponse.data?.predictions_generated || 0} predictions`)
                 onProgress?.('pattern-detector', 'completed', patternResponse.data)
+              }
 
-                // STEP 3.7: connection-detector (NEW: Find connections between entities based on industry)
-                console.log('Starting connection-detector')
-                onProgress?.('connection-detector', 'running')
+              // STEP 3.7: connection-detector (Claude-powered connection finding)
+              console.log('Starting connection-detector')
+              onProgress?.('connection-detector', 'running')
 
-                const connectionResponse = await supabase.functions.invoke('connection-detector', {
-                  body: {
-                    organization_id: organizationId
-                  }
-                })
-
-                if (connectionResponse.error) {
-                  console.warn('⚠️ Connection detection failed (non-blocking):', connectionResponse.error)
-                } else {
-                  console.log(`✅ Detected ${connectionResponse.data?.connections_detected || 0} connections, generated ${connectionResponse.data?.signals_generated || 0} connection signals`)
-                  onProgress?.('connection-detector', 'completed', connectionResponse.data)
+              const connectionResponse = await supabase.functions.invoke('connection-detector', {
+                body: {
+                  organization_id: organizationId,
+                  articles: finalArticles,
+                  company_profile: profile
                 }
+              })
+
+              if (connectionResponse.error) {
+                console.warn('⚠️ Connection detection failed (non-blocking):', connectionResponse.error)
+              } else {
+                console.log(`✅ Detected ${connectionResponse.data?.connections_detected || 0} connections`)
+                onProgress?.('connection-detector', 'completed', connectionResponse.data)
               }
             }
           }
@@ -500,38 +504,42 @@ export class IntelligenceService {
             console.log(`✅ Saved ${collectorResponse.data?.mentions_saved || 0} target mentions to intelligence repository`)
             onProgress?.('target-intelligence-collector', 'completed', collectorResponse.data)
 
-            // STEP 3.6: pattern-detector (NEW: Detect patterns and generate prediction signals)
+            // STEP 3.6: pattern-detector (Claude-powered prediction generation)
             console.log('Starting pattern-detector')
             onProgress?.('pattern-detector', 'running')
 
             const patternResponse = await supabase.functions.invoke('pattern-detector', {
               body: {
-                organization_id: organizationId
+                organization_id: organizationId,
+                articles: finalArticles,
+                company_profile: profile
               }
             })
 
             if (patternResponse.error) {
               console.warn('⚠️ Pattern detection failed (non-blocking):', patternResponse.error)
             } else {
-              console.log(`✅ Generated ${patternResponse.data?.signals_generated || 0} prediction signals`)
+              console.log(`✅ Generated ${patternResponse.data?.predictions_generated || 0} predictions`)
               onProgress?.('pattern-detector', 'completed', patternResponse.data)
+            }
 
-              // STEP 3.7: connection-detector (NEW: Find connections between entities based on industry)
-              console.log('Starting connection-detector')
-              onProgress?.('connection-detector', 'running')
+            // STEP 3.7: connection-detector (Claude-powered connection finding)
+            console.log('Starting connection-detector')
+            onProgress?.('connection-detector', 'running')
 
-              const connectionResponse = await supabase.functions.invoke('connection-detector', {
-                body: {
-                  organization_id: organizationId
-                }
-              })
-
-              if (connectionResponse.error) {
-                console.warn('⚠️ Connection detection failed (non-blocking):', connectionResponse.error)
-              } else {
-                console.log(`✅ Detected ${connectionResponse.data?.connections_detected || 0} connections, generated ${connectionResponse.data?.signals_generated || 0} connection signals`)
-                onProgress?.('connection-detector', 'completed', connectionResponse.data)
+            const connectionResponse = await supabase.functions.invoke('connection-detector', {
+              body: {
+                organization_id: organizationId,
+                articles: finalArticles,
+                company_profile: profile
               }
+            })
+
+            if (connectionResponse.error) {
+              console.warn('⚠️ Connection detection failed (non-blocking):', connectionResponse.error)
+            } else {
+              console.log(`✅ Detected ${connectionResponse.data?.connections_detected || 0} connections`)
+              onProgress?.('connection-detector', 'completed', connectionResponse.data)
             }
           }
         }

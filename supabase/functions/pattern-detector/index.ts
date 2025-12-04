@@ -1,5 +1,5 @@
-// Pattern Detector - Analyzes target_intelligence to detect meaningful patterns
-// Generates prediction_signals when thresholds are met
+// Pattern Detector v2 - Uses Claude to analyze articles and generate predictions
+// Instead of statistical counting, this actually reads article content and finds patterns
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { corsHeaders } from '../_shared/cors.ts';
@@ -7,81 +7,30 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')!;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// Configuration
-const TIME_WINDOW_DAYS = 7;
-const BASELINE_DAYS = 30;
-const MOMENTUM_THRESHOLD = 3; // Activity must be 3x baseline
-const MIN_MENTIONS_FOR_SIGNAL = 3; // Need at least 3 mentions
+interface Article {
+  title: string;
+  description?: string;
+  summary?: string;
+  url: string;
+  source: string;
+  published_at?: string;
+  relevance_score?: number;
+}
 
-// Track prediction save errors for debugging
-const predictionErrors: string[] = [];
-
-// Helper: Save signal to predictions table for UI display
-async function saveToPredictions(orgId: string, target: any, prediction: {
+interface Prediction {
   title: string;
   description: string;
+  rationale: string;
+  evidence: string[];
   confidence_score: number;
-  impact_level: string;
-  category: string;
-  time_horizon: string;
-  status: string;
-}) {
-  try {
-    // Check for existing similar prediction to avoid duplicates
-    const { data: existing, error: checkError } = await supabase
-      .from('predictions')
-      .select('id')
-      .eq('organization_id', orgId)
-      .eq('target_id', target.id)
-      .eq('title', prediction.title)
-      .single();
-
-    if (checkError && checkError.code !== 'PGRST116') {
-      // PGRST116 = no rows returned, which is fine
-      console.error(`Check error for ${target.name}:`, checkError);
-      predictionErrors.push(`Check: ${checkError.message}`);
-    }
-
-    if (existing) {
-      console.log(`   ⏭️ Prediction already exists for ${target.name}, skipping`);
-      return;
-    }
-
-    const insertData = {
-      organization_id: orgId,
-      target_id: target.id,
-      target_name: target.name,
-      target_type: target.type,
-      title: prediction.title,
-      description: prediction.description,
-      confidence_score: prediction.confidence_score,
-      impact_level: prediction.impact_level,
-      category: prediction.category,
-      time_horizon: prediction.time_horizon,
-      status: prediction.status
-    };
-
-    console.log(`   📝 Inserting prediction:`, JSON.stringify(insertData).substring(0, 100));
-
-    const { data, error } = await supabase
-      .from('predictions')
-      .insert(insertData)
-      .select()
-      .single();
-
-    if (error) {
-      console.error(`❌ Failed to save prediction for ${target.name}:`, error.message, error.details, error.hint);
-      predictionErrors.push(`Insert ${target.name}: ${error.message} | ${error.details || ''} | ${error.hint || ''}`);
-    } else {
-      console.log(`   💡 Created prediction: ${prediction.title} (id: ${data?.id})`);
-    }
-  } catch (e: any) {
-    console.error(`❌ Error saving prediction:`, e.message);
-    predictionErrors.push(`Exception: ${e.message}`);
-  }
+  impact_level: 'high' | 'medium' | 'low';
+  category: 'competitor' | 'market' | 'risk' | 'opportunity' | 'trend';
+  time_horizon: '1-month' | '3-months' | '6-months';
+  related_entities: string[];
 }
 
 serve(async (req) => {
@@ -90,105 +39,74 @@ serve(async (req) => {
   }
 
   try {
-    const { organization_id } = await req.json();
+    const { organization_id, articles, company_profile } = await req.json();
 
-    console.log(`🔍 Pattern Detector Starting for org: ${organization_id}`);
+    console.log(`🔮 Pattern Detector v2 - Claude-Powered Analysis`);
+    console.log(`   Organization: ${organization_id}`);
+    console.log(`   Articles received: ${articles?.length || 0}`);
 
-    const now = new Date();
-    const windowStart = new Date(now.getTime() - TIME_WINDOW_DAYS * 24 * 60 * 60 * 1000);
-    const baselineStart = new Date(now.getTime() - BASELINE_DAYS * 24 * 60 * 60 * 1000);
-
-    // Load intelligence targets
-    const { data: targets } = await supabase
-      .from('intelligence_targets')
-      .select('id, name, type')
-      .eq('organization_id', organization_id);
-
-    if (!targets || targets.length === 0) {
+    if (!articles || articles.length === 0) {
       return new Response(JSON.stringify({
         success: true,
-        signals_generated: 0,
-        message: 'No targets to analyze'
+        predictions_generated: 0,
+        message: 'No articles to analyze'
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    console.log(`   Analyzing ${targets.length} targets`);
+    // Load org data if not provided
+    let profile = company_profile;
+    let orgName = '';
+    if (!profile) {
+      const { data: org } = await supabase
+        .from('organizations')
+        .select('name, industry, company_profile')
+        .eq('id', organization_id)
+        .single();
 
-    const signalsGenerated = [];
-
-    // Analyze each target
-    for (const target of targets) {
-      // Get recent mentions (last TIME_WINDOW_DAYS)
-      const { data: recentMentions } = await supabase
-        .from('target_intelligence')
-        .select('*')
-        .eq('organization_id', organization_id)
-        .eq('target_id', target.id)
-        .gte('mention_date', windowStart.toISOString())
-        .order('mention_date', { ascending: false });
-
-      // Get baseline mentions (last BASELINE_DAYS for comparison)
-      const { data: baselineMentions } = await supabase
-        .from('target_intelligence')
-        .select('mention_date')
-        .eq('organization_id', organization_id)
-        .eq('target_id', target.id)
-        .gte('mention_date', baselineStart.toISOString())
-        .lt('mention_date', windowStart.toISOString());
-
-      const recentCount = recentMentions?.length || 0;
-      const baselineCount = baselineMentions?.length || 0;
-
-      // Skip if no recent activity
-      if (recentCount < MIN_MENTIONS_FOR_SIGNAL) continue;
-
-      // Calculate baseline average per TIME_WINDOW_DAYS
-      const baselineAvg = (baselineCount / (BASELINE_DAYS - TIME_WINDOW_DAYS)) * TIME_WINDOW_DAYS;
-
-      // === DETECT PATTERN 1: MOMENTUM ===
-      if (baselineAvg > 0 && recentCount >= MOMENTUM_THRESHOLD * baselineAvg) {
-        const momentumSignal = await detectMomentum(
-          target,
-          recentMentions!,
-          recentCount,
-          baselineAvg,
-          organization_id
-        );
-        if (momentumSignal) signalsGenerated.push(momentumSignal);
+      if (org) {
+        profile = org.company_profile;
+        orgName = org.name;
       }
-
-      // === DETECT PATTERN 2: SENTIMENT SHIFT ===
-      if (recentCount >= 3) {
-        const sentimentSignal = await detectSentimentShift(
-          target,
-          recentMentions!,
-          organization_id
-        );
-        if (sentimentSignal) signalsGenerated.push(sentimentSignal);
-      }
-
-      // === DETECT PATTERN 3: CATEGORY CLUSTERING ===
-      if (recentCount >= 4) {
-        const clusterSignal = await detectCategoryClustering(
-          target,
-          recentMentions!,
-          organization_id
-        );
-        if (clusterSignal) signalsGenerated.push(clusterSignal);
-      }
+    } else {
+      orgName = profile.name || 'Unknown';
     }
 
-    console.log(`✅ Pattern Detection Complete: ${signalsGenerated.length} signals generated`);
-    if (predictionErrors.length > 0) {
-      console.log(`⚠️ Prediction save errors: ${predictionErrors.length}`);
-      predictionErrors.forEach(e => console.log(`   - ${e}`));
+    // Build company context for Claude
+    const companyContext = buildCompanyContext(profile, orgName);
+
+    // Build article summaries for Claude (limit to top 30 by relevance)
+    const topArticles = articles
+      .sort((a: Article, b: Article) => (b.relevance_score || 0) - (a.relevance_score || 0))
+      .slice(0, 30);
+
+    const articleSummaries = topArticles.map((a: Article, i: number) =>
+      `[${i + 1}] "${a.title}" (${a.source}, ${a.published_at?.split('T')[0] || 'recent'})
+      ${a.summary || a.description || ''}`
+    ).join('\n\n');
+
+    // Call Claude to analyze and generate predictions
+    const predictions = await generatePredictionsWithClaude(
+      companyContext,
+      articleSummaries,
+      topArticles
+    );
+
+    console.log(`   Claude generated ${predictions.length} predictions`);
+
+    // Save predictions to database
+    let savedCount = 0;
+    for (const pred of predictions) {
+      const saved = await savePrediction(organization_id, pred);
+      if (saved) savedCount++;
     }
+
+    console.log(`✅ Pattern Detection Complete: ${savedCount} predictions saved`);
 
     return new Response(JSON.stringify({
       success: true,
-      signals_generated: signalsGenerated.length,
-      signals: signalsGenerated,
-      prediction_errors: predictionErrors.length > 0 ? predictionErrors : undefined
+      predictions_generated: predictions.length,
+      predictions_saved: savedCount,
+      predictions: predictions
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
@@ -205,241 +123,193 @@ serve(async (req) => {
   }
 });
 
-// ============================================================================
-// PATTERN 1: MOMENTUM DETECTION
-// Detects when a target's mention frequency significantly exceeds baseline
-// ============================================================================
-async function detectMomentum(
-  target: any,
-  mentions: any[],
-  currentCount: number,
-  baselineAvg: number,
-  orgId: string
-) {
-  const multiplier = currentCount / baselineAvg;
-  const signalStrength = Math.min(100, Math.round((multiplier / MOMENTUM_THRESHOLD) * 50 + 50));
+function buildCompanyContext(profile: any, orgName: string): string {
+  const parts = [`COMPANY: ${orgName}`];
 
-  // Sentiment distribution
-  const sentiments = mentions.map(m => m.sentiment).filter(Boolean);
-  const sentimentDist = {
-    positive: sentiments.filter(s => s === 'positive').length,
-    negative: sentiments.filter(s => s === 'negative').length,
-    neutral: sentiments.filter(s => s === 'neutral').length,
-    mixed: sentiments.filter(s => s === 'mixed').length
-  };
-
-  // Determine prediction type based on sentiment
-  let predictionType = 'competitive_threat';
-  const negativeRatio = sentimentDist.negative / sentiments.length;
-  if (negativeRatio > 0.5) {
-    predictionType = 'crisis_building';
-  } else if (sentimentDist.positive > sentimentDist.negative) {
-    predictionType = 'opportunity';
+  if (profile?.description) {
+    parts.push(`ABOUT: ${profile.description}`);
   }
 
-  // Save signal
-  const { data, error } = await supabase
-    .from('prediction_signals')
-    .insert({
-      organization_id: orgId,
-      target_id: target.id,
-      target_name: target.name,
-      target_type: target.type,
-      signal_type: 'momentum',
-      signal_strength: signalStrength,
-      confidence_score: signalStrength,
-      pattern_description: `${target.name} activity increased ${multiplier.toFixed(1)}x above baseline (${currentCount} mentions vs ${baselineAvg.toFixed(1)} avg)`,
-      baseline_comparison: {
-        previous_avg: baselineAvg,
-        current_count: currentCount,
-        multiplier: multiplier,
-        timeframe: `${TIME_WINDOW_DAYS}days`
+  if (profile?.service_lines?.length) {
+    parts.push(`SERVICE LINES: ${profile.service_lines.join(', ')}`);
+  }
+
+  if (profile?.competition?.direct_competitors?.length) {
+    parts.push(`COMPETITORS: ${profile.competition.direct_competitors.join(', ')}`);
+  }
+
+  if (profile?.strategic_context?.target_customers) {
+    parts.push(`TARGET CUSTOMERS: ${profile.strategic_context.target_customers}`);
+  }
+
+  if (profile?.intelligence_context?.key_questions?.length) {
+    parts.push(`KEY QUESTIONS:\n${profile.intelligence_context.key_questions.map((q: string) => `- ${q}`).join('\n')}`);
+  }
+
+  return parts.join('\n\n');
+}
+
+async function generatePredictionsWithClaude(
+  companyContext: string,
+  articleSummaries: string,
+  articles: Article[]
+): Promise<Prediction[]> {
+
+  const prompt = `You are a strategic intelligence analyst. Analyze these news articles and generate actionable predictions for the company.
+
+${companyContext}
+
+ARTICLES TO ANALYZE:
+${articleSummaries}
+
+YOUR TASK: Generate 3-5 strategic predictions based on patterns you see in these articles. Each prediction should:
+
+1. Identify a trend, threat, or opportunity emerging from the news
+2. Explain WHY this matters to the company (rationale)
+3. Cite specific articles as evidence (reference by number [1], [2], etc.)
+4. Assess confidence based on: multiple sources confirming = high, single source = low
+5. Suggest time horizon: 1-month (imminent), 3-months (developing), 6-months (emerging)
+
+PREDICTION TYPES:
+- "competitor": Competitor moves that affect market position
+- "market": Industry trends or market shifts
+- "risk": Threats requiring defensive action
+- "opportunity": Business development or growth opportunities
+- "trend": Emerging patterns worth monitoring
+
+Return a JSON array of predictions:
+[
+  {
+    "title": "Short, specific prediction title",
+    "description": "What you predict will happen and its implications",
+    "rationale": "Why this prediction makes sense given the evidence",
+    "evidence": ["Quote or fact from article [1]", "Supporting detail from article [3]"],
+    "confidence_score": 75,
+    "impact_level": "high|medium|low",
+    "category": "competitor|market|risk|opportunity|trend",
+    "time_horizon": "1-month|3-months|6-months",
+    "related_entities": ["Company A", "Person B"]
+  }
+]
+
+IMPORTANT:
+- Be specific, not generic. "Market conditions may change" is useless.
+- Ground every prediction in actual article content.
+- If articles don't support strong predictions, generate fewer predictions.
+- Focus on what matters to THIS company's business.
+
+Return ONLY the JSON array, no other text.`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
       },
-      time_window_days: TIME_WINDOW_DAYS,
-      supporting_article_ids: mentions.map(m => m.id),
-      article_count: currentCount,
-      first_mention: mentions[mentions.length - 1].mention_date,
-      latest_mention: mentions[0].mention_date,
-      sentiment_distribution: sentimentDist,
-      sentiment_trend: negativeRatio > 0.5 ? 'declining' : 'stable',
-      should_predict: signalStrength >= 70,
-      prediction_type: predictionType,
-      recommendation: signalStrength >= 70
-        ? `High activity detected - ${predictionType.replace('_', ' ')} likely`
-        : `Monitor closely - activity trending up`,
-      status: 'active'
-    })
-    .select()
-    .single();
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4000,
+        messages: [{
+          role: 'user',
+          content: prompt
+        }]
+      })
+    });
 
-  if (error) {
-    console.error(`Failed to save momentum signal:`, error);
-    return null;
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Claude API error: ${response.status} - ${errorText}`);
+      return [];
+    }
+
+    const data = await response.json();
+    const content = data.content?.[0]?.text || '';
+
+    // Parse JSON from response
+    const jsonMatch = content.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) {
+      console.error('No JSON array found in Claude response');
+      console.log('Response:', content.substring(0, 500));
+      return [];
+    }
+
+    const predictions = JSON.parse(jsonMatch[0]);
+    console.log(`   Parsed ${predictions.length} predictions from Claude`);
+
+    // Validate and clean predictions
+    return predictions.map((p: any) => ({
+      title: p.title || 'Untitled Prediction',
+      description: p.description || '',
+      rationale: p.rationale || '',
+      evidence: Array.isArray(p.evidence) ? p.evidence : [],
+      confidence_score: Math.min(100, Math.max(0, p.confidence_score || 50)),
+      impact_level: ['high', 'medium', 'low'].includes(p.impact_level) ? p.impact_level : 'medium',
+      category: ['competitor', 'market', 'risk', 'opportunity', 'trend'].includes(p.category) ? p.category : 'market',
+      time_horizon: ['1-month', '3-months', '6-months'].includes(p.time_horizon) ? p.time_horizon : '3-months',
+      related_entities: Array.isArray(p.related_entities) ? p.related_entities : []
+    }));
+
+  } catch (error: any) {
+    console.error('Error calling Claude:', error.message);
+    return [];
   }
-
-  // ALSO save to predictions table for UI display
-  await saveToPredictions(orgId, target, {
-    title: `${target.name}: Activity Surge Detected`,
-    description: `${target.name} activity increased ${multiplier.toFixed(1)}x above baseline (${currentCount} mentions vs ${baselineAvg.toFixed(1)} avg). ${predictionType === 'competitive_threat' ? 'This could signal a major competitive move.' : predictionType === 'crisis_building' ? 'Negative sentiment suggests potential crisis.' : 'This could present an opportunity.'}`,
-    confidence_score: signalStrength,
-    impact_level: signalStrength >= 80 ? 'high' : signalStrength >= 60 ? 'medium' : 'low',
-    category: predictionType === 'competitive_threat' ? 'competitor' : predictionType === 'crisis_building' ? 'risk' : 'market',
-    time_horizon: '1-month',
-    status: 'active'
-  });
-
-  console.log(`   📈 MOMENTUM signal: ${target.name} (${multiplier.toFixed(1)}x, strength: ${signalStrength})`);
-  return data;
 }
 
-// ============================================================================
-// PATTERN 2: SENTIMENT SHIFT DETECTION
-// Detects significant changes in sentiment over time
-// ============================================================================
-async function detectSentimentShift(target: any, mentions: any[], orgId: string) {
-  const sentiments = mentions.map(m => ({ date: m.mention_date, sentiment: m.sentiment })).filter(m => m.sentiment);
+async function savePrediction(orgId: string, prediction: Prediction): Promise<boolean> {
+  try {
+    // Check for existing similar prediction
+    const { data: existing } = await supabase
+      .from('predictions')
+      .select('id')
+      .eq('organization_id', orgId)
+      .eq('title', prediction.title)
+      .single();
 
-  if (sentiments.length < 3) return null;
+    if (existing) {
+      console.log(`   ⏭️ Prediction already exists: ${prediction.title.substring(0, 50)}...`);
+      return false;
+    }
 
-  // Split into early/late periods
-  const midpoint = Math.floor(sentiments.length / 2);
-  const early = sentiments.slice(midpoint);
-  const late = sentiments.slice(0, midpoint);
+    // Build description with rationale and evidence
+    const fullDescription = `${prediction.description}
 
-  const countSentiment = (items: any[], type: string) =>
-    items.filter(i => i.sentiment === type).length;
+**Rationale:** ${prediction.rationale}
 
-  const earlyNeg = countSentiment(early, 'negative');
-  const lateNeg = countSentiment(late, 'negative');
-  const earlyPos = countSentiment(early, 'positive');
-  const latePos = countSentiment(late, 'positive');
+**Evidence:**
+${prediction.evidence.map(e => `• ${e}`).join('\n')}`;
 
-  // Detect significant shift
-  const negativeShift = lateNeg > 0 && lateNeg > earlyNeg * 2;
-  const positiveShift = latePos > 0 && latePos > earlyPos * 2;
+    const { error } = await supabase
+      .from('predictions')
+      .insert({
+        organization_id: orgId,
+        title: prediction.title,
+        description: fullDescription,
+        confidence_score: prediction.confidence_score,
+        impact_level: prediction.impact_level,
+        category: prediction.category,
+        time_horizon: prediction.time_horizon,
+        status: 'active',
+        // Store structured data in metadata
+        metadata: {
+          rationale: prediction.rationale,
+          evidence: prediction.evidence,
+          related_entities: prediction.related_entities,
+          generated_by: 'pattern-detector-v2'
+        }
+      });
 
-  if (!negativeShift && !positiveShift) return null;
+    if (error) {
+      console.error(`❌ Failed to save prediction: ${error.message}`);
+      return false;
+    }
 
-  const trend = negativeShift ? 'declining' : 'improving';
-  const signalStrength = Math.min(100, Math.round(((lateNeg + latePos) / late.length) * 100));
+    console.log(`   💡 Saved: ${prediction.title.substring(0, 60)}...`);
+    return true;
 
-  const { data, error } = await supabase
-    .from('prediction_signals')
-    .insert({
-      organization_id: orgId,
-      target_id: target.id,
-      target_name: target.name,
-      target_type: target.type,
-      signal_type: 'sentiment_shift',
-      signal_strength: signalStrength,
-      confidence_score: signalStrength,
-      pattern_description: `${target.name} sentiment shifting ${trend} (${negativeShift ? 'more negative' : 'more positive'} coverage)`,
-      time_window_days: TIME_WINDOW_DAYS,
-      supporting_article_ids: mentions.map(m => m.id),
-      article_count: mentions.length,
-      first_mention: mentions[mentions.length - 1].mention_date,
-      latest_mention: mentions[0].mention_date,
-      sentiment_trend: trend,
-      should_predict: signalStrength >= 70 && negativeShift,
-      prediction_type: negativeShift ? 'crisis_building' : 'opportunity',
-      recommendation: negativeShift
-        ? `Sentiment declining - potential reputation risk`
-        : `Positive momentum building`,
-      status: 'active'
-    })
-    .select()
-    .single();
-
-  if (error) {
-    console.error(`Failed to save sentiment shift signal:`, error);
-    return null;
+  } catch (e: any) {
+    console.error(`❌ Error saving prediction: ${e.message}`);
+    return false;
   }
-
-  // ALSO save to predictions table for UI display
-  await saveToPredictions(orgId, target, {
-    title: `${target.name}: ${trend === 'declining' ? 'Sentiment Declining' : 'Sentiment Improving'}`,
-    description: `Sentiment for ${target.name} has shifted ${trend === 'declining' ? 'negatively' : 'positively'}. ${trend === 'declining' ? 'This may indicate emerging issues or negative press.' : 'This suggests improving perception or positive developments.'}`,
-    confidence_score: signalStrength,
-    impact_level: signalStrength >= 80 ? 'high' : signalStrength >= 60 ? 'medium' : 'low',
-    category: trend === 'declining' ? 'risk' : 'trend',
-    time_horizon: '1-month',
-    status: 'active'
-  });
-
-  console.log(`   📊 SENTIMENT SHIFT signal: ${target.name} (${trend}, strength: ${signalStrength})`);
-  return data;
-}
-
-// ============================================================================
-// PATTERN 3: CATEGORY CLUSTERING DETECTION
-// Detects when articles cluster around specific categories (e.g., multiple lawsuits)
-// ============================================================================
-async function detectCategoryClustering(target: any, mentions: any[], orgId: string) {
-  const categories = mentions.map(m => m.category).filter(Boolean);
-  if (categories.length < 4) return null;
-
-  // Count category frequencies
-  const catCounts: Record<string, number> = {};
-  categories.forEach(cat => {
-    catCounts[cat] = (catCounts[cat] || 0) + 1;
-  });
-
-  // Find dominant category
-  const sortedCats = Object.entries(catCounts).sort((a, b) => b[1] - a[1]);
-  const [dominantCat, count] = sortedCats[0];
-
-  // Only signal if one category dominates (>50% of mentions)
-  const dominanceRatio = count / categories.length;
-  if (dominanceRatio < 0.5) return null;
-
-  const signalStrength = Math.min(100, Math.round(dominanceRatio * 100 + count * 10));
-
-  // Determine prediction type
-  const crisisCategories = ['crisis', 'legal', 'regulatory'];
-  const predictionType = crisisCategories.includes(dominantCat) ? 'crisis_building' : 'market_shift';
-
-  const { data, error } = await supabase
-    .from('prediction_signals')
-    .insert({
-      organization_id: orgId,
-      target_id: target.id,
-      target_name: target.name,
-      target_type: target.type,
-      signal_type: 'category_clustering',
-      signal_strength: signalStrength,
-      confidence_score: signalStrength,
-      pattern_description: `${target.name} showing ${count} ${dominantCat} events (${Math.round(dominanceRatio * 100)}% of recent activity)`,
-      time_window_days: TIME_WINDOW_DAYS,
-      supporting_article_ids: mentions.filter(m => m.category === dominantCat).map(m => m.id),
-      article_count: count,
-      first_mention: mentions[mentions.length - 1].mention_date,
-      latest_mention: mentions[0].mention_date,
-      category_distribution: catCounts,
-      primary_category: dominantCat,
-      should_predict: signalStrength >= 70,
-      prediction_type: predictionType,
-      recommendation: `Concentrated ${dominantCat} activity - ${predictionType.replace('_', ' ')} possible`,
-      status: 'active'
-    })
-    .select()
-    .single();
-
-  if (error) {
-    console.error(`Failed to save clustering signal:`, error);
-    return null;
-  }
-
-  // ALSO save to predictions table for UI display
-  await saveToPredictions(orgId, target, {
-    title: `${target.name}: ${dominantCat.charAt(0).toUpperCase() + dominantCat.slice(1)} Activity Concentration`,
-    description: `${target.name} showing ${count} ${dominantCat} events (${Math.round(dominanceRatio * 100)}% of recent activity). ${predictionType === 'crisis_building' ? 'This concentration may signal an emerging crisis or legal/regulatory issue.' : 'This pattern suggests significant market activity or strategic shift.'}`,
-    confidence_score: signalStrength,
-    impact_level: signalStrength >= 80 ? 'high' : signalStrength >= 60 ? 'medium' : 'low',
-    category: predictionType === 'crisis_building' ? 'risk' : 'market',
-    time_horizon: '1-month',
-    status: 'active'
-  });
-
-  console.log(`   🎯 CLUSTERING signal: ${target.name} (${dominantCat} ${count}x, strength: ${signalStrength})`);
-  return data;
 }

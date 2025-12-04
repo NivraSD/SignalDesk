@@ -1,6 +1,5 @@
-// Connection Detector
-// Finds relationships and patterns between entities based on industry context
-// Industry-aware detection: what connections matter depends on the organization's industry
+// Connection Detector v2 - Uses Claude to find meaningful connections between entities
+// Instead of keyword matching, this analyzes article content to find real relationships
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { corsHeaders } from '../_shared/cors.ts';
@@ -8,13 +7,31 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')!;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// Analysis window for connection detection
-const DETECTION_WINDOW_DAYS = 30;
-const MIN_CONNECTION_STRENGTH = 50;
-const MIN_MENTIONS_FOR_CONNECTION = 2;
+interface Article {
+  title: string;
+  description?: string;
+  summary?: string;
+  url: string;
+  source: string;
+  published_at?: string;
+  relevance_score?: number;
+}
+
+interface Connection {
+  title: string;
+  description: string;
+  connection_type: 'partnership' | 'competition' | 'market_shift' | 'supply_chain' | 'regulatory' | 'personnel' | 'acquisition';
+  primary_entity: string;
+  connected_entities: string[];
+  strength_score: number;
+  business_implication: string;
+  evidence: string[];
+  action_suggested?: string;
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -22,197 +39,74 @@ serve(async (req) => {
   }
 
   try {
-    const { organization_id } = await req.json();
+    const { organization_id, articles, company_profile } = await req.json();
 
-    console.log(`🔗 Connection Detector`);
-    console.log(`   Organization ID: ${organization_id}`);
+    console.log(`🔗 Connection Detector v2 - Claude-Powered Analysis`);
+    console.log(`   Organization: ${organization_id}`);
+    console.log(`   Articles received: ${articles?.length || 0}`);
 
-    // Step 1: Load organization's industry from company_profile
-    const { data: orgData } = await supabase
-      .from('organizations')
-      .select('name, industry, company_profile')
-      .eq('id', organization_id)
-      .single();
-
-    if (!orgData) {
+    if (!articles || articles.length === 0) {
       return new Response(JSON.stringify({
-        error: 'Organization not found'
-      }), {
-        status: 404,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+        success: true,
+        connections_detected: 0,
+        message: 'No articles to analyze'
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    const industry = orgData.industry;
-    const orgName = orgData.name;
-
-    console.log(`   Organization: ${orgName}`);
-    console.log(`   Industry: ${industry}`);
-
-    // Step 2: Load industry intelligence profile (with fallback to DEFAULT)
-    let { data: industryProfile } = await supabase
-      .from('industry_intelligence_profiles')
-      .select('*')
-      .eq('industry', industry)
-      .single();
-
-    if (!industryProfile) {
-      console.log(`⚠️ No specific profile for: ${industry}, using DEFAULT profile`);
-
-      // Fallback to DEFAULT profile
-      const { data: defaultProfile } = await supabase
-        .from('industry_intelligence_profiles')
-        .select('*')
-        .eq('industry', 'DEFAULT')
+    // Load org data if not provided
+    let profile = company_profile;
+    let orgName = '';
+    if (!profile) {
+      const { data: org } = await supabase
+        .from('organizations')
+        .select('name, industry, company_profile')
+        .eq('id', organization_id)
         .single();
 
-      if (!defaultProfile) {
-        console.log(`❌ No DEFAULT profile found either`);
-        return new Response(JSON.stringify({
-          success: true,
-          connections_detected: 0,
-          signals_generated: 0,
-          message: `No industry profile configured for ${industry} and no DEFAULT fallback`
-        }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+      if (org) {
+        profile = org.company_profile;
+        orgName = org.name;
       }
-
-      industryProfile = defaultProfile;
-      console.log(`   Using DEFAULT profile with ${defaultProfile.connection_patterns?.length || 0} patterns`);
     } else {
-      console.log(`   Loaded ${industry} profile with ${industryProfile.connection_patterns?.length || 0} patterns`);
+      orgName = profile.name || 'Unknown';
     }
 
-    // Step 3: Load intelligence targets
-    const { data: targets } = await supabase
-      .from('intelligence_targets')
-      .select('id, name, type')
-      .eq('organization_id', organization_id)
-      .eq('active', true);
+    // Build company context for Claude
+    const companyContext = buildCompanyContext(profile, orgName);
 
-    if (!targets || targets.length === 0) {
-      console.log('⚠️ No intelligence targets found');
-      return new Response(JSON.stringify({
-        success: true,
-        connections_detected: 0,
-        signals_generated: 0,
-        message: 'No intelligence targets configured'
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
+    // Build article summaries for Claude (limit to top 25 by relevance)
+    const topArticles = articles
+      .sort((a: Article, b: Article) => (b.relevance_score || 0) - (a.relevance_score || 0))
+      .slice(0, 25);
 
-    console.log(`   Loaded ${targets.length} intelligence targets`);
+    const articleSummaries = topArticles.map((a: Article, i: number) =>
+      `[${i + 1}] "${a.title}" (${a.source}, ${a.published_at?.split('T')[0] || 'recent'})
+      ${a.summary || a.description || ''}`
+    ).join('\n\n');
 
-    // Step 4: Load recent target intelligence (last 30 days)
-    const windowStart = new Date();
-    windowStart.setDate(windowStart.getDate() - DETECTION_WINDOW_DAYS);
-
-    const { data: mentions } = await supabase
-      .from('target_intelligence')
-      .select('*')
-      .eq('organization_id', organization_id)
-      .gte('mention_date', windowStart.toISOString())
-      .order('mention_date', { ascending: false });
-
-    if (!mentions || mentions.length === 0) {
-      console.log('⚠️ No target intelligence data in detection window');
-      return new Response(JSON.stringify({
-        success: true,
-        connections_detected: 0,
-        signals_generated: 0,
-        message: 'No target intelligence data available'
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    console.log(`   Analyzing ${mentions.length} mentions from last ${DETECTION_WINDOW_DAYS} days`);
-
-    // Step 5: Detect entity connections
-    const connections = await detectEntityConnections(
-      organization_id,
-      targets,
-      mentions,
-      industryProfile.relevance_weights
+    // Call Claude to find connections
+    const connections = await findConnectionsWithClaude(
+      companyContext,
+      articleSummaries,
+      orgName
     );
 
-    console.log(`   Detected ${connections.length} connections`);
+    console.log(`   Claude found ${connections.length} connections`);
 
-    // Step 6: Save connections to database
-    let savedConnections = 0;
-    for (const connection of connections) {
-      if (connection.connection_strength >= MIN_CONNECTION_STRENGTH) {
-        const { error } = await supabase
-          .from('entity_connections')
-          .upsert(connection, {
-            onConflict: 'organization_id,entity_a_id,entity_b_id,connection_type'
-          });
-
-        if (!error) savedConnections++;
-      }
+    // Save connections to database
+    let savedCount = 0;
+    for (const conn of connections) {
+      const saved = await saveConnection(organization_id, conn);
+      if (saved) savedCount++;
     }
 
-    console.log(`   Saved ${savedConnections} connections to database`);
-
-    // Step 7: Detect connection-based signals using industry patterns
-    const signals = await detectConnectionSignals(
-      organization_id,
-      orgName,
-      mentions,
-      connections,
-      industryProfile.connection_patterns,
-      industryProfile.org_type_modifiers
-    );
-
-    console.log(`   Generated ${signals.length} connection signals`);
-
-    // Step 8: Save signals to database with deduplication
-    let savedSignals = 0;
-    for (const signal of signals) {
-      // Check for existing similar signal to avoid duplicates
-      const { data: existing } = await supabase
-        .from('connection_signals')
-        .select('id')
-        .eq('organization_id', signal.organization_id)
-        .eq('signal_type', signal.signal_type)
-        .eq('primary_entity_name', signal.primary_entity_name)
-        .single();
-
-      if (existing) {
-        console.log(`   ⏭️ Signal already exists for ${signal.primary_entity_name}, updating...`);
-        // Update existing signal instead of creating duplicate
-        const { error } = await supabase
-          .from('connection_signals')
-          .update({
-            strength_score: signal.strength_score,
-            confidence_score: signal.confidence_score,
-            related_entities: signal.related_entities,
-            pattern_data: signal.pattern_data,
-            signal_start_date: signal.signal_start_date
-          })
-          .eq('id', existing.id);
-
-        if (!error) savedSignals++;
-      } else {
-        const { error } = await supabase
-          .from('connection_signals')
-          .insert(signal);
-
-        if (!error) savedSignals++;
-      }
-    }
-
-    console.log(`✅ Connection detection complete: ${savedConnections} connections, ${savedSignals} signals`);
+    console.log(`✅ Connection Detection Complete: ${savedCount} connections saved`);
 
     return new Response(JSON.stringify({
       success: true,
-      connections_detected: savedConnections,
-      signals_generated: savedSignals,
-      mentions_analyzed: mentions.length,
-      targets_monitored: targets.length,
-      industry: industry
+      connections_detected: connections.length,
+      connections_saved: savedCount,
+      connections: connections
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
@@ -229,266 +123,212 @@ serve(async (req) => {
   }
 });
 
-// ============================================================================
-// CONNECTION DETECTION FUNCTIONS
-// ============================================================================
+function buildCompanyContext(profile: any, orgName: string): string {
+  const parts = [`COMPANY: ${orgName}`];
 
-async function detectEntityConnections(
-  organizationId: string,
-  targets: any[],
-  mentions: any[],
-  relevanceWeights: any
-): Promise<any[]> {
-  const connections: any[] = [];
-
-  // Build mention index by target
-  const mentionsByTarget = new Map<string, any[]>();
-  for (const mention of mentions) {
-    if (!mentionsByTarget.has(mention.target_id)) {
-      mentionsByTarget.set(mention.target_id, []);
-    }
-    mentionsByTarget.get(mention.target_id)!.push(mention);
+  if (profile?.description) {
+    parts.push(`ABOUT: ${profile.description}`);
   }
 
-  // Compare each pair of targets
-  for (let i = 0; i < targets.length; i++) {
-    for (let j = i + 1; j < targets.length; j++) {
-      const entityA = targets[i];
-      const entityB = targets[j];
-
-      const mentionsA = mentionsByTarget.get(entityA.id) || [];
-      const mentionsB = mentionsByTarget.get(entityB.id) || [];
-
-      if (mentionsA.length < MIN_MENTIONS_FOR_CONNECTION ||
-          mentionsB.length < MIN_MENTIONS_FOR_CONNECTION) {
-        continue;
-      }
-
-      // Connection Type 1: Co-occurrence (same articles)
-      const coOccurrence = detectCoOccurrence(mentionsA, mentionsB, relevanceWeights);
-      if (coOccurrence) {
-        connections.push({
-          organization_id: organizationId,
-          entity_a_id: entityA.id,
-          entity_a_name: entityA.name,
-          entity_a_type: entityA.type,
-          entity_b_id: entityB.id,
-          entity_b_name: entityB.name,
-          entity_b_type: entityB.type,
-          connection_type: 'co_occurrence',
-          ...coOccurrence
-        });
-      }
-
-      // Connection Type 2: Temporal correlation
-      const temporalCorrelation = detectTemporalCorrelation(mentionsA, mentionsB, relevanceWeights);
-      if (temporalCorrelation) {
-        connections.push({
-          organization_id: organizationId,
-          entity_a_id: entityA.id,
-          entity_a_name: entityA.name,
-          entity_a_type: entityA.type,
-          entity_b_id: entityB.id,
-          entity_b_name: entityB.name,
-          entity_b_type: entityB.type,
-          connection_type: 'temporal_correlation',
-          ...temporalCorrelation
-        });
-      }
-
-      // Connection Type 3: Thematic overlap
-      const thematicOverlap = detectThematicOverlap(mentionsA, mentionsB, relevanceWeights);
-      if (thematicOverlap) {
-        connections.push({
-          organization_id: organizationId,
-          entity_a_id: entityA.id,
-          entity_a_name: entityA.name,
-          entity_a_type: entityA.type,
-          entity_b_id: entityB.id,
-          entity_b_name: entityB.name,
-          entity_b_type: entityB.type,
-          connection_type: 'thematic_overlap',
-          ...thematicOverlap
-        });
-      }
-    }
+  if (profile?.service_lines?.length) {
+    parts.push(`SERVICE LINES: ${profile.service_lines.join(', ')}`);
   }
 
-  return connections;
-}
-
-function detectCoOccurrence(mentionsA: any[], mentionsB: any[], weights: any): any | null {
-  // Find articles that mention both entities
-  const urlsA = new Set(mentionsA.map(m => m.article_url));
-  const urlsB = new Set(mentionsB.map(m => m.article_url));
-
-  const sharedUrls = [...urlsA].filter(url => urlsB.has(url));
-
-  if (sharedUrls.length === 0) return null;
-
-  const strength = Math.min(100, (sharedUrls.length / Math.min(urlsA.size, urlsB.size)) * (weights?.co_occurrence || 50));
-
-  return {
-    connection_strength: Math.round(strength),
-    shared_articles: sharedUrls.length,
-    detection_window_start: new Date(Math.min(...mentionsA.map(m => new Date(m.mention_date).getTime()))).toISOString(),
-    detection_window_end: new Date(Math.max(...mentionsA.map(m => new Date(m.mention_date).getTime()))).toISOString()
-  };
-}
-
-function detectTemporalCorrelation(mentionsA: any[], mentionsB: any[], weights: any): any | null {
-  // Check if entities are active in similar time windows
-  const datesA = mentionsA.map(m => new Date(m.mention_date).getTime());
-  const datesB = mentionsB.map(m => new Date(m.mention_date).getTime());
-
-  const avgDateA = datesA.reduce((a, b) => a + b, 0) / datesA.length;
-  const avgDateB = datesB.reduce((a, b) => a + b, 0) / datesB.length;
-
-  const daysBetween = Math.abs(avgDateA - avgDateB) / (1000 * 60 * 60 * 24);
-
-  if (daysBetween > 14) return null; // Not temporally correlated
-
-  const strength = Math.min(100, (14 - daysBetween) / 14 * (weights?.temporal_correlation || 80));
-
-  return {
-    connection_strength: Math.round(strength),
-    temporal_proximity_days: Math.round(daysBetween),
-    detection_window_start: new Date(Math.min(...datesA, ...datesB)).toISOString(),
-    detection_window_end: new Date(Math.max(...datesA, ...datesB)).toISOString()
-  };
-}
-
-function detectThematicOverlap(mentionsA: any[], mentionsB: any[], weights: any): any | null {
-  // Find shared topics and categories
-  const topicsA = new Set(mentionsA.flatMap(m => m.key_topics || []));
-  const topicsB = new Set(mentionsB.flatMap(m => m.key_topics || []));
-
-  const categoriesA = new Set(mentionsA.map(m => m.category));
-  const categoriesB = new Set(mentionsB.map(m => m.category));
-
-  const sharedTopics = [...topicsA].filter(t => topicsB.has(t));
-  const sharedCategories = [...categoriesA].filter(c => categoriesB.has(c));
-
-  if (sharedTopics.length === 0 && sharedCategories.length === 0) return null;
-
-  const topicOverlap = sharedTopics.length / Math.max(topicsA.size, topicsB.size);
-  const categoryOverlap = sharedCategories.length / Math.max(categoriesA.size, categoriesB.size);
-
-  const strength = Math.min(100, ((topicOverlap + categoryOverlap) / 2) * (weights?.thematic_overlap || 60));
-
-  return {
-    connection_strength: Math.round(strength),
-    shared_topics: sharedTopics,
-    shared_categories: sharedCategories,
-    detection_window_start: new Date(Math.min(...mentionsA.map(m => new Date(m.mention_date).getTime()))).toISOString(),
-    detection_window_end: new Date(Math.max(...mentionsA.map(m => new Date(m.mention_date).getTime()))).toISOString()
-  };
-}
-
-// ============================================================================
-// SIGNAL DETECTION FUNCTIONS
-// ============================================================================
-
-async function detectConnectionSignals(
-  organizationId: string,
-  organizationName: string,
-  mentions: any[],
-  connections: any[],
-  connectionPatterns: any[],
-  orgTypeModifiers: any
-): Promise<any[]> {
-  const signals: any[] = [];
-
-  console.log(`   Analyzing ${connectionPatterns.length} industry-specific patterns`);
-
-  for (const pattern of connectionPatterns) {
-    const detectedSignals = await analyzePattern(
-      organizationId,
-      organizationName,
-      mentions,
-      connections,
-      pattern,
-      orgTypeModifiers
-    );
-
-    signals.push(...detectedSignals);
+  if (profile?.competition?.direct_competitors?.length) {
+    parts.push(`COMPETITORS TO WATCH: ${profile.competition.direct_competitors.join(', ')}`);
   }
 
-  return signals;
-}
-
-async function analyzePattern(
-  organizationId: string,
-  organizationName: string,
-  mentions: any[],
-  connections: any[],
-  pattern: any,
-  orgTypeModifiers: any
-): Promise<any[]> {
-  const signals: any[] = [];
-  const triggerKeywords = pattern.triggers || [];
-
-  // Find mentions matching pattern triggers
-  const relevantMentions = mentions.filter(mention => {
-    const text = `${mention.article_title} ${mention.article_content}`.toLowerCase();
-    return triggerKeywords.some((keyword: string) =>
-      text.includes(keyword.toLowerCase().replace(/_/g, ' '))
-    );
-  });
-
-  if (relevantMentions.length === 0) return signals;
-
-  console.log(`     Pattern "${pattern.type}": ${relevantMentions.length} relevant mentions`);
-
-  // Group by entities
-  const entitiesByMention = new Map<string, any[]>();
-  for (const mention of relevantMentions) {
-    if (!entitiesByMention.has(mention.target_name)) {
-      entitiesByMention.set(mention.target_name, []);
-    }
-    entitiesByMention.get(mention.target_name)!.push(mention);
+  if (profile?.strategic_context?.target_customers) {
+    parts.push(`TARGET CUSTOMERS: ${profile.strategic_context.target_customers}`);
   }
 
-  // If multiple entities show same pattern, it's a signal
-  if (entitiesByMention.size >= 2) {
-    const entityNames = Array.from(entitiesByMention.keys());
-    const primaryEntity = entityNames[0];
-    const relatedEntities = entityNames.slice(1).map(name => ({ name }));
+  return parts.join('\n\n');
+}
 
-    // Calculate strength based on number of entities and mentions
-    const baseStrength = Math.min(100, (entitiesByMention.size / 5) * 100);
-    const confidence = Math.min(100, (relevantMentions.length / 10) * 100);
+async function findConnectionsWithClaude(
+  companyContext: string,
+  articleSummaries: string,
+  orgName: string
+): Promise<Connection[]> {
 
-    // Apply organization type modifiers if available
-    let adjustedStrength = baseStrength;
-    if (orgTypeModifiers) {
-      const orgType = Object.keys(orgTypeModifiers)[0]; // Get first org type
-      const multiplier = orgTypeModifiers[orgType]?.signal_priority_multipliers?.[pattern.type] || 1.0;
-      adjustedStrength = Math.min(100, baseStrength * multiplier);
-    }
+  const prompt = `You are a strategic intelligence analyst specializing in finding hidden connections and relationships in news that matter for business strategy.
 
-    signals.push({
-      organization_id: organizationId,
-      signal_type: pattern.type,
-      signal_title: `${pattern.type.replace(/_/g, ' ').toUpperCase()}: ${entityNames.join(', ')}`,
-      signal_description: pattern.description,
-      primary_entity_name: primaryEntity,
-      related_entities: relatedEntities,
-      strength_score: Math.round(adjustedStrength),
-      confidence_score: Math.round(confidence),
-      industry_relevance: pattern.type,
-      client_impact_level: adjustedStrength >= 80 ? 'high' : adjustedStrength >= 60 ? 'medium' : 'low',
-      pattern_data: {
-        pattern_type: pattern.type,
-        entities_involved: entityNames,
-        mention_count: relevantMentions.length,
-        detection_window_days: pattern.detection_window_days,
-        triggers_matched: triggerKeywords
+${companyContext}
+
+ARTICLES TO ANALYZE:
+${articleSummaries}
+
+YOUR TASK: Find 2-4 meaningful CONNECTIONS between entities, events, or trends in these articles that have strategic implications for ${orgName}.
+
+A good connection is NOT just "Company A and Company B are both mentioned." It's:
+- "Company A's expansion into market X + Company B's retreat from that market = opportunity for ${orgName}"
+- "Regulatory change affecting Industry Y + Client Z's exposure = advisory opportunity"
+- "Executive moving from Competitor to Client = potential relationship to leverage"
+
+CONNECTION TYPES:
+- "partnership": New alliances, joint ventures, or collaborations
+- "competition": Competitive dynamics, market share shifts, head-to-head moves
+- "market_shift": Industry trends connecting multiple players
+- "supply_chain": Vendor, supplier, or distribution relationships
+- "regulatory": Compliance, legal, or regulatory connections
+- "personnel": Executive moves, talent flows between organizations
+- "acquisition": M&A activity, investments, or divestitures
+
+Return a JSON array:
+[
+  {
+    "title": "Brief, specific title of the connection",
+    "description": "What's connected and how",
+    "connection_type": "partnership|competition|market_shift|supply_chain|regulatory|personnel|acquisition",
+    "primary_entity": "Main company/entity in this connection",
+    "connected_entities": ["Entity 2", "Entity 3"],
+    "strength_score": 75,
+    "business_implication": "What this means for ${orgName}'s strategy or opportunities",
+    "evidence": ["Fact from article [1]", "Detail from article [4]"],
+    "action_suggested": "Specific action ${orgName} could take"
+  }
+]
+
+IMPORTANT:
+- Focus on connections that CREATE BUSINESS VALUE for ${orgName}
+- Every connection must be grounded in actual article content
+- If no meaningful connections exist, return fewer or empty array
+- Be specific about WHY this connection matters
+
+Return ONLY the JSON array, no other text.`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
       },
-      signal_start_date: new Date(Math.min(...relevantMentions.map(m => new Date(m.mention_date).getTime()))).toISOString(),
-      signal_maturity: 'emerging'
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 3000,
+        messages: [{
+          role: 'user',
+          content: prompt
+        }]
+      })
     });
-  }
 
-  return signals;
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Claude API error: ${response.status} - ${errorText}`);
+      return [];
+    }
+
+    const data = await response.json();
+    const content = data.content?.[0]?.text || '';
+
+    // Parse JSON from response
+    const jsonMatch = content.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) {
+      console.error('No JSON array found in Claude response');
+      console.log('Response:', content.substring(0, 500));
+      return [];
+    }
+
+    const connections = JSON.parse(jsonMatch[0]);
+    console.log(`   Parsed ${connections.length} connections from Claude`);
+
+    // Validate and clean connections
+    return connections.map((c: any) => ({
+      title: c.title || 'Untitled Connection',
+      description: c.description || '',
+      connection_type: ['partnership', 'competition', 'market_shift', 'supply_chain', 'regulatory', 'personnel', 'acquisition'].includes(c.connection_type)
+        ? c.connection_type
+        : 'market_shift',
+      primary_entity: c.primary_entity || 'Unknown',
+      connected_entities: Array.isArray(c.connected_entities) ? c.connected_entities : [],
+      strength_score: Math.min(100, Math.max(0, c.strength_score || 50)),
+      business_implication: c.business_implication || '',
+      evidence: Array.isArray(c.evidence) ? c.evidence : [],
+      action_suggested: c.action_suggested || ''
+    }));
+
+  } catch (error: any) {
+    console.error('Error calling Claude:', error.message);
+    return [];
+  }
+}
+
+async function saveConnection(orgId: string, connection: Connection): Promise<boolean> {
+  try {
+    // Check for existing similar connection
+    const { data: existing } = await supabase
+      .from('connection_signals')
+      .select('id')
+      .eq('organization_id', orgId)
+      .eq('primary_entity_name', connection.primary_entity)
+      .eq('signal_type', connection.connection_type)
+      .single();
+
+    if (existing) {
+      // Update existing connection
+      const { error } = await supabase
+        .from('connection_signals')
+        .update({
+          strength_score: connection.strength_score,
+          confidence_score: connection.strength_score,
+          related_entities: connection.connected_entities.map(name => ({ name })),
+          pattern_data: {
+            title: connection.title,
+            description: connection.description,
+            business_implication: connection.business_implication,
+            evidence: connection.evidence,
+            action_suggested: connection.action_suggested,
+            generated_by: 'connection-detector-v2'
+          },
+          signal_start_date: new Date().toISOString()
+        })
+        .eq('id', existing.id);
+
+      if (error) {
+        console.error(`❌ Failed to update connection: ${error.message}`);
+        return false;
+      }
+
+      console.log(`   🔄 Updated: ${connection.title.substring(0, 50)}...`);
+      return true;
+    }
+
+    // Insert new connection
+    const { error } = await supabase
+      .from('connection_signals')
+      .insert({
+        organization_id: orgId,
+        signal_type: connection.connection_type,
+        primary_entity_name: connection.primary_entity,
+        primary_entity_type: 'company',
+        related_entities: connection.connected_entities.map(name => ({ name })),
+        strength_score: connection.strength_score,
+        confidence_score: connection.strength_score,
+        pattern_data: {
+          title: connection.title,
+          description: connection.description,
+          business_implication: connection.business_implication,
+          evidence: connection.evidence,
+          action_suggested: connection.action_suggested,
+          generated_by: 'connection-detector-v2'
+        },
+        signal_start_date: new Date().toISOString(),
+        status: 'active'
+      });
+
+    if (error) {
+      console.error(`❌ Failed to save connection: ${error.message}`);
+      return false;
+    }
+
+    console.log(`   🔗 Saved: ${connection.title.substring(0, 50)}...`);
+    return true;
+
+  } catch (e: any) {
+    console.error(`❌ Error saving connection: ${e.message}`);
+    return false;
+  }
 }
