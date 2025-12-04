@@ -16,6 +16,9 @@ const BASELINE_DAYS = 30;
 const MOMENTUM_THRESHOLD = 3; // Activity must be 3x baseline
 const MIN_MENTIONS_FOR_SIGNAL = 3; // Need at least 3 mentions
 
+// Track prediction save errors for debugging
+const predictionErrors: string[] = [];
+
 // Helper: Save signal to predictions table for UI display
 async function saveToPredictions(orgId: string, target: any, prediction: {
   title: string;
@@ -28,7 +31,7 @@ async function saveToPredictions(orgId: string, target: any, prediction: {
 }) {
   try {
     // Check for existing similar prediction to avoid duplicates
-    const { data: existing } = await supabase
+    const { data: existing, error: checkError } = await supabase
       .from('predictions')
       .select('id')
       .eq('organization_id', orgId)
@@ -36,28 +39,48 @@ async function saveToPredictions(orgId: string, target: any, prediction: {
       .eq('title', prediction.title)
       .single();
 
+    if (checkError && checkError.code !== 'PGRST116') {
+      // PGRST116 = no rows returned, which is fine
+      console.error(`Check error for ${target.name}:`, checkError);
+      predictionErrors.push(`Check: ${checkError.message}`);
+    }
+
     if (existing) {
       console.log(`   ⏭️ Prediction already exists for ${target.name}, skipping`);
       return;
     }
 
-    const { error } = await supabase
+    const insertData = {
+      organization_id: orgId,
+      target_id: target.id,
+      target_name: target.name,
+      target_type: target.type,
+      title: prediction.title,
+      description: prediction.description,
+      confidence_score: prediction.confidence_score,
+      impact_level: prediction.impact_level,
+      category: prediction.category,
+      time_horizon: prediction.time_horizon,
+      status: prediction.status
+    };
+
+    console.log(`   📝 Inserting prediction:`, JSON.stringify(insertData).substring(0, 100));
+
+    const { data, error } = await supabase
       .from('predictions')
-      .insert({
-        organization_id: orgId,
-        target_id: target.id,
-        target_name: target.name,
-        target_type: target.type,
-        ...prediction
-      });
+      .insert(insertData)
+      .select()
+      .single();
 
     if (error) {
-      console.error(`Failed to save prediction for ${target.name}:`, error.message);
+      console.error(`❌ Failed to save prediction for ${target.name}:`, error.message, error.details, error.hint);
+      predictionErrors.push(`Insert ${target.name}: ${error.message} | ${error.details || ''} | ${error.hint || ''}`);
     } else {
-      console.log(`   💡 Created prediction: ${prediction.title}`);
+      console.log(`   💡 Created prediction: ${prediction.title} (id: ${data?.id})`);
     }
   } catch (e: any) {
-    console.error(`Error saving prediction:`, e.message);
+    console.error(`❌ Error saving prediction:`, e.message);
+    predictionErrors.push(`Exception: ${e.message}`);
   }
 }
 
@@ -156,11 +179,16 @@ serve(async (req) => {
     }
 
     console.log(`✅ Pattern Detection Complete: ${signalsGenerated.length} signals generated`);
+    if (predictionErrors.length > 0) {
+      console.log(`⚠️ Prediction save errors: ${predictionErrors.length}`);
+      predictionErrors.forEach(e => console.log(`   - ${e}`));
+    }
 
     return new Response(JSON.stringify({
       success: true,
       signals_generated: signalsGenerated.length,
-      signals: signalsGenerated
+      signals: signalsGenerated,
+      prediction_errors: predictionErrors.length > 0 ? predictionErrors : undefined
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
@@ -256,8 +284,8 @@ async function detectMomentum(
     confidence_score: signalStrength,
     impact_level: signalStrength >= 80 ? 'high' : signalStrength >= 60 ? 'medium' : 'low',
     category: predictionType === 'competitive_threat' ? 'competitor' : predictionType === 'crisis_building' ? 'risk' : 'market',
-    time_horizon: 'short_term',
-    status: 'pending'
+    time_horizon: '1-month',
+    status: 'active'
   });
 
   console.log(`   📈 MOMENTUM signal: ${target.name} (${multiplier.toFixed(1)}x, strength: ${signalStrength})`);
@@ -330,12 +358,12 @@ async function detectSentimentShift(target: any, mentions: any[], orgId: string)
   // ALSO save to predictions table for UI display
   await saveToPredictions(orgId, target, {
     title: `${target.name}: ${trend === 'declining' ? 'Sentiment Declining' : 'Sentiment Improving'}`,
-    description: `Sentiment for ${target.name} has shifted ${trend === 'declining' ? 'negatively' : 'positively'} (${(sentimentChange * 100).toFixed(0)}% change). ${trend === 'declining' ? 'This may indicate emerging issues or negative press.' : 'This suggests improving perception or positive developments.'}`,
+    description: `Sentiment for ${target.name} has shifted ${trend === 'declining' ? 'negatively' : 'positively'}. ${trend === 'declining' ? 'This may indicate emerging issues or negative press.' : 'This suggests improving perception or positive developments.'}`,
     confidence_score: signalStrength,
     impact_level: signalStrength >= 80 ? 'high' : signalStrength >= 60 ? 'medium' : 'low',
     category: trend === 'declining' ? 'risk' : 'trend',
-    time_horizon: 'short_term',
-    status: 'pending'
+    time_horizon: '1-month',
+    status: 'active'
   });
 
   console.log(`   📊 SENTIMENT SHIFT signal: ${target.name} (${trend}, strength: ${signalStrength})`);
@@ -408,8 +436,8 @@ async function detectCategoryClustering(target: any, mentions: any[], orgId: str
     confidence_score: signalStrength,
     impact_level: signalStrength >= 80 ? 'high' : signalStrength >= 60 ? 'medium' : 'low',
     category: predictionType === 'crisis_building' ? 'risk' : 'market',
-    time_horizon: 'short_term',
-    status: 'pending'
+    time_horizon: '1-month',
+    status: 'active'
   });
 
   console.log(`   🎯 CLUSTERING signal: ${target.name} (${dominantCat} ${count}x, strength: ${signalStrength})`);
