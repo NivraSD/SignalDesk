@@ -111,7 +111,7 @@ export default function PredictionsModule() {
   }
 
   return (
-    <div className="h-full flex flex-col bg-[var(--charcoal)]">
+    <div className="min-h-full bg-[var(--charcoal)] overflow-y-auto">
       {/* Header */}
       <div className="px-8 py-6 border-b border-[var(--grey-800)]">
         <div className="flex items-center justify-between mb-4">
@@ -245,7 +245,7 @@ export default function PredictionsModule() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto px-8 py-6">
+      <div className="px-8 py-6">
         {filteredPredictions.length === 0 ? (
           <div className="bg-[var(--grey-900)] border border-[var(--grey-800)] rounded-xl p-12 text-center">
             <Lightbulb className="w-16 h-16 mx-auto mb-4 text-[var(--grey-600)]" />

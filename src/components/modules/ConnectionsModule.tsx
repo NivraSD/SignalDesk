@@ -111,7 +111,7 @@ export default function ConnectionsModule() {
   }
 
   return (
-    <div className="h-full flex flex-col bg-[var(--charcoal)]">
+    <div className="min-h-full bg-[var(--charcoal)] overflow-y-auto">
       {/* Header */}
       <div className="px-8 py-6 border-b border-[var(--grey-800)]">
         <div className="flex items-center justify-between mb-4">
@@ -231,7 +231,7 @@ export default function ConnectionsModule() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto px-8 py-6">
+      <div className="px-8 py-6">
         {filteredSignals.length === 0 ? (
           <div className="bg-[var(--grey-900)] border border-[var(--grey-800)] rounded-xl p-12 text-center">
             <Network className="w-16 h-16 mx-auto mb-4 text-[var(--grey-600)]" />
@@ -366,49 +366,51 @@ export default function ConnectionsModule() {
                 </div>
               </div>
 
-              <div>
-                <h4 className="text-[0.7rem] uppercase tracking-wide text-[var(--grey-500)] mb-3" style={{ fontFamily: 'var(--font-display)' }}>
-                  Pattern Details
-                </h4>
-                <div className="bg-[var(--grey-800)] rounded-lg p-4 space-y-3">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <span className="text-[0.75rem] text-[var(--grey-500)]">Pattern Type:</span>
-                      <span className="ml-2 font-medium text-white">
-                        {selectedSignal.pattern_data.pattern_type.replace(/_/g, ' ')}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-[0.75rem] text-[var(--grey-500)]">Mentions:</span>
-                      <span className="ml-2 font-medium text-white">{selectedSignal.pattern_data.mention_count}</span>
-                    </div>
-                    <div>
-                      <span className="text-[0.75rem] text-[var(--grey-500)]">Strength:</span>
-                      <span className="ml-2 font-medium text-white">{Math.round(selectedSignal.strength_score)}/100</span>
-                    </div>
-                    <div>
-                      <span className="text-[0.75rem] text-[var(--grey-500)]">Confidence:</span>
-                      <span className="ml-2 font-medium text-white">{Math.round(selectedSignal.confidence_score)}/100</span>
-                    </div>
-                  </div>
-
-                  {selectedSignal.pattern_data.triggers_matched && (
-                    <div className="pt-3 border-t border-[var(--grey-700)]">
-                      <div className="text-[0.75rem] text-[var(--grey-500)] mb-2">Triggers Matched:</div>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedSignal.pattern_data.triggers_matched.map((trigger, idx) => (
-                          <span
-                            key={idx}
-                            className="px-2 py-1 text-[0.7rem] bg-[var(--grey-900)] text-[var(--grey-300)] rounded border border-[var(--grey-700)]"
-                          >
-                            {trigger.replace(/_/g, ' ')}
-                          </span>
-                        ))}
+              {selectedSignal.pattern_data && (
+                <div>
+                  <h4 className="text-[0.7rem] uppercase tracking-wide text-[var(--grey-500)] mb-3" style={{ fontFamily: 'var(--font-display)' }}>
+                    Pattern Details
+                  </h4>
+                  <div className="bg-[var(--grey-800)] rounded-lg p-4 space-y-3">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <span className="text-[0.75rem] text-[var(--grey-500)]">Pattern Type:</span>
+                        <span className="ml-2 font-medium text-white">
+                          {(selectedSignal.pattern_data.pattern_type || 'unknown').replace(/_/g, ' ')}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[0.75rem] text-[var(--grey-500)]">Mentions:</span>
+                        <span className="ml-2 font-medium text-white">{selectedSignal.pattern_data.mention_count || 0}</span>
+                      </div>
+                      <div>
+                        <span className="text-[0.75rem] text-[var(--grey-500)]">Strength:</span>
+                        <span className="ml-2 font-medium text-white">{Math.round(selectedSignal.strength_score)}/100</span>
+                      </div>
+                      <div>
+                        <span className="text-[0.75rem] text-[var(--grey-500)]">Confidence:</span>
+                        <span className="ml-2 font-medium text-white">{Math.round(selectedSignal.confidence_score)}/100</span>
                       </div>
                     </div>
-                  )}
+
+                    {selectedSignal.pattern_data.triggers_matched && selectedSignal.pattern_data.triggers_matched.length > 0 && (
+                      <div className="pt-3 border-t border-[var(--grey-700)]">
+                        <div className="text-[0.75rem] text-[var(--grey-500)] mb-2">Triggers Matched:</div>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedSignal.pattern_data.triggers_matched.map((trigger, idx) => (
+                            <span
+                              key={idx}
+                              className="px-2 py-1 text-[0.7rem] bg-[var(--grey-900)] text-[var(--grey-300)] rounded border border-[var(--grey-700)]"
+                            >
+                              {(trigger || '').replace(/_/g, ' ')}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Modal Footer */}
