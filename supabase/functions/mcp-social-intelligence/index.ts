@@ -415,18 +415,58 @@ async function monitorReddit(args: any) {
     } = args
 
     const subredditList = subreddits.join('+')
-    const url = `https://www.reddit.com/r/${subredditList}/search.json?q=${encodeURIComponent(organization_id)}&sort=new&t=${time_range}&limit=100`
+    // Use oauth.reddit.com for API access (more reliable from servers)
+    const url = `https://oauth.reddit.com/r/${subredditList}/search.json?q=${encodeURIComponent(organization_id)}&sort=new&t=${time_range}&limit=100`
 
     console.log(`🔴 Searching Reddit: ${url}`)
 
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'SignalDesk Social Intelligence Bot'
+    // First, get an anonymous OAuth token
+    const REDDIT_CLIENT_ID = Deno.env.get('REDDIT_CLIENT_ID')
+    const REDDIT_CLIENT_SECRET = Deno.env.get('REDDIT_CLIENT_SECRET')
+
+    let accessToken = ''
+
+    if (REDDIT_CLIENT_ID && REDDIT_CLIENT_SECRET) {
+      // Use OAuth if credentials available
+      const authResponse = await fetch('https://www.reddit.com/api/v1/access_token', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Basic ' + btoa(`${REDDIT_CLIENT_ID}:${REDDIT_CLIENT_SECRET}`),
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'User-Agent': 'web:signaldesk:v1.0.0 (by /u/signaldesk_bot)'
+        },
+        body: 'grant_type=client_credentials'
+      })
+
+      if (authResponse.ok) {
+        const authData = await authResponse.json()
+        accessToken = authData.access_token
+        console.log('✅ Got Reddit OAuth token')
+      } else {
+        console.error('Reddit OAuth failed:', authResponse.status)
       }
-    })
+    }
+
+    // Make the search request
+    const headers: Record<string, string> = {
+      'User-Agent': 'web:signaldesk:v1.0.0 (by /u/signaldesk_bot)',
+      'Accept': 'application/json'
+    }
+
+    let searchUrl = url
+    if (accessToken) {
+      headers['Authorization'] = `Bearer ${accessToken}`
+    } else {
+      // Fallback to public JSON endpoint
+      searchUrl = `https://www.reddit.com/r/${subredditList}/search.json?q=${encodeURIComponent(organization_id)}&sort=new&t=${time_range}&limit=100&raw_json=1`
+    }
+
+    const response = await fetch(searchUrl, { headers })
 
     if (!response.ok) {
       console.error('Reddit API Error:', response.status)
+      const errorText = await response.text()
+      console.error('Reddit Error Body:', errorText.substring(0, 200))
       return []
     }
 

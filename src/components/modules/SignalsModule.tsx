@@ -137,6 +137,7 @@ export default function SignalsModule() {
 
   const refreshSignals = async () => {
     setIsRefreshing(true)
+    console.log('🔄 Starting social intelligence scan...')
     try {
       // Call social intelligence function
       const { data, error } = await supabase.functions.invoke('mcp-social-intelligence', {
@@ -151,26 +152,51 @@ export default function SignalsModule() {
         }
       })
 
-      if (!error && data?.results) {
-        // Save results to social_signals table
-        // data.results contains { signals: [...], platform_breakdown: {...}, sentiment_analysis: {...} }
-        const signals = data.results.signals || []
-        for (const signal of signals) {
-          await supabase.from('social_signals').upsert({
-            organization_id: organization?.id,
-            platform: signal.platform,
-            content: signal.text || signal.content,
-            author: signal.author,
-            url: signal.url,
-            sentiment: signal.sentiment || 'neutral',
-            engagement_score: signal.engagement || signal.engagement_score || 0,
-            created_at: signal.timestamp || signal.created_at || new Date().toISOString()
-          }, { onConflict: 'url' })
-        }
-        await loadSignals()
+      console.log('📡 Social intelligence response:', { data, error })
+
+      if (error) {
+        console.error('❌ Social intelligence error:', error)
+        alert(`Social scan failed: ${error.message || 'Unknown error'}`)
+        return
       }
-    } catch (error) {
+
+      if (!data?.results) {
+        console.warn('⚠️ No results returned from social intelligence')
+        alert('No social signals found. This may be due to API rate limits.')
+        return
+      }
+
+      // Save results to social_signals table
+      // data.results contains { signals: [...], platform_breakdown: {...}, sentiment_analysis: {...} }
+      const signals = data.results.signals || []
+      console.log(`✅ Found ${signals.length} signals`)
+
+      if (signals.length === 0) {
+        alert('Scan complete but no new signals found.')
+        return
+      }
+
+      let savedCount = 0
+      for (const signal of signals) {
+        const { error: saveError } = await supabase.from('social_signals').upsert({
+          organization_id: organization?.id,
+          platform: signal.platform,
+          content: signal.text || signal.content,
+          author: signal.author,
+          url: signal.url,
+          sentiment: signal.sentiment || 'neutral',
+          engagement: { likes: signal.engagement || 0, shares: 0, comments: 0 },
+          published_at: signal.timestamp || signal.created_at || new Date().toISOString()
+        }, { onConflict: 'url' })
+
+        if (!saveError) savedCount++
+      }
+
+      console.log(`💾 Saved ${savedCount}/${signals.length} signals`)
+      await loadSignals()
+    } catch (error: any) {
       console.error('Signal refresh failed:', error)
+      alert(`Signal refresh failed: ${error.message || 'Unknown error'}`)
     } finally {
       setIsRefreshing(false)
     }
@@ -250,24 +276,13 @@ export default function SignalsModule() {
             </p>
           </div>
 
-          <button
-            onClick={refreshSignals}
-            disabled={isRefreshing}
-            className="px-4 py-2.5 bg-[var(--burnt-orange)] text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-[var(--burnt-orange-light)] transition-colors disabled:opacity-50"
+          <div
+            className="px-4 py-2.5 bg-[var(--grey-800)] text-[var(--grey-400)] rounded-lg text-sm font-medium flex items-center gap-2 border border-[var(--grey-700)]"
             style={{ fontFamily: 'var(--font-display)' }}
           >
-            {isRefreshing ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Scanning...
-              </>
-            ) : (
-              <>
-                <RefreshCw className="w-4 h-4" />
-                Refresh Signals
-              </>
-            )}
-          </button>
+            <Activity className="w-4 h-4" />
+            Coming Soon
+          </div>
         </div>
 
         {/* Stats */}
@@ -421,15 +436,13 @@ export default function SignalsModule() {
                 : 'Run a signal scan to discover mentions and conversations about your organization.'}
             </p>
             {!searchQuery && (
-              <button
-                onClick={refreshSignals}
-                disabled={isRefreshing}
-                className="px-5 py-2.5 bg-[var(--burnt-orange)] text-white rounded-lg text-sm font-medium inline-flex items-center gap-2 hover:bg-[var(--burnt-orange-light)] transition-colors"
+              <div
+                className="px-5 py-2.5 bg-[var(--grey-800)] text-[var(--grey-400)] rounded-lg text-sm font-medium inline-flex items-center gap-2 border border-[var(--grey-700)]"
                 style={{ fontFamily: 'var(--font-display)' }}
               >
                 <Activity className="w-4 h-4" />
-                Start Signal Scan
-              </button>
+                Social Intelligence Coming Soon
+              </div>
             )}
           </div>
         ) : (
