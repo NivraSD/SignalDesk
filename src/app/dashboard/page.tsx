@@ -553,8 +553,7 @@ export default function Dashboard() {
               </div>
 
               <SidebarItem icon={BarChart3} label="Predictions" onClick={() => setActiveModule('predictions')} tourId="sidebar-predictions" />
-              <SidebarItem icon={Activity} label="Signals" onClick={() => setActiveModule('signals')} tourId="sidebar-signals" />
-              <SidebarItem icon={Users} label="Targets" />
+              <SidebarItem icon={Activity} label="Social" onClick={() => setActiveModule('signals')} tourId="sidebar-signals" />
               <SidebarItem icon={Globe} label="Geo Intel" onClick={() => setActiveModule('geointel')} tourId="sidebar-geointel" />
               <SidebarItem icon={ExternalLink} label="Connections" onClick={() => setActiveModule('connections')} tourId="sidebar-connections" />
             </div>
