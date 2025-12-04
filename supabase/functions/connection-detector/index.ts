@@ -168,14 +168,40 @@ serve(async (req) => {
 
     console.log(`   Generated ${signals.length} connection signals`);
 
-    // Step 8: Save signals to database
+    // Step 8: Save signals to database with deduplication
     let savedSignals = 0;
     for (const signal of signals) {
-      const { error } = await supabase
+      // Check for existing similar signal to avoid duplicates
+      const { data: existing } = await supabase
         .from('connection_signals')
-        .insert(signal);
+        .select('id')
+        .eq('organization_id', signal.organization_id)
+        .eq('signal_type', signal.signal_type)
+        .eq('primary_entity_name', signal.primary_entity_name)
+        .single();
 
-      if (!error) savedSignals++;
+      if (existing) {
+        console.log(`   ⏭️ Signal already exists for ${signal.primary_entity_name}, updating...`);
+        // Update existing signal instead of creating duplicate
+        const { error } = await supabase
+          .from('connection_signals')
+          .update({
+            strength_score: signal.strength_score,
+            confidence_score: signal.confidence_score,
+            related_entities: signal.related_entities,
+            pattern_data: signal.pattern_data,
+            signal_start_date: signal.signal_start_date
+          })
+          .eq('id', existing.id);
+
+        if (!error) savedSignals++;
+      } else {
+        const { error } = await supabase
+          .from('connection_signals')
+          .insert(signal);
+
+        if (!error) savedSignals++;
+      }
     }
 
     console.log(`✅ Connection detection complete: ${savedConnections} connections, ${savedSignals} signals`);
