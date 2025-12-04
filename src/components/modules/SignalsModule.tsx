@@ -127,15 +127,33 @@ export default function SignalsModule() {
   const refreshSignals = async () => {
     setIsRefreshing(true)
     try {
-      // Call social listening function
-      const { data, error } = await supabase.functions.invoke('social-listening', {
+      // Call social intelligence function
+      const { data, error } = await supabase.functions.invoke('mcp-social-intelligence', {
         body: {
-          organization_id: organization?.id,
-          organization_name: organization?.name
+          tool: 'monitor_all_platforms',
+          arguments: {
+            organization_id: organization?.name || organization?.id,
+            time_range: '24h',
+            platforms: ['twitter', 'reddit'],
+            include_sentiment: true
+          }
         }
       })
 
-      if (!error) {
+      if (!error && data?.results) {
+        // Save results to social_signals table
+        for (const signal of data.results) {
+          await supabase.from('social_signals').upsert({
+            organization_id: organization?.id,
+            platform: signal.platform,
+            content: signal.text || signal.content,
+            author: signal.author,
+            url: signal.url,
+            sentiment: signal.sentiment || 'neutral',
+            engagement_score: signal.engagement_score || 0,
+            created_at: signal.created_at || new Date().toISOString()
+          }, { onConflict: 'url' })
+        }
         await loadSignals()
       }
     } catch (error) {
