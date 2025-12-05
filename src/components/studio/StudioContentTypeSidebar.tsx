@@ -97,7 +97,7 @@ export default function StudioContentTypeSidebar({
   onItemSelect
 }: StudioContentTypeSidebarProps) {
   const { organization } = useAppStore()
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['Written', 'Social']))
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
   const [showLibrary, setShowLibrary] = useState(false)
   const [showPrompts, setShowPrompts] = useState(false)
 
