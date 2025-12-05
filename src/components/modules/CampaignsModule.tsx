@@ -30,6 +30,7 @@ import {
 import { useAppStore } from '@/stores/useAppStore'
 import { CampaignBuilderWizard } from '@/components/campaign-builder/CampaignBuilderWizard'
 import { supabase } from '@/lib/supabase/client'
+import { upsertMemoryVaultContent, updateMemoryVaultContent } from '@/lib/memoryVaultAPI'
 
 // Storage keys are scoped by organization to prevent data leakage
 const getCampaignsStorageKey = (orgId: string) => `signaldesk_active_campaigns_${orgId}`
@@ -504,6 +505,7 @@ export default function CampaignsModule() {
 
       console.log('✅ Content generated for:', item.topic, '- Length:', generatedContent.length)
 
+      // Update local state
       setContentItems(prev => prev.map(i =>
         i.id === item.id ? {
           ...i,
@@ -512,6 +514,35 @@ export default function CampaignsModule() {
           generatedAt: new Date().toISOString()
         } : i
       ))
+
+      // Save to Memory Vault for persistence
+      const campaignName = selectedCampaign.blueprint?.overview?.campaignName || 'Untitled Campaign'
+      try {
+        await upsertMemoryVaultContent({
+          id: item.id,
+          session_id: selectedCampaign.sessionId,
+          organization_id: organization.id,
+          type: item.type,
+          title: item.topic,
+          content: generatedContent,
+          folder: `Campaigns/${campaignName}/Stage ${item.leverPriority || item.stakeholderPriority}/${item.stakeholder}`,
+          metadata: {
+            campaign_id: selectedCampaign.id,
+            stakeholder: item.stakeholder,
+            stakeholder_priority: item.stakeholderPriority,
+            lever_priority: item.leverPriority,
+            lever_name: item.leverName,
+            target: item.target,
+            details: item.details
+          },
+          tags: ['campaign', `stage-${item.leverPriority || item.stakeholderPriority}`, item.stakeholder],
+          status: 'generated'
+        })
+        console.log('💾 Saved to Memory Vault:', item.topic)
+      } catch (mvError) {
+        console.error('❌ Failed to save to Memory Vault:', mvError)
+        // Don't fail the generation if Memory Vault save fails
+      }
     } catch (error) {
       console.error('Generation error:', error)
       setContentItems(prev => prev.map(i =>
