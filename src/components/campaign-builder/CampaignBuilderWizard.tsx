@@ -751,7 +751,7 @@ export function CampaignBuilderWizard({ initialObjective, onViewInPlanner }: Cam
           ...prev,
           {
             role: 'assistant',
-            content: '🔍 Analyzing competitive landscape and AI platform visibility for this campaign goal...',
+            content: '🔍 GEO Step 1/6: Identifying target AI queries for brand ownership...',
             stage: 'geo_intelligence'
           }
         ])
@@ -791,13 +791,28 @@ export function CampaignBuilderWizard({ initialObjective, onViewInPlanner }: Cam
           totalSources: campaignIntelligence.sourceStrategy?.total_sources || 0
         })
 
+        // Mark platform testing and synthesis as complete (they happened in the intelligence call)
+        setConversationHistory(prev => [
+          ...prev,
+          {
+            role: 'assistant',
+            content: '🧪 GEO Step 2/6: Platform testing complete - tested across ChatGPT, Claude, Perplexity, Gemini',
+            stage: 'geo_intelligence'
+          },
+          {
+            role: 'assistant',
+            content: '📊 GEO Step 3/6: GEO Synthesis complete - analyzed citation patterns and competitive landscape',
+            stage: 'geo_intelligence'
+          }
+        ])
+
         // STEP 3: Generate VECTOR blueprint with campaign intelligence
         console.log('📋 Step 3: Generating VECTOR blueprint with campaign intelligence...')
         setConversationHistory(prev => [
           ...prev,
           {
             role: 'assistant',
-            content: '📋 Generating campaign blueprint with competitive landscape and source strategy...',
+            content: '📋 GEO Step 4/6: Creating VECTOR framework with stakeholders and goals...',
             stage: 'blueprint'
           }
         ])
