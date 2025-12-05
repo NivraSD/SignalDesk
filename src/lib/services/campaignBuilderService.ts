@@ -47,29 +47,40 @@ export class CampaignBuilderService {
 
       const startTime = Date.now()
 
-      // STEP 1: Organization Discovery
-      console.log('📋 Step 1: Organization discovery...')
+      // STEP 1: Use existing organization profile (no discovery needed!)
+      console.log('📋 Step 1: Loading organization profile...')
       onProgress?.('discovery', 'running')
 
-      const discoveryResponse = await supabase.functions.invoke('mcp-discovery', {
-        body: {
-          tool: 'create_organization_profile',
-          arguments: {
-            organization_name: organizationName,
-            industry_hint: industryHint,
-            save_to_persistence: true
-          }
-        }
-      })
+      // Fetch the existing organization profile from database
+      const { data: orgData, error: orgError } = await supabase
+        .from('organizations')
+        .select('company_profile, competitors, differentiators, market_position')
+        .eq('name', organizationName)
+        .single()
 
-      if (discoveryResponse.error) {
-        console.error('Discovery failed:', discoveryResponse.error)
-        onProgress?.('discovery', 'failed', discoveryResponse.error)
-        throw new Error(`Discovery failed: ${discoveryResponse.error.message}`)
+      if (orgError) {
+        console.error('Failed to load organization profile:', orgError)
+        onProgress?.('discovery', 'failed', orgError)
+        // Continue anyway - we can still proceed with just the name/industry
       }
 
-      console.log('✅ Organization profile created')
-      onProgress?.('discovery', 'completed', discoveryResponse.data)
+      // Build discovery data from existing profile
+      const discoveryData = {
+        organization_name: organizationName,
+        industry: industryHint,
+        profile: orgData?.company_profile || {},
+        competitors: orgData?.competitors || [],
+        differentiators: orgData?.differentiators || [],
+        market_position: orgData?.market_position || null,
+        // Extract key info for campaign planning
+        market_size: orgData?.company_profile?.market?.market_size || null,
+        market_drivers: orgData?.company_profile?.market?.market_drivers || [],
+        key_metrics: orgData?.company_profile?.market?.key_metrics || [],
+        geographic_focus: orgData?.company_profile?.market?.geographic_focus || []
+      }
+
+      console.log('✅ Organization profile loaded from database')
+      onProgress?.('discovery', 'completed', discoveryData)
 
       // STEP 2: Parallel MCP Intelligence Gathering
       console.log('🔍 Step 2: Gathering intelligence across dimensions...')
@@ -117,7 +128,7 @@ export class CampaignBuilderService {
       // NOTE: Stakeholder intelligence is now inferred by synthesis from org profile + campaign goal
       // No need for web research - stakeholders are strategic personas, not news topics
       const gatheredData: any = {
-        discovery: discoveryResponse.data,
+        discovery: discoveryData,
         stakeholder: null, // Will be inferred during synthesis
         narrative: null,
         channel: null,
@@ -231,7 +242,7 @@ export class CampaignBuilderService {
       return {
         sessionId,
         success: true,
-        discoveryData: discoveryResponse.data,
+        discoveryData: discoveryData,
         stakeholderData: gatheredData.stakeholder,
         narrativeData: gatheredData.narrative,
         channelData: gatheredData.channel,
