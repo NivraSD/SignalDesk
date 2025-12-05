@@ -747,6 +747,13 @@ export function CampaignBuilderWizard({ initialObjective, onViewInPlanner }: Cam
 
         // STEP 2: Generate GEO intelligence (competitive landscape + outlets + schema)
         console.log('🎯 Step 2: Generating campaign intelligence (competitive landscape, outlets, schema)...')
+
+        // Update progress: base stage running (campaign intelligence)
+        setBlueprintProgress({
+          currentStage: 'base',
+          stages: { base: 'running', orchestration: 'pending', execution: 'pending', merging: 'pending' }
+        })
+
         setConversationHistory(prev => [
           ...prev,
           {
@@ -853,6 +860,13 @@ export function CampaignBuilderWizard({ initialObjective, onViewInPlanner }: Cam
           }
         ])
 
+        // Update progress: orchestration running
+        setBlueprintProgress(prev => ({
+          ...prev,
+          currentStage: 'orchestration',
+          stages: { ...prev.stages, base: 'completed', orchestration: 'running' }
+        }))
+
         let orchestrationComplete = false
         let attempts = 0
         const maxAttempts = 120 // 120 * 2s = 4 minutes
@@ -880,6 +894,13 @@ export function CampaignBuilderWizard({ initialObjective, onViewInPlanner }: Cam
           throw new Error('Stakeholder orchestration timed out after 4 minutes')
         }
 
+        // Update progress: orchestration complete, execution running
+        setBlueprintProgress(prev => ({
+          ...prev,
+          currentStage: 'execution',
+          stages: { ...prev.stages, orchestration: 'completed', execution: 'running' }
+        }))
+
         // STEP 5: Finalize blueprint
         console.log('⚙️ Step 5: Finalizing GEO-VECTOR blueprint...')
         setConversationHistory(prev => [
@@ -890,6 +911,13 @@ export function CampaignBuilderWizard({ initialObjective, onViewInPlanner }: Cam
             stage: 'blueprint'
           }
         ])
+
+        // Update progress: merging running
+        setBlueprintProgress(prev => ({
+          ...prev,
+          currentStage: 'merging',
+          stages: { ...prev.stages, execution: 'completed', merging: 'running' }
+        }))
 
         console.log('📦 Campaign intelligence being sent to finalizer:', {
           hasCampaignIntelligence: !!campaignIntelligence,
