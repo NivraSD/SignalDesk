@@ -42,9 +42,20 @@ export function analyzeOpportunityForCreativeDirection(opportunity: any): Creati
   const triggerEvents = strategic_context?.trigger_events || []
   const triggerText = triggerEvents.join(' ').toLowerCase()
   const titleLower = title?.toLowerCase() || ''
+  const description = opportunity.description?.toLowerCase() || ''
   const whyNow = strategic_context?.why_now?.toLowerCase() || ''
   const competitiveAdvantage = strategic_context?.competitive_advantage?.toLowerCase() || ''
   const riskIfMissed = strategic_context?.risk_if_missed?.toLowerCase() || ''
+
+  // Check execution plan for content types - this reveals the CLIENT'S intent
+  const contentTypes = execution_plan?.stakeholder_campaigns
+    ?.flatMap((c: any) => c.content_items?.map((i: any) => i.type) || []) || []
+  const hasPRContent = contentTypes.some((t: string) =>
+    ['media_pitch', 'press_release', 'thought_leadership', 'blog_post'].includes(t)
+  )
+  const hasPartnershipContent = contentTypes.some((t: string) =>
+    ['partnership_outreach'].includes(t)
+  )
 
   // Scoring system for narrative styles
   const scores: Record<NarrativeStyle, number> = {
@@ -56,35 +67,47 @@ export function analyzeOpportunityForCreativeDirection(opportunity: any): Creati
     transformation: 0,
   }
 
-  // Urgency signals
+  // IMPORTANT: Default boost for visionary/thought leadership for PR-focused opportunities
+  // Most opportunities are about positioning the client as an expert, not forming partnerships
+  if (hasPRContent && !hasPartnershipContent) {
+    scores.visionary += 5  // Strong default for PR opportunities
+  }
+
+  // Detect thought leadership / positioning intent from TITLE and DESCRIPTION
+  // These describe what the CLIENT wants to do, not what happened in the news
+  if (titleLower.includes('position') || titleLower.includes('leadership') || titleLower.includes('leader')) scores.visionary += 4
+  if (description.includes('position as') || description.includes('thought leader') || description.includes('expert')) scores.visionary += 4
+  if (description.includes('can position') || description.includes('establish') || description.includes('authority')) scores.visionary += 3
+
+  // Urgency signals - from time context, not news content
   if (timeWindow.includes('immediate') || timeWindow.includes('urgent') || timeWindow.includes('days')) scores.urgency += 3
   if (triggerText.includes('crisis') || triggerText.includes('breach') || triggerText.includes('scandal')) scores.urgency += 3
   if (triggerText.includes('deadline') || triggerText.includes('expires') || triggerText.includes('limited')) scores.urgency += 2
   if (riskIfMissed.includes('window') || riskIfMissed.includes('miss') || riskIfMissed.includes('lose')) scores.urgency += 2
 
-  // Conquest/Competitive signals
-  if (triggerText.includes('competitor') || triggerText.includes('rival') || triggerText.includes('versus')) scores.conquest += 3
+  // Conquest/Competitive signals - when CLIENT is competing
+  if (titleLower.includes('against') || titleLower.includes('compete') || titleLower.includes('vs ')) scores.conquest += 3
   if (competitiveAdvantage.includes('differentiat') || competitiveAdvantage.includes('unique')) scores.conquest += 2
-  if (triggerText.includes('market share') || triggerText.includes('winning') || triggerText.includes('beat')) scores.conquest += 2
-  if (titleLower.includes('vs') || titleLower.includes('against') || titleLower.includes('compete')) scores.conquest += 2
+  if (description.includes('beat') || description.includes('win') || description.includes('outperform')) scores.conquest += 2
 
-  // Visionary/Thought Leadership signals
+  // Visionary/Thought Leadership signals - CLIENT's positioning intent
   if (triggerText.includes('research') || triggerText.includes('study') || triggerText.includes('report')) scores.visionary += 2
-  if (triggerText.includes('insight') || triggerText.includes('perspective') || triggerText.includes('thought')) scores.visionary += 2
   if (titleLower.includes('future') || titleLower.includes('vision') || titleLower.includes('outlook')) scores.visionary += 3
   if (whyNow.includes('position') || whyNow.includes('establish') || whyNow.includes('lead')) scores.visionary += 2
 
-  // Collaborative/Partnership signals
-  if (triggerText.includes('partner') || triggerText.includes('alliance') || triggerText.includes('collaboration')) scores.collaborative += 3
-  if (triggerText.includes('acquisition') || triggerText.includes('merger') || triggerText.includes('joint')) scores.collaborative += 3
-  if (titleLower.includes('partner') || titleLower.includes('together') || titleLower.includes('alliance')) scores.collaborative += 2
+  // Collaborative/Partnership signals - ONLY when CLIENT is forming a partnership
+  // NOT when news mentions other companies' partnerships
+  if (hasPartnershipContent) scores.collaborative += 5  // Client is doing partnership outreach
+  if (titleLower.includes('our partner') || titleLower.includes('announce partnership')) scores.collaborative += 4
+  if (description.includes('form a partnership') || description.includes('joint venture with')) scores.collaborative += 3
+  // DO NOT score for news mentioning other companies' partnerships
 
   // Momentum/Trend signals
   if (triggerText.includes('trend') || triggerText.includes('momentum') || triggerText.includes('growth')) scores.momentum += 3
   if (triggerText.includes('surge') || triggerText.includes('rising') || triggerText.includes('emerging')) scores.momentum += 2
   if (whyNow.includes('timing') || whyNow.includes('moment') || whyNow.includes('wave')) scores.momentum += 2
 
-  // Transformation signals
+  // Transformation signals - industry changes
   if (triggerText.includes('regulation') || triggerText.includes('policy') || triggerText.includes('law')) scores.transformation += 2
   if (triggerText.includes('disrupt') || triggerText.includes('shift') || triggerText.includes('change')) scores.transformation += 3
   if (triggerText.includes('new era') || triggerText.includes('paradigm') || triggerText.includes('revolution')) scores.transformation += 3
@@ -92,6 +115,8 @@ export function analyzeOpportunityForCreativeDirection(opportunity: any): Creati
   // Find winning narrative style
   const narrativeStyle = (Object.entries(scores)
     .sort(([, a], [, b]) => b - a)[0][0]) as NarrativeStyle
+
+  console.log('🎨 Creative direction scores:', scores, '→', narrativeStyle)
 
   // Build creative direction based on narrative style
   return buildCreativeDirection(narrativeStyle, opportunity)
@@ -231,7 +256,14 @@ function generateConquestHook(opp: any): string {
 
 function generateVisionaryHook(opp: any): string {
   const trigger = opp.strategic_context?.trigger_events?.[0] || 'Recent developments'
-  return `${trigger} reveals something important about where our industry is heading. Here's our perspective.`
+  const advantage = opp.strategic_context?.competitive_advantage || ''
+
+  // If there's a clear positioning angle, use it
+  if (advantage && advantage.length > 20) {
+    return `${trigger} - and we have a unique perspective to share. ${advantage.split('.')[0]}.`
+  }
+
+  return `${trigger} signals a shift in our industry. Here's what it means and why our perspective matters.`
 }
 
 function generateCollaborativeHook(opp: any): string {
