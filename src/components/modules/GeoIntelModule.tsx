@@ -224,7 +224,7 @@ export default function GeoIntelModule() {
               className="text-[1.5rem] font-normal text-white"
               style={{ fontFamily: 'var(--font-serif)' }}
             >
-              Generative Experience Optimization
+              Generative Engine Optimization
             </h1>
             <p className="text-[var(--grey-400)] text-sm mt-1">
               Monitor and optimize your visibility across AI platforms

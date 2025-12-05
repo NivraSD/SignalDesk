@@ -1,7 +1,7 @@
 /**
  * GEO INTELLIGENCE REGISTRY
  * Comprehensive registry of AI query patterns, schema priorities, and platform
- * preferences across 25+ industries for Generative Experience Optimization
+ * preferences across 25+ industries for Generative Engine Optimization
  *
  * Mirrors MasterSourceRegistry structure for consistency
  */

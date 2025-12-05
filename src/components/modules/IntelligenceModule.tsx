@@ -1601,7 +1601,7 @@ export default function IntelligenceModule() {
                     <Info className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
                     <div className="text-sm text-gray-300">
                       <p className="font-medium text-blue-400 mb-1">What is GEO?</p>
-                      <p>Generative Experience Optimization (GEO) tests how AI platforms like Claude, Gemini, and ChatGPT respond to queries about your brand. It monitors competitor schemas and provides recommendations to improve your AI visibility.</p>
+                      <p>Generative Engine Optimization (GEO) tests how AI platforms like Claude, Gemini, and ChatGPT respond to queries about your brand. It monitors competitor schemas and provides recommendations to improve your AI visibility.</p>
                     </div>
                   </div>
                 </div>
