@@ -336,6 +336,10 @@ export default function StudioNIVPanel({
         handleImageGenerated(response)
         break
 
+      case 'video_generated':
+        handleVideoGenerated(response)
+        break
+
       case 'presentation_generating':
         handlePresentationGenerating(response)
         break
@@ -457,6 +461,46 @@ export default function StudioNIVPanel({
       content: response.message || 'Generated image',
       timestamp: new Date(),
       metadata: { type: 'image', imageUrl },
+      contentItem,
+      showActions: true
+    }])
+
+    onContentGenerated(contentItem)
+  }
+
+  // Handle video generated
+  const handleVideoGenerated = (response: any) => {
+    const videoUrl = typeof response.videoUrl === 'string'
+      ? response.videoUrl
+      : response.videos?.[0]?.url
+
+    if (!videoUrl) {
+      setMessages(prev => [...prev, {
+        id: `msg-${Date.now()}`,
+        role: 'assistant',
+        content: 'Failed to generate video',
+        timestamp: new Date(),
+        error: true
+      }])
+      return
+    }
+
+    const contentItem: ContentItem = {
+      id: `content-${Date.now()}`,
+      type: 'video',
+      content: { videoUrl },
+      title: response.title || 'Generated Video',
+      metadata: { type: 'video', videoUrl, prompt: response.prompt, duration: response.duration },
+      saved: false,
+      timestamp: Date.now()
+    }
+
+    setMessages(prev => [...prev, {
+      id: `msg-${Date.now()}`,
+      role: 'assistant',
+      content: response.message || 'Generated video',
+      timestamp: new Date(),
+      metadata: { type: 'video', videoUrl },
       contentItem,
       showActions: true
     }])

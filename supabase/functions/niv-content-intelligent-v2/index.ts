@@ -311,6 +311,38 @@ const CONTENT_GENERATION_TOOLS = [
     }
   },
   {
+    name: "generate_video",
+    description: "Generate a video using Google Veo. Use this when user requests a video (e.g., 'create a video of...', 'make a video showing...', 'generate a video'). This creates actual AI-generated video content, not just a script.",
+    input_schema: {
+      type: "object",
+      properties: {
+        prompt: {
+          type: "string",
+          description: "Detailed description of the video to generate - include scene, action, mood, style"
+        },
+        duration: {
+          type: "number",
+          description: "Video duration in seconds (max 10)",
+          default: 8
+        },
+        aspectRatio: {
+          type: "string",
+          description: "Video aspect ratio",
+          enum: ["16:9", "9:16", "1:1"],
+          default: "16:9"
+        },
+        style: {
+          type: "string",
+          description: "Video style (cinematic, documentary, animation, corporate)",
+          default: "cinematic"
+        }
+      },
+      required: [
+        "prompt"
+      ]
+    }
+  },
+  {
     name: "generate_social_post",
     description: "Generate a social media post. Use this for SIMPLE single-post requests (e.g., 'write a LinkedIn post about...', 'create a tweet for...'). Not for full social campaigns.",
     input_schema: {
@@ -2439,6 +2471,92 @@ ${campaignContext.timeline || 'Not specified'}
           return new Response(JSON.stringify({
             success: false,
             error: `Image generation failed: ${error.message}`,
+            conversationId
+          }), {
+            headers: {
+              ...corsHeaders,
+              'Content-Type': 'application/json'
+            },
+            status: 500
+          });
+        }
+      }
+      // Handle video generation with Veo
+      if (toolUse && toolUse.name === 'generate_video') {
+        console.log('🎬 Claude called generate_video tool!');
+        console.log('📝 Prompt:', toolUse.input.prompt);
+        console.log('🔗 Calling vertex-ai-visual for video at:', `${SUPABASE_URL}/functions/v1/vertex-ai-visual`);
+        try {
+          const requestBody = {
+            type: 'video',
+            prompt: toolUse.input.prompt,
+            duration: toolUse.input.duration || 8,
+            aspectRatio: toolUse.input.aspectRatio || '16:9',
+            style: toolUse.input.style || 'cinematic'
+          };
+          console.log('📤 Video request body:', JSON.stringify(requestBody));
+          const videoResponse = await fetch(`${SUPABASE_URL}/functions/v1/vertex-ai-visual`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
+            },
+            body: JSON.stringify(requestBody)
+          });
+          console.log('📥 Vertex AI video response status:', videoResponse.status);
+          if (!videoResponse.ok) {
+            const errorText = await videoResponse.text();
+            console.error('Vertex AI video error:', errorText);
+            throw new Error(`Video generation failed: ${videoResponse.statusText}`);
+          }
+          const videoData = await videoResponse.json();
+          console.log('✅ Video data:', videoData);
+
+          // Check if we got actual video or a fallback script
+          if (videoData.success && videoData.videos?.[0]?.url) {
+            const videoUrl = videoData.videos[0].url;
+            return new Response(JSON.stringify({
+              success: true,
+              mode: 'video_generated',
+              message: `✅ Video generated successfully`,
+              videoUrl,
+              prompt: toolUse.input.prompt,
+              duration: toolUse.input.duration || 8,
+              conversationId
+            }), {
+              headers: {
+                ...corsHeaders,
+                'Content-Type': 'application/json'
+              }
+            });
+          } else if (videoData.fallback) {
+            // Veo not available, return the script/brief
+            return new Response(JSON.stringify({
+              success: true,
+              mode: 'content_generated',
+              contentType: 'video-script',
+              message: `📝 Video script generated (Veo API unavailable)`,
+              content: videoData.fallback.content,
+              metadata: {
+                type: 'video-script',
+                instructions: videoData.fallback.instructions,
+                alternativeServices: videoData.fallback.alternativeServices
+              },
+              conversationId
+            }), {
+              headers: {
+                ...corsHeaders,
+                'Content-Type': 'application/json'
+              }
+            });
+          } else {
+            throw new Error('No video URL returned from Veo');
+          }
+        } catch (error) {
+          console.error('❌ Video generation error:', error);
+          return new Response(JSON.stringify({
+            success: false,
+            error: `Video generation failed: ${error.message}`,
             conversationId
           }), {
             headers: {
