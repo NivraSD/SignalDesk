@@ -98,8 +98,12 @@ export async function GET(request: NextRequest) {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // Fetch active schema
-    const { data: schema, error } = await supabase
+    // Fetch active schema - check multiple folder patterns for compatibility
+    let schema = null
+    let error = null
+
+    // First try Schemas/Active/ (new format)
+    const { data: activeSchema, error: activeError } = await supabase
       .from('content_library')
       .select('*')
       .eq('organization_id', organizationId)
@@ -108,6 +112,38 @@ export async function GET(request: NextRequest) {
       .order('updated_at', { ascending: false })
       .limit(1)
       .single()
+
+    if (activeSchema) {
+      schema = activeSchema
+    } else {
+      // Try Schemas (onboarding format)
+      const { data: onboardingSchema, error: onboardingError } = await supabase
+        .from('content_library')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .eq('content_type', 'schema')
+        .eq('folder', 'Schemas')
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .single()
+
+      if (onboardingSchema) {
+        schema = onboardingSchema
+      } else {
+        // Last try: any schema for this org
+        const { data: anySchema, error: anyError } = await supabase
+          .from('content_library')
+          .select('*')
+          .eq('organization_id', organizationId)
+          .eq('content_type', 'schema')
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .single()
+
+        schema = anySchema
+        error = anyError
+      }
+    }
 
     if (error && error.code !== 'PGRST116') {
       throw error

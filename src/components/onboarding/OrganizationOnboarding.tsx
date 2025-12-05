@@ -2,7 +2,8 @@ import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Building2, Globe, Sparkles, Check, X, Plus, Trash2,
-  ChevronRight, ChevronLeft, ChevronDown, Upload, Loader, AlertCircle
+  ChevronRight, ChevronLeft, ChevronDown, Upload, Loader, AlertCircle,
+  FileCode, Code
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 
@@ -2086,11 +2087,63 @@ export default function OrganizationOnboarding({
                   <h3 className="text-lg font-semibold text-white mb-2">
                     Build Your Optimal Schema
                   </h3>
-                  <p className="text-sm text-[var(--grey-400)] mb-6">
+                  <p className="text-sm text-[var(--grey-400)] mb-4">
                     {schemaGenerationStarted
                       ? 'Running our 7-stage GEO-optimized pipeline to create the best possible schema for AI visibility.'
                       : 'Click Build to generate a GEO-optimized schema that makes your organization visible to AI systems like ChatGPT, Claude, and Perplexity.'}
                   </p>
+
+                  {/* Schema Explanation - only show before generation starts */}
+                  {!schemaGenerationStarted && (
+                    <div className="space-y-4 mb-6">
+                      {/* What is a Schema */}
+                      <div className="p-4 bg-[var(--grey-800)]/50 border border-[var(--grey-700)] rounded-lg">
+                        <h4 className="text-sm font-medium text-white mb-2 flex items-center gap-2">
+                          <FileCode className="w-4 h-4 text-[var(--burnt-orange)]" />
+                          What is a Schema?
+                        </h4>
+                        <p className="text-xs text-[var(--grey-400)] leading-relaxed">
+                          A schema (or JSON-LD structured data) is a special code snippet that tells search engines and AI systems exactly what your organization is, what you do, your products/services, and key facts. It's like a digital business card that AI can read and understand.
+                        </p>
+                      </div>
+
+                      {/* Why It Matters */}
+                      <div className="p-4 bg-[var(--burnt-orange)]/10 border border-[var(--burnt-orange)]/30 rounded-lg">
+                        <h4 className="text-sm font-medium text-[var(--burnt-orange)] mb-2 flex items-center gap-2">
+                          <Sparkles className="w-4 h-4" />
+                          Why It Matters for AI Visibility
+                        </h4>
+                        <ul className="text-xs text-[var(--burnt-orange)]/80 space-y-1.5">
+                          <li>• <strong>70% of companies</strong> don't have proper schema markup</li>
+                          <li>• AI assistants (ChatGPT, Claude, Perplexity) use schema to answer questions about your company</li>
+                          <li>• Without schema, AI may give incomplete or inaccurate info about your organization</li>
+                          <li>• Schema helps you control your narrative in AI-generated responses</li>
+                        </ul>
+                      </div>
+
+                      {/* How to Implement */}
+                      <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                        <h4 className="text-sm font-medium text-blue-400 mb-2 flex items-center gap-2">
+                          <Code className="w-4 h-4" />
+                          How to Add Schema to Your Website
+                        </h4>
+                        <div className="text-xs text-blue-300/80 space-y-2">
+                          <p>After we generate your schema, you'll need to add it to your website. Here's how:</p>
+                          <ol className="list-decimal list-inside space-y-1.5 ml-2">
+                            <li><strong>Copy the schema code</strong> from Memory Vault → Schemas</li>
+                            <li><strong>Add it to your homepage</strong> in the <code className="bg-blue-500/20 px-1 rounded">&lt;head&gt;</code> section</li>
+                            <li><strong>For WordPress:</strong> Use plugins like "Rank Math" or "Schema Pro", or paste in Theme → Header Scripts</li>
+                            <li><strong>For Webflow:</strong> Add to Site Settings → Custom Code → Head Code</li>
+                            <li><strong>For Squarespace:</strong> Add to Settings → Advanced → Code Injection → Header</li>
+                            <li><strong>For developers:</strong> Add the <code className="bg-blue-500/20 px-1 rounded">&lt;script type="application/ld+json"&gt;</code> tag to your HTML head</li>
+                          </ol>
+                          <p className="mt-2 text-blue-400/70">
+                            💡 Not technical? Share the schema with your web developer or agency - they'll know exactly where to put it.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {schemaGenerationStarted && (
                   <div className="space-y-3">
