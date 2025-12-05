@@ -57,63 +57,54 @@ serve(async (req) => {
     })
 
     // STEP 3: Test all 4 platforms in parallel with meta-analysis
+    // Each platform gets 25 seconds max to avoid overall timeout
     console.log('🚀 Step 2/3: Testing all 4 platforms with campaign meta-analysis...')
 
-    const [claudeRes, geminiRes, perplexityRes, chatgptRes] = await Promise.all([
-      fetch(`${supabaseUrl}/functions/v1/geo-test-claude`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          organization_id,
-          organization_name,
-          meta_analysis_prompt: metaAnalysisPrompt
-        })
-      }),
-      fetch(`${supabaseUrl}/functions/v1/geo-test-gemini`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          organization_id,
-          organization_name,
-          meta_analysis_prompt: metaAnalysisPrompt
-        })
-      }),
-      fetch(`${supabaseUrl}/functions/v1/geo-test-perplexity`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          organization_id,
-          organization_name,
-          meta_analysis_prompt: metaAnalysisPrompt
-        })
-      }),
-      fetch(`${supabaseUrl}/functions/v1/geo-test-chatgpt`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          organization_id,
-          organization_name,
-          meta_analysis_prompt: metaAnalysisPrompt
-        })
-      })
-    ])
+    const PLATFORM_TIMEOUT = 25000 // 25 seconds per platform
 
-    const claudeData = claudeRes.ok ? await claudeRes.json() : null
-    const geminiData = geminiRes.ok ? await geminiRes.json() : null
-    const perplexityData = perplexityRes.ok ? await perplexityRes.json() : null
-    const chatgptData = chatgptRes.ok ? await chatgptRes.json() : null
+    const fetchWithTimeout = async (url: string, body: any, platformName: string) => {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), PLATFORM_TIMEOUT)
+
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${supabaseKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(body),
+          signal: controller.signal
+        })
+        clearTimeout(timeoutId)
+        if (res.ok) {
+          return await res.json()
+        }
+        console.log(`⚠️ ${platformName} returned non-OK status: ${res.status}`)
+        return null
+      } catch (err: any) {
+        clearTimeout(timeoutId)
+        if (err.name === 'AbortError') {
+          console.log(`⏱️ ${platformName} timed out after ${PLATFORM_TIMEOUT / 1000}s`)
+        } else {
+          console.log(`❌ ${platformName} error:`, err.message)
+        }
+        return null
+      }
+    }
+
+    const requestBody = {
+      organization_id,
+      organization_name,
+      meta_analysis_prompt: metaAnalysisPrompt
+    }
+
+    const [claudeData, geminiData, perplexityData, chatgptData] = await Promise.all([
+      fetchWithTimeout(`${supabaseUrl}/functions/v1/geo-test-claude`, requestBody, 'Claude'),
+      fetchWithTimeout(`${supabaseUrl}/functions/v1/geo-test-gemini`, requestBody, 'Gemini'),
+      fetchWithTimeout(`${supabaseUrl}/functions/v1/geo-test-perplexity`, requestBody, 'Perplexity'),
+      fetchWithTimeout(`${supabaseUrl}/functions/v1/geo-test-chatgpt`, requestBody, 'ChatGPT')
+    ])
 
     console.log('✅ Platform testing complete:', {
       claude: claudeData?.success,
