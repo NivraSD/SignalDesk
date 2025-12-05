@@ -282,14 +282,28 @@ export default function Dashboard() {
       const synthesisData = pipelineData?.synthesis || pipelineData?.executiveSynthesis
       if (synthesisData) {
         setExecutiveSynthesis(synthesisData)
-        // Wait for opportunities to be saved to database
-        // Increased from 1.5s to 5s because opportunity detector often times out
-        // but continues saving in the background
-        await new Promise(resolve => setTimeout(resolve, 5000))
-        // Reload opportunities and sidebar data after pipeline completes
-        await loadOpportunities()
-        // Reload again after another delay in case first load was too early
-        setTimeout(() => loadOpportunities(), 5000)
+
+        // Poll for opportunities with multiple retries
+        // Opportunity detector often times out but continues saving in background
+        const pollForOpportunities = async (maxRetries = 6, delay = 3000) => {
+          for (let i = 0; i < maxRetries; i++) {
+            await new Promise(resolve => setTimeout(resolve, delay))
+            const response = await fetch(`/api/opportunities?organization_id=${organization?.id}`)
+            const data = await response.json()
+            if (data.opportunities && data.opportunities.length > 0) {
+              setOpportunities(data.opportunities.slice(0, 5))
+              console.log(`✅ Opportunities loaded on attempt ${i + 1}:`, data.opportunities.length)
+              return true
+            }
+            console.log(`⏳ Polling for opportunities, attempt ${i + 1}/${maxRetries}...`)
+          }
+          // Final attempt to load whatever is there
+          await loadOpportunities()
+          return false
+        }
+
+        // Start polling in the background
+        pollForOpportunities()
         await loadSidebarData()
       } else {
         setPipelineError('No synthesis data received from pipeline')

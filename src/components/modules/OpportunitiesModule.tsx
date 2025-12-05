@@ -469,7 +469,7 @@ ${opp.execution_plan?.success_metrics?.map((m: any) => `- ${JSON.stringify(m)}`)
           const maxAttempts = 72
           for (let i = 0; i < maxAttempts; i++) {
             setGenerationProgress({
-              current: `Finalizing Presentation... (${i * 5}s / ${maxAttempts * 5}s)`,
+              current: 'Finalizing Presentation...',
               progress: 90 + (i / maxAttempts) * 8 // 90-98%
             })
 
@@ -961,15 +961,12 @@ ${opp.execution_plan?.success_metrics?.map((m: any) => `- ${JSON.stringify(m)}`)
                     )}
                   </button>
                   {executing === opp.id && generationProgress.progress !== undefined && (
-                    <div className="space-y-2">
+                    <div className="mt-2">
                       <div className="w-full bg-[var(--grey-800)] rounded-full h-2">
                         <div
                           className="bg-[var(--burnt-orange)] h-2 rounded-full transition-all duration-300"
                           style={{ width: `${generationProgress.progress}%` }}
                         />
-                      </div>
-                      <div className="text-xs text-[var(--grey-400)] text-center">
-                        {generationProgress.progress}% complete
                       </div>
                     </div>
                   )}

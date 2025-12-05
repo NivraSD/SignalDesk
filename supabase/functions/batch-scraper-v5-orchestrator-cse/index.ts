@@ -47,7 +47,7 @@ serve(async (req) => {
       .from('source_registry')
       .select('*')
       .eq('active', true)
-      .eq('monitor_method', 'google_cse')
+      .eq('monitor_method', 'cse')
       .order('last_successful_scrape', { ascending: true, nullsFirst: true })
       .order('tier', { ascending: true });
 

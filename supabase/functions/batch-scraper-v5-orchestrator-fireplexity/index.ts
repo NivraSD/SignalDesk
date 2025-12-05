@@ -35,7 +35,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const maxSources = body.max_sources || 10; // Limit for cost control
+    const maxSources = body.max_sources || 50; // Increased from 10 to process more sources
 
     // Create batch run record
     await supabase
@@ -69,26 +69,47 @@ serve(async (req) => {
 
     console.log('🔥 Discovering articles via Firecrawl Map...\\n');
 
-    for (const source of sources || []) {
-      try {
-        const result = await discoverViaFirecrawlMap(source, supabase);
+    // Process sources in parallel batches for speed
+    const BATCH_SIZE = 5; // Process 5 sources concurrently
+    const allSources = sources || [];
 
-        totalArticles += result.articles;
-        newArticles += result.newCount;
-        duplicateArticles += result.duplicateCount;
-        sourcesSuccessful++;
+    for (let i = 0; i < allSources.length; i += BATCH_SIZE) {
+      const batch = allSources.slice(i, i + BATCH_SIZE);
+      console.log(`   Batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(allSources.length / BATCH_SIZE)}: Processing ${batch.length} sources...`);
 
-        console.log(`   ✅ ${source.source_name}: ${result.newCount} new, ${result.duplicateCount} duplicates`);
+      // Process batch in parallel
+      const batchResults = await Promise.allSettled(
+        batch.map(source => discoverViaFirecrawlMap(source, supabase))
+      );
 
-        // Update last successful scrape
-        await supabase
-          .from('source_registry')
-          .update({ last_successful_scrape: new Date().toISOString() })
-          .eq('id', source.id);
+      // Aggregate results
+      for (let j = 0; j < batchResults.length; j++) {
+        const result = batchResults[j];
+        const source = batch[j];
 
-      } catch (error) {
-        console.error(`   ❌ ${source.source_name}: ${error.message}`);
-        sourcesFailed++;
+        if (result.status === 'fulfilled') {
+          totalArticles += result.value.articles;
+          newArticles += result.value.newCount;
+          duplicateArticles += result.value.duplicateCount;
+          sourcesSuccessful++;
+
+          console.log(`   ✅ ${source.source_name}: ${result.value.newCount} new, ${result.value.duplicateCount} duplicates`);
+
+          // Update last successful scrape
+          await supabase
+            .from('source_registry')
+            .update({ last_successful_scrape: new Date().toISOString() })
+            .eq('id', source.id);
+
+        } else {
+          console.error(`   ❌ ${source.source_name}: ${result.reason?.message || 'Unknown error'}`);
+          sourcesFailed++;
+        }
+      }
+
+      // Small delay between batches to avoid rate limiting
+      if (i + BATCH_SIZE < allSources.length) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
     }
 
@@ -174,19 +195,33 @@ async function discoverViaFirecrawlMap(source: Source, supabase: any): Promise<{
     throw new Error('No links discovered');
   }
 
-  // Filter URLs to find actual articles (not category/profile pages)
+  // Filter URLs to find actual content (not category/profile pages)
   const articles = discoveredLinks
     .filter((link: string | {url: string}) => {
       const url = typeof link === 'string' ? link : link.url;
       const lowerUrl = url.toLowerCase();
 
-      // Include URLs that look like articles
+      // Include URLs that look like articles/content (expanded for institutional sites)
       const isArticle =
         lowerUrl.includes('/article') ||
         lowerUrl.includes('/news/') ||
         lowerUrl.includes('/story/') ||
         lowerUrl.includes('/20') ||  // Date in URL
-        lowerUrl.match(/\/\d{4}\/\d{2}/);  // YYYY/MM pattern
+        lowerUrl.match(/\/\d{4}\/\d{2}/) ||  // YYYY/MM pattern
+        // Institutional/government site patterns
+        lowerUrl.includes('/press-release') ||
+        lowerUrl.includes('/publication') ||
+        lowerUrl.includes('/report') ||
+        lowerUrl.includes('/insight') ||
+        lowerUrl.includes('/research') ||
+        lowerUrl.includes('/speech') ||
+        lowerUrl.includes('/testimony') ||
+        lowerUrl.includes('/blog/') ||
+        lowerUrl.includes('/post/') ||
+        lowerUrl.includes('/releases/') ||
+        lowerUrl.includes('/announcements/') ||
+        lowerUrl.includes('/update') ||
+        lowerUrl.includes('/briefing');
 
       // Exclude category/listing pages
       const isNotCategory =
@@ -195,7 +230,10 @@ async function discoverViaFirecrawlMap(source: Source, supabase: any): Promise<{
         !lowerUrl.includes('/author/') &&
         !lowerUrl.includes('/topics/') &&
         !lowerUrl.endsWith('/news') &&
-        !lowerUrl.endsWith('/latest');
+        !lowerUrl.endsWith('/latest') &&
+        !lowerUrl.endsWith('/search') &&
+        !lowerUrl.includes('/login') &&
+        !lowerUrl.includes('/subscribe');
 
       return isArticle && isNotCategory;
     })

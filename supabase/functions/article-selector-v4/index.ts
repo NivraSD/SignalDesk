@@ -435,7 +435,7 @@ serve(async (req) => {
     // STEP 3: Get articles - time window can be configured per-org or uses default
     // Some industries have less frequent trade news and need longer windows
     // ================================================================
-    const defaultHours = 48; // 2 days
+    const defaultHours = 168; // 7 days
     const hoursBack = profileData.intelligence_settings?.time_window_hours || defaultHours;
     const cutoffTime = new Date(Date.now() - hoursBack * 60 * 60 * 1000).toISOString();
 

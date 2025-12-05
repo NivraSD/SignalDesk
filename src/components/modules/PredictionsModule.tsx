@@ -351,7 +351,7 @@ export default function PredictionsModule() {
             {/* Modal Content */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
               <div>
-                <h4 className="text-[0.7rem] uppercase tracking-wide text-[var(--grey-500)] mb-2" style={{ fontFamily: 'var(--font-display)' }}>
+                <h4 className="text-[0.7rem] uppercase tracking-wide text-white mb-2" style={{ fontFamily: 'var(--font-display)' }}>
                   Description
                 </h4>
                 <p className="text-white">{selectedPrediction.description}</p>
