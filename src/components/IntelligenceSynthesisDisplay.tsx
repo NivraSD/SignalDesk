@@ -97,23 +97,23 @@ const Typography = {
   // Level 1: Section Headers - Wide tracking, tight leading
   SectionHeader: ({ children, icon: Icon, className = '' }: any) => (
     <div className={`flex items-center gap-3 mb-5 ${className}`}>
-      {Icon && <Icon className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--mauve)' }} />}
-      <h2 className="text-[10px] font-normal uppercase tracking-[0.15em] leading-none" style={{ color: 'var(--mauve)' }}>
+      {Icon && <Icon className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--burnt-orange)' }} />}
+      <h2 className="text-[10px] font-normal uppercase tracking-[0.15em] leading-none text-white">
         {children}
       </h2>
     </div>
   ),
 
   // Level 2: Subsection Headers
-  SubsectionHeader: ({ children, className = '', color = 'var(--mauve)' }: any) => (
+  SubsectionHeader: ({ children, className = '', color = 'white' }: any) => (
     <h3 className={`text-[9px] font-normal uppercase tracking-[0.12em] leading-none mb-3 ${className}`} style={{ color }}>
       {children}
     </h3>
   ),
 
   // Level 3: Card Titles - Tighter leading, more space
-  CardTitle: ({ children, className = '' }: any) => (
-    <h4 className={`text-[15px] font-light leading-[1.3] mb-2 ${className}`} style={{ color: 'var(--pearl)' }}>
+  CardTitle: ({ children, className = '', style: customStyle = {} }: any) => (
+    <h4 className={`text-[15px] font-light leading-[1.3] mb-2 text-white ${className}`} style={customStyle}>
       {children}
     </h4>
   ),
