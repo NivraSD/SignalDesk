@@ -1050,20 +1050,30 @@ const CONTENT_GENERATION_TOOLS = [
   },
   {
     name: "generate_infographic",
-    description: "Generate infographic content and structure.",
+    description: "Generate an actual infographic IMAGE using Vertex AI. Use this when user requests an infographic (e.g., 'create an infographic about...', 'make an infographic showing...'). This generates a visual infographic image, not just text.",
     input_schema: {
       type: "object",
       properties: {
         topic: {
           type: "string",
-          description: "Infographic topic"
+          description: "Main topic/title of the infographic"
         },
         data_points: {
           type: "array",
           items: {
             type: "string"
           },
-          description: "Key data to visualize"
+          description: "Key data points, statistics, or facts to visualize"
+        },
+        style: {
+          type: "string",
+          description: "Visual style (modern, corporate, colorful, minimalist)",
+          default: "modern"
+        },
+        color_scheme: {
+          type: "string",
+          description: "Color palette preference (e.g., 'blue and orange', 'monochrome', 'vibrant')",
+          default: "professional blue"
         }
       },
       required: [
@@ -3683,24 +3693,91 @@ ${campaignContext.timeline || 'Not specified'}
         });
       }
       if (toolUse && toolUse.name === 'generate_infographic') {
-        const content = await callMCPService('blog-post', {
-          organization: orgProfile.organizationName,
-          topic: `Infographic: ${toolUse.input.topic}`,
-          angle: `Data visualization showing: ${toolUse.input.data_points?.join(', ')}`
-        });
-        return new Response(JSON.stringify({
-          success: true,
-          mode: 'content_generated',
-          contentType: 'infographic',
-          message: `✅ Infographic content generated`,
-          content,
-          conversationId
-        }), {
-          headers: {
-            ...corsHeaders,
-            'Content-Type': 'application/json'
+        console.log('📊 Claude called generate_infographic tool!');
+        console.log('📝 Topic:', toolUse.input.topic);
+        console.log('📊 Data points:', toolUse.input.data_points);
+
+        // Build infographic-specific prompt
+        const dataPointsText = toolUse.input.data_points?.length > 0
+          ? `Key data to visualize: ${toolUse.input.data_points.join('; ')}. `
+          : '';
+        const styleText = toolUse.input.style || 'modern';
+        const colorScheme = toolUse.input.color_scheme || 'professional blue';
+
+        const infographicPrompt = `Create a professional infographic about: ${toolUse.input.topic}. ${dataPointsText}Style: ${styleText} infographic design with ${colorScheme} color scheme. Include clean data visualization elements, icons, charts, and clear visual hierarchy. Professional business infographic layout with sections and visual flow.`;
+
+        console.log('🔗 Calling vertex-ai-visual for infographic');
+        try {
+          const imageResponse = await fetch(`${SUPABASE_URL}/functions/v1/vertex-ai-visual`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
+            },
+            body: JSON.stringify({
+              type: 'image',
+              prompt: infographicPrompt,
+              aspectRatio: '9:16', // Vertical for infographic
+              numberOfImages: 1
+            })
+          });
+
+          console.log('📥 Vertex AI infographic response status:', imageResponse.status);
+          if (!imageResponse.ok) {
+            const errorText = await imageResponse.text();
+            console.error('Vertex AI infographic error:', errorText);
+            throw new Error(`Infographic generation failed: ${imageResponse.statusText}`);
           }
-        });
+
+          const imageData = await imageResponse.json();
+          console.log('✅ Infographic data:', imageData);
+
+          const imageUrl = imageData.images?.[0]?.url || imageData.imageUrl || null;
+
+          if (!imageUrl || typeof imageUrl !== 'string') {
+            // Return fallback content if no image was generated
+            return new Response(JSON.stringify({
+              success: false,
+              mode: 'content_generated',
+              contentType: 'infographic-brief',
+              message: `📝 Infographic brief generated (image generation unavailable)`,
+              content: `# Infographic: ${toolUse.input.topic}\n\n## Key Data Points:\n${toolUse.input.data_points?.map((p: string) => `- ${p}`).join('\n') || 'No specific data points provided'}\n\n## Visual Style: ${styleText}\n## Color Scheme: ${colorScheme}\n\n---\n\nUse this brief with design tools like Canva, Figma, or Adobe to create the infographic.`,
+              conversationId
+            }), {
+              headers: {
+                ...corsHeaders,
+                'Content-Type': 'application/json'
+              }
+            });
+          }
+
+          return new Response(JSON.stringify({
+            success: true,
+            mode: 'image_generated',
+            message: `✅ Infographic generated`,
+            imageUrl,
+            prompt: infographicPrompt,
+            conversationId
+          }), {
+            headers: {
+              ...corsHeaders,
+              'Content-Type': 'application/json'
+            }
+          });
+        } catch (error) {
+          console.error('❌ Infographic generation error:', error);
+          return new Response(JSON.stringify({
+            success: false,
+            error: `Infographic generation failed: ${error.message}`,
+            conversationId
+          }), {
+            headers: {
+              ...corsHeaders,
+              'Content-Type': 'application/json'
+            },
+            status: 500
+          });
+        }
       }
       if (toolUse && toolUse.name === 'generate_social_graphics') {
         try {
