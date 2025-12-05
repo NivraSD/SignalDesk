@@ -188,9 +188,17 @@ export default function CampaignsModule() {
 
   // Parse blueprint into content items when a campaign is selected
   // Also load any saved content from localStorage
+  // Handles both VECTOR/GEO-VECTOR (stakeholderOrchestrationPlans) and PR (contentRequirements) campaigns
   useEffect(() => {
-    if (selectedCampaign?.blueprint?.part3_stakeholderOrchestration?.stakeholderOrchestrationPlans) {
-      const freshItems = parseBlueprint(selectedCampaign.blueprint, selectedCampaign.id)
+    const blueprint = selectedCampaign?.blueprint
+    const isVectorCampaign = blueprint?.part3_stakeholderOrchestration?.stakeholderOrchestrationPlans
+    const isPRCampaign = blueprint?.contentRequirements || blueprint?.targetMedia
+
+    if (isVectorCampaign || isPRCampaign) {
+      // Use appropriate parser based on campaign type
+      const freshItems = isVectorCampaign
+        ? parseBlueprint(blueprint, selectedCampaign.id)
+        : parsePRBlueprint(blueprint, selectedCampaign.id)
 
       // Try to load saved content items for this campaign
       const savedKey = `${CONTENT_ITEMS_STORAGE_PREFIX}${selectedCampaign.id}`
@@ -330,6 +338,74 @@ export default function CampaignsModule() {
             status: 'pending'
           })
         })
+      })
+    })
+
+    return items
+  }
+
+  // Parse PR campaign blueprint into content items
+  const parsePRBlueprint = (blueprint: any, campaignId?: string): ContentItem[] => {
+    const items: ContentItem[] = []
+    let itemId = 0
+    const idPrefix = campaignId ? `${campaignId}-` : ''
+
+    // PR campaigns have contentRequirements array
+    const contentRequirements = blueprint.contentRequirements || []
+
+    contentRequirements.forEach((req: any, index: number) => {
+      // Map PR content types to our content types
+      const typeMapping: Record<string, string> = {
+        'press_release': 'media_pitch',
+        'media_pitch': 'media_pitch',
+        'social_post': 'social_post',
+        'thought_leadership': 'thought_leadership',
+        'blog_post': 'thought_leadership',
+        'executive_statement': 'thought_leadership'
+      }
+
+      const contentType = typeMapping[req.type?.toLowerCase()] || 'thought_leadership'
+      const priority = req.priority === 'high' ? 1 : req.priority === 'medium' ? 2 : 3
+
+      items.push({
+        id: `${idPrefix}item-${++itemId}`,
+        type: contentType,
+        stakeholder: req.targetAudience || 'General',
+        stakeholderPriority: priority,
+        leverName: req.type || 'Content',
+        leverPriority: priority,
+        topic: req.purpose || req.type,
+        target: req.targetAudience || '',
+        details: {
+          keyPoints: req.keyPoints || [],
+          specifications: req.specifications || {},
+          format: req.specifications?.format,
+          tone: req.specifications?.tone
+        },
+        status: 'pending'
+      })
+    })
+
+    // Also add media pitches from targetMedia.tier1_outlets
+    const tier1Outlets = blueprint.targetMedia?.tier1_outlets || []
+    tier1Outlets.forEach((outlet: any) => {
+      items.push({
+        id: `${idPrefix}item-${++itemId}`,
+        type: 'media_pitch',
+        stakeholder: 'Media',
+        stakeholderPriority: 1,
+        leverName: 'Tier 1 Media',
+        leverPriority: 1,
+        topic: outlet.pitch_angle || `Pitch to ${outlet.outlet}`,
+        target: `${outlet.journalist} (${outlet.outlet})`,
+        details: {
+          outlet: outlet.outlet,
+          journalist: outlet.journalist,
+          beat: outlet.beat,
+          recent_coverage: outlet.recent_coverage,
+          pitch_angle: outlet.pitch_angle
+        },
+        status: 'pending'
       })
     })
 
