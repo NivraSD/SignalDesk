@@ -441,9 +441,9 @@ const IntelligenceSynthesisDisplay: React.FC<IntelligenceSynthesisDisplayProps> 
                   >
                     <div className="flex items-start gap-4">
                       <span
-                        className="text-[20px] font-extralight leading-none flex-shrink-0 opacity-40"
+                        className="text-[20px] font-extralight leading-none flex-shrink-0 opacity-60"
                         style={{
-                          color: isCritical ? '#ff4444' : 'var(--mauve)',
+                          color: isCritical ? '#ff4444' : 'var(--burnt-orange)',
                           fontVariantNumeric: 'tabular-nums'
                         }}
                       >
@@ -512,7 +512,7 @@ const IntelligenceSynthesisDisplay: React.FC<IntelligenceSynthesisDisplayProps> 
             <Layout.Staggered>
               {data.competitive_analysis.success_patterns && (
                 <Card.Container variant="accent" elevation="medium" className="p-5 flex-1">
-                  <Typography.SubsectionHeader color="var(--mauve-light)">
+                  <Typography.SubsectionHeader color="white">
                     Success Patterns
                   </Typography.SubsectionHeader>
                   <Typography.BodySecondary>{data.competitive_analysis.success_patterns}</Typography.BodySecondary>
@@ -523,7 +523,7 @@ const IntelligenceSynthesisDisplay: React.FC<IntelligenceSynthesisDisplayProps> 
                 <Card.Container variant="accent" elevation="medium" className="p-5 flex-1" style={{
                   transform: 'translateY(12px)',
                 }}>
-                  <Typography.SubsectionHeader color="var(--mauve)">
+                  <Typography.SubsectionHeader color="white">
                     Gaps to Address
                   </Typography.SubsectionHeader>
                   <Typography.BodySecondary>{data.competitive_analysis.gaps_for_target}</Typography.BodySecondary>
@@ -554,7 +554,7 @@ const IntelligenceSynthesisDisplay: React.FC<IntelligenceSynthesisDisplayProps> 
                         
                       }}
                     >
-                      <Typography.CardTitle style={{ color: 'var(--mauve)' }} className="mb-3">
+                      <Typography.CardTitle style={{ color: 'var(--burnt-orange)' }} className="mb-3">
                         {pub.name}
                       </Typography.CardTitle>
                       <Typography.BodySecondary className="mb-3">{pub.reasoning}</Typography.BodySecondary>
@@ -599,14 +599,14 @@ const IntelligenceSynthesisDisplay: React.FC<IntelligenceSynthesisDisplayProps> 
                     <div className="flex items-start justify-between gap-4 mb-3 flex-wrap">
                       <div className="flex items-start gap-3 flex-1">
                         <span
-                          className="text-[18px] font-extralight opacity-30 leading-none"
-                          style={{ fontVariantNumeric: 'tabular-nums' }}
+                          className="text-[18px] font-extralight opacity-60 leading-none"
+                          style={{ fontVariantNumeric: 'tabular-nums', color: 'var(--burnt-orange)' }}
                         >
                           {String(i + 1).padStart(2, '0')}
                         </span>
                         <Typography.CardTitle
                           className="mb-0 flex-1"
-                          style={{ color: isCritical ? '#ff4444' : 'var(--pearl)' }}
+                          style={{ color: isCritical ? '#ff4444' : 'white' }}
                         >
                           {action.action}
                         </Typography.CardTitle>
@@ -614,9 +614,9 @@ const IntelligenceSynthesisDisplay: React.FC<IntelligenceSynthesisDisplayProps> 
                       <span
                         className="text-[9px] font-normal uppercase tracking-[0.1em] px-3 py-1.5 rounded-full border"
                         style={{
-                          background: 'rgba(255, 255, 255, 0.03)',
-                          borderColor: 'rgba(255, 255, 255, 0.1)',
-                          color: 'var(--mauve)',
+                          background: 'rgba(255, 255, 255, 0.1)',
+                          borderColor: 'rgba(255, 255, 255, 0.2)',
+                          color: 'white',
                         }}
                       >
                         {action.category}
