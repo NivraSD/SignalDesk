@@ -189,7 +189,7 @@ export default function CampaignsModule() {
   // Also load any saved content from localStorage
   useEffect(() => {
     if (selectedCampaign?.blueprint?.part3_stakeholderOrchestration?.stakeholderOrchestrationPlans) {
-      const freshItems = parseBlueprint(selectedCampaign.blueprint)
+      const freshItems = parseBlueprint(selectedCampaign.blueprint, selectedCampaign.id)
 
       // Try to load saved content items for this campaign
       const savedKey = `${CONTENT_ITEMS_STORAGE_PREFIX}${selectedCampaign.id}`
@@ -255,9 +255,11 @@ export default function CampaignsModule() {
     }
   }, [contentItems, selectedCampaign])
 
-  const parseBlueprint = (blueprint: any): ContentItem[] => {
+  const parseBlueprint = (blueprint: any, campaignId?: string): ContentItem[] => {
     const items: ContentItem[] = []
     let itemId = 0
+    // Use campaign ID in item IDs to prevent cross-campaign content contamination
+    const idPrefix = campaignId ? `${campaignId}-` : ''
 
     const plans = blueprint.part3_stakeholderOrchestration?.stakeholderOrchestrationPlans || []
 
@@ -270,7 +272,7 @@ export default function CampaignsModule() {
 
         campaign?.mediaPitches?.forEach((pitch: any) => {
           items.push({
-            id: `item-${++itemId}`,
+            id: `${idPrefix}item-${++itemId}`,
             type: 'media_pitch',
             stakeholder: stakeholderName,
             stakeholderPriority,
@@ -285,7 +287,7 @@ export default function CampaignsModule() {
 
         campaign?.socialPosts?.forEach((post: any) => {
           items.push({
-            id: `item-${++itemId}`,
+            id: `${idPrefix}item-${++itemId}`,
             type: 'social_post',
             stakeholder: stakeholderName,
             stakeholderPriority,
@@ -300,7 +302,7 @@ export default function CampaignsModule() {
 
         campaign?.thoughtLeadership?.forEach((article: any) => {
           items.push({
-            id: `item-${++itemId}`,
+            id: `${idPrefix}item-${++itemId}`,
             type: 'thought_leadership',
             stakeholder: stakeholderName,
             stakeholderPriority,
@@ -315,7 +317,7 @@ export default function CampaignsModule() {
 
         campaign?.additionalTactics?.forEach((tactic: any) => {
           items.push({
-            id: `item-${++itemId}`,
+            id: `${idPrefix}item-${++itemId}`,
             type: 'user_action',
             stakeholder: stakeholderName,
             stakeholderPriority,
