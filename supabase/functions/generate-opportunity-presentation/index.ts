@@ -1,7 +1,8 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
-import { opportunityToGammaContent } from '../_shared/opportunity-to-gamma.ts'
+import { opportunityToGammaContentWithDirection } from '../_shared/opportunity-to-gamma.ts'
+import { getGammaOptionsFromDirection } from '../_shared/opportunity-creative-direction.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -47,15 +48,39 @@ serve(async (req) => {
     const campaignFolder = `Opportunities/${cleanTitle}`
     console.log(`📁 Campaign folder: ${campaignFolder}`)
 
-    // 2. Transform opportunity to Gamma content
-    console.log('🔄 Transforming opportunity to presentation format...')
-    const presentationContent = opportunityToGammaContent(opportunity)
+    // 2. Transform opportunity to Gamma content WITH creative direction
+    console.log('🔄 Analyzing opportunity for creative direction...')
+    const { content: presentationContent, creativeDirection } = opportunityToGammaContentWithDirection(opportunity)
+
+    console.log(`🎨 Creative Direction Selected:`)
+    console.log(`   Narrative Style: ${creativeDirection.narrativeStyle}`)
+    console.log(`   Tone: ${creativeDirection.tone}`)
+    console.log(`   Image Model: ${creativeDirection.imageModel}`)
+    console.log(`   Visual Style: ${creativeDirection.visualStyle}`)
+    console.log(`   Color Mood: ${creativeDirection.colorMood}`)
 
     console.log(`✅ Generated presentation content (${presentationContent.length} chars)`)
     console.log('Content preview:', presentationContent.substring(0, 500))
 
-    // 3. Call gamma-presentation function - returns generationId for polling
+    // 3. Get Gamma options based on creative direction
+    const gammaOptions = getGammaOptionsFromDirection(creativeDirection)
+
+    // Determine slide count based on narrative style
+    const slideCountByStyle: Record<string, number> = {
+      urgency: 8,        // Shorter, punchy
+      conquest: 10,      // Medium, strategic
+      visionary: 12,     // Longer, expansive
+      collaborative: 10, // Medium, balanced
+      momentum: 10,      // Medium, building
+      transformation: 12 // Longer, comprehensive
+    }
+    const slideCount = slideCountByStyle[creativeDirection.narrativeStyle] || 10
+
+    // 4. Call gamma-presentation function with dynamic options
     console.log('📊 Starting Gamma presentation generation...')
+    console.log(`   Using image model: ${gammaOptions.imageOptions.model}`)
+    console.log(`   Using tone: ${gammaOptions.tone}`)
+    console.log(`   Slide count: ${slideCount}`)
 
     const gammaResponse = await fetch(`${SUPABASE_URL}/functions/v1/gamma-presentation`, {
       method: 'POST',
@@ -68,16 +93,25 @@ serve(async (req) => {
         content: presentationContent,
         topic: opportunity.title,
         format: 'presentation',
-        slideCount: 12,
-        capture: true, // Auto-saves to campaign_presentations table
+        slideCount: slideCount,
+        capture: true,
         organization_id: organization_id,
-        campaign_id: opportunity_id, // Link to opportunity
-        campaign_folder: campaignFolder, // Pass the clean folder path
+        campaign_id: opportunity_id,
+        campaign_folder: campaignFolder,
         options: {
           imageSource: 'ai',
-          tone: 'professional',
-          cardSplit: 'auto'
-        }
+          tone: gammaOptions.tone,
+          cardSplit: 'auto',
+          // Pass creative direction metadata for debugging/tracking
+          _creativeDirection: {
+            narrativeStyle: creativeDirection.narrativeStyle,
+            visualStyle: creativeDirection.visualStyle,
+            colorMood: creativeDirection.colorMood,
+            hookStrategy: creativeDirection.hookStrategy
+          }
+        },
+        // Image options with dynamic model selection
+        imageOptions: gammaOptions.imageOptions
       })
     })
 
@@ -100,9 +134,17 @@ serve(async (req) => {
         message: 'Presentation generation started. Poll for status.',
         statusEndpoint: `${SUPABASE_URL}/functions/v1/gamma-presentation?generationId=${gammaData.generationId}`,
         opportunity_id,
+        creativeDirection: {
+          narrativeStyle: creativeDirection.narrativeStyle,
+          tone: creativeDirection.tone,
+          visualStyle: creativeDirection.visualStyle,
+          imageModel: creativeDirection.imageModel,
+          openingHook: creativeDirection.openingHook,
+          closingCTA: creativeDirection.closingCTA
+        },
         metadata: {
           format: 'presentation',
-          slideCount: 12,
+          slideCount: slideCount,
           needsPolling: true
         }
       }),
