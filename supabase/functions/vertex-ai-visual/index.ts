@@ -597,17 +597,53 @@ async function generateWithGemini(prompt: string) {
   }
 }
 
+// Simplify video prompts to reduce quota usage and improve results
+function simplifyVideoPrompt(prompt: string, maxLength: number = 200): string {
+  if (!prompt) return prompt
+
+  // Remove common verbose phrases that add complexity without value
+  let simplified = prompt
+    .replace(/Create a video (of|about|showing|that|for)/gi, '')
+    .replace(/Generate a video (of|about|showing|that|for)/gi, '')
+    .replace(/Make a video (of|about|showing|that|for)/gi, '')
+    .replace(/\b(please|kindly|I want|I need|I would like)\b/gi, '')
+    .replace(/\b(high quality|professional|stunning|amazing|beautiful)\b/gi, '')
+    .replace(/\b(very|really|extremely|incredibly)\b/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  // If still too long, truncate at sentence boundary or max length
+  if (simplified.length > maxLength) {
+    const sentences = simplified.split(/[.!?]/)
+    let result = ''
+    for (const sentence of sentences) {
+      if ((result + sentence).length <= maxLength) {
+        result += sentence + '. '
+      } else {
+        break
+      }
+    }
+    simplified = result.trim() || simplified.substring(0, maxLength)
+  }
+
+  return simplified
+}
+
 async function generateVideoWithVeo(request: VideoGenerationRequest) {
   const { prompt, duration = 10, style = 'corporate', framework } = request
 
-  // Build enhanced prompt
+  // Build and simplify prompt - Veo works better with concise prompts
   let videoPrompt = prompt
   if (!prompt && framework) {
     const objective = framework?.strategy?.objective || ''
-    videoPrompt = `Create a ${duration}-second ${style} video: ${objective}`
+    videoPrompt = `${style} video: ${objective}`
   }
 
-  console.log('🎬 Generating video with Veo 3:', videoPrompt.substring(0, 100))
+  // Simplify to reduce quota usage (Google recommends shorter prompts)
+  const originalLength = videoPrompt?.length || 0
+  videoPrompt = simplifyVideoPrompt(videoPrompt, 200)
+
+  console.log(`🎬 Generating video with Veo 3 (prompt: ${originalLength} → ${videoPrompt.length} chars):`, videoPrompt.substring(0, 100))
 
   try {
     // Get access token for authentication (required for Veo)

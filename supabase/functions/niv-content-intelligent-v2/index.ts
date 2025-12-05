@@ -318,7 +318,7 @@ const CONTENT_GENERATION_TOOLS = [
       properties: {
         prompt: {
           type: "string",
-          description: "Detailed description of the video to generate - include scene, action, mood, style"
+          description: "SHORT, simple description of the video (under 150 characters). Focus on the main visual subject and action. Example: 'A golden sunset over calm ocean waves with seabirds flying'. Do NOT use complex multi-scene descriptions."
         },
         duration: {
           type: "number",
