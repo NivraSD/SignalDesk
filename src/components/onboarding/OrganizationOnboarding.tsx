@@ -2109,8 +2109,8 @@ export default function OrganizationOnboarding({
 
                       {/* Why It Matters */}
                       <div className="p-4 bg-[var(--burnt-orange)]/10 border border-[var(--burnt-orange)]/30 rounded-lg">
-                        <h4 className="text-sm font-medium text-[var(--burnt-orange)] mb-2 flex items-center gap-2">
-                          <Sparkles className="w-4 h-4" />
+                        <h4 className="text-sm font-medium text-white mb-2 flex items-center gap-2">
+                          <Sparkles className="w-4 h-4 text-[var(--burnt-orange)]" />
                           Why It Matters for AI Visibility
                         </h4>
                         <ul className="text-xs text-[var(--burnt-orange)]/80 space-y-1.5">
@@ -2123,8 +2123,8 @@ export default function OrganizationOnboarding({
 
                       {/* How to Implement */}
                       <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-                        <h4 className="text-sm font-medium text-blue-400 mb-2 flex items-center gap-2">
-                          <Code className="w-4 h-4" />
+                        <h4 className="text-sm font-medium text-white mb-2 flex items-center gap-2">
+                          <Code className="w-4 h-4 text-blue-400" />
                           How to Add Schema to Your Website
                         </h4>
                         <div className="text-xs text-blue-300/80 space-y-2">
