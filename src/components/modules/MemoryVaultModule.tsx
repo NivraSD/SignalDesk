@@ -1991,6 +1991,112 @@ export default function MemoryVaultModule({ onOpenInStudio }: MemoryVaultModuleP
                       <div className="text-xs text-[var(--grey-400)]">Export to Google Slides</div>
                     </button>
                   </>
+                ) : itemToExport.content_type === 'image' && (itemToExport.metadata?.imageUrl || itemToExport.content?.imageUrl) ? (
+                  <>
+                    {/* Image Export Options */}
+                    <button
+                      onClick={async () => {
+                        try {
+                          const imageUrl = itemToExport.metadata?.imageUrl || itemToExport.content?.imageUrl
+                          if (!imageUrl) {
+                            alert('No image URL found')
+                            return
+                          }
+
+                          // For base64 images, convert directly
+                          if (imageUrl.startsWith('data:')) {
+                            const a = document.createElement('a')
+                            a.href = imageUrl
+                            a.download = `${itemToExport.title?.replace(/[^a-z0-9]/gi, '_') || 'image'}.png`
+                            document.body.appendChild(a)
+                            a.click()
+                            document.body.removeChild(a)
+                          } else {
+                            // For URL images, fetch and download
+                            const response = await fetch(imageUrl)
+                            const blob = await response.blob()
+                            const url = URL.createObjectURL(blob)
+                            const a = document.createElement('a')
+                            a.href = url
+                            a.download = `${itemToExport.title?.replace(/[^a-z0-9]/gi, '_') || 'image'}.png`
+                            document.body.appendChild(a)
+                            a.click()
+                            document.body.removeChild(a)
+                            URL.revokeObjectURL(url)
+                          }
+
+                          setShowExportDialog(false)
+                          setItemToExport(null)
+                          setExportMode('basic')
+                        } catch (error) {
+                          console.error('Image export error:', error)
+                          alert('Failed to export image')
+                        }
+                      }}
+                      className="w-full px-4 py-3 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors text-left"
+                    >
+                      <div className="font-medium text-white">🖼️ PNG Image (.png)</div>
+                      <div className="text-xs text-[var(--grey-400)]">Download as PNG (original quality)</div>
+                    </button>
+                    <button
+                      onClick={async () => {
+                        try {
+                          const imageUrl = itemToExport.metadata?.imageUrl || itemToExport.content?.imageUrl
+                          if (!imageUrl) {
+                            alert('No image URL found')
+                            return
+                          }
+
+                          // Create canvas to convert to JPEG
+                          const img = new window.Image()
+                          img.crossOrigin = 'anonymous'
+
+                          img.onload = () => {
+                            const canvas = document.createElement('canvas')
+                            canvas.width = img.width
+                            canvas.height = img.height
+                            const ctx = canvas.getContext('2d')
+                            if (ctx) {
+                              // Fill with white background for JPEG (no transparency)
+                              ctx.fillStyle = '#FFFFFF'
+                              ctx.fillRect(0, 0, canvas.width, canvas.height)
+                              ctx.drawImage(img, 0, 0)
+
+                              canvas.toBlob((blob) => {
+                                if (blob) {
+                                  const url = URL.createObjectURL(blob)
+                                  const a = document.createElement('a')
+                                  a.href = url
+                                  a.download = `${itemToExport.title?.replace(/[^a-z0-9]/gi, '_') || 'image'}.jpg`
+                                  document.body.appendChild(a)
+                                  a.click()
+                                  document.body.removeChild(a)
+                                  URL.revokeObjectURL(url)
+                                }
+                              }, 'image/jpeg', 0.92)
+                            }
+                          }
+
+                          img.onerror = () => {
+                            alert('Failed to load image for conversion')
+                          }
+
+                          img.src = imageUrl
+
+                          setShowExportDialog(false)
+                          setItemToExport(null)
+                          setExportMode('basic')
+                        } catch (error) {
+                          console.error('JPEG export error:', error)
+                          alert('Failed to export as JPEG')
+                        }
+                      }}
+                      className="w-full px-4 py-3 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors text-left"
+                    >
+                      <div className="font-medium text-white">📷 JPEG Image (.jpg)</div>
+                      <div className="text-xs text-[var(--grey-400)]">Download as JPEG (smaller file size)</div>
+                    </button>
+                  </>
                 ) : (
                   <>
                     {/* Standard Export Options for non-Gamma content */}
