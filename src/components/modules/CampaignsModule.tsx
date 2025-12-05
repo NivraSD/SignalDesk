@@ -525,11 +525,19 @@ export default function CampaignsModule() {
   }
 
   const handleBatchGenerate = async (items: ContentItem[]) => {
-    for (const item of items) {
-      if (item.status === 'pending' && item.type !== 'user_action') {
-        await handleGenerate(item)
-      }
-    }
+    // Filter to only pending items that can be generated
+    const pendingItems = items.filter(item =>
+      item.status === 'pending' && item.type !== 'user_action'
+    )
+
+    if (pendingItems.length === 0) return
+
+    console.log(`🚀 Batch generating ${pendingItems.length} items in parallel`)
+
+    // Generate all items in parallel for faster execution
+    await Promise.all(pendingItems.map(item => handleGenerate(item)))
+
+    console.log(`✅ Batch generation complete`)
   }
 
   const handleCopyContent = async (content: string) => {
@@ -722,10 +730,10 @@ export default function CampaignsModule() {
   }
 
   const priorityLabels: Record<number, { label: string; description: string }> = {
-    1: { label: 'Priority 1: Launch Critical', description: 'Must-have content for launch success' },
-    2: { label: 'Priority 2: High-Impact', description: 'Amplification and depth' },
-    3: { label: 'Priority 3: Supporting', description: 'Ongoing engagement content' },
-    4: { label: 'Priority 4: Long-tail', description: 'Sustained presence' }
+    1: { label: 'Stage 1: Launch', description: 'Must-have content for launch success' },
+    2: { label: 'Stage 2: Amplify', description: 'High-impact amplification content' },
+    3: { label: 'Stage 3: Engage', description: 'Ongoing engagement content' },
+    4: { label: 'Stage 4: Sustain', description: 'Long-term presence building' }
   }
 
   const itemsByPriority = contentItems.reduce((acc, item) => {

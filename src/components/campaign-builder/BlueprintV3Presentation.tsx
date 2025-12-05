@@ -1053,17 +1053,17 @@ export function BlueprintV3Presentation({
           })
 
           const priorityLabels: Record<number, { label: string; color: string; description: string }> = {
-            1: { label: 'Priority 1: Launch Critical', color: 'red', description: 'Must-have content for launch success' },
-            2: { label: 'Priority 2: High-Impact', color: 'amber', description: 'Amplification and depth' },
-            3: { label: 'Priority 3: Supporting', color: 'blue', description: 'Ongoing engagement content' },
-            4: { label: 'Priority 4', color: 'gray', description: 'Additional stakeholders' }
+            1: { label: 'Stage 1: Launch', color: 'red', description: 'Must-have content for launch success' },
+            2: { label: 'Stage 2: Amplify', color: 'amber', description: 'High-impact amplification content' },
+            3: { label: 'Stage 3: Engage', color: 'blue', description: 'Ongoing engagement content' },
+            4: { label: 'Stage 4: Sustain', color: 'gray', description: 'Long-term presence building' }
           }
 
           return (
             <div className="space-y-6">
               <div className="p-3 bg-[var(--burnt-orange-muted)] border border-[var(--burnt-orange)] rounded">
                 <p className="text-sm text-[var(--burnt-orange)]">
-                  This execution inventory shows all content organized by stakeholder priority.
+                  This execution inventory shows all content organized by campaign stage.
                   Click "View Materials" below to see and execute these items.
                 </p>
               </div>

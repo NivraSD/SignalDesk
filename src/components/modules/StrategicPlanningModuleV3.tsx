@@ -298,10 +298,10 @@ export default function StrategicPlanningModuleV3({
   }
 
   const priorityLabels: Record<number, { label: string; color: string; description: string }> = {
-    1: { label: 'Priority 1: Launch Critical', color: 'red', description: 'Must-have content for launch success' },
-    2: { label: 'Priority 2: High-Impact', color: 'amber', description: 'Amplification and depth' },
-    3: { label: 'Priority 3: Supporting', color: 'blue', description: 'Ongoing engagement content' },
-    4: { label: 'Priority 4: Long-tail', color: 'gray', description: 'Sustained presence' }
+    1: { label: 'Stage 1: Launch', color: 'red', description: 'Must-have content for launch success' },
+    2: { label: 'Stage 2: Amplify', color: 'amber', description: 'High-impact amplification content' },
+    3: { label: 'Stage 3: Engage', color: 'blue', description: 'Ongoing engagement content' },
+    4: { label: 'Stage 4: Sustain', color: 'gray', description: 'Long-term presence building' }
   }
 
   // Group items by priority
