@@ -304,11 +304,12 @@ export default function StrategicPlanningModuleV3({
     4: { label: 'Stage 4: Sustain', color: 'gray', description: 'Long-term presence building' }
   }
 
-  // Group items by priority
+  // Group items by stage (leverPriority), not by stakeholder priority
+  // This ensures all stakeholders have tasks in each stage
   const itemsByPriority = contentItems.reduce((acc, item) => {
-    const priority = item.stakeholderPriority
-    if (!acc[priority]) acc[priority] = []
-    acc[priority].push(item)
+    const stage = item.leverPriority || item.stakeholderPriority
+    if (!acc[stage]) acc[stage] = []
+    acc[stage].push(item)
     return acc
   }, {} as Record<number, ContentItem[]>)
 

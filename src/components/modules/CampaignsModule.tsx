@@ -736,10 +736,14 @@ export default function CampaignsModule() {
     4: { label: 'Stage 4: Sustain', description: 'Long-term presence building' }
   }
 
+  // Group items by stage (leverPriority), not by stakeholder priority
+  // This ensures all stakeholders have tasks in each stage
   const itemsByPriority = contentItems.reduce((acc, item) => {
-    const priority = item.stakeholderPriority
-    if (!acc[priority]) acc[priority] = []
-    acc[priority].push(item)
+    // Use leverPriority for stage grouping (what content is produced when)
+    // Fall back to stakeholderPriority for backwards compatibility
+    const stage = item.leverPriority || item.stakeholderPriority || 4
+    if (!acc[stage]) acc[stage] = []
+    acc[stage].push(item)
     return acc
   }, {} as Record<number, ContentItem[]>)
 

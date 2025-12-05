@@ -1039,17 +1039,39 @@ export function BlueprintV3Presentation({
       icon: '⚡',
       color: 'emerald',
       render: () => {
-        // NEW STRUCTURE: Build execution inventory from stakeholder orchestration
+        // NEW STRUCTURE: Build execution inventory organized by STAGE first, then stakeholders within each stage
         if (blueprint.part3_stakeholderOrchestration?.stakeholderOrchestrationPlans) {
-          // Group stakeholders by priority
-          const priorityGroups: Record<number, any[]> = {}
+          // Reorganize data: Stage → Stakeholders → Content
+          // Each stage should have all stakeholders with their content for that stage
+          const stageData: Record<number, Record<string, { plan: any; levers: any[]; contentCounts: any }>> = {
+            1: {}, 2: {}, 3: {}, 4: {}
+          }
 
+          // Extract all levers and group by stage (lever priority), then by stakeholder
           blueprint.part3_stakeholderOrchestration.stakeholderOrchestrationPlans.forEach((plan: any) => {
-            const priority = plan.stakeholder?.priority || 4
-            if (!priorityGroups[priority]) {
-              priorityGroups[priority] = []
-            }
-            priorityGroups[priority].push(plan)
+            const stakeholderName = plan.stakeholder?.name || 'Unknown Stakeholder'
+
+            plan.influenceLevers?.forEach((lever: any) => {
+              const stage = lever.priority || 4
+
+              if (!stageData[stage][stakeholderName]) {
+                stageData[stage][stakeholderName] = {
+                  plan,
+                  levers: [],
+                  contentCounts: { mediaPitches: 0, socialPosts: 0, thoughtLeadership: 0, additionalTactics: 0 }
+                }
+              }
+
+              stageData[stage][stakeholderName].levers.push(lever)
+
+              // Count content items
+              if (lever.campaign) {
+                stageData[stage][stakeholderName].contentCounts.mediaPitches += lever.campaign.mediaPitches?.length || 0
+                stageData[stage][stakeholderName].contentCounts.socialPosts += lever.campaign.socialPosts?.length || 0
+                stageData[stage][stakeholderName].contentCounts.thoughtLeadership += lever.campaign.thoughtLeadership?.length || 0
+                stageData[stage][stakeholderName].contentCounts.additionalTactics += lever.campaign.additionalTactics?.length || 0
+              }
+            })
           })
 
           const priorityLabels: Record<number, { label: string; color: string; description: string }> = {
@@ -1064,53 +1086,41 @@ export function BlueprintV3Presentation({
               <div className="p-3 bg-[var(--burnt-orange-muted)] border border-[var(--burnt-orange)] rounded">
                 <p className="text-sm text-[var(--burnt-orange)]">
                   This execution inventory shows all content organized by campaign stage.
-                  Click "View Materials" below to see and execute these items.
+                  Each stage includes tasks for all stakeholder groups.
                 </p>
               </div>
 
-              {[1, 2, 3, 4].map(priorityLevel => {
-                const stakeholdersAtPriority = priorityGroups[priorityLevel]
-                if (!stakeholdersAtPriority || stakeholdersAtPriority.length === 0) return null
+              {[1, 2, 3, 4].map(stage => {
+                const stakeholdersInStage = Object.entries(stageData[stage])
+                if (stakeholdersInStage.length === 0) return null
 
-                const { label, color, description } = priorityLabels[priorityLevel]
+                const { label, color, description } = priorityLabels[stage]
+                const totalStageItems = stakeholdersInStage.reduce((sum, [_, data]) =>
+                  sum + Object.values(data.contentCounts).reduce((a, b) => a + b, 0), 0
+                )
 
                 return (
-                  <div key={priorityLevel} className={`p-4 bg-${color}-900/20 border border-${color}-500/30 rounded`}>
+                  <div key={stage} className={`p-4 bg-${color}-900/20 border border-${color}-500/30 rounded`}>
                     <div className="mb-4">
                       <div className="flex items-center justify-between mb-1">
                         <p className={`text-lg font-semibold text-${color}-300`}>{label}</p>
-                        <span className="text-xs text-[var(--grey-500)]">{stakeholdersAtPriority.length} stakeholder(s)</span>
+                        <span className="text-xs text-[var(--grey-500)]">
+                          {stakeholdersInStage.length} stakeholder(s) • {totalStageItems} items
+                        </span>
                       </div>
                       <p className="text-xs text-[var(--grey-400)]">{description}</p>
                     </div>
 
                     <div className="space-y-4">
-                      {stakeholdersAtPriority.map((plan: any, i: number) => {
-                        // Count total content items for this stakeholder
-                        let totalItems = 0
-                        const contentCounts = {
-                          mediaPitches: 0,
-                          socialPosts: 0,
-                          thoughtLeadership: 0,
-                          additionalTactics: 0
-                        }
-
-                        plan.influenceLevers?.forEach((lever: any) => {
-                          if (lever.campaign) {
-                            contentCounts.mediaPitches += lever.campaign.mediaPitches?.length || 0
-                            contentCounts.socialPosts += lever.campaign.socialPosts?.length || 0
-                            contentCounts.thoughtLeadership += lever.campaign.thoughtLeadership?.length || 0
-                            contentCounts.additionalTactics += lever.campaign.additionalTactics?.length || 0
-                          }
-                        })
-
-                        totalItems = Object.values(contentCounts).reduce((sum, count) => sum + count, 0)
+                      {stakeholdersInStage.map(([stakeholderName, data], i) => {
+                        const { plan, contentCounts } = data
+                        const totalItems = Object.values(contentCounts).reduce((sum: number, count: number) => sum + count, 0)
 
                         return (
                           <div key={i} className="p-3 bg-[var(--grey-900)] border border-zinc-800 rounded">
                             <div className="flex items-start justify-between mb-3">
                               <div>
-                                <p className="text-white font-semibold">{plan.stakeholder?.name}</p>
+                                <p className="text-white font-semibold">{stakeholderName}</p>
                                 {plan.stakeholder?.psychologicalProfile?.primaryAspiration && (
                                   <p className="text-xs text-[var(--grey-400)] mt-1">
                                     Goal: {plan.stakeholder.psychologicalProfile.primaryAspiration}
