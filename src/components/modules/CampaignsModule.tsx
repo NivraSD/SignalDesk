@@ -414,8 +414,96 @@ export default function CampaignsModule() {
 
   const activeCampaigns = campaigns.filter(c => c.status === 'active' || c.status === 'ready')
 
+  // Helper function to get clean campaign folder name (like Opportunity Engine)
+  const getCampaignFolderName = (name: string): string => {
+    return name.trim().replace(/[/\\:*?"<>|]/g, '-')
+  }
+
+  // Stage labels for folder names
+  const stageLabels: Record<number, string> = {
+    1: 'Stage 1 - Launch',
+    2: 'Stage 2 - Amplify',
+    3: 'Stage 3 - Engage',
+    4: 'Stage 4 - Sustain'
+  }
+
+  // Save campaign blueprint to Memory Vault (like Opportunity Engine saves overview)
+  const saveCampaignToMemoryVault = async (campaign: Campaign) => {
+    if (!organization?.id || !campaign.blueprint) return
+
+    const folderName = getCampaignFolderName(campaign.name)
+    console.log('📁 Saving campaign to Memory Vault folder:', `Campaigns/${folderName}`)
+
+    // Build blueprint overview content
+    const blueprint = campaign.blueprint
+    const overviewContent = `# ${campaign.name}
+
+## Campaign Overview
+**Type:** ${campaign.campaignType || 'Campaign'}
+**Created:** ${campaign.createdAt || new Date().toISOString()}
+
+${blueprint.overview?.strategicRationale ? `## Strategic Rationale
+${blueprint.overview.strategicRationale}` : ''}
+
+${blueprint.part1_positioning ? `## Positioning
+**Core Position:** ${blueprint.part1_positioning.whyThisWorks || ''}
+
+### Target Audiences
+${blueprint.part1_positioning.targetAudiences?.map((a: string) => `- ${a}`).join('\n') || 'N/A'}
+
+### Key Messages
+${blueprint.part1_positioning.keyMessages?.map((m: string) => `- ${m}`).join('\n') || 'N/A'}
+
+### Differentiators
+${blueprint.part1_positioning.differentiators?.map((d: string) => `- ${d}`).join('\n') || 'N/A'}
+` : ''}
+
+## Execution Inventory
+${blueprint.part3_stakeholderOrchestration?.stakeholderOrchestrationPlans?.map((plan: any) => `
+### ${plan.stakeholder?.name || 'Stakeholder'}
+- **Priority:** ${plan.stakeholder?.priority || 'N/A'}
+- **Content Items:** ${plan.influenceLevers?.reduce((sum: number, l: any) =>
+    sum + (l.campaign?.mediaPitches?.length || 0) +
+    (l.campaign?.socialPosts?.length || 0) +
+    (l.campaign?.thoughtLeadership?.length || 0), 0) || 0}
+`).join('\n') || 'N/A'}
+
+---
+*Campaign ID: ${campaign.id}*`
+
+    try {
+      const response = await fetch('/api/content-library/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: {
+            type: 'campaign_blueprint',
+            title: `${folderName} - Blueprint`,
+            content: overviewContent,
+            organization_id: organization.id,
+            metadata: {
+              campaign_id: campaign.id,
+              campaign_type: campaign.campaignType,
+              is_blueprint: true
+            }
+          },
+          folder: `Campaigns/${folderName}`
+        })
+      })
+
+      if (response.ok) {
+        console.log('✅ Saved campaign blueprint to Memory Vault:', `Campaigns/${folderName}`)
+      } else {
+        const error = await response.json()
+        console.error('❌ Failed to save blueprint:', error)
+      }
+    } catch (error) {
+      console.error('❌ Failed to save blueprint to Memory Vault:', error)
+    }
+  }
+
   // Handler for when user clicks "View in Strategic Planning" from Campaign Builder
-  const handleViewInActiveCampaigns = (planData: PlanData) => {
+  const handleViewInActiveCampaigns = async (planData: PlanData) => {
     console.log('📋 CampaignsModule: Received plan data, creating new campaign', {
       sessionId: planData.sessionId,
       campaignType: planData.campaignType,
@@ -437,6 +525,9 @@ export default function CampaignsModule() {
     setCampaigns(prev => [newCampaign, ...prev])
     setSelectedCampaign(newCampaign)
     setActiveView('active')
+
+    // Save blueprint to Memory Vault (like Opportunity Engine)
+    await saveCampaignToMemoryVault(newCampaign)
   }
 
   const togglePriority = (priority: number) => {
@@ -591,30 +682,44 @@ export default function CampaignsModule() {
         } : i
       ))
 
-      // Save to Memory Vault for persistence
+      // Save to Memory Vault for persistence (like Opportunity Engine)
       const campaignName = selectedCampaign.blueprint?.overview?.campaignName || 'Untitled Campaign'
+      const folderName = getCampaignFolderName(campaignName)
+      const stage = item.leverPriority || item.stakeholderPriority || 4
+      const stageFolderName = stageLabels[stage] || `Stage ${stage}`
+
       try {
-        await upsertMemoryVaultContent({
-          id: item.id,
-          session_id: selectedCampaign.sessionId,
-          organization_id: organization.id,
-          type: item.type,
-          title: item.topic,
-          content: generatedContent,
-          folder: `Campaigns/${campaignName}/Stage ${item.leverPriority || item.stakeholderPriority}/${item.stakeholder}`,
-          metadata: {
-            campaign_id: selectedCampaign.id,
-            stakeholder: item.stakeholder,
-            stakeholder_priority: item.stakeholderPriority,
-            lever_priority: item.leverPriority,
-            lever_name: item.leverName,
-            target: item.target,
-            details: item.details
-          },
-          tags: ['campaign', `stage-${item.leverPriority || item.stakeholderPriority}`, item.stakeholder],
-          status: 'generated'
+        // Use direct API call like Opportunity Engine for reliability
+        const response = await fetch('/api/content-library/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            content: {
+              type: item.type,
+              title: item.topic,
+              content: generatedContent,
+              organization_id: organization.id,
+              metadata: {
+                campaign_id: selectedCampaign.id,
+                campaign_name: campaignName,
+                stakeholder: item.stakeholder,
+                stage: stage,
+                stage_name: stageFolderName,
+                lever_name: item.leverName,
+                target: item.target,
+                details: item.details
+              }
+            },
+            folder: `Campaigns/${folderName}/${stageFolderName}`
+          })
         })
-        console.log('💾 Saved to Memory Vault:', item.topic)
+
+        if (response.ok) {
+          console.log('💾 Saved to Memory Vault:', `Campaigns/${folderName}/${stageFolderName}/${item.topic}`)
+        } else {
+          const error = await response.json()
+          console.error('❌ Failed to save to Memory Vault:', error)
+        }
       } catch (mvError) {
         console.error('❌ Failed to save to Memory Vault:', mvError)
         // Don't fail the generation if Memory Vault save fails
@@ -645,6 +750,32 @@ export default function CampaignsModule() {
 
     // Generate all items in parallel for faster execution
     await Promise.all(pendingItems.map(item => handleGenerate(item)))
+  }
+
+  // Generate all items for a specific stage (max ~30 at a time)
+  const handleBatchGenerateByStage = async (stage: number) => {
+    const stageItems = contentItems.filter(item =>
+      (item.leverPriority || item.stakeholderPriority) === stage &&
+      item.status === 'pending' &&
+      item.type !== 'user_action'
+    )
+
+    if (stageItems.length === 0) {
+      console.log(`No pending items for stage ${stage}`)
+      return
+    }
+
+    // Limit to ~30 items to avoid overwhelming the API
+    const MAX_PARALLEL = 30
+    const itemsToGenerate = stageItems.slice(0, MAX_PARALLEL)
+
+    console.log(`🚀 Generating ${itemsToGenerate.length} items for ${stageLabels[stage]} (max ${MAX_PARALLEL})`)
+
+    if (stageItems.length > MAX_PARALLEL) {
+      console.log(`⚠️ ${stageItems.length - MAX_PARALLEL} items remaining - run again after this batch completes`)
+    }
+
+    await Promise.all(itemsToGenerate.map(item => handleGenerate(item)))
 
     console.log(`✅ Batch generation complete`)
   }
@@ -1214,21 +1345,7 @@ export default function CampaignsModule() {
                           {generatedItems} of {totalItems} items
                         </div>
                       </div>
-                      {selectedCampaign.status === 'ready' && (
-                        <button
-                          onClick={() => {
-                            setCampaigns(prev => prev.map(c =>
-                              c.id === selectedCampaign.id ? { ...c, status: 'active' as const, phase: 'In Progress' } : c
-                            ))
-                            setSelectedCampaign(prev => prev ? { ...prev, status: 'active', phase: 'In Progress' } : null)
-                          }}
-                          className="px-5 py-2.5 rounded-lg text-sm font-medium text-white transition-colors hover:brightness-110 flex items-center gap-2"
-                          style={{ background: 'var(--burnt-orange)', fontFamily: 'var(--font-display)' }}
-                        >
-                          <Play className="w-4 h-4" />
-                          Start Execution
-                        </button>
-                      )}
+                      {/* Removed Start Execution button - generate stage by stage instead */}
                     </div>
                   </div>
 
@@ -1289,10 +1406,23 @@ export default function CampaignsModule() {
                                 </div>
                               </div>
                               <div className="flex items-center gap-4">
-                                <div className="text-right">
+                                <div className="text-right mr-2">
                                   <p className="text-xl font-bold" style={{ color: 'var(--white)' }}>{items.length}</p>
                                   <p className="text-xs" style={{ color: 'var(--grey-600)' }}>items</p>
                                 </div>
+                                {/* Generate Stage button */}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleBatchGenerateByStage(priority)
+                                  }}
+                                  disabled={items.filter(i => i.status === 'pending' && i.type !== 'user_action').length === 0}
+                                  className="px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                  style={{ background: 'var(--burnt-orange)', fontFamily: 'var(--font-display)' }}
+                                >
+                                  <Sparkles className="w-4 h-4" />
+                                  Generate Stage ({items.filter(i => i.status === 'pending' && i.type !== 'user_action').length})
+                                </button>
                               </div>
                             </button>
 
