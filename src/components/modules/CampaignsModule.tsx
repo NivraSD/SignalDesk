@@ -31,6 +31,9 @@ import { useAppStore } from '@/stores/useAppStore'
 import { CampaignBuilderWizard } from '@/components/campaign-builder/CampaignBuilderWizard'
 import { supabase } from '@/lib/supabase/client'
 import { upsertMemoryVaultContent, updateMemoryVaultContent } from '@/lib/memoryVaultAPI'
+import { BlueprintV3Presentation } from '@/components/campaign-builder/BlueprintV3Presentation'
+import { PRBriefPresentation } from '@/components/campaign-builder/PRBriefPresentation'
+import { GeoVectorBlueprintPresentation } from '@/components/campaign-builder/GeoVectorBlueprintPresentation'
 
 // Storage keys are scoped by organization to prevent data leakage
 const getCampaignsStorageKey = (orgId: string) => `signaldesk_active_campaigns_${orgId}`
@@ -112,6 +115,7 @@ export default function CampaignsModule() {
   const [activeView, setActiveView] = useState<SidebarView>('planner')
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null)
+  const [campaignViewMode, setCampaignViewMode] = useState<'execution' | 'blueprint' | 'progress'>('execution')
   const [contentItems, setContentItems] = useState<ContentItem[]>([])
   const [expandedPriorities, setExpandedPriorities] = useState<Set<number>>(new Set([1]))
   const [generating, setGenerating] = useState<Set<string>>(new Set())
@@ -1366,9 +1370,50 @@ ${blueprint.part3_stakeholderOrchestration?.stakeholderOrchestrationPlans?.map((
                   </div>
                 </div>
 
-                {/* Content Area - Execution Inventory */}
+                {/* View Mode Tabs */}
+                <div className="px-6 pt-4 flex gap-2 border-b border-[var(--grey-800)]">
+                  <button
+                    onClick={() => setCampaignViewMode('execution')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-t-lg transition-colors ${
+                      campaignViewMode === 'execution'
+                        ? 'bg-[var(--burnt-orange-muted)] text-[var(--burnt-orange)] border border-[var(--burnt-orange)] border-b-0'
+                        : 'bg-[var(--grey-800)] text-[var(--grey-400)] hover:bg-[var(--grey-700)]'
+                    }`}
+                    style={{ fontFamily: 'var(--font-display)' }}
+                  >
+                    <Target className="w-4 h-4" />
+                    Execution
+                  </button>
+                  <button
+                    onClick={() => setCampaignViewMode('blueprint')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-t-lg transition-colors ${
+                      campaignViewMode === 'blueprint'
+                        ? 'bg-[var(--burnt-orange-muted)] text-[var(--burnt-orange)] border border-[var(--burnt-orange)] border-b-0'
+                        : 'bg-[var(--grey-800)] text-[var(--grey-400)] hover:bg-[var(--grey-700)]'
+                    }`}
+                    style={{ fontFamily: 'var(--font-display)' }}
+                  >
+                    <FileText className="w-4 h-4" />
+                    Blueprint
+                  </button>
+                  <button
+                    onClick={() => setCampaignViewMode('progress')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-t-lg transition-colors ${
+                      campaignViewMode === 'progress'
+                        ? 'bg-[var(--burnt-orange-muted)] text-[var(--burnt-orange)] border border-[var(--burnt-orange)] border-b-0'
+                        : 'bg-[var(--grey-800)] text-[var(--grey-400)] hover:bg-[var(--grey-700)]'
+                    }`}
+                    style={{ fontFamily: 'var(--font-display)' }}
+                  >
+                    <BarChart3 className="w-4 h-4" />
+                    Progress
+                  </button>
+                </div>
+
+                {/* Content Area */}
                 <div className="flex-1 overflow-y-auto p-6">
-                  {contentItems.length > 0 ? (
+                  {/* Execution View */}
+                  {campaignViewMode === 'execution' && contentItems.length > 0 ? (
                     <div className="space-y-4">
                       {[1, 2, 3, 4].map(priority => {
                         const items = itemsByPriority[priority] || []
@@ -1536,6 +1581,114 @@ ${blueprint.part3_stakeholderOrchestration?.stakeholderOrchestrationPlans?.map((
                       <p className="text-sm" style={{ color: 'var(--grey-500)' }}>
                         No execution items found in this blueprint.
                       </p>
+                    </div>
+                  )}
+
+                  {/* Blueprint View */}
+                  {campaignViewMode === 'blueprint' && selectedCampaign?.blueprint && (
+                    <div className="bg-[var(--grey-900)] rounded-xl border border-[var(--grey-800)] p-6">
+                      {selectedCampaign.blueprint.contentRequirements ? (
+                        // PR Campaign
+                        <PRBriefPresentation
+                          brief={selectedCampaign.blueprint}
+                          onRefine={() => {}}
+                          onExport={() => {}}
+                          onExecute={() => {}}
+                          isRefining={false}
+                        />
+                      ) : (selectedCampaign.blueprint as any).threeTierTacticalPlan ? (
+                        // GEO-VECTOR Campaign
+                        <GeoVectorBlueprintPresentation
+                          blueprint={selectedCampaign.blueprint as any}
+                          onRefine={() => {}}
+                          onExport={() => {}}
+                          onExecute={() => {}}
+                          isRefining={false}
+                        />
+                      ) : (
+                        // VECTOR Campaign
+                        <BlueprintV3Presentation
+                          blueprint={selectedCampaign.blueprint}
+                          blueprintType="VECTOR_CAMPAIGN"
+                          onRefine={() => {}}
+                          onExport={() => {}}
+                          onExecute={() => {}}
+                          isRefining={false}
+                        />
+                      )}
+                    </div>
+                  )}
+
+                  {/* Progress View */}
+                  {campaignViewMode === 'progress' && (
+                    <div className="space-y-6">
+                      <div className="bg-[var(--grey-900)] rounded-xl border border-[var(--grey-800)] p-6">
+                        <h3 className="text-xl font-bold text-white mb-6" style={{ fontFamily: 'var(--font-display)' }}>
+                          Campaign Progress
+                        </h3>
+
+                        {/* Overall Progress */}
+                        <div className="mb-8">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm text-[var(--grey-400)]">Overall Completion</span>
+                            <span className="text-2xl font-bold" style={{ color: 'var(--burnt-orange)' }}>
+                              {Math.round((contentItems.filter(i => i.status === 'generated').length / Math.max(contentItems.length, 1)) * 100)}%
+                            </span>
+                          </div>
+                          <div className="h-3 bg-[var(--grey-800)] rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full transition-all"
+                              style={{
+                                background: 'var(--burnt-orange)',
+                                width: `${(contentItems.filter(i => i.status === 'generated').length / Math.max(contentItems.length, 1)) * 100}%`
+                              }}
+                            />
+                          </div>
+                          <div className="flex justify-between mt-2 text-xs text-[var(--grey-500)]">
+                            <span>{contentItems.filter(i => i.status === 'generated').length} generated</span>
+                            <span>{contentItems.length} total items</span>
+                          </div>
+                        </div>
+
+                        {/* Progress by Stage */}
+                        <h4 className="text-sm font-semibold text-white mb-4" style={{ fontFamily: 'var(--font-display)' }}>
+                          Progress by Stage
+                        </h4>
+                        <div className="space-y-4">
+                          {[1, 2, 3, 4].map(stage => {
+                            const stageItems = contentItems.filter(i =>
+                              (i.leverPriority || i.stakeholderPriority) === stage
+                            )
+                            if (stageItems.length === 0) return null
+
+                            const generated = stageItems.filter(i => i.status === 'generated').length
+                            const percent = Math.round((generated / stageItems.length) * 100)
+                            const stageLabel = stageLabels[stage] || `Stage ${stage}`
+
+                            return (
+                              <div key={stage} className="bg-[var(--grey-800)]/50 rounded-lg p-4">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="font-medium" style={{ color: 'var(--burnt-orange)' }}>
+                                    {stageLabel}
+                                  </span>
+                                  <span className="text-sm text-[var(--grey-400)]">
+                                    {generated}/{stageItems.length} ({percent}%)
+                                  </span>
+                                </div>
+                                <div className="h-2 bg-[var(--grey-700)] rounded-full overflow-hidden">
+                                  <div
+                                    className="h-full rounded-full transition-all"
+                                    style={{
+                                      background: percent === 100 ? '#22c55e' : 'var(--burnt-orange)',
+                                      width: `${percent}%`
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
