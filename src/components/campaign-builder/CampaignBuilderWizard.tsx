@@ -1386,6 +1386,7 @@ export function CampaignBuilderWizard({ initialObjective, onViewInPlanner }: Cam
               onProceed={handleResearchConfirm}
               onRefine={handleResearchRefine}
               isRefining={isLoading}
+              isProceeding={isLoading && session.stage === 'research'}
             />
           )
         } else if (isLoading) {
@@ -1612,7 +1613,7 @@ export function CampaignBuilderWizard({ initialObjective, onViewInPlanner }: Cam
 
                   {/* Rationale */}
                   <div className="mb-4">
-                    <h4 className="text-xs font-semibold text-[var(--grey-500)] uppercase mb-1">Why This Works</h4>
+                    <h4 className="text-xs font-semibold text-white uppercase mb-1">Why This Works</h4>
                     <p className="text-sm text-[var(--grey-300)]">{option.rationale}</p>
                   </div>
 
@@ -1621,7 +1622,7 @@ export function CampaignBuilderWizard({ initialObjective, onViewInPlanner }: Cam
                     {/* Target Audiences */}
                     {option.targetAudiences && option.targetAudiences.length > 0 && (
                       <div>
-                        <h4 className="text-xs font-semibold text-[var(--grey-500)] uppercase mb-2">Target Audiences</h4>
+                        <h4 className="text-xs font-semibold text-white uppercase mb-2">Target Audiences</h4>
                         <ul className="space-y-1">
                           {option.targetAudiences.map((audience: string, idx: number) => (
                             <li key={idx} className="text-sm text-[var(--grey-300)] flex items-start">
@@ -1636,7 +1637,7 @@ export function CampaignBuilderWizard({ initialObjective, onViewInPlanner }: Cam
                     {/* Key Messages */}
                     {option.keyMessages && option.keyMessages.length > 0 && (
                       <div>
-                        <h4 className="text-xs font-semibold text-[var(--grey-500)] uppercase mb-2">Key Messages</h4>
+                        <h4 className="text-xs font-semibold text-white uppercase mb-2">Key Messages</h4>
                         <ul className="space-y-1">
                           {option.keyMessages.map((message: string, idx: number) => (
                             <li key={idx} className="text-sm text-[var(--grey-300)] flex items-start">
@@ -1651,7 +1652,7 @@ export function CampaignBuilderWizard({ initialObjective, onViewInPlanner }: Cam
                     {/* Differentiators */}
                     {option.differentiators && option.differentiators.length > 0 && (
                       <div>
-                        <h4 className="text-xs font-semibold text-[var(--grey-500)] uppercase mb-2">Differentiators</h4>
+                        <h4 className="text-xs font-semibold text-white uppercase mb-2">Differentiators</h4>
                         <ul className="space-y-1">
                           {option.differentiators.map((diff: string, idx: number) => (
                             <li key={idx} className="text-sm text-[var(--grey-300)] flex items-start">
@@ -1666,7 +1667,7 @@ export function CampaignBuilderWizard({ initialObjective, onViewInPlanner }: Cam
                     {/* Opportunities */}
                     {option.opportunities && option.opportunities.length > 0 && (
                       <div>
-                        <h4 className="text-xs font-semibold text-[var(--grey-500)] uppercase mb-2">Opportunities</h4>
+                        <h4 className="text-xs font-semibold text-white uppercase mb-2">Opportunities</h4>
                         <ul className="space-y-1">
                           {option.opportunities.map((opp: string, idx: number) => (
                             <li key={idx} className="text-sm text-[var(--grey-300)] flex items-start">
@@ -1682,7 +1683,7 @@ export function CampaignBuilderWizard({ initialObjective, onViewInPlanner }: Cam
                   {/* Risks */}
                   {option.risks && option.risks.length > 0 && (
                     <div className="mt-4 pt-4 border-t border-[var(--grey-800)]">
-                      <h4 className="text-xs font-semibold text-[var(--grey-500)] uppercase mb-2">Potential Risks</h4>
+                      <h4 className="text-xs font-semibold text-white uppercase mb-2">Potential Risks</h4>
                       <ul className="space-y-1">
                         {option.risks.map((risk: string, idx: number) => (
                           <li key={idx} className="text-sm text-[var(--grey-400)] flex items-start">

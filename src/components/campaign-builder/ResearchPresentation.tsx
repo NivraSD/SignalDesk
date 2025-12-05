@@ -58,13 +58,15 @@ interface ResearchPresentationProps {
   onProceed: () => void
   onRefine: (request: string) => void
   isRefining?: boolean
+  isProceeding?: boolean
 }
 
 export function ResearchPresentation({
   research,
   onProceed,
   onRefine,
-  isRefining
+  isRefining,
+  isProceeding
 }: ResearchPresentationProps) {
   // All sections open by default - use Set to track multiple open sections
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
@@ -529,14 +531,26 @@ export function ResearchPresentation({
 
           <button
             onClick={onProceed}
-            disabled={isRefining}
+            disabled={isRefining || isProceeding}
             className="px-6 py-3 text-white rounded-lg font-medium hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
             style={{ background: 'var(--burnt-orange)', fontFamily: 'var(--font-display)' }}
           >
-            Proceed to Positioning
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
+            {isProceeding ? (
+              <>
+                <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                Generating Positioning...
+              </>
+            ) : (
+              <>
+                Proceed to Positioning
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </>
+            )}
           </button>
         </motion.div>
       )}
