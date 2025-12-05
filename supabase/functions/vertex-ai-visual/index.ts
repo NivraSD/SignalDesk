@@ -291,18 +291,18 @@ function buildImagePrompt(request: ImageGenerationRequest): string {
 async function generateWithGemini25Flash(request: ImageGenerationRequest) {
   const basePrompt = buildImagePrompt(request)
 
-  console.log('🎨 Generating image with Gemini 2.5 Flash:', basePrompt.substring(0, 100))
+  console.log('🎨 Generating image with Gemini 2.0 Flash:', basePrompt.substring(0, 100))
 
   try {
     const accessToken = await getAccessToken()
 
     if (!accessToken) {
-      console.log('⚠️ No access token for Gemini 2.5 Flash, falling back to Imagen')
+      console.log('⚠️ No access token for Gemini 2.0 Flash, falling back to Imagen')
       return null // Signal to try fallback
     }
 
-    // Gemini 2.5 Flash Image endpoint
-    const endpoint = `https://${GOOGLE_CLOUD_REGION}-aiplatform.googleapis.com/v1/projects/${GOOGLE_CLOUD_PROJECT_ID}/locations/${GOOGLE_CLOUD_REGION}/publishers/google/models/gemini-2.5-flash-preview-05-20:generateContent`
+    // Gemini 2.5 Flash Image endpoint - use the native image generation model
+    const endpoint = `https://${GOOGLE_CLOUD_REGION}-aiplatform.googleapis.com/v1/projects/${GOOGLE_CLOUD_PROJECT_ID}/locations/${GOOGLE_CLOUD_REGION}/publishers/google/models/gemini-2.0-flash-exp:generateContent`
 
     const response = await fetch(endpoint, {
       method: 'POST',
@@ -327,12 +327,12 @@ async function generateWithGemini25Flash(request: ImageGenerationRequest) {
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('Gemini 2.5 Flash error:', response.status, errorText)
+      console.error('Gemini 2.0 Flash error:', response.status, errorText)
       return null // Signal to try fallback
     }
 
     const data = await response.json()
-    console.log('📥 Gemini 2.5 Flash response received')
+    console.log('📥 Gemini 2.0 Flash response received')
 
     // Extract image from response
     if (data.candidates?.[0]?.content?.parts) {
@@ -341,7 +341,7 @@ async function generateWithGemini25Flash(request: ImageGenerationRequest) {
           const mimeType = part.inlineData.mimeType || 'image/png'
           const imageUrl = `data:${mimeType};base64,${part.inlineData.data}`
 
-          console.log('✅ Gemini 2.5 Flash image generated successfully')
+          console.log('✅ Gemini 2.0 Flash image generated successfully')
 
           return {
             success: true,
@@ -349,7 +349,7 @@ async function generateWithGemini25Flash(request: ImageGenerationRequest) {
               url: imageUrl,
               metadata: {
                 prompt: basePrompt,
-                model: 'gemini-2.5-flash-image',
+                model: 'gemini-2.0-flash-exp',
                 aspectRatio: request.aspectRatio,
                 timestamp: new Date().toISOString()
               }
@@ -361,11 +361,11 @@ async function generateWithGemini25Flash(request: ImageGenerationRequest) {
       }
     }
 
-    console.log('⚠️ No image in Gemini 2.5 Flash response, trying fallback')
+    console.log('⚠️ No image in Gemini 2.0 Flash response, trying fallback')
     return null
 
   } catch (error) {
-    console.error('Gemini 2.5 Flash error:', error)
+    console.error('Gemini 2.0 Flash error:', error)
     return null // Signal to try fallback
   }
 }
@@ -828,12 +828,12 @@ serve(async (req) => {
     let result
 
     if (type === 'image') {
-      // Try Gemini 2.5 Flash first (better quality), fall back to Imagen 3.0
-      console.log('🚀 Trying Gemini 2.5 Flash for image generation...')
+      // Try Gemini 2.0 Flash first (better quality), fall back to Imagen 3.0
+      console.log('🚀 Trying Gemini 2.0 Flash for image generation...')
       result = await generateWithGemini25Flash(request)
 
       if (!result) {
-        console.log('⚠️ Gemini 2.5 Flash failed, falling back to Imagen 3.0...')
+        console.log('⚠️ Gemini 2.0 Flash failed, falling back to Imagen 3.0...')
         result = await generateWithImagen(request)
       }
     } else if (type === 'video') {
