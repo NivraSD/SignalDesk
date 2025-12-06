@@ -2,9 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react'
 import {
-  Brain,
   Send,
-  Sparkles,
   Target,
   Loader2,
   ChevronRight,
@@ -23,11 +21,7 @@ import {
   BookOpen,
   Presentation,
   MessageSquare,
-  Search,
-  Globe,
-  Zap,
-  TrendingUp,
-  Shield
+  Zap
 } from 'lucide-react'
 import type { ContentType, ContentGenerationRequest, ContentItem, AudienceType } from '@/types/content'
 import { ContentGenerationService } from '@/services/ContentGenerationService'
@@ -559,15 +553,48 @@ export default function NIVContentAssistantV2({
       onKeyDown={(e) => e.stopPropagation()}
       onKeyUp={(e) => e.stopPropagation()}>
       {/* Header */}
-      <div className="p-4 border-b border-gray-700 bg-gradient-to-r from-purple-900/20 to-blue-900/20">
+      <div className="p-4 border-b border-gray-700" style={{ background: 'var(--charcoal)' }}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg animate-pulse">
-              <Brain className="w-5 h-5 text-white" />
+            <div
+              style={{
+                width: '45px',
+                height: '45px',
+                background: 'var(--white)',
+                borderRadius: '10px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                position: 'relative',
+                overflow: 'hidden'
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: 'var(--font-display)',
+                  fontSize: '16px',
+                  fontWeight: 700,
+                  color: 'var(--charcoal)'
+                }}
+              >
+                NIV
+              </span>
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  right: 0,
+                  width: 0,
+                  height: 0,
+                  borderStyle: 'solid',
+                  borderWidth: '0 10px 10px 0',
+                  borderColor: 'transparent var(--burnt-orange) transparent transparent'
+                }}
+              />
             </div>
             <div>
-              <h3 className="text-lg font-medium">NIV Content Orchestrator</h3>
-              <p className="text-xs text-gray-400">
+              <h3 className="text-lg font-medium" style={{ color: 'var(--white)' }}>NIV Content Orchestrator</h3>
+              <p className="text-xs" style={{ color: 'var(--grey-500)' }}>
                 Tell me what to create - I'll handle the rest
               </p>
             </div>
@@ -612,18 +639,43 @@ export default function NIVContentAssistantV2({
               {/* Regular messages */}
               {message.role !== 'tool' && (
                 <div
-                  className={`p-4 rounded-lg ${
-                    message.role === 'user'
-                      ? 'bg-purple-600/20 border border-purple-600/30'
-                      : message.generatedContent
-                      ? 'bg-gradient-to-br from-purple-900/20 to-blue-900/20 border border-purple-600/30'
-                      : 'bg-gray-800'
-                  }`}
+                  style={{
+                    padding: '12px 16px',
+                    borderRadius: '12px',
+                    background: message.role === 'user' ? 'var(--burnt-orange)' : 'var(--grey-800)',
+                    color: 'var(--white)',
+                    fontSize: '0.875rem',
+                    lineHeight: '1.5'
+                  }}
                 >
                   <div className="flex items-start gap-3">
                     {message.role === 'niv' && (
-                      <div className="p-1.5 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg">
-                        <Sparkles className="w-4 h-4 text-white" />
+                      <div
+                        style={{
+                          width: '35px',
+                          height: '35px',
+                          background: 'var(--white)',
+                          borderRadius: '8px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                          position: 'relative'
+                        }}
+                      >
+                        <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--charcoal)' }}>NIV</span>
+                        <div
+                          style={{
+                            position: 'absolute',
+                            top: 0,
+                            right: 0,
+                            width: 0,
+                            height: 0,
+                            borderStyle: 'solid',
+                            borderWidth: '0 6px 6px 0',
+                            borderColor: 'transparent var(--burnt-orange) transparent transparent'
+                          }}
+                        />
                       </div>
                     )}
                     <div className="flex-1">
@@ -675,14 +727,31 @@ export default function NIVContentAssistantV2({
 
         {isTyping && (
           <div className="flex justify-start">
-            <div className="bg-gray-800 p-4 rounded-lg">
-              <div className="flex items-center gap-3">
-                <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                  <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                  <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                </div>
-                <span className="text-sm text-gray-400">Creating content...</span>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+              <div
+                style={{
+                  width: '35px',
+                  height: '35px',
+                  background: 'var(--white)',
+                  borderRadius: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}
+              >
+                <Loader2 className="w-4 h-4 animate-spin" style={{ color: 'var(--charcoal)' }} />
+              </div>
+              <div
+                style={{
+                  padding: '12px 16px',
+                  borderRadius: '12px',
+                  background: 'var(--grey-800)',
+                  color: 'var(--grey-400)',
+                  fontSize: '0.875rem'
+                }}
+              >
+                Thinking...
               </div>
             </div>
           </div>
@@ -692,34 +761,62 @@ export default function NIVContentAssistantV2({
       </div>
 
       {/* Input Area */}
-      <div className="p-4 border-t border-gray-700 bg-gray-800/50">
-        <div className="flex items-end gap-2">
-          <div className="flex-1">
-            <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                // Stop ALL key events from propagating to canvas
-                e.stopPropagation()
+      <div
+        style={{
+          padding: '16px',
+          borderTop: '1px solid var(--grey-800)',
+          display: 'flex',
+          gap: '12px',
+          background: 'var(--grey-900)',
+          alignItems: 'flex-end'
+        }}
+      >
+        <textarea
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            // Stop ALL key events from propagating to canvas
+            e.stopPropagation()
 
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault()
-                  handleSend()
-                }
-              }}
-              placeholder="Tell me what to create (e.g., 'Write a happy birthday post for our CEO')"
-              className="w-full px-4 py-3 bg-gray-700 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-purple-500/50"
-              rows={2}
-            />
-          </div>
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault()
+              handleSend()
+            }
+          }}
+          placeholder="Tell me what to create..."
+          rows={2}
+          style={{
+            flex: 1,
+            background: 'var(--charcoal)',
+            border: '1px solid var(--grey-800)',
+            borderRadius: '10px',
+            padding: '14px 16px',
+            fontSize: '0.9rem',
+            color: 'var(--white)',
+            outline: 'none',
+            resize: 'none',
+            minHeight: '50px',
+            maxHeight: '100px',
+            lineHeight: '1.4'
+          }}
+        />
           <button
             onClick={handleSend}
             disabled={!input.trim() || isTyping}
-            className={`p-3 rounded-lg transition-all ${
-              !input.trim() || isTyping
-                ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                : 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white'
-            }`}
+            style={{
+              width: '50px',
+              height: '50px',
+              background: !input.trim() || isTyping ? 'var(--grey-700)' : 'var(--burnt-orange)',
+              border: 'none',
+              borderRadius: '10px',
+              color: 'var(--white)',
+              cursor: !input.trim() || isTyping ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              opacity: !input.trim() || isTyping ? 0.5 : 1,
+              flexShrink: 0
+            }}
           >
             {isTyping ? (
               <Loader2 className="w-5 h-5 animate-spin" />
@@ -727,7 +824,6 @@ export default function NIVContentAssistantV2({
               <Send className="w-5 h-5" />
             )}
           </button>
-        </div>
       </div>
     </div>
   )
