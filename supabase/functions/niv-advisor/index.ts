@@ -4098,9 +4098,62 @@ What would you like to explore or work on today?`
 
           // If presentation, generate Gamma presentation
           if (useGamma && requestedContentType === 'presentation') {
-            console.log('🎨 Generating Gamma presentation...')
+            // Check if user explicitly confirmed generation (not just asked to create)
+            const isExplicitConfirmation = messageLower.match(/\b(yes|confirm|go ahead|proceed|do it|approved?)\b/i) &&
+              conversationHistory.some((msg: any) =>
+                msg.role === 'niv' &&
+                (msg.content?.includes('Ready to generate') || msg.content?.includes('Here\'s what I\'ll include'))
+              )
+
+            // If not confirmed, show preview first
+            if (!isExplicitConfirmation) {
+              console.log('📋 Showing presentation preview for confirmation...')
+
+              // Build a preview of what will be in the presentation
+              const preview = `📋 **Ready to Generate Presentation**
+
+**Title:** ${preloadedStrategy.subject || 'Strategic Initiative'}
+
+**Key Messages (${preloadedStrategy.key_messages?.length || 0}):**
+${preloadedStrategy.key_messages?.slice(0, 3).map((m: string, i: number) => `${i + 1}. ${m.substring(0, 100)}...`).join('\n') || '(No specific key messages extracted - will use strategic narrative)'}
+
+**Target Audiences:** ${preloadedStrategy.target_audiences?.slice(0, 3).join(', ') || '(Will be determined from context)'}
+
+**Note:** I'll create a professional deck using this strategic framework. The presentation will NOT include my conversational feedback - only the structured strategic content.
+
+Say **"yes"** or **"go ahead"** to generate, or tell me what adjustments you'd like first.`
+
+              return new Response(
+                JSON.stringify({
+                  success: true,
+                  type: 'confirmation_needed',
+                  message: preview,
+                  response: preview,
+                  sessionId: sessionId,
+                  conversationId: conversationId
+                }),
+                {
+                  headers: {
+                    ...corsHeaders,
+                    'Content-Type': 'application/json'
+                  }
+                }
+              )
+            }
+
+            console.log('🎨 User confirmed - Generating Gamma presentation...')
 
             try {
+              // Clean the narrative - remove conversational feedback
+              if (latestFramework.strategy?.narrative) {
+                // Remove phrases like "brilliant", "great idea", "I suggest" etc.
+                let cleanedNarrative = latestFramework.strategy.narrative
+                  .replace(/\b(brilliant|great|excellent|I think|I suggest|I recommend|This is|You should)\b[^.]*\./gi, '')
+                  .replace(/\n{3,}/g, '\n\n')
+                  .trim()
+                latestFramework.strategy.narrative = cleanedNarrative
+              }
+
               // Transform to Gamma-compatible markdown
               const presentationContent = formatFrameworkForGamma(latestFramework)
 
