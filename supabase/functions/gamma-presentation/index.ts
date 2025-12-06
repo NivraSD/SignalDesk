@@ -35,16 +35,6 @@ interface PresentationRequest {
     tone?: string
     audience?: string
     cardSplit?: 'auto' | 'heading' | 'paragraph'
-    _creativeDirection?: {
-      narrativeStyle?: string
-      visualStyle?: string
-      colorMood?: string
-      hookStrategy?: string
-    }
-  }
-  // NEW: Image model options for creative variance
-  imageOptions?: {
-    model?: string  // e.g., 'ideogram-v3', 'flux-1-pro', 'leonardo-phoenix'
   }
 }
 
@@ -531,21 +521,12 @@ async function generatePresentation(request: PresentationRequest) {
       requestBody.textOptions = textOptions
     }
 
-    // Add image options - support both legacy format and new model-based format
-    const imageOptions: any = {
+    // Add image options
+    requestBody.imageOptions = {
       source: request.options?.imageSource === 'ai' ? 'aiGenerated' :
                request.options?.imageSource === 'web' ? 'webAllImages' :
                request.options?.imageSource || 'aiGenerated'
     }
-
-    // If a specific image model is requested, add it
-    // Models: flux-1-pro, ideogram-v3, leonardo-phoenix, imagen-3-pro, recraft-v3, etc.
-    if (request.imageOptions?.model) {
-      imageOptions.model = request.imageOptions.model
-      console.log(`🎨 Using custom image model: ${imageOptions.model}`)
-    }
-
-    requestBody.imageOptions = imageOptions
 
     console.log('📤 Gamma API request:', {
       url: `${GAMMA_API_URL}/generations`,
