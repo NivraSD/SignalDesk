@@ -2377,7 +2377,8 @@ ${campaignContext.timeline || 'Not specified'}
     // Use Sonnet for strategy phases: presenting research, early conversation, research_review stage
     const isStrategyPhase = shouldPresentResearchFirst || conversationState.stage === 'research_review' || conversationHistory.length < 4 // Early conversation needs strategic thinking
     ;
-    const claudeResponseData = await callClaude(conversationContext, freshResearch ? researchResults : conversationState.researchResults, orgProfile, conversationState, conversationHistory, shouldPresentResearchFirst, isStrategyPhase // Use Sonnet for strategy/research phases
+    const claudeResponseData = await callClaude(conversationContext, freshResearch ? researchResults : conversationState.researchResults, orgProfile, conversationState, conversationHistory, shouldPresentResearchFirst, isStrategyPhase, // Use Sonnet for strategy/research phases
+      understanding // Pass understanding so we can check ready_to_generate
     );
     console.log('✅ Claude response generated');
     console.log('🔍 Stop reason:', claudeResponseData.stop_reason);
@@ -5388,7 +5389,7 @@ function detectResearchNeed(message, history) {
   return false;
 }
 // Helper: Call Claude for natural conversation
-async function callClaude(context, research, orgProfile, conversationState, conversationHistory = [], shouldPresentResearchFirst = false, useStrategyModel = false) {
+async function callClaude(context, research, orgProfile, conversationState, conversationHistory = [], shouldPresentResearchFirst = false, useStrategyModel = false, understanding = null) {
   // Build organization context with full profile
   let orgContext = `- Name: ${orgProfile.organizationName}
 - Industry: ${orgProfile.industry}`;
@@ -5430,16 +5431,50 @@ ${orgContext}
       });
     });
   }
+  // Check if user is explicitly asking for generation/creation
+  // Get the user's current message from context (it's prefixed with conversation history marker)
+  const userCurrentMessage = context.split('User: ').pop()?.toLowerCase() || context.toLowerCase();
+  const isExplicitGenerationRequest =
+    userCurrentMessage.match(/\b(yes|yep|yeah|yup|go ahead|proceed|generate|create|make|build|do it)\b/i) ||
+    userCurrentMessage.match(/\bplease (create|generate|make|build)\b/i);
+
+  // Check understanding for ready_to_generate
+  const readyToGenerate = understanding?.approach?.ready_to_generate === true;
+  const contentType = understanding?.understanding?.content_type || '';
+
   // Detect if Claude is stuck in "I'll create..." loop without actually creating
-  const recentAssistantMessages = conversationHistory.filter((m)=>m.role === 'assistant').slice(-5) // Look at last 5 assistant messages
+  const recentAssistantMessages = conversationHistory.filter((m)=>m.role === 'assistant').slice(-3) // Only look at last 3 assistant messages (was 5 - too aggressive)
   .map((m)=>typeof m.content === 'string' ? m.content : '');
-  const promisesToCreateCount = recentAssistantMessages.filter((content)=>content.toLowerCase().includes("i'll create") || content.toLowerCase().includes("i'll build") || content.toLowerCase().includes("let me create") || content.toLowerCase().includes("let me build")).length;
-  // If Claude has said "I'll create..." 2+ times recently, force tool usage with a strong directive
-  if (promisesToCreateCount >= 2) {
-    console.log(`⚠️ Detected ${promisesToCreateCount} creation promises without action - adding strong directive`);
+  const promisesToCreateCount = recentAssistantMessages.filter((content)=>content.toLowerCase().includes("i'll create") || content.toLowerCase().includes("i'll build") || content.toLowerCase().includes("let me create") || content.toLowerCase().includes("let me build") || content.toLowerCase().includes("i'll generate") || content.toLowerCase().includes("let me generate")).length;
+
+  // FIX 1: Only trigger creation override when:
+  // - User EXPLICITLY asked for generation (not just "ok this is good")
+  // - AND there are creation promises without action
+  if (promisesToCreateCount >= 2 && isExplicitGenerationRequest) {
+    console.log(`⚠️ Detected ${promisesToCreateCount} creation promises AND user explicitly asked for generation - adding strong directive`);
     context = `${context}
 
-**SYSTEM OVERRIDE:** You have said you would create something ${promisesToCreateCount} times already. The user is frustrated. STOP TALKING and IMMEDIATELY call the appropriate tool (create_presentation_outline, create_strategy_document, generate_image, etc.). Do NOT respond with text - respond ONLY with a tool call. If you respond with text instead of a tool call, you will have failed the user.`;
+**SYSTEM OVERRIDE:** You have said you would create something ${promisesToCreateCount} times already. The user has now explicitly asked you to proceed. STOP TALKING and IMMEDIATELY call the appropriate tool (create_presentation_outline, create_strategy_document, generate_image, etc.). Do NOT respond with text - respond ONLY with a tool call. If you respond with text instead of a tool call, you will have failed the user.`;
+  }
+
+  // FIX 2: When ready_to_generate is true AND user confirmed, force tool call
+  // This fixes the bug where Claude says "Perfect! I'll generate..." but doesn't actually call a tool
+  if (readyToGenerate && isExplicitGenerationRequest && contentType) {
+    console.log(`🎯 ready_to_generate=true, explicit request detected, content_type=${contentType} - forcing tool call`);
+    const toolMap = {
+      'presentation': 'create_presentation_outline',
+      'media-plan': 'generate_media_plan',
+      'image': 'generate_image',
+      'strategy': 'create_strategy_document',
+      'social': 'generate_social_post',
+      'press-release': 'generate_press_release',
+      'pitch': 'generate_media_pitch',
+      'talking-points': 'generate_talking_points'
+    };
+    const expectedTool = toolMap[contentType] || 'create_presentation_outline';
+    context = `${context}
+
+**CRITICAL - EXECUTE NOW:** The user has confirmed they want you to generate the ${contentType}. You MUST call the ${expectedTool} tool in this response. Do NOT just say you'll do it - ACTUALLY call the tool. The user is waiting for the deliverable, not another acknowledgment.`;
   }
   // Add research context if available as a system injection
   let currentUserMessage = context;
