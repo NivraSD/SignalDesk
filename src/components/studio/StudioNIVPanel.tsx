@@ -2,18 +2,13 @@
 
 import React, { useState, useRef, useEffect } from 'react'
 import {
-  Sparkles,
   Send,
   Loader2,
   Save,
   Copy,
   Check,
   ExternalLink,
-  Download,
-  RefreshCw,
-  FileText,
-  Search,
-  Zap
+  FileText
 } from 'lucide-react'
 import type { ContentItem } from '@/components/execute/ExecuteTabProduction'
 import { useAppStore } from '@/stores/useAppStore'
@@ -674,10 +669,22 @@ export default function StudioNIVPanel({
               {msg.role === 'assistant' && (
                 <div className="flex items-center gap-2 mb-1">
                   <div
-                    className="w-6 h-6 rounded flex items-center justify-center"
-                    style={{ background: 'var(--burnt-orange)' }}
+                    className="w-7 h-7 rounded-lg flex items-center justify-center relative"
+                    style={{ background: 'var(--white)' }}
                   >
-                    <Sparkles className="w-3 h-3 text-white" />
+                    <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--charcoal)', fontFamily: 'var(--font-display)' }}>NIV</span>
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        right: 0,
+                        width: 0,
+                        height: 0,
+                        borderStyle: 'solid',
+                        borderWidth: '0 5px 5px 0',
+                        borderColor: 'transparent var(--burnt-orange) transparent transparent'
+                      }}
+                    />
                   </div>
                 </div>
               )}
@@ -790,14 +797,21 @@ export default function StudioNIVPanel({
         {/* Thinking/Generating indicator */}
         {(isThinking || isGenerating) && (
           <div className="flex justify-start">
-            <div
-              className="rounded-xl px-3.5 py-2.5 flex items-center gap-2"
-              style={{ background: 'var(--grey-900)' }}
-            >
-              <Loader2 className="w-4 h-4 animate-spin" style={{ color: 'var(--burnt-orange)' }} />
-              <span className="text-sm" style={{ color: 'var(--grey-400)' }}>
-                {isGenerating ? 'Generating...' : 'Thinking...'}
-              </span>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+              <div
+                className="w-7 h-7 rounded-lg flex items-center justify-center"
+                style={{ background: 'var(--white)', flexShrink: 0 }}
+              >
+                <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: 'var(--charcoal)' }} />
+              </div>
+              <div
+                className="rounded-xl px-3.5 py-2.5"
+                style={{ background: 'var(--grey-900)' }}
+              >
+                <span className="text-sm" style={{ color: 'var(--grey-400)' }}>
+                  {isGenerating ? 'Generating...' : 'Thinking...'}
+                </span>
+              </div>
             </div>
           </div>
         )}
