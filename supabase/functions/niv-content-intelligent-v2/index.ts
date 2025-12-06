@@ -5257,16 +5257,41 @@ async function getOrgProfile(organizationId, organizationName) {
     // Fetch actual organization profile from database
     const { data: orgData } = await supabase.from('organizations').select('industry, company_profile').eq('id', organizationId).single();
     const companyProfile = orgData?.company_profile || {};
+
+    // Extract competitors from competition.direct_competitors
+    const competitors = companyProfile.competition?.direct_competitors || [];
+
+    // Build keywords from org name and key terms
+    const keywords = [
+      organizationName || organizationId,
+      ...(companyProfile.key_markets || []),
+      companyProfile.industry || orgData?.industry || ''
+    ].filter(Boolean);
+
+    console.log(`📋 Loaded org profile: ${organizationName}, industry: ${companyProfile.industry || orgData?.industry}, competitors: ${competitors.length}`);
+
     return {
-      organizationName: organizationName || organizationId,
-      industry: orgData?.industry || 'Not specified',
+      organizationName: organizationName || companyProfile.organization || organizationId,
+      // Prefer company_profile.industry, fallback to organizations.industry
+      industry: companyProfile.industry || orgData?.industry || 'Not specified',
+      // Full company description for context
+      description: companyProfile.description || '',
+      // Products/services
       product_lines: companyProfile.product_lines || [],
+      // Geographic focus
       key_markets: companyProfile.key_markets || [],
-      business_model: companyProfile.business_model,
-      competitors: [],
-      keywords: [
-        organizationName || organizationId
-      ]
+      // Business model
+      business_model: companyProfile.business_model || '',
+      // Leadership team
+      leadership: companyProfile.leadership || [],
+      // Competitors from competition.direct_competitors
+      competitors: competitors,
+      // Indirect competitors too
+      indirect_competitors: companyProfile.competition?.indirect_competitors || [],
+      // Keywords for search
+      keywords: keywords,
+      // Pass the full company_profile for advanced use cases
+      _raw: companyProfile
     };
   } catch (error) {
     console.error('Error fetching org profile:', error);
@@ -5274,6 +5299,7 @@ async function getOrgProfile(organizationId, organizationName) {
     return {
       organizationName: organizationName || organizationId,
       industry: 'Not specified',
+      description: '',
       competitors: [],
       keywords: [
         organizationName || organizationId
@@ -5363,12 +5389,29 @@ function detectResearchNeed(message, history) {
 }
 // Helper: Call Claude for natural conversation
 async function callClaude(context, research, orgProfile, conversationState, conversationHistory = [], shouldPresentResearchFirst = false, useStrategyModel = false) {
+  // Build organization context with full profile
+  let orgContext = `- Name: ${orgProfile.organizationName}
+- Industry: ${orgProfile.industry}`;
+
+  if (orgProfile.description) {
+    orgContext += `\n- About: ${orgProfile.description}`;
+  }
+  if (orgProfile.key_markets && orgProfile.key_markets.length > 0) {
+    orgContext += `\n- Key Markets: ${orgProfile.key_markets.slice(0, 5).join(', ')}`;
+  }
+  if (orgProfile.competitors && orgProfile.competitors.length > 0) {
+    orgContext += `\n- Key Competitors: ${orgProfile.competitors.slice(0, 5).join(', ')}`;
+  }
+  if (orgProfile.leadership && orgProfile.leadership.length > 0) {
+    const leaders = orgProfile.leadership.slice(0, 3).map((l: any) => `${l.name} (${l.title})`).join(', ');
+    orgContext += `\n- Leadership: ${leaders}`;
+  }
+
   // Build system prompt with organization context
   const enhancedSystemPrompt = getNivContentSystemPrompt() + `
 
 **ORGANIZATION CONTEXT:**
-- Name: ${orgProfile.organizationName}
-- Industry: ${orgProfile.industry}
+${orgContext}
 
 **CONVERSATION STATE:**
 - Current stage: ${conversationState.stage}
