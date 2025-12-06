@@ -300,6 +300,8 @@ export async function orchestrateResearch(plan, tools, onStepComplete) {
   const completedSteps = [];
   const aggregatedResults = {};
   const keyFindings = [];
+  const allArticles = []; // Collect all articles across all steps
+
   // Group steps by dependencies for parallel execution
   const stepsByDependencyLevel = groupStepsByDependencies(plan.steps);
   // Execute each level of steps
@@ -312,6 +314,16 @@ export async function orchestrateResearch(plan, tools, onStepComplete) {
       results.forEach((step)=>{
         completedSteps.push(step);
         aggregatedResults[step.id] = step.results;
+        // Collect articles from step results
+        if (step.results) {
+          if (Array.isArray(step.results)) {
+            allArticles.push(...step.results);
+          } else if (step.results.articles && Array.isArray(step.results.articles)) {
+            allArticles.push(...step.results.articles);
+          } else if (step.results.source1 && Array.isArray(step.results.source1)) {
+            allArticles.push(...step.results.source1);
+          }
+        }
         if (step.insights) {
           keyFindings.push(...step.insights);
         }
@@ -323,6 +335,16 @@ export async function orchestrateResearch(plan, tools, onStepComplete) {
         const completed = await executeResearchStep(step, tools);
         completedSteps.push(completed);
         aggregatedResults[completed.id] = completed.results;
+        // Collect articles from step results
+        if (completed.results) {
+          if (Array.isArray(completed.results)) {
+            allArticles.push(...completed.results);
+          } else if (completed.results.articles && Array.isArray(completed.results.articles)) {
+            allArticles.push(...completed.results.articles);
+          } else if (completed.results.source1 && Array.isArray(completed.results.source1)) {
+            allArticles.push(...completed.results.source1);
+          }
+        }
         if (completed.insights) {
           keyFindings.push(...completed.insights);
         }
@@ -330,9 +352,20 @@ export async function orchestrateResearch(plan, tools, onStepComplete) {
       }
     }
   }
+
+  // Deduplicate articles by URL
+  const seenUrls = new Set();
+  const uniqueArticles = allArticles.filter(article => {
+    if (!article || !article.url) return false;
+    if (seenUrls.has(article.url)) return false;
+    seenUrls.add(article.url);
+    return true;
+  });
+
   return {
     completedSteps,
     aggregatedResults,
+    allArticles: uniqueArticles,
     keyFindings: [
       ...new Set(keyFindings)
     ] // Remove duplicates
