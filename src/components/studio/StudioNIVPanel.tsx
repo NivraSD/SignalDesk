@@ -668,24 +668,20 @@ export default function StudioNIVPanel({
             <div className={`max-w-full ${msg.role === 'user' ? 'order-2' : 'order-1'}`}>
               {msg.role === 'assistant' && (
                 <div className="flex items-center gap-2 mb-1">
-                  <div
-                    className="w-7 h-7 rounded-lg flex items-center justify-center relative"
-                    style={{ background: 'var(--white)' }}
-                  >
-                    <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--charcoal)', fontFamily: 'var(--font-display)' }}>NIV</span>
-                    <div
-                      style={{
-                        position: 'absolute',
-                        top: 0,
-                        right: 0,
-                        width: 0,
-                        height: 0,
-                        borderStyle: 'solid',
-                        borderWidth: '0 5px 5px 0',
-                        borderColor: 'transparent var(--burnt-orange) transparent transparent'
-                      }}
-                    />
-                  </div>
+                  <svg width="28" height="28" viewBox="0 0 28 28">
+                    <rect width="28" height="28" rx="6" fill="#faf9f7" />
+                    <text
+                      x="4"
+                      y="19"
+                      fontFamily="Space Grotesk, sans-serif"
+                      fontWeight="700"
+                      fontSize="14"
+                      fill="#1a1a1a"
+                    >
+                      NIV
+                    </text>
+                    <polygon points="22,0 28,0 28,6" fill="#c75d3a" />
+                  </svg>
                 </div>
               )}
 
@@ -798,11 +794,15 @@ export default function StudioNIVPanel({
         {(isThinking || isGenerating) && (
           <div className="flex justify-start">
             <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <div
-                className="w-7 h-7 rounded-lg flex items-center justify-center"
-                style={{ background: 'var(--white)', flexShrink: 0 }}
-              >
-                <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: 'var(--charcoal)' }} />
+              <div className="relative" style={{ width: '28px', height: '28px', flexShrink: 0 }}>
+                <svg width="28" height="28" viewBox="0 0 28 28" className="animate-pulse">
+                  <rect width="28" height="28" rx="6" fill="#faf9f7" />
+                  <polygon points="22,0 28,0 28,6" fill="#c75d3a" />
+                </svg>
+                <Loader2
+                  className="w-3.5 h-3.5 animate-spin absolute"
+                  style={{ color: '#1a1a1a', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}
+                />
               </div>
               <div
                 className="rounded-xl px-3.5 py-2.5"

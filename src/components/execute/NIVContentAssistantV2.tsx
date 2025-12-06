@@ -556,42 +556,20 @@ export default function NIVContentAssistantV2({
       <div className="p-4 border-b border-gray-700" style={{ background: 'var(--charcoal)' }}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div
-              style={{
-                width: '45px',
-                height: '45px',
-                background: 'var(--white)',
-                borderRadius: '10px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                position: 'relative',
-                overflow: 'hidden'
-              }}
-            >
-              <span
-                style={{
-                  fontFamily: 'var(--font-display)',
-                  fontSize: '16px',
-                  fontWeight: 700,
-                  color: 'var(--charcoal)'
-                }}
+            <svg width="45" height="45" viewBox="0 0 45 45">
+              <rect width="45" height="45" rx="10" fill="#faf9f7" />
+              <text
+                x="6"
+                y="31"
+                fontFamily="Space Grotesk, sans-serif"
+                fontWeight="700"
+                fontSize="22"
+                fill="#1a1a1a"
               >
                 NIV
-              </span>
-              <div
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  right: 0,
-                  width: 0,
-                  height: 0,
-                  borderStyle: 'solid',
-                  borderWidth: '0 10px 10px 0',
-                  borderColor: 'transparent var(--burnt-orange) transparent transparent'
-                }}
-              />
-            </div>
+              </text>
+              <polygon points="35,0 45,0 45,10" fill="#c75d3a" />
+            </svg>
             <div>
               <h3 className="text-lg font-medium" style={{ color: 'var(--white)' }}>NIV Content Orchestrator</h3>
               <p className="text-xs" style={{ color: 'var(--grey-500)' }}>
@@ -650,33 +628,20 @@ export default function NIVContentAssistantV2({
                 >
                   <div className="flex items-start gap-3">
                     {message.role === 'niv' && (
-                      <div
-                        style={{
-                          width: '35px',
-                          height: '35px',
-                          background: 'var(--white)',
-                          borderRadius: '8px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          flexShrink: 0,
-                          position: 'relative'
-                        }}
-                      >
-                        <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--charcoal)' }}>NIV</span>
-                        <div
-                          style={{
-                            position: 'absolute',
-                            top: 0,
-                            right: 0,
-                            width: 0,
-                            height: 0,
-                            borderStyle: 'solid',
-                            borderWidth: '0 6px 6px 0',
-                            borderColor: 'transparent var(--burnt-orange) transparent transparent'
-                          }}
-                        />
-                      </div>
+                      <svg width="32" height="32" viewBox="0 0 32 32" style={{ flexShrink: 0 }}>
+                        <rect width="32" height="32" rx="7" fill="#faf9f7" />
+                        <text
+                          x="4"
+                          y="22"
+                          fontFamily="Space Grotesk, sans-serif"
+                          fontWeight="700"
+                          fontSize="16"
+                          fill="#1a1a1a"
+                        >
+                          NIV
+                        </text>
+                        <polygon points="25,0 32,0 32,7" fill="#c75d3a" />
+                      </svg>
                     )}
                     <div className="flex-1">
                       <p className="text-sm whitespace-pre-wrap">{message.content}</p>
@@ -728,19 +693,15 @@ export default function NIVContentAssistantV2({
         {isTyping && (
           <div className="flex justify-start">
             <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <div
-                style={{
-                  width: '35px',
-                  height: '35px',
-                  background: 'var(--white)',
-                  borderRadius: '8px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0
-                }}
-              >
-                <Loader2 className="w-4 h-4 animate-spin" style={{ color: 'var(--charcoal)' }} />
+              <div className="relative" style={{ width: '32px', height: '32px', flexShrink: 0 }}>
+                <svg width="32" height="32" viewBox="0 0 32 32" className="animate-pulse">
+                  <rect width="32" height="32" rx="7" fill="#faf9f7" />
+                  <polygon points="25,0 32,0 32,7" fill="#c75d3a" />
+                </svg>
+                <Loader2
+                  className="w-4 h-4 animate-spin absolute"
+                  style={{ color: '#1a1a1a', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}
+                />
               </div>
               <div
                 style={{
