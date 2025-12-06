@@ -4104,6 +4104,15 @@ What would you like to explore or work on today?`
               // Transform to Gamma-compatible markdown
               const presentationContent = formatFrameworkForGamma(latestFramework)
 
+              // Get the actual organization_id - prefer context, fallback to organizationId variable
+              const actualOrgId = context.organizationId || organizationId
+              console.log(`🎨 Gamma generation with org_id: ${actualOrgId}`)
+
+              // Create folder path for Memory Vault - NIV Advisor presentations go to "NIV Advisor" folder
+              const cleanTitle = (preloadedStrategy.subject || 'Untitled').replace(/[^\w\s-]/g, '').substring(0, 50)
+              const folderPath = `NIV Advisor/${cleanTitle}`
+              console.log(`📁 Gamma will save to Memory Vault folder: ${folderPath}`)
+
               const gammaResponse = await fetch(
                 `${Deno.env.get('SUPABASE_URL')}/functions/v1/gamma-presentation`,
                 {
@@ -4119,8 +4128,8 @@ What would you like to explore or work on today?`
                     format: 'presentation',
                     slideCount: 12,
                     capture: true,
-                    organization_id: context.organizationId || organizationId,
-                    campaign_id: conversationId,
+                    organization_id: actualOrgId,
+                    campaign_folder: folderPath, // Save to Memory Vault under NIV Advisor folder
                     options: {
                       imageSource: 'ai',
                       tone: 'professional',
