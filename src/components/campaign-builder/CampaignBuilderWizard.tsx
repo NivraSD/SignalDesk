@@ -14,6 +14,173 @@ import { CampaignBuilderService } from '@/lib/services/campaignBuilderService'
 import { supabase } from '@/lib/supabase/client'
 import { saveToMemoryVault } from '@/lib/memoryVaultAPI'
 
+// Helper function to convert full blueprint to comprehensive markdown
+function blueprintToMarkdown(campaignName: string, campaignType: string, blueprint: any, positioning: any): string {
+  let md = `# ${campaignName}\n\n`
+  md += `## Campaign Overview\n`
+  md += `**Type:** ${campaignType}\n`
+  md += `**Created:** ${new Date().toISOString()}\n\n`
+
+  // Core Message / Positioning
+  if (positioning) {
+    md += `## Strategic Positioning\n`
+    if (positioning.name) md += `**Theme:** ${positioning.name}\n`
+    if (positioning.description) md += `${positioning.description}\n\n`
+    if (positioning.narrative) md += `**Narrative:** ${positioning.narrative}\n\n`
+  }
+
+  // Message Architecture
+  if (blueprint.messageArchitecture) {
+    md += `## Message Architecture\n`
+    if (blueprint.messageArchitecture.coreMessage) {
+      md += `### Core Message\n${blueprint.messageArchitecture.coreMessage}\n\n`
+    }
+    if (blueprint.messageArchitecture.keyMessages?.length > 0) {
+      md += `### Key Messages\n`
+      blueprint.messageArchitecture.keyMessages.forEach((msg: string, i: number) => {
+        md += `${i + 1}. ${msg}\n`
+      })
+      md += `\n`
+    }
+  }
+
+  // Strategic Goals
+  if (blueprint.part2_strategicGoals) {
+    const goals = blueprint.part2_strategicGoals
+    if (goals.keyMessages?.length > 0) {
+      md += `## Key Messages\n`
+      goals.keyMessages.forEach((msg: string, i: number) => {
+        md += `${i + 1}. ${msg}\n`
+      })
+      md += `\n`
+    }
+  }
+
+  // Stakeholders
+  if (blueprint.part1_stakeholderIdentification?.stakeholderProfiles?.length > 0) {
+    md += `## Target Stakeholders\n\n`
+    blueprint.part1_stakeholderIdentification.stakeholderProfiles.forEach((s: any, i: number) => {
+      md += `### ${i + 1}. ${s.name}\n`
+      if (s.priority) md += `- **Priority:** ${s.priority}\n`
+      if (s.role) md += `- **Role:** ${s.role}\n`
+      if (s.goals?.length > 0) {
+        md += `- **Goals:**\n`
+        s.goals.forEach((g: string) => md += `  - ${g}\n`)
+      }
+      if (s.psychologicalProfile) {
+        md += `- **Psychological Profile:**\n`
+        if (s.psychologicalProfile.values?.length > 0) {
+          md += `  - Values: ${s.psychologicalProfile.values.join(', ')}\n`
+        }
+        if (s.psychologicalProfile.fears?.length > 0) {
+          md += `  - Fears: ${s.psychologicalProfile.fears.join(', ')}\n`
+        }
+        if (s.psychologicalProfile.aspirations?.length > 0) {
+          md += `  - Aspirations: ${s.psychologicalProfile.aspirations.join(', ')}\n`
+        }
+      }
+      md += `\n`
+    })
+  }
+
+  // Orchestration Plans (Content)
+  if (blueprint.part3_stakeholderOrchestration?.stakeholderOrchestrationPlans?.length > 0) {
+    md += `## Execution Inventory\n\n`
+    blueprint.part3_stakeholderOrchestration.stakeholderOrchestrationPlans.forEach((plan: any) => {
+      md += `### ${plan.stakeholderName || plan.stakeholder}\n`
+      md += `- **Priority:** ${plan.priority || 'N/A'}\n`
+
+      // Count content items
+      let contentCount = 0
+      plan.levers?.forEach((lever: any) => {
+        const campaign = lever.campaign || {}
+        contentCount += (campaign.mediaPitches?.length || 0) +
+                       (campaign.socialPosts?.length || 0) +
+                       (campaign.thoughtLeadership?.length || 0) +
+                       (campaign.additionalTactics?.length || 0)
+      })
+      md += `- **Content Items:** ${contentCount}\n\n`
+
+      // Detail the content
+      plan.levers?.forEach((lever: any) => {
+        if (lever.leverName) {
+          md += `#### ${lever.leverName}\n`
+          if (lever.description) md += `${lever.description}\n\n`
+        }
+        const campaign = lever.campaign || {}
+
+        // Media Pitches
+        if (campaign.mediaPitches?.length > 0) {
+          md += `**Media Pitches:**\n`
+          campaign.mediaPitches.forEach((item: any, idx: number) => {
+            md += `${idx + 1}. ${item.topic || item.headline || 'Untitled'}\n`
+            if (item.angle) md += `   - Angle: ${item.angle}\n`
+            if (item.targetOutlet) md += `   - Target: ${item.targetOutlet}\n`
+          })
+          md += `\n`
+        }
+
+        // Social Posts
+        if (campaign.socialPosts?.length > 0) {
+          md += `**Social Posts:**\n`
+          campaign.socialPosts.forEach((item: any, idx: number) => {
+            md += `${idx + 1}. ${item.topic || item.headline || 'Untitled'}\n`
+            if (item.platform) md += `   - Platform: ${item.platform}\n`
+          })
+          md += `\n`
+        }
+
+        // Thought Leadership
+        if (campaign.thoughtLeadership?.length > 0) {
+          md += `**Thought Leadership:**\n`
+          campaign.thoughtLeadership.forEach((item: any, idx: number) => {
+            md += `${idx + 1}. ${item.topic || item.title || 'Untitled'}\n`
+            if (item.format) md += `   - Format: ${item.format}\n`
+          })
+          md += `\n`
+        }
+
+        // Additional Tactics
+        if (campaign.additionalTactics?.length > 0) {
+          md += `**Additional Tactics:**\n`
+          campaign.additionalTactics.forEach((item: any, idx: number) => {
+            md += `${idx + 1}. ${item.name || item.tactic || 'Untitled'}\n`
+            if (item.description) md += `   - ${item.description}\n`
+          })
+          md += `\n`
+        }
+      })
+    })
+  }
+
+  // Execution Requirements
+  if (blueprint.part5_executionRequirements) {
+    const exec = blueprint.part5_executionRequirements
+    md += `## Execution Requirements\n\n`
+
+    if (exec.resourceAllocation) {
+      md += `### Resources\n`
+      if (exec.resourceAllocation.budget) md += `- **Budget:** ${exec.resourceAllocation.budget}\n`
+      if (exec.resourceAllocation.timeline) md += `- **Timeline:** ${exec.resourceAllocation.timeline}\n`
+      md += `\n`
+    }
+
+    if (exec.successMetrics?.length > 0) {
+      md += `### Success Metrics\n`
+      exec.successMetrics.forEach((metric: any) => {
+        md += `- **${metric.metric || metric.name}:** ${metric.target || metric.value}\n`
+      })
+      md += `\n`
+    }
+  }
+
+  // Add footer
+  md += `---\n`
+  md += `*Full campaign blueprint generated by NIV Campaign Builder*\n`
+
+  return md
+}
+
 type CampaignStage = 'intent' | 'research' | 'positioning' | 'approach' | 'blueprint' | 'execution'
 
 interface SessionState {
@@ -994,45 +1161,30 @@ export function CampaignBuilderWizard({ initialObjective, onViewInPlanner }: Cam
           .slice(0, 50) // Max 50 chars
 
         try {
-          // Create clean campaign overview for Memory Vault
-          const campaignOverview = {
-            title: campaignName,
-            type: 'GEO-VECTOR Campaign',
-            goal: session.campaignGoal,
-            positioning: session.selectedPositioning,
+          // Generate comprehensive markdown of the full blueprint
+          const fullBlueprintMarkdown = blueprintToMarkdown(
+            campaignName,
+            'GEO_VECTOR_CAMPAIGN',
+            result,
+            session.selectedPositioning
+          )
 
-            campaignIntelligence: {
-              targetQueries: result.campaign_intelligence?.targetQueries?.slice(0, 5) || [],
-              competitiveIntelligence: result.campaign_intelligence?.competitiveIntelligence || {},
-              sourceStrategy: result.campaign_intelligence?.sourceStrategy || {}
-            },
-
-            stakeholders: result.part1_stakeholderIdentification?.stakeholderProfiles?.map((s: any) => ({
-              name: s.name,
-              priority: s.priority,
-              role: s.role
-            })) || [],
-
-            executionItems: result.part3_stakeholderOrchestration?.stakeholderOrchestrationPlans?.length || 0,
-
-            timeline: {
-              created: new Date().toISOString(),
-              sessionId: session.sessionId
-            }
-          }
+          // Count execution items
+          const executionItemsCount = result.part3_stakeholderOrchestration?.stakeholderOrchestrationPlans?.length || 0
 
           await saveToMemoryVault({
             organization_id: organization.id,
             type: 'campaign',
             title: campaignName,
-            content: campaignOverview,
+            content: fullBlueprintMarkdown,
             folder: `Campaigns`,
             metadata: {
               campaign_type: 'GEO_VECTOR',
               session_id: session.sessionId,
               created_via: 'campaign_builder',
               has_geo_intelligence: true,
-              execution_items_count: campaignOverview.executionItems
+              execution_items_count: executionItemsCount,
+              full_blueprint: result // Also store raw JSON for programmatic access
             }
           })
           console.log('✅ Blueprint saved to Memory Vault:', campaignName)
@@ -1188,42 +1340,30 @@ export function CampaignBuilderWizard({ initialObjective, onViewInPlanner }: Cam
         .slice(0, 50) // Max 50 chars
 
       try {
-        // Create clean campaign overview for Memory Vault
-        const campaignOverview = {
-          title: campaignName,
-          type: 'VECTOR Campaign',
-          goal: session.campaignGoal,
-          positioning: session.selectedPositioning,
+        // Generate comprehensive markdown of the full blueprint
+        const fullBlueprintMarkdown = blueprintToMarkdown(
+          campaignName,
+          'VECTOR_CAMPAIGN',
+          result,
+          session.selectedPositioning
+        )
 
-          stakeholders: result.part1_stakeholderIdentification?.stakeholderProfiles?.map((s: any) => ({
-            name: s.name,
-            priority: s.priority,
-            role: s.role,
-            goals: s.goals
-          })) || [],
-
-          executionItems: result.part3_stakeholderOrchestration?.stakeholderOrchestrationPlans?.length || 0,
-
-          keyMessages: result.part2_strategicGoals?.keyMessages?.slice(0, 5) || [],
-
-          timeline: {
-            created: new Date().toISOString(),
-            sessionId: session.sessionId
-          }
-        }
+        // Count execution items
+        const executionItemsCount = result.part3_stakeholderOrchestration?.stakeholderOrchestrationPlans?.length || 0
 
         await saveToMemoryVault({
           organization_id: organization.id,
           type: 'campaign',
           title: campaignName,
-          content: campaignOverview,
+          content: fullBlueprintMarkdown,
           folder: `Campaigns`,
           metadata: {
             campaign_type: 'VECTOR',
             session_id: session.sessionId,
             created_via: 'campaign_builder',
             has_geo_intelligence: false,
-            execution_items_count: campaignOverview.executionItems
+            execution_items_count: executionItemsCount,
+            full_blueprint: result // Also store raw JSON for programmatic access
           }
         })
         console.log('✅ VECTOR Blueprint saved to Memory Vault:', campaignName)

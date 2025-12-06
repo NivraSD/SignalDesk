@@ -110,19 +110,6 @@ export function ResearchPresentation({
         <p style={{ color: 'var(--grey-400)' }}>
           Executive-level intelligence synthesis across stakeholders, narratives, channels, and historical patterns
         </p>
-
-        {research.synthesisQuality && (
-          <div className="flex items-center justify-center gap-4 mt-4 text-sm">
-            <div className="flex items-center gap-2">
-              <span style={{ color: 'var(--grey-400)' }}>Completeness:</span>
-              <span className="text-white font-medium">{Math.round((research.synthesisQuality.completeness || 0) * 100)}%</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span style={{ color: 'var(--grey-400)' }}>Confidence:</span>
-              <span className="text-white font-medium">{Math.round((research.synthesisQuality.confidence || 0) * 100)}%</span>
-            </div>
-          </div>
-        )}
       </motion.div>
 
       {/* Key Insights */}
@@ -330,7 +317,7 @@ export function ResearchPresentation({
               <div>
                 <h3 className="font-semibold text-white" style={{ fontFamily: 'var(--font-display)' }}>Channel Intelligence</h3>
                 <p className="text-sm mt-1" style={{ color: 'var(--grey-400)' }}>
-                  {research.channelIntelligence?.journalists?.length || 0} journalists, {research.channelIntelligence?.publications?.length || 0} publications
+                  {research.channelIntelligence?.publications?.length || 0} recommended media outlets
                 </p>
               </div>
             </div>
@@ -355,27 +342,13 @@ export function ResearchPresentation({
           >
             <div className="pt-4 space-y-4 text-sm">
               <div>
-                <h4 className="text-white font-medium mb-2" style={{ fontFamily: 'var(--font-display)' }}>Top Journalists</h4>
-                <div className="space-y-2">
-                  {research.channelIntelligence.journalists?.slice(0, 5).map((j, i) => (
-                    <div key={i} className="flex justify-between items-start rounded p-2" style={{ background: 'var(--grey-800)' }}>
-                      <div>
-                        <p className="text-white">{j.name}</p>
-                        <p className="text-xs" style={{ color: 'var(--grey-400)' }}>{j.outlet} • {j.beat}</p>
-                      </div>
-                      <span className="text-xs px-2 py-1 rounded" style={{ background: 'var(--burnt-orange-muted)', color: 'var(--burnt-orange)' }}>{j.tier}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <h4 className="text-white font-medium mb-2" style={{ fontFamily: 'var(--font-display)' }}>Key Publications</h4>
-                <div className="flex flex-wrap gap-2">
+                <h4 className="text-white font-medium mb-2" style={{ fontFamily: 'var(--font-display)' }}>Recommended Media Outlets</h4>
+                <div className="grid grid-cols-2 gap-2">
                   {research.channelIntelligence.publications?.map((p, i) => (
-                    <span key={i} className="px-3 py-1 rounded text-xs" style={{ background: 'var(--grey-800)', color: 'var(--grey-300)' }}>
-                      {p.name}
-                    </span>
+                    <div key={i} className="rounded p-2" style={{ background: 'var(--grey-800)' }}>
+                      <p className="text-white text-sm">{p.name}</p>
+                      {p.type && <p className="text-xs" style={{ color: 'var(--grey-400)' }}>{p.type}</p>}
+                    </div>
                   ))}
                 </div>
               </div>
