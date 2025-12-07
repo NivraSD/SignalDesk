@@ -1617,26 +1617,48 @@ ${blueprint.part3_stakeholderOrchestration?.stakeholderOrchestrationPlans?.map((
                           Campaign Progress
                         </h3>
 
-                        {/* Overall Progress */}
-                        <div className="mb-8">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm text-[var(--grey-400)]">Overall Completion</span>
-                            <span className="text-2xl font-bold" style={{ color: 'var(--burnt-orange)' }}>
-                              {Math.round((contentItems.filter(i => i.status === 'generated').length / Math.max(contentItems.length, 1)) * 100)}%
-                            </span>
+                        {/* Overall Progress - Two bars: Generated and Completed */}
+                        <div className="mb-8 space-y-4">
+                          {/* Completed (Executed) Progress - This is the primary metric */}
+                          <div>
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm font-medium text-white">Actual Completion</span>
+                              <span className="text-2xl font-bold" style={{ color: '#22c55e' }}>
+                                {Math.round((contentItems.filter(i => i.executed).length / Math.max(contentItems.length, 1)) * 100)}%
+                              </span>
+                            </div>
+                            <div className="h-4 bg-[var(--grey-800)] rounded-full overflow-hidden">
+                              <div
+                                className="h-full rounded-full transition-all"
+                                style={{
+                                  background: '#22c55e',
+                                  width: `${(contentItems.filter(i => i.executed).length / Math.max(contentItems.length, 1)) * 100}%`
+                                }}
+                              />
+                            </div>
+                            <div className="flex justify-between mt-2 text-xs">
+                              <span style={{ color: '#22c55e' }}>{contentItems.filter(i => i.executed).length} completed</span>
+                              <span className="text-[var(--grey-500)]">{contentItems.length} total items</span>
+                            </div>
                           </div>
-                          <div className="h-3 bg-[var(--grey-800)] rounded-full overflow-hidden">
-                            <div
-                              className="h-full rounded-full transition-all"
-                              style={{
-                                background: 'var(--burnt-orange)',
-                                width: `${(contentItems.filter(i => i.status === 'generated').length / Math.max(contentItems.length, 1)) * 100}%`
-                              }}
-                            />
-                          </div>
-                          <div className="flex justify-between mt-2 text-xs text-[var(--grey-500)]">
-                            <span>{contentItems.filter(i => i.status === 'generated').length} generated</span>
-                            <span>{contentItems.length} total items</span>
+
+                          {/* Generated Progress - Secondary metric */}
+                          <div>
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm text-[var(--grey-400)]">Content Generated</span>
+                              <span className="text-lg font-medium" style={{ color: 'var(--burnt-orange)' }}>
+                                {contentItems.filter(i => i.status === 'generated' || i.status === 'published').length}/{contentItems.length}
+                              </span>
+                            </div>
+                            <div className="h-2 bg-[var(--grey-800)] rounded-full overflow-hidden">
+                              <div
+                                className="h-full rounded-full transition-all"
+                                style={{
+                                  background: 'var(--burnt-orange)',
+                                  width: `${(contentItems.filter(i => i.status === 'generated' || i.status === 'published').length / Math.max(contentItems.length, 1)) * 100}%`
+                                }}
+                              />
+                            </div>
                           </div>
                         </div>
 
@@ -1651,28 +1673,118 @@ ${blueprint.part3_stakeholderOrchestration?.stakeholderOrchestrationPlans?.map((
                             )
                             if (stageItems.length === 0) return null
 
-                            const generated = stageItems.filter(i => i.status === 'generated').length
-                            const percent = Math.round((generated / stageItems.length) * 100)
+                            const generated = stageItems.filter(i => i.status === 'generated' || i.status === 'published').length
+                            const completed = stageItems.filter(i => i.executed).length
+                            const completedPercent = Math.round((completed / stageItems.length) * 100)
                             const stageLabel = stageLabels[stage] || `Stage ${stage}`
 
                             return (
                               <div key={stage} className="bg-[var(--grey-800)]/50 rounded-lg p-4">
-                                <div className="flex items-center justify-between mb-2">
-                                  <span className="font-medium" style={{ color: 'var(--burnt-orange)' }}>
+                                <div className="flex items-center justify-between mb-3">
+                                  <span className="font-medium" style={{ color: 'var(--burnt-orange)', fontFamily: 'var(--font-display)' }}>
                                     {stageLabel}
                                   </span>
-                                  <span className="text-sm text-[var(--grey-400)]">
-                                    {generated}/{stageItems.length} ({percent}%)
-                                  </span>
+                                  <div className="flex items-center gap-4 text-sm">
+                                    <span className="text-[var(--grey-400)]">
+                                      <span style={{ color: 'var(--burnt-orange)' }}>{generated}</span> generated
+                                    </span>
+                                    <span className="text-[var(--grey-400)]">
+                                      <span style={{ color: '#22c55e' }}>{completed}</span>/{stageItems.length} completed
+                                    </span>
+                                  </div>
                                 </div>
                                 <div className="h-2 bg-[var(--grey-700)] rounded-full overflow-hidden">
                                   <div
                                     className="h-full rounded-full transition-all"
                                     style={{
-                                      background: percent === 100 ? '#22c55e' : 'var(--burnt-orange)',
-                                      width: `${percent}%`
+                                      background: completedPercent === 100 ? '#22c55e' : completedPercent > 0 ? '#22c55e' : 'var(--grey-600)',
+                                      width: `${completedPercent}%`
                                     }}
                                   />
+                                </div>
+
+                                {/* Show items in this stage */}
+                                <div className="mt-4 space-y-2">
+                                  {stageItems.map(item => {
+                                    const typeInfo = getContentTypeInfo(item.type)
+                                    const IconComponent = typeInfo.icon
+
+                                    return (
+                                      <div
+                                        key={item.id}
+                                        className="flex items-center justify-between p-3 bg-[var(--grey-900)] rounded-lg border border-[var(--grey-700)]"
+                                      >
+                                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                                          <IconComponent className="w-4 h-4 flex-shrink-0" style={{ color: typeInfo.color }} />
+                                          <div className="flex-1 min-w-0">
+                                            <p className="text-sm text-white truncate">{item.topic}</p>
+                                            <p className="text-xs text-[var(--grey-500)]">{item.stakeholder}</p>
+                                          </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-2">
+                                          {/* Status badge */}
+                                          {item.executed ? (
+                                            <span className="px-2 py-1 text-xs rounded-full bg-green-500/20 text-green-400 flex items-center gap-1">
+                                              <Check className="w-3 h-3" />
+                                              Completed
+                                            </span>
+                                          ) : item.status === 'generated' || item.status === 'published' ? (
+                                            <span className="px-2 py-1 text-xs rounded-full bg-[var(--burnt-orange-muted)] text-[var(--burnt-orange)]">
+                                              Generated
+                                            </span>
+                                          ) : (
+                                            <span className="px-2 py-1 text-xs rounded-full bg-[var(--grey-700)] text-[var(--grey-400)]">
+                                              Pending
+                                            </span>
+                                          )}
+
+                                          {/* Mark as completed button - only show for generated items */}
+                                          {(item.status === 'generated' || item.status === 'published') && !item.executed && (
+                                            <button
+                                              onClick={() => {
+                                                setContentItems(prev => prev.map(i =>
+                                                  i.id === item.id ? {
+                                                    ...i,
+                                                    executed: true,
+                                                    executedAt: new Date().toISOString()
+                                                  } : i
+                                                ))
+                                              }}
+                                              className="px-3 py-1 text-xs rounded-lg font-medium transition-colors hover:brightness-110"
+                                              style={{ background: '#22c55e', color: 'white' }}
+                                            >
+                                              Mark Complete
+                                            </button>
+                                          )}
+
+                                          {/* Track results button - show for completed items */}
+                                          {item.executed && (
+                                            <button
+                                              onClick={() => {
+                                                const notes = prompt('Track results (e.g., media pickup, engagement, response):')
+                                                if (notes) {
+                                                  setContentItems(prev => prev.map(i =>
+                                                    i.id === item.id ? {
+                                                      ...i,
+                                                      result: {
+                                                        type: 'other',
+                                                        notes
+                                                      }
+                                                    } : i
+                                                  ))
+                                                }
+                                              }}
+                                              className="px-3 py-1 text-xs rounded-lg font-medium border transition-colors hover:bg-white/5"
+                                              style={{ borderColor: 'var(--grey-600)', color: 'var(--grey-300)' }}
+                                            >
+                                              {item.result?.notes ? 'Edit Results' : 'Track Results'}
+                                            </button>
+                                          )}
+                                        </div>
+                                      </div>
+                                    )
+                                  })}
                                 </div>
                               </div>
                             )
