@@ -256,55 +256,41 @@ Return ONLY the JSON array, no other text.`;
   }
 }
 
-// Map semantic connection types to valid DB signal_types
-function mapToDbSignalType(connectionType: string): string {
-  const mapping: Record<string, string> = {
-    'partnership': 'multi_party',
-    'competition': 'correlation',
-    'market_shift': 'momentum',
-    'supply_chain': 'multi_party',
-    'regulatory': 'sentiment_shift',
-    'personnel': 'correlation',
-    'acquisition': 'multi_party'
-  };
-  return mapping[connectionType] || 'correlation';
-}
-
 async function saveConnection(orgId: string, connection: Connection): Promise<boolean> {
   try {
-    const dbSignalType = mapToDbSignalType(connection.connection_type);
-
-    // Check for existing similar connection
-    const { data: existing } = await supabase
-      .from('connection_signals')
+    // Check for existing similar signal in unified table
+    const { data: existingSignal } = await supabase
+      .from('signals')
       .select('id')
       .eq('organization_id', orgId)
-      .eq('primary_entity_name', connection.primary_entity)
-      .eq('signal_type', dbSignalType)
+      .eq('signal_type', 'connection')
+      .eq('primary_target_name', connection.primary_entity)
       .single();
 
-    if (existing) {
-      // Update existing connection
+    if (existingSignal) {
+      // Update existing signal
       const { error } = await supabase
-        .from('connection_signals')
+        .from('signals')
         .update({
-          signal_title: connection.title,
-          signal_description: connection.description,
-          strength_score: connection.strength_score,
+          title: connection.title,
+          description: connection.description,
           confidence_score: connection.strength_score,
-          related_entities: connection.connected_entities.map(name => ({ name })),
-          pattern_data: {
-            business_implication: connection.business_implication,
-            evidence: connection.evidence,
-            action_suggested: connection.action_suggested,
-            generated_by: 'connection-detector-v2'
+          significance_score: connection.strength_score,
+          related_target_names: connection.connected_entities,
+          related_entities: connection.connected_entities.map(name => ({ name, type: 'company' })),
+          evidence: {
+            data_points: connection.evidence,
+            action_suggested: connection.action_suggested
           },
-          signal_detected_date: new Date().toISOString()
+          business_implication: connection.business_implication,
+          suggested_action: connection.action_suggested,
+          detected_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         })
-        .eq('id', existing.id);
+        .eq('id', existingSignal.id);
 
       if (error) {
-        console.error(`❌ Failed to update connection: ${error.message}`);
+        console.error(`❌ Failed to update signal: ${error.message}`);
         return false;
       }
 
@@ -312,12 +298,82 @@ async function saveConnection(orgId: string, connection: Connection): Promise<bo
       return true;
     }
 
-    // Insert new connection
-    const { error } = await supabase
+    // Map connection_type to urgency
+    const urgencyMap: Record<string, string> = {
+      'acquisition': 'immediate',
+      'partnership': 'near_term',
+      'competition': 'near_term',
+      'regulatory': 'immediate',
+      'personnel': 'near_term',
+      'market_shift': 'monitoring',
+      'supply_chain': 'near_term'
+    };
+    const urgency = urgencyMap[connection.connection_type] || 'near_term';
+
+    // Map connection_type to opportunity_type
+    const opportunityMap: Record<string, string> = {
+      'partnership': 'partnership',
+      'competition': 'competitive_response',
+      'acquisition': 'advisory',
+      'regulatory': 'risk_mitigation',
+      'personnel': 'talent',
+      'market_shift': 'advisory',
+      'supply_chain': 'advisory'
+    };
+    const opportunityType = opportunityMap[connection.connection_type] || 'advisory';
+
+    // Insert new signal into unified table
+    const { error: signalError } = await supabase
+      .from('signals')
+      .insert({
+        organization_id: orgId,
+        signal_type: 'connection',
+        signal_subtype: connection.connection_type,
+        title: connection.title,
+        description: connection.description,
+        primary_target_name: connection.primary_entity,
+        primary_target_type: 'company',
+        related_target_names: connection.connected_entities,
+        related_entities: connection.connected_entities.map(name => ({ name, type: 'company' })),
+        confidence_score: connection.strength_score,
+        significance_score: connection.strength_score,
+        urgency: urgency,
+        impact_level: connection.strength_score >= 75 ? 'high' : connection.strength_score >= 50 ? 'medium' : 'low',
+        evidence: {
+          data_points: connection.evidence,
+          action_suggested: connection.action_suggested
+        },
+        reasoning: connection.business_implication,
+        business_implication: connection.business_implication,
+        suggested_action: connection.action_suggested,
+        opportunity_type: opportunityType,
+        detected_at: new Date().toISOString(),
+        status: 'active',
+        source_pipeline: 'connection-detector-v2',
+        model_version: 'claude-sonnet-4'
+      });
+
+    if (signalError) {
+      console.error(`❌ Failed to save signal: ${signalError.message}`);
+      return false;
+    }
+
+    // Also save to legacy connection_signals table for backward compatibility
+    const legacySignalType = {
+      'partnership': 'multi_party',
+      'competition': 'correlation',
+      'market_shift': 'momentum',
+      'supply_chain': 'multi_party',
+      'regulatory': 'sentiment_shift',
+      'personnel': 'correlation',
+      'acquisition': 'multi_party'
+    }[connection.connection_type] || 'correlation';
+
+    await supabase
       .from('connection_signals')
       .insert({
         organization_id: orgId,
-        signal_type: dbSignalType,
+        signal_type: legacySignalType,
         signal_title: connection.title,
         signal_description: connection.description,
         primary_entity_name: connection.primary_entity,
@@ -325,7 +381,7 @@ async function saveConnection(orgId: string, connection: Connection): Promise<bo
         strength_score: connection.strength_score,
         confidence_score: connection.strength_score,
         pattern_data: {
-          semantic_type: connection.connection_type, // Store original type for UI
+          semantic_type: connection.connection_type,
           business_implication: connection.business_implication,
           evidence: connection.evidence,
           action_suggested: connection.action_suggested,
@@ -333,12 +389,9 @@ async function saveConnection(orgId: string, connection: Connection): Promise<bo
         },
         signal_start_date: new Date().toISOString(),
         signal_detected_date: new Date().toISOString()
-      });
-
-    if (error) {
-      console.error(`❌ Failed to save connection: ${error.message}`);
-      return false;
-    }
+      })
+      .then(() => {})
+      .catch(() => {});
 
     console.log(`   🔗 Saved: ${connection.title.substring(0, 50)}...`);
     return true;

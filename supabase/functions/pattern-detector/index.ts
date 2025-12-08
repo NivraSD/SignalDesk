@@ -261,28 +261,84 @@ Return ONLY the JSON array, no other text.`;
 
 async function savePrediction(orgId: string, prediction: Prediction): Promise<boolean> {
   try {
-    // Check for existing similar prediction
-    const { data: existing } = await supabase
-      .from('predictions')
+    // Check for existing similar signal in unified table
+    const { data: existingSignal } = await supabase
+      .from('signals')
       .select('id')
       .eq('organization_id', orgId)
+      .eq('signal_type', 'predictive')
       .eq('title', prediction.title)
       .single();
 
-    if (existing) {
-      console.log(`   ⏭️ Prediction already exists: ${prediction.title.substring(0, 50)}...`);
+    if (existingSignal) {
+      console.log(`   ⏭️ Signal already exists: ${prediction.title.substring(0, 50)}...`);
       return false;
     }
 
-    // Build description with rationale and evidence
-    const fullDescription = `${prediction.description}
+    // Map time_horizon to urgency
+    const urgencyMap: Record<string, string> = {
+      '1-month': 'immediate',
+      '3-months': 'near_term',
+      '6-months': 'monitoring'
+    };
+    const urgency = urgencyMap[prediction.time_horizon] || 'near_term';
 
-**Rationale:** ${prediction.rationale}
+    // Map category to signal_subtype
+    const subtypeMap: Record<string, string> = {
+      'competitive': 'competitor_move',
+      'market': 'market_shift',
+      'crisis': 'crisis_emerging',
+      'strategic': 'strategic_opportunity',
+      'regulatory': 'regulatory_change',
+      'technology': 'technology_shift',
+      'partnership': 'partnership_opportunity'
+    };
+    const signalSubtype = subtypeMap[prediction.category] || prediction.category;
 
-**Evidence:**
-${prediction.evidence.map(e => `• ${e}`).join('\n')}`;
+    // Save to unified signals table
+    const { error: signalError } = await supabase
+      .from('signals')
+      .insert({
+        organization_id: orgId,
+        signal_type: 'predictive',
+        signal_subtype: signalSubtype,
+        title: prediction.title,
+        description: prediction.description,
+        primary_target_name: prediction.related_entities[0] || null,
+        related_target_names: prediction.related_entities.slice(1),
+        confidence_score: prediction.confidence_score,
+        significance_score: prediction.impact_level === 'high' ? 85 : prediction.impact_level === 'medium' ? 60 : 40,
+        urgency: urgency,
+        impact_level: prediction.impact_level,
+        evidence: {
+          data_points: prediction.evidence,
+          rationale: prediction.rationale
+        },
+        reasoning: prediction.rationale,
+        pattern_data: {
+          category: prediction.category,
+          time_horizon: prediction.time_horizon,
+          related_entities: prediction.related_entities
+        },
+        business_implication: prediction.description,
+        opportunity_type: prediction.category === 'strategic' || prediction.category === 'partnership' ? 'advisory' :
+                          prediction.category === 'crisis' ? 'risk_mitigation' :
+                          prediction.category === 'competitive' ? 'competitive_response' : 'advisory',
+        detected_at: new Date().toISOString(),
+        status: 'active',
+        source_pipeline: 'pattern-detector-v2',
+        model_version: 'claude-sonnet-4'
+      });
 
-    const { error } = await supabase
+    if (signalError) {
+      console.error(`❌ Failed to save signal: ${signalError.message}`);
+      return false;
+    }
+
+    // Also save to legacy predictions table for backward compatibility
+    const fullDescription = `${prediction.description}\n\n**Rationale:** ${prediction.rationale}\n\n**Evidence:**\n${prediction.evidence.map(e => `• ${e}`).join('\n')}`;
+
+    await supabase
       .from('predictions')
       .insert({
         organization_id: orgId,
@@ -293,19 +349,15 @@ ${prediction.evidence.map(e => `• ${e}`).join('\n')}`;
         category: prediction.category,
         time_horizon: prediction.time_horizon,
         status: 'active',
-        // Store structured data in the data jsonb column
         data: {
           rationale: prediction.rationale,
           evidence: prediction.evidence,
           related_entities: prediction.related_entities,
           generated_by: 'pattern-detector-v2'
         }
-      });
-
-    if (error) {
-      console.error(`❌ Failed to save prediction: ${error.message}`);
-      return false;
-    }
+      })
+      .then(() => {}) // Ignore errors for legacy table
+      .catch(() => {});
 
     console.log(`   💡 Saved: ${prediction.title.substring(0, 60)}...`);
     return true;

@@ -61,12 +61,35 @@ serve(async (req) => {
     }
 
     const industry = profileData?.industry || 'general';
-    const competitors = profileData?.competition?.direct_competitors || [];
+    const competitors = [
+      ...(profileData?.competition?.direct_competitors || []),
+      ...(profileData?.competition?.indirect_competitors || [])
+    ];
     const serviceLines = profileData?.service_lines || [];
     const description = profileData?.description || '';
 
+    // NEW: Extract full intelligence context for better relevance scoring
+    const intelligenceContext = profileData?.intelligence_context || {};
+    const keyQuestions = intelligenceContext?.key_questions || [];
+    const extractionFocus = intelligenceContext?.extraction_focus || [];
+    const relevanceCriteria = intelligenceContext?.relevance_criteria || {};
+
+    // NEW: Extract stakeholders for relevance matching
+    const stakeholders = profileData?.stakeholders || {};
+    const regulators = stakeholders?.regulators || [];
+    const keyAnalysts = stakeholders?.key_analysts || [];
+    const activists = stakeholders?.activists || [];
+
+    // NEW: Extract strategic context
+    const strategicContext = profileData?.strategic_context || {};
+    const targetCustomers = strategicContext?.target_customers || '';
+    const strategicPriorities = strategicContext?.strategic_priorities || [];
+
     console.log(`   Industry: ${industry}`);
     console.log(`   Competitors: ${competitors.length}`);
+    console.log(`   Regulators: ${regulators.length}`);
+    console.log(`   Key Questions: ${keyQuestions.length}`);
+    console.log(`   Strategic Priorities: ${strategicPriorities.length}`);
 
     // Log input source distribution
     const inputSourceDist: Record<string, number> = {};
@@ -92,35 +115,58 @@ serve(async (req) => {
 
       console.log(`   Batch ${batchNum}/${totalBatches} (${batch.length} articles)...`);
 
+      // Build stakeholder list for the prompt
+      const allStakeholders = [...regulators, ...keyAnalysts, ...activists].filter(Boolean);
+
       const prompt = `You are an intelligence analyst scoring news relevance for ${organization_name}, a ${industry} company.
 
 COMPANY CONTEXT:
 ${description ? `Description: ${description}` : ''}
 Industry: ${industry}
 Service Lines: ${serviceLines.join(', ') || 'Various'}
-Competitors: ${competitors.slice(0, 10).join(', ') || 'Unknown'}
+Competitors: ${competitors.slice(0, 15).join(', ') || 'Unknown'}
+${targetCustomers ? `Target Customers: ${targetCustomers}` : ''}
+${strategicPriorities.length > 0 ? `Strategic Priorities: ${strategicPriorities.join(', ')}` : ''}
+
+KEY STAKEHOLDERS TO WATCH:
+${regulators.length > 0 ? `Regulators: ${regulators.join(', ')}` : ''}
+${keyAnalysts.length > 0 ? `Key Analysts: ${keyAnalysts.join(', ')}` : ''}
+${activists.length > 0 ? `Activists/Advocates: ${activists.join(', ')}` : ''}
+
+${keyQuestions.length > 0 ? `KEY INTELLIGENCE QUESTIONS:
+${keyQuestions.map((q: string) => `- ${q}`).join('\n')}` : ''}
+
+${extractionFocus.length > 0 ? `EXTRACTION FOCUS:
+${extractionFocus.slice(0, 10).map((f: string) => `- ${f}`).join('\n')}` : ''}
 
 SCORING CRITERIA (be INCLUSIVE - score 60+ if potentially relevant):
 
-HIGH RELEVANCE (80-100):
-- Direct mention of company or competitors
-- Major industry news affecting the company's sector
-- Regulatory changes in their industry
-- M&A activity in their space
+CRITICAL RELEVANCE (90-100):
+- Direct mention of ${organization_name} or its direct competitors
+- Actions by key stakeholders listed above (regulators, analysts)
+- Major regulatory changes from: ${regulators.slice(0, 5).join(', ') || 'industry regulators'}
+- Crisis/scandal involving competitors
 
-MEDIUM RELEVANCE (60-79):
-- Industry trends and market dynamics
-- Tangentially related news (supply chain, commodities for trading)
+HIGH RELEVANCE (75-89):
+- Competitor strategic moves, product launches, funding rounds
+- Industry trends directly affecting ${organization_name}'s market position
+- M&A activity in the space
+- Actions by target customers or key analysts
+${strategicPriorities.length > 0 ? `- News related to strategic priorities: ${strategicPriorities.slice(0, 3).join(', ')}` : ''}
+
+MEDIUM RELEVANCE (60-74):
+- General industry trends and market dynamics
+- Technology/innovation in the sector
 - Geographic market news relevant to their operations
-- Technology/innovation in their sector
+- Tangentially related competitive intelligence
 
 LOW RELEVANCE (40-59):
 - Loosely connected industry news
-- General business news with some connection
+- General business news with indirect connection
 
 NOT RELEVANT (0-39):
 - Completely unrelated industries
-- Articles about ${organization_name} themselves (we want external intel)
+- Articles about ${organization_name} themselves (we want EXTERNAL intel)
 - Spam/promotional content
 
 ARTICLES TO SCORE:

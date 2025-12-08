@@ -315,6 +315,44 @@ async function synthesizeExecutiveIntelligence(args: any) {
 
       // Store company profile for use in synthesis prompt
       synthesisMetadata = { companyProfile };
+
+      // CRITICAL: Merge profile competitors/stakeholders with intelligence_targets
+      // The intelligence_targets table may have generic entries, but profile has the REAL competitors
+      if (companyProfile) {
+        const profileCompetitors = [
+          ...(companyProfile.competition?.direct_competitors || []),
+          ...(companyProfile.competition?.indirect_competitors || []),
+          ...(companyProfile.competition?.emerging_threats || [])
+        ].filter(Boolean);
+
+        const profileStakeholders = [
+          ...(companyProfile.stakeholders?.regulators || []),
+          ...(companyProfile.stakeholders?.key_analysts || []),
+          ...(companyProfile.stakeholders?.activists || []),
+          ...(companyProfile.stakeholders?.major_investors || []),
+          ...(companyProfile.stakeholders?.major_customers || [])
+        ].filter(Boolean);
+
+        // Merge and deduplicate - profile competitors are MORE accurate than intelligence_targets
+        if (profileCompetitors.length > 0) {
+          const existingCompetitors = new Set(discoveryTargets.competitors.map(c => c.toLowerCase()));
+          const newCompetitors = profileCompetitors.filter(c => !existingCompetitors.has(c.toLowerCase()));
+          // Put profile competitors FIRST (they're more accurate)
+          discoveryTargets.competitors = [...profileCompetitors, ...discoveryTargets.competitors.filter(c =>
+            !profileCompetitors.some(pc => pc.toLowerCase() === c.toLowerCase())
+          )];
+          console.log(`✅ Merged ${profileCompetitors.length} profile competitors (total: ${discoveryTargets.competitors.length})`);
+        }
+
+        if (profileStakeholders.length > 0) {
+          const existingStakeholders = new Set(discoveryTargets.stakeholders.map(s => s.toLowerCase()));
+          // Put profile stakeholders FIRST
+          discoveryTargets.stakeholders = [...profileStakeholders, ...discoveryTargets.stakeholders.filter(s =>
+            !profileStakeholders.some(ps => ps.toLowerCase() === s.toLowerCase())
+          )];
+          console.log(`✅ Merged ${profileStakeholders.length} profile stakeholders (total: ${discoveryTargets.stakeholders.length})`);
+        }
+      }
     } else {
       // No org_id provided, use profile fallback
       discoveryTargets = {
@@ -988,10 +1026,20 @@ ${discoveryTargets.competitors.slice(0, 10).join(', ')}
 STAKEHOLDERS TO REPORT ON (entities that impact ${organization?.name}'s business):
 ${discoveryTargets.stakeholders.slice(0, 10).join(', ')}
 
+${companyProfile?.intelligence_context?.key_questions?.length > 0 ? `KEY INTELLIGENCE QUESTIONS (what ${organization?.name} wants to know):
+${companyProfile.intelligence_context.key_questions.map((q: string) => `- ${q}`).join('\n')}` : ''}
+
+${companyProfile?.strategic_context?.strategic_priorities?.length > 0 ? `STRATEGIC PRIORITIES (${organization?.name}'s focus areas):
+${companyProfile.strategic_context.strategic_priorities.map((p: string) => `- ${p}`).join('\n')}` : ''}
+
+${companyProfile?.intelligence_context?.analysis_perspective ? `ANALYSIS PERSPECTIVE: ${companyProfile.intelligence_context.analysis_perspective}` : ''}
+
 ⚠️ CRITICAL:
 - Report on what COMPETITORS are doing (launches, deals, expansions)
 - Report on what STAKEHOLDERS are doing (regulations, policy changes)
 - DO NOT report on what ${organization?.name} is doing - that's not intelligence, that's their own activity
+- When applicable, address the KEY INTELLIGENCE QUESTIONS above
+- Prioritize news relevant to the STRATEGIC PRIORITIES
 
 **TODAY'S DATE:** ${new Date().toISOString().split('T')[0]}
 
