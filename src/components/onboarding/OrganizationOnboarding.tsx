@@ -2281,14 +2281,14 @@ export default function OrganizationOnboarding({
                       <div className="flex items-center gap-2 mb-2">
                         <Sparkles className="w-4 h-4 text-[var(--burnt-orange)]" />
                         <p className="text-sm font-medium text-[var(--burnt-orange)]">
-                          {existingSchemaData.has_existing_schema
+                          {existingSchemaData.has_schema
                             ? '✓ Existing Schema Detected'
                             : '○ No Existing Schema Found'}
                         </p>
                       </div>
                       <p className="text-xs text-[var(--burnt-orange)]/70">
-                        {existingSchemaData.has_existing_schema
-                          ? `Your website already has a schema (version ${existingSchemaData.schema_version}). We'll enhance it with GEO optimizations.`
+                        {existingSchemaData.has_schema
+                          ? `Your website already has schema types: ${existingSchemaData.schema_types?.join(', ') || 'unknown'}. We'll enhance it with GEO optimizations.`
                           : 'Creating a brand new GEO-optimized schema.org markup from scratch.'}
                       </p>
                     </div>

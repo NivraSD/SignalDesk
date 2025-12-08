@@ -9,6 +9,16 @@ import { corsHeaders } from '../_shared/cors.ts';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
+// Auth cookies for premium sources
+const AUTH_COOKIES: Record<string, string | undefined> = {
+  'Bloomberg': Deno.env.get('BLOOMBERG_AUTH_COOKIE'),
+  'Wall Street Journal': Deno.env.get('WSJ_AUTH_COOKIE'),
+  'WSJ': Deno.env.get('WSJ_AUTH_COOKIE'),
+  'Financial Times': Deno.env.get('FT_AUTH_COOKIE'),
+  'New York Times': Deno.env.get('NYTIMES_AUTH_COOKIE'),
+  'NYTimes': Deno.env.get('NYTIMES_AUTH_COOKIE'),
+};
+
 // Standard User-Agent to avoid being blocked
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
@@ -17,6 +27,7 @@ interface Source {
   source_name: string;
   source_url: string;
   monitor_method: string;
+  monitor_config?: { sitemap_url?: string };
   industries: string[];
   tier: number;
   last_successful_scrape?: string;
@@ -149,32 +160,52 @@ serve(async (req) => {
 });
 
 // ============================================================================
+// Helper: Get headers with auth cookie if available
+// ============================================================================
+function getHeadersForSource(sourceName: string): HeadersInit {
+  const headers: HeadersInit = { 'User-Agent': USER_AGENT };
+  const cookie = AUTH_COOKIES[sourceName];
+  if (cookie) {
+    headers['Cookie'] = cookie;
+    console.log(`   🔐 Using auth cookie for ${sourceName}`);
+  }
+  return headers;
+}
+
+// ============================================================================
 // Helper: Discover articles via sitemap
 // ============================================================================
 async function discoverViaSitemap(source: Source, supabase: any): Promise<{ articles: number, newCount: number, duplicateCount: number }> {
   const domain = new URL(source.source_url).origin;
+  const headers = getHeadersForSource(source.source_name);
 
-  // Step 1: Fetch robots.txt to find sitemaps
-  const robotsUrl = `${domain}/robots.txt`;
-  const robotsRes = await fetch(robotsUrl, {
-    headers: { 'User-Agent': USER_AGENT }
-  });
-  if (!robotsRes.ok) {
-    throw new Error(`robots.txt not found (${robotsRes.status})`);
+  let sitemapUrls: string[] = [];
+
+  // Step 1: Check if monitor_config has a direct sitemap URL
+  if (source.monitor_config?.sitemap_url) {
+    console.log(`   📍 Using configured sitemap: ${source.monitor_config.sitemap_url}`);
+    sitemapUrls = [source.monitor_config.sitemap_url];
+  } else {
+    // Fall back to robots.txt discovery
+    const robotsUrl = `${domain}/robots.txt`;
+    const robotsRes = await fetch(robotsUrl, { headers });
+    if (!robotsRes.ok) {
+      throw new Error(`robots.txt not found (${robotsRes.status})`);
+    }
+
+    const robotsTxt = await robotsRes.text();
+
+    // Check if we got HTML instead of robots.txt (some sites block without user agent)
+    if (robotsTxt.trim().startsWith('<!DOCTYPE') || robotsTxt.trim().startsWith('<html')) {
+      throw new Error('robots.txt returned HTML (possibly blocked)');
+    }
+
+    sitemapUrls = robotsTxt
+      .split('\n')
+      .filter(line => line.toLowerCase().startsWith('sitemap:'))
+      .map(line => line.split(':').slice(1).join(':').trim())
+      .filter(url => url.includes('news') || url.includes('latest') || url.includes('sitemap'));
   }
-
-  const robotsTxt = await robotsRes.text();
-
-  // Check if we got HTML instead of robots.txt (some sites block without user agent)
-  if (robotsTxt.trim().startsWith('<!DOCTYPE') || robotsTxt.trim().startsWith('<html')) {
-    throw new Error('robots.txt returned HTML (possibly blocked)');
-  }
-
-  let sitemapUrls = robotsTxt
-    .split('\n')
-    .filter(line => line.toLowerCase().startsWith('sitemap:'))
-    .map(line => line.split(':').slice(1).join(':').trim())
-    .filter(url => url.includes('news') || url.includes('latest') || url.includes('sitemap'));
 
   if (sitemapUrls.length === 0) {
     throw new Error('No sitemaps found in robots.txt');
@@ -205,7 +236,7 @@ async function discoverViaSitemap(source: Source, supabase: any): Promise<{ arti
       const newsIndex = sitemapUrls.find(u => u.includes('news-sitemap-index'));
       if (newsIndex) {
         try {
-          const indexRes = await fetch(newsIndex, { headers: { 'User-Agent': USER_AGENT } });
+          const indexRes = await fetch(newsIndex, { headers });
           if (indexRes.ok) {
             const indexXml = await indexRes.text();
             const nestedSitemaps = [...indexXml.matchAll(/<loc>(.*?)<\/loc>/g)]
@@ -236,9 +267,7 @@ async function discoverViaSitemap(source: Source, supabase: any): Promise<{ arti
 
   for (const sitemapUrl of sitemapUrls.slice(0, 3)) { // Limit to first 3 sitemaps per source
     try {
-      const sitemapRes = await fetch(sitemapUrl, {
-        headers: { 'User-Agent': USER_AGENT }
-      });
+      const sitemapRes = await fetch(sitemapUrl, { headers });
       if (!sitemapRes.ok) continue;
 
       const xml = await sitemapRes.text();

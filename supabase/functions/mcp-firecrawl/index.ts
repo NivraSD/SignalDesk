@@ -13,6 +13,7 @@ const WSJ_AUTH_COOKIE = Deno.env.get('WSJ_AUTH_COOKIE');
 const FT_AUTH_COOKIE = Deno.env.get('FT_AUTH_COOKIE');
 const BLOOMBERG_AUTH_COOKIE = Deno.env.get('BLOOMBERG_AUTH_COOKIE');
 const NYTIMES_AUTH_COOKIE = Deno.env.get('NYTIMES_AUTH_COOKIE');
+const THEINFORMATION_AUTH_COOKIE = Deno.env.get('THEINFORMATION_AUTH_COOKIE');
 
 // MCP Tools Definition
 const TOOLS = [
@@ -164,6 +165,9 @@ async function batchScrapeArticles(args: any) {
         } else if (article.url.includes('nytimes.com') && NYTIMES_AUTH_COOKIE) {
           authCookie = NYTIMES_AUTH_COOKIE;
           sourceName = 'NYTimes';
+        } else if (article.url.includes('theinformation.com') && THEINFORMATION_AUTH_COOKIE) {
+          authCookie = THEINFORMATION_AUTH_COOKIE;
+          sourceName = 'The Information';
         }
 
         if (authCookie) {

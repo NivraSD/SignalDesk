@@ -73,12 +73,21 @@ serve(async (req) => {
       try {
         console.log(`   Processing: ${article.title?.substring(0, 60)}...`);
 
-        const metadata = await extractMetadata(article);
+        const { metadata, extractedDate } = await extractMetadata(article);
+
+        // Build update object
+        const updateData: any = { extracted_metadata: metadata };
+
+        // If we extracted a date and the article has no published_at, update it
+        if (extractedDate && !article.published_at) {
+          updateData.published_at = extractedDate;
+          console.log(`   📅 Extracted date from content: ${extractedDate}`);
+        }
 
         // Update article with metadata
         const { error: updateError } = await supabase
           .from('raw_articles')
-          .update({ extracted_metadata: metadata })
+          .update(updateData)
           .eq('id', article.id);
 
         if (updateError) {
@@ -128,7 +137,7 @@ serve(async (req) => {
   }
 });
 
-async function extractMetadata(article: any): Promise<ArticleMetadata> {
+async function extractMetadata(article: any): Promise<{ metadata: ArticleMetadata; extractedDate: string | null }> {
   // Use whatever we have, prioritize richer sources
   const textToAnalyze = article.full_content
     || `${article.title || ''} ${article.description || ''}`
@@ -138,22 +147,23 @@ async function extractMetadata(article: any): Promise<ArticleMetadata> {
     : article.description ? 'medium'
     : 'low';
 
-  // Calculate temporal info
-  const publishedDate = new Date(article.published_at);
+  // Call Claude for extraction (including date)
+  const extracted = await callClaudeForExtraction(textToAnalyze, article.title, confidence);
+
+  // Use extracted date if article has no published_at
+  const effectiveDate = article.published_at || extracted.published_date;
+  const publishedDate = effectiveDate ? new Date(effectiveDate) : new Date();
   const ageHours = (Date.now() - publishedDate.getTime()) / (1000 * 60 * 60);
 
   const wordCount = textToAnalyze.split(/\s+/).filter(w => w.length > 0).length;
 
-  // Call Claude for extraction
-  const extracted = await callClaudeForExtraction(textToAnalyze, article.title, confidence);
-
-  return {
+  const metadata: ArticleMetadata = {
     entities: extracted.entities,
     article_type: extracted.article_type,
     topics: extracted.topics,
     industries: extracted.industries,
     temporal: {
-      published_at: article.published_at,
+      published_at: effectiveDate,
       age_hours: Math.round(ageHours * 10) / 10,
       is_within_24h: ageHours <= 24,
       is_breaking: ageHours <= 2
@@ -166,6 +176,11 @@ async function extractMetadata(article: any): Promise<ArticleMetadata> {
     },
     summary: extracted.summary,
     extracted_at: new Date().toISOString()
+  };
+
+  return {
+    metadata,
+    extractedDate: extracted.published_date || null
   };
 }
 
@@ -182,6 +197,7 @@ Extract:
 3. Topics/themes (be specific - "crisis communications", "AI regulation", "venture funding", etc.)
 4. Industries (public_relations, technology, finance, healthcare, energy, manufacturing, etc.)
 5. Brief 2-sentence summary
+6. Publication date - look for dates in the article (like "Dec 5, 2025" or "December 5, 2025"). Return in ISO format YYYY-MM-DD if found, or null if not found.
 
 Return as JSON:
 {
@@ -194,10 +210,11 @@ Return as JSON:
   "article_type": "news",
   "topics": ["topic1", "topic2"],
   "industries": ["industry1", "industry2"],
-  "summary": "Two sentence summary."
+  "summary": "Two sentence summary.",
+  "published_date": "2025-12-05"
 }
 
-Note: Confidence level is ${confidence}. Extract what you can from the available text.`;
+Note: Confidence level is ${confidence}. Extract what you can from the available text. For published_date, look for byline dates, timestamps, or dates at the start of the article. Return null if no date is clearly visible.`;
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',

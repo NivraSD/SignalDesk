@@ -95,15 +95,29 @@ serve(async (req) => {
 
           console.log(`   ✅ ${source.source_name}: ${result.value.newCount} new, ${result.value.duplicateCount} duplicates`);
 
-          // Update last successful scrape
+          // Update last successful scrape and reset consecutive failures
           await supabase
             .from('source_registry')
-            .update({ last_successful_scrape: new Date().toISOString() })
+            .update({
+              last_successful_scrape: new Date().toISOString(),
+              consecutive_failures: 0
+            })
             .eq('id', source.id);
 
         } else {
           console.error(`   ❌ ${source.source_name}: ${result.reason?.message || 'Unknown error'}`);
           sourcesFailed++;
+
+          // Increment consecutive failures and update last_successful_scrape
+          // This prevents infinite retries of failing sources
+          await supabase
+            .from('source_registry')
+            .update({
+              consecutive_failures: (source.consecutive_failures || 0) + 1,
+              // Still update timestamp so we don't keep retrying immediately
+              last_successful_scrape: new Date().toISOString()
+            })
+            .eq('id', source.id);
         }
       }
 
@@ -196,46 +210,42 @@ async function discoverViaFirecrawlMap(source: Source, supabase: any): Promise<{
   }
 
   // Filter URLs to find actual content (not category/profile pages)
+  // More permissive approach: if Firecrawl returned it, it's likely an article
+  // Only exclude obvious non-article pages
   const articles = discoveredLinks
     .filter((link: string | {url: string}) => {
       const url = typeof link === 'string' ? link : link.url;
       const lowerUrl = url.toLowerCase();
 
-      // Include URLs that look like articles/content (expanded for institutional sites)
-      const isArticle =
-        lowerUrl.includes('/article') ||
-        lowerUrl.includes('/news/') ||
-        lowerUrl.includes('/story/') ||
-        lowerUrl.includes('/20') ||  // Date in URL
-        lowerUrl.match(/\/\d{4}\/\d{2}/) ||  // YYYY/MM pattern
-        // Institutional/government site patterns
-        lowerUrl.includes('/press-release') ||
-        lowerUrl.includes('/publication') ||
-        lowerUrl.includes('/report') ||
-        lowerUrl.includes('/insight') ||
-        lowerUrl.includes('/research') ||
-        lowerUrl.includes('/speech') ||
-        lowerUrl.includes('/testimony') ||
-        lowerUrl.includes('/blog/') ||
-        lowerUrl.includes('/post/') ||
-        lowerUrl.includes('/releases/') ||
-        lowerUrl.includes('/announcements/') ||
-        lowerUrl.includes('/update') ||
-        lowerUrl.includes('/briefing');
+      // Skip the exact source URL (the page we started from)
+      if (lowerUrl === source.source_url.toLowerCase()) {
+        return false;
+      }
 
-      // Exclude category/listing pages
-      const isNotCategory =
-        !lowerUrl.includes('/category') &&
-        !lowerUrl.includes('/tag/') &&
-        !lowerUrl.includes('/author/') &&
-        !lowerUrl.includes('/topics/') &&
-        !lowerUrl.endsWith('/news') &&
-        !lowerUrl.endsWith('/latest') &&
-        !lowerUrl.endsWith('/search') &&
-        !lowerUrl.includes('/login') &&
-        !lowerUrl.includes('/subscribe');
+      // Exclude obvious non-article pages
+      const isExcluded =
+        lowerUrl.includes('/category') ||
+        lowerUrl.includes('/tag/') ||
+        lowerUrl.includes('/author/') ||
+        lowerUrl.includes('/topics/') ||
+        lowerUrl.includes('/login') ||
+        lowerUrl.includes('/subscribe') ||
+        lowerUrl.includes('/signup') ||
+        lowerUrl.includes('/search') ||
+        lowerUrl.includes('/contact') ||
+        lowerUrl.includes('/about') ||
+        lowerUrl.includes('/privacy') ||
+        lowerUrl.includes('/terms') ||
+        lowerUrl.includes('/faq') ||
+        lowerUrl.includes('.pdf') ||
+        lowerUrl.includes('.xml') ||
+        lowerUrl.endsWith('/news') ||
+        lowerUrl.endsWith('/latest') ||
+        lowerUrl.endsWith('/archive') ||
+        // Skip if URL is just the domain or has only 1-2 path segments
+        (new URL(url).pathname.split('/').filter(Boolean).length < 2);
 
-      return isArticle && isNotCategory;
+      return !isExcluded;
     })
     .map((link: string | {url: string, title?: string}) => {
       if (typeof link === 'string') {
