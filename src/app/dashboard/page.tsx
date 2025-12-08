@@ -566,10 +566,8 @@ export default function Dashboard() {
                 Intelligence
               </div>
 
-              <SidebarItem icon={BarChart3} label="Predictions" onClick={() => setActiveModule('predictions')} tourId="sidebar-predictions" />
-              <SidebarItem icon={Activity} label="Social" onClick={() => setActiveModule('signals')} tourId="sidebar-signals" />
+              <SidebarItem icon={Zap} label="Signals" onClick={() => setActiveModule('signals')} tourId="sidebar-signals" />
               <SidebarItem icon={Globe} label="Geo Intel" onClick={() => setActiveModule('geointel')} tourId="sidebar-geointel" />
-              <SidebarItem icon={ExternalLink} label="Connections" onClick={() => setActiveModule('connections')} tourId="sidebar-connections" />
             </div>
           </div>
         </aside>
@@ -785,7 +783,7 @@ function HubView({
   const [expandedOppId, setExpandedOppId] = useState<string | null>(null)
   const [executingOppId, setExecutingOppId] = useState<string | null>(null)
   const [executionProgress, setExecutionProgress] = useState<{ current?: string; progress?: number }>({})
-  const [activeSidebarTab, setActiveSidebarTab] = useState<'social' | 'predictions' | 'connections'>('predictions')
+  const [activeSidebarTab, setActiveSidebarTab] = useState<'signals'>('signals')
 
   // Helper function to create clean folder name from opportunity title
   const getOpportunityFolderName = (title: string): string => {
@@ -1208,131 +1206,72 @@ ${opp.strategic_context?.trigger_events?.map((e: string) => `- ${e}`).join('\n')
 
       {/* Intel Sidebar - Right */}
       <aside className="w-[320px] bg-[var(--grey-900)] border-l border-[var(--grey-800)] p-5 overflow-y-auto shrink-0">
-        {/* Tabs */}
-        <div className="flex gap-1 mb-5">
-          <button
-            onClick={() => setActiveSidebarTab('social')}
-            className={`px-3 py-2 text-[0.75rem] rounded-md transition-colors ${
-              activeSidebarTab === 'social'
-                ? 'bg-[var(--burnt-orange-muted)] text-[var(--burnt-orange)]'
-                : 'text-[var(--grey-500)] hover:text-[var(--grey-300)]'
-            }`}
-            style={{ fontFamily: 'var(--font-display)' }}
-          >
-            Social
-          </button>
-          <button
-            onClick={() => setActiveSidebarTab('predictions')}
-            className={`px-3 py-2 text-[0.75rem] rounded-md transition-colors ${
-              activeSidebarTab === 'predictions'
-                ? 'bg-[var(--burnt-orange-muted)] text-[var(--burnt-orange)]'
-                : 'text-[var(--grey-500)] hover:text-[var(--grey-300)]'
-            }`}
-            style={{ fontFamily: 'var(--font-display)' }}
-          >
-            Predictions
-            {predictions.length > 0 && (
-              <span className="ml-1.5 px-1.5 py-0.5 text-[0.6rem] bg-[var(--burnt-orange)]/20 rounded">
-                {predictions.length}
+        {/* Header */}
+        <div
+          className="text-[0.65rem] uppercase tracking-[0.1em] text-[var(--grey-500)] mb-3 flex items-center justify-between"
+          style={{ fontFamily: 'var(--font-display)' }}
+        >
+          <span className="flex items-center gap-2">
+            <Zap className="w-3.5 h-3.5 text-[var(--burnt-orange)]" />
+            Signals
+            {(predictions.length + connections.length) > 0 && (
+              <span className="px-1.5 py-0.5 text-[0.6rem] bg-[var(--burnt-orange)]/20 text-[var(--burnt-orange)] rounded">
+                {predictions.length + connections.length}
               </span>
             )}
-          </button>
+          </span>
           <button
-            onClick={() => setActiveSidebarTab('connections')}
-            className={`px-3 py-2 text-[0.75rem] rounded-md transition-colors ${
-              activeSidebarTab === 'connections'
-                ? 'bg-[var(--burnt-orange-muted)] text-[var(--burnt-orange)]'
-                : 'text-[var(--grey-500)] hover:text-[var(--grey-300)]'
-            }`}
-            style={{ fontFamily: 'var(--font-display)' }}
+            onClick={() => onNavigate('signals')}
+            className="text-[var(--burnt-orange)] hover:underline text-[0.65rem]"
           >
-            Connections
-            {connections.length > 0 && (
-              <span className="ml-1.5 px-1.5 py-0.5 text-[0.6rem] bg-[var(--burnt-orange)]/20 rounded">
-                {connections.length}
-              </span>
-            )}
+            View All
           </button>
         </div>
 
-        {/* Social Tab Content - Placeholder for now */}
-        {activeSidebarTab === 'social' && (
-          <div>
+        {/* Predictions Section */}
+        {predictions.length > 0 && (
+          <div className="mb-4">
             <div
-              className="text-[0.65rem] uppercase tracking-[0.1em] text-[var(--grey-500)] mb-3"
+              className="text-[0.6rem] uppercase tracking-[0.1em] text-[var(--grey-600)] mb-2"
               style={{ fontFamily: 'var(--font-display)' }}
             >
-              Trending Mentions
+              Predictions
             </div>
-            <div className="text-center py-8 text-[var(--grey-500)] text-sm">
-              Social monitoring coming soon
-            </div>
+            {predictions.slice(0, 3).map((pred, idx) => (
+              <IntelItem
+                key={pred.id || idx}
+                title={pred.prediction_text || pred.title || 'Prediction'}
+                highlight={`${pred.confidence_score || 0}%`}
+                meta={`confidence · ${pred.category || 'general'}`}
+              />
+            ))}
           </div>
         )}
 
-        {/* Predictions Tab Content */}
-        {activeSidebarTab === 'predictions' && (
-          <div>
+        {/* Connections Section */}
+        {connections.length > 0 && (
+          <div className="mb-4">
             <div
-              className="text-[0.65rem] uppercase tracking-[0.1em] text-[var(--grey-500)] mb-3 flex items-center justify-between"
+              className="text-[0.6rem] uppercase tracking-[0.1em] text-[var(--grey-600)] mb-2"
               style={{ fontFamily: 'var(--font-display)' }}
             >
-              <span>Predictions</span>
-              <button
-                onClick={() => onNavigate('predictions')}
-                className="text-[var(--burnt-orange)] hover:underline text-[0.65rem]"
-              >
-                View All
-              </button>
+              Connections
             </div>
-
-            {predictions.length > 0 ? (
-              predictions.slice(0, 5).map((pred, idx) => (
-                <IntelItem
-                  key={pred.id || idx}
-                  title={pred.prediction_text || pred.title || 'Prediction'}
-                  highlight={`${pred.confidence_score || 0}%`}
-                  meta={`confidence · ${pred.category || 'general'}`}
-                />
-              ))
-            ) : (
-              <div className="text-center py-8 text-[var(--grey-500)] text-sm">
-                No predictions yet. Generate an intelligence brief to detect predictions.
-              </div>
-            )}
+            {connections.slice(0, 3).map((conn, idx) => (
+              <IntelItem
+                key={conn.id || idx}
+                title={conn.signal_title || conn.headline || 'Connection Signal'}
+                highlight={conn.signal_strength ? `${Math.round(conn.signal_strength * 100)}%` : 'New'}
+                meta={`${conn.client_impact_level || 'medium'} impact · ${conn.signal_type || 'general'}`}
+              />
+            ))}
           </div>
         )}
 
-        {/* Connections Tab Content */}
-        {activeSidebarTab === 'connections' && (
-          <div>
-            <div
-              className="text-[0.65rem] uppercase tracking-[0.1em] text-[var(--grey-500)] mb-3 flex items-center justify-between"
-              style={{ fontFamily: 'var(--font-display)' }}
-            >
-              <span>Connection Signals</span>
-              <button
-                onClick={() => onNavigate('connections')}
-                className="text-[var(--burnt-orange)] hover:underline text-[0.65rem]"
-              >
-                View All
-              </button>
-            </div>
-
-            {connections.length > 0 ? (
-              connections.slice(0, 5).map((conn, idx) => (
-                <IntelItem
-                  key={conn.id || idx}
-                  title={conn.signal_title || conn.headline || 'Connection Signal'}
-                  highlight={conn.signal_strength ? `${Math.round(conn.signal_strength * 100)}%` : 'New'}
-                  meta={`${conn.client_impact_level || 'medium'} impact · ${conn.signal_type || 'general'}`}
-                />
-              ))
-            ) : (
-              <div className="text-center py-8 text-[var(--grey-500)] text-sm">
-                No connections yet. Generate an intelligence brief to detect connections.
-              </div>
-            )}
+        {/* Empty State */}
+        {predictions.length === 0 && connections.length === 0 && (
+          <div className="text-center py-8 text-[var(--grey-500)] text-sm">
+            No signals yet. Generate an intelligence brief to detect predictions and connections.
           </div>
         )}
       </aside>
