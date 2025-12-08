@@ -54,8 +54,9 @@ import GeoIntelModule from '@/components/modules/GeoIntelModule'
 import ConnectionsModule from '@/components/modules/ConnectionsModule'
 import PredictionsModule from '@/components/modules/PredictionsModule'
 import SignalsModule from '@/components/modules/SignalsModule'
+import SocialIntelligenceModule from '@/components/modules/SocialIntelligenceModule'
 
-type ModuleView = 'hub' | 'opportunities' | 'studio' | 'campaigns' | 'crisis' | 'vault' | 'geointel' | 'connections' | 'predictions' | 'signals'
+type ModuleView = 'hub' | 'opportunities' | 'studio' | 'campaigns' | 'crisis' | 'vault' | 'geointel' | 'connections' | 'predictions' | 'signals' | 'social'
 
 export default function Dashboard() {
   const router = useRouter()
@@ -567,7 +568,7 @@ export default function Dashboard() {
               </div>
 
               <SidebarItem icon={Zap} label="Signals" onClick={() => setActiveModule('signals')} tourId="sidebar-signals" />
-              <SidebarItem icon={Activity} label="Social" onClick={() => setActiveModule('signals')} tourId="sidebar-social" />
+              <SidebarItem icon={Activity} label="Social" onClick={() => setActiveModule('social')} tourId="sidebar-social" />
               <SidebarItem icon={Globe} label="Geo Intel" onClick={() => setActiveModule('geointel')} tourId="sidebar-geointel" />
             </div>
           </div>
@@ -641,6 +642,12 @@ export default function Dashboard() {
           {activeModule === 'signals' && (
             <div className="flex-1 overflow-y-auto p-8">
               <SignalsModule />
+            </div>
+          )}
+
+          {activeModule === 'social' && (
+            <div className="flex-1 overflow-y-auto p-8">
+              <SocialIntelligenceModule />
             </div>
           )}
         </main>
