@@ -567,6 +567,7 @@ export default function Dashboard() {
               </div>
 
               <SidebarItem icon={Zap} label="Signals" onClick={() => setActiveModule('signals')} tourId="sidebar-signals" />
+              <SidebarItem icon={Activity} label="Social" onClick={() => setActiveModule('signals')} tourId="sidebar-social" />
               <SidebarItem icon={Globe} label="Geo Intel" onClick={() => setActiveModule('geointel')} tourId="sidebar-geointel" />
             </div>
           </div>
