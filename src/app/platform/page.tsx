@@ -31,6 +31,13 @@ import {
 export default function PlatformCapabilities() {
   const router = useRouter()
 
+  // Format today's date as "Month Day, Year"
+  const todayFormatted = new Date().toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  })
+
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
       {/* Navigation */}
@@ -116,7 +123,7 @@ export default function PlatformCapabilities() {
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <div className="text-[#c75d3a] text-xs font-semibold tracking-[0.15em] uppercase mb-1" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>Executive Intelligence Brief</div>
-                    <div className="text-[#757575] text-sm">December 2, 2024 • 47 signals analyzed</div>
+                    <div className="text-[#757575] text-sm">{todayFormatted} • 47 signals analyzed</div>
                   </div>
                   <div className="px-3 py-1 bg-[#c75d3a]/10 rounded-full">
                     <span className="text-[#c75d3a] text-xs font-medium">LIVE</span>
@@ -340,7 +347,7 @@ export default function PlatformCapabilities() {
                     Acme Corp Announces Industry-First AI Integration Platform, Transforming Enterprise Workflows
                   </h4>
                   <p className="text-[#9e9e9e] text-sm leading-relaxed mb-3">
-                    <span className="text-[#bdbdbd]">SAN FRANCISCO – December 2, 2024</span> – Acme Corp, the leading provider of enterprise automation solutions, today announced the launch of AIFlow, a groundbreaking platform that seamlessly integrates artificial intelligence...
+                    <span className="text-[#bdbdbd]">SAN FRANCISCO – {todayFormatted}</span> – Acme Corp, the leading provider of enterprise automation solutions, today announced the launch of AIFlow, a groundbreaking platform that seamlessly integrates artificial intelligence...
                   </p>
                   <p className="text-[#9e9e9e] text-sm leading-relaxed italic" style={{ fontFamily: 'Playfair Display, serif' }}>
                     "This represents a fundamental shift in how enterprises approach automation," said Jane Smith, CEO of Acme Corp. "We've spent two years developing technology that..."
