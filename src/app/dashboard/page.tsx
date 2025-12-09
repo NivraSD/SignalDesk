@@ -676,7 +676,14 @@ export default function Dashboard() {
 
             {/* Popout Content */}
             <div className="flex-1 overflow-y-auto p-6">
-              <IntelligenceBriefDisplay synthesis={executiveSynthesis} organizationId={organization?.id} />
+              <IntelligenceBriefDisplay
+                synthesis={executiveSynthesis}
+                organizationId={organization?.id}
+                onNavigateToOpportunities={() => {
+                  setShowReportPopout(false)
+                  setActiveModule('opportunities')
+                }}
+              />
             </div>
           </div>
         </div>

@@ -86,6 +86,8 @@ Think creatively about how ${organizationName} can leverage this news:
 
 Generate a SINGLE opportunity with this EXACT JSON structure:
 
+IMPORTANT: You MUST generate AT LEAST 3 stakeholder campaigns with 2-3 content items each. This is critical for comprehensive execution.
+
 {
   "title": "Action-oriented opportunity title",
   "description": "2-3 sentence description of the opportunity and why it matters for ${organizationName}",
@@ -100,47 +102,163 @@ Generate a SINGLE opportunity with this EXACT JSON structure:
     "risk_if_missed": "What happens if ${organizationName} doesn't act"
   },
 
+  "media_targeting_strategy": {
+    "tier_1_targets": [
+      {
+        "outlet": "Publication name",
+        "reporter": "Reporter name if known, or 'TBD'",
+        "beat": "Their coverage area",
+        "pitch_angle": "How to pitch this specifically to them",
+        "past_coverage": "Relevant past articles they've written"
+      }
+    ],
+    "tier_2_targets": [
+      {
+        "outlet": "Trade publication or secondary outlet",
+        "pitch_angle": "How to pitch for trade media"
+      }
+    ],
+    "pitch_strategy": "Overall approach for media outreach",
+    "timing_notes": "Best days/times to pitch, news cycle considerations"
+  },
+
   "execution_plan": {
     "stakeholder_campaigns": [
       {
-        "stakeholder_name": "Target audience (e.g., 'Industry media', 'Potential clients', 'Partners')",
+        "stakeholder_name": "Industry Media & Journalists",
         "stakeholder_priority": 1,
-        "stakeholder_description": "Who this audience is and why they matter",
-        "lever_name": "The influence lever (e.g., 'Thought Leadership', 'Expert Commentary')",
+        "stakeholder_description": "Key trade and business journalists covering this space",
+        "lever_name": "Media Relations",
         "lever_priority": 1,
-        "lever_description": "How this lever will influence the stakeholder",
+        "lever_description": "Proactive pitching and expert commentary positioning",
         "content_items": [
           {
-            "type": "thought_leadership",
-            "topic": "Specific content topic",
-            "target": "Where this will be published/shared",
+            "type": "media_pitch",
+            "topic": "Pitch for tier 1 media",
+            "target": "Specific outlet or reporter",
             "brief": {
-              "angle": "The specific angle for this content",
+              "angle": "The news hook and ${organizationName}'s unique perspective",
               "key_points": ["Point 1", "Point 2", "Point 3"],
-              "tone": "Professional, insightful, etc.",
-              "length": "800-1000 words",
-              "cta": "Call to action",
-              "target_audience": "Who will read this",
-              "data_to_include": ["Any data points to reference"]
+              "tone": "Newsworthy, timely",
+              "length": "200-300 words",
+              "cta": "Interview availability, data to share",
+              "target_audience": "Reporter/editor",
+              "data_to_include": ["Relevant stats", "Expert quotes"]
             },
             "urgency": "immediate",
-            "estimated_effort": "2 hours"
+            "estimated_effort": "1 hour"
+          },
+          {
+            "type": "thought_leadership",
+            "topic": "Byline article on the topic",
+            "target": "Industry publication",
+            "brief": {
+              "angle": "Expert analysis of the news",
+              "key_points": ["Industry context", "What this means", "What's next"],
+              "tone": "Authoritative, analytical",
+              "length": "600-800 words",
+              "cta": "Contact for more insights",
+              "target_audience": "Industry decision-makers",
+              "data_to_include": ["Market data", "Case examples"]
+            },
+            "urgency": "immediate",
+            "estimated_effort": "3 hours"
+          }
+        ]
+      },
+      {
+        "stakeholder_name": "Target Clients & Prospects",
+        "stakeholder_priority": 2,
+        "stakeholder_description": "Current and potential clients who care about this topic",
+        "lever_name": "Thought Leadership",
+        "lever_priority": 2,
+        "lever_description": "Demonstrate expertise and relevance to client challenges",
+        "content_items": [
+          {
+            "type": "social_post",
+            "topic": "LinkedIn perspective on the news",
+            "target": "LinkedIn",
+            "brief": {
+              "angle": "${organizationName}'s take on the development",
+              "key_points": ["Key insight", "Implication for the industry", "Call to engage"],
+              "tone": "Thought-provoking, professional",
+              "length": "150-250 words",
+              "cta": "Engage with question or offer",
+              "target_audience": "LinkedIn network",
+              "data_to_include": ["1-2 key stats"]
+            },
+            "urgency": "immediate",
+            "estimated_effort": "30 minutes"
+          },
+          {
+            "type": "email_campaign",
+            "topic": "Client advisory on the news",
+            "target": "Client email list",
+            "brief": {
+              "angle": "What this news means for clients",
+              "key_points": ["News summary", "Impact analysis", "Recommended actions"],
+              "tone": "Advisory, helpful",
+              "length": "300-400 words",
+              "cta": "Schedule a call to discuss",
+              "target_audience": "Current and prospective clients",
+              "data_to_include": ["Key implications"]
+            },
+            "urgency": "this_week",
+            "estimated_effort": "1 hour"
+          }
+        ]
+      },
+      {
+        "stakeholder_name": "Industry & Professional Network",
+        "stakeholder_priority": 3,
+        "stakeholder_description": "Peers, partners, and industry influencers",
+        "lever_name": "Social Proof & Visibility",
+        "lever_priority": 3,
+        "lever_description": "Build visibility and thought leadership position",
+        "content_items": [
+          {
+            "type": "social_post",
+            "topic": "Twitter/X thread on the news",
+            "target": "Twitter/X",
+            "brief": {
+              "angle": "Quick takes and analysis",
+              "key_points": ["Hook", "Key insight", "Industry implication"],
+              "tone": "Sharp, insightful",
+              "length": "5-7 tweets",
+              "cta": "Engage with follow-up question",
+              "target_audience": "Industry Twitter",
+              "data_to_include": ["Key stat"]
+            },
+            "urgency": "immediate",
+            "estimated_effort": "30 minutes"
           }
         ]
       }
     ],
     "execution_timeline": {
-      "immediate": ["Actions for today/tomorrow"],
-      "this_week": ["Actions for this week"],
-      "this_month": ["Ongoing actions"],
-      "ongoing": ["Long-term follow-up"]
+      "immediate": ["Draft and send media pitches", "Post LinkedIn perspective", "Share Twitter thread"],
+      "this_week": ["Send client advisory email", "Follow up with journalists", "Engage with responses"],
+      "this_month": ["Publish byline article", "Track media coverage", "Share wins"],
+      "ongoing": ["Monitor for follow-up opportunities", "Update talking points as story develops"]
     },
     "success_metrics": [
       {
-        "metric": "What to measure",
-        "target": "Target value",
-        "measurement_method": "How to measure",
-        "timeframe": "When to measure"
+        "metric": "Media mentions",
+        "target": "2-3 placements",
+        "measurement_method": "Media monitoring",
+        "timeframe": "2 weeks"
+      },
+      {
+        "metric": "Social engagement",
+        "target": "500+ impressions, 20+ engagements",
+        "measurement_method": "Platform analytics",
+        "timeframe": "1 week"
+      },
+      {
+        "metric": "Client conversations",
+        "target": "3+ follow-up meetings",
+        "measurement_method": "CRM tracking",
+        "timeframe": "2 weeks"
       }
     ]
   },
@@ -411,7 +529,7 @@ serve(async (req) => {
         executed: false,
         version: 2,
 
-        // Data field for backward compatibility
+        // Data field for backward compatibility and media targeting
         data: {
           confidence_factors: opportunity.confidence_factors,
           pattern_matched: opportunity.detection_metadata?.pattern_matched || 'Single Article',
@@ -424,7 +542,8 @@ serve(async (req) => {
           },
           total_content_items: opportunity.execution_plan?.stakeholder_campaigns
             ?.reduce((sum: number, c: any) => sum + (c.content_items?.length || 0), 0) || 0,
-          stakeholder_count: opportunity.execution_plan?.stakeholder_campaigns?.length || 0
+          stakeholder_count: opportunity.execution_plan?.stakeholder_campaigns?.length || 0,
+          media_targeting_strategy: opportunity.media_targeting_strategy || null
         },
 
         status: 'active',

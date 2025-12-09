@@ -18,12 +18,14 @@ interface IntelligenceBriefDisplayProps {
   synthesis: any
   organizationId?: string
   onOpportunityGenerated?: (opportunity: any) => void
+  onNavigateToOpportunities?: () => void
 }
 
-export default function IntelligenceBriefDisplay({ synthesis, organizationId, onOpportunityGenerated }: IntelligenceBriefDisplayProps) {
+export default function IntelligenceBriefDisplay({ synthesis, organizationId, onOpportunityGenerated, onNavigateToOpportunities }: IntelligenceBriefDisplayProps) {
   const [generatingOpportunity, setGeneratingOpportunity] = useState<number | null>(null)
   const [generationError, setGenerationError] = useState<string | null>(null)
-  const [generationSuccess, setGenerationSuccess] = useState<number | null>(null)
+  // Track generated opportunity IDs by development index
+  const [generatedOpportunities, setGeneratedOpportunities] = useState<Record<number, string>>({})
 
   // Generate opportunity from article/development
   const handleGenerateOpportunity = async (dev: any, index: number) => {
@@ -55,12 +57,13 @@ export default function IntelligenceBriefDisplay({ synthesis, organizationId, on
       if (error) throw error
 
       if (data?.success) {
-        console.log('Opportunity generated:', data.opportunity?.title)
-        setGenerationSuccess(index)
+        console.log('Opportunity generated:', data.opportunity?.title, 'ID:', data.metadata?.opportunity_id)
+        // Store the opportunity ID for this development
+        const opportunityId = data.metadata?.opportunity_id || data.opportunity?.id
+        if (opportunityId) {
+          setGeneratedOpportunities(prev => ({ ...prev, [index]: opportunityId }))
+        }
         onOpportunityGenerated?.(data.opportunity)
-
-        // Clear success after 3 seconds
-        setTimeout(() => setGenerationSuccess(null), 3000)
       } else {
         throw new Error(data?.error || 'Failed to generate opportunity')
       }
@@ -107,8 +110,9 @@ export default function IntelligenceBriefDisplay({ synthesis, organizationId, on
                 index={i}
                 organizationId={organizationId}
                 isGenerating={generatingOpportunity === i}
-                isSuccess={generationSuccess === i}
+                generatedOpportunityId={generatedOpportunities[i]}
                 onGenerateOpportunity={() => handleGenerateOpportunity(dev, i)}
+                onViewOpportunity={onNavigateToOpportunities}
               />
             ))}
           </div>
@@ -331,15 +335,17 @@ function DevelopmentCard({
   index,
   organizationId,
   isGenerating,
-  isSuccess,
-  onGenerateOpportunity
+  generatedOpportunityId,
+  onGenerateOpportunity,
+  onViewOpportunity
 }: {
   development: any
   index: number
   organizationId?: string
   isGenerating?: boolean
-  isSuccess?: boolean
+  generatedOpportunityId?: string
   onGenerateOpportunity?: () => void
+  onViewOpportunity?: () => void
 }) {
   // Support both old (impact) and new (pr_implication) field names
   const implication = development.pr_implication || development.impact || development.details
@@ -397,40 +403,48 @@ function DevelopmentCard({
       {/* Generate Opportunity Button */}
       {organizationId && onGenerateOpportunity && (
         <div className="mt-3 pt-3 border-t border-[var(--grey-700)]">
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              onGenerateOpportunity()
-            }}
-            disabled={isGenerating}
-            className={`
-              flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium
-              transition-all duration-200
-              ${isSuccess
-                ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                : isGenerating
+          {generatedOpportunityId ? (
+            // Show "View Opportunity" button after generation
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                onViewOpportunity?.()
+              }}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30"
+            >
+              <ChevronRight className="w-3.5 h-3.5" />
+              View Opportunity
+            </button>
+          ) : (
+            // Show "Generate Opportunity" button
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                onGenerateOpportunity()
+              }}
+              disabled={isGenerating}
+              className={`
+                flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium
+                transition-all duration-200
+                ${isGenerating
                   ? 'bg-[var(--grey-700)] text-[var(--grey-400)] cursor-wait'
                   : 'bg-purple-500/20 text-purple-300 border border-purple-500/30 hover:bg-purple-500/30 hover:border-purple-500/50'
-              }
-            `}
-          >
-            {isGenerating ? (
-              <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                Generating...
-              </>
-            ) : isSuccess ? (
-              <>
-                <Sparkles className="w-3.5 h-3.5" />
-                Opportunity Created!
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-3.5 h-3.5" />
-                Generate Opportunity
-              </>
-            )}
-          </button>
+                }
+              `}
+            >
+              {isGenerating ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Generate Opportunity
+                </>
+              )}
+            </button>
+          )}
         </div>
       )}
     </div>
