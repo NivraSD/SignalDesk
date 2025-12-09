@@ -7,12 +7,17 @@ import {
   AlertTriangle,
   Target,
   MessageSquare,
-  Lightbulb
+  Lightbulb,
+  Sparkles,
+  Loader2
 } from 'lucide-react';
+import { supabase } from '@/lib/supabase/client';
 
 interface IntelligenceSynthesisDisplayProps {
   synthesis: any;
   loading?: boolean;
+  organizationId?: string;
+  onOpportunityGenerated?: (opportunity: any) => void;
 }
 
 // TEXTURE & MATERIAL SYSTEM
@@ -374,8 +379,64 @@ const Section = ({ children, className = '', variant = 'default' }: any) => {
 // MAIN COMPONENT
 // ==============
 
-const IntelligenceSynthesisDisplay: React.FC<IntelligenceSynthesisDisplayProps> = ({ synthesis, loading }) => {
+const IntelligenceSynthesisDisplay: React.FC<IntelligenceSynthesisDisplayProps> = ({
+  synthesis,
+  loading,
+  organizationId,
+  onOpportunityGenerated
+}) => {
   const [expandedDevelopment, setExpandedDevelopment] = useState<number | null>(0);
+  const [generatingOpportunity, setGeneratingOpportunity] = useState<number | null>(null);
+  const [generationError, setGenerationError] = useState<string | null>(null);
+  const [generationSuccess, setGenerationSuccess] = useState<number | null>(null);
+
+  // Generate opportunity from article/development
+  const handleGenerateOpportunity = async (dev: any, index: number) => {
+    if (!organizationId) {
+      setGenerationError('Organization ID required');
+      return;
+    }
+
+    setGeneratingOpportunity(index);
+    setGenerationError(null);
+    setGenerationSuccess(null);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-opportunity-from-article', {
+        body: {
+          organization_id: organizationId,
+          article: {
+            title: dev.event || dev.headline || dev.title,
+            content: dev.impact || dev.details || dev.description,
+            description: dev.impact || dev.details,
+            url: dev.url,
+            source: dev.source,
+            published_at: dev.published_at || new Date().toISOString()
+          },
+          save_to_db: true
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        console.log('Opportunity generated:', data.opportunity?.title);
+        setGenerationSuccess(index);
+        onOpportunityGenerated?.(data.opportunity);
+
+        // Clear success after 3 seconds
+        setTimeout(() => setGenerationSuccess(null), 3000);
+      } else {
+        throw new Error(data?.error || 'Failed to generate opportunity');
+      }
+    } catch (err: any) {
+      console.error('Error generating opportunity:', err);
+      setGenerationError(err.message || 'Failed to generate opportunity');
+      setTimeout(() => setGenerationError(null), 5000);
+    } finally {
+      setGeneratingOpportunity(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -714,9 +775,56 @@ const IntelligenceSynthesisDisplay: React.FC<IntelligenceSynthesisDisplayProps> 
                       </a>
                     </div>
                   )}
+
+                  {/* Generate Opportunity Button */}
+                  {organizationId && (
+                    <div className="mt-3 pt-3 border-t border-gray-700/50">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleGenerateOpportunity(dev, i);
+                        }}
+                        disabled={generatingOpportunity === i}
+                        className={`
+                          flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium
+                          transition-all duration-200
+                          ${generationSuccess === i
+                            ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                            : generatingOpportunity === i
+                              ? 'bg-gray-700/50 text-gray-400 cursor-wait'
+                              : 'bg-purple-500/20 text-purple-300 border border-purple-500/30 hover:bg-purple-500/30 hover:border-purple-500/50'
+                          }
+                        `}
+                      >
+                        {generatingOpportunity === i ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            Generating...
+                          </>
+                        ) : generationSuccess === i ? (
+                          <>
+                            <Sparkles className="w-3.5 h-3.5" />
+                            Opportunity Created!
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-3.5 h-3.5" />
+                            Generate Opportunity
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
                 </Card.Container>
               ))}
             </Layout.Masonry>
+
+            {/* Generation Error Message */}
+            {generationError && (
+              <div className="mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+                {generationError}
+              </div>
+            )}
           </Section>
         )}
 

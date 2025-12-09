@@ -281,7 +281,7 @@ export default function GeoIntelModule() {
       {/* Content */}
       <div className="flex-1 overflow-y-auto px-8 py-6">
         {geoResults?.synthesis ? (
-          <IntelligenceSynthesisDisplay synthesis={geoResults} loading={false} />
+          <IntelligenceSynthesisDisplay synthesis={geoResults} loading={false} organizationId={organization?.id} />
         ) : (
           <div className="bg-[var(--grey-900)] border border-[var(--grey-800)] rounded-xl p-12 text-center">
             <Globe className="w-16 h-16 mx-auto mb-4 text-[var(--grey-600)]" />

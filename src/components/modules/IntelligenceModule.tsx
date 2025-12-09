@@ -1122,7 +1122,7 @@ export default function IntelligenceModule() {
                   </div>
                 </div>
               ) : (
-                <IntelligenceSynthesisDisplay synthesis={executiveSynthesis} />
+                <IntelligenceSynthesisDisplay synthesis={executiveSynthesis} organizationId={organization?.id} />
               )}
             </div>
           </div>
@@ -1709,7 +1709,7 @@ export default function IntelligenceModule() {
               )}
                 </>
               ) : (
-                <IntelligenceSynthesisDisplay synthesis={geoResults} loading={false} />
+                <IntelligenceSynthesisDisplay synthesis={geoResults} loading={false} organizationId={organization?.id} />
               )}
 
               {/* Loading State */}
