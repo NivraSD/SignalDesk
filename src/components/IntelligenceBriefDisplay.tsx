@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import {
   TrendingUp,
   Eye,
@@ -8,14 +8,71 @@ import {
   Target,
   Lightbulb,
   Clock,
-  ChevronRight
+  ChevronRight,
+  Sparkles,
+  Loader2
 } from 'lucide-react'
+import { supabase } from '@/lib/supabase/client'
 
 interface IntelligenceBriefDisplayProps {
   synthesis: any
+  organizationId?: string
+  onOpportunityGenerated?: (opportunity: any) => void
 }
 
-export default function IntelligenceBriefDisplay({ synthesis }: IntelligenceBriefDisplayProps) {
+export default function IntelligenceBriefDisplay({ synthesis, organizationId, onOpportunityGenerated }: IntelligenceBriefDisplayProps) {
+  const [generatingOpportunity, setGeneratingOpportunity] = useState<number | null>(null)
+  const [generationError, setGenerationError] = useState<string | null>(null)
+  const [generationSuccess, setGenerationSuccess] = useState<number | null>(null)
+
+  // Generate opportunity from article/development
+  const handleGenerateOpportunity = async (dev: any, index: number) => {
+    if (!organizationId) {
+      setGenerationError('Organization ID required')
+      return
+    }
+
+    setGeneratingOpportunity(index)
+    setGenerationError(null)
+    setGenerationSuccess(null)
+
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-opportunity-from-article', {
+        body: {
+          organization_id: organizationId,
+          article: {
+            title: dev.event || dev.headline || dev.title,
+            content: dev.impact || dev.pr_implication || dev.details || dev.description,
+            description: dev.impact || dev.pr_implication || dev.details,
+            url: dev.url,
+            source: dev.source,
+            published_at: dev.published_at || new Date().toISOString()
+          },
+          save_to_db: true
+        }
+      })
+
+      if (error) throw error
+
+      if (data?.success) {
+        console.log('Opportunity generated:', data.opportunity?.title)
+        setGenerationSuccess(index)
+        onOpportunityGenerated?.(data.opportunity)
+
+        // Clear success after 3 seconds
+        setTimeout(() => setGenerationSuccess(null), 3000)
+      } else {
+        throw new Error(data?.error || 'Failed to generate opportunity')
+      }
+    } catch (err: any) {
+      console.error('Error generating opportunity:', err)
+      setGenerationError(err.message || 'Failed to generate opportunity')
+      setTimeout(() => setGenerationError(null), 5000)
+    } finally {
+      setGeneratingOpportunity(null)
+    }
+  }
+
   // Handle various data structures - the synthesis might be nested
   const data = synthesis?.synthesis || synthesis?.synthesis_data?.synthesis || synthesis
 
@@ -44,9 +101,23 @@ export default function IntelligenceBriefDisplay({ synthesis }: IntelligenceBrie
         <Section title="Key Developments" icon={TrendingUp}>
           <div className="space-y-3">
             {data.key_developments.map((dev: any, i: number) => (
-              <DevelopmentCard key={i} development={dev} index={i} />
+              <DevelopmentCard
+                key={i}
+                development={dev}
+                index={i}
+                organizationId={organizationId}
+                isGenerating={generatingOpportunity === i}
+                isSuccess={generationSuccess === i}
+                onGenerateOpportunity={() => handleGenerateOpportunity(dev, i)}
+              />
             ))}
           </div>
+          {/* Generation Error Message */}
+          {generationError && (
+            <div className="mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+              {generationError}
+            </div>
+          )}
         </Section>
       )}
 
@@ -255,7 +326,21 @@ function Section({ title, icon: Icon, children }: { title: string; icon: any; ch
 }
 
 // Development Card
-function DevelopmentCard({ development, index }: { development: any; index: number }) {
+function DevelopmentCard({
+  development,
+  index,
+  organizationId,
+  isGenerating,
+  isSuccess,
+  onGenerateOpportunity
+}: {
+  development: any
+  index: number
+  organizationId?: string
+  isGenerating?: boolean
+  isSuccess?: boolean
+  onGenerateOpportunity?: () => void
+}) {
   // Support both old (impact) and new (pr_implication) field names
   const implication = development.pr_implication || development.impact || development.details
 
@@ -306,6 +391,46 @@ function DevelopmentCard({ development, index }: { development: any; index: numb
           ) : (
             development.source
           )}
+        </div>
+      )}
+
+      {/* Generate Opportunity Button */}
+      {organizationId && onGenerateOpportunity && (
+        <div className="mt-3 pt-3 border-t border-[var(--grey-700)]">
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onGenerateOpportunity()
+            }}
+            disabled={isGenerating}
+            className={`
+              flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium
+              transition-all duration-200
+              ${isSuccess
+                ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                : isGenerating
+                  ? 'bg-[var(--grey-700)] text-[var(--grey-400)] cursor-wait'
+                  : 'bg-purple-500/20 text-purple-300 border border-purple-500/30 hover:bg-purple-500/30 hover:border-purple-500/50'
+              }
+            `}
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                Generating...
+              </>
+            ) : isSuccess ? (
+              <>
+                <Sparkles className="w-3.5 h-3.5" />
+                Opportunity Created!
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-3.5 h-3.5" />
+                Generate Opportunity
+              </>
+            )}
+          </button>
         </div>
       )}
     </div>

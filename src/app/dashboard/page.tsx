@@ -676,7 +676,7 @@ export default function Dashboard() {
 
             {/* Popout Content */}
             <div className="flex-1 overflow-y-auto p-6">
-              <IntelligenceBriefDisplay synthesis={executiveSynthesis} />
+              <IntelligenceBriefDisplay synthesis={executiveSynthesis} organizationId={organization?.id} />
             </div>
           </div>
         </div>
