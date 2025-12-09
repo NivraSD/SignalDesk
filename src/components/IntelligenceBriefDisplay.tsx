@@ -36,7 +36,6 @@ export default function IntelligenceBriefDisplay({ synthesis, organizationId, on
 
     setGeneratingOpportunity(index)
     setGenerationError(null)
-    setGenerationSuccess(null)
 
     try {
       const { data, error } = await supabase.functions.invoke('generate-opportunity-from-article', {
