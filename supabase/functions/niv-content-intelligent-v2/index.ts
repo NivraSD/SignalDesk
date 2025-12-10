@@ -6575,13 +6575,54 @@ function normalizeContentTypeForMCP(rawType) {
     'email-campaign': 'email-campaign',
     'roi-calculator-tool': 'thought-leadership',
     'roi-calculator': 'thought-leadership',
-    'calculator': 'thought-leadership'
+    'calculator': 'thought-leadership',
+    'crisis-communication': 'crisis-communication',
+    'crisis_communication': 'crisis-communication',
+    'crisis-response': 'crisis-communication',
+    'holding-statement': 'crisis-communication'
   };
   return typeMap[normalized] || normalized;
 }
 // NEW: Direct content generation using Claude (bypasses MCP)
 async function generateContentDirectly(contentType, strategicBrief, parameters) {
   const normalizedType = normalizeContentTypeForMCP(contentType);
+
+  // SPECIAL CASE: Crisis communications should use mcp-crisis for proper holding statements
+  if (normalizedType === 'crisis-communication') {
+    console.log(`🚨 Crisis communication detected - routing to mcp-crisis for holding statement generation...`);
+    try {
+      const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/mcp-crisis`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
+        },
+        body: JSON.stringify({
+          action: 'generate_single_holding_statement',
+          scenario: {
+            title: parameters.fullFramework?.campaignContext?.crisisScenario?.title || 'Crisis Scenario',
+            description: parameters.fullFramework?.campaignContext?.crisisScenario?.description || strategicBrief
+          },
+          stakeholder: parameters.targetAudiences?.[0] || 'general',
+          organization_name: parameters.organization || 'Organization',
+          industry: parameters.fullFramework?.campaignContext?.industry || 'general'
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.content || result.message) {
+          console.log(`✅ Generated crisis holding statement via mcp-crisis`);
+          return result.content || result.message;
+        }
+      }
+      // Fall through to direct generation if mcp-crisis fails
+      console.log(`⚠️ mcp-crisis call failed, falling back to direct generation`);
+    } catch (error) {
+      console.error(`❌ Error calling mcp-crisis:`, error);
+    }
+  }
+
   console.log(`🎨 Generating ${normalizedType} directly with Claude (bypassing MCP)...`);
   // Extract context
   const fullFramework = parameters.fullFramework || {};

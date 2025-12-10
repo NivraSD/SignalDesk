@@ -1200,6 +1200,27 @@ serve(async (req) => {
       );
     }
 
+    // Handle generate_single_holding_statement action (called from niv-content-intelligent-v2)
+    if (action === 'generate_single_holding_statement') {
+      const { scenario, stakeholder, organization_name, industry } = body;
+      const companyContext = `
+**COMPANY PROFILE:**
+- Organization: ${organization_name}
+- Industry: ${industry}
+`;
+      const result = await generatePreDraftedCommunication(
+        scenario,
+        stakeholder,
+        organization_name,
+        industry,
+        companyContext
+      );
+      return new Response(
+        JSON.stringify({ success: true, content: result?.message || '', stakeholder: result?.stakeholder }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+      );
+    }
+
     if (tool === 'list_tools') {
       return new Response(
         JSON.stringify({ tools: TOOLS, success: true }),
