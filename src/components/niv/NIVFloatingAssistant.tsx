@@ -69,7 +69,7 @@ export default function NIVFloatingAssistant() {
       const isGammaLink = url.includes('gamma.app')
 
       if (isGammaLink) {
-        // Styled button for Gamma presentations - orange to match platform
+        // Clean button for Gamma presentations
         parts.push(
           <a
             key={match.index}
@@ -79,30 +79,25 @@ export default function NIVFloatingAssistant() {
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '8px',
-              marginTop: '12px',
-              padding: '12px 20px',
+              gap: '6px',
+              padding: '8px 14px',
               background: 'var(--burnt-orange)',
               color: 'white',
-              borderRadius: '10px',
+              borderRadius: '8px',
               textDecoration: 'none',
-              fontWeight: 600,
-              fontSize: '0.9rem',
-              boxShadow: '0 4px 12px rgba(217, 119, 6, 0.3)',
-              transition: 'transform 0.2s, box-shadow 0.2s'
+              fontWeight: 500,
+              fontSize: '0.8rem',
+              transition: 'opacity 0.2s'
             }}
             onMouseOver={(e) => {
-              e.currentTarget.style.transform = 'translateY(-2px)'
-              e.currentTarget.style.boxShadow = '0 6px 16px rgba(217, 119, 6, 0.4)'
+              e.currentTarget.style.opacity = '0.9'
             }}
             onMouseOut={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)'
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(217, 119, 6, 0.3)'
+              e.currentTarget.style.opacity = '1'
             }}
           >
-            <span style={{ fontSize: '1.1rem' }}>🎨</span>
             {linkText}
-            <span style={{ fontSize: '0.8rem' }}>→</span>
+            <span style={{ fontSize: '0.75rem' }}>↗</span>
           </a>
         )
       } else {
@@ -192,7 +187,7 @@ export default function NIVFloatingAssistant() {
               if (msg.id === messageId) {
                 return {
                   ...msg,
-                  content: `✅ Your Gamma presentation is ready!\n\n🔗 [Open Presentation](${finalUrl})`
+                  content: `[Open Presentation](${finalUrl})`
                 }
               }
               return msg
