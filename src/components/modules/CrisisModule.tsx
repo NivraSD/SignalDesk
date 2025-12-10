@@ -127,15 +127,19 @@ export default function CrisisModule({ onOpenInStudio }: CrisisModuleProps) {
   const loadPreDraftedComms = async () => {
     if (!organization?.id) return
     try {
+      // Simple query - get content from Crisis folder
       const { data, error } = await supabase
         .from('content_library')
-        .select('id, title, content, metadata')
+        .select('id, title, content, folder, metadata')
         .eq('organization_id', organization.id)
-        .eq('type', 'crisis-communication')
-        .contains('tags', ['pre-drafted'])
+        .like('folder', 'Crisis/%')
         .order('created_at', { ascending: false })
 
-      if (!error && data) {
+      if (error) {
+        console.error('Query error:', error)
+      }
+
+      if (data) {
         setPreDraftedComms(data.map(d => ({
           id: d.id,
           title: d.title,
