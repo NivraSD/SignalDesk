@@ -1134,8 +1134,9 @@ async function generateScenarioComms(args: any) {
       const { error } = await supabase
         .from('content_library')
         .insert({
+          id: crypto.randomUUID(),
           organization_id: organization_id,
-          type: 'crisis-communication',
+          content_type: 'crisis-communication',
           title: `${comm.stakeholder} - ${comm.channel || 'Email'}`,
           content: comm.message,
           folder: `Crisis/${scenarioFolderName}`,

@@ -44,7 +44,7 @@ export default function CrisisPlanViewer({ onClose, plan: providedPlan, embedded
         .from('content_library')
         .select('id, metadata')
         .eq('organization_id', organization.id)
-        .eq('type', 'crisis-communication')
+        .eq('content_type', 'crisis-communication')
         .contains('tags', ['pre-drafted'])
 
       if (!error && data) {

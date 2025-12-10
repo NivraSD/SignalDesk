@@ -85,7 +85,7 @@ export default function CrisisCommunications({ crisis, onUpdate, onOpenInStudio 
         .from('content_library')
         .select('id, title, content, folder, metadata')
         .eq('organization_id', organization.id)
-        .eq('type', 'crisis-communication')
+        .eq('content_type', 'crisis-communication')
         .contains('tags', ['pre-drafted'])
         .order('created_at', { ascending: false })
 
