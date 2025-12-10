@@ -2077,10 +2077,14 @@ async function createIntelligenceTargets(organizationId: string, profile: any) {
       }
     });
 
-    // Add key topics/keywords
+    // Add key topics/keywords from multiple profile sources
     const hotTopics = profile.trending?.hot_topics || [];
     const keywords = profile.keywords || profile.monitoring_config?.keywords || [];
+    const marketDrivers = profile.market?.market_drivers || [];
+    const marketBarriers = profile.market?.market_barriers || [];
+    const keyMetrics = profile.market?.key_metrics || [];
 
+    // Hot topics and keywords as medium priority
     [...hotTopics, ...keywords].forEach((topic: string) => {
       if (topic && typeof topic === 'string') {
         targets.push({
@@ -2089,6 +2093,48 @@ async function createIntelligenceTargets(organizationId: string, profile: any) {
           type: 'topic',
           priority: 'medium',
           monitoring_context: { category: 'keyword' },
+          active: true
+        });
+      }
+    });
+
+    // Market drivers as high priority topics (these drive the business)
+    marketDrivers.forEach((driver: string) => {
+      if (driver && typeof driver === 'string') {
+        targets.push({
+          organization_id: organizationId,
+          name: driver.trim(),
+          type: 'topic',
+          priority: 'high',
+          monitoring_context: { category: 'market_driver' },
+          active: true
+        });
+      }
+    });
+
+    // Market barriers as high priority topics (risks to monitor)
+    marketBarriers.forEach((barrier: string) => {
+      if (barrier && typeof barrier === 'string') {
+        targets.push({
+          organization_id: organizationId,
+          name: barrier.trim(),
+          type: 'topic',
+          priority: 'high',
+          monitoring_context: { category: 'market_barrier' },
+          active: true
+        });
+      }
+    });
+
+    // Key metrics as medium priority topics
+    keyMetrics.forEach((metric: string) => {
+      if (metric && typeof metric === 'string') {
+        targets.push({
+          organization_id: organizationId,
+          name: metric.trim(),
+          type: 'topic',
+          priority: 'medium',
+          monitoring_context: { category: 'key_metric' },
           active: true
         });
       }
