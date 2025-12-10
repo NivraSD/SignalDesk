@@ -155,7 +155,12 @@ export default function CrisisCommunications({ crisis, onUpdate, onOpenInStudio 
       // Call niv-content-intelligent-v2 (same as Opportunities module)
       const { data: result, error } = await supabase.functions.invoke('niv-content-intelligent-v2', {
         body: {
-          message: `Generate crisis communications for all stakeholders for the scenario: ${scenario.title}. ${scenario.description}`,
+          message: `Generate HOLDING STATEMENTS (not full responses) for the crisis scenario: ${scenario.title}.
+
+IMPORTANT: These are PRE-DRAFTED HOLDING STATEMENTS - short, templated messages (150-300 words max) that can be quickly adapted during an actual crisis. Use [BRACKETS] for details to be filled in. Do NOT write elaborate fictional scenario responses with specific dates or invented details.
+
+Example format:
+"[Organization] is aware of [brief situation description]. We are taking immediate action to [response]. The safety and trust of our [stakeholder group] remains our highest priority. We will provide updates as the situation develops."`,
           conversationHistory: [],
           organizationContext: {
             conversationId: `crisis-${scenario.title.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
@@ -164,19 +169,21 @@ export default function CrisisCommunications({ crisis, onUpdate, onOpenInStudio 
           },
           stage: 'campaign_generation',
           campaignContext: {
-            phase: 'crisis_communications',
+            phase: 'crisis_holding_statements',
             phaseNumber: 1,
-            objective: `Crisis Communications for ${scenario.title}`,
-            narrative: scenario.description,
+            objective: `Crisis Holding Statements for ${scenario.title}`,
+            narrative: `Pre-drafted holding statements for: ${scenario.description}. These should be SHORT templates (150-300 words) with [PLACEHOLDERS] for specific details, ready to be quickly customized during an actual crisis.`,
             keyMessages: [
-              'Acknowledge the situation transparently',
-              'Explain immediate response actions',
-              'Provide timeline for resolution',
-              'Commit to ongoing updates'
+              'Acknowledge awareness of the situation',
+              'Express commitment to stakeholder safety/trust',
+              'Indicate immediate action being taken',
+              'Promise ongoing updates'
             ],
             contentRequirements,
             campaignFolder,
-            campaignType: 'CRISIS_COMMUNICATIONS',
+            campaignType: 'CRISIS_HOLDING_STATEMENTS',
+            outputFormat: 'holding_statement',
+            maxLength: 300,
             crisisScenario: {
               title: scenario.title,
               description: scenario.description,
@@ -184,7 +191,8 @@ export default function CrisisCommunications({ crisis, onUpdate, onOpenInStudio 
               likelihood: scenario.likelihood || 'Medium'
             },
             targetStakeholders: stakeholders,
-            industry: organization.industry || 'general'
+            industry: organization.industry || 'general',
+            instructions: 'Generate SHORT holding statement templates (150-300 words) with [PLACEHOLDER] brackets for details to be filled in during actual crisis. Do NOT invent specific dates, names, or elaborate fictional details.'
           }
         }
       })
