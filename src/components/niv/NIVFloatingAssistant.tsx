@@ -8,6 +8,7 @@ interface Message {
   id: string
   role: 'user' | 'niv'
   content: string
+  data?: any
 }
 
 export default function NIVFloatingAssistant() {
@@ -50,6 +51,78 @@ export default function NIVFloatingAssistant() {
     }
   }
 
+  // Poll Gamma presentation status
+  const pollGammaStatus = async (generationId: string, messageId: string) => {
+    const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+    console.log('🚀 Starting Gamma polling for:', generationId)
+    let attempts = 0
+    const maxAttempts = 60 // 60 attempts * 3 seconds = 3 minutes max
+
+    while (attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 3000))
+      attempts++
+      console.log(`🔄 Gamma poll attempt ${attempts}/${maxAttempts}`)
+
+      try {
+        const response = await fetch(
+          `${SUPABASE_URL}/functions/v1/gamma-presentation?generationId=${generationId}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+            }
+          }
+        )
+
+        if (response.ok) {
+          const statusData = await response.json()
+          console.log('📊 Gamma status:', statusData.status)
+
+          if (statusData.status === 'complete' || statusData.status === 'completed') {
+            const finalUrl = statusData.gammaUrl || statusData.presentationUrl || statusData.url || statusData.webUrl
+            console.log('✅ Gamma complete! URL:', finalUrl)
+
+            setMessages(prev => prev.map(msg => {
+              if (msg.id === messageId) {
+                return {
+                  ...msg,
+                  content: `✅ Your Gamma presentation is ready!\n\n🔗 [Open Presentation](${finalUrl})`
+                }
+              }
+              return msg
+            }))
+            return
+          } else if (statusData.status === 'failed' || statusData.status === 'error') {
+            setMessages(prev => prev.map(msg => {
+              if (msg.id === messageId) {
+                return {
+                  ...msg,
+                  content: `❌ Gamma presentation generation failed: ${statusData.error || 'Unknown error'}`
+                }
+              }
+              return msg
+            }))
+            return
+          }
+        }
+      } catch (error) {
+        console.error('Gamma polling error:', error)
+      }
+    }
+
+    // Timeout
+    setMessages(prev => prev.map(msg => {
+      if (msg.id === messageId) {
+        return {
+          ...msg,
+          content: `⏱️ Gamma presentation generation timed out. Please check the Gamma dashboard.`
+        }
+      }
+      return msg
+    }))
+  }
+
   const handleSend = async () => {
     if (!input.trim() || processing) return
 
@@ -67,6 +140,11 @@ export default function NIVFloatingAssistant() {
         body: JSON.stringify({
           message: userMessage,
           organizationId: organization?.id,
+          organizationContext: {
+            name: organization?.name || 'Unknown',
+            industry: organization?.industry || 'Technology',
+            competitors: organization?.competitors || []
+          },
           context: 'global',
           conversationHistory: messages.slice(-10).map(m => ({
             role: m.role === 'user' ? 'user' : 'assistant',
@@ -77,12 +155,22 @@ export default function NIVFloatingAssistant() {
 
       if (response.ok) {
         const data = await response.json()
+        console.log('🎯 NIV response type:', data.type, '| gammaGenerationId:', data.gammaGenerationId)
+
         const nivResponse = data.response || data.message || "I'm processing your request..."
+        const messageId = `niv-${Date.now()}`
+
         setMessages(prev => [...prev, {
-          id: `niv-${Date.now()}`,
+          id: messageId,
           role: 'niv',
-          content: nivResponse
+          content: nivResponse,
+          data: data
         }])
+
+        // If Gamma presentation is being generated, start polling
+        if (data.type === 'gamma_generating' && data.gammaGenerationId) {
+          pollGammaStatus(data.gammaGenerationId, messageId)
+        }
       } else {
         setMessages(prev => [...prev, {
           id: `niv-${Date.now()}`,
