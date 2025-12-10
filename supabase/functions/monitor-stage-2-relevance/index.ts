@@ -85,7 +85,20 @@ serve(async (req) => {
     const targetCustomers = strategicContext?.target_customers || '';
     const strategicPriorities = strategicContext?.strategic_priorities || [];
 
+    // CRITICAL: Extract source quality tiers from company profile
+    const sourcePriorities = profileData?.monitoring_config?.source_priorities || {};
+    const criticalSources = new Set<string>((sourcePriorities.critical || []).map((s: string) => s.toLowerCase()));
+    const highSources = new Set<string>((sourcePriorities.high || []).map((s: string) => s.toLowerCase()));
+    const blockedSources = new Set<string>((sourcePriorities.blocked || []).map((s: string) => s.toLowerCase()));
+
+    // Default press release sources to always penalize
+    const PRESS_RELEASE_SOURCES = new Set([
+      'pr newswire', 'prnewswire', 'globenewswire', 'globe newswire',
+      'businesswire', 'business wire', 'cision', 'accesswire', 'einewswire'
+    ]);
+
     console.log(`   Industry: ${industry}`);
+    console.log(`   Source tiers: ${criticalSources.size} critical, ${highSources.size} high, ${blockedSources.size} blocked`);
     console.log(`   Competitors: ${competitors.length}`);
     console.log(`   Regulators: ${regulators.length}`);
     console.log(`   Key Questions: ${keyQuestions.length}`);
@@ -119,6 +132,19 @@ serve(async (req) => {
       const allStakeholders = [...regulators, ...keyAnalysts, ...activists].filter(Boolean);
 
       const prompt = `You are an intelligence analyst scoring news relevance for ${organization_name}, a ${industry} company.
+
+⚠️ CRITICAL SOURCE QUALITY RULES - READ FIRST:
+Press releases (PR Newswire, GlobeNewswire, BusinessWire) are MARKETING, not journalism.
+- They should score 25-30 POINTS LOWER than equivalent content from quality sources
+- A press release about "ADNOC energy deal" should score ~50, while Reuters covering the same story scores ~80
+- Press releases lack analysis, verification, and journalistic perspective
+- NEVER score a press release above 65 unless it contains truly exceptional breaking news
+
+SOURCE QUALITY HIERARCHY:
+TIER 1 (Premium journalism - score normally): Financial Times, Reuters, WSJ, Bloomberg, The Economist, NYT, Washington Post
+TIER 2 (Quality industry sources - score normally): Industry publications, think tanks, analyst reports
+TIER 3 (Press releases - PENALIZE 25-30 points): PR Newswire, GlobeNewswire, BusinessWire, Cision
+${blockedSources.size > 0 ? `BLOCKED (Score 0): ${Array.from(blockedSources).join(', ')}` : ''}
 
 COMPANY CONTEXT:
 ${description ? `Description: ${description}` : ''}
@@ -261,10 +287,30 @@ Score ALL ${batch.length} articles.`;
     console.log(`   Industry priority kept: ${priorityKept} (${priorityBoosted} boosted)`);
 
     // ================================================================
-    // STEP 2: Enforce SOURCE DIVERSITY
-    // Take top N from each source, sorted by score
+    // STEP 2: Enforce SOURCE DIVERSITY with TIERED CAPS
+    // Quality sources get more slots, press releases get fewer
     // ================================================================
-    console.log(`\n📊 Enforcing source diversity...`);
+    console.log(`\n📊 Enforcing source diversity with quality tiers...`);
+
+    // Helper to get cap for a source based on quality tier
+    const getSourceCap = (sourceName: string): number => {
+      const srcLower = sourceName.toLowerCase();
+
+      // Blocked sources: 0 articles
+      if (blockedSources.has(srcLower)) return 0;
+
+      // Press releases: max 2 articles (severely limited)
+      if (PRESS_RELEASE_SOURCES.has(srcLower)) return 2;
+
+      // Critical/Tier 1 sources: max 12 articles (premium treatment)
+      if (criticalSources.has(srcLower)) return 12;
+
+      // High/Tier 2 sources: max 10 articles
+      if (highSources.has(srcLower)) return 10;
+
+      // Default for unknown sources: max 6 articles
+      return 6;
+    };
 
     // Group by source
     const bySource: Record<string, any[]> = {};
@@ -279,8 +325,13 @@ Score ALL ${batch.length} articles.`;
       bySource[src].sort((a, b) => (b.relevance_score || 0) - (a.relevance_score || 0));
     });
 
-    // Take top articles from each source to ensure diversity
-    const MAX_PER_SOURCE = 8;  // Max 8 per source
+    // Log source caps being applied
+    const sourceCaps: Record<string, number> = {};
+    Object.keys(bySource).forEach(src => {
+      sourceCaps[src] = getSourceCap(src);
+    });
+    console.log(`   Source caps:`, sourceCaps);
+
     const TARGET_TOTAL = 80;   // Target ~80 articles total
 
     const diverseArticles: any[] = [];
@@ -288,12 +339,15 @@ Score ALL ${batch.length} articles.`;
     let round = 0;
 
     // Round-robin: take 1 from each source per round until we hit target
+    // But respect per-source caps based on quality tier
     while (diverseArticles.length < TARGET_TOTAL) {
       let addedThisRound = 0;
 
       for (const src of Object.keys(bySource)) {
         const count = sourceCount[src] || 0;
-        if (count < MAX_PER_SOURCE && bySource[src][count]) {
+        const cap = getSourceCap(src);
+
+        if (count < cap && bySource[src][count]) {
           diverseArticles.push(bySource[src][count]);
           sourceCount[src] = count + 1;
           addedThisRound++;
@@ -306,6 +360,18 @@ Score ALL ${batch.length} articles.`;
       if (addedThisRound === 0) break;  // No more articles to add
       if (round > 20) break;  // Safety limit
     }
+
+    // Log how many were blocked/limited
+    let blockedCount = 0;
+    let pressReleaseLimited = 0;
+    Object.keys(bySource).forEach(src => {
+      const cap = getSourceCap(src);
+      const available = bySource[src].length;
+      if (cap === 0) blockedCount += available;
+      else if (cap === 2 && available > 2) pressReleaseLimited += (available - 2);
+    });
+    console.log(`   Blocked source articles removed: ${blockedCount}`);
+    console.log(`   Press release articles limited: ${pressReleaseLimited}`);
 
     // Sort final list by score
     diverseArticles.sort((a, b) => (b.relevance_score || 0) - (a.relevance_score || 0));

@@ -1,6 +1,17 @@
-// Article Selector V5
-// Fast article selection using pre-computed target matches
-// Returns both target-grouped data AND V4-compatible flat articles array
+// Article Selector V5.1
+// Hybrid approach: Embeddings find CANDIDATES, Claude scores BUSINESS RELEVANCE
+//
+// V5.0 was broken because:
+// 1. Embedding context was garbage ("Target: X. Type: competitor.")
+// 2. No quality filtering - garbage articles with numeric titles passed through
+// 3. No business relevance scoring - just pattern matching
+// 4. No source quality consideration
+//
+// V5.1 fixes:
+// 1. Embeddings now have rich context (from batch-embed-targets v2)
+// 2. Quality filter rejects garbage articles
+// 3. Claude scores business relevance (like V4)
+// 4. Source tiers: critical > high > other, with caps
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -8,10 +19,20 @@ import { corsHeaders } from '../_shared/cors.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')!;
 
-// Source diversity is handled downstream by relevance filter
-// Selector should return all relevant matches, relevance filter applies diversity after scoring
-const DEFAULT_HOURS_BACK = 24;  // 24 hours for daily briefings
+const DEFAULT_HOURS_BACK = 24;
+
+// Built-in source quality tiers (fallback if company profile doesn't have them)
+const TIER1_SOURCES = new Set([
+  'reuters', 'bloomberg', 'financial times', 'wall street journal', 'wsj',
+  'the information', 'cnbc', 'nikkei asia', 'the economist', 'ft'
+]);
+
+const ALWAYS_BLOCK_SOURCES = new Set([
+  'pr newswire', 'globenewswire', 'businesswire', 'cision', 'accesswire',
+  'prnewswire', 'einewswire', 'marketwatch press release'
+]);
 
 interface TargetMatch {
   target_id: string;
@@ -50,11 +71,147 @@ interface V4Article {
   url: string;
   source_name: string;
   published_at: string;
-  relevance_score: number;
+  relevance_score: number;  // Now Claude-scored, not just embedding similarity
   matched_targets: string[];
   signal_strength: string;
   signal_category: string;
-  is_priority_source?: boolean;  // From company profile priority sources
+  is_priority_source?: boolean;
+  source_tier?: number;  // 1=critical, 2=high, 3=other
+}
+
+// Check if article is garbage (malformed scrape, no real content)
+function isGarbageArticle(article: { title: string; description?: string | null }): boolean {
+  const title = article.title || '';
+
+  // Numeric-only titles (malformed sitemap extraction like "566046")
+  if (/^\d+$/.test(title.trim())) return true;
+
+  // Too short titles (less than 15 chars)
+  if (title.trim().length < 15) return true;
+
+  // HTML file extensions in title (scraper grabbed filename)
+  if (/\.html?$/i.test(title.trim())) return true;
+
+  // Just a URL slug
+  if (/^[a-z0-9-]+$/.test(title.trim()) && title.includes('-') && !title.includes(' ')) return true;
+
+  // Mostly non-alphabetic (likely garbled encoding)
+  const alphaRatio = (title.match(/[a-zA-Z]/g) || []).length / title.length;
+  if (alphaRatio < 0.5 && title.length > 10) return true;
+
+  return false;
+}
+
+// Build intelligence context for Claude scoring (similar to V4)
+function buildIntelligenceContext(profile: any, orgName: string, industry: string): string {
+  const parts: string[] = [];
+  parts.push(`COMPANY: ${orgName}`);
+  parts.push(`INDUSTRY: ${industry}`);
+
+  if (profile?.description) {
+    parts.push(`\nABOUT: ${profile.description}`);
+  }
+
+  if (profile?.service_lines?.length) {
+    parts.push(`\nSERVICE LINES: ${profile.service_lines.join(', ')}`);
+  }
+
+  if (profile?.competition) {
+    const comp = profile.competition;
+    if (comp.direct_competitors?.length) {
+      parts.push(`\nDIRECT COMPETITORS: ${comp.direct_competitors.slice(0, 10).join(', ')}`);
+    }
+  }
+
+  if (profile?.strategic_context?.strategic_priorities?.length) {
+    parts.push(`\nSTRATEGIC PRIORITIES: ${profile.strategic_context.strategic_priorities.join(', ')}`);
+  }
+
+  if (profile?.intelligence_context?.key_questions?.length) {
+    parts.push(`\nKEY QUESTIONS: ${profile.intelligence_context.key_questions.slice(0, 5).join('; ')}`);
+  }
+
+  return parts.join('\n');
+}
+
+// Use Claude to score article relevance (from V4)
+async function scoreArticlesWithClaude(
+  articles: Array<{ id: string; title: string; source: string; matched_targets: string[] }>,
+  intelligenceContext: string,
+  competitors: string[]
+): Promise<Map<string, number>> {
+  if (articles.length === 0) return new Map();
+
+  const articleList = articles.map((a, i) =>
+    `[${i}] ${a.source}: ${a.title}${a.matched_targets.length > 0 ? ` (matched: ${a.matched_targets.slice(0, 2).join(', ')})` : ''}`
+  ).join('\n');
+
+  const competitorList = competitors.length > 0 ? competitors.slice(0, 10).join(', ') : 'key competitors';
+
+  const prompt = `You are scoring articles for BUSINESS RELEVANCE to a company.
+
+${intelligenceContext}
+
+SCORING (return ONE integer 0-100 per article):
+90-100: CRITICAL - Mentions company/competitors by name: ${competitorList}
+70-89: HIGH VALUE - Target customers, M&A, regulatory, industry-specific developments
+50-69: RELEVANT - Industry news, market trends in company's sectors
+30-49: BACKGROUND - Tangential relevance
+0-29: NOT RELEVANT - Wrong industry, consumer news, unrelated tech
+
+⚠️ ANTI-GARBAGE RULES:
+- Generic "AI" news is NOT relevant unless it affects THIS company's industry
+- Press releases score 20-30 points LOWER than equivalent journalism
+- "Tech giant does X" is NOT relevant unless it directly affects this company
+
+ARTICLES:
+${articleList}
+
+Return ONLY a JSON array of ${articles.length} integers, nothing else:`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-3-5-haiku-20241022',
+        max_tokens: 1500,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    if (!response.ok) {
+      console.error(`Claude API error: ${response.status}`);
+      return new Map();
+    }
+
+    const data = await response.json();
+    const content = data.content[0].text.trim();
+
+    // Extract JSON array
+    const bracketStart = content.indexOf('[');
+    const bracketEnd = content.lastIndexOf(']');
+    if (bracketStart === -1 || bracketEnd === -1) return new Map();
+
+    let jsonContent = content.substring(bracketStart, bracketEnd + 1);
+    jsonContent = jsonContent.replace(/\/\/[^\n]*/g, '').replace(/,\s*\]/g, ']');
+
+    const scores = JSON.parse(jsonContent);
+    const scoreMap = new Map<string, number>();
+
+    articles.forEach((article, i) => {
+      scoreMap.set(article.id, scores[i] || 50);
+    });
+
+    return scoreMap;
+  } catch (error) {
+    console.error('Claude scoring error:', error);
+    return new Map();
+  }
 }
 
 serve(async (req) => {
@@ -67,31 +224,28 @@ serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
     const organizationId = body.organization_id;
-    const organizationName = body.organization_name; // Optional, for V4 compat
+    const organizationName = body.organization_name;
     const hoursBack = body.hours_back || DEFAULT_HOURS_BACK;
-    const minSignalStrength = body.min_signal_strength || 'weak'; // weak, moderate, strong
-    // Query more matches than needed since we filter by article date after
-    const maxArticlesPerTarget = body.max_articles_per_target || 100;
-    const includeConnections = body.include_connections !== false; // Default true
+    const minSignalStrength = body.min_signal_strength || 'weak';
+    const maxArticlesPerTarget = body.max_articles_per_target || 50;
+    const includeConnections = body.include_connections !== false;
+    const skipClaudeScoring = body.skip_claude_scoring || false; // For debugging
 
     if (!organizationId) {
-      return new Response(JSON.stringify({
-        error: 'organization_id is required'
-      }), {
+      return new Response(JSON.stringify({ error: 'organization_id is required' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    console.log('📰 ARTICLE SELECTOR V5 (Pre-computed Matches)');
+    console.log('📰 ARTICLE SELECTOR V5.1 (Embeddings + Claude Scoring)');
     console.log(`   Time: ${new Date().toISOString()}`);
     console.log(`   Organization: ${organizationId}`);
     console.log(`   Hours back: ${hoursBack}`);
-    console.log(`   Min signal strength: ${minSignalStrength}`);
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
-    // Get organization details including company_profile for priority sources
+    // Get organization with full profile
     const { data: org } = await supabase
       .from('organizations')
       .select('id, name, industry, company_profile')
@@ -102,55 +256,57 @@ serve(async (req) => {
     const industry = org?.industry || 'default';
     const companyProfile = org?.company_profile || {};
 
-    // Extract priority sources from company profile (set by mcp-discovery)
+    // Build intelligence context for Claude scoring
+    const intelligenceContext = buildIntelligenceContext(companyProfile, orgName, industry);
+    const competitors = [
+      ...(companyProfile.competition?.direct_competitors || []),
+      ...(companyProfile.competition?.indirect_competitors || [])
+    ];
+
+    // Extract source priorities (case-insensitive)
     const sourcePriorities = companyProfile.monitoring_config?.source_priorities || {};
-    const criticalSources = new Set<string>(sourcePriorities.critical || []);
-    const highPrioritySources = new Set<string>(sourcePriorities.high || []);
-    const allPrioritySources = new Set<string>([...criticalSources, ...highPrioritySources]);
+    const criticalSources = new Set<string>((sourcePriorities.critical || []).map((s: string) => s.toLowerCase()));
+    const highPrioritySources = new Set<string>((sourcePriorities.high || []).map((s: string) => s.toLowerCase()));
 
-    if (allPrioritySources.size > 0) {
-      console.log(`   Priority sources: ${criticalSources.size} critical, ${highPrioritySources.size} high`);
-    }
+    // Merge with built-in tier 1 sources
+    TIER1_SOURCES.forEach(s => criticalSources.add(s));
 
-    // Calculate time cutoff
+    // Build blocked sources set
+    const blockedSources = new Set<string>((sourcePriorities.blocked || []).map((s: string) => s.toLowerCase()));
+    ALWAYS_BLOCK_SOURCES.forEach(s => blockedSources.add(s));
+
+    console.log(`   Critical sources: ${criticalSources.size}, High: ${highPrioritySources.size}`);
+    console.log(`   Blocked sources: ${blockedSources.size}`);
+
     const sinceTime = new Date(Date.now() - hoursBack * 60 * 60 * 1000).toISOString();
 
-    // Get all targets for this org
+    // Get intelligence targets
     const { data: targets, error: targetError } = await supabase
       .from('intelligence_targets')
       .select('id, name, target_type, priority')
       .eq('organization_id', organizationId)
-      .eq('is_active', true)
-      .order('priority');
+      .eq('is_active', true);
 
-    if (targetError) {
-      throw new Error(`Failed to fetch targets: ${targetError.message}`);
-    }
+    if (targetError) throw new Error(`Failed to fetch targets: ${targetError.message}`);
 
-    // Build signal strength filter
-    const strengthFilter = minSignalStrength === 'strong'
-      ? ['strong']
-      : minSignalStrength === 'moderate'
-        ? ['strong', 'moderate']
-        : ['strong', 'moderate', 'weak'];
+    const strengthFilter = minSignalStrength === 'strong' ? ['strong']
+      : minSignalStrength === 'moderate' ? ['strong', 'moderate']
+      : ['strong', 'moderate', 'weak'];
 
-    // Get matches grouped by target
-    const targetMatches: TargetMatch[] = [];
-    const articleMap = new Map<string, V4Article>(); // For deduplication
-    const sourceDistribution: Record<string, number> = {};
-    let totalMatchesBeforeFilter = 0;
-    let totalFilteredByAge = 0;
+    // STEP 1: Fetch embedding matches (candidates)
+    console.log('\n📊 STEP 1: Fetching embedding matches...');
+    const articleMap = new Map<string, V4Article & { embedding_score: number }>();
+    let totalMatches = 0;
+    let filteredBlocked = 0;
+    let filteredGarbage = 0;
+    let filteredOld = 0;
 
     for (const target of targets || []) {
-      const { data: matches, error: matchError } = await supabase
+      const { data: matches } = await supabase
         .from('target_article_matches')
         .select(`
-          similarity_score,
-          signal_strength,
-          signal_category,
-          article:raw_articles(
-            id, title, description, url, source_name, published_at, scraped_at
-          )
+          similarity_score, signal_strength, signal_category,
+          article:raw_articles(id, title, description, url, source_name, published_at, scraped_at)
         `)
         .eq('target_id', target.id)
         .gte('matched_at', sinceTime)
@@ -158,127 +314,194 @@ serve(async (req) => {
         .order('similarity_score', { ascending: false })
         .limit(maxArticlesPerTarget);
 
-      if (matchError) {
-        console.error(`Error fetching matches for ${target.name}:`, matchError.message);
-        continue;
+      if (!matches) continue;
+
+      for (const m of matches) {
+        if (!m.article) continue;
+        const a = m.article as any;
+        totalMatches++;
+
+        // Filter 1: Blocked sources
+        const srcLower = (a.source_name || '').toLowerCase();
+        if (blockedSources.has(srcLower)) {
+          filteredBlocked++;
+          continue;
+        }
+
+        // Filter 2: Garbage articles
+        if (isGarbageArticle({ title: a.title, description: a.description })) {
+          filteredGarbage++;
+          continue;
+        }
+
+        // Filter 3: Old articles
+        const dateToCheck = a.published_at || a.scraped_at;
+        if (dateToCheck) {
+          try {
+            if (new Date(dateToCheck) < new Date(sinceTime)) {
+              filteredOld++;
+              continue;
+            }
+          } catch { /* keep if date parsing fails */ }
+        }
+
+        // Determine source tier
+        let sourceTier = 3;
+        if (criticalSources.has(srcLower)) sourceTier = 1;
+        else if (highPrioritySources.has(srcLower)) sourceTier = 2;
+
+        const existing = articleMap.get(a.id);
+        if (existing) {
+          if (!existing.matched_targets.includes(target.name)) {
+            existing.matched_targets.push(target.name);
+          }
+          if (m.similarity_score > existing.embedding_score) {
+            existing.embedding_score = m.similarity_score;
+          }
+        } else {
+          articleMap.set(a.id, {
+            id: a.id,
+            title: a.title,
+            description: a.description,
+            url: a.url,
+            source_name: a.source_name,
+            published_at: a.published_at || a.scraped_at,
+            relevance_score: 0, // Will be set by Claude
+            embedding_score: m.similarity_score,
+            matched_targets: [target.name],
+            signal_strength: m.signal_strength,
+            signal_category: m.signal_category,
+            is_priority_source: sourceTier <= 2,
+            source_tier: sourceTier
+          });
+        }
+      }
+    }
+
+    console.log(`   Total matches: ${totalMatches}`);
+    console.log(`   Filtered blocked: ${filteredBlocked}`);
+    console.log(`   Filtered garbage: ${filteredGarbage}`);
+    console.log(`   Filtered old: ${filteredOld}`);
+    console.log(`   Candidates remaining: ${articleMap.size}`);
+
+    // STEP 2: Apply source caps BEFORE Claude scoring (to limit API calls)
+    console.log('\n📊 STEP 2: Applying source tier caps...');
+    const CAPS = { tier1: 20, tier2: 10, tier3: 5 }; // Per-source caps by tier
+    const sourceCount: Record<string, number> = {};
+    const cappedArticles: Array<V4Article & { embedding_score: number }> = [];
+
+    // Sort by source tier first, then embedding score
+    const sortedCandidates = Array.from(articleMap.values())
+      .sort((a, b) => {
+        if ((a.source_tier || 3) !== (b.source_tier || 3)) {
+          return (a.source_tier || 3) - (b.source_tier || 3);
+        }
+        return b.embedding_score - a.embedding_score;
+      });
+
+    for (const article of sortedCandidates) {
+      const src = article.source_name;
+      const tier = article.source_tier || 3;
+      const cap = tier === 1 ? CAPS.tier1 : tier === 2 ? CAPS.tier2 : CAPS.tier3;
+      const count = sourceCount[src] || 0;
+
+      if (count < cap) {
+        sourceCount[src] = count + 1;
+        cappedArticles.push(article);
+      }
+    }
+
+    console.log(`   After source caps: ${cappedArticles.length} articles`);
+
+    // STEP 3: Claude scoring for business relevance
+    let v4Articles: V4Article[];
+
+    if (skipClaudeScoring || cappedArticles.length === 0) {
+      console.log('\n📊 STEP 3: Skipping Claude scoring (using embedding scores)');
+      v4Articles = cappedArticles.map(a => ({
+        ...a,
+        relevance_score: Math.round(a.embedding_score * 100)
+      }));
+    } else {
+      console.log(`\n📊 STEP 3: Claude scoring ${cappedArticles.length} articles...`);
+      const BATCH_SIZE = 40;
+      const allScores = new Map<string, number>();
+
+      for (let i = 0; i < cappedArticles.length; i += BATCH_SIZE) {
+        const batch = cappedArticles.slice(i, i + BATCH_SIZE).map(a => ({
+          id: a.id,
+          title: a.title,
+          source: a.source_name,
+          matched_targets: a.matched_targets
+        }));
+
+        const batchScores = await scoreArticlesWithClaude(batch, intelligenceContext, competitors);
+        batchScores.forEach((score, id) => allScores.set(id, score));
+        console.log(`   Scored batch ${Math.floor(i/BATCH_SIZE) + 1}/${Math.ceil(cappedArticles.length/BATCH_SIZE)}`);
       }
 
-      if (matches && matches.length > 0) {
-        const allArticles = matches
-          .filter(m => m.article) // Filter out any nulls
-          .map(m => ({
-            id: (m.article as any).id,
-            title: (m.article as any).title,
-            description: (m.article as any).description,
-            url: (m.article as any).url,
-            source_name: (m.article as any).source_name,
-            published_at: (m.article as any).published_at,
-            scraped_at: (m.article as any).scraped_at,
-            similarity_score: m.similarity_score,
-            signal_strength: m.signal_strength,
-            signal_category: m.signal_category
-          }));
+      // Apply Claude scores
+      v4Articles = cappedArticles.map(a => ({
+        ...a,
+        relevance_score: allScores.get(a.id) || Math.round(a.embedding_score * 100)
+      }));
+    }
 
-        totalMatchesBeforeFilter += allArticles.length;
+    // STEP 4: Final filtering and sorting
+    console.log('\n📊 STEP 4: Final filtering...');
+    const MIN_RELEVANCE = 40; // Minimum Claude score to include
 
-        // Filter out old articles - use published_at if available, fall back to scraped_at
-        const articles = allArticles.filter(a => {
-          // Use published_at if available, otherwise fall back to scraped_at
-          const dateToCheck = a.published_at || a.scraped_at;
-          if (!dateToCheck) return true; // Keep articles with no date info at all
-          try {
-            const articleDate = new Date(dateToCheck);
-            const cutoffDate = new Date(sinceTime);
-            return articleDate >= cutoffDate;
-          } catch {
-            return true; // Keep if date parsing fails
-          }
-        });
+    const finalArticles = v4Articles
+      .filter(a => a.relevance_score >= MIN_RELEVANCE)
+      .sort((a, b) => {
+        // Sort by tier first, then by relevance score
+        if ((a.source_tier || 3) !== (b.source_tier || 3)) {
+          return (a.source_tier || 3) - (b.source_tier || 3);
+        }
+        return b.relevance_score - a.relevance_score;
+      })
+      .slice(0, 100); // Max 100 articles
 
-        totalFilteredByAge += allArticles.length - articles.length;
+    console.log(`   Final articles: ${finalArticles.length}`);
 
-        // Build V4-compatible flat list with deduplication
-        articles.forEach(a => {
-          const existing = articleMap.get(a.id);
-          if (existing) {
-            // Article already seen - add this target to matched_targets
-            if (!existing.matched_targets.includes(target.name)) {
-              existing.matched_targets.push(target.name);
-            }
-            // Keep highest relevance score
-            const newScore = Math.round(a.similarity_score * 100);
-            if (newScore > existing.relevance_score) {
-              existing.relevance_score = newScore;
-              existing.signal_strength = a.signal_strength;
-              existing.signal_category = a.signal_category;
-            }
-          } else {
-            // New article
-            articleMap.set(a.id, {
-              id: a.id,
-              title: a.title,
-              description: a.description,
-              url: a.url,
-              source_name: a.source_name,
-              published_at: a.published_at,
-              relevance_score: Math.round(a.similarity_score * 100),
-              matched_targets: [target.name],
-              signal_strength: a.signal_strength,
-              signal_category: a.signal_category,
-              is_priority_source: allPrioritySources.has(a.source_name)
-            });
-            // Track source distribution
-            sourceDistribution[a.source_name] = (sourceDistribution[a.source_name] || 0) + 1;
-          }
-        });
-
+    // Build target matches for V5 format
+    const targetMatches: TargetMatch[] = [];
+    for (const target of targets || []) {
+      const matchingArticles = finalArticles.filter(a => a.matched_targets.includes(target.name));
+      if (matchingArticles.length > 0) {
         targetMatches.push({
           target_id: target.id,
           target_name: target.name,
           target_type: target.target_type,
           priority: target.priority,
-          articles
+          articles: matchingArticles.map(a => ({
+            id: a.id,
+            title: a.title,
+            description: a.description,
+            url: a.url,
+            source_name: a.source_name,
+            published_at: a.published_at,
+            similarity_score: a.embedding_score,
+            signal_strength: a.signal_strength,
+            signal_category: a.signal_category
+          }))
         });
       }
     }
 
-    // Build V4-compatible articles array sorted by:
-    // 1. Critical priority sources first
-    // 2. High priority sources second
-    // 3. Then by relevance score
-    // No source cap here - relevance filter handles diversity after scoring
-    const v4Articles = Array.from(articleMap.values())
-      .sort((a, b) => {
-        // Priority source tier: critical=2, high=1, other=0
-        const aPriority = criticalSources.has(a.source_name) ? 2 : highPrioritySources.has(a.source_name) ? 1 : 0;
-        const bPriority = criticalSources.has(b.source_name) ? 2 : highPrioritySources.has(b.source_name) ? 1 : 0;
-
-        // Sort by priority tier first, then by relevance score
-        if (aPriority !== bPriority) {
-          return bPriority - aPriority;  // Higher priority first
-        }
-        return b.relevance_score - a.relevance_score;
-      });
-
     // Calculate source distribution
     const finalSourceDistribution: Record<string, number> = {};
-    v4Articles.forEach(a => {
+    finalArticles.forEach(a => {
       finalSourceDistribution[a.source_name] = (finalSourceDistribution[a.source_name] || 0) + 1;
     });
 
-    // Get cross-target connections (articles matching multiple targets)
+    // Get cross-target connections
     let connections: CrossTargetArticle[] = [];
-
     if (includeConnections) {
       const { data: crossMatches, error: crossError } = await supabase.rpc(
         'find_cross_target_articles',
-        {
-          org_id: organizationId,
-          min_targets: 2,
-          since_time: sinceTime
-        }
+        { org_id: organizationId, min_targets: 2, since_time: sinceTime }
       );
-
       if (!crossError && crossMatches) {
         connections = crossMatches.map((c: any) => ({
           article_id: c.article_id,
@@ -289,61 +512,48 @@ serve(async (req) => {
       }
     }
 
-    // Get signal summary by target
-    const { data: signalSummary, error: summaryError } = await supabase.rpc(
-      'get_target_signal_summary',
-      {
-        org_id: organizationId,
-        since_time: sinceTime
-      }
-    );
-
     const duration = Date.now() - startTime;
-    const durationSeconds = Math.round(duration / 1000);
+    const prioritySourceCount = finalArticles.filter(a => a.is_priority_source).length;
 
-    // Count priority source articles
-    const prioritySourceCount = v4Articles.filter(a => a.is_priority_source).length;
-
-    console.log('📊 RESULTS:');
-    console.log(`   Targets with signals: ${targetMatches.length}`);
-    console.log(`   Total matches found: ${totalMatchesBeforeFilter}`);
-    console.log(`   Filtered by publish date: ${totalFilteredByAge}`);
-    console.log(`   Total unique articles: ${v4Articles.length}`);
+    console.log('\n📊 FINAL RESULTS:');
+    console.log(`   Total matches found: ${totalMatches}`);
+    console.log(`   After quality filters: ${articleMap.size}`);
+    console.log(`   After source caps: ${cappedArticles.length}`);
+    console.log(`   After Claude scoring: ${finalArticles.length}`);
     console.log(`   From priority sources: ${prioritySourceCount}`);
-    console.log(`   Cross-target connections: ${connections.length}`);
     console.log(`   Duration: ${duration}ms`);
 
+    // Remove embedding_score from output (internal only)
+    const outputArticles = finalArticles.map(({ embedding_score, ...rest }) => rest);
+
     return new Response(JSON.stringify({
-      // === V4-COMPATIBLE FIELDS (for downstream pipeline) ===
       success: true,
       organization_id: organizationId,
       organization_name: orgName,
       industry,
-      total_articles: v4Articles.length,
-      articles: v4Articles,  // Flat list for V4 compatibility
+      total_articles: outputArticles.length,
+      articles: outputArticles,
       sources: Object.keys(finalSourceDistribution),
       source_distribution: finalSourceDistribution,
       selected_at: new Date().toISOString(),
-      duration_seconds: durationSeconds,
-      selection_method: 'v5_embedding_match',
+      duration_seconds: Math.round(duration / 1000),
+      selection_method: 'v5.1_embeddings_plus_claude',
 
-      // === V5-SPECIFIC FIELDS (target-organized data) ===
-      time_range: {
-        hours_back: hoursBack,
-        since: sinceTime
-      },
+      time_range: { hours_back: hoursBack, since: sinceTime },
       summary: {
         targets_with_signals: targetMatches.length,
         total_targets: targets?.length || 0,
-        total_matches_found: totalMatchesBeforeFilter,
-        filtered_by_publish_date: totalFilteredByAge,
-        unique_articles: v4Articles.length,
-        from_priority_sources: prioritySourceCount,
-        cross_target_connections: connections.length
+        total_matches: totalMatches,
+        filtered_blocked: filteredBlocked,
+        filtered_garbage: filteredGarbage,
+        filtered_old: filteredOld,
+        after_quality_filter: articleMap.size,
+        after_source_caps: cappedArticles.length,
+        final_articles: outputArticles.length,
+        from_priority_sources: prioritySourceCount
       },
       target_signals: targetMatches,
       connections,
-      signal_summary: summaryError ? null : signalSummary,
       duration_ms: duration
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -353,10 +563,7 @@ serve(async (req) => {
     console.error('❌ Error:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

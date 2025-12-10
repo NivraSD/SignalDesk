@@ -905,17 +905,26 @@ CRITICAL:
     });
 
     // Limit older articles - prioritize recent ones
-    // Include articles from last 14 days, exclude anything older
+    // Include articles from last 14 days
     const recentArticles = sortedArticles.filter(a => ['today', 'yesterday', 'this_week'].includes(a.calculated_recency));
-    const twoWeekArticles = sortedArticles.filter(a => a.calculated_recency === 'last_2_weeks').slice(0, 15); // Allow more from past 2 weeks
-    // EXCLUDE: 'older' and 'unknown' articles entirely - they shouldn't be in synthesis
-    const excludedCount = sortedArticles.filter(a => ['older', 'unknown'].includes(a.calculated_recency)).length;
+    const twoWeekArticles = sortedArticles.filter(a => a.calculated_recency === 'last_2_weeks').slice(0, 15);
+
+    // INCLUDE unknown articles - they were scraped recently so likely fresh
+    // Don't punish articles just because their source doesn't publish dates
+    const unknownArticles = sortedArticles.filter(a => a.calculated_recency === 'unknown');
+
+    // Only EXCLUDE articles we know are definitely old
+    const excludedCount = sortedArticles.filter(a => a.calculated_recency === 'older').length;
 
     if (excludedCount > 0) {
       console.log(`⚠️ EXCLUDED ${excludedCount} articles older than 14 days from synthesis`);
     }
 
-    const prioritizedArticles = [...recentArticles, ...twoWeekArticles].slice(0, 50); // Increased from 25 to 50
+    if (unknownArticles.length > 0) {
+      console.log(`📰 INCLUDING ${unknownArticles.length} articles with unknown dates (assuming recent)`);
+    }
+
+    const prioritizedArticles = [...recentArticles, ...twoWeekArticles, ...unknownArticles].slice(0, 50);
 
     console.log(`📰 Prioritized ${prioritizedArticles.length} articles (${recentArticles.length} recent, ${twoWeekArticles.length} from past 2 weeks)`);
 
@@ -933,7 +942,10 @@ CRITICAL:
       competitive_relevance: article.deep_analysis?.competitive_relevance || 'medium',
       has_full_content: article.has_full_content || false,
       content_quality: article.content_quality || 'enhanced_summary',
-      is_trade_source: article.is_trade_source || false
+      is_trade_source: article.is_trade_source || false,
+      // V5 embedding match data - shows WHY this article was selected
+      matched_targets: article.matched_targets || [],
+      signal_strength: article.signal_strength || 'unknown'
     }));
 
     console.log('📊 Article summaries prepared:', articleSummaries.length);
@@ -943,6 +955,64 @@ CRITICAL:
     if (articleOnlyMode) {
       console.log('📰 ARTICLE-ONLY MODE: No pre-extracted events, synthesis will work directly from articles');
     }
+
+    // ═══════════════════════════════════════════════════════════
+    // 🎯 INTELLIGENCE GROUPING - Group articles by matched targets
+    // This transforms random articles into structured intelligence
+    // ═══════════════════════════════════════════════════════════
+    const targetToArticles = new Map<string, any[]>();
+    const articlesWithMultipleTargets: any[] = [];
+
+    prioritizedArticles.forEach(article => {
+      const targets = article.matched_targets || [];
+      if (targets.length > 1) {
+        articlesWithMultipleTargets.push({
+          ...article,
+          target_count: targets.length
+        });
+      }
+      targets.forEach((target: string) => {
+        if (!targetToArticles.has(target)) {
+          targetToArticles.set(target, []);
+        }
+        targetToArticles.get(target)!.push(article);
+      });
+    });
+
+    // Sort targets by article count (most signals first)
+    const sortedTargets = [...targetToArticles.entries()]
+      .sort((a, b) => b[1].length - a[1].length)
+      .slice(0, 15); // Top 15 targets with signals
+
+    console.log('🎯 INTELLIGENCE GROUPING:', {
+      targets_with_signals: sortedTargets.length,
+      top_targets: sortedTargets.slice(0, 5).map(([t, a]) => `${t}: ${a.length} articles`),
+      cross_target_articles: articlesWithMultipleTargets.length
+    });
+
+    // Build intelligence summary by target
+    const intelligenceByTarget = sortedTargets.map(([targetName, articles]) => {
+      const sourcePriorities = companyProfile?.monitoring_config?.source_priorities || {};
+      const blockedSources = new Set((sourcePriorities.blocked || []).map((s: string) => s.toLowerCase()));
+
+      // Filter out blocked sources from this target's articles
+      const qualityArticles = articles.filter(a =>
+        !blockedSources.has((a.source || a.source_name || '').toLowerCase())
+      );
+
+      return {
+        target: targetName,
+        total_signals: articles.length,
+        quality_signals: qualityArticles.length,
+        blocked_filtered: articles.length - qualityArticles.length,
+        top_articles: qualityArticles.slice(0, 3).map(a => ({
+          title: a.title,
+          source: a.source || a.source_name,
+          signal_strength: a.signal_strength,
+          url: a.url
+        }))
+      };
+    }).filter(t => t.quality_signals > 0); // Only show targets with quality signals
 
     // Extract all unique entities from events for clarity
     const allEntities = [...new Set(topEvents.map(e => e.entity).filter(Boolean))];
@@ -1041,21 +1111,100 @@ ${companyProfile?.intelligence_context?.analysis_perspective ? `ANALYSIS PERSPEC
 - When applicable, address the KEY INTELLIGENCE QUESTIONS above
 - Prioritize news relevant to the STRATEGIC PRIORITIES
 
+📰 SOURCE QUALITY HIERARCHY (from company profile):
+${(() => {
+  const sourcePriorities = companyProfile?.monitoring_config?.source_priorities || {};
+  const critical = sourcePriorities.critical || [];
+  const high = sourcePriorities.high || [];
+  const blocked = sourcePriorities.blocked || [];
+
+  let sourceGuidance = '';
+
+  if (critical.length > 0) {
+    sourceGuidance += `🔴 CRITICAL SOURCES (ALWAYS prioritize): ${critical.join(', ')}\n`;
+  }
+  if (high.length > 0) {
+    sourceGuidance += `🟡 HIGH-PRIORITY SOURCES (prefer over others): ${high.join(', ')}\n`;
+  }
+  if (blocked.length > 0) {
+    sourceGuidance += `🚫 BLOCKED SOURCES (NEVER cite or include): ${blocked.join(', ')}\n`;
+  }
+
+  if (!sourceGuidance) {
+    sourceGuidance = 'No source priorities configured - use editorial judgment.\n';
+  }
+
+  sourceGuidance += `
+⚠️ SOURCE SELECTION RULES:
+- When multiple articles cover the same story, ALWAYS cite the CRITICAL/HIGH source, not blocked sources
+- NEVER lead your executive summary with content from BLOCKED sources
+- If the ONLY source for a story is a BLOCKED source, note it as "unverified" or skip it entirely
+- PR Newswire, GlobeNewswire, BusinessWire are press releases, NOT journalism - treat accordingly
+- Prefer original reporting (Reuters, FT, WSJ) over republished press releases`;
+
+  return sourceGuidance;
+})()}
+
 **TODAY'S DATE:** ${new Date().toISOString().split('T')[0]}
 
+═══════════════════════════════════════════════════════════
+🎯 INTELLIGENCE BY TARGET (What matters to ${organization?.name})
+═══════════════════════════════════════════════════════════
+
+${intelligenceByTarget.length > 0 ? `
+These are YOUR intelligence targets with active signals. PRIORITIZE these in your synthesis:
+
+${intelligenceByTarget.map((t, i) => `
+${i+1}. **${t.target}** (${t.quality_signals} signals${t.blocked_filtered > 0 ? `, ${t.blocked_filtered} blocked` : ''})
+${t.top_articles.map(a => `   • [${a.signal_strength?.toUpperCase() || 'SIGNAL'}] "${a.title}" (${a.source})`).join('\n')}
+`).join('')}
+
+🔗 CROSS-TARGET CONNECTIONS (${articlesWithMultipleTargets.length} articles match multiple targets):
+${articlesWithMultipleTargets.slice(0, 5).map(a => `• "${a.title}" connects ${a.target_count} targets: ${(a.matched_targets || []).slice(0, 3).join(', ')}`).join('\n') || 'None detected'}
+
+⚠️ USE THIS STRUCTURE:
+- Lead with insights about targets that have STRONG signals
+- Connect the dots between targets when articles match multiple
+- Ignore articles that don't match any target (they're noise)
+` : 'No intelligence targets with signals found - using general article analysis.'}
+
 PRE-ANALYZED ARTICLES (${enrichedArticles.length} articles processed${articleOnlyMode ? ' - USE THESE FOR key_developments' : ''}):
-${articleSummaries.map((article, i) => {
-  const contentQuality = article.has_full_content ? '✓ FULL' : '◆ SUMMARY';
-  const tradeFlag = article.is_trade_source ? ' [TRADE]' : '';
-  const recencyEmoji = article.recency === 'today' ? '🔥 TODAY' :
-                        article.recency === 'yesterday' ? '📅 YESTERDAY' :
-                        article.recency === 'this_week' ? '📆 THIS WEEK' : '⚠️ OLDER';
-  return `
-${i+1}. [${recencyEmoji}] [${contentQuality}]${tradeFlag} ${article.headline}
+${(() => {
+  const sourcePriorities = companyProfile?.monitoring_config?.source_priorities || {};
+  const criticalSources = new Set((sourcePriorities.critical || []).map(s => s.toLowerCase()));
+  const highSources = new Set((sourcePriorities.high || []).map(s => s.toLowerCase()));
+  const blockedSources = new Set((sourcePriorities.blocked || []).map(s => s.toLowerCase()));
+
+  return articleSummaries.map((article, i) => {
+    const contentQuality = article.has_full_content ? '✓ FULL' : '◆ SUMMARY';
+    const tradeFlag = article.is_trade_source ? ' [TRADE]' : '';
+    const recencyEmoji = article.recency === 'today' ? '🔥 TODAY' :
+                          article.recency === 'yesterday' ? '📅 YESTERDAY' :
+                          article.recency === 'this_week' ? '📆 THIS WEEK' : '⚠️ OLDER';
+    const signalBadge = article.signal_strength === 'strong' ? '🔴 STRONG' :
+                         article.signal_strength === 'moderate' ? '🟡 MODERATE' : '🟢 WEAK';
+
+    // Source quality badge based on company profile
+    const sourceLower = (article.source || '').toLowerCase();
+    let sourceQualityBadge = '';
+    if (blockedSources.has(sourceLower)) {
+      sourceQualityBadge = ' ⛔ BLOCKED-SOURCE-DO-NOT-USE';
+    } else if (criticalSources.has(sourceLower)) {
+      sourceQualityBadge = ' ⭐ CRITICAL-SOURCE';
+    } else if (highSources.has(sourceLower)) {
+      sourceQualityBadge = ' ✓ HIGH-PRIORITY';
+    }
+
+    const matchedInfo = article.matched_targets?.length > 0
+      ? `\n   🎯 MATCHED TARGETS: ${article.matched_targets.slice(0, 5).join(', ')}${article.matched_targets.length > 5 ? ` (+${article.matched_targets.length - 5} more)` : ''}`
+      : '';
+    return `
+${i+1}. [${recencyEmoji}] [${signalBadge}] [${contentQuality}]${tradeFlag}${sourceQualityBadge} ${article.headline}
    Source: ${article.source} | URL: ${article.url}
-   Published: ${article.published_at} | Relevance: ${article.relevance}/100
+   Published: ${article.published_at} | Relevance: ${article.relevance}/100${matchedInfo}
    Summary: ${article.key_insight}`;
-}).join('') || 'No enriched articles available'}
+  }).join('');
+})() || 'No enriched articles available'}
 
 ⚠️ Content Quality Legend:
 - [✓ FULL] = Complete scraped article text (high-priority articles)

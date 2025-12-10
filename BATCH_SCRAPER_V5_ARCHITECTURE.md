@@ -1002,10 +1002,297 @@ Set up alerts for:
 - **Pending queue:** > 5000 (worker can't keep up)
 - **Failed rate:** > 50% of daily articles (widespread scraping issues)
 
+## Embedding-Based Intelligence Matching (V5.1 - Dec 2024)
+
+### Overview
+
+After articles are scraped, they go through an **embedding pipeline** that enables semantic matching to organization-specific intelligence targets. This replaces keyword-based article selection with AI-powered similarity matching.
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    EMBEDDING PHASE                               │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  batch-embed-articles                                            │
+│  - Embeds article full_content using Voyage AI (voyage-3)       │
+│  - Stores 1024-dimensional vectors in raw_articles.embedding    │
+│  - Runs after scraping completes                                 │
+│                                                                  │
+│  batch-embed-targets                                             │
+│  - Embeds intelligence_targets (competitors, stakeholders, etc) │
+│  - Stores vectors in intelligence_targets.embedding             │
+│  - Runs when new targets are added                               │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    MATCHING PHASE                                │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  batch-match-signals                                             │
+│  - Compares article embeddings to target embeddings              │
+│  - Uses pgvector cosine similarity (<=> operator)               │
+│  - Creates matches in target_article_matches table               │
+│  - Signal strength: strong (≥0.50), moderate (≥0.40), weak (≥0.35)│
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    SELECTION PHASE                               │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  article-selector-v5                                             │
+│  - Queries pre-computed matches for organization                 │
+│  - Filters by signal strength, recency, blocked sources         │
+│  - Returns articles with matched_targets metadata                │
+│  - Used by intelligence-pipeline-simple → synthesis              │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### New Database Tables
+
+#### `intelligence_targets` Table
+
+```sql
+id UUID PRIMARY KEY
+organization_id UUID REFERENCES organizations(id)
+name TEXT                          -- "Glencore", "Energy transition", "FERC"
+target_type TEXT                   -- 'competitor', 'stakeholder', 'regulator', 'topic'
+priority TEXT                      -- 'critical', 'high', 'medium', 'low'
+monitoring_context JSONB           -- Additional context for matching
+is_active BOOLEAN DEFAULT TRUE
+embedding VECTOR(1024)             -- Voyage AI embedding
+embedded_at TIMESTAMPTZ            -- When embedding was generated
+created_at TIMESTAMPTZ
+```
+
+#### `target_article_matches` Table
+
+```sql
+id UUID PRIMARY KEY
+target_id UUID REFERENCES intelligence_targets(id)
+article_id UUID REFERENCES raw_articles(id)
+organization_id UUID               -- Denormalized for fast queries
+similarity_score FLOAT             -- Cosine similarity (0-1)
+signal_strength TEXT               -- 'strong', 'moderate', 'weak'
+matched_at TIMESTAMPTZ
+UNIQUE(target_id, article_id)      -- One match per target-article pair
+```
+
+#### Updated `raw_articles` Table
+
+```sql
+-- New V5.1 field
+embedding VECTOR(1024)             -- Voyage AI voyage-3 embedding
+embedded_at TIMESTAMPTZ            -- When embedding was generated
+```
+
+### Edge Functions
+
+#### `batch-embed-articles`
+**Purpose:** Generate embeddings for unembedded articles
+
+**Process:**
+- Queries articles where `embedding IS NULL` and `full_content IS NOT NULL`
+- Sends content to Voyage AI (voyage-3 model, 1024 dimensions)
+- Stores embedding vector in `raw_articles.embedding`
+- Processes in batches of 100
+
+**Performance:**
+- ~100 articles per run
+- ~30-60 seconds per batch
+- Voyage AI rate limits: 300 RPM
+
+#### `batch-embed-targets`
+**Purpose:** Generate embeddings for intelligence targets
+
+**Process:**
+- Queries targets where `embedding IS NULL` and `is_active = true`
+- Generates embedding from target name + monitoring_context
+- Stores in `intelligence_targets.embedding`
+
+**Performance:**
+- Fast (targets are small text)
+- Run when new targets are created
+
+#### `batch-match-signals`
+**Purpose:** Create article-target matches using vector similarity
+
+**Process:**
+- For each organization with embedded targets:
+  - Query recent embedded articles (last 24h)
+  - Calculate cosine similarity using pgvector
+  - Insert matches above threshold (0.35) into `target_article_matches`
+- Assigns signal_strength based on score
+
+**Signal Strength Thresholds:**
+```
+Strong:   similarity ≥ 0.50
+Moderate: similarity ≥ 0.40
+Weak:     similarity ≥ 0.35
+```
+
+**Performance:**
+- Processes all orgs with targets
+- ~30 seconds per run
+- Creates thousands of matches per run
+
+#### `article-selector-v5`
+**Purpose:** Select articles for an organization using pre-computed matches
+
+**Process:**
+- Queries `target_article_matches` for organization
+- Joins with `raw_articles` for article data
+- Filters by:
+  - `min_signal_strength` (default: 'weak')
+  - `hours_back` (default: 24)
+  - Blocked sources from company profile
+  - Article publish date
+- Returns articles with `matched_targets` array
+
+**Output:**
+```json
+{
+  "articles": [
+    {
+      "id": "uuid",
+      "title": "ADNOC in deal talks...",
+      "matched_targets": ["Energy transition", "FERC", "Geopolitical risks"],
+      "signal_strength": "moderate",
+      "max_similarity_score": 0.42
+    }
+  ],
+  "summary": {
+    "total_matches_found": 1500,
+    "filtered_by_blocked_source": 50,
+    "unique_articles": 221
+  }
+}
+```
+
+### Production Cron Schedule
+
+Located in `supabase/migrations/20251210_embedding_cron_schedule.sql`:
+
+```sql
+-- Discovery Phase: 4x daily at 5, 11, 17, 23 UTC
+SELECT cron.schedule('mcp-discovery', '0 5,11,17,23 * * *', ...);
+
+-- Embed Articles: 4x daily at 0, 6, 12, 18 UTC (1 hour after discovery)
+SELECT cron.schedule('embed-articles', '0 0,6,12,18 * * *', ...);
+
+-- Match Signals: Every 3 hours at :15 (minimizes gaps)
+SELECT cron.schedule('match-signals', '15 */3 * * *', ...);
+```
+
+**Schedule Rationale:**
+- Discovery runs first to find new articles
+- Embedding runs 1 hour after discovery (articles need full_content)
+- Matching runs every 3 hours to ensure briefings have recent matches
+- Max gap between matching: 3 hours (was 6 hours, caused ADNOC issue)
+
+### Intelligence Flow (End-to-End)
+
+```
+1. RSS/Sitemap/CSE discovers article URL
+   ↓
+2. Worker scrapes full_content
+   ↓
+3. batch-embed-articles generates embedding
+   ↓
+4. batch-match-signals creates target matches
+   ↓
+5. article-selector-v5 returns matched articles
+   ↓
+6. mcp-executive-synthesis receives:
+   - Articles with matched_targets
+   - Intelligence grouped by target
+   - Cross-target connections
+   ↓
+7. Output: Intelligence brief organized by what matters to org
+```
+
+### Source Blocking
+
+Sources can be blocked per-organization in `company_profile.monitoring_config.source_priorities`:
+
+```json
+{
+  "monitoring_config": {
+    "source_priorities": {
+      "critical": ["Financial Times", "Reuters", "Bloomberg"],
+      "high": ["Wall Street Journal", "CNBC"],
+      "blocked": ["PR Newswire", "GlobeNewswire"]
+    }
+  }
+}
+```
+
+- **article-selector-v5**: Filters out blocked sources before returning
+- **mcp-executive-synthesis**: Marks blocked sources with `⛔ BLOCKED-SOURCE-DO-NOT-USE`
+- Claude instructed to never cite blocked sources
+
+### Monitoring Queries
+
+```sql
+-- Check embedding coverage
+SELECT
+  COUNT(*) as total,
+  COUNT(*) FILTER (WHERE embedding IS NOT NULL) as embedded,
+  COUNT(*) FILTER (WHERE embedded_at > NOW() - INTERVAL '24h') as embedded_today
+FROM raw_articles
+WHERE full_content IS NOT NULL;
+
+-- Check matches per org
+SELECT
+  o.name,
+  COUNT(DISTINCT tam.article_id) as matched_articles,
+  COUNT(*) as total_matches
+FROM target_article_matches tam
+JOIN organizations o ON tam.organization_id = o.id
+WHERE tam.matched_at > NOW() - INTERVAL '24h'
+GROUP BY o.name;
+
+-- Check target coverage
+SELECT
+  it.name,
+  it.target_type,
+  COUNT(tam.id) as match_count,
+  AVG(tam.similarity_score) as avg_score
+FROM intelligence_targets it
+LEFT JOIN target_article_matches tam ON it.id = tam.target_id
+WHERE it.is_active = true
+GROUP BY it.id
+ORDER BY match_count DESC;
+```
+
+### Troubleshooting
+
+#### Articles not matching any targets
+1. **Check embedding exists:** `SELECT id, embedded_at FROM raw_articles WHERE id = 'uuid'`
+2. **Check targets have embeddings:** `SELECT name, embedded_at FROM intelligence_targets WHERE organization_id = 'org-uuid'`
+3. **Check matching ran:** `SELECT MAX(matched_at) FROM target_article_matches WHERE organization_id = 'org-uuid'`
+4. **Lower threshold:** Try `min_signal_strength: 'weak'` in selector
+
+#### High-quality articles being missed
+1. **Check similarity scores:** Article may be below 0.35 threshold
+2. **Add relevant targets:** Create topic targets that better match the content
+3. **Check article has full_content:** Embedding from title-only is less accurate
+
+#### PR Newswire still appearing
+1. **Check blocked sources configured:** `SELECT company_profile->'monitoring_config'->'source_priorities'->'blocked' FROM organizations WHERE id = 'uuid'`
+2. **Verify correct org ID:** Multiple orgs may have same name
+3. **Check selector is V5:** Pipeline should call `article-selector-v5`, not v3/v4
+
 ## Next Steps
 
-1. **Set up cron scheduling** using the SQL above
-2. **Monitor queue metrics** via health check query
-3. **Add alerting** via Supabase webhooks or external monitoring
-4. **Expand source registry** - add more RSS feeds for Tier 2 sources
-5. **Tune metadata extraction** prompts for better entity/topic accuracy
+1. **Monitor embedding coverage** - Ensure articles are being embedded daily
+2. **Tune similarity thresholds** - May need per-org or per-target-type tuning
+3. **Expand intelligence targets** - Add more topics from company profiles
+4. **Add target auto-refresh** - Re-run discovery to create targets for new orgs
+5. **Implement target feedback** - Allow users to mark irrelevant matches

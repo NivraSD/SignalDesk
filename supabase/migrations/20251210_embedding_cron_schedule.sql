@@ -99,10 +99,11 @@ SELECT cron.schedule(
   $$
 );
 
--- Match Signals: 15 minutes after embedding (0:15, 6:15, 12:15, 18:15 UTC)
+-- Match Signals: Every 3 hours at :15 to minimize gaps
+-- Runs at: 0:15, 3:15, 6:15, 9:15, 12:15, 15:15, 18:15, 21:15 UTC
 SELECT cron.schedule(
   'match-signals',
-  '15 0,6,12,18 * * *',
+  '15 */3 * * *',
   $$
   SELECT net.http_post(
     url := 'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/batch-match-signals',

@@ -46,8 +46,9 @@ serve(async (req) => {
     // ================================================================
     console.log('📰 Step 2: Selecting articles from V5 batch scraper...');
 
+    // Use V5 embedding-based selector for semantic matching
     const articleResponse = await fetch(
-      `${SUPABASE_URL}/functions/v1/article-selector-v3`,
+      `${SUPABASE_URL}/functions/v1/article-selector-v5`,
       {
         method: 'POST',
         headers: {
@@ -56,7 +57,9 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           organization_id,
-          organization_name: organization_name || org.name
+          organization_name: organization_name || org.name,
+          hours_back: 24,
+          min_signal_strength: 'weak'
         })
       }
     );
