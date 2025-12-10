@@ -12,10 +12,10 @@ interface PreDraftedComm {
   content: string
   folder?: string
   metadata: {
-    scenario: string
-    stakeholder: string
-    tone: string
-    channel: string
+    scenario?: string
+    stakeholder?: string
+    tone?: string
+    channel?: string
   }
 }
 
@@ -39,6 +39,7 @@ export default function CrisisCommunications({ crisis, onUpdate, onOpenInStudio 
   const [loadingScenarios, setLoadingScenarios] = useState(true)
   const [loadingComms, setLoadingComms] = useState(true)
   const [generatingFor, setGeneratingFor] = useState<string | null>(null)
+  const [generationProgress, setGenerationProgress] = useState<string>('')
   const [expandedScenario, setExpandedScenario] = useState<string | null>(null)
   const [selectedComm, setSelectedComm] = useState<PreDraftedComm | null>(null)
 
@@ -72,7 +73,7 @@ export default function CrisisCommunications({ crisis, onUpdate, onOpenInStudio 
     loadScenarios()
   }, [organization?.id])
 
-  // Load pre-drafted communications
+  // Load pre-drafted communications from Crisis folder
   useEffect(() => {
     loadPreDraftedComms()
   }, [organization?.id])
@@ -81,15 +82,19 @@ export default function CrisisCommunications({ crisis, onUpdate, onOpenInStudio 
     if (!organization?.id) return
     setLoadingComms(true)
     try {
+      // Simple query - just get content from Crisis folder
       const { data, error } = await supabase
         .from('content_library')
         .select('id, title, content, folder, metadata')
         .eq('organization_id', organization.id)
-        .eq('content_type', 'crisis-communication')
-        .contains('tags', ['pre-drafted'])
+        .like('folder', 'Crisis/%')
         .order('created_at', { ascending: false })
 
-      if (!error && data) {
+      if (error) {
+        console.error('Query error:', error)
+      }
+
+      if (data) {
         setPreDraftedComms(data.map(d => ({
           id: d.id,
           title: d.title,
@@ -106,30 +111,119 @@ export default function CrisisCommunications({ crisis, onUpdate, onOpenInStudio 
   }
 
   const getCommsForScenario = (scenarioTitle: string) => {
-    return preDraftedComms.filter(c => c.metadata?.scenario === scenarioTitle)
+    // Match by folder path OR metadata scenario
+    const folderName = scenarioTitle.replace(/[^a-zA-Z0-9\s]/g, '').trim()
+    return preDraftedComms.filter(c =>
+      c.folder?.includes(folderName) ||
+      c.metadata?.scenario === scenarioTitle
+    )
   }
 
+  // Generate using niv-content-intelligent-v2 (same pattern as Opportunities/Campaigns)
   const generateCommsForScenario = async (scenario: Scenario) => {
     if (!organization || generatingFor) return
     setGeneratingFor(scenario.title)
+    setGenerationProgress('Starting generation...')
+
+    const scenarioFolderName = scenario.title.replace(/[^a-zA-Z0-9\s]/g, '').trim()
+    const campaignFolder = `Crisis/${scenarioFolderName}`
+
+    // Content requirements for each stakeholder
+    const contentRequirements = stakeholders.map(stakeholder => ({
+      type: 'crisis-communication',
+      topic: `${stakeholder} Communication for ${scenario.title}`,
+      details: {
+        stakeholder,
+        scenario: scenario.title,
+        scenarioDescription: scenario.description,
+        channel: getChannelForStakeholder(stakeholder),
+        tone: getToneForStakeholder(stakeholder)
+      }
+    }))
+
     try {
-      const { data, error } = await supabase.functions.invoke('mcp-crisis', {
+      console.log(`🚀 Generating crisis comms for scenario: ${scenario.title}`)
+      setGenerationProgress(`Generating ${stakeholders.length} stakeholder communications...`)
+
+      // Call niv-content-intelligent-v2 (same as Opportunities module)
+      const { data: result, error } = await supabase.functions.invoke('niv-content-intelligent-v2', {
         body: {
-          action: 'generate_scenario_comms',
-          scenario: scenario,
-          organization_id: organization.id,
-          organization_name: organization.name,
-          industry: organization.industry
+          message: `Generate crisis communications for all stakeholders for the scenario: ${scenario.title}. ${scenario.description}`,
+          conversationHistory: [],
+          organizationContext: {
+            conversationId: `crisis-${scenario.title.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
+            organizationId: organization.id,
+            organizationName: organization.name || 'Organization'
+          },
+          stage: 'campaign_generation',
+          campaignContext: {
+            phase: 'crisis_communications',
+            phaseNumber: 1,
+            objective: `Crisis Communications for ${scenario.title}`,
+            narrative: scenario.description,
+            keyMessages: [
+              'Acknowledge the situation transparently',
+              'Explain immediate response actions',
+              'Provide timeline for resolution',
+              'Commit to ongoing updates'
+            ],
+            contentRequirements,
+            campaignFolder,
+            campaignType: 'CRISIS_COMMUNICATIONS',
+            crisisScenario: {
+              title: scenario.title,
+              description: scenario.description,
+              impact: scenario.impact || 'Major',
+              likelihood: scenario.likelihood || 'Medium'
+            },
+            targetStakeholders: stakeholders,
+            industry: organization.industry || 'general'
+          }
         }
       })
-      if (!error) {
-        await loadPreDraftedComms()
+
+      if (error) {
+        console.error('Generation error:', error)
+        throw error
       }
+
+      console.log('✅ Generation complete:', result)
+      setGenerationProgress('Generation complete! Loading content...')
+
+      // Reload to show new content
+      await loadPreDraftedComms()
+
     } catch (err) {
       console.error('Error generating communications:', err)
+      setGenerationProgress('Generation failed. Please try again.')
     } finally {
       setGeneratingFor(null)
+      setTimeout(() => setGenerationProgress(''), 3000)
     }
+  }
+
+  const getChannelForStakeholder = (stakeholder: string): string => {
+    const channels: Record<string, string> = {
+      'Customers': 'Email/Website/App notification',
+      'Employees': 'Internal email/Slack/Town hall',
+      'Investors': 'Press release/Investor call',
+      'Media': 'Press release/Media briefing',
+      'Regulators': 'Formal letter/Regulatory filing',
+      'Partners': 'Direct communication/Partner portal'
+    }
+    return channels[stakeholder] || 'Email'
+  }
+
+  const getToneForStakeholder = (stakeholder: string): string => {
+    const tones: Record<string, string> = {
+      'Customers': 'empathetic and reassuring',
+      'Employees': 'supportive and transparent',
+      'Investors': 'factual and confident',
+      'Media': 'factual and professional',
+      'Regulators': 'formal and compliant',
+      'Partners': 'collaborative and transparent'
+    }
+    return tones[stakeholder] || 'professional'
   }
 
   const copyToClipboard = (text: string) => {
@@ -137,7 +231,7 @@ export default function CrisisCommunications({ crisis, onUpdate, onOpenInStudio 
   }
 
   const getStakeholderIcon = (stakeholder: string) => {
-    const lower = stakeholder.toLowerCase()
+    const lower = (stakeholder || '').toLowerCase()
     if (lower.includes('customer')) return '👥'
     if (lower.includes('employee')) return '💼'
     if (lower.includes('investor')) return '💰'
@@ -174,6 +268,15 @@ export default function CrisisCommunications({ crisis, onUpdate, onOpenInStudio 
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>Scenario Materials</h2>
         </div>
+
+        {generationProgress && (
+          <div className="mb-4 p-3 bg-[var(--burnt-orange)]/10 border border-[var(--burnt-orange)]/30 rounded-lg">
+            <p className="text-sm text-[var(--burnt-orange)] flex items-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              {generationProgress}
+            </p>
+          </div>
+        )}
 
         <div className="space-y-4">
           {scenarios.map((scenario, idx) => {
@@ -249,9 +352,9 @@ export default function CrisisCommunications({ crisis, onUpdate, onOpenInStudio 
                             }`}
                           >
                             <div className="flex items-center gap-2">
-                              <span className="text-lg">{getStakeholderIcon(comm.metadata?.stakeholder)}</span>
+                              <span className="text-lg">{getStakeholderIcon(comm.metadata?.stakeholder || comm.title)}</span>
                               <div>
-                                <p className="text-sm text-white font-medium">{comm.metadata?.stakeholder}</p>
+                                <p className="text-sm text-white font-medium">{comm.metadata?.stakeholder || comm.title}</p>
                                 <p className="text-xs text-[var(--grey-500)]">{comm.metadata?.channel || 'Email'}</p>
                               </div>
                             </div>
@@ -298,13 +401,13 @@ export default function CrisisCommunications({ crisis, onUpdate, onOpenInStudio 
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <span className="text-2xl">{getStakeholderIcon(selectedComm.metadata?.stakeholder)}</span>
+                <span className="text-2xl">{getStakeholderIcon(selectedComm.metadata?.stakeholder || selectedComm.title)}</span>
                 <div>
                   <h3 className="text-lg font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>
-                    {selectedComm.metadata?.stakeholder} Communication
+                    {selectedComm.metadata?.stakeholder || selectedComm.title}
                   </h3>
                   <p className="text-sm text-[var(--grey-400)]">
-                    {selectedComm.metadata?.scenario} • {selectedComm.metadata?.channel || 'Email'}
+                    {selectedComm.metadata?.scenario || selectedComm.folder} • {selectedComm.metadata?.channel || 'Email'}
                   </p>
                 </div>
               </div>

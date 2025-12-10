@@ -40,17 +40,21 @@ export default function CrisisPlanViewer({ onClose, plan: providedPlan, embedded
   const loadDraftedComms = async () => {
     if (!organization?.id) return
     try {
+      // Simple query - get content from Crisis folder
       const { data, error } = await supabase
         .from('content_library')
-        .select('id, metadata')
+        .select('id, folder, metadata')
         .eq('organization_id', organization.id)
-        .eq('content_type', 'crisis-communication')
-        .contains('tags', ['pre-drafted'])
+        .like('folder', 'Crisis/%')
 
-      if (!error && data) {
+      if (error) {
+        console.error('Query error:', error)
+      }
+
+      if (data) {
         setDraftedComms(data.map(d => ({
           id: d.id,
-          scenario: d.metadata?.scenario || '',
+          scenario: d.metadata?.scenario || d.folder?.split('/')[1] || '',
           stakeholder: d.metadata?.stakeholder || ''
         })))
       }
