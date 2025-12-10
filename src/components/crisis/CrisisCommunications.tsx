@@ -134,18 +134,19 @@ export default function CrisisCommunications({ crisis, onUpdate, onOpenInStudio 
     const scenarioFolderName = scenario.title.replace(/[^a-zA-Z0-9\s]/g, '').trim()
     const campaignFolder = `Crisis/${scenarioFolderName}`
 
-    // Content requirements for each stakeholder
-    const contentRequirements = stakeholders.map(stakeholder => ({
-      type: 'crisis-communication',
-      topic: `${stakeholder} Communication for ${scenario.title}`,
-      details: {
-        stakeholder,
-        scenario: scenario.title,
-        scenarioDescription: scenario.description,
+    // Content requirements - must have owned/media structure for niv-content-intelligent-v2
+    const contentRequirements = {
+      owned: stakeholders.map(stakeholder => ({
+        type: 'crisis-communication',
+        stakeholder: stakeholder,
+        topic: `${stakeholder} Communication for ${scenario.title}`,
         channel: getChannelForStakeholder(stakeholder),
-        tone: getToneForStakeholder(stakeholder)
-      }
-    }))
+        tone: getToneForStakeholder(stakeholder),
+        scenarioTitle: scenario.title,
+        scenarioDescription: scenario.description
+      })),
+      media: []
+    }
 
     try {
       console.log(`🚀 Generating crisis comms for scenario: ${scenario.title}`)
