@@ -654,7 +654,7 @@ async function generatePresentation(request: PresentationRequest) {
 
     // Default to custom theme with icons (dark with orange accents)
     if (!themeId) {
-      themeId = 'ysdv2wnyy9v8td0';
+      themeId = 'hh9e848rtz7zseo';
       console.log(`🎨 Using default theme: ${themeId}`);
     }
 

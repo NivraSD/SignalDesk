@@ -701,7 +701,7 @@ export default function SignalsModule() {
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
               {/* Description */}
               <div>
-                <h4 className="text-[0.7rem] uppercase tracking-wide text-[var(--grey-500)] mb-2" style={{ fontFamily: 'var(--font-display)' }}>
+                <h4 className="text-[0.7rem] uppercase tracking-wide text-white mb-2" style={{ fontFamily: 'var(--font-display)' }}>
                   Description
                 </h4>
                 <p className="text-white">{selectedSignal.description}</p>
@@ -742,7 +742,7 @@ export default function SignalsModule() {
               {/* Key Insight */}
               {selectedSignal.analysis.key_insight && (
                 <div>
-                  <h4 className="text-[0.7rem] uppercase tracking-wide text-[var(--grey-500)] mb-3" style={{ fontFamily: 'var(--font-display)' }}>
+                  <h4 className="text-[0.7rem] uppercase tracking-wide text-white mb-3" style={{ fontFamily: 'var(--font-display)' }}>
                     Key Insight
                   </h4>
                   <div className="p-4 bg-[var(--burnt-orange-muted)] rounded-lg border border-[var(--burnt-orange)]/30">
@@ -754,7 +754,7 @@ export default function SignalsModule() {
               {/* Business Implications */}
               {selectedSignal.analysis.business_implications && selectedSignal.analysis.business_implications.length > 0 && (
                 <div>
-                  <h4 className="text-[0.7rem] uppercase tracking-wide text-[var(--grey-500)] mb-3" style={{ fontFamily: 'var(--font-display)' }}>
+                  <h4 className="text-[0.7rem] uppercase tracking-wide text-white mb-3" style={{ fontFamily: 'var(--font-display)' }}>
                     Business Implications
                   </h4>
                   <ul className="space-y-2">
@@ -771,7 +771,7 @@ export default function SignalsModule() {
               {/* Recommended Actions */}
               {selectedSignal.analysis.recommended_actions && selectedSignal.analysis.recommended_actions.length > 0 && (
                 <div>
-                  <h4 className="text-[0.7rem] uppercase tracking-wide text-[var(--grey-500)] mb-3" style={{ fontFamily: 'var(--font-display)' }}>
+                  <h4 className="text-[0.7rem] uppercase tracking-wide text-white mb-3" style={{ fontFamily: 'var(--font-display)' }}>
                     Recommended Actions
                   </h4>
                   <ul className="space-y-2">
@@ -788,7 +788,7 @@ export default function SignalsModule() {
               {/* Evidence Sources */}
               {selectedSignal.evidence.sources && selectedSignal.evidence.sources.length > 0 && (
                 <div>
-                  <h4 className="text-[0.7rem] uppercase tracking-wide text-[var(--grey-500)] mb-3" style={{ fontFamily: 'var(--font-display)' }}>
+                  <h4 className="text-[0.7rem] uppercase tracking-wide text-white mb-3" style={{ fontFamily: 'var(--font-display)' }}>
                     Evidence Sources
                   </h4>
                   <div className="flex flex-wrap gap-2">
@@ -806,7 +806,7 @@ export default function SignalsModule() {
 
               {/* Feedback Section */}
               <div className="pt-4 border-t border-[var(--grey-700)]">
-                <h4 className="text-[0.7rem] uppercase tracking-wide text-[var(--grey-500)] mb-3" style={{ fontFamily: 'var(--font-display)' }}>
+                <h4 className="text-[0.7rem] uppercase tracking-wide text-white mb-3" style={{ fontFamily: 'var(--font-display)' }}>
                   Was this signal accurate?
                 </h4>
                 <div className="flex gap-3">

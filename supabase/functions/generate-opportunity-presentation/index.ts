@@ -74,7 +74,7 @@ serve(async (req) => {
         campaign_id: opportunity_id, // Link to opportunity
         campaign_folder: campaignFolder, // Pass the clean folder path
         options: {
-          themeId: 'ysdv2wnyy9v8td0',
+          themeId: 'hh9e848rtz7zseo',
           imageSource: 'ai',
           tone: 'professional'
         }
