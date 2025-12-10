@@ -27,7 +27,10 @@ import {
   UserPlus,
   UserMinus,
   Eye,
-  Filter
+  Filter,
+  Zap,
+  Target,
+  Link2
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/components/auth/AuthProvider'
@@ -52,6 +55,13 @@ interface Stats {
   queueCompleted: number
   queueFailed: number
   queueMetadataOnly: number
+  // Embedding stats
+  articlesEmbedded: number
+  articlesAwaitingEmbed: number
+  targetsEmbedded: number
+  totalTargets: number
+  totalMatches: number
+  recentEmbedJobs: any[]
 }
 
 export default function AdminDashboard() {
@@ -100,7 +110,14 @@ export default function AdminDashboard() {
         queueProcessingResult,
         queueCompletedResult,
         queueFailedResult,
-        queueMetadataOnlyResult
+        queueMetadataOnlyResult,
+        // Embedding stats
+        articlesEmbeddedResult,
+        articlesAwaitingEmbedResult,
+        targetsEmbeddedResult,
+        totalTargetsResult,
+        totalMatchesResult,
+        recentEmbedJobsResult
       ] = await Promise.all([
         supabase.from('user_profiles').select('*', { count: 'exact' }),
         supabase.from('organizations').select('*', { count: 'exact' }),
@@ -116,6 +133,13 @@ export default function AdminDashboard() {
         supabase.from('raw_articles').select('*', { count: 'exact', head: true }).eq('scrape_status', 'completed'),
         supabase.from('raw_articles').select('*', { count: 'exact', head: true }).eq('scrape_status', 'failed'),
         supabase.from('raw_articles').select('*', { count: 'exact', head: true }).eq('scrape_status', 'metadata_only'),
+        // Embedding stats
+        supabase.from('raw_articles').select('*', { count: 'exact', head: true }).not('embedding', 'is', null),
+        supabase.from('raw_articles').select('*', { count: 'exact', head: true }).is('embedding', null).eq('scrape_status', 'completed'),
+        supabase.from('intelligence_targets').select('*', { count: 'exact', head: true }).not('embedding', 'is', null),
+        supabase.from('intelligence_targets').select('*', { count: 'exact', head: true }),
+        supabase.from('target_article_matches').select('*', { count: 'exact', head: true }),
+        supabase.from('embedding_jobs').select('*').order('completed_at', { ascending: false }).limit(5)
       ])
 
       // Get recent signups (last 30 days)
@@ -142,6 +166,13 @@ export default function AdminDashboard() {
         queueCompleted: queueCompletedResult.count || 0,
         queueFailed: queueFailedResult.count || 0,
         queueMetadataOnly: queueMetadataOnlyResult.count || 0,
+        // Embedding stats
+        articlesEmbedded: articlesEmbeddedResult.count || 0,
+        articlesAwaitingEmbed: articlesAwaitingEmbedResult.count || 0,
+        targetsEmbedded: targetsEmbeddedResult.count || 0,
+        totalTargets: totalTargetsResult.count || 0,
+        totalMatches: totalMatchesResult.count || 0,
+        recentEmbedJobs: recentEmbedJobsResult.data || [],
       })
 
       // Also load detailed data
@@ -200,6 +231,12 @@ export default function AdminDashboard() {
       if (type === 'worker') {
         functionName = 'batch-scraper-v5-worker'
         body = { batch_size: 10 }
+      } else if (type === 'embed') {
+        functionName = 'batch-embed-articles'
+        body = { batch_size: 100, max_batches: 10, hours_back: 48 }
+      } else if (type === 'match') {
+        functionName = 'batch-match-signals'
+        body = { hours_back: 48 }
       } else if (type === 'all') {
         functionName = 'batch-scraper-v5-orchestrator'
       } else {
@@ -214,7 +251,7 @@ export default function AdminDashboard() {
       setTimeout(loadStats, 2000)
     } catch (error) {
       console.error('Failed to trigger scrape:', error)
-      alert(`Failed to trigger scrape: ${error}`)
+      alert(`Failed to trigger: ${error}`)
     } finally {
       setTriggeringScrape(null)
     }
@@ -361,6 +398,30 @@ export default function AdminDashboard() {
                 )}
                 Process Queue
               </button>
+              <button
+                onClick={() => triggerScrape('embed')}
+                disabled={!!triggeringScrape}
+                className="w-full flex items-center gap-2 px-3 py-2 bg-blue-500/20 hover:bg-blue-500/30 rounded-lg text-sm text-blue-400 transition-colors disabled:opacity-50"
+              >
+                {triggeringScrape === 'embed' ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Zap className="w-4 h-4" />
+                )}
+                Run Embeddings
+              </button>
+              <button
+                onClick={() => triggerScrape('match')}
+                disabled={!!triggeringScrape}
+                className="w-full flex items-center gap-2 px-3 py-2 bg-purple-500/20 hover:bg-purple-500/30 rounded-lg text-sm text-purple-400 transition-colors disabled:opacity-50"
+              >
+                {triggeringScrape === 'match' ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Link2 className="w-4 h-4" />
+                )}
+                Run Matching
+              </button>
             </div>
           </div>
 
@@ -495,6 +556,105 @@ function OverviewView({ stats, loading }: { stats: Stats | null; loading: boolea
             ))}
           </div>
         </div>
+      </div>
+
+      {/* Embedding Stats */}
+      <div className="bg-[#1a1a1a] rounded-xl border border-[#2e2e2e] p-6">
+        <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
+          <Zap className="w-4 h-4 text-[#c75d3a]" />
+          Embedding Pipeline
+        </h3>
+        <div className="grid grid-cols-5 gap-4 mb-6">
+          <div className="text-center">
+            <div className="text-2xl text-white font-bold">{stats.articlesEmbedded.toLocaleString()}</div>
+            <div className="text-[#757575] text-xs">Articles Embedded</div>
+          </div>
+          <div className="text-center">
+            <div className={`text-2xl font-bold ${stats.articlesAwaitingEmbed > 0 ? 'text-yellow-400' : 'text-green-400'}`}>
+              {stats.articlesAwaitingEmbed}
+            </div>
+            <div className="text-[#757575] text-xs">Awaiting Embed</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl text-white font-bold">{stats.targetsEmbedded}</div>
+            <div className="text-[#757575] text-xs">Targets Embedded</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl text-white font-bold">{stats.totalTargets}</div>
+            <div className="text-[#757575] text-xs">Total Targets</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl text-white font-bold">{stats.totalMatches.toLocaleString()}</div>
+            <div className="text-[#757575] text-xs">Total Matches</div>
+          </div>
+        </div>
+
+        {/* Embedding completion bar */}
+        <div className="mb-4">
+          <div className="flex items-center justify-between text-xs mb-1">
+            <span className="text-[#757575]">Article Embedding Progress</span>
+            <span className="text-[#9e9e9e]">
+              {stats.totalArticles > 0
+                ? Math.round((stats.articlesEmbedded / stats.totalArticles) * 100)
+                : 0}%
+            </span>
+          </div>
+          <div className="w-full h-2 bg-[#3d3d3d] rounded-full overflow-hidden">
+            <div
+              className="h-full bg-[#c75d3a] rounded-full transition-all"
+              style={{
+                width: `${stats.totalArticles > 0 ? (stats.articlesEmbedded / stats.totalArticles) * 100 : 0}%`
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Target embedding progress */}
+        <div className="mb-4">
+          <div className="flex items-center justify-between text-xs mb-1">
+            <span className="text-[#757575]">Target Embedding Progress</span>
+            <span className="text-[#9e9e9e]">
+              {stats.totalTargets > 0
+                ? Math.round((stats.targetsEmbedded / stats.totalTargets) * 100)
+                : 0}%
+            </span>
+          </div>
+          <div className="w-full h-2 bg-[#3d3d3d] rounded-full overflow-hidden">
+            <div
+              className="h-full bg-blue-500 rounded-full transition-all"
+              style={{
+                width: `${stats.totalTargets > 0 ? (stats.targetsEmbedded / stats.totalTargets) * 100 : 0}%`
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Recent embedding jobs */}
+        {stats.recentEmbedJobs.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-[#2e2e2e]">
+            <div className="text-[#757575] text-xs font-semibold uppercase mb-2">Recent Embedding Jobs</div>
+            <div className="space-y-2">
+              {stats.recentEmbedJobs.slice(0, 3).map((job: any) => (
+                <div key={job.id} className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2">
+                    {job.status === 'completed' ? (
+                      <CheckCircle className="w-3 h-3 text-green-400" />
+                    ) : (
+                      <Loader2 className="w-3 h-3 text-yellow-400 animate-spin" />
+                    )}
+                    <span className="text-[#9e9e9e]">{job.job_type}</span>
+                    <span className="text-[#757575]">
+                      {job.items_processed}/{job.items_total} items
+                    </span>
+                  </div>
+                  <span className="text-[#757575]">
+                    {job.completed_at ? new Date(job.completed_at).toLocaleTimeString() : 'Running...'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Recent Signups */}
