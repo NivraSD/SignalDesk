@@ -232,7 +232,10 @@ function detectPresentationIntent(
   const isConfirmation = /^(yes|yeah|yep|sure|ok|okay|go ahead|proceed|do it|generate|generate it|looks good|perfect|approved?)\.?$/i.test(userMessage.trim())
   if (isConfirmation) {
     // Check if there's a pending presentation outline in history
+    // Check multiple formats: metadata outline, type, or legacy HTML comment
     const hasOutline = conversationHistory.some((msg: any) =>
+      msg.outline?.topic ||
+      msg.type === 'presentation_outline' ||
       msg.content?.includes('<!-- PRESENTATION_OUTLINE')
     )
     if (hasOutline) return true
@@ -244,6 +247,8 @@ function detectPresentationIntent(
                         /less\s+(slides?|sections?)/i.test(lower)
   if (isModification) {
     const hasOutline = conversationHistory.some((msg: any) =>
+      msg.outline?.topic ||
+      msg.type === 'presentation_outline' ||
       msg.content?.includes('<!-- PRESENTATION_OUTLINE')
     )
     if (hasOutline) return true
