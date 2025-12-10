@@ -9,8 +9,8 @@ import { corsHeaders } from '../_shared/cors.ts';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-// Source diversity settings
-const MAX_PER_SOURCE = 5;  // Strict cap to ensure source diversity
+// Source diversity is handled downstream by relevance filter
+// Selector should return all relevant matches, relevance filter applies diversity after scoring
 const DEFAULT_HOURS_BACK = 18;  // 18 hours for daily scrapes
 
 interface TargetMatch {
@@ -224,8 +224,8 @@ serve(async (req) => {
     // 1. Critical priority sources first
     // 2. High priority sources second
     // 3. Then by relevance score
-    // Apply source diversity cap to prevent any single source from dominating
-    const sortedArticles = Array.from(articleMap.values())
+    // No source cap here - relevance filter handles diversity after scoring
+    const v4Articles = Array.from(articleMap.values())
       .sort((a, b) => {
         // Priority source tier: critical=2, high=1, other=0
         const aPriority = criticalSources.has(a.source_name) ? 2 : highPrioritySources.has(a.source_name) ? 1 : 0;
@@ -238,26 +238,11 @@ serve(async (req) => {
         return b.relevance_score - a.relevance_score;
       });
 
-    const sourceCount: Record<string, number> = {};
-    const v4Articles = sortedArticles.filter(a => {
-      const count = sourceCount[a.source_name] || 0;
-      if (count >= MAX_PER_SOURCE) {
-        return false;  // Skip - source already at max
-      }
-      sourceCount[a.source_name] = count + 1;
-      return true;
-    });
-
-    // Recalculate source distribution after diversity cap
+    // Calculate source distribution
     const finalSourceDistribution: Record<string, number> = {};
     v4Articles.forEach(a => {
       finalSourceDistribution[a.source_name] = (finalSourceDistribution[a.source_name] || 0) + 1;
     });
-
-    const skippedForDiversity = sortedArticles.length - v4Articles.length;
-    if (skippedForDiversity > 0) {
-      console.log(`   ⚖️ Source diversity: skipped ${skippedForDiversity} articles (max ${MAX_PER_SOURCE} per source)`);
-    }
 
     // Get cross-target connections (articles matching multiple targets)
     let connections: CrossTargetArticle[] = [];

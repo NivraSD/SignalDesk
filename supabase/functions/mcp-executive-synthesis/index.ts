@@ -905,9 +905,9 @@ CRITICAL:
     });
 
     // Limit older articles - prioritize recent ones
-    // STRICT: Only include articles from last 14 days, hard exclude anything older
+    // Include articles from last 14 days, exclude anything older
     const recentArticles = sortedArticles.filter(a => ['today', 'yesterday', 'this_week'].includes(a.calculated_recency));
-    const twoWeekArticles = sortedArticles.filter(a => a.calculated_recency === 'last_2_weeks').slice(0, 3); // Max 3 from past 2 weeks
+    const twoWeekArticles = sortedArticles.filter(a => a.calculated_recency === 'last_2_weeks').slice(0, 15); // Allow more from past 2 weeks
     // EXCLUDE: 'older' and 'unknown' articles entirely - they shouldn't be in synthesis
     const excludedCount = sortedArticles.filter(a => ['older', 'unknown'].includes(a.calculated_recency)).length;
 
@@ -915,7 +915,7 @@ CRITICAL:
       console.log(`⚠️ EXCLUDED ${excludedCount} articles older than 14 days from synthesis`);
     }
 
-    const prioritizedArticles = [...recentArticles, ...twoWeekArticles].slice(0, 25); // Reduced from 40 to 25
+    const prioritizedArticles = [...recentArticles, ...twoWeekArticles].slice(0, 50); // Increased from 25 to 50
 
     console.log(`📰 Prioritized ${prioritizedArticles.length} articles (${recentArticles.length} recent, ${twoWeekArticles.length} from past 2 weeks)`);
 

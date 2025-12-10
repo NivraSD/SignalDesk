@@ -21,10 +21,30 @@ interface Article {
   title: string;
   description: string | null;
   source_name: string;
+  full_content: string | null;
   extracted_metadata: {
     topics?: string[];
     summary?: string;
   } | null;
+}
+
+// Strip common navigation/boilerplate from full content for cleaner embeddings
+function cleanFullContent(content: string): string {
+  let cleaned = content;
+
+  // Remove common navigation patterns
+  cleaned = cleaned.replace(/\[Skip to content\].*?\n/gi, '');
+  cleaned = cleaned.replace(/Text\s*settings[\s\S]*?Minimize to nav/gi, '');
+  cleaned = cleaned.replace(/\*\s*Subscribers only[\s\S]*?\[Learn more\].*?\n/gi, '');
+  cleaned = cleaned.replace(/Share this article.*?\n/gi, '');
+  cleaned = cleaned.replace(/Related articles?.*?\n/gi, '');
+  cleaned = cleaned.replace(/Sign up|Log in|Subscribe now/gi, '');
+
+  // Remove excessive whitespace
+  cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
+  cleaned = cleaned.trim();
+
+  return cleaned;
 }
 
 function buildEmbeddingText(article: Article): string {
@@ -33,7 +53,14 @@ function buildEmbeddingText(article: Article): string {
   parts.push(`Title: ${article.title}`);
   parts.push(`Source: ${article.source_name}`);
 
-  if (article.description) {
+  // Use full_content if available (this is the scraped article body - MUCH better for matching)
+  if (article.full_content) {
+    const cleanedContent = cleanFullContent(article.full_content);
+    // Use first 6000 chars of content to leave room for other fields
+    const contentPreview = cleanedContent.slice(0, 6000);
+    parts.push(`Content: ${contentPreview}`);
+  } else if (article.description) {
+    // Fall back to description if no full content
     parts.push(`Description: ${article.description}`);
   }
 
@@ -113,13 +140,19 @@ serve(async (req) => {
       batchNumber++;
 
       // Get articles that need embedding (from last N hours)
+      // Now includes ANY article that has content to embed:
+      // - completed: has full_content (best)
+      // - metadata_only: may have description
+      // - pending: may have description from RSS
       const { data: articles, error: fetchError } = await supabase
         .from('raw_articles')
-        .select('id, title, description, source_name, extracted_metadata')
+        .select('id, title, description, source_name, full_content, extracted_metadata')
         .is('embedding', null)
-        .eq('scrape_status', 'completed')
+        .in('scrape_status', ['completed', 'metadata_only', 'pending'])
         .gte('created_at', sinceTime)
         .not('title', 'is', null)
+        // Prioritize completed articles (have full_content) first
+        .order('scrape_status', { ascending: true })  // 'completed' comes before 'pending' alphabetically
         .order('created_at', { ascending: false })
         .limit(batchSize);
 
@@ -132,17 +165,34 @@ serve(async (req) => {
         break;
       }
 
-      console.log(`   Batch ${batchNumber}: Processing ${articles.length} articles...`);
+      // Filter out articles with no meaningful content (title-only = sparse, won't match well)
+      const articlesToEmbed = articles.filter(a => a.full_content || a.description);
+      const skippedTitleOnly = articles.length - articlesToEmbed.length;
+
+      // Count content types for logging
+      const withFullContent = articlesToEmbed.filter(a => a.full_content).length;
+      const withDescription = articlesToEmbed.filter(a => !a.full_content && a.description).length;
+
+      console.log(`   Batch ${batchNumber}: Processing ${articlesToEmbed.length} articles (skipped ${skippedTitleOnly} title-only)...`);
+      console.log(`      - ${withFullContent} with full content`);
+      console.log(`      - ${withDescription} with description only`);
+
+      if (articlesToEmbed.length === 0) {
+        console.log(`   Batch ${batchNumber}: No articles with content to embed, skipping...`);
+        // Still increment processed count for the skipped ones
+        totalProcessed += skippedTitleOnly;
+        continue;
+      }
 
       // Build embedding texts
-      const texts = articles.map(a => buildEmbeddingText(a as Article));
+      const texts = articlesToEmbed.map(a => buildEmbeddingText(a as Article));
 
       // Get embeddings from Voyage
       const embeddings = await embedTexts(texts);
 
       if (!embeddings) {
         console.error(`   Batch ${batchNumber}: Failed to get embeddings from Voyage AI`);
-        totalFailed += articles.length;
+        totalFailed += articlesToEmbed.length;
         continue;
       }
 
@@ -150,7 +200,7 @@ serve(async (req) => {
       let batchSuccess = 0;
       let batchFailed = 0;
 
-      for (let i = 0; i < articles.length; i++) {
+      for (let i = 0; i < articlesToEmbed.length; i++) {
         const embeddingStr = JSON.stringify(embeddings[i]);
         const { error: updateError } = await supabase
           .from('raw_articles')
@@ -158,23 +208,23 @@ serve(async (req) => {
             embedding: embeddingStr,
             embedded_at: new Date().toISOString()
           })
-          .eq('id', articles[i].id);
+          .eq('id', articlesToEmbed[i].id);
 
         if (updateError) {
-          console.error(`   Failed to update article ${articles[i].id}: ${updateError.message}`);
+          console.error(`   Failed to update article ${articlesToEmbed[i].id}: ${updateError.message}`);
           batchFailed++;
         } else {
           batchSuccess++;
         }
       }
 
-      totalProcessed += articles.length;
+      totalProcessed += articlesToEmbed.length + skippedTitleOnly;
       totalSuccess += batchSuccess;
       totalFailed += batchFailed;
 
       console.log(`   Batch ${batchNumber}: ${batchSuccess} embedded, ${batchFailed} failed`);
 
-      // If we got fewer articles than batch size, we're done
+      // If we got fewer articles than batch size (including skipped), we're done
       if (articles.length < batchSize) {
         break;
       }

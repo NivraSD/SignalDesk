@@ -227,9 +227,10 @@ Score ALL ${batch.length} articles.`;
             if (!article) return;
 
             // Industry priority articles get a score boost and lower threshold
+            // Lowered thresholds to let more articles through - synthesis will filter further
             const isPriority = article.industry_priority === true;
             const effectiveScore = isPriority ? Math.max(s.score, 65) : s.score;
-            const threshold = isPriority ? 40 : 50;  // Lower threshold for priority articles
+            const threshold = isPriority ? 30 : 35;  // Lowered from 40/50 to let more through
 
             if (effectiveScore >= threshold) {
               scoredArticles.push({
