@@ -155,12 +155,12 @@ export default function CrisisCommunications({ crisis, onUpdate, onOpenInStudio 
       // Call niv-content-intelligent-v2 (same as Opportunities module)
       const { data: result, error } = await supabase.functions.invoke('niv-content-intelligent-v2', {
         body: {
-          message: `Generate HOLDING STATEMENTS (not full responses) for the crisis scenario: ${scenario.title}.
+          message: `Generate HOLDING STATEMENTS for ${organization.name} (${organization.industry || 'general'} industry) for the crisis scenario: ${scenario.title}.
 
-IMPORTANT: These are PRE-DRAFTED HOLDING STATEMENTS - short, templated messages (150-300 words max) that can be quickly adapted during an actual crisis. Use [BRACKETS] for details to be filled in. Do NOT write elaborate fictional scenario responses with specific dates or invented details.
+IMPORTANT: These are PRE-DRAFTED HOLDING STATEMENTS - short, templated messages (150-300 words max) that can be quickly adapted during an actual crisis. Use the actual organization name "${organization.name}" but use [BRACKETS] for specific incident details to be filled in later. Do NOT write elaborate fictional scenario responses with specific dates or invented details.
 
-Example format:
-"[Organization] is aware of [brief situation description]. We are taking immediate action to [response]. The safety and trust of our [stakeholder group] remains our highest priority. We will provide updates as the situation develops."`,
+Example format for ${organization.name}:
+"${organization.name} is aware of [brief situation description]. We are taking immediate action to [response]. The safety and trust of our [stakeholder group] remains our highest priority. We will provide updates as the situation develops."`,
           conversationHistory: [],
           organizationContext: {
             conversationId: `crisis-${scenario.title.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
@@ -171,8 +171,10 @@ Example format:
           campaignContext: {
             phase: 'crisis_holding_statements',
             phaseNumber: 1,
-            objective: `Crisis Holding Statements for ${scenario.title}`,
-            narrative: `Pre-drafted holding statements for: ${scenario.description}. These should be SHORT templates (150-300 words) with [PLACEHOLDERS] for specific details, ready to be quickly customized during an actual crisis.`,
+            organizationName: organization.name,
+            organizationIndustry: organization.industry || 'general',
+            objective: `Crisis Holding Statements for ${organization.name} - ${scenario.title}`,
+            narrative: `Pre-drafted holding statements for ${organization.name} regarding: ${scenario.description}. Use "${organization.name}" as the org name. These should be SHORT templates (150-300 words) with [PLACEHOLDERS] for specific incident details, ready to be quickly customized during an actual crisis.`,
             keyMessages: [
               'Acknowledge awareness of the situation',
               'Express commitment to stakeholder safety/trust',
