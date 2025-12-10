@@ -70,7 +70,8 @@ serve(async (req) => {
     const organizationName = body.organization_name; // Optional, for V4 compat
     const hoursBack = body.hours_back || DEFAULT_HOURS_BACK;
     const minSignalStrength = body.min_signal_strength || 'weak'; // weak, moderate, strong
-    const maxArticlesPerTarget = body.max_articles_per_target || 10;
+    // Query more matches than needed since we filter by article date after
+    const maxArticlesPerTarget = body.max_articles_per_target || 100;
     const includeConnections = body.include_connections !== false; // Default true
 
     if (!organizationId) {
