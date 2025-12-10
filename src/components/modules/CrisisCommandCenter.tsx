@@ -101,7 +101,7 @@ interface CrisisEvent {
 
 export default function CrisisCommandCenter() {
   const { organization } = useAppStore()
-  const [activeView, setActiveView] = useState<'dashboard' | 'timeline' | 'team' | 'communications' | 'plan'>('dashboard')
+  const [activeView, setActiveView] = useState<'dashboard' | 'timeline' | 'team' | 'communications' | 'plan' | 'alerts'>('dashboard')
   const [activeCrisis, setActiveCrisis] = useState<CrisisEvent | null>(null)
   const [loading, setLoading] = useState(false)
   const [showPlanGenerator, setShowPlanGenerator] = useState(false)
@@ -312,6 +312,137 @@ export default function CrisisCommandCenter() {
       const hours = Math.floor((diffMins % 1440) / 60)
       return `${days}d ${hours}h`
     }
+  }
+
+  // Classify scenario type based on alert content
+  const classifyScenarioType = (alert: any): { type: string; label: string } => {
+    const content = `${alert.title || ''} ${alert.summary || ''} ${(alert.signals || alert.warning_signals || []).join(' ')}`.toLowerCase()
+
+    if (content.includes('data breach') || content.includes('cyber') || content.includes('hack') || content.includes('security incident')) {
+      return { type: 'data_breach', label: 'Data Breach / Cyber Attack' }
+    }
+    if (content.includes('lawsuit') || content.includes('litigation') || content.includes('legal') || content.includes('regulatory')) {
+      return { type: 'legal', label: 'Legal / Regulatory Issue' }
+    }
+    if (content.includes('product recall') || content.includes('defect') || content.includes('safety')) {
+      return { type: 'product_recall', label: 'Product Safety / Recall' }
+    }
+    if (content.includes('executive') || content.includes('ceo') || content.includes('leadership') || content.includes('misconduct')) {
+      return { type: 'leadership', label: 'Leadership / Executive Crisis' }
+    }
+    if (content.includes('financial') || content.includes('earnings') || content.includes('fraud') || content.includes('accounting')) {
+      return { type: 'financial', label: 'Financial Crisis' }
+    }
+    if (content.includes('environmental') || content.includes('pollution') || content.includes('climate') || content.includes('spill')) {
+      return { type: 'environmental', label: 'Environmental Issue' }
+    }
+    if (content.includes('layoff') || content.includes('workforce') || content.includes('employee') || content.includes('workplace')) {
+      return { type: 'workforce', label: 'Workforce / HR Crisis' }
+    }
+    if (content.includes('supply chain') || content.includes('supplier') || content.includes('shortage')) {
+      return { type: 'supply_chain', label: 'Supply Chain Disruption' }
+    }
+    if (content.includes('reputation') || content.includes('social media') || content.includes('viral') || content.includes('backlash')) {
+      return { type: 'reputation', label: 'Reputation Crisis' }
+    }
+    return { type: 'other', label: 'General Crisis Alert' }
+  }
+
+  // Activate crisis from a specific detected alert
+  const activateCrisisFromAlert = async (alert: any) => {
+    if (!organization) return
+
+    const scenarioType = classifyScenarioType(alert)
+    const articles = alert.trigger_data?.articles || alert.articles || []
+
+    setLoading(true)
+    try {
+      // Update the existing crisis_event from 'monitoring' to 'active' if it exists
+      if (alert.crisis_id) {
+        const { data, error } = await supabase
+          .from('crisis_events')
+          .update({
+            status: 'active',
+            crisis_type: scenarioType.type,
+            timeline: [{
+              time: new Date().toISOString(),
+              event_type: 'activation',
+              content: `Crisis mode activated from detected alert: ${alert.title}`,
+              actor: 'user'
+            }]
+          })
+          .eq('id', alert.crisis_id)
+          .select()
+          .single()
+
+        if (!error && data) {
+          setActiveCrisis(data)
+          setPotentialCrisisAlerts(prev => prev.filter(a => a.crisis_id !== alert.crisis_id))
+          setActiveView('dashboard')
+          return
+        }
+      }
+
+      // Create new crisis event if no existing one
+      const newCrisis = {
+        organization_id: organization.id,
+        crisis_type: scenarioType.type,
+        severity: alert.severity === 'critical' ? 'high' : 'medium',
+        status: 'active',
+        title: alert.title || scenarioType.label,
+        description: alert.summary,
+        started_at: new Date().toISOString(),
+        trigger_source: 'detected_alert',
+        trigger_data: {
+          original_alert: alert,
+          articles: articles,
+          risk_level: alert.risk_level,
+          warning_signals: alert.signals || alert.warning_signals || []
+        },
+        timeline: [{
+          time: new Date().toISOString(),
+          event_type: 'activation',
+          content: `Crisis mode activated from detected alert`,
+          actor: 'user'
+        }],
+        decisions: [],
+        communications: [],
+        ai_interactions: [],
+        team_status: {},
+        tasks: [],
+        social_signals: [],
+        media_coverage: articles.map((a: any) => ({ title: a.title, url: a.url, source: 'detected' })),
+        stakeholder_sentiment: {},
+        metadata: { scenario_type: scenarioType }
+      }
+
+      const { data, error } = await supabase
+        .from('crisis_events')
+        .insert(newCrisis)
+        .select()
+        .single()
+
+      if (!error && data) {
+        setActiveCrisis(data)
+        setPotentialCrisisAlerts(prev => prev.filter(a => a !== alert))
+        setActiveView('dashboard')
+      }
+    } catch (err) {
+      console.error('Error activating crisis from alert:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Dismiss an alert (remove from monitoring)
+  const dismissAlert = async (alert: any) => {
+    if (alert.crisis_id) {
+      await supabase
+        .from('crisis_events')
+        .update({ status: 'resolved', resolved_at: new Date().toISOString() })
+        .eq('id', alert.crisis_id)
+    }
+    setPotentialCrisisAlerts(prev => prev.filter(a => a !== alert))
   }
 
   const activateScenario = async (scenarioType: string, scenarioTitle: string) => {
@@ -538,49 +669,104 @@ export default function CrisisCommandCenter() {
 
             {/* Right: Quick Actions & Status */}
             <div className="space-y-6">
-              {/* Potential Crisis Alert Banner */}
+              {/* Detected Crisis Alerts - Recent Activity */}
               {potentialCrisisAlerts.length > 0 && (
-                <div className="bg-gradient-to-r from-red-500/20 to-orange-500/20 border-2 border-red-500/50 rounded-xl p-6 animate-pulse">
-                  <div className="flex items-start gap-3 mb-4">
-                    <div className="w-12 h-12 rounded-full flex items-center justify-center bg-red-500/20">
-                      <AlertTriangle className="w-6 h-6 text-red-400 animate-pulse" />
+                <div className="bg-gray-900 border border-red-500/50 rounded-xl p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center bg-red-500/20">
+                        <AlertTriangle className="w-5 h-5 text-red-400" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-white">Recent Activity</h3>
+                        <p className="text-xs text-red-400">{potentialCrisisAlerts.length} alert{potentialCrisisAlerts.length !== 1 ? 's' : ''} detected</p>
+                      </div>
                     </div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-bold text-red-400 mb-2">
-                        ⚠️ Potential Crisis Detected
-                      </h3>
-                      <p className="text-sm text-gray-300 mb-3">
-                        {potentialCrisisAlerts.length} critical {potentialCrisisAlerts.length === 1 ? 'alert' : 'alerts'} detected by Real-Time Intelligence Monitor
-                      </p>
-                      <div className="space-y-2 mb-4">
-                        {potentialCrisisAlerts.slice(0, 2).map((alert, idx) => (
-                          <div key={idx} className="bg-black/30 rounded-lg p-3">
-                            <div className="flex items-start gap-2">
-                              <span className="text-red-400 text-xl flex-shrink-0">
+                    <button
+                      onClick={() => setActiveView('alerts')}
+                      className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                    >
+                      View All <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="space-y-3">
+                    {potentialCrisisAlerts.slice(0, 3).map((alert, idx) => {
+                      const scenarioType = classifyScenarioType(alert)
+                      const articles = alert.trigger_data?.articles || []
+                      const riskLevel = alert.risk_level || alert.trigger_data?.risk_level || 0
+
+                      return (
+                        <div key={idx} className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
+                          {/* Alert Header */}
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <span className={`text-lg ${alert.severity === 'critical' ? 'text-red-500' : 'text-orange-500'}`}>
                                 {alert.severity === 'critical' ? '🔴' : '🟠'}
                               </span>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-white font-semibold text-sm truncate">{alert.title}</p>
-                                <p className="text-xs text-gray-400 mt-1 line-clamp-2">{alert.summary}</p>
-                              </div>
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-gray-700 text-gray-300">
+                                {scenarioType.label}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                Risk: {riskLevel}/10
+                              </span>
                             </div>
+                            <button
+                              onClick={() => dismissAlert(alert)}
+                              className="text-gray-500 hover:text-gray-300 text-xs"
+                            >
+                              Dismiss
+                            </button>
                           </div>
-                        ))}
-                        {potentialCrisisAlerts.length > 2 && (
-                          <p className="text-xs text-gray-400 text-center">
-                            +{potentialCrisisAlerts.length - 2} more {potentialCrisisAlerts.length - 2 === 1 ? 'alert' : 'alerts'}
-                          </p>
-                        )}
-                      </div>
-                      <button
-                        onClick={() => setShowScenarioSelector(true)}
-                        className="w-full px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors flex items-center justify-center gap-2 font-semibold"
-                      >
-                        <Shield className="w-4 h-4" />
-                        Activate Crisis Response
-                      </button>
-                    </div>
+
+                          {/* Alert Content */}
+                          <h4 className="text-white font-semibold text-sm mb-1">{alert.title}</h4>
+                          <p className="text-xs text-gray-400 mb-3 line-clamp-2">{alert.summary}</p>
+
+                          {/* Source Articles */}
+                          {articles.length > 0 && (
+                            <div className="mb-3">
+                              <p className="text-xs text-gray-500 mb-1">Source:</p>
+                              {articles.slice(0, 1).map((article: any, aIdx: number) => (
+                                <a
+                                  key={aIdx}
+                                  href={article.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-blue-400 hover:text-blue-300 hover:underline truncate block"
+                                >
+                                  {article.title || article.url}
+                                </a>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Detection Time */}
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-gray-500">
+                              Detected {alert.detected_at ? new Date(alert.detected_at).toLocaleString() : 'recently'}
+                            </span>
+                            <button
+                              onClick={() => activateCrisisFromAlert(alert)}
+                              className="px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white text-xs rounded-lg transition-colors flex items-center gap-1 font-semibold"
+                            >
+                              <Shield className="w-3 h-3" />
+                              Activate Crisis Mode
+                            </button>
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
+
+                  {potentialCrisisAlerts.length > 3 && (
+                    <button
+                      onClick={() => setActiveView('alerts')}
+                      className="w-full mt-3 text-center text-sm text-gray-400 hover:text-gray-300"
+                    >
+                      View {potentialCrisisAlerts.length - 3} more alert{potentialCrisisAlerts.length - 3 !== 1 ? 's' : ''}
+                    </button>
+                  )}
                 </div>
               )}
 
@@ -822,6 +1008,130 @@ export default function CrisisCommandCenter() {
             </button>
           </div>
         )}
+
+        {/* All Detected Alerts View */}
+        {activeView === 'alerts' && (
+          <div className="flex-1 p-6 overflow-auto">
+            <div className="max-w-4xl mx-auto">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center bg-red-500/20">
+                    <AlertTriangle className="w-5 h-5 text-red-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-white">All Detected Alerts</h2>
+                    <p className="text-sm text-gray-400">{potentialCrisisAlerts.length} potential crisis signal{potentialCrisisAlerts.length !== 1 ? 's' : ''}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setActiveView('dashboard')}
+                  className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-sm"
+                >
+                  Back to Dashboard
+                </button>
+              </div>
+
+              {potentialCrisisAlerts.length === 0 ? (
+                <div className="text-center py-12 bg-gray-900 rounded-xl border border-gray-800">
+                  <CheckCircle2 className="w-12 h-12 text-green-500 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-white mb-2">No Active Alerts</h3>
+                  <p className="text-gray-400">Real-time monitoring is active. You'll be notified if any crisis signals are detected.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {potentialCrisisAlerts.map((alert, idx) => {
+                    const scenarioType = classifyScenarioType(alert)
+                    const articles = alert.trigger_data?.articles || []
+                    const riskLevel = alert.risk_level || alert.trigger_data?.risk_level || 0
+                    const warningSignals = alert.signals || alert.trigger_data?.warning_signals || []
+
+                    return (
+                      <div key={idx} className="bg-gray-900 rounded-xl border border-gray-800 p-6">
+                        {/* Alert Header */}
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <span className={`text-2xl ${alert.severity === 'critical' ? 'text-red-500' : 'text-orange-500'}`}>
+                              {alert.severity === 'critical' ? '🔴' : '🟠'}
+                            </span>
+                            <div>
+                              <span className="px-2 py-1 rounded-full bg-gray-800 text-gray-300 text-xs font-medium">
+                                {scenarioType.label}
+                              </span>
+                              <span className="ml-2 text-xs text-gray-500">
+                                Risk Level: <span className={riskLevel >= 7 ? 'text-red-400' : riskLevel >= 5 ? 'text-orange-400' : 'text-yellow-400'}>{riskLevel}/10</span>
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => dismissAlert(alert)}
+                              className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm rounded-lg"
+                            >
+                              Dismiss
+                            </button>
+                            <button
+                              onClick={() => activateCrisisFromAlert(alert)}
+                              className="px-4 py-1.5 bg-red-600 hover:bg-red-500 text-white text-sm rounded-lg flex items-center gap-2 font-semibold"
+                            >
+                              <Shield className="w-4 h-4" />
+                              Activate Crisis Mode
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Alert Title & Description */}
+                        <h3 className="text-lg font-semibold text-white mb-2">{alert.title}</h3>
+                        <p className="text-sm text-gray-400 mb-4">{alert.summary}</p>
+
+                        {/* Warning Signals */}
+                        {warningSignals.length > 0 && (
+                          <div className="mb-4">
+                            <p className="text-xs text-gray-500 mb-2">Warning Signals:</p>
+                            <div className="flex flex-wrap gap-2">
+                              {warningSignals.map((signal: string, sIdx: number) => (
+                                <span key={sIdx} className="px-2 py-1 bg-red-500/10 border border-red-500/30 rounded text-xs text-red-400">
+                                  {signal}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Source Articles */}
+                        {articles.length > 0 && (
+                          <div className="mb-4">
+                            <p className="text-xs text-gray-500 mb-2">Source Articles:</p>
+                            <div className="space-y-2">
+                              {articles.map((article: any, aIdx: number) => (
+                                <a
+                                  key={aIdx}
+                                  href={article.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="block p-3 bg-gray-800/50 rounded-lg hover:bg-gray-800 transition-colors"
+                                >
+                                  <div className="text-sm text-blue-400 hover:text-blue-300 font-medium">
+                                    {article.title || 'View Article'}
+                                  </div>
+                                  <div className="text-xs text-gray-500 mt-1 truncate">
+                                    {article.url}
+                                  </div>
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Detection Time */}
+                        <div className="flex items-center gap-2 text-xs text-gray-500 pt-4 border-t border-gray-800">
+                          <Clock className="w-4 h-4" />
+                          Detected: {alert.detected_at ? new Date(alert.detected_at).toLocaleString() : 'Recently'}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           </div>
         )}
