@@ -312,25 +312,15 @@ export default function CrisisModule({ onOpenInStudio }: CrisisModuleProps) {
     ]
   }
 
-  // Get tabs - Response Protocol only shows when crisis is active
-  const getTabs = () => {
-    const baseTabs = [
-      { id: 'dashboard', label: 'Dashboard', icon: Activity },
-    ]
-
-    if (activeCrisis) {
-      baseTabs.push({ id: 'protocol', label: 'Response Protocol', icon: Target })
-    }
-
-    baseTabs.push(
-      { id: 'timeline', label: 'Timeline', icon: Clock },
-      { id: 'team', label: 'Team & Tasks', icon: Users },
-      { id: 'communications', label: 'Communications', icon: MessageSquare },
-      { id: 'plan', label: 'Crisis Plan', icon: FileText }
-    )
-
-    return baseTabs
-  }
+  // Tabs - always the same, never changes
+  const tabs = [
+    { id: 'dashboard', label: 'Dashboard', icon: Activity },
+    { id: 'protocol', label: 'Response Protocol', icon: Target },
+    { id: 'timeline', label: 'Timeline', icon: Clock },
+    { id: 'team', label: 'Team & Tasks', icon: Users },
+    { id: 'communications', label: 'Communications', icon: MessageSquare },
+    { id: 'plan', label: 'Crisis Plan', icon: FileText }
+  ]
 
   if (loading) {
     return (
@@ -384,7 +374,7 @@ export default function CrisisModule({ onOpenInStudio }: CrisisModuleProps) {
         {/* Tabs */}
         <div className="px-6 border-b border-[var(--grey-800)] shrink-0">
           <div className="flex space-x-1">
-            {getTabs().map((tab) => (
+            {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveView(tab.id as any)}
@@ -404,85 +394,165 @@ export default function CrisisModule({ onOpenInStudio }: CrisisModuleProps) {
 
         {/* Content */}
         <div className="flex-1 overflow-auto">
-          {/* DASHBOARD */}
+          {/* DASHBOARD - Always same layout */}
           {activeView === 'dashboard' && (
-            activeCrisis ? (
-              <div className="h-full grid grid-cols-3 gap-6 p-6">
-                <div className="space-y-6">
-                  <CrisisAIAssistant crisis={activeCrisis} onUpdate={loadActiveCrisis} />
-                </div>
-                <div className="space-y-6">
-                  <div className="bg-[var(--grey-900)] border border-[var(--grey-800)] rounded-xl p-6">
-                    <h3 className="text-lg font-bold text-white mb-4" style={{ fontFamily: 'var(--font-display)' }}>Quick Stats</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="bg-[var(--grey-800)]/50 p-4 rounded-lg">
-                        <div className="text-2xl font-bold text-white">{Object.keys(activeCrisis.team_status || {}).length}</div>
-                        <div className="text-sm text-[var(--grey-400)]">Team Active</div>
-                      </div>
-                      <div className="bg-[var(--grey-800)]/50 p-4 rounded-lg">
-                        <div className="text-2xl font-bold text-white">{activeCrisis.tasks?.filter((t: any) => t.status === 'completed').length || 0}/{activeCrisis.tasks?.length || 0}</div>
-                        <div className="text-sm text-[var(--grey-400)]">Tasks Done</div>
-                      </div>
-                      <div className="bg-[var(--grey-800)]/50 p-4 rounded-lg">
-                        <div className="text-2xl font-bold text-white">{activeCrisis.communications?.length || 0}</div>
-                        <div className="text-sm text-[var(--grey-400)]">Comms Sent</div>
-                      </div>
-                      <div className="bg-[var(--grey-800)]/50 p-4 rounded-lg">
-                        <div className="text-2xl font-bold text-white">{activeCrisis.decisions?.length || 0}</div>
-                        <div className="text-sm text-[var(--grey-400)]">Decisions</div>
-                      </div>
+            <div className="h-full grid grid-cols-3 gap-6 p-6">
+              <div className="space-y-6">
+                <CrisisAIAssistant crisis={activeCrisis} onUpdate={loadActiveCrisis} />
+              </div>
+              <div className="space-y-6">
+                <div className="bg-[var(--grey-900)] border border-[var(--grey-800)] rounded-xl p-6">
+                  <h3 className="text-lg font-bold text-white mb-4" style={{ fontFamily: 'var(--font-display)' }}>Quick Stats</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-[var(--grey-800)]/50 p-4 rounded-lg">
+                      <div className="text-2xl font-bold text-white">{Object.keys(activeCrisis?.team_status || {}).length}</div>
+                      <div className="text-sm text-[var(--grey-400)]">Team Active</div>
+                    </div>
+                    <div className="bg-[var(--grey-800)]/50 p-4 rounded-lg">
+                      <div className="text-2xl font-bold text-white">{activeCrisis?.tasks?.filter((t: any) => t.status === 'completed').length || 0}/{activeCrisis?.tasks?.length || 0}</div>
+                      <div className="text-sm text-[var(--grey-400)]">Tasks Done</div>
+                    </div>
+                    <div className="bg-[var(--grey-800)]/50 p-4 rounded-lg">
+                      <div className="text-2xl font-bold text-white">{activeCrisis?.communications?.length || 0}</div>
+                      <div className="text-sm text-[var(--grey-400)]">Comms Sent</div>
+                    </div>
+                    <div className="bg-[var(--grey-800)]/50 p-4 rounded-lg">
+                      <div className="text-2xl font-bold text-white">{activeCrisis?.decisions?.length || 0}</div>
+                      <div className="text-sm text-[var(--grey-400)]">Decisions</div>
                     </div>
                   </div>
-                  <div className="bg-[var(--grey-900)] border border-[var(--grey-800)] rounded-xl p-6">
+                </div>
+                <div className="bg-[var(--grey-900)] border border-[var(--grey-800)] rounded-xl p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>Recent Activity</h3>
+                    <button onClick={() => setActiveView('timeline')} className="text-sm text-[var(--burnt-orange)] flex items-center">
+                      View All <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="space-y-3">
+                    {(activeCrisis?.timeline || []).slice(-5).reverse().map((event: any, idx: number) => (
+                      <div key={idx} className="flex items-start space-x-3 text-sm">
+                        <div className="w-2 h-2 bg-[var(--burnt-orange)] rounded-full mt-2" />
+                        <div>
+                          <div className="text-[var(--grey-300)]">{event.content}</div>
+                          <div className="text-xs text-[var(--grey-500)]">{event.time ? new Date(event.time).toLocaleTimeString() : ''}</div>
+                        </div>
+                      </div>
+                    ))}
+                    {(!activeCrisis?.timeline?.length) && <div className="text-center py-8 text-[var(--grey-500)]">No activity yet</div>}
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-6">
+                <div className="bg-[var(--grey-900)] border border-[var(--grey-800)] rounded-xl p-6">
+                  <h3 className="text-lg font-bold text-white mb-4" style={{ fontFamily: 'var(--font-display)' }}>Social Signals</h3>
+                  {(activeCrisis?.social_signals?.length || 0) > 0 ? (
+                    activeCrisis?.social_signals?.slice(-3).map((s: any, i: number) => (
+                      <div key={i} className="p-3 bg-[var(--grey-800)]/50 rounded-lg mb-2">
+                        <div className="text-sm text-[var(--grey-300)]">{s.summary || s.content?.substring(0, 100)}</div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-[var(--grey-500)]">No signals detected</div>
+                  )}
+                </div>
+                <div className="bg-[var(--grey-900)] border border-[var(--grey-800)] rounded-xl p-6">
+                  <h3 className="text-lg font-bold text-white mb-4" style={{ fontFamily: 'var(--font-display)' }}>Stakeholder Sentiment</h3>
+                  {Object.keys(activeCrisis?.stakeholder_sentiment || {}).length > 0 ? (
+                    Object.entries(activeCrisis?.stakeholder_sentiment || {}).map(([group, score]) => (
+                      <div key={group} className="mb-3">
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className="text-[var(--grey-400)] capitalize">{group}</span>
+                          <span className={(score as number) > 50 ? 'text-emerald-400' : 'text-red-400'}>{score as number}%</span>
+                        </div>
+                        <div className="h-2 bg-[var(--grey-800)] rounded-full">
+                          <div className={`h-full rounded-full ${(score as number) > 50 ? 'bg-emerald-500' : 'bg-red-500'}`} style={{ width: `${score}%` }} />
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-[var(--grey-500)]">No sentiment data</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* RESPONSE PROTOCOL - Shows scenario when crisis active, otherwise empty state */}
+          {activeView === 'protocol' && (
+            activeCrisis && activeScenario ? (
+              <div className="h-full p-6">
+                <div className="max-w-4xl mx-auto bg-[var(--grey-900)] border border-[var(--grey-800)] rounded-xl p-6">
+                  <div className="mb-6">
+                    <p className="text-xs text-red-400 uppercase tracking-wider mb-2">ACTIVE RESPONSE PROTOCOL</p>
+                    <h2 className="text-xl font-semibold text-white" style={{ fontFamily: 'var(--font-display)' }}>{activeScenario.title}</h2>
+                    <p className="text-sm text-[var(--grey-400)] mt-1">{activeScenario.description}</p>
+                  </div>
+
+                  {/* Timeline */}
+                  <div className="relative pl-6 mb-8">
+                    <div className="absolute left-2 top-0 bottom-0 w-0.5 bg-[var(--grey-700)]" />
+                    {getScenarioTimeline(activeScenario).map((item, idx) => (
+                      <div key={idx} className="relative mb-4">
+                        <div className="absolute -left-4 top-3 w-3 h-3 bg-[var(--burnt-orange)] rounded-full border-2 border-[var(--grey-900)]" />
+                        <div className="bg-[var(--grey-800)]/50 rounded-lg p-4">
+                          <p className="text-xs text-[var(--burnt-orange)] uppercase mb-1">{item.phase}</p>
+                          <p className="text-white font-medium text-sm mb-1">{item.action}</p>
+                          <p className="text-xs text-[var(--grey-400)]">{item.detail}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Pre-drafted Comms */}
+                  <div className="border-t border-[var(--grey-800)] pt-6">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>Recent Activity</h3>
-                      <button onClick={() => setActiveView('timeline')} className="text-sm text-[var(--burnt-orange)] flex items-center">
-                        View All <ChevronRight className="w-4 h-4" />
-                      </button>
+                      <h3 className="text-white font-semibold" style={{ fontFamily: 'var(--font-display)' }}>Pre-drafted Communications</h3>
+                      {!scenarioHasComms(activeScenario.title) && (
+                        <button
+                          onClick={() => generateCommsForScenario(activeScenario)}
+                          disabled={!!generatingComms}
+                          className="px-4 py-2 bg-[var(--burnt-orange)] text-white rounded-lg text-sm flex items-center gap-2 disabled:opacity-50"
+                        >
+                          {generatingComms ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                          {generatingComms ? 'Generating...' : 'Generate All Comms'}
+                        </button>
+                      )}
                     </div>
-                    <div className="space-y-3">
-                      {(activeCrisis.timeline || []).slice(-5).reverse().map((event: any, idx: number) => (
-                        <div key={idx} className="flex items-start space-x-3 text-sm">
-                          <div className="w-2 h-2 bg-[var(--burnt-orange)] rounded-full mt-2" />
-                          <div>
-                            <div className="text-[var(--grey-300)]">{event.content}</div>
-                            <div className="text-xs text-[var(--grey-500)]">{event.time ? new Date(event.time).toLocaleTimeString() : ''}</div>
+                    {scenarioHasComms(activeScenario.title) ? (
+                      <div className="grid grid-cols-2 gap-3">
+                        {getCommsForScenario(activeScenario.title).map((comm) => (
+                          <div key={comm.id} className="p-4 bg-[var(--grey-800)]/50 border border-[var(--grey-700)] rounded-lg group hover:border-[var(--burnt-orange)]">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-lg">
+                                {comm.metadata?.stakeholder === 'customers' ? '👥' :
+                                 comm.metadata?.stakeholder === 'employees' ? '💼' :
+                                 comm.metadata?.stakeholder === 'investors' ? '💰' :
+                                 comm.metadata?.stakeholder === 'media' ? '📰' :
+                                 comm.metadata?.stakeholder === 'regulators' ? '⚖️' : '🤝'}
+                              </span>
+                              <div>
+                                <p className="text-xs text-[var(--burnt-orange)] uppercase">{comm.metadata?.stakeholder}</p>
+                                <p className="text-sm text-white">{comm.metadata?.channel}</p>
+                              </div>
+                              {onOpenInStudio && (
+                                <button
+                                  onClick={() => onOpenInStudio({ id: comm.id, title: comm.title, content: comm.content })}
+                                  className="ml-auto p-1.5 text-[var(--grey-500)] hover:text-[var(--burnt-orange)] opacity-0 group-hover:opacity-100"
+                                >
+                                  <FileText className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
+                            <p className="text-xs text-[var(--grey-400)] line-clamp-2">{comm.content.substring(0, 120)}...</p>
                           </div>
-                        </div>
-                      ))}
-                      {(!activeCrisis.timeline?.length) && <div className="text-center py-8 text-[var(--grey-500)]">No activity yet</div>}
-                    </div>
-                  </div>
-                </div>
-                <div className="space-y-6">
-                  <div className="bg-[var(--grey-900)] border border-[var(--grey-800)] rounded-xl p-6">
-                    <h3 className="text-lg font-bold text-white mb-4" style={{ fontFamily: 'var(--font-display)' }}>Social Signals</h3>
-                    {(activeCrisis.social_signals?.length || 0) > 0 ? (
-                      activeCrisis.social_signals?.slice(-3).map((s: any, i: number) => (
-                        <div key={i} className="p-3 bg-[var(--grey-800)]/50 rounded-lg mb-2">
-                          <div className="text-sm text-[var(--grey-300)]">{s.summary || s.content?.substring(0, 100)}</div>
-                        </div>
-                      ))
+                        ))}
+                      </div>
                     ) : (
-                      <div className="text-center py-8 text-[var(--grey-500)]">No signals detected</div>
-                    )}
-                  </div>
-                  <div className="bg-[var(--grey-900)] border border-[var(--grey-800)] rounded-xl p-6">
-                    <h3 className="text-lg font-bold text-white mb-4" style={{ fontFamily: 'var(--font-display)' }}>Stakeholder Sentiment</h3>
-                    {Object.keys(activeCrisis.stakeholder_sentiment || {}).length > 0 ? (
-                      Object.entries(activeCrisis.stakeholder_sentiment || {}).map(([group, score]) => (
-                        <div key={group} className="mb-3">
-                          <div className="flex justify-between text-sm mb-1">
-                            <span className="text-[var(--grey-400)] capitalize">{group}</span>
-                            <span className={(score as number) > 50 ? 'text-emerald-400' : 'text-red-400'}>{score as number}%</span>
-                          </div>
-                          <div className="h-2 bg-[var(--grey-800)] rounded-full">
-                            <div className={`h-full rounded-full ${(score as number) > 50 ? 'bg-emerald-500' : 'bg-red-500'}`} style={{ width: `${score}%` }} />
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="text-center py-8 text-[var(--grey-500)]">No sentiment data</div>
+                      <div className="text-center py-8 bg-[var(--grey-800)]/30 rounded-lg">
+                        <MessageSquare className="w-10 h-10 text-[var(--grey-600)] mx-auto mb-3" />
+                        <p className="text-sm text-[var(--grey-400)]">No pre-drafted communications for this scenario</p>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -490,9 +560,9 @@ export default function CrisisModule({ onOpenInStudio }: CrisisModuleProps) {
             ) : (
               <div className="h-full flex items-center justify-center">
                 <div className="text-center">
-                  <Shield className="w-16 h-16 text-[var(--grey-600)] mx-auto mb-4" />
-                  <h3 className="text-xl font-bold text-white mb-2" style={{ fontFamily: 'var(--font-display)' }}>No Active Crisis</h3>
-                  <p className="text-[var(--grey-400)] mb-6">Your organization is operating normally.</p>
+                  <Target className="w-16 h-16 text-[var(--grey-600)] mx-auto mb-4" />
+                  <h3 className="text-xl font-bold text-white mb-2" style={{ fontFamily: 'var(--font-display)' }}>No Active Response Protocol</h3>
+                  <p className="text-[var(--grey-400)] mb-6">Activate a crisis scenario to see the response protocol.</p>
                   <button
                     onClick={() => setShowScenarioSelector(true)}
                     className="px-6 py-3 bg-[var(--burnt-orange)] text-white rounded-lg font-medium hover:brightness-110 flex items-center gap-2 mx-auto"
@@ -505,117 +575,19 @@ export default function CrisisModule({ onOpenInStudio }: CrisisModuleProps) {
             )
           )}
 
-          {/* RESPONSE PROTOCOL - Only when crisis is active */}
-          {activeView === 'protocol' && activeCrisis && activeScenario && (
-            <div className="h-full p-6">
-              <div className="max-w-4xl mx-auto bg-[var(--grey-900)] border border-[var(--grey-800)] rounded-xl p-6">
-                <div className="mb-6">
-                  <p className="text-xs text-red-400 uppercase tracking-wider mb-2">ACTIVE RESPONSE PROTOCOL</p>
-                  <h2 className="text-xl font-semibold text-white" style={{ fontFamily: 'var(--font-display)' }}>{activeScenario.title}</h2>
-                  <p className="text-sm text-[var(--grey-400)] mt-1">{activeScenario.description}</p>
-                </div>
-
-                {/* Timeline */}
-                <div className="relative pl-6 mb-8">
-                  <div className="absolute left-2 top-0 bottom-0 w-0.5 bg-[var(--grey-700)]" />
-                  {getScenarioTimeline(activeScenario).map((item, idx) => (
-                    <div key={idx} className="relative mb-4">
-                      <div className="absolute -left-4 top-3 w-3 h-3 bg-[var(--burnt-orange)] rounded-full border-2 border-[var(--grey-900)]" />
-                      <div className="bg-[var(--grey-800)]/50 rounded-lg p-4">
-                        <p className="text-xs text-[var(--burnt-orange)] uppercase mb-1">{item.phase}</p>
-                        <p className="text-white font-medium text-sm mb-1">{item.action}</p>
-                        <p className="text-xs text-[var(--grey-400)]">{item.detail}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Pre-drafted Comms */}
-                <div className="border-t border-[var(--grey-800)] pt-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-white font-semibold" style={{ fontFamily: 'var(--font-display)' }}>Pre-drafted Communications</h3>
-                    {!scenarioHasComms(activeScenario.title) && (
-                      <button
-                        onClick={() => generateCommsForScenario(activeScenario)}
-                        disabled={!!generatingComms}
-                        className="px-4 py-2 bg-[var(--burnt-orange)] text-white rounded-lg text-sm flex items-center gap-2 disabled:opacity-50"
-                      >
-                        {generatingComms ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
-                        {generatingComms ? 'Generating...' : 'Generate All Comms'}
-                      </button>
-                    )}
-                  </div>
-                  {scenarioHasComms(activeScenario.title) ? (
-                    <div className="grid grid-cols-2 gap-3">
-                      {getCommsForScenario(activeScenario.title).map((comm) => (
-                        <div key={comm.id} className="p-4 bg-[var(--grey-800)]/50 border border-[var(--grey-700)] rounded-lg group hover:border-[var(--burnt-orange)]">
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="text-lg">
-                              {comm.metadata?.stakeholder === 'customers' ? '👥' :
-                               comm.metadata?.stakeholder === 'employees' ? '💼' :
-                               comm.metadata?.stakeholder === 'investors' ? '💰' :
-                               comm.metadata?.stakeholder === 'media' ? '📰' :
-                               comm.metadata?.stakeholder === 'regulators' ? '⚖️' : '🤝'}
-                            </span>
-                            <div>
-                              <p className="text-xs text-[var(--burnt-orange)] uppercase">{comm.metadata?.stakeholder}</p>
-                              <p className="text-sm text-white">{comm.metadata?.channel}</p>
-                            </div>
-                            {onOpenInStudio && (
-                              <button
-                                onClick={() => onOpenInStudio({ id: comm.id, title: comm.title, content: comm.content })}
-                                className="ml-auto p-1.5 text-[var(--grey-500)] hover:text-[var(--burnt-orange)] opacity-0 group-hover:opacity-100"
-                              >
-                                <FileText className="w-4 h-4" />
-                              </button>
-                            )}
-                          </div>
-                          <p className="text-xs text-[var(--grey-400)] line-clamp-2">{comm.content.substring(0, 120)}...</p>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 bg-[var(--grey-800)]/30 rounded-lg">
-                      <MessageSquare className="w-10 h-10 text-[var(--grey-600)] mx-auto mb-3" />
-                      <p className="text-sm text-[var(--grey-400)]">No pre-drafted communications for this scenario</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* TIMELINE */}
           {activeView === 'timeline' && (
-            activeCrisis ? (
-              <CrisisTimeline crisis={activeCrisis} onUpdate={loadActiveCrisis} />
-            ) : (
-              <div className="h-full flex items-center justify-center">
-                <p className="text-[var(--grey-500)]">No active crisis to show timeline</p>
-              </div>
-            )
+            <CrisisTimeline crisis={activeCrisis} onUpdate={loadActiveCrisis} />
           )}
 
           {/* TEAM */}
           {activeView === 'team' && (
-            activeCrisis ? (
-              <CrisisTeamManager crisis={activeCrisis} onUpdate={loadActiveCrisis} />
-            ) : (
-              <div className="h-full flex items-center justify-center">
-                <p className="text-[var(--grey-500)]">No active crisis to manage team</p>
-              </div>
-            )
+            <CrisisTeamManager crisis={activeCrisis} onUpdate={loadActiveCrisis} />
           )}
 
           {/* COMMUNICATIONS */}
           {activeView === 'communications' && (
-            activeCrisis ? (
-              <CrisisCommunications crisis={activeCrisis} onUpdate={loadActiveCrisis} onOpenInStudio={onOpenInStudio} />
-            ) : (
-              <div className="h-full flex items-center justify-center">
-                <p className="text-[var(--grey-500)]">No active crisis. Activate crisis mode to access communications.</p>
-              </div>
-            )
+            <CrisisCommunications crisis={activeCrisis} onUpdate={loadActiveCrisis} onOpenInStudio={onOpenInStudio} />
           )}
 
           {/* CRISIS PLAN - Full viewer with edit/regenerate */}
