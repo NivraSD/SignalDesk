@@ -51,6 +51,100 @@ export default function NIVFloatingAssistant() {
     }
   }
 
+  // Render message content with markdown links as clickable elements
+  const renderMessageContent = (content: string) => {
+    // Match markdown links: [text](url)
+    const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g
+    const parts: (string | JSX.Element)[] = []
+    let lastIndex = 0
+    let match
+
+    while ((match = linkRegex.exec(content)) !== null) {
+      // Add text before the link
+      if (match.index > lastIndex) {
+        parts.push(content.slice(lastIndex, match.index))
+      }
+
+      const [, linkText, url] = match
+      const isGammaLink = url.includes('gamma.app')
+
+      if (isGammaLink) {
+        // Styled button for Gamma presentations
+        parts.push(
+          <a
+            key={match.index}
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              marginTop: '12px',
+              padding: '12px 20px',
+              background: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)',
+              color: 'white',
+              borderRadius: '10px',
+              textDecoration: 'none',
+              fontWeight: 600,
+              fontSize: '0.9rem',
+              boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)',
+              transition: 'transform 0.2s, box-shadow 0.2s'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)'
+              e.currentTarget.style.boxShadow = '0 6px 16px rgba(139, 92, 246, 0.4)'
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)'
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(139, 92, 246, 0.3)'
+            }}
+          >
+            <span style={{ fontSize: '1.1rem' }}>🎨</span>
+            {linkText}
+            <span style={{ fontSize: '0.8rem' }}>→</span>
+          </a>
+        )
+      } else {
+        // Regular styled link
+        parts.push(
+          <a
+            key={match.index}
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              color: 'var(--burnt-orange)',
+              textDecoration: 'underline'
+            }}
+          >
+            {linkText}
+          </a>
+        )
+      }
+
+      lastIndex = match.index + match[0].length
+    }
+
+    // Add remaining text
+    if (lastIndex < content.length) {
+      parts.push(content.slice(lastIndex))
+    }
+
+    // Handle newlines
+    return parts.map((part, i) => {
+      if (typeof part === 'string') {
+        return part.split('\n').map((line, j, arr) => (
+          <React.Fragment key={`${i}-${j}`}>
+            {line}
+            {j < arr.length - 1 && <br />}
+          </React.Fragment>
+        ))
+      }
+      return part
+    })
+  }
+
   // Poll Gamma presentation status
   const pollGammaStatus = async (generationId: string, messageId: string) => {
     const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -363,7 +457,7 @@ export default function NIVFloatingAssistant() {
                     color: 'var(--white)'
                   }}
                 >
-                  {msg.content}
+                  {renderMessageContent(msg.content)}
                 </div>
               </div>
             ))}
