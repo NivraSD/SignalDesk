@@ -125,66 +125,24 @@ export default function CrisisCommunications({ crisis, onUpdate, onOpenInStudio 
     return matches
   }
 
-  // Generate using niv-content-intelligent-v2 (same pattern as Opportunities/Campaigns)
+  // Generate using mcp-crisis (which properly generates crisis communications)
   const generateCommsForScenario = async (scenario: Scenario) => {
     if (!organization || generatingFor) return
     setGeneratingFor(scenario.title)
     setGenerationProgress('Starting generation...')
 
-    const scenarioFolderName = scenario.title.replace(/[^a-zA-Z0-9\s]/g, '').trim()
-    const campaignFolder = `Crisis/${scenarioFolderName}`
-
-    // Content requirements for each stakeholder
-    const contentRequirements = stakeholders.map(stakeholder => ({
-      type: 'crisis-communication',
-      topic: `${stakeholder} Communication for ${scenario.title}`,
-      details: {
-        stakeholder,
-        scenario: scenario.title,
-        scenarioDescription: scenario.description,
-        channel: getChannelForStakeholder(stakeholder),
-        tone: getToneForStakeholder(stakeholder)
-      }
-    }))
-
     try {
       console.log(`🚀 Generating crisis comms for scenario: ${scenario.title}`)
-      setGenerationProgress(`Generating ${stakeholders.length} stakeholder communications...`)
+      setGenerationProgress(`Generating communications for all stakeholders...`)
 
-      // Call niv-content-intelligent-v2 (same as Opportunities module)
-      const { data: result, error } = await supabase.functions.invoke('niv-content-intelligent-v2', {
+      // Call mcp-crisis which properly generates and saves crisis communications
+      const { data, error } = await supabase.functions.invoke('mcp-crisis', {
         body: {
-          message: `Generate crisis communications for all stakeholders for the scenario: ${scenario.title}. ${scenario.description}`,
-          conversationHistory: [],
-          organizationContext: {
-            conversationId: `crisis-${scenario.title.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
-            organizationId: organization.id,
-            organizationName: organization.name || 'Organization'
-          },
-          stage: 'campaign_generation',
-          campaignContext: {
-            phase: 'crisis_communications',
-            phaseNumber: 1,
-            objective: `Crisis Communications for ${scenario.title}`,
-            narrative: scenario.description,
-            keyMessages: [
-              'Acknowledge the situation transparently',
-              'Explain immediate response actions',
-              'Provide timeline for resolution',
-              'Commit to ongoing updates'
-            ],
-            contentRequirements,
-            campaignFolder,
-            campaignType: 'CRISIS_COMMUNICATIONS',
-            crisisScenario: {
-              title: scenario.title,
-              description: scenario.description,
-              impact: scenario.impact || 'Major',
-              likelihood: scenario.likelihood || 'Medium'
-            },
-            targetStakeholders: stakeholders,
-            industry: organization.industry || 'general'
-          }
+          action: 'generate_scenario_comms',
+          scenario: scenario,
+          organization_id: organization.id,
+          organization_name: organization.name,
+          industry: organization.industry
         }
       })
 
@@ -193,7 +151,7 @@ export default function CrisisCommunications({ crisis, onUpdate, onOpenInStudio 
         throw error
       }
 
-      console.log('✅ Generation complete:', result)
+      console.log('✅ Generation complete:', data)
       setGenerationProgress('Generation complete! Loading content...')
 
       // Reload to show new content
@@ -206,18 +164,6 @@ export default function CrisisCommunications({ crisis, onUpdate, onOpenInStudio 
       setGeneratingFor(null)
       setTimeout(() => setGenerationProgress(''), 3000)
     }
-  }
-
-  const getChannelForStakeholder = (stakeholder: string): string => {
-    const channels: Record<string, string> = {
-      'Customers': 'Email/Website/App notification',
-      'Employees': 'Internal email/Slack/Town hall',
-      'Investors': 'Press release/Investor call',
-      'Media': 'Press release/Media briefing',
-      'Regulators': 'Formal letter/Regulatory filing',
-      'Partners': 'Direct communication/Partner portal'
-    }
-    return channels[stakeholder] || 'Email'
   }
 
   const getToneForStakeholder = (stakeholder: string): string => {
