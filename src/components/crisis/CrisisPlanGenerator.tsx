@@ -280,12 +280,13 @@ export default function CrisisPlanGenerator({ onClose, onPlanGenerated }: Crisis
 
         for (const comm of data.predraftedCommunications) {
           try {
+            const scenarioFolderName = comm.scenario.replace(/[^a-zA-Z0-9\s]/g, '').trim()
             await saveToMemoryVault({
               organization_id: organization.id,
               type: 'crisis-communication',
-              title: `[${comm.scenario}] ${comm.stakeholder} Communication`,
+              title: `${comm.stakeholder} - ${comm.channel || 'Email'}`,
               content: comm.message,
-              tags: ['crisis-communication', 'pre-drafted', comm.scenario.toLowerCase().replace(/\s+/g, '-'), comm.stakeholder.toLowerCase()],
+              folder: `Crisis/${scenarioFolderName}`,
               metadata: {
                 generated_at: new Date().toISOString(),
                 scenario: comm.scenario,
