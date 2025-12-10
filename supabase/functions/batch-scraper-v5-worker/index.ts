@@ -281,6 +281,15 @@ function validateArticleContent(
   const titleLower = title.toLowerCase();
   const urlLower = url.toLowerCase();
 
+  // 0. Reject non-article file types (XML sitemaps, archives, etc.)
+  if (urlLower.endsWith('.xml') || urlLower.includes('/archive/') && urlLower.match(/\d{4}\/\w+\.xml$/)) {
+    return {
+      is_valid: false,
+      reason: 'Not an article URL (XML/archive file)',
+      confidence: 1.0
+    };
+  }
+
   // 1. Check for category/landing page patterns in URL
   const categoryUrlPatterns = [
     '/insights',
@@ -300,13 +309,24 @@ function validateArticleContent(
   ];
 
   for (const pattern of categoryUrlPatterns) {
-    if (urlLower.includes(pattern) && !urlLower.match(/\/\d{4}\/\d{2}/)) {
-      // URL has category pattern and NO date pattern (YYYY/MM)
-      return {
-        is_valid: false,
-        reason: `Category page URL pattern: ${pattern}`,
-        confidence: 0.9
-      };
+    if (urlLower.includes(pattern)) {
+      // Skip category check if URL has article identifiers:
+      // - Date pattern (YYYY/MM)
+      // - PR Newswire numeric ID (e.g., -302636860.html)
+      // - GlobeNewswire ID pattern
+      const hasDatePattern = urlLower.match(/\/\d{4}\/\d{2}/);
+      const hasPRNewswireId = urlLower.match(/prnewswire\.com.*-\d{6,}\.html$/);
+      const hasGlobeNewswireId = urlLower.match(/globenewswire\.com.*\/\d{7,}/);
+      const hasArticleId = urlLower.match(/\d{6,}\.html$/) || urlLower.match(/\/\d{7,}$/);
+
+      if (!hasDatePattern && !hasPRNewswireId && !hasGlobeNewswireId && !hasArticleId) {
+        // URL has category pattern and NO article identifier
+        return {
+          is_valid: false,
+          reason: `Category page URL pattern: ${pattern}`,
+          confidence: 0.9
+        };
+      }
     }
   }
 

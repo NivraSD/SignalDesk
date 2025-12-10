@@ -51,12 +51,34 @@ export function AuthForm({ mode, onSuccess }: AuthFormProps) {
             text: 'Account created successfully!',
           })
 
+          // Send signup notification to admin (fire and forget)
+          fetch('/api/auth/notify-signup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email,
+              fullName,
+              userId: data.user?.id
+            })
+          }).catch(console.error)
+
           // Redirect to onboarding
           setTimeout(() => {
             window.location.href = '/onboarding'
           }, 500)
         } else {
           // Email confirmation is enabled, waiting for verification
+          // Still send notification since user registered
+          fetch('/api/auth/notify-signup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email,
+              fullName,
+              userId: data.user?.id
+            })
+          }).catch(console.error)
+
           setMessage({
             type: 'success',
             text: 'Check your email to confirm your account!',

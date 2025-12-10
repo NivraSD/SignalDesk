@@ -1745,28 +1745,20 @@ serve(async (req)=>{
         }
         researchSection += `**INSTRUCTION:** Integrate the above facts, statistics, and insights throughout the presentation. Use specific data points to support key messages. Make the presentation data-driven and credible.\n\n`;
       }
-      const gammaPrompt = `**CURRENT DATE: ${currentDate}**
-**CURRENT YEAR: ${currentYear}**
+      // Build clean markdown content - Gamma uses headings (#) to create slides
+      // Each # heading becomes a new slide with cardSplit: 'inputTextBreaks'
+      const gammaPrompt = `# ${outline.topic}
 
-IMPORTANT: This presentation is being created in ${currentYear}. Use current data and avoid referencing outdated information from before 2024.
-${researchSection}
-Create a ${outline.slide_count || 10}-slide presentation on "${outline.topic}" for ${outline.audience}.
+${outline.purpose}
 
-Purpose: ${outline.purpose}
+${outline.key_messages.slice(0, 2).join('\n\n')}
 
-Key Messages:
-${outline.key_messages.map((m, i)=>`${i + 1}. ${m}`).join('\n')}
+${outline.sections.map((section, i)=>`# ${section.title}
 
-Slide Structure:
-${outline.sections.map((section, i)=>`
-Slide ${i + 1}: ${section.title}
-Content: ${section.talking_points.join('; ')}
-Visual: ${section.visual_suggestion}
-`).join('\n')}
+${section.talking_points.map(point => `- ${point}`).join('\n')}
 
-Style: Professional, clean design with visuals supporting each key point. Use specific data and facts from the research provided above.
-
-REMINDER: Current date is ${currentDate}. Ensure all data references and examples are from 2024-${currentYear}. Incorporate the research findings listed above into relevant slides.`;
+${section.visual_suggestion ? `*Visual: ${section.visual_suggestion}*` : ''}
+`).join('\n')}`;
       console.log('📊 Built Gamma prompt for direct generation');
       try {
         // Create folder path for Memory Vault capture
@@ -3183,8 +3175,11 @@ ${campaignContext.timeline || 'Not specified'}
           organization: orgProfile.organizationName,
           topic: toolUse.input.topic,
           angle: toolUse.input.angle,
-          // Pass company profile to prevent hallucinations
+          // Pass FULL company profile to prevent hallucinations
+          description: orgProfile.description || '', // Critical: what does this company actually DO?
           product_lines: orgProfile.product_lines || [],
+          core_offerings: orgProfile._raw?.core_offerings || [], // What they actually offer
+          differentiators: orgProfile._raw?.differentiators || [], // What makes them unique
           key_markets: orgProfile.key_markets || [],
           business_model: orgProfile.business_model,
           leadership: orgProfile.leadership || [],
@@ -3232,7 +3227,10 @@ ${campaignContext.timeline || 'Not specified'}
         const content = await callMCPService('thought-leadership', {
           organization: orgProfile.organizationName,
           topic: toolUse.input.topic,
-          keyPoints: toolUse.input.key_points || []
+          keyPoints: toolUse.input.key_points || [],
+          description: orgProfile.description || '',
+          industry: orgProfile.industry,
+          core_offerings: orgProfile._raw?.core_offerings || []
         });
         return new Response(JSON.stringify({
           success: true,
@@ -3363,7 +3361,13 @@ ${campaignContext.timeline || 'Not specified'}
         const content = await callMCPService('thought-leadership', {
           organization: orgProfile.organizationName,
           topic: toolUse.input.topic,
-          keyPoints: toolUse.input.chapters || []
+          keyPoints: toolUse.input.chapters || [],
+          // Pass FULL company profile to prevent hallucinations
+          description: orgProfile.description || '',
+          core_offerings: orgProfile._raw?.core_offerings || [],
+          differentiators: orgProfile._raw?.differentiators || [],
+          industry: orgProfile.industry,
+          business_model: orgProfile.business_model
         });
         return new Response(JSON.stringify({
           success: true,
@@ -3839,6 +3843,12 @@ ${campaignContext.timeline || 'Not specified'}
         const content = await callMCPService('thought-leadership', {
           organization: orgProfile.organizationName,
           topic: `Messaging Framework: ${toolUse.input.product}`,
+          // Pass FULL company profile to prevent hallucinations
+          description: orgProfile.description || '',
+          core_offerings: orgProfile._raw?.core_offerings || [],
+          differentiators: orgProfile._raw?.differentiators || [],
+          industry: orgProfile.industry,
+          business_model: orgProfile.business_model,
           keyPoints: [
             `Target audience: ${toolUse.input.audience}`,
             'Value proposition',
@@ -3864,7 +3874,13 @@ ${campaignContext.timeline || 'Not specified'}
         const content = await callMCPService('thought-leadership', {
           organization: orgProfile.organizationName,
           topic: `Brand Narrative: ${toolUse.input.brand}`,
-          keyPoints: toolUse.input.values || []
+          keyPoints: toolUse.input.values || [],
+          // Pass FULL company profile to prevent hallucinations
+          description: orgProfile.description || '',
+          core_offerings: orgProfile._raw?.core_offerings || [],
+          differentiators: orgProfile._raw?.differentiators || [],
+          industry: orgProfile.industry,
+          business_model: orgProfile.business_model
         });
         return new Response(JSON.stringify({
           success: true,
@@ -3884,6 +3900,12 @@ ${campaignContext.timeline || 'Not specified'}
         const content = await callMCPService('thought-leadership', {
           organization: orgProfile.organizationName,
           topic: 'Value Proposition',
+          // Pass FULL company profile to prevent hallucinations
+          description: orgProfile.description || '',
+          core_offerings: orgProfile._raw?.core_offerings || [],
+          differentiators: orgProfile._raw?.differentiators || [],
+          industry: orgProfile.industry,
+          business_model: orgProfile.business_model,
           keyPoints: [
             toolUse.input.offering,
             toolUse.input.benefit
@@ -3907,7 +3929,13 @@ ${campaignContext.timeline || 'Not specified'}
         const content = await callMCPService('thought-leadership', {
           organization: orgProfile.organizationName,
           topic: `Competitive Positioning: ${toolUse.input.product}`,
-          keyPoints: toolUse.input.competitors || []
+          keyPoints: toolUse.input.competitors || [],
+          // Pass FULL company profile to prevent hallucinations
+          description: orgProfile.description || '',
+          core_offerings: orgProfile._raw?.core_offerings || [],
+          differentiators: orgProfile._raw?.differentiators || [],
+          industry: orgProfile.industry,
+          business_model: orgProfile.business_model
         });
         return new Response(JSON.stringify({
           success: true,
@@ -4234,28 +4262,20 @@ ${section.talking_points.map((p)=>`- ${p}`).join('\n')}
           }
           researchSection += `**INSTRUCTION:** Integrate the above facts, statistics, and insights throughout the presentation. Use specific data points to support key messages. Make the presentation data-driven and credible.\n\n`;
         }
-        const gammaPrompt = `**CURRENT DATE: ${currentDate}**
-**CURRENT YEAR: ${currentYear}**
+        // Build clean markdown content - Gamma uses headings (#) to create slides
+        // Each # heading becomes a new slide with cardSplit: 'inputTextBreaks'
+        const gammaPrompt = `# ${outline.topic}
 
-IMPORTANT: This presentation is being created in ${currentYear}. Use current data and avoid referencing outdated information from before 2024.
-${researchSection}
-Create a ${outline.slide_count || 10}-slide presentation on "${outline.topic}" for ${outline.audience}.
+${outline.purpose}
 
-Purpose: ${outline.purpose}
+${outline.key_messages.slice(0, 2).join('\n\n')}
 
-Key Messages:
-${outline.key_messages.map((m, i)=>`${i + 1}. ${m}`).join('\n')}
+${outline.sections.map((section, i)=>`# ${section.title}
 
-Slide Structure:
-${outline.sections.map((section, i)=>`
-Slide ${i + 1}: ${section.title}
-Content: ${section.talking_points.join('; ')}
-Visual: ${section.visual_suggestion}
-`).join('\n')}
+${section.talking_points.map(point => `- ${point}`).join('\n')}
 
-Style: Professional, clean design with visuals supporting each key point. Use specific data and facts from the research provided above.
-
-REMINDER: Current date is ${currentDate}. Ensure all data references and examples are from 2024-${currentYear}. Incorporate the research findings listed above into relevant slides.`;
+${section.visual_suggestion ? `*Visual: ${section.visual_suggestion}*` : ''}
+`).join('\n')}`;
         console.log('📊 Built Gamma prompt:', gammaPrompt.substring(0, 500));
         console.log('📊 Outline:', JSON.stringify(outline, null, 2));
         try {
@@ -4587,7 +4607,9 @@ ${section.talking_points.map((point)=>`- ${point}`).join('\n')}
             body: JSON.stringify({
               url: toolUse.input.url,
               formats: ['markdown', 'html'],
-              onlyMainContent: true
+              onlyMainContent: true,
+              waitFor: 5000,  // Wait 5 seconds for JavaScript to render
+              timeout: 30000  // 30 second timeout for slow-loading pages
             })
           });
 
@@ -4698,7 +4720,206 @@ Return ONLY valid JSON, no other text.`
           });
 
           const continuedData = await continuedResponse.json();
-          const finalText = continuedData.content?.find((b) => b.type === 'text')?.text ||
+
+          // Check if Claude wants to make another tool call (like get_schemas or update_schema)
+          if (continuedData.stop_reason === 'tool_use') {
+            const nextToolUse = continuedData.content?.find((b: any) => b.type === 'tool_use');
+            if (nextToolUse) {
+              console.log(`🔄 Chained tool call after fetch: ${nextToolUse.name}`);
+
+              // Handle get_schemas as a chained call
+              if (nextToolUse.name === 'get_schemas') {
+                let query = supabase
+                  .from('content_library')
+                  .select('id, title, content, metadata, folder, updated_at')
+                  .eq('organization_id', organizationId)
+                  .eq('content_type', 'schema')
+                  .order('updated_at', { ascending: false });
+
+                if (nextToolUse.input?.schema_type) {
+                  query = query.eq('metadata->>schema_type', nextToolUse.input.schema_type);
+                }
+
+                const { data: schemas } = await query;
+                console.log(`✅ Chained get_schemas: Found ${schemas?.length || 0} schemas`);
+
+                // Now ask Claude what to do with the schemas + extracted products
+                const schemaList = (schemas || []).map((s: any) => ({
+                  id: s.id,
+                  type: s.metadata?.schema_type || 'Unknown',
+                  title: s.title
+                }));
+
+                // Continue conversation with both results
+                const furtherMessages = [
+                  ...continuedMessages,
+                  {
+                    role: 'assistant',
+                    content: continuedData.content
+                  },
+                  {
+                    role: 'user',
+                    content: [{
+                      type: 'tool_result',
+                      tool_use_id: nextToolUse.id,
+                      content: JSON.stringify({ schemas: schemaList, total: schemaList.length })
+                    }]
+                  }
+                ];
+
+                const furtherResponse = await fetch('https://api.anthropic.com/v1/messages', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'anthropic-version': '2023-06-01',
+                    'x-api-key': ANTHROPIC_API_KEY
+                  },
+                  body: JSON.stringify({
+                    model: 'claude-sonnet-4-20250514',
+                    max_tokens: 4096,
+                    tools: CONTENT_GENERATION_TOOLS,
+                    messages: furtherMessages,
+                    system: conversationContext
+                  })
+                });
+
+                const furtherData = await furtherResponse.json();
+
+                // Check for yet another tool call (update_schema)
+                if (furtherData.stop_reason === 'tool_use') {
+                  const updateToolUse = furtherData.content?.find((b: any) => b.type === 'tool_use');
+                  if (updateToolUse?.name === 'update_schema') {
+                    console.log('✏️ Executing double-chained update_schema');
+
+                    const { data: currentSchema } = await supabase
+                      .from('content_library')
+                      .select('*')
+                      .eq('id', updateToolUse.input.schema_id)
+                      .eq('content_type', 'schema')
+                      .single();
+
+                    if (currentSchema) {
+                      let updatedContent = currentSchema.content;
+                      const action = updateToolUse.input.action || 'merge';
+
+                      if (action === 'merge') {
+                        updatedContent = { ...currentSchema.content, ...updateToolUse.input.updates };
+                      } else if (action === 'add_to_array' && updateToolUse.input.array_field) {
+                        const arrayField = updateToolUse.input.array_field;
+                        const existingArray = currentSchema.content[arrayField] || [];
+                        const newItems = updateToolUse.input.updates[arrayField] || updateToolUse.input.updates;
+                        updatedContent = {
+                          ...currentSchema.content,
+                          [arrayField]: [...existingArray, ...(Array.isArray(newItems) ? newItems : [newItems])]
+                        };
+                      }
+
+                      const { data: updated } = await supabase
+                        .from('content_library')
+                        .update({
+                          content: updatedContent,
+                          metadata: {
+                            ...currentSchema.metadata,
+                            version: (currentSchema.metadata?.version || 1) + 1,
+                            last_updated: new Date().toISOString()
+                          }
+                        })
+                        .eq('id', updateToolUse.input.schema_id)
+                        .select()
+                        .single();
+
+                      if (updated) {
+                        console.log('✅ Double-chained schema update successful');
+                        const textContent = furtherData.content?.find((b: any) => b.type === 'text')?.text || '';
+                        return new Response(JSON.stringify({
+                          success: true,
+                          mode: 'conversation',
+                          message: textContent + '\n\n✅ Schema has been updated with the extracted content!',
+                          extractedData: { products: extractedProducts, url: toolUse.input.url },
+                          updated_schema: { id: updated.id, title: updated.title },
+                          conversationId
+                        }), {
+                          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                        });
+                      }
+                    }
+                  }
+                }
+
+                const furtherText = furtherData.content?.find((b: any) => b.type === 'text')?.text || '';
+                return new Response(JSON.stringify({
+                  success: true,
+                  mode: 'conversation',
+                  message: furtherText,
+                  extractedData: { products: extractedProducts, url: toolUse.input.url },
+                  schemas: schemaList,
+                  conversationId
+                }), {
+                  headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+              }
+
+              // Handle direct update_schema call
+              if (nextToolUse.name === 'update_schema') {
+                console.log('✏️ Executing chained update_schema from fetch');
+
+                const { data: currentSchema } = await supabase
+                  .from('content_library')
+                  .select('*')
+                  .eq('id', nextToolUse.input.schema_id)
+                  .eq('content_type', 'schema')
+                  .single();
+
+                if (currentSchema) {
+                  let updatedContent = currentSchema.content;
+                  const action = nextToolUse.input.action || 'merge';
+
+                  if (action === 'merge') {
+                    updatedContent = { ...currentSchema.content, ...nextToolUse.input.updates };
+                  } else if (action === 'add_to_array' && nextToolUse.input.array_field) {
+                    const arrayField = nextToolUse.input.array_field;
+                    const existingArray = currentSchema.content[arrayField] || [];
+                    const newItems = nextToolUse.input.updates[arrayField] || nextToolUse.input.updates;
+                    updatedContent = {
+                      ...currentSchema.content,
+                      [arrayField]: [...existingArray, ...(Array.isArray(newItems) ? newItems : [newItems])]
+                    };
+                  }
+
+                  const { data: updated } = await supabase
+                    .from('content_library')
+                    .update({
+                      content: updatedContent,
+                      metadata: {
+                        ...currentSchema.metadata,
+                        version: (currentSchema.metadata?.version || 1) + 1,
+                        last_updated: new Date().toISOString()
+                      }
+                    })
+                    .eq('id', nextToolUse.input.schema_id)
+                    .select()
+                    .single();
+
+                  if (updated) {
+                    console.log('✅ Chained schema update from fetch successful');
+                    const textContent = continuedData.content?.find((b: any) => b.type === 'text')?.text || '';
+                    return new Response(JSON.stringify({
+                      success: true,
+                      mode: 'conversation',
+                      message: textContent + '\n\n✅ Schema has been updated!',
+                      extractedData: { products: extractedProducts, url: toolUse.input.url },
+                      updated_schema: { id: updated.id, title: updated.title },
+                      conversationId
+                    }), {
+                      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                    });
+                  }
+                }
+              }
+            }
+          }
+
+          const finalText = continuedData.content?.find((b: any) => b.type === 'text')?.text ||
             `Found ${extractedProducts.length} products on ${pageTitle}`;
 
           return new Response(JSON.stringify({
@@ -4798,7 +5019,84 @@ Return ONLY valid JSON, no other text.`
           });
 
           const continuedData = await continuedResponse.json();
-          const finalText = continuedData.content?.find((b) => b.type === 'text')?.text ||
+
+          // Check if Claude wants to make another tool call (like update_schema)
+          if (continuedData.stop_reason === 'tool_use') {
+            const nextToolUse = continuedData.content?.find((b: any) => b.type === 'tool_use');
+            if (nextToolUse) {
+              console.log(`🔄 Chained tool call detected: ${nextToolUse.name}`);
+
+              // Handle update_schema as a chained call
+              if (nextToolUse.name === 'update_schema') {
+                console.log('✏️ Executing chained update_schema:', nextToolUse.input.schema_id);
+
+                // Get current schema
+                const { data: currentSchema, error: fetchErr } = await supabase
+                  .from('content_library')
+                  .select('*')
+                  .eq('id', nextToolUse.input.schema_id)
+                  .eq('content_type', 'schema')
+                  .single();
+
+                if (fetchErr || !currentSchema) {
+                  console.error('Schema not found for chained update');
+                } else {
+                  let updatedContent = currentSchema.content;
+                  const action = nextToolUse.input.action || 'merge';
+
+                  if (action === 'merge') {
+                    updatedContent = { ...currentSchema.content, ...nextToolUse.input.updates };
+                  } else if (action === 'replace') {
+                    updatedContent = nextToolUse.input.updates;
+                  } else if (action === 'add_to_array' && nextToolUse.input.array_field) {
+                    const arrayField = nextToolUse.input.array_field;
+                    const existingArray = currentSchema.content[arrayField] || [];
+                    const newItems = nextToolUse.input.updates[arrayField] || nextToolUse.input.updates;
+                    updatedContent = {
+                      ...currentSchema.content,
+                      [arrayField]: [...existingArray, ...(Array.isArray(newItems) ? newItems : [newItems])]
+                    };
+                  }
+
+                  // Update the schema
+                  const { data: updated, error: updateErr } = await supabase
+                    .from('content_library')
+                    .update({
+                      content: updatedContent,
+                      metadata: {
+                        ...currentSchema.metadata,
+                        version: (currentSchema.metadata?.version || 1) + 1,
+                        last_updated: new Date().toISOString()
+                      }
+                    })
+                    .eq('id', nextToolUse.input.schema_id)
+                    .select()
+                    .single();
+
+                  if (!updateErr && updated) {
+                    console.log('✅ Chained schema update successful');
+                    const textContent = continuedData.content?.find((b: any) => b.type === 'text')?.text || '';
+                    return new Response(JSON.stringify({
+                      success: true,
+                      mode: 'conversation',
+                      message: textContent + '\n\n✅ Schema has been updated successfully!',
+                      schemas: schemaList,
+                      updated_schema: {
+                        id: updated.id,
+                        title: updated.title,
+                        schema_type: updated.metadata?.schema_type
+                      },
+                      conversationId
+                    }), {
+                      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                    });
+                  }
+                }
+              }
+            }
+          }
+
+          const finalText = continuedData.content?.find((b: any) => b.type === 'text')?.text ||
             `Found ${schemaList.length} schemas`;
 
           return new Response(JSON.stringify({
@@ -5475,6 +5773,38 @@ ${orgContext}
     context = `${context}
 
 **CRITICAL - EXECUTE NOW:** The user has confirmed they want you to generate the ${contentType}. You MUST call the ${expectedTool} tool in this response. Do NOT just say you'll do it - ACTUALLY call the tool. The user is waiting for the deliverable, not another acknowledgment.`;
+  }
+
+  // FIX 3: When in strategy_review stage and user approves, force generate_media_plan
+  // This fixes the bug where user approves strategy but Claude asks follow-up questions instead of generating
+  const approvalPhrases = ['yes', 'yeah', 'yep', 'sure', 'ok', 'okay', 'go ahead', 'let\'s do it', 'proceed',
+    'perfect', 'great', 'looks good', 'sounds good', 'that works', 'approved', 'let\'s go', 'love it',
+    'i like', 'go with', 'that one', 'the first', 'the second', 'option 1', 'option 2', 'option 3'];
+  const isApprovalMessage = approvalPhrases.some(phrase =>
+    userCurrentMessage.includes(phrase) || userCurrentMessage.startsWith(phrase)
+  );
+
+  if (conversationState.stage === 'strategy_review' && isApprovalMessage && conversationState.approvedStrategy) {
+    console.log(`🎯 Strategy review stage + approval detected - forcing generate_media_plan`);
+    console.log(`   Approval message: "${userCurrentMessage}"`);
+    console.log(`   Strategy subject: ${conversationState.approvedStrategy.subject || conversationState.approvedStrategy.topic || 'unknown'}`);
+
+    context = `${context}
+
+**CRITICAL - STRATEGY APPROVED - EXECUTE NOW:**
+The user has approved the strategy document. You MUST now call the generate_media_plan tool with this approved strategy:
+${JSON.stringify(conversationState.approvedStrategy, null, 2)}
+
+Do NOT ask any more questions. Do NOT offer to help with specific elements. The user selected "Media Plan" which means they want ALL 7 deliverables generated:
+1. Press Release
+2. Media Pitch
+3. Media List
+4. Q&A Document
+5. Talking Points
+6. Social Posts
+7. Email
+
+Call generate_media_plan NOW with the approved_strategy parameter containing the strategy above.`;
   }
   // Add research context if available as a system injection
   let currentUserMessage = context;

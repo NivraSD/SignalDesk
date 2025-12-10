@@ -246,6 +246,7 @@ export default function NIVPanel({ embedded = false, onCampaignGenerated, onOppo
 
       const data = await response.json()
       console.log('✅ Processing complete:', data)
+      console.log('🎯 Response type:', data.type, '| gammaGenerationId:', data.gammaGenerationId)
 
       // Process NIV response
       const nivMessage: Message = {
@@ -352,7 +353,10 @@ export default function NIVPanel({ embedded = false, onCampaignGenerated, onOppo
 
       // If this is a Gamma presentation being generated, start polling
       if (data.type === 'gamma_generating' && data.gammaGenerationId) {
+        console.log('🚀 Starting Gamma polling for:', data.gammaGenerationId)
         pollGammaStatus(data.gammaGenerationId, nivMessage.id)
+      } else {
+        console.log('⏭️ Not starting Gamma polling - type:', data.type, 'generationId:', data.gammaGenerationId)
       }
 
       // Show tool status if available

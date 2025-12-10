@@ -183,6 +183,11 @@ function blueprintToMarkdown(campaignName: string, campaignType: string, bluepri
 
 type CampaignStage = 'intent' | 'research' | 'positioning' | 'approach' | 'blueprint' | 'execution'
 
+interface InformationGap {
+  category: 'geographic' | 'market' | 'evidence' | 'capability'
+  context: string
+}
+
 interface SessionState {
   sessionId: string
   stage: CampaignStage
@@ -192,6 +197,7 @@ interface SessionState {
   selectedPositioning?: any
   selectedApproach?: 'PR_CAMPAIGN' | 'VECTOR_CAMPAIGN' | 'GEO_VECTOR_CAMPAIGN'
   blueprint?: any
+  informationGaps?: InformationGap[]  // Gaps identified during positioning
 }
 
 interface CampaignBuilderWizardProps {
@@ -562,7 +568,8 @@ export function CampaignBuilderWizard({ initialObjective, onViewInPlanner }: Cam
         },
         body: JSON.stringify({
           researchData: session.researchData,
-          campaignGoal: session.campaignGoal
+          campaignGoal: session.campaignGoal,
+          orgId: organization?.id  // Pass orgId for gap analysis
         })
       })
 
@@ -578,12 +585,16 @@ export function CampaignBuilderWizard({ initialObjective, onViewInPlanner }: Cam
 
       const data = await response.json()
       console.log('✅ Positioning options generated:', data)
+      if (data.informationGaps?.length > 0) {
+        console.log('⚠️ Information gaps identified:', data.informationGaps.map((g: InformationGap) => g.title))
+      }
 
       // Update session stage and positioning options
       setSession(prev => ({
         ...prev!,
         stage: 'positioning',
-        positioningOptions: data.options
+        positioningOptions: data.options,
+        informationGaps: data.informationGaps  // Store gaps for display
       }))
 
       setConversationHistory(prev => [
@@ -1762,6 +1773,31 @@ export function CampaignBuilderWizard({ initialObjective, onViewInPlanner }: Cam
                 Based on the research, choose the positioning that best aligns with your campaign goals.
               </p>
             </div>
+
+            {/* Campaign Context Notice */}
+            {session.informationGaps && session.informationGaps.length > 0 && (
+              <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <div className="text-xl">💡</div>
+                  <div className="flex-1">
+                    <h3 className="text-blue-400 font-medium mb-1" style={{ fontFamily: 'var(--font-display)' }}>
+                      Campaign Framing
+                    </h3>
+                    <p className="text-sm text-[var(--grey-300)]">
+                      {session.informationGaps.some(g => g.category === 'geographic') && (
+                        <>This will be framed as a <span className="text-blue-300 font-medium">market expansion</span> campaign since you're entering a new region. </>
+                      )}
+                      {session.informationGaps.some(g => g.category === 'market') && (
+                        <>Content will highlight <span className="text-blue-300 font-medium">transferable expertise</span> for this new vertical. </>
+                      )}
+                      {session.informationGaps.some(g => g.category === 'evidence') && (
+                        <>Messaging will use <span className="text-blue-300 font-medium">forward-looking language</span> rather than specific metrics. </>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="space-y-4">
               {session.positioningOptions.map((option: any) => (

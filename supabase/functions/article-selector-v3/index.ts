@@ -124,9 +124,9 @@ serve(async (req) => {
     // ================================================================
     const { data: intelligenceTargets } = await supabase
       .from('intelligence_targets')
-      .select('name, type, priority')
+      .select('name, target_type, priority')  // Fixed: was 'type', column is 'target_type'
       .eq('organization_id', organization_id || org.id)
-      .eq('active', true);
+      .eq('is_active', true);  // Fixed: was 'active', column is 'is_active'
 
     if (intelligenceTargets && intelligenceTargets.length > 0) {
       intelligenceTargets.forEach(target => {

@@ -77,10 +77,19 @@ CREATIVE EXAMPLES TO INSPIRE YOUR HUNTING:
 - "Industry report says market slowing" → "Contrarian Take: Why This Is Actually Perfect Timing"
 - "Competitor lays off 20%" → "Stability Messaging + Talent Acquisition + We're Hiring Campaign"
 - "New regulation announced" → "Compliance Thought Leadership + Early Adopter Positioning"
-- "Competitor launches AI feature" → "Why We Built This 6 Months Ago + Implementation Best Practices"
+- "Major industry shift in your space" → "Expert Commentary from the organization's actual expertise areas"
 - "CEO of Partner changes" → "Relationship Continuity + Expanded Partnership Announcement"
 - "3 competitors all struggling with X" → "Industry-Wide Problem We Solved: Here's How"
 - "Trending topic on social" → "Real-Time Commentary + Unique Data Point + Viral Hook"
+
+🚨 **FORBIDDEN POSITIONING** 🚨
+DO NOT position the organization as having expertise or capabilities they don't have:
+- If they are NOT an AI/ML company (not listed in core_offerings), do NOT suggest AI thought leadership
+- If they are NOT a technology company, do NOT suggest technology infrastructure claims
+- If they are a SERVICE company (agency, consulting, etc.), focus on: client work, case studies, industry insight, methodology
+- If they are a PRODUCT company, focus on: product features, user outcomes, roadmap
+- NEVER claim the organization "built" or "has" technology/AI unless it's explicitly in their profile
+- For marketing/advertising agencies: focus on creative, strategy, platform expertise, campaign results - NOT technical infrastructure
 
 For EACH opportunity you detect, you must provide:
 

@@ -133,8 +133,33 @@ serve(async (req) => {
       throw new Error('ANTHROPIC_API_KEY not configured')
     }
 
+    // Fetch company profile to ground content in reality
+    let companyProfile: any = null
+    if (orgId && SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+      try {
+        const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+        const { data: org } = await supabase
+          .from('organizations')
+          .select('id, name, description, industry, company_profile')
+          .eq('id', orgId)
+          .single()
+
+        if (org) {
+          companyProfile = {
+            name: org.name,
+            description: org.description,
+            industry: org.industry,
+            ...(org.company_profile || {})
+          }
+          console.log('   ✅ Loaded company profile for grounding:', companyProfile.name)
+        }
+      } catch (err) {
+        console.warn('   ⚠️ Could not fetch company profile:', err.message)
+      }
+    }
+
     // Build comprehensive prompt for Claude (with optional GEO intelligence)
-    const prompt = buildOrchestrationPrompt(part1_strategicFoundation, part2_psychologicalInfluence, geoIntelligence, campaign_intelligence)
+    const prompt = buildOrchestrationPrompt(part1_strategicFoundation, part2_psychologicalInfluence, geoIntelligence, campaign_intelligence, companyProfile)
 
     console.log('📡 Calling Claude for orchestration generation...')
 
@@ -313,7 +338,7 @@ serve(async (req) => {
   }
 })
 
-function buildOrchestrationPrompt(part1: any, part2: any, geoIntelligence?: any, campaign_intelligence?: any): string {
+function buildOrchestrationPrompt(part1: any, part2: any, geoIntelligence?: any, campaign_intelligence?: any, companyProfile?: any): string {
   const currentDate = new Date().toISOString().split('T')[0]
 
   // Extract key info - adapt to actual Part 1 and Part 2 structure
@@ -430,6 +455,52 @@ ${geoIntelligence.synthesis?.priorityActions?.map((a: string, i: number) => `${i
 `
   }
 
+  // Build company context section for grounding
+  const companyContextSection = companyProfile ? `
+
+### COMPANY PROFILE (GROUND ALL CONTENT IN THIS REALITY):
+**Company Name:** ${companyProfile.name || 'Not specified'}
+**Description:** ${companyProfile.description || 'Not specified'}
+**Industry:** ${companyProfile.industry || 'Not specified'}
+**Services/Products:** ${companyProfile.services?.join(', ') || companyProfile.product_lines?.join(', ') || 'Not specified'}
+**Key Markets:** ${companyProfile.key_markets?.join(', ') || 'Not specified'}
+**Geographic Presence:** ${companyProfile.geographic_presence?.join(', ') || companyProfile.headquarters || 'Not specified'}
+**Known Achievements/Case Studies:** ${companyProfile.achievements?.join(', ') || companyProfile.case_studies?.join(', ') || 'None specified - DO NOT FABRICATE'}
+**Leadership:** ${companyProfile.leadership?.map((l: any) => typeof l === 'string' ? l : `${l.name || l.title}`).join(', ') || 'Not specified'}
+
+## ⚠️ CRITICAL ANTI-HALLUCINATION RULES ⚠️
+
+**YOU MUST NOT:**
+1. **NEVER invent case studies, pilots, or success stories** that don't exist in the company profile above
+2. **NEVER fabricate statistics, percentages, or specific numbers** (e.g., "40% efficiency gains")
+3. **NEVER claim the company operates in markets** they're not in (check Geographic Presence)
+4. **NEVER create fictional partnerships, clients, or testimonials**
+5. **NEVER reference products or services** not listed in the company profile
+6. **NEVER invent proprietary methodologies** or frameworks with trademarked names
+
+**YOU MUST:**
+1. **Ground all story angles in REAL capabilities** listed in the company profile
+2. **Use aspirational/forward-looking language** for things the company wants to achieve (e.g., "seeking to expand into UK market" NOT "successfully serving UK healthcare")
+3. **For markets they DON'T operate in yet:** Frame pitches around market entry, expansion plans, or industry expertise
+4. **When suggesting case studies:** ONLY reference ones explicitly listed, or say "to be developed based on customer results"
+5. **For statistics:** Use qualitative language ("many organizations", "growing demand") unless specific numbers are provided above
+
+**EXAMPLE OF CORRECT vs INCORRECT:**
+❌ WRONG: "NHS pilot success: How [Trust Name] achieved 40% procurement efficiency gains with AI automation"
+✅ CORRECT: "How AI-powered fax automation is transforming healthcare intake processes in the US - and what UK healthcare can learn"
+
+❌ WRONG: "Tennr's established UK healthcare partnerships drive NHS modernization"
+✅ CORRECT: "US healthcare automation leader Tennr explores UK market expansion opportunities"
+
+` : `
+
+## ⚠️ ANTI-HALLUCINATION WARNING ⚠️
+No company profile was provided. Generate GENERIC industry-focused content.
+DO NOT invent specific case studies, statistics, or achievements.
+Use aspirational language about what could be achieved, not claims of past success.
+
+`
+
   return `You are an expert campaign strategist. Your task is to create a stakeholder orchestration plan using a multi-channel, WHO → WHAT → WHERE approach.
 
 **TODAY'S DATE:** ${currentDate}
@@ -441,7 +512,7 @@ ${JSON.stringify(stakeholders, null, 2)}
 
 ### Influence Strategies (from Part 2):
 Each stakeholder has ~4 psychological influence levers (fear mitigation, aspiration activation, decision triggers, etc.)
-${JSON.stringify(influenceStrategies, null, 2)}${geoSection}
+${JSON.stringify(influenceStrategies, null, 2)}${companyContextSection}${geoSection}
 
 ## YOUR TASK
 

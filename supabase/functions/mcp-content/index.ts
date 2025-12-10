@@ -9,8 +9,110 @@ const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')!;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
+// Get current date for all content generation - calculated fresh each cold start
+const CURRENT_DATE = new Date().toISOString().split('T')[0];
+const CURRENT_YEAR = new Date().getFullYear();
+const CURRENT_MONTH = new Date().toLocaleString('en-US', { month: 'long' });
+const CURRENT_MONTH_NUM = new Date().getMonth() + 1; // 1-12
+
+// Anti-hallucination system prompt for content generation
+const ANTI_HALLUCINATION_SYSTEM = `You are a professional content writer who NEVER invents statistics, data, facts, organizational experience, or client scenarios.
+
+**TODAY'S DATE: ${CURRENT_DATE} (${CURRENT_MONTH} ${CURRENT_YEAR})**
+
+When referencing future dates, calculate correctly from TODAY (${CURRENT_MONTH} ${CURRENT_YEAR}):
+- We are at the END of ${CURRENT_YEAR}, so ${CURRENT_YEAR + 1} starts in just weeks/days
+- ${CURRENT_YEAR + 1} is "next year" or "early next year" - NOT "a year from now" or "18 months from now"
+- If something is announced for "${CURRENT_YEAR + 1}", it could be as soon as weeks away
+- ${CURRENT_YEAR + 2} is approximately 1 year from now
+- Be precise: "Google announced X for 2026" when written in Dec 2025 means "coming in the next few weeks to 12 months"
+
+🚨 CRITICAL - YOU ARE NOT THE COMPANY 🚨
+You are writing content FOR a company, not AS the company with first-hand experience. You do NOT have:
+- Personal experience working there
+- Access to their internal data, metrics, or results
+- Knowledge of their client work, case studies, or engagements
+- Information about their operational practices (payment terms, processes, team structures)
+
+ABSOLUTE RULES:
+1. NEVER write specific percentages, statistics, or numerical data unless they are provided in the prompt
+2. NEVER write phrases like "X% of executives", "studies show", "research indicates", or "according to data" unless citing provided sources
+3. Instead of inventing numbers, use qualitative language: "many", "increasingly", "growing number of", "significant portion"
+4. If you're tempted to write a specific number that wasn't provided, STOP and rephrase qualitatively
+5. NEVER fabricate company capabilities, methodologies, or internal data
+
+6. **CRITICAL - NO INVENTED FIRST-PERSON ORGANIZATIONAL EXPERIENCE:**
+   - NEVER write "At [Company], we've managed/built/deployed/created..." with invented experience
+   - NEVER write "Here at [Company], we've seen/tracked/observed..." with fabricated data
+   - NEVER write "In our experience working with X clients..." (you have no such experience)
+   - NEVER claim the company has specific operational practices unless documented ("we pay within 7 days", "we've partnered with thousands")
+   - NEVER invent internal metrics ("we tracked a direct correlation", "creators who receive payment within 48 hours deliver 23% more...")
+   - NEVER write as if you personally work at the company and have witnessed these things
+
+7. **CRITICAL - NO INVENTED CLIENT STORIES OR CASE STUDIES:**
+   - NEVER write about fictional clients, even if anonymized ("One enterprise client...", "A consumer goods company came to us...", "One of our clients...")
+   - NEVER invent case studies, pilot programs, deployments, implementations, or client success stories
+   - NEVER create fictional scenarios that sound like real client work ("We deployed our framework in September...", "Their cost per acquisition was climbing...")
+   - NEVER fabricate results, outcomes, or metrics from fictional engagements
+   - NEVER invent anecdotes ("Last year, we worked with a mid-tier creator—about 300K followers...")
+   - If no real case studies are provided, DO NOT make them up - discuss the topic conceptually instead
+   - This includes "composite" or "representative" examples - they are still fabrications
+
+8. **CRITICAL - NO FABRICATED ORGANIZATIONAL ACTIONS:**
+   - NEVER claim the organization "conducted research", "analyzed data", "ran a study", or "identified findings" unless that research is explicitly documented in the provided context
+   - NEVER write "In our analysis of..." or "Our research shows..." unless the organization actually did that analysis
+   - NEVER write "According to our internal data from working with X clients..." (fabricated)
+   - NEVER claim the organization has internal data, proprietary findings, or first-party insights unless provided
+   - If you want to make a point, cite INDUSTRY research or use general observations - do NOT invent organizational research
+   - The organization can have OPINIONS and PERSPECTIVES on industry trends, but cannot claim to have CONDUCTED research they didn't do
+
+Examples of FORBIDDEN patterns:
+- "At VaynerMedia, we've managed thousands of influencer partnerships" (FABRICATED EXPERIENCE)
+- "Here at [Company], we've tracked a direct correlation between payment speed and content quality" (INVENTED DATA)
+- "Creators who receive payment within 48 hours deliver 23% more authentic content" (INVENTED STATISTIC)
+- "The creators who work with us on campaigns with accelerated payment timelines are 40% more likely to pitch us" (FABRICATED METRIC)
+- "According to our internal data from working with over 2,000 creators in 2024 alone" (INVENTED VOLUME)
+- "Last year, we worked with a mid-tier creator—about 300K followers" (FICTIONAL ANECDOTE)
+- "She had to turn down a five-figure campaign because she was already waiting on $8,000" (INVENTED STORY)
+- "One enterprise client in the consumer goods category came to us..." (FICTIONAL CLIENT)
+- "We deployed our AI creative optimization framework in mid-September..." (FICTIONAL DEPLOYMENT)
+- "A recent client engagement showed..." (FICTIONAL ENGAGEMENT)
+- "When we worked with a major retailer..." (FICTIONAL WORK)
+- "In our analysis of 500 partnerships..." (unless this research exists)
+- "Our internal data shows..." (unless data is provided)
+
+Examples of ALLOWED patterns:
+- "Many agencies are finding that payment speed affects creator relationships" (general observation)
+- "Industry research suggests that faster payments correlate with better outcomes" (cite industry if true)
+- "The opportunity for agencies is to differentiate through operational excellence" (forward-looking)
+- "From our perspective, the key challenges facing agencies include..." (stated as opinion)
+- "We believe that brands should focus on..." (stated as belief)
+- "Organizations that optimize creator payments often see improved engagement" (general truth)
+- "The creator economy is evolving to demand faster payment infrastructure" (industry trend)
+
+INSTEAD OF FABRICATING EXPERIENCE:
+- Discuss industry trends and observations
+- Present the company's PERSPECTIVE and OPINION on issues
+- Analyze publicly available information
+- Make forward-looking recommendations without claiming past proof
+- If you want to illustrate a point, say "consider a scenario where..." not "we had a client where..."
+
+This is a HARD RULE. Violating it damages credibility and trust. Content that invents organizational experience or statistics is WORSE than generic content.`;
+
 // Helper function to call Anthropic API directly
-async function callAnthropic(messages: any[], maxTokens: number = 1500) {
+async function callAnthropic(messages: any[], maxTokens: number = 1500, systemPrompt?: string) {
+  const body: any = {
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: maxTokens,
+    temperature: 0.3, // Lower temperature to reduce hallucination
+    messages
+  };
+
+  // Add system prompt if provided
+  if (systemPrompt) {
+    body.system = systemPrompt;
+  }
+
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -18,12 +120,7 @@ async function callAnthropic(messages: any[], maxTokens: number = 1500) {
       'x-api-key': ANTHROPIC_API_KEY,
       'anthropic-version': '2023-06-01',
     },
-    body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: maxTokens,
-      temperature: 0.5,
-      messages
-    })
+    body: JSON.stringify(body)
   });
 
   if (!response.ok) {
@@ -1036,10 +1133,26 @@ async function generateThoughtLeadership(args: any) {
   const industryContext = industry || 'cross-industry and sector-agnostic';
 
   // Extract company context to prevent hallucination
+  // Support BOTH parameter naming conventions (mcp-content native and niv-content-intelligent-v2)
   const companyName = args.organization || args.company || 'the organization';
-  const companyServices = args.companyServices || args.services || [];
-  const companyCapabilities = args.companyCapabilities || args.capabilities || [];
+
+  // Description is the most important context - what does this company actually do?
+  const companyDescription = args.description || args.companyDescription || '';
+
+  // Services/offerings - accept multiple param names
+  const companyServices = args.companyServices || args.services || args.product_lines || args.core_offerings || [];
+
+  // Capabilities - accept multiple param names
+  const companyCapabilities = args.companyCapabilities || args.capabilities || args.differentiators || [];
+
+  // Methodologies/approach
   const companyMethodologies = args.companyMethodologies || args.methodologies || [];
+
+  // Business model context
+  const businessModel = args.business_model || args.businessModel || '';
+
+  // Key markets/focus areas
+  const keyMarkets = args.key_markets || args.keyMarkets || [];
 
   // Extract research data/statistics if provided
   const researchData = args.research || args.researchData || '';
@@ -1062,21 +1175,31 @@ ${statistics.length > 0 ? `Statistics:\n${statistics.map(s => `- ${s.stat} (Sour
   const companyContextSection = `
 
 COMPANY CONTEXT (${companyName}):
-${companyServices.length > 0 ? `Services: ${companyServices.join(', ')}` : 'Services: Not specified'}
-${companyCapabilities.length > 0 ? `Capabilities: ${companyCapabilities.join(', ')}` : 'Capabilities: Not specified'}
-${companyMethodologies.length > 0 ? `Known Methodologies: ${companyMethodologies.join(', ')}` : 'Known Methodologies: Not specified'}
+${companyDescription ? `**WHAT THIS COMPANY DOES:** ${companyDescription}` : '**WHAT THIS COMPANY DOES:** Not specified - write from general industry perspective'}
+${industryContext ? `**Industry:** ${industryContext}` : ''}
+${businessModel ? `**Business Model:** ${businessModel}` : ''}
+${companyServices.length > 0 ? `**Services/Offerings:** ${Array.isArray(companyServices) ? companyServices.join(', ') : companyServices}` : ''}
+${companyCapabilities.length > 0 ? `**Differentiators/Capabilities:** ${Array.isArray(companyCapabilities) ? companyCapabilities.join(', ') : companyCapabilities}` : ''}
+${keyMarkets.length > 0 ? `**Key Markets:** ${Array.isArray(keyMarkets) ? keyMarkets.join(', ') : keyMarkets}` : ''}
+${companyMethodologies.length > 0 ? `**Known Methodologies:** ${Array.isArray(companyMethodologies) ? companyMethodologies.join(', ') : companyMethodologies}` : ''}
 ${researchSection}
 **CRITICAL ANTI-HALLUCINATION RULES:**
-- ONLY reference services, capabilities, or methodologies explicitly listed above
+- READ the "WHAT THIS COMPANY DOES" section above carefully - this defines the company's ACTUAL expertise
+- ONLY claim expertise in areas listed in their Services/Offerings and Capabilities
 - DO NOT invent proprietary frameworks, methodologies, or trademarked terms
 - DO NOT create fictional "™" or "®" branded approaches
+- If the company description says they are a MARKETING AGENCY - do NOT claim they built AI/technology
+- If the company description says they are a TECHNOLOGY company - do NOT claim marketing expertise they don't have
 - If no company-specific details are provided, write generically about the industry without claiming company-specific innovations
-- Speak about the topic from industry expertise, NOT from invented company capabilities
 - **STATISTICS RULE**: DO NOT cite specific statistics, percentages, or numerical data unless explicitly provided in the RESEARCH DATA section above
 - If you want to reference a trend or pattern, use qualitative language ("many executives", "increasingly", "growing concern") instead of inventing numbers
 - NEVER write things like "17% of CEOs" or "according to recent studies" without actual citations from the research data provided above`;
 
-  const prompt = `TODAY'S DATE: ${currentDate} (${currentYear})
+  const prompt = `⚠️ CRITICAL: NO FABRICATED STATISTICS ⚠️
+Before writing, remember: DO NOT invent any percentages, statistics, or numerical data.
+Use qualitative language instead: "many", "increasingly", "significant", "growing number of"
+
+TODAY'S DATE: ${currentDate} (${currentYear})
 
 Write a ${tone} thought leadership article:
   Topic: ${topic}
@@ -1087,18 +1210,25 @@ Write a ${tone} thought leadership article:
 
   Requirements:
   - Start with a compelling hook
-  - Include data and trends from ${currentYear} (use CURRENT information, not outdated 2023/2024 references)
+  - Include current trends from ${currentYear} (use CURRENT information, not outdated 2023/2024 references)
   - Provide unique insights and predictions
   - Challenge conventional thinking
   - End with actionable takeaways
   - Use authoritative voice and expert positioning
   - If constraints are provided above, follow them strictly
   - DO NOT reference years before ${currentYear} unless providing historical context
-  - FOLLOW THE ANTI-HALLUCINATION RULES STRICTLY - do not invent company capabilities or methodologies`;
+  - FOLLOW THE ANTI-HALLUCINATION RULES STRICTLY - do not invent company capabilities or methodologies
+
+  ⚠️ FINAL CHECK: Before submitting, verify you have NOT invented any:
+  - Specific percentages (e.g., "23% increase")
+  - Time-based statistics (e.g., "within 7 days")
+  - Study citations without provided sources
+  - Internal data claims (e.g., "our analysis of 500 partnerships")`;
 
   const content = await callAnthropic(
     [{ role: 'user', content: prompt }],
-    Math.round(wordCount * 1.5)
+    Math.round(wordCount * 1.5),
+    ANTI_HALLUCINATION_SYSTEM
   );
 
   return { content };
@@ -1583,13 +1713,20 @@ REQUIREMENTS FOR THE PITCH:
 - Open with ${pitchContext[pitchType as keyof typeof pitchContext]}
 - Personalize to the journalist's beat (if known)
 - Lead with the most newsworthy angle that aligns with our narrative
-- Include concrete data and specifics
 - Reference the research insights and market context
 - Offer exclusive access or information
 - **IMPORTANT**: Ensure the pitch reinforces our key messages and positioning
 - End with clear next steps
 - Include a subject line that gets opened
 - Keep it concise (150-200 words max) and compelling
+
+**⚠️ CRITICAL ANTI-HALLUCINATION RULES:**
+- ONLY cite statistics, percentages, or numbers if they appear in the SUPPORTING DATA section above
+- DO NOT invent case studies, pilot programs, or success stories - only reference what's in the provided context
+- DO NOT fabricate quotes, testimonials, or client names
+- If the story angle references achievements that aren't backed by supporting data, reframe as aspirational/forward-looking
+- Use qualitative language ("many organizations", "growing demand") instead of inventing specific numbers
+- If a claim seems fabricated (e.g., specific NHS pilots, percentage gains without source), rephrase to be truthful
 
 FORMAT:
 Subject: [Compelling Subject Line]
@@ -1598,7 +1735,8 @@ Subject: [Compelling Subject Line]
 
   const content = await callAnthropic(
     [{ role: 'user', content: prompt }],
-    1000
+    1000,
+    ANTI_HALLUCINATION_SYSTEM
   );
 
   return { content, pitchType };

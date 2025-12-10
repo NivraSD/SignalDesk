@@ -1,5 +1,5 @@
-// Pattern Detector v2 - Uses Claude to analyze articles and generate predictions
-// Instead of statistical counting, this actually reads article content and finds patterns
+// Pattern Detector v3 - Intelligence-Target-Aware Predictions
+// Loads intelligence_targets, uses priority weighting, links signals via FK, tracks activity
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { corsHeaders } from '../_shared/cors.ts';
@@ -21,6 +21,19 @@ interface Article {
   relevance_score?: number;
 }
 
+interface IntelligenceTarget {
+  id: string;
+  name: string;
+  target_type: string;
+  priority: string;
+  monitoring_keywords: string[];
+  monitoring_context: string | null;
+  accumulated_context: Record<string, any>;
+  baseline_metrics: Record<string, any>;
+  activity_count: number;
+  last_activity_at: string | null;
+}
+
 interface Prediction {
   title: string;
   description: string;
@@ -31,6 +44,7 @@ interface Prediction {
   category: 'competitive' | 'market' | 'crisis' | 'strategic' | 'regulatory' | 'technology' | 'partnership';
   time_horizon: '1-month' | '3-months' | '6-months';
   related_entities: string[];
+  primary_target_name?: string; // The main target this prediction is about
 }
 
 serve(async (req) => {
@@ -41,7 +55,7 @@ serve(async (req) => {
   try {
     const { organization_id, articles, company_profile } = await req.json();
 
-    console.log(`🔮 Pattern Detector v2 - Claude-Powered Analysis`);
+    console.log(`🔮 Pattern Detector v3 - Intelligence-Target-Aware Analysis`);
     console.log(`   Organization: ${organization_id}`);
     console.log(`   Articles received: ${articles?.length || 0}`);
 
@@ -71,8 +85,27 @@ serve(async (req) => {
       orgName = profile.name || 'Unknown';
     }
 
-    // Build company context for Claude
-    const companyContext = buildCompanyContext(profile, orgName);
+    // Load intelligence targets from database
+    const { data: intelligenceTargets, error: targetsError } = await supabase
+      .from('intelligence_targets')
+      .select('id, name, target_type, priority, monitoring_keywords, monitoring_context, accumulated_context, baseline_metrics, activity_count, last_activity_at')
+      .eq('organization_id', organization_id)
+      .eq('is_active', true);
+
+    if (targetsError) {
+      console.error('Error loading intelligence targets:', targetsError);
+    }
+
+    const targets: IntelligenceTarget[] = intelligenceTargets || [];
+    console.log(`   Intelligence targets loaded: ${targets.length}`);
+
+    // Log target breakdown by priority
+    const criticalTargets = targets.filter(t => t.priority === 'critical');
+    const highTargets = targets.filter(t => t.priority === 'high');
+    console.log(`   Critical targets: ${criticalTargets.length}, High priority: ${highTargets.length}`);
+
+    // Build company context for Claude (now includes intelligence targets)
+    const companyContext = buildCompanyContext(profile, orgName, targets);
 
     // Build article summaries for Claude (limit to top 30 by relevance)
     const topArticles = articles
@@ -88,15 +121,16 @@ serve(async (req) => {
     const predictions = await generatePredictionsWithClaude(
       companyContext,
       articleSummaries,
-      topArticles
+      topArticles,
+      targets
     );
 
     console.log(`   Claude generated ${predictions.length} predictions`);
 
-    // Save predictions to database
+    // Save predictions to database with FK linkage and activity tracking
     let savedCount = 0;
     for (const pred of predictions) {
-      const saved = await savePrediction(organization_id, pred);
+      const saved = await savePrediction(organization_id, pred, targets);
       if (saved) savedCount++;
     }
 
@@ -106,7 +140,8 @@ serve(async (req) => {
       success: true,
       predictions_generated: predictions.length,
       predictions_saved: savedCount,
-      predictions: predictions
+      predictions: predictions,
+      targets_used: targets.length
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
@@ -123,7 +158,7 @@ serve(async (req) => {
   }
 });
 
-function buildCompanyContext(profile: any, orgName: string): string {
+function buildCompanyContext(profile: any, orgName: string, targets: IntelligenceTarget[]): string {
   const parts = [`COMPANY: ${orgName}`];
 
   if (profile?.description) {
@@ -134,10 +169,6 @@ function buildCompanyContext(profile: any, orgName: string): string {
     parts.push(`SERVICE LINES: ${profile.service_lines.join(', ')}`);
   }
 
-  if (profile?.competition?.direct_competitors?.length) {
-    parts.push(`COMPETITORS: ${profile.competition.direct_competitors.join(', ')}`);
-  }
-
   if (profile?.strategic_context?.target_customers) {
     parts.push(`TARGET CUSTOMERS: ${profile.strategic_context.target_customers}`);
   }
@@ -146,59 +177,138 @@ function buildCompanyContext(profile: any, orgName: string): string {
     parts.push(`KEY QUESTIONS:\n${profile.intelligence_context.key_questions.map((q: string) => `- ${q}`).join('\n')}`);
   }
 
+  // Build intelligence targets section with priority weighting
+  if (targets.length > 0) {
+    const competitors = targets.filter(t => t.target_type === 'competitor');
+    const stakeholders = targets.filter(t => t.target_type === 'stakeholder' || t.target_type === 'influencer');
+    const regulators = targets.filter(t => t.target_type === 'regulator');
+    const customers = targets.filter(t => t.target_type === 'customer');
+    const partners = targets.filter(t => t.target_type === 'partner');
+
+    // Format targets with priority indicators
+    const formatTargetList = (targetList: IntelligenceTarget[]) => {
+      // Sort by priority: critical > high > medium > low
+      const priorityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
+      return targetList
+        .sort((a, b) => (priorityOrder[a.priority as keyof typeof priorityOrder] || 3) - (priorityOrder[b.priority as keyof typeof priorityOrder] || 3))
+        .map(t => {
+          const priorityFlag = t.priority === 'critical' ? '🔴' : t.priority === 'high' ? '🟠' : '';
+          const activityNote = t.activity_count > 0 ? ` (${t.activity_count} prior signals)` : '';
+          const keywords = t.monitoring_keywords?.length > 0 ? ` [watch for: ${t.monitoring_keywords.slice(0, 3).join(', ')}]` : '';
+          return `${priorityFlag} ${t.name}${activityNote}${keywords}`.trim();
+        })
+        .join('\n  - ');
+    };
+
+    parts.push(`\n=== INTELLIGENCE TARGETS (prioritized) ===`);
+
+    if (competitors.length > 0) {
+      parts.push(`COMPETITORS TO MONITOR:\n  - ${formatTargetList(competitors)}`);
+    }
+
+    if (stakeholders.length > 0) {
+      parts.push(`KEY STAKEHOLDERS/INFLUENCERS:\n  - ${formatTargetList(stakeholders)}`);
+    }
+
+    if (regulators.length > 0) {
+      parts.push(`REGULATORY BODIES:\n  - ${formatTargetList(regulators)}`);
+    }
+
+    if (customers.length > 0) {
+      parts.push(`KEY CUSTOMERS:\n  - ${formatTargetList(customers)}`);
+    }
+
+    if (partners.length > 0) {
+      parts.push(`STRATEGIC PARTNERS:\n  - ${formatTargetList(partners)}`);
+    }
+
+    // Add baseline context for critical targets
+    const criticalTargets = targets.filter(t => t.priority === 'critical');
+    if (criticalTargets.length > 0) {
+      const baselineContext = criticalTargets
+        .filter(t => t.accumulated_context && Object.keys(t.accumulated_context).length > 0)
+        .map(t => `${t.name}: ${JSON.stringify(t.accumulated_context).substring(0, 200)}`)
+        .join('\n');
+
+      if (baselineContext) {
+        parts.push(`\nCRITICAL TARGET CONTEXT:\n${baselineContext}`);
+      }
+    }
+  } else if (profile?.competition?.direct_competitors?.length) {
+    // Fallback to company_profile if no intelligence targets
+    parts.push(`COMPETITORS: ${profile.competition.direct_competitors.join(', ')}`);
+  }
+
   return parts.join('\n\n');
 }
 
 async function generatePredictionsWithClaude(
   companyContext: string,
   articleSummaries: string,
-  articles: Article[]
+  articles: Article[],
+  targets: IntelligenceTarget[]
 ): Promise<Prediction[]> {
 
-  const prompt = `You are a strategic intelligence analyst. Analyze these news articles and generate actionable predictions for the company.
+  // Build target names list for the prompt
+  const targetNames = targets.map(t => t.name);
+  const criticalTargetNames = targets.filter(t => t.priority === 'critical' || t.priority === 'high').map(t => t.name);
+
+  const prompt = `You are a competitive intelligence analyst. Your ONLY job is to predict what SPECIFIC COMPANIES we are tracking will do next.
+
+⚠️ CRITICAL CONSTRAINT: You may ONLY make predictions about these specific entities:
+${targetNames.length > 0 ? targetNames.map(n => `• ${n}`).join('\n') : 'No targets specified'}
+
+DO NOT make generic predictions about "the market" or "the industry".
+DO NOT predict things about companies not in the list above.
+If the articles don't mention any of our tracked targets, return an EMPTY ARRAY [].
 
 ${companyContext}
 
 ARTICLES TO ANALYZE:
 ${articleSummaries}
 
-YOUR TASK: Generate 3-5 strategic predictions based on patterns you see in these articles. Each prediction should:
+YOUR TASK: Make 2-5 predictions about what the specific tracked companies above will do next.
 
-1. Identify a trend, threat, or opportunity emerging from the news
-2. Explain WHY this matters to the company (rationale)
-3. Cite specific articles as evidence (reference by number [1], [2], etc.)
-4. Assess confidence based on: multiple sources confirming = high, single source = low
-5. Suggest time horizon: 1-month (imminent), 3-months (developing), 6-months (emerging)
+${criticalTargetNames.length > 0 ? `
+🔴 HIGH PRIORITY TARGETS (predictions about these matter most):
+${criticalTargetNames.map(n => `   • ${n}`).join('\n')}
+` : ''}
 
-PREDICTION TYPES (use exact values):
-- "competitive": Competitor moves that affect market position
-- "market": Industry trends or market shifts
-- "crisis": Threats requiring defensive action
-- "strategic": Business development or growth opportunities
-- "regulatory": Regulatory, legal, or compliance developments
-- "technology": Technology shifts or innovations
-- "partnership": Alliance or partnership opportunities
+WHAT TO PREDICT:
+- A tracked competitor's next strategic move based on signals in the news
+- Leadership changes at tracked targets
+- Market entries/exits by tracked competitors
+- Partnership or M&A activity involving tracked targets
+- How tracked regulators might act
 
-Return a JSON array of predictions:
+PREDICTION TYPES:
+- "competitive": What a tracked competitor will do next
+- "regulatory": What a tracked regulator might do
+- "partnership": Potential alliances involving tracked targets
+- "strategic": Business moves by tracked targets
+- "personnel": Executive changes at tracked targets
+- "crisis": Potential problems for tracked targets
+
+Return a JSON array (or empty [] if no tracked targets found in articles):
 [
   {
-    "title": "Short, specific prediction title",
-    "description": "What you predict will happen and its implications",
-    "rationale": "Why this prediction makes sense given the evidence",
-    "evidence": ["Quote or fact from article [1]", "Supporting detail from article [3]"],
+    "title": "Prediction about [TRACKED TARGET NAME]",
+    "description": "What will happen",
+    "rationale": "Why we predict this based on the evidence",
+    "evidence": ["Quote from article [X]"],
     "confidence_score": 75,
     "impact_level": "high|medium|low",
-    "category": "competitive|market|crisis|strategic|regulatory|technology|partnership",
+    "category": "competitive|regulatory|partnership|strategic|personnel|crisis",
     "time_horizon": "1-month|3-months|6-months",
-    "related_entities": ["Company A", "Person B"]
+    "related_entities": ["Other entities involved"],
+    "primary_target_name": "EXACT name from targets list above"
   }
 ]
 
-IMPORTANT:
-- Be specific, not generic. "Market conditions may change" is useless.
-- Ground every prediction in actual article content.
-- If articles don't support strong predictions, generate fewer predictions.
-- Focus on what matters to THIS company's business.
+🚨 VALIDATION RULES:
+1. "primary_target_name" MUST match exactly one of: ${targetNames.slice(0, 15).join(', ')}${targetNames.length > 15 ? '...' : ''}
+2. If no articles mention our tracked targets, return []
+3. "Gen Z", "AI", "the market" are NOT valid target names - use specific company/person names only
 
 Return ONLY the JSON array, no other text.`;
 
@@ -250,7 +360,8 @@ Return ONLY the JSON array, no other text.`;
       impact_level: ['high', 'medium', 'low'].includes(p.impact_level) ? p.impact_level : 'medium',
       category: ['competitive', 'market', 'crisis', 'strategic', 'regulatory', 'technology', 'partnership'].includes(p.category) ? p.category : 'market',
       time_horizon: ['1-month', '3-months', '6-months'].includes(p.time_horizon) ? p.time_horizon : '3-months',
-      related_entities: Array.isArray(p.related_entities) ? p.related_entities : []
+      related_entities: Array.isArray(p.related_entities) ? p.related_entities : [],
+      primary_target_name: p.primary_target_name || null
     }));
 
   } catch (error: any) {
@@ -259,7 +370,7 @@ Return ONLY the JSON array, no other text.`;
   }
 }
 
-async function savePrediction(orgId: string, prediction: Prediction): Promise<boolean> {
+async function savePrediction(orgId: string, prediction: Prediction, targets: IntelligenceTarget[]): Promise<boolean> {
   try {
     // Check for existing similar signal in unified table
     const { data: existingSignal } = await supabase
@@ -273,6 +384,35 @@ async function savePrediction(orgId: string, prediction: Prediction): Promise<bo
     if (existingSignal) {
       console.log(`   ⏭️ Signal already exists: ${prediction.title.substring(0, 50)}...`);
       return false;
+    }
+
+    // Look up the primary target by name to get the UUID
+    let primaryTargetId: string | null = null;
+    let primaryTargetType: string | null = null;
+    const primaryTargetName = prediction.primary_target_name || prediction.related_entities[0] || null;
+
+    if (primaryTargetName) {
+      // Find matching target (case-insensitive)
+      const matchedTarget = targets.find(t =>
+        t.name.toLowerCase() === primaryTargetName.toLowerCase()
+      );
+
+      if (matchedTarget) {
+        primaryTargetId = matchedTarget.id;
+        primaryTargetType = matchedTarget.target_type;
+        console.log(`   🎯 Linked to target: ${matchedTarget.name} (${matchedTarget.target_type}, priority: ${matchedTarget.priority})`);
+      }
+    }
+
+    // Look up related target IDs
+    const relatedTargetIds: string[] = [];
+    for (const entityName of prediction.related_entities) {
+      const matched = targets.find(t =>
+        t.name.toLowerCase() === entityName.toLowerCase()
+      );
+      if (matched && matched.id !== primaryTargetId) {
+        relatedTargetIds.push(matched.id);
+      }
     }
 
     // Map time_horizon to urgency
@@ -295,7 +435,7 @@ async function savePrediction(orgId: string, prediction: Prediction): Promise<bo
     };
     const signalSubtype = subtypeMap[prediction.category] || prediction.category;
 
-    // Save to unified signals table
+    // Save to unified signals table WITH FK linkage
     const { error: signalError } = await supabase
       .from('signals')
       .insert({
@@ -304,8 +444,12 @@ async function savePrediction(orgId: string, prediction: Prediction): Promise<bo
         signal_subtype: signalSubtype,
         title: prediction.title,
         description: prediction.description,
-        primary_target_name: prediction.related_entities[0] || null,
-        related_target_names: prediction.related_entities.slice(1),
+        // FK linkage to intelligence_targets
+        primary_target_id: primaryTargetId,
+        primary_target_name: primaryTargetName,
+        primary_target_type: primaryTargetType,
+        related_target_ids: relatedTargetIds.length > 0 ? relatedTargetIds : null,
+        related_target_names: prediction.related_entities,
         confidence_score: prediction.confidence_score,
         significance_score: prediction.impact_level === 'high' ? 85 : prediction.impact_level === 'medium' ? 60 : 40,
         urgency: urgency,
@@ -318,7 +462,8 @@ async function savePrediction(orgId: string, prediction: Prediction): Promise<bo
         pattern_data: {
           category: prediction.category,
           time_horizon: prediction.time_horizon,
-          related_entities: prediction.related_entities
+          related_entities: prediction.related_entities,
+          primary_target_linked: !!primaryTargetId
         },
         business_implication: prediction.description,
         opportunity_type: prediction.category === 'strategic' || prediction.category === 'partnership' ? 'advisory' :
@@ -326,13 +471,68 @@ async function savePrediction(orgId: string, prediction: Prediction): Promise<bo
                           prediction.category === 'competitive' ? 'competitive_response' : 'advisory',
         detected_at: new Date().toISOString(),
         status: 'active',
-        source_pipeline: 'pattern-detector-v2',
+        source_pipeline: 'pattern-detector-v3',
         model_version: 'claude-sonnet-4'
       });
 
     if (signalError) {
       console.error(`❌ Failed to save signal: ${signalError.message}`);
       return false;
+    }
+
+    // UPDATE ACTIVITY TRACKING on intelligence_targets
+    if (primaryTargetId) {
+      const { error: activityError } = await supabase
+        .from('intelligence_targets')
+        .update({
+          activity_count: supabase.rpc('increment_activity_count', { target_id: primaryTargetId }) || 1,
+          last_activity_at: new Date().toISOString(),
+          last_activity_summary: `Prediction: ${prediction.title.substring(0, 100)}`,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', primaryTargetId);
+
+      // Fallback if RPC doesn't exist - direct increment
+      if (activityError) {
+        // Get current count and increment
+        const { data: currentTarget } = await supabase
+          .from('intelligence_targets')
+          .select('activity_count')
+          .eq('id', primaryTargetId)
+          .single();
+
+        await supabase
+          .from('intelligence_targets')
+          .update({
+            activity_count: (currentTarget?.activity_count || 0) + 1,
+            last_activity_at: new Date().toISOString(),
+            last_activity_summary: `Prediction: ${prediction.title.substring(0, 100)}`,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', primaryTargetId);
+      }
+
+      console.log(`   📊 Updated activity tracking for target: ${primaryTargetName}`);
+    }
+
+    // Update activity for related targets too
+    for (const relatedId of relatedTargetIds) {
+      const { data: relatedTarget } = await supabase
+        .from('intelligence_targets')
+        .select('activity_count, name')
+        .eq('id', relatedId)
+        .single();
+
+      if (relatedTarget) {
+        await supabase
+          .from('intelligence_targets')
+          .update({
+            activity_count: (relatedTarget.activity_count || 0) + 1,
+            last_activity_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', relatedId);
+      }
     }
 
     // Also save to legacy predictions table for backward compatibility
@@ -353,10 +553,11 @@ async function savePrediction(orgId: string, prediction: Prediction): Promise<bo
           rationale: prediction.rationale,
           evidence: prediction.evidence,
           related_entities: prediction.related_entities,
-          generated_by: 'pattern-detector-v2'
+          primary_target_id: primaryTargetId,
+          generated_by: 'pattern-detector-v3'
         }
       })
-      .then(() => {}) // Ignore errors for legacy table
+      .then(() => {})
       .catch(() => {});
 
     console.log(`   💡 Saved: ${prediction.title.substring(0, 60)}...`);

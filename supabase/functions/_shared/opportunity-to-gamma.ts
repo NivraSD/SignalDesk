@@ -1,142 +1,211 @@
-// Transform OpportunityV2 into Gamma presentation format
+// Transform OpportunityV2 into Gamma presentation format (improved structure)
 
 export function opportunityToGammaContent(opportunity: any): string {
   const { title, strategic_context, execution_plan } = opportunity
 
-  let content = `# ${title}\n\n`
+  // Clean title (remove "Opportunity:" prefix if present)
+  const cleanTitle = title.replace(/^Opportunity:\s*/i, '').trim()
 
-  // Slide 1: The Opportunity
-  content += `## The Opportunity\n\n`
-  content += `### What Happened\n`
-  strategic_context?.trigger_events?.forEach((event: string) => {
-    content += `- ${event}\n`
-  })
-  content += `\n`
+  // Generate subtitle from market dynamics or why_now
+  const subtitle = strategic_context?.why_now || strategic_context?.market_dynamics || ''
 
-  content += `### Why It Matters\n`
-  content += `${strategic_context?.market_dynamics || ''}\n\n`
-  content += `${strategic_context?.why_now || ''}\n\n`
+  let content = `# ${cleanTitle}\n\n`
+  content += `${subtitle.substring(0, 150)}${subtitle.length > 150 ? '...' : ''}\n\n`
 
-  // Slide 2: Strategic Context
-  content += `## Strategic Context\n\n`
-  content += `### Our Advantage\n`
-  content += `${strategic_context?.competitive_advantage || ''}\n\n`
+  // Slide 2: Success Metrics (lead with outcomes)
+  content += `## Success Metrics\n\n`
+  if (execution_plan?.success_metrics?.length > 0) {
+    execution_plan.success_metrics.forEach((metric: any) => {
+      content += `### ${metric.metric}\n`
+      content += `**Target:** ${metric.target}\n`
+      if (metric.timeframe) {
+        content += `**Timeline:** ${metric.timeframe}\n`
+      }
+      if (metric.measurement_method) {
+        content += `**Tracking:** ${metric.measurement_method}\n`
+      }
+      content += `\n`
+    })
+  } else {
+    content += `Define success metrics based on campaign objectives.\n\n`
+  }
 
-  content += `### Time Window\n`
-  content += `**${strategic_context?.time_window || ''}**\n\n`
-  content += `⏰ ${strategic_context?.expiration_date ? `Act before ${new Date(strategic_context.expiration_date).toLocaleDateString()}` : ''}\n\n`
+  // Slide 3: Content Deliverables Overview
+  const allItems = execution_plan?.stakeholder_campaigns
+    ?.flatMap((c: any) => c.content_items || []) || []
+  const totalItems = allItems.length
 
-  content += `### Expected Impact\n`
-  content += `${strategic_context?.expected_impact || ''}\n\n`
-
-  content += `### Risk If Missed\n`
-  content += `${strategic_context?.risk_if_missed || ''}\n\n`
-
-  // Slide 3: Target Stakeholders
-  content += `## Target Stakeholders\n\n`
-  execution_plan?.stakeholder_campaigns?.forEach((campaign: any) => {
-    content += `### ${campaign.stakeholder_name}\n`
-    if (campaign.stakeholder_description) {
-      content += `${campaign.stakeholder_description}\n\n`
-    }
-    content += `**Priority:** ${campaign.stakeholder_priority}\n`
-    content += `**Strategy:** ${campaign.lever_name}\n\n`
-  })
-
-  // Slide 4-N: Execution Plan by Stakeholder
-  execution_plan?.stakeholder_campaigns?.forEach((campaign: any, idx: number) => {
-    content += `## Execution: ${campaign.stakeholder_name}\n\n`
-    content += `### ${campaign.lever_name}\n`
-    if (campaign.lever_description) {
-      content += `${campaign.lever_description}\n\n`
-    }
-
-    // Group content by type
+  content += `## Content Deliverables Overview\n\n`
+  if (totalItems > 0) {
+    // Group by type and show top items
     const byType: Record<string, any[]> = {}
-    campaign.content_items?.forEach((item: any) => {
+    allItems.forEach((item: any) => {
       if (!byType[item.type]) byType[item.type] = []
       byType[item.type].push(item)
     })
 
-    Object.entries(byType).forEach(([type, items]) => {
-      content += `\n**${formatContentType(type)}** (${items.length})\n`
-      items.forEach((item: any, i: number) => {
-        content += `${i + 1}. ${item.topic}\n`
-        if (item.brief?.angle) {
-          content += `   - ${item.brief.angle}\n`
-        }
-      })
+    let itemNum = 1
+    Object.entries(byType).slice(0, 4).forEach(([type, items]) => {
+      const topItem = items[0]
+      content += `### ${itemNum}. ${formatContentType(type)}\n`
+      content += `${topItem.topic}\n`
+      if (topItem.brief?.angle) {
+        content += `${topItem.brief.angle}\n`
+      }
       content += `\n`
+      itemNum++
     })
-  })
+    content += `**Total Deliverables:** ${totalItems}\n\n`
+  }
 
-  // Slide: Timeline
-  content += `## Execution Timeline\n\n`
-  if (execution_plan?.execution_timeline) {
-    const timeline = execution_plan.execution_timeline
+  // Slide 4: Next Steps - Seize the Moment
+  content += `## Next Steps: Seize the Moment\n\n`
+  content += `### The Window Is Now\n`
+  if (strategic_context?.time_window) {
+    content += `${strategic_context.time_window}\n\n`
+  }
 
-    if (timeline.immediate?.length > 0) {
-      content += `### 🔥 Immediate (Today)\n`
-      timeline.immediate.forEach((item: string) => content += `- ${item}\n`)
-      content += `\n`
-    }
+  content += `### Immediate Action Required\n`
+  if (execution_plan?.execution_timeline?.immediate?.length > 0) {
+    execution_plan.execution_timeline.immediate.slice(0, 2).forEach((item: string) => {
+      content += `- ${item}\n`
+    })
+  } else {
+    content += `- Begin execution immediately to capture the opportunity\n`
+  }
+  content += `\n`
 
-    if (timeline.this_week?.length > 0) {
-      content += `### 📅 This Week\n`
-      timeline.this_week.forEach((item: string) => content += `- ${item}\n`)
-      content += `\n`
-    }
+  if (strategic_context?.expiration_date) {
+    const expDate = new Date(strategic_context.expiration_date).toLocaleDateString()
+    content += `**Act before ${expDate}**\n\n`
+  }
 
-    if (timeline.this_month?.length > 0) {
-      content += `### 🗓️ This Month\n`
-      timeline.this_month.forEach((item: string) => content += `- ${item}\n`)
-      content += `\n`
-    }
+  // Slide 5: The Strategic Opportunity
+  content += `## The Strategic Opportunity\n\n`
+  content += `### What Happened\n`
+  if (strategic_context?.trigger_events?.length > 0) {
+    strategic_context.trigger_events.forEach((event: string) => {
+      content += `- ${event}\n`
+    })
+  }
+  content += `\n`
 
-    if (timeline.ongoing?.length > 0) {
-      content += `### 🔄 Ongoing\n`
-      timeline.ongoing.forEach((item: string) => content += `- ${item}\n`)
-      content += `\n`
+  content += `### Why It Matters\n`
+  content += `${strategic_context?.market_dynamics || ''}\n\n`
+
+  // Slide 6: Our Competitive Advantage
+  content += `## Our Competitive Advantage\n\n`
+  if (strategic_context?.competitive_advantage) {
+    // Split into bullet points if it's a long text
+    const advantages = strategic_context.competitive_advantage.split(/[.!]\s+/).filter((s: string) => s.trim())
+    if (advantages.length > 1) {
+      advantages.slice(0, 3).forEach((adv: string, i: number) => {
+        content += `### Advantage ${i + 1}\n`
+        content += `${adv.trim()}.\n\n`
+      })
+    } else {
+      content += `${strategic_context.competitive_advantage}\n\n`
     }
   }
 
-  // Slide: Success Metrics
-  content += `## Success Metrics\n\n`
-  execution_plan?.success_metrics?.forEach((metric: any) => {
-    content += `### ${metric.metric}\n`
-    content += `**Target:** ${metric.target}\n`
-    if (metric.measurement_method) {
-      content += `**How:** ${metric.measurement_method}\n`
+  // Slide 7: Critical Time Window (emojis trigger icon generation in Gamma)
+  content += `## Critical Time Window\n\n`
+  const timeline = execution_plan?.execution_timeline || {}
+  let phase = 1
+
+  if (timeline.immediate?.length > 0) {
+    content += `### ${phase} 🔥 Immediate (Today)\n`
+    content += `${timeline.immediate[0]}\n\n`
+    phase++
+  }
+
+  if (timeline.this_week?.length > 0) {
+    content += `### ${phase} 📅 This Week\n`
+    content += `${timeline.this_week[0]}\n\n`
+    phase++
+  }
+
+  if (timeline.this_month?.length > 0) {
+    content += `### ${phase} 🗓️ This Month\n`
+    content += `${timeline.this_month[0]}\n\n`
+    phase++
+  }
+
+  if (strategic_context?.risk_if_missed) {
+    content += `### ${phase} 🔄 Ongoing\n`
+    content += `Risk increases: ${strategic_context.risk_if_missed}\n\n`
+  }
+
+  // Slide 8: Expected Impact & Risk
+  content += `## Expected Impact & Risk\n\n`
+  content += `### The Upside\n`
+  content += `${strategic_context?.expected_impact || 'Successfully executing this strategy will establish market leadership.'}\n\n`
+
+  content += `### The Risk\n`
+  content += `${strategic_context?.risk_if_missed || 'Delayed action allows competitors to claim the opportunity first.'}\n\n`
+
+  // Slides 9-10: Target Audiences (Primary and Secondary)
+  const stakeholders = execution_plan?.stakeholder_campaigns || []
+  if (stakeholders.length > 0) {
+    const primary = stakeholders[0]
+    content += `## Primary Target: ${primary.stakeholder_name}\n\n`
+    content += `### Who They Are\n`
+    content += `${primary.stakeholder_description || 'Key decision-makers in the target market.'}\n\n`
+    content += `### Our Approach\n`
+    content += `**${primary.lever_name}:** ${primary.lever_description || 'Targeted engagement strategy.'}\n\n`
+
+    if (stakeholders.length > 1) {
+      const secondary = stakeholders[1]
+      content += `## Secondary Target: ${secondary.stakeholder_name}\n\n`
+      content += `### Audience Profile\n`
+      content += `${secondary.stakeholder_description || 'Secondary decision-makers and influencers.'}\n\n`
+      content += `### Strategic Value\n`
+      content += `**${secondary.lever_name}:** ${secondary.lever_description || 'Supporting engagement strategy.'}\n\n`
     }
-    if (metric.timeframe) {
-      content += `**When:** ${metric.timeframe}\n`
-    }
-    content += `\n`
-  })
+  }
 
-  // Final slide: Content Inventory
-  const totalItems = execution_plan?.stakeholder_campaigns
-    ?.reduce((sum: number, c: any) => sum + (c.content_items?.length || 0), 0) || 0
-
-  content += `## Content Inventory\n\n`
-  content += `### Total Deliverables: ${totalItems}\n\n`
-
-  // Summary by type
-  const allItems = execution_plan?.stakeholder_campaigns
-    ?.flatMap((c: any) => c.content_items || []) || []
-
-  const typeCount: Record<string, number> = {}
-  allItems.forEach((item: any) => {
-    typeCount[item.type] = (typeCount[item.type] || 0) + 1
-  })
-
-  Object.entries(typeCount)
-    .sort(([, a], [, b]) => b - a)
-    .forEach(([type, count]) => {
-      content += `- **${formatContentType(type)}:** ${count}\n`
+  // Slide 11: Core Content Strategy
+  content += `## Core Content Strategy\n\n`
+  if (totalItems > 0) {
+    // Show top 2-3 content items with details
+    allItems.slice(0, 3).forEach((item: any) => {
+      content += `### ${formatContentType(item.type)}\n`
+      content += `**"${item.topic}"**\n`
+      if (item.brief?.angle) {
+        content += `${item.brief.angle}\n`
+      }
+      content += `\n`
     })
+  }
 
-  content += `\n---\n\n`
+  // Slide 12: Execution Timeline (detailed - emojis trigger icons)
+  content += `## Execution Timeline: Speed to Market\n\n`
+
+  if (timeline.immediate?.length > 0) {
+    content += `### 1 🔥 Immediate (Today)\n`
+    timeline.immediate.forEach((item: string) => content += `- ${item}\n`)
+    content += `\n`
+  }
+
+  if (timeline.this_week?.length > 0) {
+    content += `### 2 📅 This Week (Days 1-7)\n`
+    timeline.this_week.forEach((item: string) => content += `- ${item}\n`)
+    content += `\n`
+  }
+
+  if (timeline.this_month?.length > 0) {
+    content += `### 3 🗓️ This Month (Weeks 2-4)\n`
+    timeline.this_month.forEach((item: string) => content += `- ${item}\n`)
+    content += `\n`
+  }
+
+  if (timeline.ongoing?.length > 0) {
+    content += `### 4 🔄 Ongoing (Month 2+)\n`
+    timeline.ongoing.forEach((item: string) => content += `- ${item}\n`)
+    content += `\n`
+  }
+
+  content += `---\n\n`
   content += `*Auto-generated from Opportunity Detection System*\n`
 
   return content
@@ -144,19 +213,19 @@ export function opportunityToGammaContent(opportunity: any): string {
 
 function formatContentType(type: string): string {
   const typeMap: Record<string, string> = {
-    media_pitch: 'Media Pitches',
-    social_post: 'Social Posts',
+    media_pitch: 'Media Pitch',
+    social_post: 'Social Content',
     thought_leadership: 'Thought Leadership',
-    press_release: 'Press Releases',
-    blog_post: 'Blog Posts',
-    email_campaign: 'Email Campaigns',
-    webinar: 'Webinars',
-    presentation: 'Presentations',
+    press_release: 'Press Release',
+    blog_post: 'Blog Post',
+    email_campaign: 'Email Campaign',
+    webinar: 'Webinar',
+    presentation: 'Presentation',
     image: 'Visual Content',
     video: 'Video Content',
-    event: 'Events',
+    event: 'Event',
     partnership_outreach: 'Partnership Outreach',
-    user_action: 'Custom Actions'
+    user_action: 'Custom Action'
   }
   return typeMap[type] || type
 }

@@ -139,7 +139,13 @@ ${keyQuestions.map((q: string) => `- ${q}`).join('\n')}` : ''}
 ${extractionFocus.length > 0 ? `EXTRACTION FOCUS:
 ${extractionFocus.slice(0, 10).map((f: string) => `- ${f}`).join('\n')}` : ''}
 
-SCORING CRITERIA (be INCLUSIVE - score 60+ if potentially relevant):
+⚠️ CRITICAL ANTI-HYPE FILTER: Generic "AI" or "technology" news is NOT automatically relevant!
+- "Company X launches AI feature" → ONLY relevant if Company X is a competitor, customer, or partner
+- "AI is transforming industry Y" → ONLY relevant if industry Y is ${organization_name}'s industry
+- "Tech giant acquires AI startup" → ONLY relevant if it directly affects ${organization_name}'s market
+- Just mentioning "AI" or "technology" does NOT make something relevant to ${organization_name}
+
+SCORING CRITERIA (be STRICT about relevance - generic tech news should score LOW):
 
 CRITICAL RELEVANCE (90-100):
 - Direct mention of ${organization_name} or its direct competitors
@@ -150,24 +156,28 @@ CRITICAL RELEVANCE (90-100):
 HIGH RELEVANCE (75-89):
 - Competitor strategic moves, product launches, funding rounds
 - Industry trends directly affecting ${organization_name}'s market position
-- M&A activity in the space
+- M&A activity ONLY if it involves companies in ${organization_name}'s industry or market
 - Actions by target customers or key analysts
 ${strategicPriorities.length > 0 ? `- News related to strategic priorities: ${strategicPriorities.slice(0, 3).join(', ')}` : ''}
 
 MEDIUM RELEVANCE (60-74):
-- General industry trends and market dynamics
-- Technology/innovation in the sector
+- Industry-specific news in ${organization_name}'s actual industry (${industry})
 - Geographic market news relevant to their operations
-- Tangentially related competitive intelligence
+- Competitive intelligence about similar companies
 
 LOW RELEVANCE (40-59):
 - Loosely connected industry news
 - General business news with indirect connection
 
-NOT RELEVANT (0-39):
+NOT RELEVANT (0-39) - Score these LOW!
 - Completely unrelated industries
 - Articles about ${organization_name} themselves (we want EXTERNAL intel)
 - Spam/promotional content
+- **Generic AI/tech news about companies NOT in ${organization_name}'s industry**
+- **M&A between tech companies** unless they are competitors, customers, or partners (e.g., IBM acquiring Confluent is NOT relevant to a marketing agency)
+- **"AI hype" articles** that discuss AI trends without specific application to ${organization_name}'s industry
+- **Major corporate news about tech giants** (Google, Microsoft, IBM, Apple, Amazon) UNLESS they are competitors, customers, or directly affect ${organization_name}'s business
+- **Funding/IPO news for startups** in unrelated industries
 
 ARTICLES TO SCORE:
 ${batch.map((a: Article, idx: number) => {

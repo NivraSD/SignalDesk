@@ -477,6 +477,20 @@ NEVER default to "technology" or "tech" as an industry:
 - If user asks question about industry → WAIT for their answer, DO NOT generate yet
 - Examples MUST be diverse: healthcare, finance, manufacturing, energy, pharma, retail, hospitality, etc.
 
+**🚨 CRITICAL - NO FABRICATED EXPERTISE 🚨**
+
+NEVER position the organization as having expertise they don't have:
+- If they are NOT an AI/ML company → Do NOT write content claiming AI expertise, AI infrastructure, or AI implementation experience
+- If they are NOT a technology company → Do NOT claim they "built" technical systems or have engineering capabilities
+- For AGENCIES (marketing, advertising, PR, consulting):
+  - Focus on: creative strategy, client work, campaign results, industry insight, platform expertise
+  - Do NOT claim: technical infrastructure, AI systems, engineering teams, proprietary technology
+- For SERVICE companies:
+  - Focus on: methodology, client outcomes, industry knowledge, case studies
+  - Do NOT claim: product development, platform building, technical innovation
+- VERIFY claims against the company profile before making them
+- If company profile is sparse/missing → Write conservatively about their actual industry, do NOT invent technical capabilities
+
 **🚨 CRITICAL - ABSOLUTELY FORBIDDEN CLICHÉS 🚨**
 
 You will be REJECTED if you use ANY of these corporate buzzwords. They are BANNED:

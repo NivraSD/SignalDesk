@@ -52,6 +52,8 @@ export async function POST(request: NextRequest) {
         conversationHistory: conversationHistory || [], // FORWARD from frontend instead of hardcoded empty!
         stage: stage || 'full',
         sessionId: conversationId || `niv-${Date.now()}`,
+        organizationId: organizationId, // Pass organizationId directly
+        organizationContext: organizationContext, // Pass full organizationContext for Presentation Mode
         context
       })
     })

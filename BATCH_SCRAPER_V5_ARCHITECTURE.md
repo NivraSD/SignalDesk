@@ -178,6 +178,7 @@ scrape_status TEXT DEFAULT 'pending'
   -- 'processing' = Currently being scraped
   -- 'completed' = Successfully scraped
   -- 'failed' = Scraping failed (will retry if attempts < 3)
+  -- 'metadata_only' = URL/title/date captured, no content scrape (for blocked sources like Bloomberg)
 
 scrape_attempts INTEGER DEFAULT 0
   -- Number of times scraping was attempted
@@ -358,30 +359,52 @@ Output:
 - mcp-firecrawl caching reduces duplicate scraping
 - Priority-based ensures important articles scraped first
 
-## Performance Metrics
+## Performance Metrics (Actual Production Data - Dec 2024)
 
-### Discovery Phase
-- **RSS:** ~44 sources → 400-600 URLs → ~30 seconds
-- **Google CSE:** ~44 sources → 200-300 URLs → ~13 seconds
-- **Sitemap:** ~13 sources → 20-50 URLs → ~2-5 seconds
-- **Fireplexity:** Variable sources → 50-100 URLs → ~10 seconds
-- **Total:** ~99 sources → 700-1000 URLs → ~60 seconds
+### Discovery Phase (Single Run)
+| Orchestrator | Sources Processed | Sources Failed | Articles Found | New URLs | Duration |
+|--------------|-------------------|----------------|----------------|----------|----------|
+| **RSS** | 22-23 | 30-32 | 400-500 | 20-50 | ~60 seconds |
+| **Sitemap** | 2 | 0 | 600-700 | 100-350 | ~2 seconds |
+| **Fireplexity** | 27-30 | 3 | 1000-1200 | 50-100 | ~40 seconds |
+| **CSE** | 3 | 0 | 10-30 | 0-10 | ~5 seconds |
 
-### Scraping Phase
-- **Worker:** 10 articles → ~8 seconds → ~75 articles/minute
-- **500 articles:** ~50 worker runs → ~7 minutes total
-- **Success rate:** 95%+ (with automatic retries)
+**Notes:**
+- RSS has ~30 failed sources due to missing `rss_url` configs (need to add feed URLs)
+- Sitemap is now the most productive after fixing Bloomberg + PR Newswire configs
+- Fireplexity provides good coverage for firecrawl-based sources
+
+### Scraping Phase (Worker)
+- **Per run:** 10 articles processed, 2-10 successful (varies by source difficulty)
+- **Duration:** 4-10 seconds per run
+- **Best sources:** PR Newswire, Bloomberg (high success rate)
+- **Difficult sources:** Paywalled sites show 0-30% success rate
+- **Throughput:** ~50-150 articles/hour depending on source mix
 
 ### Metadata Extraction Phase
-- **Orchestrator:** 50 articles → ~30 seconds
-- **500 articles:** ~5 minutes total
-- **Success rate:** 95%+
+- **Per run:** 140-150 articles processed
+- **Duration:** ~20-30 seconds per batch
+- **Success rate:** 95%+ (140/148 in recent test)
 
-### Content Stats (typical run)
-- **Total articles:** ~700-1000 per day
-- **With full content:** 90%+
-- **With metadata:** 95%+
-- **Average article:** ~15,000 characters
+### Overall Pipeline Stats (Current State)
+```
+Queue Status:
+  Completed: 4,346 articles
+  Pending: 1,069 articles
+  Failed: 1,187 articles
+  With Metadata: 4,338 articles
+
+Success Rates:
+  Discovery: ~90% of sources work
+  Scraping: ~60% overall (varies by source)
+  Metadata: 95%+
+```
+
+### Content Quality
+- **Average article length:** 15,000-50,000 characters
+- **Articles with full content:** 75-80%
+- **Articles blocked by paywall:** 15-20%
+- **Articles with extraction errors:** 5%
 
 ## Monitoring
 
@@ -466,20 +489,68 @@ SELECT cron.schedule(
 
 ## Troubleshooting
 
-### No articles discovered
-- Check `source_registry` has active sources
-- Verify RSS URLs are valid
-- Check Google CSE API quota
+### No articles discovered from RSS sources
+- **Check `monitor_config` format:** Must use `rss_url` key, not `feed_url`
+- **Verify RSS feed is accessible:** `curl -s "https://feeds.example.com/rss.xml" | head`
+- **Check source is active:** `SELECT * FROM source_registry WHERE monitor_method='rss' AND active=true`
 
-### Worker not processing queue
-- Verify `scrape_status='pending'` articles exist
-- Check `scrape_attempts < 3`
-- Review mcp-firecrawl function logs
+### "No valid RSS feed" error for specific source
+```sql
+-- Check the current config
+SELECT source_name, monitor_config FROM source_registry WHERE source_name = 'Wall Street Journal';
 
-### High failure rate
-- Check Firecrawl API key and quota
-- Review `processing_error` field in failed articles
-- Verify source URLs are still valid
+-- Fix: Use rss_url key
+UPDATE source_registry
+SET monitor_config = '{"rss_url": "https://feeds.a.dj.com/rss/WSJcomUSBusiness.xml"}'::jsonb
+WHERE source_name = 'Wall Street Journal';
+```
+
+### Sitemap discovery returns 0 new articles but sources exist
+1. **Check for duplicate key errors in logs** - May need batched duplicate checking
+2. **Verify sitemap URL returns XML:** `curl -s "https://example.com/sitemap-news.xml" | head`
+3. **Check URL validation rules** - Source may need custom validation in `isValidArticleUrl()`
+
+### Duplicate key constraint errors on insert
+**Cause:** Supabase `.in()` query with 500+ URLs returns incomplete results
+
+**Fix:** Batch duplicate checks (already implemented in sitemap orchestrator):
+```typescript
+const checkBatchSize = 50;
+for (let i = 0; i < urls.length; i += checkBatchSize) {
+  const batch = urls.slice(i, i + checkBatchSize);
+  // ... check each batch
+}
+```
+
+### Worker processing but 0 successful scrapes
+- **Paywalled sources:** Many premium sources block scrapers; use authenticated cookies or switch to firecrawl
+- **Rate limiting:** Add delays between requests or reduce batch size
+- **Check mcp-firecrawl logs:** May show specific error messages
+
+### High failure rate (> 50%)
+- **Review failed articles:**
+  ```sql
+  SELECT source_name, processing_error, COUNT(*)
+  FROM raw_articles
+  WHERE scrape_status = 'failed' AND created_at > NOW() - INTERVAL '1 day'
+  GROUP BY source_name, processing_error
+  ORDER BY COUNT(*) DESC;
+  ```
+- **Common causes:**
+  - 403 Forbidden: Source blocking scrapers
+  - 404 Not Found: URL structure changed
+  - Timeout: Source too slow, increase timeout or use firecrawl
+  - Paywall: Need auth cookie or switch method
+
+### Pending queue keeps growing
+- **Worker can't keep up:** Increase worker frequency (every 10 min instead of 15)
+- **Too many failed retries:** Articles stuck in retry loop; may need to mark as permanently failed
+- **Check worker is running:** Verify cron job is executing
+
+### Metadata extraction failing
+- **Claude API issues:** Check Anthropic API key and rate limits
+- **Content too long:** Some articles exceed context window; truncate in extraction function
+- **Check extraction logs:** `SELECT id, processing_error FROM raw_articles WHERE extracted_metadata IS NULL AND scrape_status = 'completed'`
 
 ## Migration from V4
 
@@ -671,10 +742,270 @@ curl -X POST "https://{project}.supabase.co/functions/v1/batch-article-tagger" \
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+## Premium Source Configurations (Verified Working)
+
+### Tier 1 Sources - Recommended Methods
+
+| Source | Method | Configuration | Notes |
+|--------|--------|---------------|-------|
+| **Bloomberg** | `sitemap` | `monitor_config: { sitemap_url: "https://www.bloomberg.com/feeds/sitemap_news.xml" }` | **Metadata-only** - URL/title/date stored, content not scraped (blocked by anti-bot) |
+| **Wall Street Journal** | `rss` | `monitor_config: { rss_url: "https://feeds.a.dj.com/rss/WSJcomUSBusiness.xml" }` | ~20-30 articles/day via RSS |
+| **CNBC** | `rss` | `monitor_config: { rss_url: "https://www.cnbc.com/id/100003114/device/rss/rss.html" }` | ~30-50 articles/day |
+| **PR Newswire** | `sitemap` | `monitor_config: { sitemap_url: "https://www.prnewswire.com/sitemap-news.xml?page=1" }` | ~100-200 press releases/day |
+| **Reuters** | `firecrawl` | Default firecrawl method | Via Fireplexity orchestrator |
+| **Business Wire** | `firecrawl` | Default firecrawl method | Via Fireplexity orchestrator |
+
+### RSS Configuration Format
+
+**IMPORTANT:** The RSS orchestrator expects `rss_url` inside `monitor_config`:
+
+```sql
+-- Correct format
+UPDATE source_registry
+SET monitor_method = 'rss',
+    monitor_config = '{"rss_url": "https://feeds.example.com/rss.xml"}'::jsonb
+WHERE source_name = 'Example Source';
+
+-- Wrong format (will fail with "No valid RSS feed")
+-- monitor_config = '{"feed_url": "..."}'  -- WRONG key name
+```
+
+### Sitemap Configuration Format
+
+```sql
+UPDATE source_registry
+SET monitor_method = 'sitemap',
+    monitor_config = '{"sitemap_url": "https://example.com/sitemap-news.xml"}'::jsonb
+WHERE source_name = 'Example Source';
+```
+
+## Reliability Fixes Applied (Dec 2024)
+
+### 1. Batched Duplicate Checking (Sitemap Orchestrator)
+
+**Problem:** When discovering 500+ URLs, the duplicate check query `.in('url', urls)` hit Supabase limits and returned incomplete results, causing duplicate key constraint errors on insert.
+
+**Fix:** Batch duplicate checks into groups of 50 URLs:
+
+```typescript
+// In batch-scraper-v5-orchestrator-sitemap/index.ts
+const existingUrlSet = new Set<string>();
+const urls = articles.map(a => a.url);
+const checkBatchSize = 50;
+
+for (let i = 0; i < urls.length; i += checkBatchSize) {
+  const batch = urls.slice(i, i + checkBatchSize);
+  const { data: existingUrls } = await supabase
+    .from('raw_articles')
+    .select('url')
+    .in('url', batch);
+
+  if (existingUrls) {
+    for (const r of existingUrls) {
+      existingUrlSet.add(r.url);
+    }
+  }
+}
+```
+
+### 2. URL Validation Rules (Sitemap Orchestrator)
+
+**Problem:** Sitemaps contain non-article URLs (homepages, category pages, etc.)
+
+**Fix:** Added source-specific URL validation:
+
+```typescript
+// PR Newswire - only /news-releases/ URLs
+if (sourceName === 'PR Newswire') {
+  return urlLower.includes('/news-releases/');
+}
+
+// Business Wire - only press release URLs
+if (sourceName === 'Business Wire') {
+  return urlLower.includes('/news/home/') || urlLower.includes('/en/');
+}
+
+// Bloomberg - filter out non-article paths
+if (sourceName === 'Bloomberg') {
+  const invalidPaths = ['/audio/', '/video/', '/podcasts/', '/live/'];
+  return !invalidPaths.some(p => urlLower.includes(p));
+}
+```
+
+### 3. Error Tracking (All Orchestrators)
+
+Added `error_summary` JSONB field to `batch_scrape_runs` table to track per-source failures:
+
+```typescript
+const sourceErrors: { source: string, error: string }[] = [];
+// ... in catch block:
+sourceErrors.push({ source: source.source_name, error: error.message });
+// ... at end:
+await supabase.from('batch_scrape_runs').update({
+  error_summary: sourceErrors.length > 0 ? sourceErrors : null
+});
+```
+
+### 4. Metadata-Only Sources (Sitemap Orchestrator)
+
+**Problem:** Some premium sources (Bloomberg, South China Morning Post) block scrapers with anti-bot protection, causing all articles to fail with timeouts.
+
+**Fix:** Added `METADATA_ONLY_SOURCES` array to store only URL/title/date without attempting content scraping:
+
+```typescript
+// In batch-scraper-v5-orchestrator-sitemap/index.ts
+const METADATA_ONLY_SOURCES = ['Bloomberg', 'South China Morning Post'];
+
+// When inserting, check if source is metadata-only
+const isMetadataOnly = METADATA_ONLY_SOURCES.includes(source.source_name);
+const scrapeStatus = isMetadataOnly ? 'metadata_only' : 'pending';
+```
+
+Articles from these sources get `scrape_status: 'metadata_only'` and are skipped by the worker.
+
+### 5. PR Newswire URL Validation Fix (Worker)
+
+**Problem:** Quality check incorrectly flagged valid PR Newswire press releases as "category pages" because they contain `/news-releases/` in the URL path.
+
+**Fix:** Added article ID pattern detection to skip category check for URLs with numeric identifiers:
+
+```typescript
+// In batch-scraper-v5-worker/index.ts
+const hasPRNewswireId = urlLower.match(/prnewswire\.com.*-\d{6,}\.html$/);
+const hasArticleId = urlLower.match(/\d{6,}\.html$/) || urlLower.match(/\/\d{7,}$/);
+
+if (!hasDatePattern && !hasPRNewswireId && !hasArticleId) {
+  // Only flag as category page if no article identifier present
+  return { is_valid: false, reason: 'Category page URL pattern' };
+}
+```
+
+### 6. XML Archive Filter (Worker)
+
+**Problem:** *Dive sites (Payments Dive, BioPharma Dive, etc.) sitemap discovery was picking up XML archive index files instead of actual article URLs (e.g., `/news/archive/2022/may.xml`).
+
+**Fix:** Added early rejection for XML/archive files in quality check:
+
+```typescript
+// In batch-scraper-v5-worker/index.ts
+if (urlLower.endsWith('.xml') || urlLower.includes('/archive/') && urlLower.match(/\d{4}\/\w+\.xml$/)) {
+  return {
+    is_valid: false,
+    reason: 'Not an article URL (XML/archive file)',
+    confidence: 1.0
+  };
+}
+```
+
+## Autonomous Cron Operation
+
+### Recommended Cron Schedule
+
+```sql
+-- Discovery: Run 4x per day (every 6 hours)
+-- Stagger by 2 minutes to avoid conflicts
+
+SELECT cron.schedule('scraper-rss', '0 */6 * * *', $$
+  SELECT net.http_post(
+    url := 'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/batch-scraper-v5-orchestrator-rss',
+    headers := '{"Authorization": "Bearer SERVICE_KEY"}'::jsonb
+  );
+$$);
+
+SELECT cron.schedule('scraper-sitemap', '2 */6 * * *', $$
+  SELECT net.http_post(
+    url := 'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/batch-scraper-v5-orchestrator-sitemap',
+    headers := '{"Authorization": "Bearer SERVICE_KEY"}'::jsonb
+  );
+$$);
+
+SELECT cron.schedule('scraper-fireplexity', '4 */6 * * *', $$
+  SELECT net.http_post(
+    url := 'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/batch-scraper-v5-orchestrator-fireplexity',
+    headers := '{"Authorization": "Bearer SERVICE_KEY"}'::jsonb
+  );
+$$);
+
+SELECT cron.schedule('scraper-cse', '6 */6 * * *', $$
+  SELECT net.http_post(
+    url := 'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/batch-scraper-v5-orchestrator-cse',
+    headers := '{"Authorization": "Bearer SERVICE_KEY"}'::jsonb
+  );
+$$);
+
+-- Worker: Run every 15 minutes to process queue
+SELECT cron.schedule('scraper-worker', '*/15 * * * *', $$
+  SELECT net.http_post(
+    url := 'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/batch-scraper-v5-worker',
+    headers := '{"Authorization": "Bearer SERVICE_KEY"}'::jsonb
+  );
+$$);
+
+-- Metadata: Run every 30 minutes
+SELECT cron.schedule('scraper-metadata', '10,40 * * * *', $$
+  SELECT net.http_post(
+    url := 'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/batch-metadata-orchestrator',
+    headers := '{"Authorization": "Bearer SERVICE_KEY"}',
+    body := '{"limit": 200}'::jsonb
+  );
+$$);
+```
+
+### Expected Daily Throughput
+
+Based on actual production runs (Dec 2024):
+
+| Orchestrator | Sources | Articles/Run | New/Run | Runs/Day | Daily New |
+|--------------|---------|--------------|---------|----------|-----------|
+| RSS | 22-25 | 400-500 | 20-50 | 4 | 80-200 |
+| Sitemap | 2 | 600-700 | 100-300 | 4 | 400-1200 |
+| Fireplexity | 27-30 | 1000-1200 | 50-100 | 4 | 200-400 |
+| CSE | 3 | 10-30 | 0-10 | 4 | 0-40 |
+| **Total** | | | | | **700-1800** |
+
+### Worker Performance Expectations
+
+- **Best case:** 10 successful scrapes per run (~8 seconds)
+- **Typical case:** 2-6 successful scrapes per run (paywalled/blocked sources)
+- **Failed articles:** Move to `failed` status after 3 attempts
+- **Processing rate:** ~100-200 articles/hour with 15-minute worker intervals
+
+### Failure Modes to Monitor
+
+1. **"No valid RSS feed" errors** - Check `monitor_config.rss_url` format
+2. **Duplicate key constraint errors** - Batched check may need smaller batch size
+3. **Low success rate on worker** - Many sources are paywalled; consider switching to firecrawl
+4. **Sitemap 403/404 errors** - Source changed sitemap URL; update `monitor_config`
+
+### Health Check Query
+
+```sql
+-- Run daily to check pipeline health
+SELECT
+  DATE(created_at) as date,
+  COUNT(*) FILTER (WHERE scrape_status = 'completed') as completed,
+  COUNT(*) FILTER (WHERE scrape_status = 'failed') as failed,
+  COUNT(*) FILTER (WHERE scrape_status = 'pending') as pending,
+  COUNT(*) FILTER (WHERE extracted_metadata IS NOT NULL) as with_metadata,
+  ROUND(100.0 * COUNT(*) FILTER (WHERE scrape_status = 'completed') / NULLIF(COUNT(*), 0), 1) as success_rate
+FROM raw_articles
+WHERE created_at > NOW() - INTERVAL '7 days'
+GROUP BY DATE(created_at)
+ORDER BY date DESC;
+```
+
+### Alerting Thresholds
+
+Set up alerts for:
+- **Discovery:** < 100 new URLs per day (pipeline stalled)
+- **Worker success rate:** < 30% (source issues)
+- **Pending queue:** > 5000 (worker can't keep up)
+- **Failed rate:** > 50% of daily articles (widespread scraping issues)
+
 ## Next Steps
 
-1. **Set up cron scheduling** for automated discovery + scraping + metadata extraction
-2. **Monitor queue metrics** to tune worker frequency
-3. **Add alerting** for high failure rates or empty discovery
-4. **Expand source registry** with more Tier 1 sources
+1. **Set up cron scheduling** using the SQL above
+2. **Monitor queue metrics** via health check query
+3. **Add alerting** via Supabase webhooks or external monitoring
+4. **Expand source registry** - add more RSS feeds for Tier 2 sources
 5. **Tune metadata extraction** prompts for better entity/topic accuracy

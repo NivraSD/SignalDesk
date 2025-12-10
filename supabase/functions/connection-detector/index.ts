@@ -1,5 +1,5 @@
-// Connection Detector v2 - Uses Claude to find meaningful connections between entities
-// Instead of keyword matching, this analyzes article content to find real relationships
+// Connection Detector v3 - Intelligence-Target-Aware Connection Detection
+// Loads intelligence_targets, uses priority weighting, links signals via FK, tracks activity
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { corsHeaders } from '../_shared/cors.ts';
@@ -21,6 +21,19 @@ interface Article {
   relevance_score?: number;
 }
 
+interface IntelligenceTarget {
+  id: string;
+  name: string;
+  target_type: string;
+  priority: string;
+  monitoring_keywords: string[];
+  monitoring_context: string | null;
+  accumulated_context: Record<string, any>;
+  baseline_metrics: Record<string, any>;
+  activity_count: number;
+  last_activity_at: string | null;
+}
+
 interface Connection {
   title: string;
   description: string;
@@ -31,6 +44,7 @@ interface Connection {
   business_implication: string;
   evidence: string[];
   action_suggested?: string;
+  primary_target_name?: string; // The main intelligence target this connection is about
 }
 
 serve(async (req) => {
@@ -41,7 +55,7 @@ serve(async (req) => {
   try {
     const { organization_id, articles, company_profile } = await req.json();
 
-    console.log(`🔗 Connection Detector v2 - Claude-Powered Analysis`);
+    console.log(`🔗 Connection Detector v3 - Intelligence-Target-Aware Analysis`);
     console.log(`   Organization: ${organization_id}`);
     console.log(`   Articles received: ${articles?.length || 0}`);
 
@@ -71,8 +85,27 @@ serve(async (req) => {
       orgName = profile.name || 'Unknown';
     }
 
-    // Build company context for Claude
-    const companyContext = buildCompanyContext(profile, orgName);
+    // Load intelligence targets from database
+    const { data: intelligenceTargets, error: targetsError } = await supabase
+      .from('intelligence_targets')
+      .select('id, name, target_type, priority, monitoring_keywords, monitoring_context, accumulated_context, baseline_metrics, activity_count, last_activity_at')
+      .eq('organization_id', organization_id)
+      .eq('is_active', true);
+
+    if (targetsError) {
+      console.error('Error loading intelligence targets:', targetsError);
+    }
+
+    const targets: IntelligenceTarget[] = intelligenceTargets || [];
+    console.log(`   Intelligence targets loaded: ${targets.length}`);
+
+    // Log target breakdown
+    const competitors = targets.filter(t => t.target_type === 'competitor');
+    const stakeholders = targets.filter(t => t.target_type === 'stakeholder' || t.target_type === 'influencer');
+    console.log(`   Competitors: ${competitors.length}, Stakeholders: ${stakeholders.length}`);
+
+    // Build company context for Claude (now includes intelligence targets)
+    const companyContext = buildCompanyContext(profile, orgName, targets);
 
     // Build article summaries for Claude (limit to top 25 by relevance)
     const topArticles = articles
@@ -88,15 +121,16 @@ serve(async (req) => {
     const connections = await findConnectionsWithClaude(
       companyContext,
       articleSummaries,
-      orgName
+      orgName,
+      targets
     );
 
     console.log(`   Claude found ${connections.length} connections`);
 
-    // Save connections to database
+    // Save connections to database with FK linkage
     let savedCount = 0;
     for (const conn of connections) {
-      const saved = await saveConnection(organization_id, conn);
+      const saved = await saveConnection(organization_id, conn, targets);
       if (saved) savedCount++;
     }
 
@@ -106,7 +140,8 @@ serve(async (req) => {
       success: true,
       connections_detected: connections.length,
       connections_saved: savedCount,
-      connections: connections
+      connections: connections,
+      targets_used: targets.length
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
@@ -123,7 +158,7 @@ serve(async (req) => {
   }
 });
 
-function buildCompanyContext(profile: any, orgName: string): string {
+function buildCompanyContext(profile: any, orgName: string, targets: IntelligenceTarget[]): string {
   const parts = [`COMPANY: ${orgName}`];
 
   if (profile?.description) {
@@ -134,12 +169,54 @@ function buildCompanyContext(profile: any, orgName: string): string {
     parts.push(`SERVICE LINES: ${profile.service_lines.join(', ')}`);
   }
 
-  if (profile?.competition?.direct_competitors?.length) {
-    parts.push(`COMPETITORS TO WATCH: ${profile.competition.direct_competitors.join(', ')}`);
-  }
-
   if (profile?.strategic_context?.target_customers) {
     parts.push(`TARGET CUSTOMERS: ${profile.strategic_context.target_customers}`);
+  }
+
+  // Build intelligence targets section with priority weighting
+  if (targets.length > 0) {
+    const competitors = targets.filter(t => t.target_type === 'competitor');
+    const stakeholders = targets.filter(t => t.target_type === 'stakeholder' || t.target_type === 'influencer');
+    const regulators = targets.filter(t => t.target_type === 'regulator');
+    const customers = targets.filter(t => t.target_type === 'customer');
+    const partners = targets.filter(t => t.target_type === 'partner');
+
+    // Format targets with priority indicators
+    const formatTargetList = (targetList: IntelligenceTarget[]) => {
+      const priorityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
+      return targetList
+        .sort((a, b) => (priorityOrder[a.priority as keyof typeof priorityOrder] || 3) - (priorityOrder[b.priority as keyof typeof priorityOrder] || 3))
+        .map(t => {
+          const priorityFlag = t.priority === 'critical' ? '🔴' : t.priority === 'high' ? '🟠' : '';
+          const activityNote = t.activity_count > 0 ? ` (${t.activity_count} prior signals)` : '';
+          return `${priorityFlag} ${t.name}${activityNote}`.trim();
+        })
+        .join('\n  - ');
+    };
+
+    parts.push(`\n=== INTELLIGENCE TARGETS (find connections between these) ===`);
+
+    if (competitors.length > 0) {
+      parts.push(`COMPETITORS:\n  - ${formatTargetList(competitors)}`);
+    }
+
+    if (stakeholders.length > 0) {
+      parts.push(`KEY STAKEHOLDERS/INFLUENCERS:\n  - ${formatTargetList(stakeholders)}`);
+    }
+
+    if (regulators.length > 0) {
+      parts.push(`REGULATORY BODIES:\n  - ${formatTargetList(regulators)}`);
+    }
+
+    if (customers.length > 0) {
+      parts.push(`KEY CUSTOMERS:\n  - ${formatTargetList(customers)}`);
+    }
+
+    if (partners.length > 0) {
+      parts.push(`STRATEGIC PARTNERS:\n  - ${formatTargetList(partners)}`);
+    }
+  } else if (profile?.competition?.direct_competitors?.length) {
+    parts.push(`COMPETITORS TO WATCH: ${profile.competition.direct_competitors.join(', ')}`);
   }
 
   return parts.join('\n\n');
@@ -148,52 +225,68 @@ function buildCompanyContext(profile: any, orgName: string): string {
 async function findConnectionsWithClaude(
   companyContext: string,
   articleSummaries: string,
-  orgName: string
+  orgName: string,
+  targets: IntelligenceTarget[]
 ): Promise<Connection[]> {
 
-  const prompt = `You are a strategic intelligence analyst specializing in finding hidden connections and relationships in news that matter for business strategy.
+  // Build target names list for the prompt
+  const targetNames = targets.map(t => t.name);
+  const criticalTargetNames = targets.filter(t => t.priority === 'critical' || t.priority === 'high').map(t => t.name);
+
+  const prompt = `You are a competitive intelligence analyst. Your ONLY job is to find news about SPECIFIC COMPANIES we are tracking.
+
+⚠️ CRITICAL CONSTRAINT: You may ONLY report connections involving these specific entities:
+${targetNames.length > 0 ? targetNames.map(n => `• ${n}`).join('\n') : 'No targets specified'}
+
+DO NOT invent generic market categories like "Crisis Communications Market" or "Fortune 500 Companies".
+DO NOT report on companies not in the list above.
+If the articles don't mention any of our tracked targets, return an EMPTY ARRAY [].
 
 ${companyContext}
 
 ARTICLES TO ANALYZE:
 ${articleSummaries}
 
-YOUR TASK: Find 2-4 meaningful CONNECTIONS between entities, events, or trends in these articles that have strategic implications for ${orgName}.
+YOUR TASK: Find connections ONLY involving the specific companies/people listed above.
 
-A good connection is NOT just "Company A and Company B are both mentioned." It's:
-- "Company A's expansion into market X + Company B's retreat from that market = opportunity for ${orgName}"
-- "Regulatory change affecting Industry Y + Client Z's exposure = advisory opportunity"
-- "Executive moving from Competitor to Client = potential relationship to leverage"
+${criticalTargetNames.length > 0 ? `
+🔴 HIGH PRIORITY TARGETS (these matter most):
+${criticalTargetNames.map(n => `   • ${n}`).join('\n')}
+` : ''}
+
+WHAT TO LOOK FOR:
+- One of our tracked targets mentioned doing something (hiring, launching, partnering, etc.)
+- Two of our tracked targets connected (partnership, competition, executive move between them)
+- A tracked target affected by news (regulatory action, client win/loss, etc.)
 
 CONNECTION TYPES:
-- "partnership": New alliances, joint ventures, or collaborations
-- "competition": Competitive dynamics, market share shifts, head-to-head moves
-- "market_shift": Industry trends connecting multiple players
-- "supply_chain": Vendor, supplier, or distribution relationships
-- "regulatory": Compliance, legal, or regulatory connections
-- "personnel": Executive moves, talent flows between organizations
-- "acquisition": M&A activity, investments, or divestitures
+- "partnership": Tracked target forms alliance
+- "competition": Head-to-head move between tracked competitors
+- "personnel": Executive moves involving tracked targets
+- "acquisition": M&A involving tracked targets
+- "regulatory": Regulatory action affecting tracked targets
+- "market_shift": Tracked target responding to market change
 
-Return a JSON array:
+Return a JSON array (or empty [] if no tracked targets found in articles):
 [
   {
-    "title": "Brief, specific title of the connection",
-    "description": "What's connected and how",
-    "connection_type": "partnership|competition|market_shift|supply_chain|regulatory|personnel|acquisition",
-    "primary_entity": "Main company/entity in this connection",
-    "connected_entities": ["Entity 2", "Entity 3"],
+    "title": "Brief title mentioning the tracked target by name",
+    "description": "What happened - be specific",
+    "connection_type": "partnership|competition|market_shift|regulatory|personnel|acquisition",
+    "primary_entity": "MUST be a name from the tracked targets list",
+    "connected_entities": ["Other involved entities"],
     "strength_score": 75,
-    "business_implication": "What this means for ${orgName}'s strategy or opportunities",
-    "evidence": ["Fact from article [1]", "Detail from article [4]"],
-    "action_suggested": "Specific action ${orgName} could take"
+    "business_implication": "What this means for ${orgName}",
+    "evidence": ["Quote from article [X]"],
+    "action_suggested": "Recommended action",
+    "primary_target_name": "EXACT name from targets list above"
   }
 ]
 
-IMPORTANT:
-- Focus on connections that CREATE BUSINESS VALUE for ${orgName}
-- Every connection must be grounded in actual article content
-- If no meaningful connections exist, return fewer or empty array
-- Be specific about WHY this connection matters
+🚨 VALIDATION RULES:
+1. "primary_entity" MUST match exactly one of: ${targetNames.slice(0, 15).join(', ')}${targetNames.length > 15 ? '...' : ''}
+2. If you can't find any articles mentioning our tracked targets, return []
+3. Generic terms like "the market", "industry players", "major firms" are NOT valid - use specific names only
 
 Return ONLY the JSON array, no other text.`;
 
@@ -247,7 +340,8 @@ Return ONLY the JSON array, no other text.`;
       strength_score: Math.min(100, Math.max(0, c.strength_score || 50)),
       business_implication: c.business_implication || '',
       evidence: Array.isArray(c.evidence) ? c.evidence : [],
-      action_suggested: c.action_suggested || ''
+      action_suggested: c.action_suggested || '',
+      primary_target_name: c.primary_target_name || c.primary_entity || null
     }));
 
   } catch (error: any) {
@@ -256,24 +350,57 @@ Return ONLY the JSON array, no other text.`;
   }
 }
 
-async function saveConnection(orgId: string, connection: Connection): Promise<boolean> {
+async function saveConnection(orgId: string, connection: Connection, targets: IntelligenceTarget[]): Promise<boolean> {
   try {
+    // Look up the primary target by name to get the UUID
+    let primaryTargetId: string | null = null;
+    let primaryTargetType: string | null = null;
+    const primaryTargetName = connection.primary_target_name || connection.primary_entity;
+
+    if (primaryTargetName) {
+      // Find matching target (case-insensitive)
+      const matchedTarget = targets.find(t =>
+        t.name.toLowerCase() === primaryTargetName.toLowerCase()
+      );
+
+      if (matchedTarget) {
+        primaryTargetId = matchedTarget.id;
+        primaryTargetType = matchedTarget.target_type;
+        console.log(`   🎯 Linked to target: ${matchedTarget.name} (${matchedTarget.target_type}, priority: ${matchedTarget.priority})`);
+      }
+    }
+
+    // Look up related target IDs
+    const relatedTargetIds: string[] = [];
+    for (const entityName of connection.connected_entities) {
+      const matched = targets.find(t =>
+        t.name.toLowerCase() === entityName.toLowerCase()
+      );
+      if (matched && matched.id !== primaryTargetId) {
+        relatedTargetIds.push(matched.id);
+      }
+    }
+
     // Check for existing similar signal in unified table
     const { data: existingSignal } = await supabase
       .from('signals')
       .select('id')
       .eq('organization_id', orgId)
       .eq('signal_type', 'connection')
-      .eq('primary_target_name', connection.primary_entity)
+      .eq('title', connection.title)
       .single();
 
     if (existingSignal) {
-      // Update existing signal
+      // Update existing signal with FK linkage
       const { error } = await supabase
         .from('signals')
         .update({
           title: connection.title,
           description: connection.description,
+          primary_target_id: primaryTargetId,
+          primary_target_name: primaryTargetName,
+          primary_target_type: primaryTargetType,
+          related_target_ids: relatedTargetIds.length > 0 ? relatedTargetIds : null,
           confidence_score: connection.strength_score,
           significance_score: connection.strength_score,
           related_target_names: connection.connected_entities,
@@ -322,7 +449,7 @@ async function saveConnection(orgId: string, connection: Connection): Promise<bo
     };
     const opportunityType = opportunityMap[connection.connection_type] || 'advisory';
 
-    // Insert new signal into unified table
+    // Insert new signal into unified table WITH FK linkage
     const { error: signalError } = await supabase
       .from('signals')
       .insert({
@@ -331,8 +458,11 @@ async function saveConnection(orgId: string, connection: Connection): Promise<bo
         signal_subtype: connection.connection_type,
         title: connection.title,
         description: connection.description,
-        primary_target_name: connection.primary_entity,
-        primary_target_type: 'company',
+        // FK linkage to intelligence_targets
+        primary_target_id: primaryTargetId,
+        primary_target_name: primaryTargetName,
+        primary_target_type: primaryTargetType,
+        related_target_ids: relatedTargetIds.length > 0 ? relatedTargetIds : null,
         related_target_names: connection.connected_entities,
         related_entities: connection.connected_entities.map(name => ({ name, type: 'company' })),
         confidence_score: connection.strength_score,
@@ -344,18 +474,64 @@ async function saveConnection(orgId: string, connection: Connection): Promise<bo
           action_suggested: connection.action_suggested
         },
         reasoning: connection.business_implication,
+        pattern_data: {
+          connection_type: connection.connection_type,
+          primary_target_linked: !!primaryTargetId,
+          related_targets_linked: relatedTargetIds.length
+        },
         business_implication: connection.business_implication,
         suggested_action: connection.action_suggested,
         opportunity_type: opportunityType,
         detected_at: new Date().toISOString(),
         status: 'active',
-        source_pipeline: 'connection-detector-v2',
+        source_pipeline: 'connection-detector-v3',
         model_version: 'claude-sonnet-4'
       });
 
     if (signalError) {
       console.error(`❌ Failed to save signal: ${signalError.message}`);
       return false;
+    }
+
+    // UPDATE ACTIVITY TRACKING on intelligence_targets
+    if (primaryTargetId) {
+      const { data: currentTarget } = await supabase
+        .from('intelligence_targets')
+        .select('activity_count')
+        .eq('id', primaryTargetId)
+        .single();
+
+      await supabase
+        .from('intelligence_targets')
+        .update({
+          activity_count: (currentTarget?.activity_count || 0) + 1,
+          last_activity_at: new Date().toISOString(),
+          last_activity_summary: `Connection: ${connection.title.substring(0, 100)}`,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', primaryTargetId);
+
+      console.log(`   📊 Updated activity tracking for target: ${primaryTargetName}`);
+    }
+
+    // Update activity for related targets too
+    for (const relatedId of relatedTargetIds) {
+      const { data: relatedTarget } = await supabase
+        .from('intelligence_targets')
+        .select('activity_count, name')
+        .eq('id', relatedId)
+        .single();
+
+      if (relatedTarget) {
+        await supabase
+          .from('intelligence_targets')
+          .update({
+            activity_count: (relatedTarget.activity_count || 0) + 1,
+            last_activity_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', relatedId);
+      }
     }
 
     // Also save to legacy connection_signals table for backward compatibility
@@ -385,7 +561,8 @@ async function saveConnection(orgId: string, connection: Connection): Promise<bo
           business_implication: connection.business_implication,
           evidence: connection.evidence,
           action_suggested: connection.action_suggested,
-          generated_by: 'connection-detector-v2'
+          primary_target_id: primaryTargetId,
+          generated_by: 'connection-detector-v3'
         },
         signal_start_date: new Date().toISOString(),
         signal_detected_date: new Date().toISOString()

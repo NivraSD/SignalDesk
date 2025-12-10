@@ -22,6 +22,10 @@ const AUTH_COOKIES: Record<string, string | undefined> = {
 // Standard User-Agent to avoid being blocked
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
+// Sources where we only store metadata (URL, title, date) without scraping content
+// These sources block scrapers, so we just capture the article reference
+const METADATA_ONLY_SOURCES = ['Bloomberg', 'South China Morning Post'];
+
 interface Source {
   id: string;
   source_name: string;
@@ -79,11 +83,13 @@ serve(async (req) => {
     let duplicateArticles = 0;
     let sourcesSuccessful = 0;
     let sourcesFailed = 0;
+    const sourceErrors: { source: string, error: string }[] = [];
 
     console.log('🗺️  Discovering articles via sitemaps...\n');
 
     for (const source of sources || []) {
       try {
+        console.log(`   Processing ${source.source_name}...`);
         const result = await discoverViaSitemap(source, supabase);
 
         totalArticles += result.articles;
@@ -99,8 +105,10 @@ serve(async (req) => {
           .update({ last_successful_scrape: new Date().toISOString() })
           .eq('id', source.id);
 
-      } catch (error) {
-        console.error(`   ❌ ${source.source_name}: ${error.message}`);
+      } catch (error: any) {
+        const errorMsg = error.message || String(error);
+        console.error(`   ❌ ${source.source_name}: ${errorMsg}`);
+        sourceErrors.push({ source: source.source_name, error: errorMsg });
         sourcesFailed++;
       }
     }
@@ -116,7 +124,8 @@ serve(async (req) => {
         articles_new: newArticles,
         sources_successful: sourcesSuccessful,
         sources_failed: sourcesFailed,
-        duration_seconds: duration
+        duration_seconds: duration,
+        error_summary: sourceErrors.length > 0 ? sourceErrors : null
       })
       .eq('id', runId);
 
@@ -130,7 +139,8 @@ serve(async (req) => {
       articles_discovered: totalArticles,
       new_urls: newArticles,
       duplicates_skipped: duplicateArticles,
-      duration_seconds: duration
+      duration_seconds: duration,
+      errors: sourceErrors.length > 0 ? sourceErrors : undefined
     };
 
     console.log('\n📊 Summary:');
@@ -308,7 +318,7 @@ async function discoverViaSitemap(source: Source, supabase: any): Promise<{ arti
         // Filter by URL pattern - be smart about what's an article vs category page
         const isArticle = isValidArticleUrl(url, source.source_name);
         if (isArticle) {
-          articles.push({ url, title });
+          articles.push({ url, title, published_at: pubDate });
         }
       }
 
@@ -321,24 +331,45 @@ async function discoverViaSitemap(source: Source, supabase: any): Promise<{ arti
     throw new Error('No articles found in sitemaps');
   }
 
-  // Step 3: Check for duplicates
+  // Step 3: Check for duplicates in batches (Supabase has query limits)
+  const existingUrlSet = new Set<string>();
   const urls = articles.map(a => a.url);
-  const { data: existingUrls } = await supabase
-    .from('raw_articles')
-    .select('url')
-    .in('url', urls);
+  const checkBatchSize = 50; // Check 50 URLs at a time to avoid query limits
 
-  const existingUrlSet = new Set((existingUrls || []).map((r: any) => r.url));
+  for (let i = 0; i < urls.length; i += checkBatchSize) {
+    const batch = urls.slice(i, i + checkBatchSize);
+    const { data: existingUrls } = await supabase
+      .from('raw_articles')
+      .select('url')
+      .in('url', batch);
+
+    if (existingUrls) {
+      for (const r of existingUrls) {
+        existingUrlSet.add(r.url);
+      }
+    }
+  }
+
   const newArticles = articles.filter(a => !existingUrlSet.has(a.url));
+  console.log(`   📊 ${source.source_name}: ${articles.length} total, ${existingUrlSet.size} existing, ${newArticles.length} new`);
 
   // Step 4: Insert new articles
   if (newArticles.length > 0) {
+    // For metadata-only sources (like Bloomberg), mark as 'metadata_only' so worker skips them
+    const isMetadataOnly = METADATA_ONLY_SOURCES.includes(source.source_name);
+    const scrapeStatus = isMetadataOnly ? 'metadata_only' : 'pending';
+
+    if (isMetadataOnly) {
+      console.log(`   ℹ️  ${source.source_name} is metadata-only (no content scraping)`);
+    }
+
     const records = newArticles.map(article => ({
       source_id: source.id,
       source_name: source.source_name,
       url: article.url,
       title: article.title,
-      scrape_status: 'pending'
+      published_at: article.published_at || null,
+      scrape_status: scrapeStatus
     }));
 
     // Insert in batches of 100 to avoid timeouts
@@ -474,6 +505,16 @@ function isValidArticleUrl(url: string, sourceName: string): boolean {
   if (sourceName === 'Financial Times') {
     // FT articles have /content/ with a UUID
     return urlLower.includes('/content/');
+  }
+
+  if (sourceName === 'PR Newswire') {
+    // PR Newswire press releases are in /news-releases/
+    return urlLower.includes('/news-releases/');
+  }
+
+  if (sourceName === 'Business Wire') {
+    // Business Wire press releases
+    return urlLower.includes('/news/home/') || urlLower.includes('/en/');
   }
 
   // Default: check for common article URL patterns

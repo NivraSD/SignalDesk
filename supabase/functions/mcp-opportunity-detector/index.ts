@@ -106,12 +106,12 @@ function extractIntelligenceData(enrichedData: any, organizationName: string) {
     .from('intelligence_targets')
     .select('*')
     .eq('organization_id', organizationId)
-    .eq('active', true);
+    .eq('is_active', true);  // Fixed: was 'active', column is 'is_active'
 
   const discoveryTargets = {
-    competitors: intelligenceTargets?.filter(t => t.type === 'competitor').map(t => t.name) || [],
-    stakeholders: intelligenceTargets?.filter(t => t.type === 'stakeholder' || t.type === 'influencer').map(t => t.name) || [],
-    topics: intelligenceTargets?.filter(t => t.type === 'topic' || t.type === 'keyword').map(t => t.name) || []
+    competitors: intelligenceTargets?.filter(t => t.target_type === 'competitor').map(t => t.name) || [],
+    stakeholders: intelligenceTargets?.filter(t => t.target_type === 'stakeholder' || t.target_type === 'influencer').map(t => t.name) || [],
+    topics: intelligenceTargets?.filter(t => t.target_type === 'topic' || t.target_type === 'keyword').map(t => t.name) || []
   };
 
   console.log('📊 Intelligence Data Extraction:', {

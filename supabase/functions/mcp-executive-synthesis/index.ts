@@ -230,13 +230,13 @@ async function synthesizeExecutiveIntelligence(args: any) {
         .from('intelligence_targets')
         .select('*')
         .eq('organization_id', organization_id)
-        .eq('active', true);
+        .eq('is_active', true);  // Fixed: was 'active', column is 'is_active'
 
       if (intelligenceTargets && intelligenceTargets.length > 0) {
         discoveryTargets = {
-          competitors: intelligenceTargets.filter(t => t.type === 'competitor').map(t => t.name),
-          stakeholders: intelligenceTargets.filter(t => t.type === 'stakeholder' || t.type === 'influencer').map(t => t.name),
-          topics: intelligenceTargets.filter(t => t.type === 'topic' || t.type === 'keyword').map(t => t.name)
+          competitors: intelligenceTargets.filter(t => t.target_type === 'competitor').map(t => t.name),
+          stakeholders: intelligenceTargets.filter(t => t.target_type === 'stakeholder' || t.target_type === 'influencer').map(t => t.name),
+          topics: intelligenceTargets.filter(t => t.target_type === 'topic' || t.target_type === 'keyword').map(t => t.name)
         };
         console.log('✅ Loaded from intelligence_targets:', {
           competitors: discoveryTargets.competitors.length,

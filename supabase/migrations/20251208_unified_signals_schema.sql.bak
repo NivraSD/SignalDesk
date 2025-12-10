@@ -1,0 +1,846 @@
+-- =============================================
+-- UNIFIED SIGNALS SCHEMA
+-- Combines predictions + connections into unified signals system
+-- Adds target intelligence tracking and platform-level analytics
+-- =============================================
+
+-- =============================================
+-- 1. INTELLIGENCE TARGETS (synced from company_profile)
+-- =============================================
+-- Drop existing table if it has wrong structure
+-- (keeping data would require migration, but current data is stale anyway)
+
+DROP TABLE IF EXISTS intelligence_targets CASCADE;
+
+CREATE TABLE intelligence_targets (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+
+  -- Target identity
+  name TEXT NOT NULL,
+  type TEXT NOT NULL CHECK (type IN ('competitor', 'stakeholder', 'regulator', 'customer', 'partner', 'influencer')),
+  priority TEXT DEFAULT 'medium' CHECK (priority IN ('critical', 'high', 'medium', 'low')),
+  category TEXT, -- subcategory like 'direct_competitor', 'indirect_competitor', 'key_analyst'
+
+  -- Monitoring config
+  monitoring_keywords TEXT[] DEFAULT '{}', -- additional keywords to watch
+  monitoring_context TEXT, -- why we're tracking this target
+
+  -- Accumulated intelligence (updated by pipeline)
+  accumulated_context JSONB DEFAULT '{}',
+  /*
+    accumulated_context example:
+    {
+      "summary": "AI healthcare automation company, Series C stage...",
+      "recent_themes": ["expansion", "hiring", "partnerships"],
+      "last_known_funding": "$50M Series C",
+      "key_people": ["CEO Name", "CTO Name"],
+      "our_relationship": "Direct competitor in healthcare AI space"
+    }
+  */
+
+  baseline_metrics JSONB DEFAULT '{}',
+  /*
+    baseline_metrics example:
+    {
+      "avg_mentions_per_week": 2.5,
+      "typical_event_types": ["product", "partnership"],
+      "sentiment_baseline": 0.3,
+      "calculated_at": "2025-12-01"
+    }
+  */
+
+  -- Activity tracking
+  last_activity_at TIMESTAMPTZ,
+  last_activity_summary TEXT,
+  activity_count INTEGER DEFAULT 0,
+
+  -- Source tracking
+  synced_from TEXT DEFAULT 'company_profile', -- 'company_profile', 'manual', 'import'
+
+  -- Status
+  active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+
+  UNIQUE(organization_id, name, type)
+);
+
+CREATE INDEX idx_intelligence_targets_org ON intelligence_targets(organization_id) WHERE active = true;
+CREATE INDEX idx_intelligence_targets_type ON intelligence_targets(organization_id, type) WHERE active = true;
+
+-- =============================================
+-- 2. TARGET INTEL EVENTS (historical events per target)
+-- =============================================
+CREATE TABLE target_intel_events (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+  target_id UUID REFERENCES intelligence_targets(id) ON DELETE CASCADE,
+  target_name TEXT NOT NULL, -- denormalized for easy queries
+
+  -- Event details
+  event_date TIMESTAMPTZ NOT NULL,
+  event_type TEXT NOT NULL CHECK (event_type IN (
+    'product_launch', 'product_update', 'product_discontinue',
+    'hiring', 'layoffs', 'executive_move', 'executive_departure',
+    'funding', 'acquisition', 'ipo', 'divestiture', 'bankruptcy',
+    'partnership', 'partnership_end', 'contract_win', 'contract_loss',
+    'expansion', 'contraction', 'restructuring', 'merger',
+    'regulatory_action', 'regulatory_approval', 'legal_filing', 'legal_settlement', 'investigation',
+    'earnings', 'guidance', 'analyst_rating', 'credit_rating',
+    'crisis', 'scandal', 'pr_event', 'award', 'recognition',
+    'market_entry', 'market_exit', 'pricing_change',
+    'other'
+  )),
+
+  -- Content
+  headline TEXT NOT NULL,
+  summary TEXT,
+
+  -- Source attribution
+  source_article_ids UUID[], -- links to raw_articles
+  source_urls TEXT[],
+  source_names TEXT[],
+
+  -- Analysis
+  sentiment NUMERIC CHECK (sentiment >= -1 AND sentiment <= 1),
+  significance_score INTEGER CHECK (significance_score >= 1 AND significance_score <= 100),
+
+  -- Extracted entities/details
+  extracted_data JSONB DEFAULT '{}',
+  /*
+    extracted_data example:
+    {
+      "amount": "$50M",
+      "people_mentioned": ["John Smith", "Jane Doe"],
+      "companies_mentioned": ["Partner Corp"],
+      "locations": ["Austin, TX"],
+      "key_quotes": ["We're excited to..."]
+    }
+  */
+
+  -- Processing metadata
+  extracted_by TEXT, -- 'target-intel-extractor', 'manual'
+  raw_extraction JSONB,
+
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_target_intel_events_target ON target_intel_events(target_id, event_date DESC);
+CREATE INDEX idx_target_intel_events_org_date ON target_intel_events(organization_id, event_date DESC);
+CREATE INDEX idx_target_intel_events_type ON target_intel_events(target_id, event_type, event_date DESC);
+
+-- Prevent exact duplicates
+CREATE UNIQUE INDEX idx_target_intel_events_unique
+  ON target_intel_events(target_id, event_date, headline)
+  WHERE headline IS NOT NULL;
+
+-- =============================================
+-- 3. SIGNALS (unified - replaces predictions + connection_signals)
+-- =============================================
+CREATE TABLE signals (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+
+  -- Signal classification
+  signal_type TEXT NOT NULL CHECK (signal_type IN (
+    'movement',    -- target activity anomaly
+    'connection',  -- relationship between entities
+    'predictive',  -- pattern suggests future event
+    'opportunity'  -- actionable business opportunity
+  )),
+  signal_subtype TEXT, -- more specific categorization
+  /*
+    signal_subtype examples:
+    - movement: 'expansion_signal', 'contraction_signal', 'pivot_signal', 'leadership_change'
+    - connection: 'partnership', 'competition', 'supply_chain', 'regulatory', 'personnel'
+    - predictive: 'acquisition_likely', 'crisis_emerging', 'market_entry', 'restructuring'
+    - opportunity: 'sales_opportunity', 'advisory_opportunity', 'partnership_opportunity'
+  */
+
+  -- Signal content
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+
+  -- Primary entity
+  primary_target_id UUID REFERENCES intelligence_targets(id),
+  primary_target_name TEXT,
+  primary_target_type TEXT, -- 'competitor', 'stakeholder', etc.
+
+  -- Related entities
+  related_target_ids UUID[],
+  related_target_names TEXT[],
+  related_entities JSONB DEFAULT '[]',
+  /*
+    related_entities example for non-tracked entities:
+    [
+      {"name": "Unknown Corp", "role": "partner", "type": "company"},
+      {"name": "John Smith", "role": "executive", "type": "person"}
+    ]
+  */
+
+  -- Scoring
+  confidence_score INTEGER CHECK (confidence_score >= 1 AND confidence_score <= 100),
+  significance_score INTEGER CHECK (significance_score >= 1 AND significance_score <= 100),
+  urgency TEXT DEFAULT 'medium' CHECK (urgency IN ('immediate', 'near_term', 'long_term')),
+
+  -- Evidence & reasoning
+  evidence JSONB NOT NULL DEFAULT '{}',
+  /*
+    evidence example:
+    {
+      "articles": [
+        {"id": "uuid", "title": "...", "url": "...", "date": "...", "source": "..."}
+      ],
+      "events": [
+        {"event_id": "uuid", "type": "hiring", "summary": "...", "date": "..."}
+      ],
+      "data_points": [
+        "3 hiring articles in 30 days (vs 0.5 baseline)",
+        "Funding round announced Dec 6"
+      ],
+      "timeline": [
+        {"date": "2025-12-01", "event": "Office expansion announced"},
+        {"date": "2025-12-06", "event": "Series C funding"}
+      ]
+    }
+  */
+  reasoning TEXT, -- human-readable explanation
+
+  -- Pattern data (for predictive signals)
+  pattern_data JSONB DEFAULT '{}',
+  /*
+    pattern_data example:
+    {
+      "pattern_type": "pre_acquisition_indicators",
+      "pattern_version": "1.0",
+      "indicators_present": ["strategic_review", "cfo_departure", "advisor_hired"],
+      "indicators_total": 5,
+      "indicators_matched": 3,
+      "historical_accuracy": 0.72,
+      "similar_cases": ["Company X (2024)", "Company Y (2023)"]
+    }
+  */
+
+  -- Business implications
+  business_implication TEXT,
+  suggested_action TEXT,
+  opportunity_type TEXT CHECK (opportunity_type IN (
+    'advisory', 'competitive_response', 'partnership', 'sales',
+    'risk_mitigation', 'pr_response', 'investment', 'talent', 'other'
+  )),
+
+  -- Timeline
+  detected_at TIMESTAMPTZ DEFAULT NOW(),
+  signal_start_date TIMESTAMPTZ, -- when underlying pattern started
+  signal_peak_date TIMESTAMPTZ, -- when signal was strongest
+  expires_at TIMESTAMPTZ, -- when signal becomes stale
+
+  -- Status tracking
+  status TEXT DEFAULT 'active' CHECK (status IN (
+    'active',      -- needs attention
+    'monitoring',  -- watching but not urgent
+    'actioned',    -- user took action
+    'resolved',    -- situation resolved naturally
+    'dismissed',   -- user dismissed as not relevant
+    'expired'      -- auto-expired
+  )),
+  resolution_notes TEXT,
+  resolved_at TIMESTAMPTZ,
+  resolved_by UUID REFERENCES auth.users(id),
+
+  -- =============================================
+  -- OUTCOME TRACKING (for platform learning)
+  -- =============================================
+  user_feedback TEXT CHECK (user_feedback IN (
+    'accurate',           -- signal was correct
+    'inaccurate',         -- signal was wrong
+    'partially_accurate', -- some aspects correct
+    'too_early',          -- can't tell yet
+    'not_relevant'        -- accurate but not useful for this org
+  )),
+  outcome_value TEXT CHECK (outcome_value IN (
+    'high_value',   -- led to significant business outcome
+    'some_value',   -- useful but not major
+    'no_value',     -- not useful
+    'negative'      -- caused wasted effort
+  )),
+  outcome_notes TEXT,
+  feedback_recorded_at TIMESTAMPTZ,
+  feedback_recorded_by UUID REFERENCES auth.users(id),
+
+  -- Metadata
+  source_pipeline TEXT, -- 'movement-detector', 'connection-detector', 'pattern-detector', 'opportunity-detector'
+  model_version TEXT, -- version of detection model used
+  generation_metadata JSONB DEFAULT '{}',
+
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Indexes for signals
+CREATE INDEX idx_signals_org_status ON signals(organization_id, status) WHERE status IN ('active', 'monitoring');
+CREATE INDEX idx_signals_org_type ON signals(organization_id, signal_type, detected_at DESC);
+CREATE INDEX idx_signals_org_urgency ON signals(organization_id, urgency, detected_at DESC) WHERE status = 'active';
+CREATE INDEX idx_signals_primary_target ON signals(primary_target_id) WHERE primary_target_id IS NOT NULL;
+CREATE INDEX idx_signals_feedback ON signals(organization_id, user_feedback) WHERE user_feedback IS NOT NULL;
+CREATE INDEX idx_signals_detected ON signals(detected_at DESC);
+
+-- =============================================
+-- 4. PLATFORM SIGNAL ANALYTICS (aggregated, anonymized)
+-- For platform-wide learning across all organizations
+-- =============================================
+CREATE TABLE platform_signal_analytics (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+  -- Time bucket
+  period_start DATE NOT NULL,
+  period_end DATE NOT NULL,
+  period_type TEXT NOT NULL CHECK (period_type IN ('daily', 'weekly', 'monthly')),
+
+  -- Signal classification (anonymized - no org-specific data)
+  signal_type TEXT NOT NULL,
+  signal_subtype TEXT,
+  pattern_type TEXT, -- for predictive signals
+
+  -- Industry/vertical (from org, for vertical-specific learning)
+  industry TEXT,
+
+  -- Volume metrics
+  total_signals INTEGER DEFAULT 0,
+  unique_organizations INTEGER DEFAULT 0,
+
+  -- Action metrics
+  signals_actioned INTEGER DEFAULT 0,
+  signals_dismissed INTEGER DEFAULT 0,
+  signals_expired INTEGER DEFAULT 0,
+  avg_time_to_action_hours NUMERIC,
+
+  -- Accuracy metrics (from user feedback)
+  feedback_count INTEGER DEFAULT 0,
+  accurate_count INTEGER DEFAULT 0,
+  inaccurate_count INTEGER DEFAULT 0,
+  partially_accurate_count INTEGER DEFAULT 0,
+  accuracy_rate NUMERIC GENERATED ALWAYS AS (
+    CASE WHEN feedback_count > 0
+    THEN (accurate_count + partially_accurate_count * 0.5)::NUMERIC / feedback_count
+    ELSE NULL END
+  ) STORED,
+
+  -- Value metrics
+  value_feedback_count INTEGER DEFAULT 0,
+  high_value_count INTEGER DEFAULT 0,
+  some_value_count INTEGER DEFAULT 0,
+  no_value_count INTEGER DEFAULT 0,
+  value_rate NUMERIC GENERATED ALWAYS AS (
+    CASE WHEN value_feedback_count > 0
+    THEN (high_value_count + some_value_count * 0.5)::NUMERIC / value_feedback_count
+    ELSE NULL END
+  ) STORED,
+
+  -- Confidence calibration (how well does confidence predict accuracy?)
+  avg_confidence_score NUMERIC,
+  avg_significance_score NUMERIC,
+  confidence_calibration NUMERIC, -- correlation between confidence and actual accuracy
+
+  -- Signal characteristics
+  avg_evidence_count NUMERIC,
+  avg_signal_lifespan_days NUMERIC,
+
+  -- Pattern-specific metrics (for predictive signals)
+  pattern_metrics JSONB DEFAULT '{}',
+  /*
+    pattern_metrics example:
+    {
+      "pre_acquisition_indicators": {
+        "total": 45,
+        "accurate": 32,
+        "accuracy_rate": 0.71
+      }
+    }
+  */
+
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+
+  UNIQUE(period_start, period_end, period_type, signal_type, signal_subtype, industry)
+);
+
+CREATE INDEX idx_platform_analytics_period ON platform_signal_analytics(period_type, period_start DESC);
+CREATE INDEX idx_platform_analytics_type ON platform_signal_analytics(signal_type, signal_subtype);
+CREATE INDEX idx_platform_analytics_industry ON platform_signal_analytics(industry, signal_type);
+
+-- =============================================
+-- 5. PLATFORM PATTERN LIBRARY (learned patterns)
+-- Stores effective detection patterns discovered across platform
+-- =============================================
+CREATE TABLE platform_pattern_library (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+  -- Pattern identity
+  pattern_name TEXT NOT NULL UNIQUE,
+  pattern_type TEXT NOT NULL, -- 'predictive', 'movement', 'connection'
+  pattern_version TEXT DEFAULT '1.0',
+
+  -- Pattern definition
+  description TEXT NOT NULL,
+  indicators JSONB NOT NULL,
+  /*
+    indicators example:
+    {
+      "required": [
+        {"type": "event", "event_type": "executive_departure", "role": "CFO"},
+        {"type": "event", "event_type": "investigation", "within_days": 90}
+      ],
+      "optional": [
+        {"type": "event", "event_type": "audit_delay"},
+        {"type": "sentiment", "direction": "negative", "threshold": -0.3}
+      ],
+      "min_optional_matches": 1,
+      "time_window_days": 90
+    }
+  */
+
+  -- Applicability
+  applicable_industries TEXT[], -- null = all industries
+  applicable_target_types TEXT[], -- 'competitor', 'customer', etc.
+
+  -- Performance metrics (updated from platform_signal_analytics)
+  times_triggered INTEGER DEFAULT 0,
+  accuracy_rate NUMERIC,
+  value_rate NUMERIC,
+  avg_confidence NUMERIC,
+
+  -- Status
+  status TEXT DEFAULT 'active' CHECK (status IN ('active', 'testing', 'deprecated')),
+  min_confidence_threshold INTEGER DEFAULT 50, -- don't fire below this
+
+  -- Metadata
+  created_by TEXT, -- 'system', 'manual', 'ml_discovered'
+  notes TEXT,
+
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- =============================================
+-- 6. HELPER FUNCTIONS
+-- =============================================
+
+-- Function to sync intelligence_targets from company_profile
+CREATE OR REPLACE FUNCTION sync_intelligence_targets_from_profile(org_id UUID)
+RETURNS INTEGER AS $$
+DECLARE
+  profile JSONB;
+  target_count INTEGER := 0;
+  competitor TEXT;
+  stakeholder TEXT;
+  regulator TEXT;
+BEGIN
+  -- Get company_profile
+  SELECT company_profile INTO profile
+  FROM organizations
+  WHERE id = org_id;
+
+  IF profile IS NULL THEN
+    RETURN 0;
+  END IF;
+
+  -- Sync direct competitors
+  IF profile->'competition'->'direct_competitors' IS NOT NULL THEN
+    FOR competitor IN SELECT jsonb_array_elements_text(profile->'competition'->'direct_competitors')
+    LOOP
+      INSERT INTO intelligence_targets (organization_id, name, type, category, priority, synced_from)
+      VALUES (org_id, competitor, 'competitor', 'direct_competitor', 'high', 'company_profile')
+      ON CONFLICT (organization_id, name, type) DO UPDATE SET
+        category = 'direct_competitor',
+        priority = 'high',
+        updated_at = NOW();
+      target_count := target_count + 1;
+    END LOOP;
+  END IF;
+
+  -- Sync indirect competitors
+  IF profile->'competition'->'indirect_competitors' IS NOT NULL THEN
+    FOR competitor IN SELECT jsonb_array_elements_text(profile->'competition'->'indirect_competitors')
+    LOOP
+      INSERT INTO intelligence_targets (organization_id, name, type, category, priority, synced_from)
+      VALUES (org_id, competitor, 'competitor', 'indirect_competitor', 'medium', 'company_profile')
+      ON CONFLICT (organization_id, name, type) DO UPDATE SET
+        category = 'indirect_competitor',
+        priority = 'medium',
+        updated_at = NOW();
+      target_count := target_count + 1;
+    END LOOP;
+  END IF;
+
+  -- Sync regulators
+  IF profile->'stakeholders'->'regulators' IS NOT NULL THEN
+    FOR regulator IN SELECT jsonb_array_elements_text(profile->'stakeholders'->'regulators')
+    LOOP
+      INSERT INTO intelligence_targets (organization_id, name, type, category, priority, synced_from)
+      VALUES (org_id, regulator, 'regulator', 'primary_regulator', 'high', 'company_profile')
+      ON CONFLICT (organization_id, name, type) DO UPDATE SET
+        category = 'primary_regulator',
+        priority = 'high',
+        updated_at = NOW();
+      target_count := target_count + 1;
+    END LOOP;
+  END IF;
+
+  -- Sync key analysts
+  IF profile->'stakeholders'->'key_analysts' IS NOT NULL THEN
+    FOR stakeholder IN SELECT jsonb_array_elements_text(profile->'stakeholders'->'key_analysts')
+    LOOP
+      INSERT INTO intelligence_targets (organization_id, name, type, category, priority, synced_from)
+      VALUES (org_id, stakeholder, 'influencer', 'key_analyst', 'medium', 'company_profile')
+      ON CONFLICT (organization_id, name, type) DO UPDATE SET
+        category = 'key_analyst',
+        priority = 'medium',
+        updated_at = NOW();
+      target_count := target_count + 1;
+    END LOOP;
+  END IF;
+
+  -- Sync activists
+  IF profile->'stakeholders'->'activists' IS NOT NULL THEN
+    FOR stakeholder IN SELECT jsonb_array_elements_text(profile->'stakeholders'->'activists')
+    LOOP
+      INSERT INTO intelligence_targets (organization_id, name, type, category, priority, synced_from)
+      VALUES (org_id, stakeholder, 'stakeholder', 'activist', 'medium', 'company_profile')
+      ON CONFLICT (organization_id, name, type) DO UPDATE SET
+        category = 'activist',
+        priority = 'medium',
+        updated_at = NOW();
+      target_count := target_count + 1;
+    END LOOP;
+  END IF;
+
+  RETURN target_count;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to aggregate signal analytics (run daily/weekly)
+CREATE OR REPLACE FUNCTION aggregate_signal_analytics(
+  p_period_type TEXT DEFAULT 'weekly',
+  p_period_start DATE DEFAULT NULL,
+  p_period_end DATE DEFAULT NULL
+)
+RETURNS INTEGER AS $$
+DECLARE
+  start_date DATE;
+  end_date DATE;
+  rows_inserted INTEGER := 0;
+BEGIN
+  -- Calculate period
+  IF p_period_start IS NULL THEN
+    IF p_period_type = 'daily' THEN
+      start_date := CURRENT_DATE - INTERVAL '1 day';
+      end_date := CURRENT_DATE;
+    ELSIF p_period_type = 'weekly' THEN
+      start_date := CURRENT_DATE - INTERVAL '7 days';
+      end_date := CURRENT_DATE;
+    ELSE
+      start_date := DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month');
+      end_date := DATE_TRUNC('month', CURRENT_DATE);
+    END IF;
+  ELSE
+    start_date := p_period_start;
+    end_date := p_period_end;
+  END IF;
+
+  -- Aggregate by signal_type, signal_subtype, and industry
+  INSERT INTO platform_signal_analytics (
+    period_start, period_end, period_type,
+    signal_type, signal_subtype, industry,
+    total_signals, unique_organizations,
+    signals_actioned, signals_dismissed, signals_expired,
+    avg_time_to_action_hours,
+    feedback_count, accurate_count, inaccurate_count, partially_accurate_count,
+    value_feedback_count, high_value_count, some_value_count, no_value_count,
+    avg_confidence_score, avg_significance_score,
+    avg_evidence_count
+  )
+  SELECT
+    start_date,
+    end_date,
+    p_period_type,
+    s.signal_type,
+    s.signal_subtype,
+    o.industry,
+    COUNT(*)::INTEGER as total_signals,
+    COUNT(DISTINCT s.organization_id)::INTEGER as unique_organizations,
+    COUNT(*) FILTER (WHERE s.status = 'actioned')::INTEGER,
+    COUNT(*) FILTER (WHERE s.status = 'dismissed')::INTEGER,
+    COUNT(*) FILTER (WHERE s.status = 'expired')::INTEGER,
+    AVG(EXTRACT(EPOCH FROM (s.resolved_at - s.detected_at)) / 3600) FILTER (WHERE s.status = 'actioned'),
+    COUNT(*) FILTER (WHERE s.user_feedback IS NOT NULL)::INTEGER,
+    COUNT(*) FILTER (WHERE s.user_feedback = 'accurate')::INTEGER,
+    COUNT(*) FILTER (WHERE s.user_feedback = 'inaccurate')::INTEGER,
+    COUNT(*) FILTER (WHERE s.user_feedback = 'partially_accurate')::INTEGER,
+    COUNT(*) FILTER (WHERE s.outcome_value IS NOT NULL)::INTEGER,
+    COUNT(*) FILTER (WHERE s.outcome_value = 'high_value')::INTEGER,
+    COUNT(*) FILTER (WHERE s.outcome_value = 'some_value')::INTEGER,
+    COUNT(*) FILTER (WHERE s.outcome_value = 'no_value')::INTEGER,
+    AVG(s.confidence_score),
+    AVG(s.significance_score),
+    AVG(jsonb_array_length(COALESCE(s.evidence->'articles', '[]'::jsonb)) +
+        jsonb_array_length(COALESCE(s.evidence->'events', '[]'::jsonb)))
+  FROM signals s
+  JOIN organizations o ON s.organization_id = o.id
+  WHERE s.detected_at >= start_date AND s.detected_at < end_date
+  GROUP BY s.signal_type, s.signal_subtype, o.industry
+  ON CONFLICT (period_start, period_end, period_type, signal_type, signal_subtype, industry)
+  DO UPDATE SET
+    total_signals = EXCLUDED.total_signals,
+    unique_organizations = EXCLUDED.unique_organizations,
+    signals_actioned = EXCLUDED.signals_actioned,
+    signals_dismissed = EXCLUDED.signals_dismissed,
+    signals_expired = EXCLUDED.signals_expired,
+    avg_time_to_action_hours = EXCLUDED.avg_time_to_action_hours,
+    feedback_count = EXCLUDED.feedback_count,
+    accurate_count = EXCLUDED.accurate_count,
+    inaccurate_count = EXCLUDED.inaccurate_count,
+    partially_accurate_count = EXCLUDED.partially_accurate_count,
+    value_feedback_count = EXCLUDED.value_feedback_count,
+    high_value_count = EXCLUDED.high_value_count,
+    some_value_count = EXCLUDED.some_value_count,
+    no_value_count = EXCLUDED.no_value_count,
+    avg_confidence_score = EXCLUDED.avg_confidence_score,
+    avg_significance_score = EXCLUDED.avg_significance_score,
+    avg_evidence_count = EXCLUDED.avg_evidence_count,
+    updated_at = NOW();
+
+  GET DIAGNOSTICS rows_inserted = ROW_COUNT;
+  RETURN rows_inserted;
+END;
+$$ LANGUAGE plpgsql;
+
+-- =============================================
+-- 7. TRIGGERS
+-- =============================================
+
+-- Auto-update updated_at
+CREATE OR REPLACE FUNCTION update_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_intelligence_targets_updated
+  BEFORE UPDATE ON intelligence_targets
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+CREATE TRIGGER trg_signals_updated
+  BEFORE UPDATE ON signals
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- Auto-sync intelligence_targets when company_profile changes
+CREATE OR REPLACE FUNCTION trigger_sync_intelligence_targets()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.company_profile IS DISTINCT FROM OLD.company_profile THEN
+    PERFORM sync_intelligence_targets_from_profile(NEW.id);
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_org_profile_changed
+  AFTER UPDATE OF company_profile ON organizations
+  FOR EACH ROW EXECUTE FUNCTION trigger_sync_intelligence_targets();
+
+-- =============================================
+-- 8. MIGRATE EXISTING DATA (if tables exist)
+-- =============================================
+
+-- Migrate from connection_signals to signals (if exists)
+DO $$
+BEGIN
+  IF EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'connection_signals') THEN
+    INSERT INTO signals (
+      organization_id, signal_type, signal_subtype,
+      title, description,
+      primary_target_name, related_entities,
+      confidence_score, significance_score,
+      evidence, reasoning,
+      business_implication, suggested_action,
+      detected_at, status,
+      source_pipeline, created_at
+    )
+    SELECT
+      organization_id,
+      'connection',
+      signal_type, -- maps to signal_subtype
+      signal_title,
+      signal_description,
+      primary_entity_name,
+      COALESCE(related_entities, '[]'::jsonb),
+      confidence_score,
+      strength_score,
+      COALESCE(pattern_data, '{}'::jsonb),
+      NULL,
+      pattern_data->>'business_implication',
+      pattern_data->>'action_suggested',
+      signal_detected_date,
+      CASE
+        WHEN status = 'active' THEN 'active'
+        WHEN status = 'resolved' THEN 'resolved'
+        ELSE 'active'
+      END,
+      'connection-detector-v2-migrated',
+      created_at
+    FROM connection_signals
+    ON CONFLICT DO NOTHING;
+
+    RAISE NOTICE 'Migrated connection_signals to signals table';
+  END IF;
+END $$;
+
+-- Migrate from predictions to signals (if exists)
+DO $$
+BEGIN
+  IF EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'predictions') THEN
+    INSERT INTO signals (
+      organization_id, signal_type, signal_subtype,
+      title, description,
+      primary_target_name,
+      confidence_score, significance_score, urgency,
+      evidence, reasoning, pattern_data,
+      business_implication, suggested_action, opportunity_type,
+      detected_at, expires_at, status,
+      source_pipeline, created_at
+    )
+    SELECT
+      organization_id,
+      CASE
+        WHEN category IN ('crisis', 'scandal', 'investigation') THEN 'predictive'
+        WHEN category IN ('opportunity', 'sales', 'partnership') THEN 'opportunity'
+        ELSE 'predictive'
+      END,
+      category,
+      title,
+      description,
+      COALESCE(entities->0->>'name', NULL),
+      COALESCE((confidence * 100)::INTEGER, 50),
+      COALESCE((relevance_score * 100)::INTEGER, 50),
+      CASE
+        WHEN time_horizon = 'immediate' THEN 'immediate'
+        WHEN time_horizon = 'short_term' THEN 'near_term'
+        ELSE 'long_term'
+      END,
+      jsonb_build_object(
+        'articles', COALESCE(source_articles, '[]'::jsonb),
+        'data_points', COALESCE(evidence, '[]'::jsonb)
+      ),
+      reasoning,
+      jsonb_build_object('pattern_type', category, 'indicators', COALESCE(evidence, '[]'::jsonb)),
+      business_impact,
+      recommended_actions->0,
+      CASE
+        WHEN category IN ('sales', 'partnership', 'opportunity') THEN 'sales'
+        WHEN category IN ('crisis', 'risk') THEN 'risk_mitigation'
+        ELSE 'advisory'
+      END,
+      created_at,
+      expires_at,
+      CASE
+        WHEN status = 'active' THEN 'active'
+        WHEN status = 'resolved' THEN 'resolved'
+        WHEN status = 'dismissed' THEN 'dismissed'
+        ELSE 'active'
+      END,
+      'pattern-detector-migrated',
+      created_at
+    FROM predictions
+    ON CONFLICT DO NOTHING;
+
+    RAISE NOTICE 'Migrated predictions to signals table';
+  END IF;
+END $$;
+
+-- =============================================
+-- 9. INITIAL SYNC FOR ALL ORGS
+-- =============================================
+DO $$
+DECLARE
+  org_record RECORD;
+  total_synced INTEGER := 0;
+  org_synced INTEGER;
+BEGIN
+  FOR org_record IN SELECT id FROM organizations WHERE company_profile IS NOT NULL
+  LOOP
+    SELECT sync_intelligence_targets_from_profile(org_record.id) INTO org_synced;
+    total_synced := total_synced + org_synced;
+  END LOOP;
+
+  RAISE NOTICE 'Synced % intelligence targets across all organizations', total_synced;
+END $$;
+
+-- =============================================
+-- 10. ROW LEVEL SECURITY
+-- =============================================
+ALTER TABLE intelligence_targets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE target_intel_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE signals ENABLE ROW LEVEL SECURITY;
+
+-- Users can only see their org's data
+CREATE POLICY "Users can view own org intelligence_targets"
+  ON intelligence_targets FOR SELECT
+  USING (organization_id IN (
+    SELECT organization_id FROM organization_members WHERE user_id = auth.uid()
+  ));
+
+CREATE POLICY "Users can view own org target_intel_events"
+  ON target_intel_events FOR SELECT
+  USING (organization_id IN (
+    SELECT organization_id FROM organization_members WHERE user_id = auth.uid()
+  ));
+
+CREATE POLICY "Users can view own org signals"
+  ON signals FOR SELECT
+  USING (organization_id IN (
+    SELECT organization_id FROM organization_members WHERE user_id = auth.uid()
+  ));
+
+CREATE POLICY "Users can update own org signals"
+  ON signals FOR UPDATE
+  USING (organization_id IN (
+    SELECT organization_id FROM organization_members WHERE user_id = auth.uid()
+  ));
+
+-- Service role can do everything (for pipelines)
+CREATE POLICY "Service role full access to intelligence_targets"
+  ON intelligence_targets FOR ALL
+  USING (auth.role() = 'service_role');
+
+CREATE POLICY "Service role full access to target_intel_events"
+  ON target_intel_events FOR ALL
+  USING (auth.role() = 'service_role');
+
+CREATE POLICY "Service role full access to signals"
+  ON signals FOR ALL
+  USING (auth.role() = 'service_role');
+
+-- Platform analytics is admin-only (you)
+ALTER TABLE platform_signal_analytics ENABLE ROW LEVEL SECURITY;
+ALTER TABLE platform_pattern_library ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Only service role can access platform_signal_analytics"
+  ON platform_signal_analytics FOR ALL
+  USING (auth.role() = 'service_role');
+
+CREATE POLICY "Only service role can access platform_pattern_library"
+  ON platform_pattern_library FOR ALL
+  USING (auth.role() = 'service_role');
+
+-- =============================================
+-- DONE
+-- =============================================
+COMMENT ON TABLE intelligence_targets IS 'Entities being tracked for each organization (competitors, stakeholders, regulators). Synced from company_profile.';
+COMMENT ON TABLE target_intel_events IS 'Historical events detected for each intelligence target. Used for trend analysis and movement detection.';
+COMMENT ON TABLE signals IS 'Unified signals table - combines predictions, connections, movements, and opportunities.';
+COMMENT ON TABLE platform_signal_analytics IS 'Aggregated, anonymized signal performance data for platform-wide learning.';
+COMMENT ON TABLE platform_pattern_library IS 'Library of detection patterns with performance metrics.';

@@ -1,5 +1,9 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import Anthropic from 'https://esm.sh/@anthropic-ai/sdk@0.24.3'
+
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -10,6 +14,12 @@ interface PositioningRequest {
   researchData: any
   campaignGoal: string
   refinementRequest?: string
+  orgId?: string  // Added to fetch company profile
+}
+
+interface InformationGap {
+  category: 'geographic' | 'market' | 'evidence' | 'capability'
+  context: string  // Brief description of what this means for campaign framing
 }
 
 interface PositioningOption {
@@ -32,15 +42,44 @@ serve(async (req) => {
   }
 
   try {
-    const { researchData, campaignGoal, refinementRequest } = await req.json() as PositioningRequest
+    const { researchData, campaignGoal, refinementRequest, orgId } = await req.json() as PositioningRequest
 
     console.log('Positioning Generator:', {
       goal: campaignGoal.substring(0, 50),
       hasRefinement: !!refinementRequest,
       hasResearchData: !!researchData,
       researchKeys: researchData ? Object.keys(researchData) : [],
-      stakeholdersCount: researchData?.stakeholders?.length || 0
+      stakeholdersCount: researchData?.stakeholders?.length || 0,
+      orgId: orgId || 'not provided'
     })
+
+    // Fetch company profile for gap analysis
+    let companyProfile: any = null
+    if (orgId && SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+      try {
+        const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+        const { data: org } = await supabase
+          .from('organizations')
+          .select('id, name, description, industry, company_profile')
+          .eq('id', orgId)
+          .single()
+
+        if (org) {
+          companyProfile = {
+            name: org.name,
+            description: org.description,
+            industry: org.industry,
+            ...(org.company_profile || {})
+          }
+          console.log('   ✅ Loaded company profile for gap analysis:', companyProfile.name)
+        }
+      } catch (err) {
+        console.warn('   ⚠️ Could not fetch company profile:', err.message)
+      }
+    }
+
+    // Analyze information gaps between campaign goal and company profile
+    const informationGaps = analyzeInformationGaps(campaignGoal, companyProfile, researchData)
 
     const anthropic = new Anthropic({
       apiKey: Deno.env.get('ANTHROPIC_API_KEY') || '',
@@ -124,8 +163,19 @@ Output valid JSON only.`
       throw new Error('Failed to parse positioning options')
     }
 
+    // Add information gaps to response
+    const responseData = {
+      ...positioning,
+      informationGaps: informationGaps.length > 0 ? informationGaps : undefined,
+      companyProfileLoaded: !!companyProfile
+    }
+
+    if (informationGaps.length > 0) {
+      console.log(`   ⚠️ Found ${informationGaps.length} information gaps:`, informationGaps.map(g => g.title))
+    }
+
     return new Response(
-      JSON.stringify(positioning),
+      JSON.stringify(responseData),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
@@ -241,4 +291,71 @@ function buildResearchContext(research: any): string {
   }
 
   return context || '## No research data available\n'
+}
+
+// Analyze campaign context to inform positioning framing
+function analyzeInformationGaps(campaignGoal: string, companyProfile: any, researchData: any): InformationGap[] {
+  const gaps: InformationGap[] = []
+  const goalLower = campaignGoal.toLowerCase()
+
+  // Geographic expansion detection
+  const geographicKeywords = {
+    'uk': ['uk', 'united kingdom', 'britain', 'british', 'england', 'london', 'nhs'],
+    'europe': ['europe', 'european', 'eu', 'emea', 'germany', 'france', 'spain', 'italy'],
+    'asia': ['asia', 'apac', 'japan', 'china', 'singapore', 'india', 'korea'],
+    'middle_east': ['middle east', 'mena', 'saudi', 'uae', 'dubai', 'gulf'],
+    'latam': ['latin america', 'latam', 'brazil', 'mexico', 'south america']
+  }
+
+  for (const [region, keywords] of Object.entries(geographicKeywords)) {
+    if (keywords.some(kw => goalLower.includes(kw))) {
+      const geoPresence = companyProfile?.geographic_presence || companyProfile?.key_markets || []
+      const geoString = JSON.stringify(geoPresence).toLowerCase()
+
+      if (!keywords.some(kw => geoString.includes(kw))) {
+        const regionName = region.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
+        gaps.push({
+          category: 'geographic',
+          context: `Entering ${regionName} market - content will be framed as market expansion`
+        })
+      }
+    }
+  }
+
+  // Industry/vertical expansion detection
+  const industryKeywords = {
+    'healthcare': ['healthcare', 'health', 'medical', 'hospital', 'clinical', 'nhs', 'patient'],
+    'finance': ['finance', 'financial', 'banking', 'insurance', 'fintech'],
+    'government': ['government', 'public sector', 'federal', 'municipal', 'gov'],
+    'education': ['education', 'university', 'school', 'edtech', 'learning']
+  }
+
+  for (const [industry, keywords] of Object.entries(industryKeywords)) {
+    if (keywords.some(kw => goalLower.includes(kw))) {
+      const companyIndustry = (companyProfile?.industry || '').toLowerCase()
+      const companyDesc = (companyProfile?.description || '').toLowerCase()
+
+      if (!keywords.some(kw => companyIndustry.includes(kw) || companyDesc.includes(kw))) {
+        const industryName = industry.charAt(0).toUpperCase() + industry.slice(1)
+        gaps.push({
+          category: 'market',
+          context: `Expanding into ${industryName} - content will highlight transferable expertise`
+        })
+      }
+    }
+  }
+
+  // Evidence gap detection
+  const evidenceKeywords = ['success', 'results', 'roi', 'improvement', 'savings', 'efficiency', 'growth']
+  if (evidenceKeywords.some(kw => goalLower.includes(kw))) {
+    const hasEvidence = companyProfile?.achievements || companyProfile?.case_studies || companyProfile?.metrics
+    if (!hasEvidence || (Array.isArray(hasEvidence) && hasEvidence.length === 0)) {
+      gaps.push({
+        category: 'evidence',
+        context: `No documented metrics - content will use forward-looking language`
+      })
+    }
+  }
+
+  return gaps
 }

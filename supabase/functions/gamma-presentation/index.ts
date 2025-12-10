@@ -30,12 +30,58 @@ interface PresentationRequest {
   // Export options are provided by Gamma after generation, not requested upfront
   options?: {
     numCards?: number
-    themeName?: string
+    themeId?: string  // Theme ID from Gamma workspace (use 'stardust' for default)
+    themeName?: string  // Deprecated - use themeId instead
     imageSource?: 'ai' | 'unsplash' | 'web'
     tone?: string
     audience?: string
-    cardSplit?: 'auto' | 'heading' | 'paragraph'
+    cardSplit?: 'auto' | 'inputTextBreaks'
   }
+}
+
+// Cache for theme IDs (fetched once per cold start)
+let cachedThemes: { id: string; name: string }[] | null = null;
+
+// Fetch available themes from Gamma API
+async function fetchGammaThemes(): Promise<{ id: string; name: string }[]> {
+  if (cachedThemes) {
+    return cachedThemes;
+  }
+
+  try {
+    console.log('🎨 Fetching Gamma themes...');
+    const response = await fetch(`${GAMMA_API_URL}/themes`, {
+      method: 'GET',
+      headers: {
+        'X-API-KEY': GAMMA_API_KEY
+      }
+    });
+
+    if (!response.ok) {
+      console.error('Failed to fetch themes:', response.status);
+      return [];
+    }
+
+    const data = await response.json();
+    // Gamma API returns { data: [...themes...], hasMore: bool, nextCursor: string }
+    const themesArray = data.data || data.themes || data;
+    cachedThemes = Array.isArray(themesArray) ? themesArray : [];
+    console.log(`✅ Fetched ${cachedThemes.length} themes`);
+    return cachedThemes;
+  } catch (error) {
+    console.error('Error fetching themes:', error);
+    return [];
+  }
+}
+
+// Find theme ID by name (case-insensitive)
+async function findThemeId(themeName: string): Promise<string | null> {
+  const themes = await fetchGammaThemes();
+  const theme = themes.find(t =>
+    t.name.toLowerCase() === themeName.toLowerCase() ||
+    t.name.toLowerCase().includes(themeName.toLowerCase())
+  );
+  return theme?.id || null;
 }
 
 // Convert framework to presentation-optimized content
@@ -494,9 +540,13 @@ async function generatePresentation(request: PresentationRequest) {
     // Build Gamma API request with proper structure
     const requestBody: any = {
       inputText: inputText,
-      textMode: request.content ? 'preserve' : 'generate',
+      // Always use 'generate' so Gamma interprets markdown structure and creates proper slides
+      // 'preserve' was keeping everything as literal text in one slide
+      textMode: 'generate',
       format: request.format || 'presentation',
       numCards: request.options?.numCards || request.slideCount || (request.framework ? 12 : 10),
+      // Use 'auto' - lets Gamma intelligently split based on content structure
+      // 'inputTextBreaks' requires specific delimiters that may not be present
       cardSplit: request.options?.cardSplit || 'auto',
       // REQUEST PPTX EXPORT - Gamma will provide download URL in status response
       exportAs: 'pptx'
@@ -504,9 +554,37 @@ async function generatePresentation(request: PresentationRequest) {
 
     // Export URLs will be available in the GET /generations/{id} response when completed
 
-    // Add theme only if specified (let Gamma use workspace default otherwise)
-    if (request.options?.themeName && request.options.themeName !== 'auto') {
-      requestBody.themeName = request.options.themeName
+    // Handle theme selection - default to "Stardust" theme
+    // Priority: explicit themeId (if valid UUID) > themeName/themeId lookup > default "Stardust"
+    let themeId: string | null = null;
+    const requestedTheme = request.options?.themeId || request.options?.themeName;
+
+    // Check if requested theme looks like a UUID (actual theme ID) vs a name
+    const isUUID = requestedTheme && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(requestedTheme);
+
+    if (requestedTheme && requestedTheme !== 'auto') {
+      if (isUUID) {
+        // Already a valid UUID, use directly
+        themeId = requestedTheme;
+        console.log(`🎨 Using provided theme ID (UUID): ${themeId}`);
+      } else {
+        // Look up theme by name
+        themeId = await findThemeId(requestedTheme);
+        console.log(`🎨 Theme lookup for "${requestedTheme}": ${themeId || 'not found'}`);
+      }
+    }
+
+    // Default to custom theme with icons (dark with orange accents)
+    if (!themeId) {
+      themeId = 'ysdv2wnyy9v8td0';
+      console.log(`🎨 Using default theme: ${themeId}`);
+    }
+
+    if (themeId) {
+      requestBody.themeId = themeId;
+      console.log(`🎨 Final theme ID: ${themeId}`);
+    } else {
+      console.log(`⚠️ No theme found - Gamma will use workspace default`);
     }
 
     // Add text options if provided

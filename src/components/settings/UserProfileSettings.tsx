@@ -1,12 +1,22 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { User, Mail, Loader2, Check, X as CloseIcon, Shield } from 'lucide-react'
+import { User, Mail, Loader2, Check, X as CloseIcon, Shield, Building2, Trash2, AlertTriangle } from 'lucide-react'
 import { createAuthClient } from '@/lib/supabase/auth-client'
 import { useAuth } from '@/components/auth/AuthProvider'
+import { useAppStore } from '@/stores/useAppStore'
+
+interface Organization {
+  id: string
+  name: string
+  url?: string
+  industry?: string
+  created_at: string
+}
 
 export default function UserProfileSettings() {
   const { user } = useAuth()
+  const { organization: currentOrg, setOrganization } = useAppStore()
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
@@ -14,13 +24,74 @@ export default function UserProfileSettings() {
   const [fullName, setFullName] = useState('')
   const [avatarUrl, setAvatarUrl] = useState('')
 
+  // Organizations state
+  const [organizations, setOrganizations] = useState<Organization[]>([])
+  const [orgsLoading, setOrgsLoading] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState<string | null>(null)
+
   const supabase = createAuthClient()
 
   useEffect(() => {
     if (user) {
       loadProfile()
+      loadOrganizations()
     }
   }, [user])
+
+  const loadOrganizations = async () => {
+    setOrgsLoading(true)
+    try {
+      const response = await fetch('/api/organizations')
+      const data = await response.json()
+      if (data.success && data.organizations) {
+        setOrganizations(data.organizations)
+      }
+    } catch (error: any) {
+      console.error('Error loading organizations:', error)
+    } finally {
+      setOrgsLoading(false)
+    }
+  }
+
+  const handleDeleteOrg = async (orgId: string) => {
+    if (deleting) return
+    setDeleting(orgId)
+    try {
+      const response = await fetch(`/api/organizations?id=${orgId}`, {
+        method: 'DELETE'
+      })
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to delete organization')
+      }
+
+      // Remove from local state
+      setOrganizations(prev => prev.filter(org => org.id !== orgId))
+
+      // If this was the current org, clear it
+      if (currentOrg?.id === orgId) {
+        const remainingOrgs = organizations.filter(org => org.id !== orgId)
+        if (remainingOrgs.length > 0) {
+          // Switch to another org
+          setOrganization(remainingOrgs[0] as any)
+        } else {
+          // No orgs left, clear
+          setOrganization(null as any)
+        }
+      }
+
+      setMessage({ type: 'success', text: 'Organization deleted successfully' })
+      setTimeout(() => setMessage(null), 3000)
+    } catch (error: any) {
+      console.error('Error deleting organization:', error)
+      setMessage({ type: 'error', text: error.message || 'Failed to delete organization' })
+    } finally {
+      setDeleting(null)
+      setDeleteConfirm(null)
+    }
+  }
 
   const loadProfile = async () => {
     setLoading(true)
@@ -274,6 +345,122 @@ export default function UserProfileSettings() {
               Change password
             </a>
           </div>
+        </div>
+      </div>
+
+      {/* Organizations Section */}
+      <div
+        className="rounded-xl p-6"
+        style={{ background: 'var(--grey-900)', border: '1px solid var(--grey-800)' }}
+      >
+        <div className="mb-6">
+          <div className="flex items-center gap-3 mb-2">
+            <div
+              className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+              style={{ background: 'var(--grey-800)' }}
+            >
+              <Building2 className="w-5 h-5" style={{ color: 'var(--burnt-orange)' }} />
+            </div>
+            <div>
+              <h2
+                className="text-lg font-medium text-white"
+                style={{ fontFamily: 'var(--font-display)' }}
+              >
+                My Organizations
+              </h2>
+              <p className="text-sm" style={{ color: 'var(--grey-500)' }}>
+                Manage organizations you have access to
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {orgsLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-6 h-6 animate-spin" style={{ color: 'var(--burnt-orange)' }} />
+          </div>
+        ) : organizations.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-sm" style={{ color: 'var(--grey-500)' }}>
+              No organizations found
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {organizations.map((org) => (
+              <div
+                key={org.id}
+                className="flex items-center justify-between p-4 rounded-lg"
+                style={{ background: 'var(--grey-800)', border: '1px solid var(--grey-700)' }}
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-white font-medium truncate">{org.name}</p>
+                    {currentOrg?.id === org.id && (
+                      <span
+                        className="px-2 py-0.5 rounded text-xs"
+                        style={{ background: 'var(--burnt-orange-muted)', color: 'var(--burnt-orange)' }}
+                      >
+                        Active
+                      </span>
+                    )}
+                  </div>
+                  {org.industry && (
+                    <p className="text-xs truncate" style={{ color: 'var(--grey-500)' }}>
+                      {org.industry}
+                    </p>
+                  )}
+                </div>
+
+                {deleteConfirm === org.id ? (
+                  <div className="flex items-center gap-2 ml-4">
+                    <span className="text-xs text-red-400 mr-2">Delete?</span>
+                    <button
+                      onClick={() => handleDeleteOrg(org.id)}
+                      disabled={deleting === org.id}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1"
+                      style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444' }}
+                    >
+                      {deleting === org.id ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <>
+                          <Check className="w-3 h-3" />
+                          Yes
+                        </>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => setDeleteConfirm(null)}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                      style={{ background: 'var(--grey-700)', color: 'var(--grey-300)' }}
+                    >
+                      No
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setDeleteConfirm(org.id)}
+                    className="ml-4 p-2 rounded-lg transition-colors hover:bg-red-500/10"
+                    title="Delete organization"
+                  >
+                    <Trash2 className="w-4 h-4 text-red-400" />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div
+          className="mt-4 p-3 rounded-lg flex items-start gap-2"
+          style={{ background: 'rgba(234, 179, 8, 0.1)', border: '1px solid rgba(234, 179, 8, 0.2)' }}
+        >
+          <AlertTriangle className="w-4 h-4 text-yellow-500 flex-shrink-0 mt-0.5" />
+          <p className="text-xs" style={{ color: 'var(--grey-400)' }}>
+            Deleting an organization permanently removes all its data including intelligence targets,
+            predictions, and company profiles. This action cannot be undone.
+          </p>
         </div>
       </div>
     </div>

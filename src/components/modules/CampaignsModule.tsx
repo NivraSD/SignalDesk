@@ -76,7 +76,8 @@ interface ContentItem {
   status: 'pending' | 'generating' | 'generated' | 'published'
   generatedContent?: string
   generatedAt?: string
-  // Execution tracking
+  // Execution tracking - persisted to Memory Vault
+  memoryVaultId?: string  // Links to content_library entry
   executed?: boolean
   executedAt?: string
   result?: {
@@ -84,6 +85,15 @@ interface ContentItem {
     value?: string
     notes?: string
   }
+}
+
+// Result field configuration by content type
+const RESULT_FIELDS: Record<string, { label: string; placeholder: string; resultType: string }> = {
+  'media_pitch': { label: 'Response', placeholder: 'e.g., Replied, No response, Meeting scheduled', resultType: 'media_response' },
+  'thought_leadership': { label: 'Engagement', placeholder: 'e.g., Views, Shares, Comments', resultType: 'engagement' },
+  'social_post': { label: 'Engagement', placeholder: 'e.g., Likes, Comments, Shares', resultType: 'engagement' },
+  'press_release': { label: 'Media Pickup', placeholder: 'e.g., Number of outlets, Coverage quality', resultType: 'pickup' },
+  'user_action': { label: 'Result', placeholder: 'Enter result or outcome', resultType: 'other' }
 }
 
 interface CalendarItem {
@@ -134,6 +144,12 @@ export default function CampaignsModule() {
   const [manualEventDate, setManualEventDate] = useState('')
   const [editingResultItem, setEditingResultItem] = useState<CalendarItem | null>(null)
   const [resultType, setResultType] = useState<'media_response' | 'engagement' | 'pickup' | 'other'>('other')
+
+  // Progress tab result tracking state
+  const [editingProgressResult, setEditingProgressResult] = useState<string | null>(null) // ContentItem ID
+  const [progressResultValue, setProgressResultValue] = useState('')
+  const [progressResultNotes, setProgressResultNotes] = useState('')
+  const [savingProgress, setSavingProgress] = useState(false)
   const [resultValue, setResultValue] = useState('')
   const [resultNotes, setResultNotes] = useState('')
 
@@ -719,7 +735,15 @@ ${blueprint.part3_stakeholderOrchestration?.stakeholderOrchestrationPlans?.map((
         })
 
         if (response.ok) {
-          console.log('💾 Saved to Memory Vault:', `Campaigns/${folderName}/${stageFolderName}/${item.topic}`)
+          const savedData = await response.json()
+          console.log('💾 Saved to Memory Vault:', `Campaigns/${folderName}/${stageFolderName}/${item.topic}`, 'ID:', savedData.id)
+
+          // Store the Memory Vault ID on the content item for result tracking
+          if (savedData.id) {
+            setContentItems(prev => prev.map(i =>
+              i.id === item.id ? { ...i, memoryVaultId: savedData.id } : i
+            ))
+          }
         } else {
           const error = await response.json()
           console.error('❌ Failed to save to Memory Vault:', error)
@@ -799,6 +823,71 @@ ${blueprint.part3_stakeholderOrchestration?.stakeholderOrchestrationPlans?.map((
     a.download = `${item.type}-${item.topic.substring(0, 30)}.txt`
     a.click()
     URL.revokeObjectURL(url)
+  }
+
+  // Get result field configuration for content type
+  const getResultFieldForType = (contentType: string) => {
+    return RESULT_FIELDS[contentType] || RESULT_FIELDS['user_action']
+  }
+
+  // Mark content as complete and persist to Memory Vault
+  const handleMarkComplete = async (item: ContentItem) => {
+    const executedAt = new Date().toISOString()
+
+    // Update local state immediately
+    setContentItems(prev => prev.map(i =>
+      i.id === item.id ? {
+        ...i,
+        executed: true,
+        executedAt
+      } : i
+    ))
+
+    // Persist to Memory Vault if we have the ID
+    if (item.memoryVaultId) {
+      try {
+        await updateMemoryVaultContent(item.memoryVaultId, {
+          executed: true,
+          executed_at: executedAt
+        } as any)
+        console.log('✅ Marked complete in Memory Vault:', item.memoryVaultId)
+      } catch (error) {
+        console.error('❌ Failed to persist completion to Memory Vault:', error)
+      }
+    }
+  }
+
+  // Update result data and persist to Memory Vault
+  const handleUpdateProgressResult = async (item: ContentItem) => {
+    setSavingProgress(true)
+
+    const resultField = getResultFieldForType(item.type)
+    const resultData = {
+      type: resultField.resultType as 'media_response' | 'engagement' | 'pickup' | 'other',
+      value: progressResultValue,
+      notes: progressResultNotes
+    }
+
+    // Update local state
+    setContentItems(prev => prev.map(i =>
+      i.id === item.id ? { ...i, result: resultData } : i
+    ))
+
+    // Persist to Memory Vault if we have the ID
+    if (item.memoryVaultId) {
+      try {
+        await updateMemoryVaultContent(item.memoryVaultId, { result: resultData } as any)
+        console.log('✅ Updated result in Memory Vault:', item.memoryVaultId)
+      } catch (error) {
+        console.error('❌ Failed to persist result to Memory Vault:', error)
+      }
+    }
+
+    // Reset form state
+    setEditingProgressResult(null)
+    setProgressResultValue('')
+    setProgressResultNotes('')
+    setSavingProgress(false)
   }
 
   // Calendar functions
@@ -1742,15 +1831,7 @@ ${blueprint.part3_stakeholderOrchestration?.stakeholderOrchestrationPlans?.map((
                                           {/* Mark as completed button - only show for generated items */}
                                           {(item.status === 'generated' || item.status === 'published') && !item.executed && (
                                             <button
-                                              onClick={() => {
-                                                setContentItems(prev => prev.map(i =>
-                                                  i.id === item.id ? {
-                                                    ...i,
-                                                    executed: true,
-                                                    executedAt: new Date().toISOString()
-                                                  } : i
-                                                ))
-                                              }}
+                                              onClick={() => handleMarkComplete(item)}
                                               className="px-3 py-1 text-xs rounded-lg font-medium transition-colors hover:brightness-110"
                                               style={{ background: '#22c55e', color: 'white' }}
                                             >
@@ -1762,26 +1843,95 @@ ${blueprint.part3_stakeholderOrchestration?.stakeholderOrchestrationPlans?.map((
                                           {item.executed && (
                                             <button
                                               onClick={() => {
-                                                const notes = prompt('Track results (e.g., media pickup, engagement, response):')
-                                                if (notes) {
-                                                  setContentItems(prev => prev.map(i =>
-                                                    i.id === item.id ? {
-                                                      ...i,
-                                                      result: {
-                                                        type: 'other',
-                                                        notes
-                                                      }
-                                                    } : i
-                                                  ))
+                                                if (editingProgressResult === item.id) {
+                                                  setEditingProgressResult(null)
+                                                  setProgressResultValue('')
+                                                  setProgressResultNotes('')
+                                                } else {
+                                                  setEditingProgressResult(item.id)
+                                                  setProgressResultValue(item.result?.value || '')
+                                                  setProgressResultNotes(item.result?.notes || '')
                                                 }
                                               }}
                                               className="px-3 py-1 text-xs rounded-lg font-medium border transition-colors hover:bg-white/5"
                                               style={{ borderColor: 'var(--grey-600)', color: 'var(--grey-300)' }}
                                             >
-                                              {item.result?.notes ? 'Edit Results' : 'Track Results'}
+                                              {editingProgressResult === item.id ? 'Cancel' : (item.result?.notes || item.result?.value ? 'Edit Results' : 'Track Results')}
                                             </button>
                                           )}
                                         </div>
+
+                                        {/* Inline Result Form - shown when editing */}
+                                        {editingProgressResult === item.id && (
+                                          <div
+                                            className="mt-3 p-4 rounded-lg border space-y-3"
+                                            style={{ background: 'var(--charcoal)', borderColor: 'var(--grey-700)' }}
+                                          >
+                                            <div>
+                                              <label
+                                                className="text-xs mb-1.5 block"
+                                                style={{ color: 'var(--grey-400)', fontFamily: 'var(--font-display)' }}
+                                              >
+                                                {getResultFieldForType(item.type).label}
+                                              </label>
+                                              <input
+                                                type="text"
+                                                value={progressResultValue}
+                                                onChange={(e) => setProgressResultValue(e.target.value)}
+                                                placeholder={getResultFieldForType(item.type).placeholder}
+                                                className="w-full px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2"
+                                                style={{
+                                                  background: 'var(--grey-800)',
+                                                  borderColor: 'var(--grey-700)',
+                                                  color: 'var(--white)'
+                                                }}
+                                              />
+                                            </div>
+                                            <div>
+                                              <label
+                                                className="text-xs mb-1.5 block"
+                                                style={{ color: 'var(--grey-400)', fontFamily: 'var(--font-display)' }}
+                                              >
+                                                Notes
+                                              </label>
+                                              <textarea
+                                                value={progressResultNotes}
+                                                onChange={(e) => setProgressResultNotes(e.target.value)}
+                                                placeholder="Additional context or details..."
+                                                className="w-full px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 min-h-[60px]"
+                                                style={{
+                                                  background: 'var(--grey-800)',
+                                                  borderColor: 'var(--grey-700)',
+                                                  color: 'var(--white)'
+                                                }}
+                                              />
+                                            </div>
+                                            <button
+                                              onClick={() => handleUpdateProgressResult(item)}
+                                              disabled={savingProgress}
+                                              className="w-full px-3 py-2 rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
+                                              style={{
+                                                background: 'var(--burnt-orange)',
+                                                color: 'var(--white)',
+                                                fontFamily: 'var(--font-display)'
+                                              }}
+                                            >
+                                              {savingProgress ? 'Saving...' : 'Save Result'}
+                                            </button>
+                                          </div>
+                                        )}
+
+                                        {/* Show saved result summary */}
+                                        {item.result && !editingProgressResult && (item.result.value || item.result.notes) && (
+                                          <div
+                                            className="mt-2 p-2 rounded-lg text-xs"
+                                            style={{ background: 'var(--burnt-orange-muted)', color: 'var(--burnt-orange)' }}
+                                          >
+                                            {item.result.value && <span className="font-medium">{item.result.value}</span>}
+                                            {item.result.value && item.result.notes && <span className="mx-1">•</span>}
+                                            {item.result.notes && <span style={{ color: 'var(--grey-300)' }}>{item.result.notes}</span>}
+                                          </div>
+                                        )}
                                       </div>
                                     )
                                   })}
