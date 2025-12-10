@@ -69,7 +69,7 @@ export default function NIVFloatingAssistant() {
       const isGammaLink = url.includes('gamma.app')
 
       if (isGammaLink) {
-        // Styled button for Gamma presentations
+        // Styled button for Gamma presentations - orange to match platform
         parts.push(
           <a
             key={match.index}
@@ -82,22 +82,22 @@ export default function NIVFloatingAssistant() {
               gap: '8px',
               marginTop: '12px',
               padding: '12px 20px',
-              background: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)',
+              background: 'var(--burnt-orange)',
               color: 'white',
               borderRadius: '10px',
               textDecoration: 'none',
               fontWeight: 600,
               fontSize: '0.9rem',
-              boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)',
+              boxShadow: '0 4px 12px rgba(217, 119, 6, 0.3)',
               transition: 'transform 0.2s, box-shadow 0.2s'
             }}
             onMouseOver={(e) => {
               e.currentTarget.style.transform = 'translateY(-2px)'
-              e.currentTarget.style.boxShadow = '0 6px 16px rgba(139, 92, 246, 0.4)'
+              e.currentTarget.style.boxShadow = '0 6px 16px rgba(217, 119, 6, 0.4)'
             }}
             onMouseOut={(e) => {
               e.currentTarget.style.transform = 'translateY(0)'
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(139, 92, 246, 0.3)'
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(217, 119, 6, 0.3)'
             }}
           >
             <span style={{ fontSize: '1.1rem' }}>🎨</span>
