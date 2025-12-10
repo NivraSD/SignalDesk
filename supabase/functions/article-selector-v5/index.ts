@@ -11,7 +11,7 @@ const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 // Source diversity is handled downstream by relevance filter
 // Selector should return all relevant matches, relevance filter applies diversity after scoring
-const DEFAULT_HOURS_BACK = 18;  // 18 hours for daily scrapes
+const DEFAULT_HOURS_BACK = 24;  // 24 hours for daily briefings
 
 interface TargetMatch {
   target_id: string;
