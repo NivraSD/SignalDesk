@@ -101,12 +101,12 @@ export class IntelligenceService {
 
       console.log('✅ Profile extracted:', profile ? 'Yes' : 'No')
 
-      // Use article-selector to query V5 batch scraper articles
+      // Use article-selector-v5 with pre-computed embedding matches
       if (profile) {
-        console.log('Starting article-selector-v4 (Intelligence Hunter)')
+        console.log('Starting article-selector-v5 (Embedding Match)')
         onProgress?.('article-selector', 'running')
 
-        const articleResponse = await supabase.functions.invoke('article-selector-v4', {
+        const articleResponse = await supabase.functions.invoke('article-selector-v5', {
           body: {
             organization_id: organizationId,
             organization_name: orgName
@@ -442,11 +442,11 @@ export class IntelligenceService {
       console.log('✅ Profile loaded successfully')
       onProgress?.('load-profile', 'completed', { profile })
 
-      // STEP 2: Use article-selector-v4 to query V5 batch scraper articles
-      console.log('Starting article-selector-v4 (Intelligence Hunter)')
+      // STEP 2: Use article-selector-v5 with pre-computed embedding matches
+      console.log('Starting article-selector-v5 (Embedding Match)')
       onProgress?.('article-selector', 'running')
 
-      const articleResponse = await supabase.functions.invoke('article-selector-v4', {
+      const articleResponse = await supabase.functions.invoke('article-selector-v5', {
         body: {
           organization_id: organizationId,
           organization_name: organizationName
