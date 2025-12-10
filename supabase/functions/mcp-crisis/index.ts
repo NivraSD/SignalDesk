@@ -1038,36 +1038,41 @@ async function generatePreDraftedCommunication(
     partners: 'Direct communication/Partner portal'
   };
 
-  const prompt = `You are a crisis communications expert. Generate a COMPLETE, ready-to-use communication draft.
+  const prompt = `You are a crisis communications expert creating PRE-DRAFTED HOLDING STATEMENTS for a crisis management plan.
 
 ${companyContext}
 
-**CRISIS SCENARIO:**
-${scenario.title}: ${scenario.description}
-Severity: ${scenario.impact || 'Major'}
+**CRISIS SCENARIO:** ${scenario.title}
+${scenario.description}
 
 **TARGET AUDIENCE:** ${stakeholder.charAt(0).toUpperCase() + stakeholder.slice(1)}
-**THEIR KEY CONCERNS:** ${stakeholderConcerns[stakeholder]?.join(', ') || 'General concerns'}
-**COMMUNICATION CHANNEL:** ${channels[stakeholder] || 'Email'}
+**KEY CONCERNS:** ${stakeholderConcerns[stakeholder]?.join(', ') || 'General concerns'}
+**CHANNEL:** ${channels[stakeholder] || 'Email'}
 
-Generate a COMPLETE communication (500-800 words) that:
-1. Opens with acknowledgment of the situation
-2. Clearly states what happened (use [SPECIFIC DETAILS] placeholders for unknown facts)
-3. Explains the impact on this stakeholder
-4. Details the company's immediate response actions
-5. Provides a clear timeline for resolution
-6. Lists specific next steps for the audience
-7. Ends with contact information and commitment to updates
+**CRISIS COMMUNICATION BEST PRACTICES:**
+Holding statements are SHORT, templated messages (150-250 words) prepared BEFORE a crisis occurs. They:
+- Use the real organization name (${organizationName})
+- Use [BRACKETS] for incident-specific details to be filled in during actual crisis
+- Do NOT invent specific dates, dollar amounts, executive names, or fictional details
+- Focus on acknowledgment, commitment, and next steps
+- Are ready to deploy within minutes of a crisis breaking
 
-Use a tone appropriate for ${stakeholder}: ${stakeholder === 'media' ? 'factual and professional' : stakeholder === 'employees' ? 'supportive and transparent' : stakeholder === 'customers' ? 'empathetic and reassuring' : 'formal and informative'}.
+**GENERATE A HOLDING STATEMENT TEMPLATE that includes:**
+1. Brief acknowledgment: "${organizationName} is aware of [situation]..."
+2. Commitment to stakeholders (1-2 sentences)
+3. Immediate actions being taken (general, not fictional specifics)
+4. Promise of updates
+5. Contact information placeholder
 
-IMPORTANT: Generate the FULL message. Do not truncate or abbreviate. Include ALL sections.`;
+**TONE:** ${stakeholder === 'media' ? 'factual and professional' : stakeholder === 'employees' ? 'supportive and transparent' : stakeholder === 'customers' ? 'empathetic and reassuring' : stakeholder === 'investors' ? 'factual and confident' : 'formal and informative'}
+
+Keep it 150-250 words. Use [BRACKETS] for any details that would only be known during an actual crisis.`;
 
   try {
     const completion = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 2000,
-      temperature: 0.5,
+      max_tokens: 800,
+      temperature: 0.3,
       messages: [{ role: 'user', content: prompt }]
     });
 

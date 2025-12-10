@@ -125,77 +125,24 @@ export default function CrisisCommunications({ crisis, onUpdate, onOpenInStudio 
     return matches
   }
 
-  // Generate using niv-content-intelligent-v2 (same pattern as Opportunities/Campaigns)
+  // Generate holding statements using mcp-crisis (crisis communications expert)
   const generateCommsForScenario = async (scenario: Scenario) => {
     if (!organization || generatingFor) return
     setGeneratingFor(scenario.title)
     setGenerationProgress('Starting generation...')
 
-    const scenarioFolderName = scenario.title.replace(/[^a-zA-Z0-9\s]/g, '').trim()
-    const campaignFolder = `Crisis/${scenarioFolderName}`
-
-    // Content requirements - must have owned/media structure for niv-content-intelligent-v2
-    const contentRequirements = {
-      owned: stakeholders.map(stakeholder => ({
-        type: 'crisis-communication',
-        stakeholder: stakeholder,
-        topic: `${stakeholder} Communication for ${scenario.title}`,
-        channel: getChannelForStakeholder(stakeholder),
-        tone: getToneForStakeholder(stakeholder),
-        scenarioTitle: scenario.title,
-        scenarioDescription: scenario.description
-      })),
-      media: []
-    }
-
     try {
-      console.log(`🚀 Generating crisis comms for scenario: ${scenario.title}`)
-      setGenerationProgress(`Generating ${stakeholders.length} stakeholder communications...`)
+      console.log(`🚀 Generating crisis holding statements for scenario: ${scenario.title}`)
+      setGenerationProgress(`Generating ${stakeholders.length} stakeholder holding statements...`)
 
-      // Call niv-content-intelligent-v2 (same as Opportunities module)
-      const { data: result, error } = await supabase.functions.invoke('niv-content-intelligent-v2', {
+      // Call mcp-crisis which generates proper holding statements
+      const { data: result, error } = await supabase.functions.invoke('mcp-crisis', {
         body: {
-          message: `Generate HOLDING STATEMENTS for ${organization.name} (${organization.industry || 'general'} industry) for the crisis scenario: ${scenario.title}.
-
-IMPORTANT: These are PRE-DRAFTED HOLDING STATEMENTS - short, templated messages (150-300 words max) that can be quickly adapted during an actual crisis. Use the actual organization name "${organization.name}" but use [BRACKETS] for specific incident details to be filled in later. Do NOT write elaborate fictional scenario responses with specific dates or invented details.
-
-Example format for ${organization.name}:
-"${organization.name} is aware of [brief situation description]. We are taking immediate action to [response]. The safety and trust of our [stakeholder group] remains our highest priority. We will provide updates as the situation develops."`,
-          conversationHistory: [],
-          organizationContext: {
-            conversationId: `crisis-${scenario.title.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
-            organizationId: organization.id,
-            organizationName: organization.name || 'Organization'
-          },
-          stage: 'campaign_generation',
-          campaignContext: {
-            phase: 'crisis_holding_statements',
-            phaseNumber: 1,
-            organizationName: organization.name,
-            organizationIndustry: organization.industry || 'general',
-            objective: `Crisis Holding Statements for ${organization.name} - ${scenario.title}`,
-            narrative: `Pre-drafted holding statements for ${organization.name} regarding: ${scenario.description}. Use "${organization.name}" as the org name. These should be SHORT templates (150-300 words) with [PLACEHOLDERS] for specific incident details, ready to be quickly customized during an actual crisis.`,
-            keyMessages: [
-              'Acknowledge awareness of the situation',
-              'Express commitment to stakeholder safety/trust',
-              'Indicate immediate action being taken',
-              'Promise ongoing updates'
-            ],
-            contentRequirements,
-            campaignFolder,
-            campaignType: 'CRISIS_HOLDING_STATEMENTS',
-            outputFormat: 'holding_statement',
-            maxLength: 300,
-            crisisScenario: {
-              title: scenario.title,
-              description: scenario.description,
-              impact: scenario.impact || 'Major',
-              likelihood: scenario.likelihood || 'Medium'
-            },
-            targetStakeholders: stakeholders,
-            industry: organization.industry || 'general',
-            instructions: 'Generate SHORT holding statement templates (150-300 words) with [PLACEHOLDER] brackets for details to be filled in during actual crisis. Do NOT invent specific dates, names, or elaborate fictional details.'
-          }
+          action: 'generate_scenario_comms',
+          scenario: scenario,
+          organization_id: organization.id,
+          organization_name: organization.name,
+          industry: organization.industry || 'general'
         }
       })
 
@@ -217,30 +164,6 @@ Example format for ${organization.name}:
       setGeneratingFor(null)
       setTimeout(() => setGenerationProgress(''), 3000)
     }
-  }
-
-  const getChannelForStakeholder = (stakeholder: string): string => {
-    const channels: Record<string, string> = {
-      'Customers': 'Email/Website/App notification',
-      'Employees': 'Internal email/Slack/Town hall',
-      'Investors': 'Press release/Investor call',
-      'Media': 'Press release/Media briefing',
-      'Regulators': 'Formal letter/Regulatory filing',
-      'Partners': 'Direct communication/Partnership portal'
-    }
-    return channels[stakeholder] || 'Email'
-  }
-
-  const getToneForStakeholder = (stakeholder: string): string => {
-    const tones: Record<string, string> = {
-      'Customers': 'empathetic and reassuring',
-      'Employees': 'supportive and transparent',
-      'Investors': 'factual and confident',
-      'Media': 'factual and professional',
-      'Regulators': 'formal and compliant',
-      'Partners': 'collaborative and transparent'
-    }
-    return tones[stakeholder] || 'professional'
   }
 
   const copyToClipboard = (text: string) => {
