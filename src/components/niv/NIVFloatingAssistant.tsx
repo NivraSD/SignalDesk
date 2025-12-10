@@ -148,7 +148,10 @@ export default function NIVFloatingAssistant() {
           context: 'global',
           conversationHistory: messages.slice(-10).map(m => ({
             role: m.role === 'user' ? 'user' : 'assistant',
-            content: m.content
+            content: m.content,
+            // Pass outline/type back so backend can find it for confirmation
+            ...(m.data?.outline && { outline: m.data.outline }),
+            ...(m.data?.type && { type: m.data.type })
           }))
         })
       })
