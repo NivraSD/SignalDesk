@@ -253,66 +253,67 @@ async function generatePredictionsWithClaude(
   const targetNames = targets.map(t => t.name);
   const criticalTargetNames = targets.filter(t => t.priority === 'critical' || t.priority === 'high').map(t => t.name);
 
-  const prompt = `You are a competitive intelligence analyst. Your ONLY job is to predict what SPECIFIC COMPANIES we are tracking will do next.
+  const prompt = `You are a competitive intelligence analyst for a trading/commodities company. Your job is to predict what our TRACKED COMPETITORS AND STAKEHOLDERS will do next based on market news.
 
-⚠️ CRITICAL CONSTRAINT: You may ONLY make predictions about these specific entities:
+=== INTELLIGENCE TARGETS WE TRACK ===
 ${targetNames.length > 0 ? targetNames.map(n => `• ${n}`).join('\n') : 'No targets specified'}
-
-DO NOT make generic predictions about "the market" or "the industry".
-DO NOT predict things about companies not in the list above.
-If the articles don't mention any of our tracked targets, return an EMPTY ARRAY [].
 
 ${companyContext}
 
-ARTICLES TO ANALYZE:
+=== NEWS ARTICLES TO ANALYZE ===
 ${articleSummaries}
 
-YOUR TASK: Make 2-5 predictions about what the specific tracked companies above will do next.
+=== YOUR TASK ===
+Analyze the news and predict how our tracked targets will respond or be affected. Make 2-5 predictions.
+
+IMPORTANT: You don't need the target to be mentioned BY NAME in an article. Use your intelligence to predict how market events WILL AFFECT our tracked targets. For example:
+- News about "China supply chain shifts" → Predict how trading companies like Vitol or Glencore will respond
+- News about "commodity price changes" → Predict moves by Goldman Sachs Commodities or Morgan Stanley Commodities
+- News about "regulatory changes" → Predict how our tracked targets will adapt
 
 ${criticalTargetNames.length > 0 ? `
-🔴 HIGH PRIORITY TARGETS (predictions about these matter most):
+🔴 HIGH PRIORITY TARGETS (focus predictions on these):
 ${criticalTargetNames.map(n => `   • ${n}`).join('\n')}
 ` : ''}
 
-WHAT TO PREDICT:
-- A tracked competitor's next strategic move based on signals in the news
-- Leadership changes at tracked targets
-- Market entries/exits by tracked competitors
-- Partnership or M&A activity involving tracked targets
-- How tracked regulators might act
-
 PREDICTION TYPES:
-- "competitive": What a tracked competitor will do next
-- "regulatory": What a tracked regulator might do
-- "partnership": Potential alliances involving tracked targets
-- "strategic": Business moves by tracked targets
-- "personnel": Executive changes at tracked targets
-- "crisis": Potential problems for tracked targets
+- "competitive": How a tracked competitor will respond to market changes
+- "strategic": Business moves or pivots by tracked targets
+- "partnership": Likely alliances involving tracked targets
+- "regulatory": How tracked targets will respond to regulatory shifts
+- "market": How tracked targets will capitalize on market trends
 
-Return a JSON array (or empty [] if no tracked targets found in articles):
+Return a JSON array with 2-5 predictions:
 [
   {
-    "title": "Prediction about [TRACKED TARGET NAME]",
-    "description": "What will happen",
-    "rationale": "Why we predict this based on the evidence",
-    "evidence": ["Quote from article [X]"],
-    "confidence_score": 75,
+    "title": "Prediction about [TARGET NAME]",
+    "description": "What they will likely do",
+    "rationale": "Why we predict this - connect the news to the target's known behavior/position",
+    "evidence": ["Relevant quote or fact from articles"],
+    "confidence_score": 60-85,
     "impact_level": "high|medium|low",
-    "category": "competitive|regulatory|partnership|strategic|personnel|crisis",
+    "category": "competitive|strategic|partnership|regulatory|market",
     "time_horizon": "1-month|3-months|6-months",
     "related_entities": ["Other entities involved"],
     "primary_target_name": "EXACT name from targets list above"
   }
 ]
 
-🚨 VALIDATION RULES:
-1. "primary_target_name" MUST match exactly one of: ${targetNames.slice(0, 15).join(', ')}${targetNames.length > 15 ? '...' : ''}
-2. If no articles mention our tracked targets, return []
-3. "Gen Z", "AI", "the market" are NOT valid target names - use specific company/person names only
+RULES:
+1. "primary_target_name" MUST match exactly one of our tracked targets
+2. Each prediction must explain WHY the news affects that specific target
+3. If you genuinely cannot connect ANY news to ANY tracked target, return []
 
 Return ONLY the JSON array, no other text.`;
 
   try {
+    // DEBUG: Log what we're sending to Claude
+    console.log(`   📤 Sending to Claude - Target names: ${targetNames.slice(0, 5).join(', ')}${targetNames.length > 5 ? '...' : ''}`);
+    console.log(`   📤 Article count in prompt: ${articles.length}`);
+    console.log(`   📤 First article title: ${articles[0]?.title?.substring(0, 80) || 'N/A'}`);
+
+    const startTime = Date.now();
+
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -330,6 +331,9 @@ Return ONLY the JSON array, no other text.`;
       })
     });
 
+    const apiTime = Date.now() - startTime;
+    console.log(`   ⏱️ Claude API response time: ${apiTime}ms`);
+
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`Claude API error: ${response.status} - ${errorText}`);
@@ -338,6 +342,9 @@ Return ONLY the JSON array, no other text.`;
 
     const data = await response.json();
     const content = data.content?.[0]?.text || '';
+
+    // DEBUG: Log Claude's raw response
+    console.log(`   📥 Claude raw response (first 500 chars): ${content.substring(0, 500)}`);
 
     // Parse JSON from response
     const jsonMatch = content.match(/\[[\s\S]*\]/);

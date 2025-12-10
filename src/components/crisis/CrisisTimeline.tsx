@@ -150,14 +150,14 @@ export default function CrisisTimeline({ crisis, onUpdate }: CrisisTimelineProps
                       <div className="flex items-start justify-between mb-2">
                         <div>
                           <span className={`text-xs font-semibold uppercase ${color}`}>
-                            {event.type.replace('_', ' ')}
+                            {(event.type || 'event').replace('_', ' ')}
                           </span>
                           <div className="text-sm text-[var(--grey-500)] mt-1">
-                            {new Date(event.time).toLocaleString()} • {event.actor}
+                            {event.time ? new Date(event.time).toLocaleString() : 'Unknown time'} • {event.actor || 'System'}
                           </div>
                         </div>
                       </div>
-                      <div className="text-[var(--grey-300)]">{event.content}</div>
+                      <div className="text-[var(--grey-300)]">{event.content || 'No content'}</div>
                     </div>
                   </div>
                 )

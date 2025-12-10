@@ -92,6 +92,9 @@ export default function Dashboard() {
   const [connections, setConnections] = useState<ConnectionSignal[]>([])
   const [loadingSidebarData, setLoadingSidebarData] = useState(false)
 
+  // Crisis monitoring state
+  const [activeCrisisCount, setActiveCrisisCount] = useState(0)
+
   // Studio content (for editing from Memory Vault)
   const [studioInitialContent, setStudioInitialContent] = useState<{
     id: string
@@ -183,6 +186,9 @@ export default function Dashboard() {
 
       // Load predictions and connections for sidebar
       loadSidebarData()
+
+      // Load active crisis count for sidebar badge
+      loadActiveCrisisCount()
     }
   }, [organization?.id])
 
@@ -221,6 +227,24 @@ export default function Dashboard() {
       console.error('Failed to load sidebar data:', error)
     } finally {
       setLoadingSidebarData(false)
+    }
+  }
+
+  const loadActiveCrisisCount = async () => {
+    if (!organization?.id) return
+
+    try {
+      const { data, error } = await supabase
+        .from('crisis_events')
+        .select('id', { count: 'exact' })
+        .eq('organization_id', organization.id)
+        .in('status', ['monitoring', 'active'])
+
+      if (!error && data) {
+        setActiveCrisisCount(data.length)
+      }
+    } catch (error) {
+      console.error('Failed to load crisis count:', error)
     }
   }
 
@@ -554,6 +578,7 @@ export default function Dashboard() {
               <SidebarItem
                 icon={AlertTriangle}
                 label="Crisis Monitor"
+                badge={activeCrisisCount || undefined}
                 onClick={() => setActiveModule('crisis')}
               />
             </div>
@@ -614,7 +639,12 @@ export default function Dashboard() {
           )}
 
           {activeModule === 'crisis' && (
-            <CrisisModule />
+            <CrisisModule
+              onOpenInStudio={(content) => {
+                handleOpenInStudio(content)
+                setActiveModule('studio')
+              }}
+            />
           )}
 
           {activeModule === 'vault' && (

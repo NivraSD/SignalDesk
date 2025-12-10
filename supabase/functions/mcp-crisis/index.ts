@@ -708,7 +708,7 @@ async function generateCrisisReport(args: any) {
   return report;
 }
 
-// Generate comprehensive crisis plan
+// Generate comprehensive crisis plan with company profile and pre-drafted communications
 async function generateCrisisPlan(args: any) {
   const {
     industry,
@@ -718,13 +718,39 @@ async function generateCrisisPlan(args: any) {
     existing_protocols = '',
     additional_context = '',
     emergency_contacts = [],
-    organization_id
+    organization_id,
+    organization_name = 'the organization',
+    company_profile = null,
+    generate_communications = false
   } = args;
 
-  console.log('🚀 Generating crisis plan for', industry, company_size);
+  console.log('🚀 Generating crisis plan for', organization_name || industry, company_size);
+  console.log('📋 Company profile provided:', !!company_profile);
 
-  // Generate industry-specific scenarios
-  const scenariosPrompt = `For the ${industry} industry, generate 5 specific crisis scenarios that could realistically occur. Focus on industry-specific crises.
+  // Build company context from profile
+  const companyContext = company_profile ? `
+**COMPANY PROFILE:**
+- Organization: ${organization_name}
+- Industry: ${industry}
+- Business Model: ${company_profile.business_model || 'Not specified'}
+- Key Markets: ${company_profile.key_markets?.join(', ') || 'Not specified'}
+- Product Lines: ${company_profile.product_lines?.join(', ') || 'Not specified'}
+- Strategic Goals: ${company_profile.strategic_goals?.join('; ') || 'Not specified'}
+- Leadership: ${company_profile.leadership?.map((l: any) => `${l.name} (${l.title})`).join(', ') || 'Not specified'}
+- Headquarters: ${company_profile.headquarters?.city ? `${company_profile.headquarters.city}, ${company_profile.headquarters.country || ''}` : 'Not specified'}
+- Company Size: ${company_profile.company_size?.employees || company_size || 'Not specified'}
+` : `
+**COMPANY PROFILE:**
+- Industry: ${industry}
+- Company Size: ${company_size}
+`;
+
+  // Generate industry-specific scenarios with company context
+  const scenariosPrompt = `For ${organization_name} in the ${industry} industry, generate 5 specific crisis scenarios that could realistically occur.
+
+${companyContext}
+
+Focus on industry-specific crises relevant to this company's profile, markets, and product lines.
 
 Return ONLY a valid JSON object in this format:
 {
@@ -909,14 +935,17 @@ Return ONLY a valid JSON object:
   }
 
   // Build complete crisis plan
+  const allScenarios = [...scenarios.map((s: any) => ({ ...s, isUniversal: false })), ...universalScenarios];
+
   const crisisPlan = {
     industry,
     company_size,
     organization_id,
+    organization_name,
     generatedDate: new Date().toLocaleDateString(),
     purpose,
     guidingPrinciples,
-    scenarios: [...scenarios.map((s: any) => ({ ...s, isUniversal: false })), ...universalScenarios],
+    scenarios: allScenarios,
     stakeholders,
     communicationPlans,
     crisisTeam: team_members,
@@ -924,12 +953,209 @@ Return ONLY a valid JSON object:
     keyConcerns: key_concerns,
     existingProtocols: existing_protocols,
     additionalContext: additional_context,
+    companyProfile: company_profile,
     isAIGenerated: true
   };
 
-  console.log('✅ Crisis plan generated with', scenarios.length + universalScenarios.length, 'scenarios');
+  console.log('✅ Crisis plan generated with', allScenarios.length, 'scenarios');
 
-  return { plan: crisisPlan };
+  // Generate pre-drafted communications if requested (parallel orchestration)
+  let predraftedCommunications: any[] = [];
+
+  if (generate_communications && allScenarios.length > 0 && stakeholders.length > 0) {
+    console.log('📝 Generating pre-drafted communications in parallel...');
+
+    // Define stakeholder groups for communication
+    const stakeholderGroups = ['customers', 'employees', 'investors', 'media', 'regulators', 'partners'];
+
+    // Select top 3 most critical scenarios for pre-drafting
+    const criticalScenarios = allScenarios
+      .filter((s: any) => s.impact === 'Critical' || s.impact === 'Major')
+      .slice(0, 3);
+
+    if (criticalScenarios.length === 0) {
+      // Fallback to first 3 scenarios
+      criticalScenarios.push(...allScenarios.slice(0, 3));
+    }
+
+    console.log(`   📋 Pre-drafting for ${criticalScenarios.length} scenarios x ${stakeholderGroups.length} stakeholders`);
+
+    // Generate communications in parallel batches
+    const communicationTasks: Promise<any>[] = [];
+
+    for (const scenario of criticalScenarios) {
+      for (const stakeholder of stakeholderGroups) {
+        communicationTasks.push(
+          generatePreDraftedCommunication(
+            scenario,
+            stakeholder,
+            organization_name,
+            industry,
+            companyContext
+          )
+        );
+      }
+    }
+
+    // Execute in parallel with batching (6 at a time to avoid rate limits)
+    const batchSize = 6;
+    for (let i = 0; i < communicationTasks.length; i += batchSize) {
+      const batch = communicationTasks.slice(i, i + batchSize);
+      const results = await Promise.all(batch);
+      predraftedCommunications.push(...results.filter(r => r !== null));
+      console.log(`   ✅ Batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(communicationTasks.length / batchSize)} complete`);
+    }
+
+    console.log(`✅ Generated ${predraftedCommunications.length} pre-drafted communications`);
+  }
+
+  return { plan: crisisPlan, predraftedCommunications };
+}
+
+// Generate a single pre-drafted communication
+async function generatePreDraftedCommunication(
+  scenario: any,
+  stakeholder: string,
+  organizationName: string,
+  industry: string,
+  companyContext: string
+): Promise<any> {
+  const stakeholderConcerns: Record<string, string[]> = {
+    customers: ['Service availability', 'Data security', 'Resolution timeline', 'Compensation'],
+    employees: ['Job security', 'Safety', 'Company stability', 'Action steps'],
+    investors: ['Financial impact', 'Stock implications', 'Recovery plan', 'Leadership response'],
+    media: ['Facts', 'Timeline', 'Company response', 'Contact information'],
+    regulators: ['Compliance', 'Incident details', 'Remediation steps', 'Timeline'],
+    partners: ['Business continuity', 'Support available', 'Communication plan', 'Next steps']
+  };
+
+  const channels: Record<string, string> = {
+    customers: 'Email/Website/App notification',
+    employees: 'Internal email/Slack/Town hall',
+    investors: 'Press release/Investor call',
+    media: 'Press release/Media briefing',
+    regulators: 'Formal letter/Regulatory filing',
+    partners: 'Direct communication/Partner portal'
+  };
+
+  const prompt = `You are a crisis communications expert. Generate a COMPLETE, ready-to-use communication draft.
+
+${companyContext}
+
+**CRISIS SCENARIO:**
+${scenario.title}: ${scenario.description}
+Severity: ${scenario.impact || 'Major'}
+
+**TARGET AUDIENCE:** ${stakeholder.charAt(0).toUpperCase() + stakeholder.slice(1)}
+**THEIR KEY CONCERNS:** ${stakeholderConcerns[stakeholder]?.join(', ') || 'General concerns'}
+**COMMUNICATION CHANNEL:** ${channels[stakeholder] || 'Email'}
+
+Generate a COMPLETE communication (500-800 words) that:
+1. Opens with acknowledgment of the situation
+2. Clearly states what happened (use [SPECIFIC DETAILS] placeholders for unknown facts)
+3. Explains the impact on this stakeholder
+4. Details the company's immediate response actions
+5. Provides a clear timeline for resolution
+6. Lists specific next steps for the audience
+7. Ends with contact information and commitment to updates
+
+Use a tone appropriate for ${stakeholder}: ${stakeholder === 'media' ? 'factual and professional' : stakeholder === 'employees' ? 'supportive and transparent' : stakeholder === 'customers' ? 'empathetic and reassuring' : 'formal and informative'}.
+
+IMPORTANT: Generate the FULL message. Do not truncate or abbreviate. Include ALL sections.`;
+
+  try {
+    const completion = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 2000,
+      temperature: 0.5,
+      messages: [{ role: 'user', content: prompt }]
+    });
+
+    const message = completion.content[0].type === 'text' ? completion.content[0].text : '';
+
+    return {
+      scenario: scenario.title,
+      stakeholder: stakeholder,
+      message: message,
+      channel: channels[stakeholder] || 'email',
+      tone: stakeholder === 'media' ? 'factual' : stakeholder === 'customers' ? 'empathetic' : 'transparent',
+      concerns: stakeholderConcerns[stakeholder] || []
+    };
+  } catch (error) {
+    console.error(`Failed to generate communication for ${scenario.title}/${stakeholder}:`, error);
+    return null;
+  }
+}
+
+// Generate communications for a single scenario (for on-demand generation)
+async function generateScenarioComms(args: any) {
+  const {
+    scenario,
+    organization_id,
+    organization_name = 'the organization',
+    industry = 'general'
+  } = args;
+
+  if (!scenario || !organization_id) {
+    throw new Error('scenario and organization_id are required');
+  }
+
+  console.log(`📝 Generating communications for scenario: ${scenario.title}`);
+
+  const stakeholderGroups = ['customers', 'employees', 'investors', 'media', 'regulators', 'partners'];
+  const companyContext = `
+**COMPANY PROFILE:**
+- Organization: ${organization_name}
+- Industry: ${industry}
+`;
+
+  // Generate communications in parallel
+  const communicationTasks = stakeholderGroups.map(stakeholder =>
+    generatePreDraftedCommunication(
+      scenario,
+      stakeholder,
+      organization_name,
+      industry,
+      companyContext
+    )
+  );
+
+  // Execute all in parallel
+  const results = await Promise.all(communicationTasks);
+  const communications = results.filter(r => r !== null);
+
+  console.log(`✅ Generated ${communications.length} communications for ${scenario.title}`);
+
+  // Save each communication to content_library
+  for (const comm of communications) {
+    try {
+      const { error } = await supabase
+        .from('content_library')
+        .insert({
+          organization_id: organization_id,
+          type: 'crisis-communication',
+          title: `[${comm.scenario}] ${comm.stakeholder} Communication`,
+          content: comm.message,
+          tags: ['crisis-communication', 'pre-drafted', comm.scenario.toLowerCase().replace(/\s+/g, '-'), comm.stakeholder.toLowerCase()],
+          metadata: {
+            generated_at: new Date().toISOString(),
+            scenario: comm.scenario,
+            stakeholder: comm.stakeholder,
+            tone: comm.tone || 'transparent',
+            channel: comm.channel || 'email',
+            source: 'crisis-scenario-generator'
+          }
+        });
+
+      if (error) {
+        console.error(`Failed to save communication for ${comm.stakeholder}:`, error);
+      }
+    } catch (err) {
+      console.error(`Error saving communication for ${comm.stakeholder}:`, err);
+    }
+  }
+
+  return { communications, scenario: scenario.title };
 }
 
 // HTTP handler
@@ -950,6 +1176,15 @@ serve(async (req) => {
     // Handle generate_plan action (direct call from frontend)
     if (action === 'generate_plan') {
       const result = await generateCrisisPlan(body);
+      return new Response(
+        JSON.stringify({ ...result, success: true }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+      );
+    }
+
+    // Handle generate_scenario_comms action (generate comms for a single scenario)
+    if (action === 'generate_scenario_comms') {
+      const result = await generateScenarioComms(body);
       return new Response(
         JSON.stringify({ ...result, success: true }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }

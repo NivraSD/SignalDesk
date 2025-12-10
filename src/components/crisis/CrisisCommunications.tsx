@@ -1,21 +1,73 @@
 'use client'
 
-import React, { useState } from 'react'
-import { MessageSquare, Send, Check, X as CloseIcon, Edit2, Sparkles, Loader2, Copy, Eye } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { MessageSquare, Send, Check, X as CloseIcon, Edit2, Sparkles, Loader2, Copy, Eye, FileText, ExternalLink } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
+import { useAppStore } from '@/stores/useAppStore'
+
+interface PreDraftedComm {
+  id: string
+  title: string
+  content: string
+  metadata: {
+    scenario: string
+    stakeholder: string
+    tone: string
+    channel: string
+  }
+}
 
 interface CrisisCommunicationsProps {
   crisis: any
   onUpdate: () => void
+  onOpenInStudio?: (content: { id: string; title: string; content: string }) => void
 }
 
-export default function CrisisCommunications({ crisis, onUpdate }: CrisisCommunicationsProps) {
+export default function CrisisCommunications({ crisis, onUpdate, onOpenInStudio }: CrisisCommunicationsProps) {
+  const { organization } = useAppStore()
   const [selectedStakeholder, setSelectedStakeholder] = useState<string | null>(null)
   const [draftMessage, setDraftMessage] = useState('')
   const [generating, setGenerating] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
+  const [preDraftedComms, setPreDraftedComms] = useState<PreDraftedComm[]>([])
+  const [loadingPreDrafts, setLoadingPreDrafts] = useState(false)
+  const [selectedPreDraft, setSelectedPreDraft] = useState<PreDraftedComm | null>(null)
 
   const communications = crisis.communications || []
+
+  // Load pre-drafted communications from Memory Vault
+  useEffect(() => {
+    const loadPreDraftedComms = async () => {
+      if (!organization?.id) return
+
+      setLoadingPreDrafts(true)
+      try {
+        const { data, error } = await supabase
+          .from('content_library')
+          .select('id, title, content, metadata')
+          .eq('organization_id', organization.id)
+          .eq('type', 'crisis-communication')
+          .contains('tags', ['pre-drafted'])
+          .order('created_at', { ascending: false })
+
+        if (!error && data) {
+          setPreDraftedComms(data.map(d => ({
+            id: d.id,
+            title: d.title,
+            content: d.content,
+            metadata: d.metadata || {}
+          })))
+          console.log(`📋 Loaded ${data.length} pre-drafted communications`)
+        }
+      } catch (err) {
+        console.error('Failed to load pre-drafted communications:', err)
+      } finally {
+        setLoadingPreDrafts(false)
+      }
+    }
+
+    loadPreDraftedComms()
+  }, [organization?.id])
 
   const stakeholderGroups = [
     { id: 'customers', name: 'Customers', icon: '👥', color: 'bg-[var(--burnt-orange)]' },
@@ -160,6 +212,76 @@ export default function CrisisCommunications({ crisis, onUpdate }: CrisisCommuni
 
             {selectedStakeholder && (
               <>
+                {/* Pre-drafted Communications Section */}
+                {preDraftedComms.filter(c => c.metadata?.stakeholder === selectedStakeholder).length > 0 && (
+                  <div className="mb-4">
+                    <label className="block text-sm text-[var(--grey-400)] mb-2">
+                      <FileText className="w-4 h-4 inline mr-1" />
+                      Pre-Drafted Templates (from Memory Vault)
+                    </label>
+                    <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto">
+                      {preDraftedComms
+                        .filter(c => c.metadata?.stakeholder === selectedStakeholder)
+                        .map((comm) => (
+                          <div
+                            key={comm.id}
+                            className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                              selectedPreDraft?.id === comm.id
+                                ? 'border-[var(--burnt-orange)] bg-[var(--burnt-orange)]/10'
+                                : 'border-zinc-700 bg-zinc-800 hover:border-zinc-600'
+                            }`}
+                            onClick={() => {
+                              setSelectedPreDraft(comm)
+                              setDraftMessage(comm.content)
+                            }}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <div className="text-sm font-medium text-white">{comm.metadata?.scenario || 'Crisis Communication'}</div>
+                                <div className="text-xs text-[var(--grey-500)]">
+                                  {comm.metadata?.channel || 'Email'} • {comm.metadata?.tone || 'Professional'} tone
+                                </div>
+                              </div>
+                              <div className="flex gap-2">
+                                {onOpenInStudio && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      onOpenInStudio({
+                                        id: comm.id,
+                                        title: comm.title,
+                                        content: comm.content
+                                      })
+                                    }}
+                                    className="text-[var(--grey-500)] hover:text-[var(--burnt-orange)] transition-colors"
+                                    title="Edit in Studio"
+                                  >
+                                    <ExternalLink className="w-4 h-4" />
+                                  </button>
+                                )}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    copyToClipboard(comm.content)
+                                  }}
+                                  className="text-[var(--grey-500)] hover:text-[var(--burnt-orange)] transition-colors"
+                                  title="Copy to clipboard"
+                                >
+                                  <Copy className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                    {selectedPreDraft && (
+                      <div className="mt-2 text-xs text-[var(--grey-500)]">
+                        Selected template loaded. Edit below or use as-is.
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className="text-sm text-[var(--grey-400)]">Message Content</label>
@@ -176,7 +298,7 @@ export default function CrisisCommunications({ crisis, onUpdate }: CrisisCommuni
                       ) : (
                         <>
                           <Sparkles className="w-3 h-3" />
-                          Generate with AI
+                          Generate New with AI
                         </>
                       )}
                     </button>
@@ -185,7 +307,7 @@ export default function CrisisCommunications({ crisis, onUpdate }: CrisisCommuni
                     value={draftMessage}
                     onChange={(e) => setDraftMessage(e.target.value)}
                     className="w-full bg-zinc-800 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)] h-48"
-                    placeholder="Enter your message here..."
+                    placeholder="Enter your message here or select a pre-drafted template above..."
                   />
                 </div>
 

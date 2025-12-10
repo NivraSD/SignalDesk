@@ -1,10 +1,22 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { X as CloseIcon, Plus, Minus, Sparkles, Loader2, FileText } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { useAppStore } from '@/stores/useAppStore'
 import { saveToMemoryVault } from '@/lib/memoryVaultAPI'
+
+interface CompanyProfile {
+  leadership?: { name: string; title: string; responsibilities?: string }[]
+  headquarters?: { city?: string; country?: string }
+  company_size?: { employees?: string; revenue?: string }
+  founded?: string
+  parent_company?: string
+  product_lines?: string[]
+  key_markets?: string[]
+  business_model?: string
+  strategic_goals?: string[]
+}
 
 interface TeamMember {
   role: string
@@ -40,6 +52,33 @@ export default function CrisisPlanGenerator({ onClose, onPlanGenerated }: Crisis
   const { organization } = useAppStore()
   const [step, setStep] = useState(1)
   const [generating, setGenerating] = useState(false)
+  const [companyProfile, setCompanyProfile] = useState<CompanyProfile | null>(null)
+  const [loadingProfile, setLoadingProfile] = useState(false)
+
+  // Load company profile on mount
+  useEffect(() => {
+    const loadCompanyProfile = async () => {
+      if (!organization?.id) return
+
+      setLoadingProfile(true)
+      try {
+        const response = await fetch(`/api/organizations/profile?id=${organization.id}`)
+        const data = await response.json()
+
+        if (data.success && data.organization?.company_profile) {
+          setCompanyProfile(data.organization.company_profile)
+          console.log('📋 Loaded company profile for crisis plan:', data.organization.company_profile)
+        }
+      } catch (error) {
+        console.error('Failed to load company profile:', error)
+      } finally {
+        setLoadingProfile(false)
+      }
+    }
+
+    loadCompanyProfile()
+  }, [organization?.id])
+
   const [planForm, setPlanForm] = useState<PlanForm>({
     industry: organization?.industry || '',
     companySize: 'medium',
@@ -170,7 +209,7 @@ export default function CrisisPlanGenerator({ onClose, onPlanGenerated }: Crisis
     try {
       console.log('🚀 Generating crisis plan with:', planForm)
 
-      // Call mcp-crisis edge function
+      // Call mcp-crisis edge function with company profile
       const { data, error } = await supabase.functions.invoke('mcp-crisis', {
         body: {
           action: 'generate_plan',
@@ -181,7 +220,20 @@ export default function CrisisPlanGenerator({ onClose, onPlanGenerated }: Crisis
           existing_protocols: planForm.existingProtocols,
           additional_context: planForm.additionalContext,
           emergency_contacts: planForm.emergencyContacts.filter(c => c.name),
-          organization_id: organization.name
+          organization_id: organization.id,
+          organization_name: organization.name,
+          // Pass company profile for context-aware plan generation
+          company_profile: companyProfile ? {
+            leadership: companyProfile.leadership || [],
+            headquarters: companyProfile.headquarters,
+            company_size: companyProfile.company_size,
+            product_lines: companyProfile.product_lines || [],
+            key_markets: companyProfile.key_markets || [],
+            business_model: companyProfile.business_model || '',
+            strategic_goals: companyProfile.strategic_goals || []
+          } : null,
+          // Request pre-drafted communications
+          generate_communications: true
         }
       })
 
@@ -220,6 +272,35 @@ export default function CrisisPlanGenerator({ onClose, onPlanGenerated }: Crisis
         console.error('⚠️ Failed to save to content_library')
       } else {
         console.log('✅ Plan saved to content_library')
+      }
+
+      // Save pre-drafted communications to Memory Vault
+      if (data.predraftedCommunications && Array.isArray(data.predraftedCommunications)) {
+        console.log(`📝 Saving ${data.predraftedCommunications.length} pre-drafted communications...`)
+
+        for (const comm of data.predraftedCommunications) {
+          try {
+            await saveToMemoryVault({
+              organization_id: organization.id,
+              type: 'crisis-communication',
+              title: `[${comm.scenario}] ${comm.stakeholder} Communication`,
+              content: comm.message,
+              tags: ['crisis-communication', 'pre-drafted', comm.scenario.toLowerCase().replace(/\s+/g, '-'), comm.stakeholder.toLowerCase()],
+              metadata: {
+                generated_at: new Date().toISOString(),
+                scenario: comm.scenario,
+                stakeholder: comm.stakeholder,
+                tone: comm.tone || 'transparent',
+                channel: comm.channel || 'email',
+                source: 'crisis-plan-generator',
+                plan_id: savedPlan?.id || null
+              }
+            })
+          } catch (err) {
+            console.error(`Failed to save communication for ${comm.scenario}/${comm.stakeholder}:`, err)
+          }
+        }
+        console.log('✅ Pre-drafted communications saved to Memory Vault')
       }
 
       onPlanGenerated(data.plan)

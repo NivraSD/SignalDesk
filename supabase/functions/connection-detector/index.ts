@@ -233,64 +233,67 @@ async function findConnectionsWithClaude(
   const targetNames = targets.map(t => t.name);
   const criticalTargetNames = targets.filter(t => t.priority === 'critical' || t.priority === 'high').map(t => t.name);
 
-  const prompt = `You are a competitive intelligence analyst. Your ONLY job is to find news about SPECIFIC COMPANIES we are tracking.
+  const prompt = `You are a competitive intelligence analyst for a trading/commodities company. Your job is to identify how market news creates connections and implications for our TRACKED COMPETITORS AND STAKEHOLDERS.
 
-⚠️ CRITICAL CONSTRAINT: You may ONLY report connections involving these specific entities:
+=== INTELLIGENCE TARGETS WE TRACK ===
 ${targetNames.length > 0 ? targetNames.map(n => `• ${n}`).join('\n') : 'No targets specified'}
-
-DO NOT invent generic market categories like "Crisis Communications Market" or "Fortune 500 Companies".
-DO NOT report on companies not in the list above.
-If the articles don't mention any of our tracked targets, return an EMPTY ARRAY [].
 
 ${companyContext}
 
-ARTICLES TO ANALYZE:
+=== NEWS ARTICLES TO ANALYZE ===
 ${articleSummaries}
 
-YOUR TASK: Find connections ONLY involving the specific companies/people listed above.
+=== YOUR TASK ===
+Identify connections between market events and our tracked targets. Find 2-5 meaningful connections.
+
+IMPORTANT: You don't need the target to be mentioned BY NAME in an article. Analyze how market events CREATE CONNECTIONS for our tracked targets. For example:
+- News about "China supply chain shifts" → How does this connect Vitol, Glencore, or Chinese trading enterprises to new opportunities/threats?
+- News about "commodity market changes" → What connections does this create for Goldman Sachs Commodities or Morgan Stanley?
+- News about "regulatory developments" → How are our tracked targets connected to these changes?
 
 ${criticalTargetNames.length > 0 ? `
-🔴 HIGH PRIORITY TARGETS (these matter most):
+🔴 HIGH PRIORITY TARGETS (focus on connections involving these):
 ${criticalTargetNames.map(n => `   • ${n}`).join('\n')}
 ` : ''}
 
-WHAT TO LOOK FOR:
-- One of our tracked targets mentioned doing something (hiring, launching, partnering, etc.)
-- Two of our tracked targets connected (partnership, competition, executive move between them)
-- A tracked target affected by news (regulatory action, client win/loss, etc.)
-
 CONNECTION TYPES:
-- "partnership": Tracked target forms alliance
-- "competition": Head-to-head move between tracked competitors
-- "personnel": Executive moves involving tracked targets
-- "acquisition": M&A involving tracked targets
-- "regulatory": Regulatory action affecting tracked targets
-- "market_shift": Tracked target responding to market change
+- "market_shift": How market changes connect to/affect our tracked targets
+- "competitive": Competitive dynamics between tracked targets or with new entrants
+- "partnership": Potential or actual alliances involving tracked targets
+- "supply_chain": Supply chain implications for tracked targets
+- "regulatory": Regulatory connections affecting tracked targets
 
-Return a JSON array (or empty [] if no tracked targets found in articles):
+Return a JSON array with 2-5 connections:
 [
   {
-    "title": "Brief title mentioning the tracked target by name",
-    "description": "What happened - be specific",
-    "connection_type": "partnership|competition|market_shift|regulatory|personnel|acquisition",
-    "primary_entity": "MUST be a name from the tracked targets list",
-    "connected_entities": ["Other involved entities"],
-    "strength_score": 75,
+    "title": "Connection: [TARGET NAME] and [market event/entity]",
+    "description": "What the connection is and why it matters",
+    "connection_type": "market_shift|competitive|partnership|supply_chain|regulatory",
+    "primary_entity": "Name from our tracked targets list",
+    "connected_entities": ["Other entities or market forces involved"],
+    "strength_score": 60-85,
     "business_implication": "What this means for ${orgName}",
-    "evidence": ["Quote from article [X]"],
-    "action_suggested": "Recommended action",
+    "evidence": ["Relevant fact or quote from articles"],
+    "action_suggested": "Recommended response",
     "primary_target_name": "EXACT name from targets list above"
   }
 ]
 
-🚨 VALIDATION RULES:
-1. "primary_entity" MUST match exactly one of: ${targetNames.slice(0, 15).join(', ')}${targetNames.length > 15 ? '...' : ''}
-2. If you can't find any articles mentioning our tracked targets, return []
-3. Generic terms like "the market", "industry players", "major firms" are NOT valid - use specific names only
+RULES:
+1. "primary_entity" and "primary_target_name" MUST match one of our tracked targets
+2. Explain WHY/HOW the news creates a connection to that target
+3. If you genuinely cannot connect ANY news to ANY tracked target, return []
 
 Return ONLY the JSON array, no other text.`;
 
   try {
+    // DEBUG: Log what we're sending to Claude
+    console.log(`   📤 Sending to Claude - Target names: ${targetNames.slice(0, 5).join(', ')}${targetNames.length > 5 ? '...' : ''}`);
+    console.log(`   📤 Article count in prompt: ${articleSummaries.split('\n\n').length}`);
+    console.log(`   📤 First article excerpt: ${articleSummaries.substring(0, 150)}`);
+
+    const startTime = Date.now();
+
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -308,6 +311,9 @@ Return ONLY the JSON array, no other text.`;
       })
     });
 
+    const apiTime = Date.now() - startTime;
+    console.log(`   ⏱️ Claude API response time: ${apiTime}ms`);
+
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`Claude API error: ${response.status} - ${errorText}`);
@@ -316,6 +322,9 @@ Return ONLY the JSON array, no other text.`;
 
     const data = await response.json();
     const content = data.content?.[0]?.text || '';
+
+    // DEBUG: Log Claude's raw response
+    console.log(`   📥 Claude raw response (first 500 chars): ${content.substring(0, 500)}`);
 
     // Parse JSON from response
     const jsonMatch = content.match(/\[[\s\S]*\]/);
