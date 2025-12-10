@@ -81,6 +81,7 @@ export default function CrisisCommunications({ crisis, onUpdate, onOpenInStudio 
   const loadPreDraftedComms = async () => {
     if (!organization?.id) return
     setLoadingComms(true)
+    console.log('📂 Loading crisis comms for org:', organization.id)
     try {
       // Simple query - just get content from Crisis folder
       const { data, error } = await supabase
@@ -90,11 +91,14 @@ export default function CrisisCommunications({ crisis, onUpdate, onOpenInStudio 
         .like('folder', 'Crisis/%')
         .order('created_at', { ascending: false })
 
+      console.log('📂 Crisis comms query result:', { dataCount: data?.length || 0, error, orgId: organization.id })
+
       if (error) {
         console.error('Query error:', error)
       }
 
       if (data) {
+        console.log('📂 Crisis comms loaded:', data.map(d => ({ title: d.title, folder: d.folder })))
         setPreDraftedComms(data.map(d => ({
           id: d.id,
           title: d.title,
@@ -113,10 +117,12 @@ export default function CrisisCommunications({ crisis, onUpdate, onOpenInStudio 
   const getCommsForScenario = (scenarioTitle: string) => {
     // Match by folder path OR metadata scenario
     const folderName = scenarioTitle.replace(/[^a-zA-Z0-9\s]/g, '').trim()
-    return preDraftedComms.filter(c =>
+    const matches = preDraftedComms.filter(c =>
       c.folder?.includes(folderName) ||
       c.metadata?.scenario === scenarioTitle
     )
+    console.log('📂 getCommsForScenario:', { scenarioTitle, folderName, totalComms: preDraftedComms.length, matches: matches.length })
+    return matches
   }
 
   // Generate using niv-content-intelligent-v2 (same pattern as Opportunities/Campaigns)
