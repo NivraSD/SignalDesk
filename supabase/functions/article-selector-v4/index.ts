@@ -46,6 +46,10 @@ const INDUSTRY_MAPPINGS: Record<string, string[]> = {
   healthcare: ['healthcare', 'pharma', 'biotech', 'medtech', 'regulation'],
   energy: ['energy', 'cleantech', 'renewables', 'utilities'],
   retail: ['retail', 'ecommerce', 'fashion', 'food', 'consumer_protection'],
+  // Beauty/cosmetics industry - separate from general retail to avoid grocery noise
+  beauty: ['beauty', 'cosmetics', 'fashion', 'retail', 'consumer', 'lifestyle'],
+  cosmetics: ['beauty', 'cosmetics', 'fashion', 'retail', 'consumer', 'lifestyle'],
+  'beauty & cosmetics': ['beauty', 'cosmetics', 'fashion', 'retail', 'consumer', 'lifestyle'],
   default: ['finance', 'technology', 'healthcare', 'retail', 'politics']
 };
 
@@ -53,8 +57,15 @@ const INDUSTRY_MAPPINGS: Record<string, string[]> = {
 // These now go through Claude relevance scoring to filter out generic AI/tech news
 const CORE_BUSINESS_SOURCES = ['Reuters', 'Wall Street Journal', 'Bloomberg', 'Financial Times'];
 
+// Intelligence target interface
+interface IntelligenceTarget {
+  name: string;
+  target_type: string;
+  priority: string;
+}
+
 // Build intelligence context from company profile for Claude
-function buildIntelligenceContext(profile: any, orgName: string): string {
+function buildIntelligenceContext(profile: any, orgName: string, targets: IntelligenceTarget[] = []): string {
   const parts: string[] = [];
 
   parts.push(`COMPANY: ${orgName}`);
@@ -128,6 +139,34 @@ function buildIntelligenceContext(profile: any, orgName: string): string {
     parts.push(`\nKEY STAKEHOLDERS: ${profile.stakeholders.key_stakeholders.map((s: any) => s.name || s).join(', ')}`);
   }
 
+  // Add intelligence targets with priority weighting
+  if (targets.length > 0) {
+    const criticalTargets = targets.filter(t => t.priority === 'critical');
+    const highTargets = targets.filter(t => t.priority === 'high');
+
+    if (criticalTargets.length > 0 || highTargets.length > 0) {
+      parts.push(`\n🔴 PRIORITY INTELLIGENCE TARGETS (monitor closely):`);
+      [...criticalTargets, ...highTargets].forEach(t => {
+        parts.push(`- ${t.name} (${t.target_type})`);
+      });
+    }
+
+    // Add other targets by type
+    const competitors = targets.filter(t => t.target_type === 'competitor' && t.priority !== 'critical' && t.priority !== 'high');
+    const stakeholders = targets.filter(t => (t.target_type === 'stakeholder' || t.target_type === 'influencer') && t.priority !== 'critical' && t.priority !== 'high');
+    const regulators = targets.filter(t => t.target_type === 'regulator');
+
+    if (competitors.length > 0) {
+      parts.push(`\nADDITIONAL COMPETITORS TO MONITOR: ${competitors.map(t => t.name).join(', ')}`);
+    }
+    if (stakeholders.length > 0) {
+      parts.push(`\nADDITIONAL STAKEHOLDERS TO MONITOR: ${stakeholders.map(t => t.name).join(', ')}`);
+    }
+    if (regulators.length > 0) {
+      parts.push(`\nREGULATORS TO MONITOR: ${regulators.map(t => t.name).join(', ')}`);
+    }
+  }
+
   return parts.join('\n');
 }
 
@@ -161,7 +200,13 @@ ${intelligenceContext}
 
 YOUR JOB: Score each article based on whether the company's executives would want to know about it. Think like a business strategist, not a keyword matcher.
 
-SCORING FRAMEWORK - Think about BUSINESS RELEVANCE, not just keyword matching.
+SCORING FRAMEWORK - Think about DIRECT BUSINESS RELEVANCE, not just keyword matching.
+
+⚠️ CRITICAL ANTI-HYPE FILTER: Generic "AI" news is NOT automatically relevant!
+- "Company X launches AI feature" → ONLY relevant if Company X is a competitor, customer, or partner
+- "AI is transforming industry Y" → ONLY relevant if industry Y is the company's industry
+- "Tech giant acquires AI startup" → ONLY relevant if it directly affects the company's market
+- Just mentioning "AI" or "technology" does NOT make something relevant
 
 90-100: CRITICAL INTELLIGENCE
 - Article mentions the company by name OR its direct competitors: ${competitorList}
@@ -172,25 +217,30 @@ SCORING FRAMEWORK - Think about BUSINESS RELEVANCE, not just keyword matching.
 - News about the company's TARGET CUSTOMERS or the industries they serve
 - Corporate crises, restructurings, investigations, or litigation (potential business opportunities)
 - Regulatory changes or enforcement actions in relevant sectors
-- M&A activity, PE deals, or major corporate transactions
-- Industry trends that affect the company's service lines
+- M&A activity ONLY if it involves companies in the same industry or market
+- Industry trends that DIRECTLY affect the company's service lines
 - News about companies that COULD BE clients or are in the company's target market
 
 50-69: RELEVANT MARKET INTELLIGENCE
-- General industry news and market developments
+- Industry-specific news and market developments (MUST be the company's industry)
 - Economic trends affecting the company's sectors
-- Technology or regulatory changes with business implications
+- Regulatory changes in the company's operating regions
 - Competitor industry developments (even if competitor not named)
 
 30-49: BACKGROUND CONTEXT
 - Broader business trends with indirect relevance
 - Adjacent industry news
 
-0-29: NOT RELEVANT
+0-29: NOT RELEVANT - Score these LOW!
 - Consumer lifestyle, entertainment, sports (unless company serves those sectors)
 - Pure tech/science news with no business application
 - Local news with no corporate relevance
 - Topics completely outside the company's scope
+- **Generic AI/tech news about companies NOT in the same industry**
+- **M&A between companies unrelated to this company's market** (e.g., IBM acquiring Confluent is NOT relevant to a marketing agency)
+- **"AI hype" articles** that just discuss AI trends without specific industry application
+- **Major corporate news about tech giants** (Google, Microsoft, IBM, Apple, Amazon) UNLESS they are competitors, customers, or it directly affects this company's business
+- **Funding/IPO news for startups** in unrelated industries
 
 COMPANY TYPE SPECIFIC GUIDANCE:
 
@@ -208,6 +258,13 @@ These are not just "interesting news" - they are POTENTIAL CLIENTS needing advis
 FOR MARKETING/PR AGENCIES:
 Score 70+ for brand campaigns, CMO moves, agency reviews, consumer trends, sponsorships.
 Major brand advertiser news is highly relevant (auto, tech, CPG, entertainment).
+
+FOR BEAUTY/COSMETICS COMPANIES:
+Score 70+ for beauty industry news, new product launches, ingredient trends, packaging innovations.
+Competitor brand news (other cosmetics companies, skincare brands) is highly relevant.
+Retail partnerships with Sephora, Ulta, Target beauty, CVS beauty are relevant.
+Score LOW for general grocery/food retail news - grocery stores are NOT relevant unless they have beauty sections.
+Celebrity beauty brands, influencer partnerships, and social commerce trends are relevant.
 
 FOR TRADING/COMMODITIES COMPANIES:
 Score 70+ for supply chain, commodity prices, trade policy, shipping, logistics.
@@ -359,8 +416,35 @@ serve(async (req) => {
     const profileData = org.company_profile || {};
     const industryRaw = (org.industry || profileData.industry || 'default').toLowerCase();
 
+    // ================================================================
+    // STEP 1b: Load intelligence targets from database
+    // ================================================================
+    const { data: intelligenceTargets, error: targetsError } = await supabase
+      .from('intelligence_targets')
+      .select('name, target_type, priority')
+      .eq('organization_id', org.id)
+      .eq('is_active', true);
+
+    if (targetsError) {
+      console.error('Error loading intelligence targets:', targetsError.message);
+    }
+
+    const targets = intelligenceTargets || [];
+    console.log(`   Intelligence targets loaded: ${targets.length}`);
+
+    // Extract targets by type for merging with profile
+    const targetCompetitors = targets.filter(t => t.target_type === 'competitor').map(t => t.name);
+    const targetStakeholders = targets.filter(t => t.target_type === 'stakeholder' || t.target_type === 'influencer').map(t => t.name);
+    const criticalTargets = targets.filter(t => t.priority === 'critical' || t.priority === 'high').map(t => t.name);
+
+    if (criticalTargets.length > 0) {
+      console.log(`   🔴 Critical/High priority targets: ${criticalTargets.join(', ')}`);
+    }
+
     // Normalize industry name
     let industry = industryRaw;
+    const orgNameLower = org.name.toLowerCase();
+
     if (industryRaw.includes('trading') || industryRaw.includes('sogo') || industryRaw.includes('conglomerate')) {
       industry = 'trading';
     } else if (industryRaw.includes('public_relations') || industryRaw.includes('pr ') || industryRaw.includes('communications')) {
@@ -369,6 +453,12 @@ serve(async (req) => {
       industry = 'marketing';
     } else if (industryRaw.includes('consulting') || industryRaw.includes('advisory') || industryRaw.includes('forensic') || industryRaw.includes('litigation')) {
       industry = 'consulting';
+    } else if (industryRaw.includes('beauty') || industryRaw.includes('cosmetic') || industryRaw.includes('skincare') || industryRaw.includes('makeup')) {
+      industry = 'beauty';
+    } else if (orgNameLower.includes('cosmetic') || orgNameLower.includes('beauty') || orgNameLower.includes('skincare')) {
+      // Also detect beauty companies by name even if industry is generic (like "Consumer Goods")
+      industry = 'beauty';
+      console.log(`   🎨 Detected beauty company from name: ${org.name}`);
     }
 
     // Auto-detect consulting firms based on industry and set flag before building context
@@ -381,7 +471,8 @@ serve(async (req) => {
     }
 
     // Build intelligence context for Claude (after setting consulting flag)
-    const intelligenceContext = buildIntelligenceContext(profileData, org.name);
+    // Pass intelligence_targets for priority weighting in context
+    const intelligenceContext = buildIntelligenceContext(profileData, org.name, targets);
     console.log(`   Intelligence context built (${intelligenceContext.length} chars)`);
 
     // Debug: Log agency/consulting detection details
@@ -397,12 +488,23 @@ serve(async (req) => {
       console.log(`   📊 CONSULTING MODE ENABLED - Using expanded scoring for restructuring, litigation, M&A, etc.`);
     }
 
-    // Extract competitors list for strict matching
-    const competitors: string[] = [
+    // Extract competitors list for strict matching - merge profile + intelligence_targets
+    const profileCompetitors = [
       ...(profileData.competition?.direct_competitors || []),
       ...(profileData.competition?.indirect_competitors || [])
     ];
-    console.log(`   Competitors to watch: ${competitors.slice(0, 5).join(', ')}${competitors.length > 5 ? '...' : ''}`);
+    // Merge with intelligence_targets competitors, deduplicate
+    const competitors: string[] = [...new Set([...profileCompetitors, ...targetCompetitors])];
+    console.log(`   Competitors to watch: ${competitors.slice(0, 5).join(', ')}${competitors.length > 5 ? '...' : ''} (${profileCompetitors.length} from profile, ${targetCompetitors.length} from targets)`);
+
+    // Also include stakeholders for Claude to watch
+    const stakeholders: string[] = [...new Set([
+      ...(profileData.stakeholders?.key_stakeholders?.map((s: any) => s.name || s) || []),
+      ...targetStakeholders
+    ])];
+    if (stakeholders.length > 0) {
+      console.log(`   Stakeholders to watch: ${stakeholders.slice(0, 5).join(', ')}${stakeholders.length > 5 ? '...' : ''}`);
+    }
 
     const relevantIndustryTags = INDUSTRY_MAPPINGS[industry] || INDUSTRY_MAPPINGS.default;
     console.log(`   Company industry: ${industryRaw} -> ${industry}`);
@@ -457,6 +559,13 @@ serve(async (req) => {
       healthcare: ['STAT News', 'FierceHealthcare', 'MedCity News', 'Endpoints News'],
       retail: ['Retail Dive', 'Modern Retail', 'Chain Store Age'],
       trading: ['Financial Times', 'Nikkei Asia', 'Reuters', 'Bloomberg', 'FreightWaves'],
+      // Beauty/cosmetics industry - WWD, Glossy, beauty trade publications
+      beauty: ['WWD', 'Glossy', 'Beauty Independent', 'Cosmetics Business', 'Global Cosmetic Industry',
+               'Beauty Packaging', 'CEW', 'Allure', 'Byrdie', 'Fashionista', 'The Business of Fashion'],
+      cosmetics: ['WWD', 'Glossy', 'Beauty Independent', 'Cosmetics Business', 'Global Cosmetic Industry',
+               'Beauty Packaging', 'CEW', 'Allure', 'Byrdie', 'Fashionista', 'The Business of Fashion'],
+      'beauty & cosmetics': ['WWD', 'Glossy', 'Beauty Independent', 'Cosmetics Business', 'Global Cosmetic Industry',
+               'Beauty Packaging', 'CEW', 'Allure', 'Byrdie', 'Fashionista', 'The Business of Fashion'],
       // Consulting industry - management consulting, litigation support, forensic accounting, restructuring
       consulting: ['Consulting Magazine', 'Management Consulting News', 'Harvard Business Review',
                    'Strategy+Business', 'McKinsey Insights', 'BCG Insights', 'Accounting Today',
@@ -540,11 +649,26 @@ serve(async (req) => {
     const seenIds = new Set((articlesWithDates || []).map(a => a.id));
     const uniqueTradeNoDate = tradeNoDateMapped.filter(a => !seenIds.has(a.id));
 
-    const articles = [...(articlesWithDates || []), ...uniqueTradeNoDate];
+    const rawArticles = [...(articlesWithDates || []), ...uniqueTradeNoDate];
+
+    // Filter out malformed articles (numeric-only titles, too short titles)
+    const articles = rawArticles.filter(a => {
+      const title = a.title || '';
+      // Skip if title is just numbers (malformed sitemap extraction)
+      if (/^\d+$/.test(title)) return false;
+      // Skip if title is too short (less than 10 chars)
+      if (title.length < 10) return false;
+      return true;
+    });
+
+    const malformedCount = rawArticles.length - articles.length;
+    if (malformedCount > 0) {
+      console.log(`   ⚠️ Filtered out ${malformedCount} malformed articles (numeric/short titles)`);
+    }
 
     console.log(`   Articles with dates: ${articlesWithDates?.length || 0}`);
     console.log(`   Trade articles with null dates (using created_at): ${uniqueTradeNoDate.length}`);
-    console.log(`   Total articles: ${articles.length}`);
+    console.log(`   Total articles (after malformed filter): ${articles.length}`);
 
     if (!articles || articles.length === 0) {
       return new Response(JSON.stringify({

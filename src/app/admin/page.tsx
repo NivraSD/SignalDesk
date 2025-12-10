@@ -46,6 +46,12 @@ interface Stats {
   recentScrapeRuns: any[]
   articlesLast24h: number
   articlesLast7d: number
+  // Queue stats
+  queuePending: number
+  queueProcessing: number
+  queueCompleted: number
+  queueFailed: number
+  queueMetadataOnly: number
 }
 
 export default function AdminDashboard() {
@@ -88,7 +94,13 @@ export default function AdminDashboard() {
         sourcesResult,
         scrapeRunsResult,
         articles24hResult,
-        articles7dResult
+        articles7dResult,
+        // Queue status counts
+        queuePendingResult,
+        queueProcessingResult,
+        queueCompletedResult,
+        queueFailedResult,
+        queueMetadataOnlyResult
       ] = await Promise.all([
         supabase.from('user_profiles').select('*', { count: 'exact' }),
         supabase.from('organizations').select('*', { count: 'exact' }),
@@ -98,6 +110,12 @@ export default function AdminDashboard() {
         supabase.from('batch_scrape_runs').select('*').order('started_at', { ascending: false }).limit(10),
         supabase.from('raw_articles').select('*', { count: 'exact' }).gte('scraped_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
         supabase.from('raw_articles').select('*', { count: 'exact' }).gte('scraped_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
+        // Queue status queries
+        supabase.from('raw_articles').select('*', { count: 'exact', head: true }).eq('scrape_status', 'pending'),
+        supabase.from('raw_articles').select('*', { count: 'exact', head: true }).eq('scrape_status', 'processing'),
+        supabase.from('raw_articles').select('*', { count: 'exact', head: true }).eq('scrape_status', 'completed'),
+        supabase.from('raw_articles').select('*', { count: 'exact', head: true }).eq('scrape_status', 'failed'),
+        supabase.from('raw_articles').select('*', { count: 'exact', head: true }).eq('scrape_status', 'metadata_only'),
       ])
 
       // Get recent signups (last 30 days)
@@ -118,6 +136,12 @@ export default function AdminDashboard() {
         recentScrapeRuns: scrapeRunsResult.data || [],
         articlesLast24h: articles24hResult.count || 0,
         articlesLast7d: articles7dResult.count || 0,
+        // Queue stats
+        queuePending: queuePendingResult.count || 0,
+        queueProcessing: queueProcessingResult.count || 0,
+        queueCompleted: queueCompletedResult.count || 0,
+        queueFailed: queueFailedResult.count || 0,
+        queueMetadataOnly: queueMetadataOnlyResult.count || 0,
       })
 
       // Also load detailed data
@@ -170,13 +194,19 @@ export default function AdminDashboard() {
   async function triggerScrape(type: string) {
     setTriggeringScrape(type)
     try {
-      const functionName = type === 'all'
-        ? 'batch-scraper-v5-orchestrator'
-        : `batch-scraper-v5-orchestrator-${type}`
+      let functionName: string
+      let body: any = { triggered_by: user?.email || 'admin' }
 
-      const { data, error } = await supabase.functions.invoke(functionName, {
-        body: { triggered_by: user?.email || 'admin' }
-      })
+      if (type === 'worker') {
+        functionName = 'batch-scraper-v5-worker'
+        body = { batch_size: 10 }
+      } else if (type === 'all') {
+        functionName = 'batch-scraper-v5-orchestrator'
+      } else {
+        functionName = `batch-scraper-v5-orchestrator-${type}`
+      }
+
+      const { data, error } = await supabase.functions.invoke(functionName, { body })
 
       if (error) throw error
 
@@ -306,6 +336,31 @@ export default function AdminDashboard() {
                 )}
                 Run Fireplexity
               </button>
+              <button
+                onClick={() => triggerScrape('cse')}
+                disabled={!!triggeringScrape}
+                className="w-full flex items-center gap-2 px-3 py-2 bg-[#1a1a1a] hover:bg-[#2e2e2e] rounded-lg text-sm text-[#bdbdbd] transition-colors disabled:opacity-50"
+              >
+                {triggeringScrape === 'cse' ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Play className="w-4 h-4" />
+                )}
+                Run CSE
+              </button>
+              <div className="border-t border-[#2e2e2e] my-2" />
+              <button
+                onClick={() => triggerScrape('worker')}
+                disabled={!!triggeringScrape}
+                className="w-full flex items-center gap-2 px-3 py-2 bg-[#c75d3a]/20 hover:bg-[#c75d3a]/30 rounded-lg text-sm text-[#c75d3a] transition-colors disabled:opacity-50"
+              >
+                {triggeringScrape === 'worker' ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Activity className="w-4 h-4" />
+                )}
+                Process Queue
+              </button>
             </div>
           </div>
 
@@ -334,7 +389,8 @@ export default function AdminDashboard() {
             <ScrapingView
               scrapeRuns={scrapeRuns}
               rawArticles={rawArticles}
-              onRefresh={() => { loadAllScrapeRuns(); loadRawArticles(); }}
+              stats={stats}
+              onRefresh={() => { loadAllScrapeRuns(); loadRawArticles(); loadStats(); }}
             />
           )}
           {activeView === 'users' && (
@@ -509,10 +565,12 @@ function StatCard({
 function ScrapingView({
   scrapeRuns,
   rawArticles,
+  stats,
   onRefresh
 }: {
   scrapeRuns: any[]
   rawArticles: any[]
+  stats: Stats | null
   onRefresh: () => void
 }) {
   const [activeTab, setActiveTab] = useState<'runs' | 'articles'>('runs')
@@ -533,6 +591,24 @@ function ScrapingView({
         </button>
       </div>
 
+      {/* Queue Summary */}
+      {stats && (
+        <div className="flex items-center gap-6 text-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-[#757575]">Pending:</span>
+            <span className={stats.queuePending > 0 ? 'text-yellow-400 font-medium' : 'text-green-400'}>{stats.queuePending}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[#757575]">Completed:</span>
+            <span className="text-green-400 font-medium">{stats.queueCompleted.toLocaleString()}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[#757575]">Failed:</span>
+            <span className="text-red-400 font-medium">{stats.queueFailed}</span>
+          </div>
+        </div>
+      )}
+
       {/* Tabs */}
       <div className="flex gap-2 border-b border-[#2e2e2e]">
         <button
@@ -543,7 +619,7 @@ function ScrapingView({
               : 'text-[#757575] border-transparent hover:text-white'
           }`}
         >
-          Scrape Runs
+          Runs
         </button>
         <button
           onClick={() => setActiveTab('articles')}
@@ -553,64 +629,62 @@ function ScrapingView({
               : 'text-[#757575] border-transparent hover:text-white'
           }`}
         >
-          Raw Articles
+          Articles
         </button>
       </div>
 
-      {activeTab === 'runs' ? (
+      {activeTab === 'runs' && (
         <div className="bg-[#1a1a1a] rounded-xl border border-[#2e2e2e] overflow-hidden">
           <table className="w-full">
             <thead>
               <tr className="border-b border-[#2e2e2e]">
-                <th className="text-left p-4 text-[#757575] text-xs font-semibold uppercase">Status</th>
-                <th className="text-left p-4 text-[#757575] text-xs font-semibold uppercase">Type</th>
-                <th className="text-left p-4 text-[#757575] text-xs font-semibold uppercase">Started</th>
-                <th className="text-left p-4 text-[#757575] text-xs font-semibold uppercase">Articles</th>
-                <th className="text-left p-4 text-[#757575] text-xs font-semibold uppercase">Sources</th>
-                <th className="text-left p-4 text-[#757575] text-xs font-semibold uppercase">Duration</th>
+                <th className="text-left p-4 text-[#757575] text-xs font-semibold uppercase">Date</th>
+                <th className="text-right p-4 text-[#757575] text-xs font-semibold uppercase">Time</th>
+                <th className="text-center p-4 text-[#757575] text-xs font-semibold uppercase">Type</th>
+                <th className="text-right p-4 text-[#757575] text-xs font-semibold uppercase">New</th>
+                <th className="text-center p-4 text-[#757575] text-xs font-semibold uppercase">Status</th>
               </tr>
             </thead>
             <tbody>
               {scrapeRuns.map(run => (
                 <tr key={run.id} className="border-b border-[#2e2e2e] last:border-0 hover:bg-[#212121]">
-                  <td className="p-4">
-                    <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium ${
-                      run.status === 'completed' ? 'bg-green-500/10 text-green-400' :
-                      run.status === 'failed' ? 'bg-red-500/10 text-red-400' :
-                      run.status === 'running' ? 'bg-yellow-500/10 text-yellow-400' :
+                  <td className="p-4 text-[#9e9e9e] text-sm">
+                    {new Date(run.started_at).toLocaleDateString()}
+                  </td>
+                  <td className="p-4 text-right text-[#757575] text-sm">
+                    {run.duration_seconds ? `${run.duration_seconds}s` : '-'}
+                  </td>
+                  <td className="p-4 text-center">
+                    <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${
+                      run.run_type === 'rss' ? 'bg-blue-500/10 text-blue-400' :
+                      run.run_type === 'sitemap' ? 'bg-purple-500/10 text-purple-400' :
+                      run.run_type === 'fireplexity' ? 'bg-orange-500/10 text-orange-400' :
+                      run.run_type === 'cse' ? 'bg-green-500/10 text-green-400' :
                       'bg-[#3d3d3d] text-[#9e9e9e]'
                     }`}>
-                      {run.status === 'completed' && <CheckCircle className="w-3 h-3" />}
-                      {run.status === 'failed' && <XCircle className="w-3 h-3" />}
-                      {run.status === 'running' && <Loader2 className="w-3 h-3 animate-spin" />}
-                      {run.status}
+                      {run.run_type?.toUpperCase() || 'UNKNOWN'}
                     </span>
                   </td>
-                  <td className="p-4 text-[#bdbdbd] text-sm">{run.run_type}</td>
-                  <td className="p-4 text-[#9e9e9e] text-sm">
-                    {new Date(run.started_at).toLocaleString()}
+                  <td className="p-4 text-right">
+                    <span className="text-white text-sm font-medium">{run.articles_new || 0}</span>
                   </td>
-                  <td className="p-4">
-                    <span className="text-white text-sm">{run.articles_new || 0}</span>
-                    <span className="text-[#757575] text-xs ml-1">new</span>
-                    {run.articles_discovered > 0 && (
-                      <span className="text-[#757575] text-xs ml-2">/ {run.articles_discovered} found</span>
+                  <td className="p-4 text-center">
+                    {run.status === 'completed' ? (
+                      <CheckCircle className="w-4 h-4 text-green-400 inline" />
+                    ) : run.status === 'failed' ? (
+                      <XCircle className="w-4 h-4 text-red-400 inline" />
+                    ) : (
+                      <Loader2 className="w-4 h-4 text-yellow-400 animate-spin inline" />
                     )}
-                  </td>
-                  <td className="p-4">
-                    <span className="text-green-400 text-sm">{run.sources_successful || 0}</span>
-                    <span className="text-[#757575] text-xs"> / </span>
-                    <span className="text-red-400 text-sm">{run.sources_failed || 0}</span>
-                  </td>
-                  <td className="p-4 text-[#757575] text-sm">
-                    {run.duration_seconds ? `${run.duration_seconds}s` : '-'}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-      ) : (
+      )}
+
+      {activeTab === 'articles' && (
         <div className="bg-[#1a1a1a] rounded-xl border border-[#2e2e2e] overflow-hidden">
           <table className="w-full">
             <thead>
