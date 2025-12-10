@@ -73,6 +73,7 @@ export default function StudioNIVPanel({
   const [conversationId] = useState(`conv-${Date.now()}`)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [hasShownWelcome, setHasShownWelcome] = useState(false)
 
   // Track the last content ID we acknowledged
@@ -175,6 +176,11 @@ export default function StudioNIVPanel({
     const userMessage = input.trim()
     setInput('')
 
+    // Reset textarea height to default
+    if (textareaRef.current) {
+      textareaRef.current.style.height = '40px'
+    }
+
     // Add user message
     const userMsg: Message = {
       id: `msg-${Date.now()}`,
@@ -269,9 +275,10 @@ export default function StudioNIVPanel({
       }])
     }
 
-    // If ack is asking a question, wait for user
+    // If ack is asking a question, wait for user (don't call full stage)
+    // Mark as already handled so processResponse doesn't duplicate
     if (ackData?.mode === 'question' || ackData?.mode === 'dialogue' || ackData?.awaitingResponse) {
-      return ackData
+      return { ...ackData, _alreadyHandled: true }
     }
 
     // Step 2: Get full response
@@ -306,6 +313,12 @@ export default function StudioNIVPanel({
   // Process response from NIV
   const processResponse = (response: any) => {
     console.log('Processing response mode:', response.mode)
+
+    // Skip if already handled by acknowledgment stage
+    if (response._alreadyHandled) {
+      console.log('Response already handled by acknowledgment stage, skipping')
+      return
+    }
 
     switch (response.mode) {
       case 'question':
@@ -793,16 +806,32 @@ export default function StudioNIVPanel({
         {/* Thinking/Generating indicator */}
         {(isThinking || isGenerating) && (
           <div className="flex justify-start">
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <div className="relative" style={{ width: '28px', height: '28px', flexShrink: 0 }}>
-                <svg width="28" height="28" viewBox="0 0 28 28" className="animate-pulse">
-                  <rect width="28" height="28" rx="6" fill="#faf9f7" />
-                  <polygon points="22,0 28,0 28,6" fill="#c75d3a" />
-                </svg>
-                <Loader2
-                  className="w-3.5 h-3.5 animate-spin absolute"
-                  style={{ color: '#1a1a1a', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}
-                />
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                {/* NIV avatar with spinner overlay */}
+                <div className="relative" style={{ width: 28, height: 28, flexShrink: 0 }}>
+                  <svg width="28" height="28" viewBox="0 0 28 28" style={{ display: 'block' }}>
+                    <rect width="28" height="28" rx="6" fill="#faf9f7" />
+                    <text
+                      x="4"
+                      y="19"
+                      fontFamily="Space Grotesk, sans-serif"
+                      fontWeight="700"
+                      fontSize="14"
+                      fill="#1a1a1a"
+                    >
+                      NIV
+                    </text>
+                    <polygon points="22,0 28,0 28,6" fill="#c75d3a" />
+                  </svg>
+                  {/* Spinner overlay */}
+                  <div
+                    className="absolute inset-0 flex items-center justify-center rounded-md"
+                    style={{ background: 'rgba(250, 249, 247, 0.85)' }}
+                  >
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: 'var(--charcoal)' }} />
+                  </div>
+                </div>
               </div>
               <div
                 className="rounded-xl px-3.5 py-2.5"
@@ -823,6 +852,7 @@ export default function StudioNIVPanel({
       <div className="p-4 pb-8 mb-[5vh] border-t border-zinc-800 flex-shrink-0">
         <div className="flex space-x-2 items-end">
           <textarea
+            ref={textareaRef}
             value={input}
             onChange={(e) => {
               setInput(e.target.value)
