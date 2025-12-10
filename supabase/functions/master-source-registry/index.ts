@@ -230,18 +230,19 @@ const TIER1_SOURCES = {
     { name: 'Puck News', url: 'https://puck.news/feed/', type: 'rss', priority: 'high' }
   ],
   pr_sources: [
-    { name: 'PR Newswire', url: 'https://www.prnewswire.com/rss/news-releases-list.rss', type: 'rss', priority: 'critical' },
-    { name: 'Business Wire', url: 'https://feed.businesswire.com/rss/home', type: 'rss', priority: 'critical' },
-    { name: 'Globe Newswire', url: 'https://www.globenewswire.com/RssFeed/', type: 'rss', priority: 'high' },
-    { name: 'PR Week', url: 'https://www.prweek.com/rss', type: 'rss', priority: 'high' },
-    { name: "O'Dwyer's PR", url: 'https://www.odwyerpr.com/rss.xml', type: 'rss', priority: 'medium' },
-    { name: 'EIN Presswire', url: 'https://www.einpresswire.com/rss', type: 'rss', priority: 'high' },
-    { name: 'PR Log', url: 'https://www.prlog.org/news/rss/', type: 'rss', priority: 'medium' },
-    { name: 'CSRwire', url: 'https://www.csrwire.com/rss/all', type: 'rss', priority: 'high' },
-    { name: 'PR Leap', url: 'https://www.prleap.com/rss/', type: 'rss', priority: 'medium' },
-    { name: '24-7PressRelease', url: 'https://www.24-7pressrelease.com/rss/', type: 'rss', priority: 'medium' },
-    { name: 'Cision PR Web', url: 'https://www.prweb.com/rss/', type: 'rss', priority: 'high' },
-    { name: 'MarketWired', url: 'https://www.marketwired.com/rss', type: 'rss', priority: 'high' },
+    // Wire services downgraded - significant news gets picked up by major outlets anyway
+    { name: 'PR Newswire', url: 'https://www.prnewswire.com/rss/news-releases-list.rss', type: 'rss', priority: 'low' },
+    { name: 'Business Wire', url: 'https://feed.businesswire.com/rss/home', type: 'rss', priority: 'low' },
+    { name: 'Globe Newswire', url: 'https://www.globenewswire.com/RssFeed/', type: 'rss', priority: 'low' },
+    { name: 'PR Week', url: 'https://www.prweek.com/rss', type: 'rss', priority: 'medium' },
+    { name: "O'Dwyer's PR", url: 'https://www.odwyerpr.com/rss.xml', type: 'rss', priority: 'low' },
+    { name: 'EIN Presswire', url: 'https://www.einpresswire.com/rss', type: 'rss', priority: 'low' },
+    { name: 'PR Log', url: 'https://www.prlog.org/news/rss/', type: 'rss', priority: 'low' },
+    { name: 'CSRwire', url: 'https://www.csrwire.com/rss/all', type: 'rss', priority: 'low' },
+    { name: 'PR Leap', url: 'https://www.prleap.com/rss/', type: 'rss', priority: 'low' },
+    { name: '24-7PressRelease', url: 'https://www.24-7pressrelease.com/rss/', type: 'rss', priority: 'low' },
+    { name: 'Cision PR Web', url: 'https://www.prweb.com/rss/', type: 'rss', priority: 'low' },
+    { name: 'MarketWired', url: 'https://www.marketwired.com/rss', type: 'rss', priority: 'low' },
     { name: 'PR Underground', url: 'https://www.prunderground.com/rss-feeds/', type: 'rss', priority: 'low' }
   ],
   regulatory_sources: [

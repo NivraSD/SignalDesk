@@ -9,8 +9,8 @@ import { corsHeaders } from '../_shared/cors.ts';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-// Source diversity settings (matching V4)
-const MAX_PER_SOURCE = 15;  // Prevent any single source from dominating
+// Source diversity settings
+const MAX_PER_SOURCE = 5;  // Strict cap to ensure source diversity
 const DEFAULT_HOURS_BACK = 18;  // 18 hours for daily scrapes
 
 interface TargetMatch {

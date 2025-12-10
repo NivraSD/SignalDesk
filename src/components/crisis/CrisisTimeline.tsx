@@ -5,7 +5,7 @@ import { Clock, Plus, Activity, MessageSquare, AlertCircle, CheckCircle2 } from 
 import { supabase } from '@/lib/supabase/client'
 
 interface CrisisTimelineProps {
-  crisis: any
+  crisis: any | null
   onUpdate: () => void
 }
 
@@ -13,11 +13,14 @@ export default function CrisisTimeline({ crisis, onUpdate }: CrisisTimelineProps
   const [showAddEntry, setShowAddEntry] = useState(false)
   const [newEntry, setNewEntry] = useState({ type: 'event', content: '', actor: '' })
 
+  // Handle null crisis
+  const timeline = crisis?.timeline || []
+
   const addTimelineEntry = async () => {
-    if (!newEntry.content.trim()) return
+    if (!newEntry.content.trim() || !crisis) return
 
     const updatedTimeline = [
-      ...(crisis.timeline || []),
+      ...timeline,
       {
         time: new Date().toISOString(),
         type: newEntry.type,
@@ -133,8 +136,8 @@ export default function CrisisTimeline({ crisis, onUpdate }: CrisisTimelineProps
 
           {/* Timeline Events */}
           <div className="space-y-6">
-            {crisis.timeline && crisis.timeline.length > 0 ? (
-              crisis.timeline.slice().reverse().map((event: any, idx: number) => {
+            {timeline.length > 0 ? (
+              timeline.slice().reverse().map((event: any, idx: number) => {
                 const Icon = getEventIcon(event.type)
                 const color = getEventColor(event.type)
 

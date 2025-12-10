@@ -5,7 +5,7 @@ import { Users, CheckCircle, Circle, Plus, Edit2, Trash2, UserCheck, UserX, Cloc
 import { supabase } from '@/lib/supabase/client'
 
 interface CrisisTeamManagerProps {
-  crisis: any
+  crisis: any | null
   onUpdate: () => void
 }
 
@@ -13,11 +13,12 @@ export default function CrisisTeamManager({ crisis, onUpdate }: CrisisTeamManage
   const [newTask, setNewTask] = useState({ title: '', assignee: '', priority: 'medium' })
   const [showAddTask, setShowAddTask] = useState(false)
 
-  const teamStatus = crisis.team_status || {}
-  const tasks = crisis.tasks || []
+  // Handle null crisis
+  const teamStatus = crisis?.team_status || {}
+  const tasks = crisis?.tasks || []
 
   const addTask = async () => {
-    if (!newTask.title) return
+    if (!newTask.title || !crisis) return
 
     const updatedTasks = [
       ...tasks,
@@ -42,6 +43,7 @@ export default function CrisisTeamManager({ crisis, onUpdate }: CrisisTeamManage
   }
 
   const updateTaskStatus = async (taskId: number, status: string) => {
+    if (!crisis) return
     const updatedTasks = tasks.map((t: any) =>
       t.id === taskId ? { ...t, status, completedAt: status === 'completed' ? new Date().toISOString() : null } : t
     )
@@ -55,6 +57,7 @@ export default function CrisisTeamManager({ crisis, onUpdate }: CrisisTeamManage
   }
 
   const deleteTask = async (taskId: number) => {
+    if (!crisis) return
     const updatedTasks = tasks.filter((t: any) => t.id !== taskId)
 
     const { error } = await supabase
@@ -66,6 +69,7 @@ export default function CrisisTeamManager({ crisis, onUpdate }: CrisisTeamManage
   }
 
   const updateTeamMemberStatus = async (memberId: string, status: string, notified: boolean) => {
+    if (!crisis) return
     const updatedTeamStatus = {
       ...teamStatus,
       [memberId]: { ...teamStatus[memberId], status, notified }
