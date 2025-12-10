@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { FileText, X as CloseIcon, Users, Shield, MessageSquare, AlertTriangle, CheckCircle } from 'lucide-react'
+import { FileText, X as CloseIcon, Users, Shield, MessageSquare, AlertTriangle, CheckCircle, Package, Circle, ExternalLink } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { useAppStore } from '@/stores/useAppStore'
 import { fetchMemoryVaultContent } from '@/lib/memoryVaultAPI'
@@ -12,17 +12,56 @@ interface CrisisPlanViewerProps {
   embedded?: boolean
 }
 
+interface DraftedComm {
+  id: string
+  scenario: string
+  stakeholder: string
+}
+
 export default function CrisisPlanViewer({ onClose, plan: providedPlan, embedded = false }: CrisisPlanViewerProps) {
   const { organization } = useAppStore()
   const [plan, setPlan] = useState<any>(providedPlan)
   const [loading, setLoading] = useState(!providedPlan)
   const [activeTab, setActiveTab] = useState('overview')
+  const [draftedComms, setDraftedComms] = useState<DraftedComm[]>([])
 
   useEffect(() => {
     if (!providedPlan && organization) {
       loadPlan()
     }
   }, [organization, providedPlan])
+
+  useEffect(() => {
+    if (organization) {
+      loadDraftedComms()
+    }
+  }, [organization])
+
+  const loadDraftedComms = async () => {
+    if (!organization?.id) return
+    try {
+      const { data, error } = await supabase
+        .from('content_library')
+        .select('id, metadata')
+        .eq('organization_id', organization.id)
+        .eq('type', 'crisis-communication')
+        .contains('tags', ['pre-drafted'])
+
+      if (!error && data) {
+        setDraftedComms(data.map(d => ({
+          id: d.id,
+          scenario: d.metadata?.scenario || '',
+          stakeholder: d.metadata?.stakeholder || ''
+        })))
+      }
+    } catch (err) {
+      console.error('Failed to load drafted comms:', err)
+    }
+  }
+
+  const getCommsForScenario = (scenarioTitle: string) => {
+    return draftedComms.filter(c => c.scenario === scenarioTitle)
+  }
 
   const loadPlan = async () => {
     setLoading(true)
@@ -102,8 +141,15 @@ export default function CrisisPlanViewer({ onClose, plan: providedPlan, embedded
     { id: 'scenarios', name: 'Scenarios', icon: AlertTriangle },
     { id: 'team', name: 'Crisis Team', icon: Users },
     { id: 'stakeholders', name: 'Stakeholders', icon: Shield },
-    { id: 'communications', name: 'Communications', icon: MessageSquare }
+    { id: 'inventory', name: 'Inventory', icon: Package }
   ]
+
+  // Helper to find communication plan for a stakeholder
+  const getCommPlanForStakeholder = (stakeholderName: string) => {
+    return plan.communicationPlans?.find((c: any) =>
+      c.stakeholder?.toLowerCase() === stakeholderName?.toLowerCase()
+    )
+  }
 
   const getSeverityColor = (severity: string) => {
     switch (severity?.toLowerCase()) {
@@ -272,78 +318,147 @@ export default function CrisisPlanViewer({ onClose, plan: providedPlan, embedded
 
         {activeTab === 'stakeholders' && (
           <div className="space-y-4">
-            {plan.stakeholders?.map((stakeholder: any, idx: number) => (
-              <div key={idx} className="bg-zinc-800 border border-zinc-700 rounded-xl p-6">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <h3 className="text-lg font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>{stakeholder.name}</h3>
-                    <p className="text-sm text-[var(--grey-400)]">{stakeholder.description}</p>
-                  </div>
-                  <span className={`text-xs px-2 py-1 rounded border ${
-                    stakeholder.impactLevel === 'High' ? 'text-red-400 bg-red-500/10 border-red-500' :
-                    stakeholder.impactLevel === 'Medium' ? 'text-amber-400 bg-amber-500/10 border-amber-500' :
-                    'text-[var(--burnt-orange)] bg-[var(--burnt-orange)]/10 border-[var(--burnt-orange)]'
-                  }`}>
-                    {stakeholder.impactLevel} Impact
-                  </span>
-                </div>
-                {stakeholder.concerns?.length > 0 && (
-                  <div className="mt-4">
-                    <div className="text-sm font-semibold text-[var(--grey-400)] mb-2">Primary Concerns:</div>
-                    <div className="flex flex-wrap gap-2">
-                      {stakeholder.concerns.map((concern: string, cidx: number) => (
-                        <span key={cidx} className="px-2 py-1 bg-zinc-900 text-[var(--grey-300)] text-xs rounded">
-                          {concern}
-                        </span>
-                      ))}
+            {plan.stakeholders?.map((stakeholder: any, idx: number) => {
+              const commPlan = getCommPlanForStakeholder(stakeholder.name)
+              return (
+                <div key={idx} className="bg-zinc-800 border border-zinc-700 rounded-xl p-6">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <h3 className="text-lg font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>{stakeholder.name}</h3>
+                      <p className="text-sm text-[var(--grey-400)]">{stakeholder.description}</p>
                     </div>
+                    <span className={`text-xs px-2 py-1 rounded border ${
+                      stakeholder.impactLevel === 'High' ? 'text-red-400 bg-red-500/10 border-red-500' :
+                      stakeholder.impactLevel === 'Medium' ? 'text-amber-400 bg-amber-500/10 border-amber-500' :
+                      'text-[var(--burnt-orange)] bg-[var(--burnt-orange)]/10 border-[var(--burnt-orange)]'
+                    }`}>
+                      {stakeholder.impactLevel} Impact
+                    </span>
                   </div>
-                )}
-              </div>
-            ))}
+
+                  {/* Concerns */}
+                  {stakeholder.concerns?.length > 0 && (
+                    <div className="mt-4">
+                      <div className="text-sm font-semibold text-[var(--grey-400)] mb-2">Primary Concerns:</div>
+                      <div className="flex flex-wrap gap-2">
+                        {stakeholder.concerns.map((concern: string, cidx: number) => (
+                          <span key={cidx} className="px-2 py-1 bg-zinc-900 text-[var(--grey-300)] text-xs rounded">
+                            {concern}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Communication Approach */}
+                  {commPlan && (
+                    <div className="mt-4 pt-4 border-t border-zinc-700">
+                      <div className="text-sm font-semibold text-[var(--burnt-orange)] mb-3">Communication Approach</div>
+                      <div className="grid grid-cols-2 gap-3 mb-3">
+                        <div>
+                          <div className="text-xs text-[var(--grey-500)]">Primary Channel</div>
+                          <div className="text-sm text-white">{commPlan.primaryChannel}</div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-[var(--grey-500)]">Timing</div>
+                          <div className="text-sm text-white">{commPlan.timing}</div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-[var(--grey-500)]">Spokesperson</div>
+                          <div className="text-sm text-white">{commPlan.spokesperson}</div>
+                        </div>
+                        {commPlan.secondaryChannel && (
+                          <div>
+                            <div className="text-xs text-[var(--grey-500)]">Secondary Channel</div>
+                            <div className="text-sm text-white">{commPlan.secondaryChannel}</div>
+                          </div>
+                        )}
+                      </div>
+                      {commPlan.keyMessages?.length > 0 && (
+                        <div>
+                          <div className="text-xs text-[var(--grey-500)] mb-2">Key Messages:</div>
+                          <ul className="space-y-1">
+                            {commPlan.keyMessages.slice(0, 3).map((message: string, midx: number) => (
+                              <li key={midx} className="text-xs text-[var(--grey-300)] flex items-start gap-2">
+                                <span className="text-[var(--burnt-orange)]">•</span>
+                                <span>{message}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
         )}
 
-        {activeTab === 'communications' && (
-          <div className="space-y-4">
-            {plan.communicationPlans?.map((comm: any, idx: number) => (
-              <div key={idx} className="bg-zinc-800 border border-zinc-700 rounded-xl p-6">
-                <h3 className="text-lg font-bold text-white mb-4" style={{ fontFamily: 'var(--font-display)' }}>{comm.stakeholder}</h3>
-
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <div className="text-sm text-[var(--grey-400)] mb-1">Primary Channel</div>
-                    <div className="text-sm text-white">{comm.primaryChannel}</div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-[var(--grey-400)] mb-1">Secondary Channel</div>
-                    <div className="text-sm text-white">{comm.secondaryChannel}</div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-[var(--grey-400)] mb-1">Timing</div>
-                    <div className="text-sm text-white">{comm.timing}</div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-[var(--grey-400)] mb-1">Spokesperson</div>
-                    <div className="text-sm text-white">{comm.spokesperson}</div>
-                  </div>
-                </div>
-
-                {comm.keyMessages?.length > 0 && (
-                  <div>
-                    <div className="text-sm font-semibold text-[var(--grey-400)] mb-2">Key Messages:</div>
-                    <ul className="space-y-2">
-                      {comm.keyMessages.map((message: string, midx: number) => (
-                        <li key={midx} className="text-sm text-[var(--grey-300)] flex items-start gap-2">
-                          <MessageSquare className="w-4 h-4 text-[var(--burnt-orange)] mt-0.5 flex-shrink-0" />
-                          <span>{message}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+        {activeTab === 'inventory' && (
+          <div className="space-y-6">
+            {/* Info banner */}
+            <div className="bg-zinc-800/50 border border-zinc-700 rounded-lg p-4 flex items-start gap-3">
+              <MessageSquare className="w-5 h-5 text-[var(--burnt-orange)] mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm text-[var(--grey-300)]">
+                  Draft communications are generated and managed in the <span className="text-[var(--burnt-orange)] font-medium">Communications tab</span> of the Crisis Command Center.
+                </p>
+                <p className="text-xs text-[var(--grey-500)] mt-1">
+                  Materials are stored in Memory Vault under Crisis/[Scenario Name]
+                </p>
               </div>
-            ))}
+            </div>
+
+            {/* Scenarios with draft status */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>Scenario Draft Status</h3>
+              {plan.scenarios?.map((scenario: any, idx: number) => {
+                const scenarioComms = getCommsForScenario(scenario.title)
+                const stakeholderCount = plan.stakeholders?.length || 6
+                const hasAllComms = scenarioComms.length >= stakeholderCount
+
+                return (
+                  <div key={idx} className="bg-zinc-800 border border-zinc-700 rounded-xl p-5">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <h4 className="text-white font-semibold">{scenario.title}</h4>
+                        <p className="text-sm text-[var(--grey-400)] mt-1">{scenario.description}</p>
+                      </div>
+                      <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${
+                        hasAllComms
+                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                          : scenarioComms.length > 0
+                          ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
+                          : 'bg-zinc-700 text-[var(--grey-400)] border border-zinc-600'
+                      }`}>
+                        {hasAllComms ? (
+                          <><CheckCircle className="w-3.5 h-3.5" /> Complete</>
+                        ) : scenarioComms.length > 0 ? (
+                          <><Circle className="w-3.5 h-3.5" /> Partial ({scenarioComms.length}/{stakeholderCount})</>
+                        ) : (
+                          <><Circle className="w-3.5 h-3.5" /> Not Generated</>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Stakeholder breakdown */}
+                    {scenarioComms.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-zinc-700">
+                        <div className="text-xs text-[var(--grey-500)] mb-2">Drafted for:</div>
+                        <div className="flex flex-wrap gap-2">
+                          {scenarioComms.map((comm, cidx) => (
+                            <span key={cidx} className="px-2 py-1 bg-emerald-500/10 text-emerald-400 text-xs rounded border border-emerald-500/20">
+                              {comm.stakeholder}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
           </div>
         )}
       </div>

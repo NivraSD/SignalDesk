@@ -155,6 +155,7 @@ interface FolderNode {
 const FOLDER_TEMPLATES = [
   { name: 'Opportunities', icon: '🎯', color: 'text-blue-400' },
   { name: 'Campaigns', icon: '📢', color: 'text-purple-400' },
+  { name: 'Crisis', icon: '🚨', color: 'text-red-400' },
   { name: 'Media Plans', icon: '📰', color: 'text-cyan-400' },
   { name: 'Strategies', icon: '💡', color: 'text-green-400' },
   { name: 'Press Releases', icon: '📝', color: 'text-orange-400' },

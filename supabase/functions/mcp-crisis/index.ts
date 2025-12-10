@@ -1126,7 +1126,9 @@ async function generateScenarioComms(args: any) {
 
   console.log(`✅ Generated ${communications.length} communications for ${scenario.title}`);
 
-  // Save each communication to content_library
+  // Save each communication to content_library in Crisis/[Scenario] folder
+  const scenarioFolderName = scenario.title.replace(/[^a-zA-Z0-9\s]/g, '').trim();
+
   for (const comm of communications) {
     try {
       const { error } = await supabase
@@ -1134,8 +1136,9 @@ async function generateScenarioComms(args: any) {
         .insert({
           organization_id: organization_id,
           type: 'crisis-communication',
-          title: `[${comm.scenario}] ${comm.stakeholder} Communication`,
+          title: `${comm.stakeholder} - ${comm.channel || 'Email'}`,
           content: comm.message,
+          folder: `Crisis/${scenarioFolderName}`,
           tags: ['crisis-communication', 'pre-drafted', comm.scenario.toLowerCase().replace(/\s+/g, '-'), comm.stakeholder.toLowerCase()],
           metadata: {
             generated_at: new Date().toISOString(),
