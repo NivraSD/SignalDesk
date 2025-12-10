@@ -146,11 +146,12 @@ export default function NIVFloatingAssistant() {
   }
 
   // Poll Gamma presentation status
-  const pollGammaStatus = async (generationId: string, messageId: string) => {
+  // Pass capture params on each poll since Edge Functions are stateless
+  const pollGammaStatus = async (generationId: string, messageId: string, captureParams?: { organization_id?: string, title?: string }) => {
     const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
     const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-    console.log('🚀 Starting Gamma polling for:', generationId)
+    console.log('🚀 Starting Gamma polling for:', generationId, 'with capture params:', captureParams)
     let attempts = 0
     const maxAttempts = 60 // 60 attempts * 3 seconds = 3 minutes max
 
@@ -160,12 +161,22 @@ export default function NIVFloatingAssistant() {
       console.log(`🔄 Gamma poll attempt ${attempts}/${maxAttempts}`)
 
       try {
+        // Use POST with capture params so gamma-presentation can save to Memory Vault
         const response = await fetch(
-          `${SUPABASE_URL}/functions/v1/gamma-presentation?generationId=${generationId}`,
+          `${SUPABASE_URL}/functions/v1/gamma-presentation`,
           {
+            method: 'POST',
             headers: {
+              'Content-Type': 'application/json',
               'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-            }
+            },
+            body: JSON.stringify({
+              generationId,
+              capture: true,
+              organization_id: captureParams?.organization_id,
+              title: captureParams?.title,
+              campaign_folder: 'NIV Advisor'
+            })
           }
         )
 
@@ -265,8 +276,12 @@ export default function NIVFloatingAssistant() {
         }])
 
         // If Gamma presentation is being generated, start polling
+        // Pass capture params so gamma-presentation can save to Memory Vault
         if (data.type === 'gamma_generating' && data.gammaGenerationId) {
-          pollGammaStatus(data.gammaGenerationId, messageId)
+          pollGammaStatus(data.gammaGenerationId, messageId, {
+            organization_id: organization?.id,
+            title: data.outline?.topic || data.outline?.title || 'NIV Presentation'
+          })
         }
       } else {
         setMessages(prev => [...prev, {

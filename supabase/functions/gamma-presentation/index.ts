@@ -7,8 +7,80 @@ const GAMMA_API_URL = 'https://public-api.gamma.app/v1.0'
 const GAMMA_API_KEY = Deno.env.get('GAMMA_API_KEY') || 'sk-gamma-zFOvUwGMpXZaDiB5sWkl3a5lakNfP19E90ZUZUdZM'
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+const VOYAGE_API_KEY = Deno.env.get('VOYAGE_API_KEY')
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+
+/**
+ * Generate embedding using Voyage AI voyage-3-large
+ * Returns null on error (non-blocking - content saved even if embedding fails)
+ */
+async function generateEmbedding(text: string): Promise<number[] | null> {
+  if (!VOYAGE_API_KEY) {
+    console.warn('⚠️ VOYAGE_API_KEY not set, skipping embedding generation')
+    return null
+  }
+
+  try {
+    const maxChars = 8000
+    const truncatedText = text.length > maxChars ? text.substring(0, maxChars) : text
+
+    const response = await fetch('https://api.voyageai.com/v1/embeddings', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${VOYAGE_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'voyage-3-large',
+        input: truncatedText,
+        input_type: 'document'
+      })
+    })
+
+    if (!response.ok) {
+      console.error('❌ Voyage API error:', await response.text())
+      return null
+    }
+
+    const data = await response.json()
+    console.log(`✅ Generated embedding (${data.data[0].embedding.length}D)`)
+    return data.data[0].embedding
+  } catch (error) {
+    console.error('❌ Error generating embedding:', error)
+    return null
+  }
+}
+
+/**
+ * Generate embedding asynchronously and update content_library record
+ * This runs in the background without blocking content saves
+ */
+async function generateEmbeddingAsync(contentId: string, text: string, organizationId: string) {
+  try {
+    console.log(`🔄 Starting async embedding generation for ${contentId}`)
+    const embedding = await generateEmbedding(text)
+
+    if (!embedding) {
+      console.warn(`⚠️ No embedding generated for ${contentId}`)
+      return
+    }
+
+    const { error } = await supabase.from('content_library').update({
+      embedding,
+      embedding_model: 'voyage-3-large',
+      embedding_updated_at: new Date().toISOString()
+    }).eq('id', contentId).eq('organization_id', organizationId)
+
+    if (error) {
+      console.error(`❌ Failed to update embedding for ${contentId}:`, error)
+    } else {
+      console.log(`✅ Async embedding saved for ${contentId}`)
+    }
+  } catch (error) {
+    console.error(`❌ Async embedding generation failed for ${contentId}:`, error)
+  }
+}
 
 // Store pending capture requests (in-memory, for this Edge Function instance)
 // Key: generationId, Value: PresentationRequest
@@ -486,6 +558,12 @@ async function capturePresentation(
         folder: folderPath,
         title: presentationTitle,
         has_gamma_url: !!gammaUrl
+      })
+
+      // Generate embedding asynchronously in background (non-blocking)
+      const embeddingText = `${presentationTitle}\n\n${contentToSave}`.substring(0, 8000)
+      generateEmbeddingAsync(mvData.id, embeddingText, request.organization_id).catch((err) => {
+        console.error(`Background embedding failed for presentation ${mvData.id}:`, err)
       })
     } catch (mvError: any) {
       console.error('❌ Error saving to Memory Vault:', mvError)
