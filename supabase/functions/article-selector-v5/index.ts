@@ -137,6 +137,8 @@ serve(async (req) => {
     const targetMatches: TargetMatch[] = [];
     const articleMap = new Map<string, V4Article>(); // For deduplication
     const sourceDistribution: Record<string, number> = {};
+    let totalMatchesBeforeFilter = 0;
+    let totalFilteredByAge = 0;
 
     for (const target of targets || []) {
       const { data: matches, error: matchError } = await supabase
@@ -146,7 +148,7 @@ serve(async (req) => {
           signal_strength,
           signal_category,
           article:raw_articles(
-            id, title, description, url, source_name, published_at
+            id, title, description, url, source_name, published_at, scraped_at
           )
         `)
         .eq('target_id', target.id)
@@ -161,7 +163,7 @@ serve(async (req) => {
       }
 
       if (matches && matches.length > 0) {
-        const articles = matches
+        const allArticles = matches
           .filter(m => m.article) // Filter out any nulls
           .map(m => ({
             id: (m.article as any).id,
@@ -170,10 +172,29 @@ serve(async (req) => {
             url: (m.article as any).url,
             source_name: (m.article as any).source_name,
             published_at: (m.article as any).published_at,
+            scraped_at: (m.article as any).scraped_at,
             similarity_score: m.similarity_score,
             signal_strength: m.signal_strength,
             signal_category: m.signal_category
           }));
+
+        totalMatchesBeforeFilter += allArticles.length;
+
+        // Filter out old articles - use published_at if available, fall back to scraped_at
+        const articles = allArticles.filter(a => {
+          // Use published_at if available, otherwise fall back to scraped_at
+          const dateToCheck = a.published_at || a.scraped_at;
+          if (!dateToCheck) return true; // Keep articles with no date info at all
+          try {
+            const articleDate = new Date(dateToCheck);
+            const cutoffDate = new Date(sinceTime);
+            return articleDate >= cutoffDate;
+          } catch {
+            return true; // Keep if date parsing fails
+          }
+        });
+
+        totalFilteredByAge += allArticles.length - articles.length;
 
         // Build V4-compatible flat list with deduplication
         articles.forEach(a => {
@@ -284,6 +305,8 @@ serve(async (req) => {
 
     console.log('📊 RESULTS:');
     console.log(`   Targets with signals: ${targetMatches.length}`);
+    console.log(`   Total matches found: ${totalMatchesBeforeFilter}`);
+    console.log(`   Filtered by publish date: ${totalFilteredByAge}`);
     console.log(`   Total unique articles: ${v4Articles.length}`);
     console.log(`   From priority sources: ${prioritySourceCount}`);
     console.log(`   Cross-target connections: ${connections.length}`);
@@ -311,6 +334,8 @@ serve(async (req) => {
       summary: {
         targets_with_signals: targetMatches.length,
         total_targets: targets?.length || 0,
+        total_matches_found: totalMatchesBeforeFilter,
+        filtered_by_publish_date: totalFilteredByAge,
         unique_articles: v4Articles.length,
         from_priority_sources: prioritySourceCount,
         cross_target_connections: connections.length
