@@ -18,7 +18,7 @@ interface PreDraftedComm {
 }
 
 interface CrisisCommunicationsProps {
-  crisis: any
+  crisis: any | null
   onUpdate: () => void
   onOpenInStudio?: (content: { id: string; title: string; content: string }) => void
 }
@@ -33,7 +33,8 @@ export default function CrisisCommunications({ crisis, onUpdate, onOpenInStudio 
   const [loadingPreDrafts, setLoadingPreDrafts] = useState(false)
   const [selectedPreDraft, setSelectedPreDraft] = useState<PreDraftedComm | null>(null)
 
-  const communications = crisis.communications || []
+  // Handle null crisis
+  const communications = crisis?.communications || []
 
   // Load pre-drafted communications from Memory Vault
   useEffect(() => {
@@ -79,7 +80,7 @@ export default function CrisisCommunications({ crisis, onUpdate, onOpenInStudio 
   ]
 
   const generateDraft = async () => {
-    if (!selectedStakeholder) return
+    if (!selectedStakeholder || !crisis) return
 
     setGenerating(true)
     try {
@@ -115,7 +116,7 @@ export default function CrisisCommunications({ crisis, onUpdate, onOpenInStudio 
   }
 
   const saveDraft = async (status: 'draft' | 'approved' | 'sent') => {
-    if (!selectedStakeholder || !draftMessage) return
+    if (!selectedStakeholder || !draftMessage || !crisis) return
 
     const newComm = {
       id: Date.now(),
@@ -141,6 +142,7 @@ export default function CrisisCommunications({ crisis, onUpdate, onOpenInStudio 
   }
 
   const updateCommStatus = async (commId: number, status: string) => {
+    if (!crisis) return
     const updatedComms = communications.map((c: any) =>
       c.id === commId
         ? { ...c, status, sentAt: status === 'sent' ? new Date().toISOString() : c.sentAt }
@@ -156,6 +158,7 @@ export default function CrisisCommunications({ crisis, onUpdate, onOpenInStudio 
   }
 
   const deleteComm = async (commId: number) => {
+    if (!crisis) return
     const updatedComms = communications.filter((c: any) => c.id !== commId)
 
     const { error } = await supabase
