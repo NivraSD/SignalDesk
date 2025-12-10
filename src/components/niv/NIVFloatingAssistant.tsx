@@ -177,11 +177,11 @@ export default function NIVFloatingAssistant() {
 
         if (response.ok) {
           const statusData = await response.json()
-          console.log('📊 Gamma status:', statusData.status)
+          console.log('📊 Gamma status:', statusData.status, '| captured:', statusData.captured, '| captureDebug:', statusData.captureDebug)
 
           if (statusData.status === 'complete' || statusData.status === 'completed') {
             const finalUrl = statusData.gammaUrl || statusData.presentationUrl || statusData.url || statusData.webUrl
-            console.log('✅ Gamma complete! URL:', finalUrl)
+            console.log('✅ Gamma complete! URL:', finalUrl, '| Memory Vault ID:', statusData.capturedId)
 
             setMessages(prev => prev.map(msg => {
               if (msg.id === messageId) {

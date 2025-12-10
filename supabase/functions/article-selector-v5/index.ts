@@ -9,6 +9,10 @@ import { corsHeaders } from '../_shared/cors.ts';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
+// Source diversity settings (matching V4)
+const MAX_PER_SOURCE = 15;  // Prevent any single source from dominating
+const DEFAULT_HOURS_BACK = 18;  // 18 hours for daily scrapes
+
 interface TargetMatch {
   target_id: string;
   target_name: string;
@@ -50,6 +54,7 @@ interface V4Article {
   matched_targets: string[];
   signal_strength: string;
   signal_category: string;
+  is_priority_source?: boolean;  // From company profile priority sources
 }
 
 serve(async (req) => {
@@ -63,7 +68,7 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const organizationId = body.organization_id;
     const organizationName = body.organization_name; // Optional, for V4 compat
-    const hoursBack = body.hours_back || 24;
+    const hoursBack = body.hours_back || DEFAULT_HOURS_BACK;
     const minSignalStrength = body.min_signal_strength || 'weak'; // weak, moderate, strong
     const maxArticlesPerTarget = body.max_articles_per_target || 10;
     const includeConnections = body.include_connections !== false; // Default true
@@ -85,15 +90,26 @@ serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
-    // Get organization details for V4 compatibility
+    // Get organization details including company_profile for priority sources
     const { data: org } = await supabase
       .from('organizations')
-      .select('id, name, industry')
+      .select('id, name, industry, company_profile')
       .eq('id', organizationId)
       .single();
 
     const orgName = organizationName || org?.name || 'Unknown';
     const industry = org?.industry || 'default';
+    const companyProfile = org?.company_profile || {};
+
+    // Extract priority sources from company profile (set by mcp-discovery)
+    const sourcePriorities = companyProfile.monitoring_config?.source_priorities || {};
+    const criticalSources = new Set<string>(sourcePriorities.critical || []);
+    const highPrioritySources = new Set<string>(sourcePriorities.high || []);
+    const allPrioritySources = new Set<string>([...criticalSources, ...highPrioritySources]);
+
+    if (allPrioritySources.size > 0) {
+      console.log(`   Priority sources: ${criticalSources.size} critical, ${highPrioritySources.size} high`);
+    }
 
     // Calculate time cutoff
     const sinceTime = new Date(Date.now() - hoursBack * 60 * 60 * 1000).toISOString();
@@ -186,7 +202,8 @@ serve(async (req) => {
               relevance_score: Math.round(a.similarity_score * 100),
               matched_targets: [target.name],
               signal_strength: a.signal_strength,
-              signal_category: a.signal_category
+              signal_category: a.signal_category,
+              is_priority_source: allPrioritySources.has(a.source_name)
             });
             // Track source distribution
             sourceDistribution[a.source_name] = (sourceDistribution[a.source_name] || 0) + 1;
@@ -203,9 +220,44 @@ serve(async (req) => {
       }
     }
 
-    // Build V4-compatible articles array sorted by relevance
-    const v4Articles = Array.from(articleMap.values())
-      .sort((a, b) => b.relevance_score - a.relevance_score);
+    // Build V4-compatible articles array sorted by:
+    // 1. Critical priority sources first
+    // 2. High priority sources second
+    // 3. Then by relevance score
+    // Apply source diversity cap to prevent any single source from dominating
+    const sortedArticles = Array.from(articleMap.values())
+      .sort((a, b) => {
+        // Priority source tier: critical=2, high=1, other=0
+        const aPriority = criticalSources.has(a.source_name) ? 2 : highPrioritySources.has(a.source_name) ? 1 : 0;
+        const bPriority = criticalSources.has(b.source_name) ? 2 : highPrioritySources.has(b.source_name) ? 1 : 0;
+
+        // Sort by priority tier first, then by relevance score
+        if (aPriority !== bPriority) {
+          return bPriority - aPriority;  // Higher priority first
+        }
+        return b.relevance_score - a.relevance_score;
+      });
+
+    const sourceCount: Record<string, number> = {};
+    const v4Articles = sortedArticles.filter(a => {
+      const count = sourceCount[a.source_name] || 0;
+      if (count >= MAX_PER_SOURCE) {
+        return false;  // Skip - source already at max
+      }
+      sourceCount[a.source_name] = count + 1;
+      return true;
+    });
+
+    // Recalculate source distribution after diversity cap
+    const finalSourceDistribution: Record<string, number> = {};
+    v4Articles.forEach(a => {
+      finalSourceDistribution[a.source_name] = (finalSourceDistribution[a.source_name] || 0) + 1;
+    });
+
+    const skippedForDiversity = sortedArticles.length - v4Articles.length;
+    if (skippedForDiversity > 0) {
+      console.log(`   ⚖️ Source diversity: skipped ${skippedForDiversity} articles (max ${MAX_PER_SOURCE} per source)`);
+    }
 
     // Get cross-target connections (articles matching multiple targets)
     let connections: CrossTargetArticle[] = [];
@@ -242,9 +294,13 @@ serve(async (req) => {
     const duration = Date.now() - startTime;
     const durationSeconds = Math.round(duration / 1000);
 
+    // Count priority source articles
+    const prioritySourceCount = v4Articles.filter(a => a.is_priority_source).length;
+
     console.log('📊 RESULTS:');
     console.log(`   Targets with signals: ${targetMatches.length}`);
     console.log(`   Total unique articles: ${v4Articles.length}`);
+    console.log(`   From priority sources: ${prioritySourceCount}`);
     console.log(`   Cross-target connections: ${connections.length}`);
     console.log(`   Duration: ${duration}ms`);
 
@@ -256,8 +312,8 @@ serve(async (req) => {
       industry,
       total_articles: v4Articles.length,
       articles: v4Articles,  // Flat list for V4 compatibility
-      sources: Object.keys(sourceDistribution),
-      source_distribution: sourceDistribution,
+      sources: Object.keys(finalSourceDistribution),
+      source_distribution: finalSourceDistribution,
       selected_at: new Date().toISOString(),
       duration_seconds: durationSeconds,
       selection_method: 'v5_embedding_match',
@@ -271,6 +327,7 @@ serve(async (req) => {
         targets_with_signals: targetMatches.length,
         total_targets: targets?.length || 0,
         unique_articles: v4Articles.length,
+        from_priority_sources: prioritySourceCount,
         cross_target_connections: connections.length
       },
       target_signals: targetMatches,

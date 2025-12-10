@@ -135,6 +135,40 @@ export default function SignalsModule() {
     }
   }, [organization?.id])
 
+  // Transform unified signals table data to frontend Signal interface
+  const transformUnifiedSignal = (s: any): Signal => ({
+    id: s.id,
+    organization_id: s.organization_id,
+    signal_type: s.signal_type,
+    title: s.title,
+    description: s.description,
+    // Map primary_target_* to target_*
+    target_id: s.primary_target_id,
+    target_name: s.primary_target_name,
+    target_type: s.primary_target_type,
+    confidence_score: s.confidence_score || 70,
+    urgency: s.urgency || 'monitoring',
+    impact_level: s.impact_level || 'medium',
+    evidence: {
+      sources: s.evidence?.data_points || [],
+      supporting_data: s.pattern_data
+    },
+    // Build analysis object from schema fields
+    analysis: {
+      key_insight: s.reasoning || s.description,
+      business_implications: s.business_implication ? [s.business_implication] : [],
+      recommended_actions: s.suggested_action ? [s.suggested_action] : [],
+      time_horizon: s.pattern_data?.time_horizon
+    },
+    user_feedback: s.user_feedback || 'pending',
+    outcome_value: s.outcome_value || 'pending',
+    detected_at: s.detected_at || s.created_at,
+    expires_at: s.expires_at,
+    status: s.status || 'active',
+    created_at: s.created_at,
+    updated_at: s.updated_at
+  })
+
   const loadSignals = async () => {
     setLoading(true)
     try {
@@ -153,8 +187,10 @@ export default function SignalsModule() {
         return
       }
 
-      setSignals(signalsData || [])
-      calculateStats(signalsData || [])
+      // Transform to frontend format
+      const transformedSignals = (signalsData || []).map(transformUnifiedSignal)
+      setSignals(transformedSignals)
+      calculateStats(transformedSignals)
     } catch (error) {
       console.error('Failed to load signals:', error)
       // Try legacy fallback
@@ -167,11 +203,12 @@ export default function SignalsModule() {
   const loadLegacySignals = async () => {
     try {
       // Load predictions and convert to unified format
+      // Note: predictions use status 'active' (not 'pending')
       const { data: predictions } = await supabase
         .from('predictions')
         .select('*')
         .eq('organization_id', organization!.id)
-        .eq('status', 'pending')
+        .eq('status', 'active')
         .order('created_at', { ascending: false })
         .limit(50)
 

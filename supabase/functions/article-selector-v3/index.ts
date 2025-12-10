@@ -150,11 +150,11 @@ serve(async (req) => {
     const keywordArray = Array.from(keywords);
 
     // ================================================================
-    // STEP 5: Get articles from last 48h
+    // STEP 5: Get articles from last 18h
     // ================================================================
-    const twentyFourHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+    const eighteenHoursAgo = new Date(Date.now() - 18 * 60 * 60 * 1000).toISOString();
 
-    // Get articles from last 48h - limit to 100 most recent to avoid timeout
+    // Get articles from last 18h - limit to 100 most recent to avoid timeout
     // Prefer published_at when available, fallback to scraped_at
     const { data: articlesWithPublishedDate } = await supabase
       .from('raw_articles')
@@ -172,7 +172,7 @@ serve(async (req) => {
       `)
       .in('scrape_status', ['completed', 'failed'])  // Include paywalled articles with titles
       .not('published_at', 'is', null)
-      .gte('published_at', twentyFourHoursAgo)
+      .gte('published_at', eighteenHoursAgo)
       .order('published_at', { ascending: false })
       .limit(100);
 
@@ -182,7 +182,7 @@ serve(async (req) => {
 
     const allArticles = articlesWithPublishedDate || [];
 
-    console.log(`   Found ${allArticles?.length || 0} articles from last 48h`);
+    console.log(`   Found ${allArticles?.length || 0} articles from last 18h`);
 
     if (!allArticles || allArticles.length === 0) {
       return new Response(JSON.stringify({
@@ -191,7 +191,7 @@ serve(async (req) => {
         organization_name,
         total_articles: 0,
         articles: [],
-        message: 'No articles found in last 48 hours'
+        message: 'No articles found in last 18 hours'
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
@@ -311,10 +311,10 @@ YOUR MISSION: HUNT FOR BREAKING STRATEGIC INTELLIGENCE
 
 TODAY'S DATE: ${new Date().toISOString().split('T')[0]}
 
-You have ${articlesForEvaluation.length} RECENT articles (published in last 48 hours) to evaluate.
+You have ${articlesForEvaluation.length} RECENT articles (published in last 18 hours) to evaluate.
 Your job is to HUNT for BREAKING NEWS that provides genuine strategic value.
 
-CRITICAL: These should all be recent news. Each article has a published_at timestamp - verify it's from the last 48 hours. Reject anything that looks like old content, evergreen articles, or research papers.
+CRITICAL: These should all be recent news. Each article has a published_at timestamp - verify it's from the last 18 hours. Reject anything that looks like old content, evergreen articles, or research papers.
 
 WHAT TO SELECT:
 

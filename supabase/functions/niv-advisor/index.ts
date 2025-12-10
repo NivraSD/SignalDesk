@@ -595,43 +595,9 @@ async function generateGammaPresentationFromOutline(
     const gammaData = await gammaResponse.json()
     console.log('✅ Gamma presentation started:', gammaData.generationId)
 
-    // Save to Memory Vault IMMEDIATELY (like niv-content-intelligent-v2 does)
-    // This saves the outline with status 'generating', will be updated when complete
-    try {
-      console.log('💾 Saving presentation to Memory Vault')
-      const presentationId = crypto.randomUUID()
-      const supabaseForSave = createClient(
-        Deno.env.get('SUPABASE_URL')!,
-        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-      )
-
-      await supabaseForSave.from('content_library').insert({
-        id: presentationId,
-        organization_id: organizationId,
-        content_type: 'presentation',
-        title: outline.topic,
-        content: gammaContent,
-        metadata: {
-          gamma_generation_id: gammaData.generationId,
-          audience: outline.audience,
-          purpose: outline.purpose,
-          slide_count: outline.slide_count,
-          key_messages: outline.key_messages || [],
-          created_date: new Date().toISOString(),
-          status: 'generating'
-        },
-        folder: folderPath,
-        tags: ['gamma', 'presentation', 'niv-advisor'],
-        status: 'draft',
-        embedding: null,
-        embedding_model: null,
-        embedding_updated_at: null
-      })
-      console.log(`✅ Saved presentation to Memory Vault: ${presentationId}`)
-    } catch (saveError) {
-      console.error('❌ Error saving to Memory Vault:', saveError)
-      // Don't fail the request if vault save fails
-    }
+    // NOTE: Memory Vault save is handled by gamma-presentation edge function
+    // when frontend polls with capture=true. This avoids duplicate records.
+    console.log(`📁 Gamma will save to Memory Vault when complete (org: ${organizationId}, folder: ${folderPath})`)
 
     const responseMessage = `🎨 **Creating your presentation...**
 

@@ -2116,9 +2116,59 @@ async function createIntelligenceTargets(organizationId: string, profile: any) {
     }
 
     console.log(`✅ Created ${targets.length} intelligence targets`);
+
+    // Trigger embedding for the new targets so they're ready for V5 article matching
+    await triggerTargetEmbedding(organizationId);
   } catch (e) {
     console.error('❌ Error creating intelligence targets:', e);
     // Don't throw - this is non-blocking
+  }
+}
+
+// Trigger embedding pipeline for newly created targets
+// This ensures new orgs can use V5 article matching immediately
+async function triggerTargetEmbedding(organizationId: string) {
+  try {
+    console.log('🔄 Triggering target embedding pipeline...');
+
+    // Step 1: Embed the targets (creates vector embeddings)
+    console.log('   Step 1: Embedding targets...');
+    const embedResponse = await supabase.functions.invoke('batch-embed-targets', {
+      body: {
+        organization_id: organizationId,
+        batch_size: 100  // Should be enough for any single org
+      }
+    });
+
+    if (embedResponse.error) {
+      console.warn('   ⚠️ Target embedding failed:', embedResponse.error);
+      return; // Non-blocking - targets can be embedded by cron later
+    }
+
+    const embedResult = embedResponse.data;
+    console.log(`   ✅ Embedded ${embedResult?.embedded || 0} targets`);
+
+    // Step 2: Match targets to recent articles
+    console.log('   Step 2: Matching to articles...');
+    const matchResponse = await supabase.functions.invoke('batch-match-signals', {
+      body: {
+        organization_id: organizationId,
+        hours_back: 48  // Look back 48h for new orgs to have some matches
+      }
+    });
+
+    if (matchResponse.error) {
+      console.warn('   ⚠️ Signal matching failed:', matchResponse.error);
+      return; // Non-blocking
+    }
+
+    const matchResult = matchResponse.data;
+    console.log(`   ✅ Created ${matchResult?.matches_created || 0} article matches`);
+
+    console.log('✅ Target embedding pipeline complete - org ready for V5 article selection');
+  } catch (e) {
+    console.warn('⚠️ Target embedding pipeline error (non-blocking):', e);
+    // Don't throw - this is non-blocking, cron will catch up
   }
 }
 
