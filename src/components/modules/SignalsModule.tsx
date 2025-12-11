@@ -12,12 +12,8 @@ import {
   CheckCircle,
   ChevronRight,
   RefreshCw,
-  Eye,
   Loader2,
   X,
-  ThumbsUp,
-  ThumbsDown,
-  Filter,
   Calendar,
   Building2,
   Zap
@@ -26,7 +22,7 @@ import { useAppStore } from '@/stores/useAppStore'
 import { supabase } from '@/lib/supabase/client'
 
 // Signal types from unified schema
-type SignalType = 'movement' | 'connection' | 'predictive' | 'opportunity'
+type SignalType = 'movement' | 'connection' | 'predictive' | 'opportunity' | 'pattern'
 type SignalUrgency = 'immediate' | 'near_term' | 'monitoring'
 type FeedbackStatus = 'accurate' | 'inaccurate' | 'pending'
 type OutcomeValue = 'high_value' | 'some_value' | 'no_value' | 'pending'
@@ -82,22 +78,22 @@ interface SignalStats {
   total: number
   byType: Record<SignalType, number>
   byUrgency: Record<SignalUrgency, number>
-  accuracyRate: number
-  actionedCount: number
 }
 
 const SIGNAL_ICONS: Record<SignalType, typeof TrendingUp> = {
   movement: TrendingUp,
   connection: Link2,
   predictive: Sparkles,
-  opportunity: Lightbulb
+  opportunity: Lightbulb,
+  pattern: Target
 }
 
 const SIGNAL_COLORS: Record<SignalType, string> = {
   movement: 'text-blue-400 bg-blue-500/20 border-blue-500/30',
   connection: 'text-purple-400 bg-purple-500/20 border-purple-500/30',
   predictive: 'text-amber-400 bg-amber-500/20 border-amber-500/30',
-  opportunity: 'text-green-400 bg-green-500/20 border-green-500/30'
+  opportunity: 'text-green-400 bg-green-500/20 border-green-500/30',
+  pattern: 'text-cyan-400 bg-cyan-500/20 border-cyan-500/30'
 }
 
 const URGENCY_COLORS: Record<SignalUrgency, string> = {
@@ -325,24 +321,16 @@ export default function SignalsModule() {
         movement: signalData.filter(s => s.signal_type === 'movement').length,
         connection: signalData.filter(s => s.signal_type === 'connection').length,
         predictive: signalData.filter(s => s.signal_type === 'predictive').length,
-        opportunity: signalData.filter(s => s.signal_type === 'opportunity').length
+        opportunity: signalData.filter(s => s.signal_type === 'opportunity').length,
+        pattern: signalData.filter(s => s.signal_type === 'pattern').length
       },
       byUrgency: {
         immediate: signalData.filter(s => s.urgency === 'immediate').length,
         near_term: signalData.filter(s => s.urgency === 'near_term').length,
         monitoring: signalData.filter(s => s.urgency === 'monitoring').length
-      },
-      accuracyRate: calculateAccuracyRate(signalData),
-      actionedCount: signalData.filter(s => s.status === 'actioned').length
+      }
     }
     setStats(stats)
-  }
-
-  const calculateAccuracyRate = (signalData: Signal[]): number => {
-    const reviewed = signalData.filter(s => s.user_feedback !== 'pending')
-    if (reviewed.length === 0) return 0
-    const accurate = reviewed.filter(s => s.user_feedback === 'accurate').length
-    return Math.round((accurate / reviewed.length) * 100)
   }
 
   const filteredSignals = signals.filter(signal => {
@@ -450,7 +438,7 @@ export default function SignalsModule() {
 
         {/* Stats Row */}
         {stats && (
-          <div className="grid grid-cols-6 gap-4 mt-6">
+          <div className="grid grid-cols-5 gap-4 mt-6">
             {/* Urgency Stats */}
             <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4">
               <div className="text-[0.7rem] uppercase tracking-wide text-red-400 mb-1" style={{ fontFamily: 'var(--font-display)' }}>
@@ -479,24 +467,22 @@ export default function SignalsModule() {
               </div>
             </div>
 
-            <div className="w-px bg-[var(--grey-700)]" />
-
             {/* Type Stats */}
-            <div className="bg-[var(--grey-900)] border border-[var(--grey-800)] rounded-xl p-4">
-              <div className="text-[0.7rem] uppercase tracking-wide text-[var(--grey-500)] mb-1" style={{ fontFamily: 'var(--font-display)' }}>
-                Total Signals
+            <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-4">
+              <div className="text-[0.7rem] uppercase tracking-wide text-cyan-400 mb-1" style={{ fontFamily: 'var(--font-display)' }}>
+                Patterns
               </div>
-              <div className="text-2xl font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>
-                {stats.total}
+              <div className="text-2xl font-bold text-cyan-400" style={{ fontFamily: 'var(--font-display)' }}>
+                {stats.byType.pattern}
               </div>
             </div>
 
-            <div className="bg-[var(--grey-900)] border border-[var(--grey-800)] rounded-xl p-4">
-              <div className="text-[0.7rem] uppercase tracking-wide text-[var(--grey-500)] mb-1" style={{ fontFamily: 'var(--font-display)' }}>
-                Accuracy Rate
+            <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-4">
+              <div className="text-[0.7rem] uppercase tracking-wide text-purple-400 mb-1" style={{ fontFamily: 'var(--font-display)' }}>
+                Connections
               </div>
-              <div className="text-2xl font-bold text-green-400" style={{ fontFamily: 'var(--font-display)' }}>
-                {stats.accuracyRate}%
+              <div className="text-2xl font-bold text-purple-400" style={{ fontFamily: 'var(--font-display)' }}>
+                {stats.byType.connection}
               </div>
             </div>
           </div>
@@ -522,7 +508,7 @@ export default function SignalsModule() {
             >
               All
             </button>
-            {(['movement', 'connection', 'predictive', 'opportunity'] as SignalType[]).map(type => (
+            {(['pattern', 'connection', 'movement', 'predictive', 'opportunity'] as SignalType[]).map(type => (
               <button
                 key={type}
                 onClick={() => setFilterType(type)}
@@ -697,205 +683,143 @@ export default function SignalsModule() {
         )}
       </div>
 
-      {/* Signal Detail Modal */}
+      {/* Signal Detail Modal - Detector/Alerter focused */}
       {selectedSignal && (
         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-8">
-          <div className="bg-[var(--grey-900)] rounded-xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+          <div className="bg-[var(--grey-900)] rounded-xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
             {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-[var(--grey-800)] flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className={`px-2 py-1 text-[0.65rem] rounded border flex items-center gap-1.5 ${SIGNAL_COLORS[selectedSignal.signal_type]}`}>
+            <div className="px-6 py-4 border-b border-[var(--grey-800)]">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <span className={`px-2.5 py-1 text-[0.7rem] rounded border flex items-center gap-1.5 ${SIGNAL_COLORS[selectedSignal.signal_type]}`}>
                     {getSignalIcon(selectedSignal.signal_type)}
-                    {selectedSignal.signal_type.toUpperCase()}
+                    {selectedSignal.signal_type === 'pattern' ? 'PATTERN DETECTED' :
+                     selectedSignal.signal_type === 'connection' ? 'CONNECTION FOUND' :
+                     selectedSignal.signal_type.toUpperCase()}
                   </span>
-                  <span className={`px-2 py-0.5 text-[0.65rem] rounded border ${URGENCY_COLORS[selectedSignal.urgency]}`}>
+                  <span className={`px-2.5 py-1 text-[0.7rem] rounded border ${URGENCY_COLORS[selectedSignal.urgency]}`}>
                     {URGENCY_LABELS[selectedSignal.urgency]}
                   </span>
-                  {selectedSignal.target_name && (
-                    <span className="px-2 py-0.5 text-[0.65rem] rounded bg-[var(--grey-800)] text-[var(--grey-400)] border border-[var(--grey-700)] flex items-center gap-1">
-                      <Building2 className="w-3 h-3" />
-                      {selectedSignal.target_name}
-                    </span>
-                  )}
                 </div>
-                <h3
-                  className="text-xl font-medium text-white"
-                  style={{ fontFamily: 'var(--font-display)' }}
+                <button
+                  onClick={() => setSelectedSignal(null)}
+                  className="p-2 hover:bg-[var(--grey-800)] rounded-lg transition-colors"
                 >
-                  {selectedSignal.title}
-                </h3>
+                  <X className="w-5 h-5 text-[var(--grey-400)]" />
+                </button>
               </div>
-              <button
-                onClick={() => setSelectedSignal(null)}
-                className="p-2 hover:bg-[var(--grey-800)] rounded-lg transition-colors"
+              <h3
+                className="text-xl font-medium text-white leading-tight"
+                style={{ fontFamily: 'var(--font-display)' }}
               >
-                <X className="w-5 h-5 text-[var(--grey-400)]" />
-              </button>
+                {selectedSignal.title}
+              </h3>
+              <div className="flex items-center gap-3 mt-2 text-sm text-[var(--grey-500)]">
+                <span className="flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5" />
+                  {formatDate(selectedSignal.detected_at)}
+                </span>
+                {selectedSignal.target_name && (
+                  <span className="flex items-center gap-1.5">
+                    <Target className="w-3.5 h-3.5" />
+                    {selectedSignal.target_name}
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Modal Content */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6">
-              {/* Description */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-5">
+              {/* What Was Detected */}
               <div>
                 <h4 className="text-[0.7rem] uppercase tracking-wide text-white mb-2" style={{ fontFamily: 'var(--font-display)' }}>
-                  Description
+                  What We Detected
                 </h4>
-                <p className="text-white">{selectedSignal.description}</p>
+                <p className="text-[var(--grey-200)] leading-relaxed">{selectedSignal.description}</p>
               </div>
 
-              {/* Key Metrics */}
-              <div className="grid grid-cols-3 gap-4">
-                <div className="bg-[var(--grey-800)] rounded-lg p-4">
-                  <div className="text-[0.7rem] uppercase tracking-wide text-[var(--grey-500)] mb-2" style={{ fontFamily: 'var(--font-display)' }}>
-                    Confidence Score
-                  </div>
-                  <div className={`text-3xl font-bold ${getConfidenceColor(selectedSignal.confidence_score)}`} style={{ fontFamily: 'var(--font-display)' }}>
-                    {Math.round(selectedSignal.confidence_score)}%
-                  </div>
-                </div>
-
-                <div className="bg-[var(--grey-800)] rounded-lg p-4">
-                  <div className="text-[0.7rem] uppercase tracking-wide text-[var(--grey-500)] mb-2" style={{ fontFamily: 'var(--font-display)' }}>
-                    Detected
-                  </div>
-                  <div className="text-lg font-medium text-white" style={{ fontFamily: 'var(--font-display)' }}>
-                    {formatDate(selectedSignal.detected_at)}
-                  </div>
-                </div>
-
-                {selectedSignal.analysis.time_horizon && (
-                  <div className="bg-[var(--grey-800)] rounded-lg p-4">
-                    <div className="text-[0.7rem] uppercase tracking-wide text-[var(--grey-500)] mb-2" style={{ fontFamily: 'var(--font-display)' }}>
-                      Time Horizon
-                    </div>
-                    <div className="text-lg font-medium text-white" style={{ fontFamily: 'var(--font-display)' }}>
-                      {selectedSignal.analysis.time_horizon}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Key Insight */}
-              {selectedSignal.analysis.key_insight && (
-                <div>
-                  <h4 className="text-[0.7rem] uppercase tracking-wide text-white mb-3" style={{ fontFamily: 'var(--font-display)' }}>
-                    Key Insight
-                  </h4>
-                  <div className="p-4 bg-[var(--burnt-orange-muted)] rounded-lg border border-[var(--burnt-orange)]/30">
-                    <p className="text-white">{selectedSignal.analysis.key_insight}</p>
-                  </div>
-                </div>
-              )}
-
-              {/* Business Implications */}
+              {/* Why It Matters - Business Implication (Primary Focus) */}
               {selectedSignal.analysis.business_implications && selectedSignal.analysis.business_implications.length > 0 && (
-                <div>
-                  <h4 className="text-[0.7rem] uppercase tracking-wide text-white mb-3" style={{ fontFamily: 'var(--font-display)' }}>
-                    Business Implications
+                <div className="p-4 bg-[var(--burnt-orange-muted)] rounded-lg border border-[var(--burnt-orange)]/30">
+                  <h4 className="text-[0.7rem] uppercase tracking-wide text-[var(--burnt-orange)] mb-2 flex items-center gap-1.5" style={{ fontFamily: 'var(--font-display)' }}>
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    Why This Matters
                   </h4>
-                  <ul className="space-y-2">
-                    {selectedSignal.analysis.business_implications.map((imp, idx) => (
-                      <li key={idx} className="flex items-start gap-2 text-[var(--grey-300)]">
-                        <AlertTriangle className="w-4 h-4 text-[var(--burnt-orange)] mt-0.5 flex-shrink-0" />
-                        <span>{imp}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  <p className="text-white leading-relaxed">{selectedSignal.analysis.business_implications[0]}</p>
                 </div>
               )}
 
-              {/* Recommended Actions */}
+              {/* Suggested Action */}
               {selectedSignal.analysis.recommended_actions && selectedSignal.analysis.recommended_actions.length > 0 && (
-                <div>
-                  <h4 className="text-[0.7rem] uppercase tracking-wide text-white mb-3" style={{ fontFamily: 'var(--font-display)' }}>
-                    Recommended Actions
+                <div className="p-4 bg-green-500/10 rounded-lg border border-green-500/20">
+                  <h4 className="text-[0.7rem] uppercase tracking-wide text-green-400 mb-2 flex items-center gap-1.5" style={{ fontFamily: 'var(--font-display)' }}>
+                    <CheckCircle className="w-3.5 h-3.5" />
+                    Suggested Action
                   </h4>
-                  <ul className="space-y-2">
-                    {selectedSignal.analysis.recommended_actions.map((action, idx) => (
-                      <li key={idx} className="flex items-start gap-2 text-[var(--grey-300)]">
-                        <CheckCircle className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                        <span>{action}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  <p className="text-[var(--grey-200)] leading-relaxed">{selectedSignal.analysis.recommended_actions[0]}</p>
                 </div>
               )}
 
-              {/* Evidence Sources */}
+              {/* Supporting Evidence */}
               {selectedSignal.evidence.sources && selectedSignal.evidence.sources.length > 0 && (
                 <div>
                   <h4 className="text-[0.7rem] uppercase tracking-wide text-white mb-3" style={{ fontFamily: 'var(--font-display)' }}>
-                    Evidence Sources
+                    Supporting Evidence
                   </h4>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedSignal.evidence.sources.map((source, idx) => (
-                      <span
-                        key={idx}
-                        className="px-3 py-1.5 text-[0.75rem] bg-[var(--grey-800)] text-[var(--grey-300)] rounded-lg border border-[var(--grey-700)]"
-                      >
-                        {source}
-                      </span>
+                  <ul className="space-y-2">
+                    {selectedSignal.evidence.sources.slice(0, 5).map((source, idx) => (
+                      <li key={idx} className="flex items-start gap-2 text-[var(--grey-400)] text-sm">
+                        <span className="text-[var(--grey-600)] mt-1">•</span>
+                        <span>{source}</span>
+                      </li>
                     ))}
-                  </div>
+                  </ul>
                 </div>
               )}
 
-              {/* Feedback Section */}
-              <div className="pt-4 border-t border-[var(--grey-700)]">
-                <h4 className="text-[0.7rem] uppercase tracking-wide text-white mb-3" style={{ fontFamily: 'var(--font-display)' }}>
-                  Was this signal accurate?
-                </h4>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => handleFeedback(selectedSignal.id, 'accurate')}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                      selectedSignal.user_feedback === 'accurate'
-                        ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                        : 'bg-[var(--grey-800)] text-[var(--grey-400)] hover:text-green-400 border border-[var(--grey-700)]'
-                    }`}
-                  >
-                    <ThumbsUp className="w-4 h-4" />
-                    Accurate
-                  </button>
-                  <button
-                    onClick={() => handleFeedback(selectedSignal.id, 'inaccurate')}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                      selectedSignal.user_feedback === 'inaccurate'
-                        ? 'bg-red-500/20 text-red-400 border border-red-500/30'
-                        : 'bg-[var(--grey-800)] text-[var(--grey-400)] hover:text-red-400 border border-[var(--grey-700)]'
-                    }`}
-                  >
-                    <ThumbsDown className="w-4 h-4" />
-                    Not Accurate
-                  </button>
+              {/* Confidence & Impact */}
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                <div className="bg-[var(--grey-800)] rounded-lg p-3">
+                  <div className="text-[0.65rem] uppercase tracking-wide text-[var(--grey-500)] mb-1" style={{ fontFamily: 'var(--font-display)' }}>
+                    Confidence
+                  </div>
+                  <div className={`text-xl font-bold ${getConfidenceColor(selectedSignal.confidence_score)}`} style={{ fontFamily: 'var(--font-display)' }}>
+                    {Math.round(selectedSignal.confidence_score)}%
+                  </div>
+                </div>
+                <div className="bg-[var(--grey-800)] rounded-lg p-3">
+                  <div className="text-[0.65rem] uppercase tracking-wide text-[var(--grey-500)] mb-1" style={{ fontFamily: 'var(--font-display)' }}>
+                    Impact Level
+                  </div>
+                  <div className="text-xl font-bold text-white capitalize" style={{ fontFamily: 'var(--font-display)' }}>
+                    {selectedSignal.impact_level}
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Modal Footer */}
-            <div className="px-6 py-4 border-t border-[var(--grey-800)] flex justify-between">
+            {/* Modal Footer - Simple Actions */}
+            <div className="px-6 py-4 border-t border-[var(--grey-800)] flex justify-between items-center">
               <div className="flex gap-2">
                 <button
                   onClick={() => handleAction(selectedSignal.id, 'actioned')}
-                  className="px-4 py-2 bg-green-500/20 text-green-400 rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-green-500/30 transition-colors border border-green-500/30"
+                  className="px-4 py-2 bg-[var(--burnt-orange)] text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-[var(--burnt-orange-light)] transition-colors"
                   style={{ fontFamily: 'var(--font-display)' }}
                 >
                   <CheckCircle className="w-4 h-4" />
-                  Mark Actioned
+                  Acknowledge
                 </button>
                 <button
                   onClick={() => handleAction(selectedSignal.id, 'dismissed')}
                   className="px-4 py-2 bg-[var(--grey-800)] text-[var(--grey-400)] rounded-lg text-sm font-medium flex items-center gap-2 hover:text-white transition-colors border border-[var(--grey-700)]"
                   style={{ fontFamily: 'var(--font-display)' }}
                 >
-                  <X className="w-4 h-4" />
                   Dismiss
                 </button>
               </div>
               <button
                 onClick={() => setSelectedSignal(null)}
-                className="px-4 py-2 text-[var(--grey-400)] hover:text-white transition-colors"
+                className="px-4 py-2 text-[var(--grey-400)] hover:text-white transition-colors text-sm"
                 style={{ fontFamily: 'var(--font-display)' }}
               >
                 Close
