@@ -8,12 +8,13 @@ export class IntelligenceService {
    * 1. mcp-discovery (create company profile)
    * 2. article-selector (AI-powered relevance scoring from V5 batch scraper)
    * 3. target-intelligence-collector (save mentions)
-   * 4. pattern-detector (detect patterns → predictions)
-   * 5. connection-detector (find connections)
-   * 6. crisis-detector (detect crisis signals → crisis_events)
-   * 7. monitoring-stage-2-enrichment (extract events/entities)
-   * 8. mcp-executive-synthesis (generate executive summary)
-   * 9. mcp-opportunity-detector-v2 (detect opportunities)
+   * 4. crisis-detector (detect crisis signals → crisis_events)
+   * 5. monitoring-stage-2-enrichment (extract events/entities)
+   * 6. mcp-executive-synthesis (generate executive summary)
+   * 7. mcp-opportunity-detector-v2 (detect opportunities)
+   *
+   * Note: Pattern and connection detection are now handled by cron-scheduled functions
+   * that run after the pipeline (analyze-target-patterns, detect-cross-target-connections)
    */
   static async startPipeline(
     organizationId: string,
@@ -190,45 +191,12 @@ export class IntelligenceService {
               console.log(`✅ Saved ${collectorResponse.data?.mentions_saved || 0} target mentions to intelligence repository`)
               onProgress?.('target-intelligence-collector', 'completed', collectorResponse.data)
 
-              // STEP 3.6: pattern-detector (Claude-powered prediction generation)
-              console.log('Starting pattern-detector')
-              onProgress?.('pattern-detector', 'running')
+              // NOTE: Pattern and connection detection now handled by cron-scheduled functions:
+              // - analyze-target-patterns (runs at :30 after pipeline)
+              // - detect-cross-target-connections (runs at :35 after pipeline)
+              // These write to the unified 'signals' table instead of legacy predictions/connection_signals
 
-              const patternResponse = await supabase.functions.invoke('pattern-detector', {
-                body: {
-                  organization_id: organizationId,
-                  articles: finalArticles,
-                  company_profile: profile
-                }
-              })
-
-              if (patternResponse.error) {
-                console.warn('⚠️ Pattern detection failed (non-blocking):', patternResponse.error)
-              } else {
-                console.log(`✅ Generated ${patternResponse.data?.predictions_generated || 0} predictions`)
-                onProgress?.('pattern-detector', 'completed', patternResponse.data)
-              }
-
-              // STEP 3.7: connection-detector (Claude-powered connection finding)
-              console.log('Starting connection-detector')
-              onProgress?.('connection-detector', 'running')
-
-              const connectionResponse = await supabase.functions.invoke('connection-detector', {
-                body: {
-                  organization_id: organizationId,
-                  articles: finalArticles,
-                  company_profile: profile
-                }
-              })
-
-              if (connectionResponse.error) {
-                console.warn('⚠️ Connection detection failed (non-blocking):', connectionResponse.error)
-              } else {
-                console.log(`✅ Detected ${connectionResponse.data?.connections_detected || 0} connections`)
-                onProgress?.('connection-detector', 'completed', connectionResponse.data)
-              }
-
-              // STEP 3.8: crisis-detector (Claude-powered crisis signal detection)
+              // STEP 3.6: crisis-detector (Claude-powered crisis signal detection)
               console.log('Starting crisis-detector (mcp-crisis)')
               onProgress?.('crisis-detector', 'running')
 
@@ -406,12 +374,13 @@ export class IntelligenceService {
    * 1. Load existing profile from database
    * 2. article-selector (AI-powered relevance scoring from V5 batch scraper)
    * 3. target-intelligence-collector (save mentions)
-   * 4. pattern-detector (detect patterns → predictions)
-   * 5. connection-detector (find connections)
-   * 6. crisis-detector (detect crisis signals → crisis_events)
-   * 7. monitoring-stage-2-enrichment (extract events/entities)
-   * 8. mcp-executive-synthesis (generate executive summary)
-   * 9. mcp-opportunity-detector-v2 (detect opportunities)
+   * 4. crisis-detector (detect crisis signals → crisis_events)
+   * 5. monitoring-stage-2-enrichment (extract events/entities)
+   * 6. mcp-executive-synthesis (generate executive summary)
+   * 7. mcp-opportunity-detector-v2 (detect opportunities)
+   *
+   * Note: Pattern and connection detection are now handled by cron-scheduled functions
+   * that run after the pipeline (analyze-target-patterns, detect-cross-target-connections)
    */
   static async runMonitoringPipeline(
     organizationId: string,
@@ -531,45 +500,12 @@ export class IntelligenceService {
             console.log(`✅ Saved ${collectorResponse.data?.mentions_saved || 0} target mentions to intelligence repository`)
             onProgress?.('target-intelligence-collector', 'completed', collectorResponse.data)
 
-            // STEP 3.6: pattern-detector (Claude-powered prediction generation)
-            console.log('Starting pattern-detector')
-            onProgress?.('pattern-detector', 'running')
+            // NOTE: Pattern and connection detection now handled by cron-scheduled functions:
+            // - analyze-target-patterns (runs at :30 after pipeline)
+            // - detect-cross-target-connections (runs at :35 after pipeline)
+            // These write to the unified 'signals' table instead of legacy predictions/connection_signals
 
-            const patternResponse = await supabase.functions.invoke('pattern-detector', {
-              body: {
-                organization_id: organizationId,
-                articles: finalArticles,
-                company_profile: profile
-              }
-            })
-
-            if (patternResponse.error) {
-              console.warn('⚠️ Pattern detection failed (non-blocking):', patternResponse.error)
-            } else {
-              console.log(`✅ Generated ${patternResponse.data?.predictions_generated || 0} predictions`)
-              onProgress?.('pattern-detector', 'completed', patternResponse.data)
-            }
-
-            // STEP 3.7: connection-detector (Claude-powered connection finding)
-            console.log('Starting connection-detector')
-            onProgress?.('connection-detector', 'running')
-
-            const connectionResponse = await supabase.functions.invoke('connection-detector', {
-              body: {
-                organization_id: organizationId,
-                articles: finalArticles,
-                company_profile: profile
-              }
-            })
-
-            if (connectionResponse.error) {
-              console.warn('⚠️ Connection detection failed (non-blocking):', connectionResponse.error)
-            } else {
-              console.log(`✅ Detected ${connectionResponse.data?.connections_detected || 0} connections`)
-              onProgress?.('connection-detector', 'completed', connectionResponse.data)
-            }
-
-            // STEP 3.8: crisis-detector (Claude-powered crisis signal detection)
+            // STEP 3.6: crisis-detector (Claude-powered crisis signal detection)
             console.log('Starting crisis-detector (mcp-crisis)')
             onProgress?.('crisis-detector', 'running')
 
