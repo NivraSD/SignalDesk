@@ -613,8 +613,10 @@ Return ONLY valid JSON in this format:
   "watching_closely": ["Entities, trends, or topics to monitor based on the intelligence"]
 }
 
-CRITICAL:
-- key_developments should include ALL significant events from the data (aim for 15-25 entries)
+CRITICAL - QUALITY OVER QUANTITY:
+- key_developments should include ONLY the 8-12 MOST STRATEGICALLY RELEVANT stories
+- BEFORE INCLUDING ANY STORY, ask: "Does this mention a tracked competitor, stakeholder, or directly affect ${organization?.name}'s business?"
+- EXCLUDE generic macro news (Fed policy, currency movements, unrelated country economics, general tech M&A)
 - Each development MUST have source attribution (source + url fields)
 - Sort by recency (today first, then this week, then older)
 - Be specific in "event" field - include names, numbers, details from the actual events`;
@@ -1338,13 +1340,27 @@ Generate your COMMUNICATIONS INTELLIGENCE BRIEF as valid JSON:
   }
 }
 
-CRITICAL INSTRUCTIONS:
-${articleOnlyMode ? `- Include 15-25 key_developments from the ${enrichedArticles.length} articles provided` : `- Include 15-25 key_developments from the ${topEvents.length} events`}
+CRITICAL INSTRUCTIONS - QUALITY OVER QUANTITY:
+${articleOnlyMode ? `- Include ONLY 8-12 key_developments from the ${enrichedArticles.length} articles - choose the MOST strategically relevant` : `- Include ONLY 8-12 key_developments from the ${topEvents.length} events - choose the MOST strategically relevant`}
 - EVERY entry MUST have source and url fields - copy the URL exactly from the article/event data
 - "pr_implication" should explain how this affects ${organization?.name}'s communications (NOT business impact)
 - Sort by recency: "today" FIRST, then "this_week", then "older" - RECENT NEWS DOMINATES
 - Be specific in "event" - use actual names, numbers, quotes
 - Focus on stories that have PR/communications relevance
+
+🎯 STRATEGIC RELEVANCE FILTER - APPLY TO EVERY STORY:
+Before including ANY story, it MUST pass at least ONE of these tests:
+1. NAMED ENTITY: Mentions a tracked competitor, stakeholder, customer, or partner by name
+2. DIRECT INDUSTRY: Directly affects ${organization?.name}'s specific industry (not just "business" or "economy")
+3. ACTIONABLE: Creates a clear PR/communications opportunity ${organization?.name} can act on
+
+❌ EXCLUDE THESE (even if technically "relevant"):
+- Generic macroeconomic news (Fed policy, interest rates, inflation data)
+- Currency/forex movements (rupee, yuan, etc.) unless directly affecting client business
+- Unrelated country economics (China property market, etc.)
+- General tech/AI M&A that doesn't involve competitors or partners
+- Broad industry trends without specific entity mentions
+- "Nice to know" news that doesn't create actionable intelligence
 
 ⚠️ RECENCY IS CRITICAL:
 - If an event is from TODAY or THIS WEEK, it should appear BEFORE older events
@@ -1361,7 +1377,8 @@ Before responding, verify:
 ✅ Every key_development has a pr_implication (not business impact)
 ✅ Recent stories (today/this_week) appear before older stories
 ✅ The executive_summary focuses on PR/communications implications
-✅ You've included 15-25 developments with full details`;
+✅ You've included 8-12 HIGH-QUALITY developments (not 15-25 mediocre ones)
+✅ Every story passes the STRATEGIC RELEVANCE FILTER above`;
     
   } else {
     // Standard synthesis of pre-analyzed data
