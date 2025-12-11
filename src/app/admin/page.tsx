@@ -43,6 +43,41 @@ import { Logo } from '@/components/ui/Logo'
 
 type AdminView = 'overview' | 'pipeline' | 'scraping' | 'users' | 'sources'
 
+// Helper to format dates in Eastern Time
+const formatDateET = (dateStr: string, options?: Intl.DateTimeFormatOptions) => {
+  const date = new Date(dateStr)
+  return date.toLocaleString('en-US', {
+    timeZone: 'America/New_York',
+    ...options
+  })
+}
+
+const formatTimeET = (dateStr: string) => {
+  return formatDateET(dateStr, {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  })
+}
+
+const formatDateOnlyET = (dateStr: string) => {
+  return formatDateET(dateStr, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric'
+  })
+}
+
+const formatFullDateET = (dateStr: string) => {
+  return formatDateET(dateStr, {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  })
+}
+
 interface Stats {
   totalUsers: number
   totalOrgs: number
@@ -228,22 +263,101 @@ export default function AdminDashboard() {
   }
 
   async function loadPipelineRuns() {
-    // Load recent batch_scrape_runs and group by approximate time
-    // This is what actually shows pipeline activity since the orchestrator doesn't work
-    const { data } = await supabase
-      .from('batch_scrape_runs')
-      .select('id,run_type,status,started_at,completed_at,articles_discovered,articles_new,duration_seconds,error_summary')
-      .order('started_at', { ascending: false })
-      .limit(50)
+    // Load all pipeline-related runs: discovery, worker, embedding, matching
+    const [scrapeRunsResult, embeddingJobsResult, pipelineRunsResult] = await Promise.all([
+      supabase
+        .from('batch_scrape_runs')
+        .select('id,run_type,status,started_at,completed_at,articles_discovered,articles_new,duration_seconds,error_summary,sources_successful,sources_failed')
+        .order('started_at', { ascending: false })
+        .limit(100),
+      supabase
+        .from('embedding_jobs')
+        .select('id,job_type,status,items_processed,items_total,started_at,completed_at,error_message')
+        .order('started_at', { ascending: false })
+        .limit(50),
+      supabase
+        .from('pipeline_runs')
+        .select('id,run_type,status,started_at,completed_at,duration_seconds,metadata')
+        .order('started_at', { ascending: false })
+        .limit(50)
+    ])
 
-    // Group runs that started within 10 minutes of each other as a "pipeline run"
+    // Combine all runs into a unified timeline
+    const allRuns: any[] = []
+
+    // Add discovery runs (batch_scrape_runs)
+    for (const run of scrapeRunsResult.data || []) {
+      allRuns.push({
+        id: run.id,
+        type: 'discovery',
+        subtype: run.run_type?.replace('_discovery', '') || 'unknown',
+        status: run.status,
+        started_at: run.started_at,
+        completed_at: run.completed_at,
+        duration_seconds: run.duration_seconds,
+        details: {
+          articles_discovered: run.articles_discovered || 0,
+          articles_new: run.articles_new || 0,
+          sources_successful: run.sources_successful || 0,
+          sources_failed: run.sources_failed || 0,
+          status: run.status
+        },
+        error: run.error_summary ? JSON.stringify(run.error_summary).substring(0, 200) : undefined
+      })
+    }
+
+    // Add embedding jobs
+    for (const job of embeddingJobsResult.data || []) {
+      const durationSeconds = job.started_at && job.completed_at
+        ? Math.round((new Date(job.completed_at).getTime() - new Date(job.started_at).getTime()) / 1000)
+        : 0
+      allRuns.push({
+        id: job.id,
+        type: 'embedding',
+        subtype: job.job_type || 'articles',
+        status: job.status,
+        started_at: job.started_at,
+        completed_at: job.completed_at,
+        duration_seconds: durationSeconds,
+        details: {
+          items_processed: job.items_processed || 0,
+          items_total: job.items_total || 0,
+          status: job.status
+        },
+        error: job.error_message
+      })
+    }
+
+    // Add pipeline_runs (worker, matching, etc.)
+    for (const run of pipelineRunsResult.data || []) {
+      // Skip if it's a duplicate type we already have
+      if (run.run_type === 'unified_pipeline') continue
+      allRuns.push({
+        id: run.id,
+        type: run.run_type?.includes('worker') ? 'worker' :
+              run.run_type?.includes('match') ? 'matching' :
+              run.run_type?.includes('embed') ? 'embedding' : 'other',
+        subtype: run.run_type,
+        status: run.status,
+        started_at: run.started_at,
+        completed_at: run.completed_at,
+        duration_seconds: run.duration_seconds,
+        details: run.metadata || {},
+        error: run.metadata?.error
+      })
+    }
+
+    // Sort by start time descending
+    allRuns.sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime())
+
+    // Group runs that started within 15 minutes of each other as a "pipeline run"
     const grouped: any[] = []
     let currentGroup: any = null
 
-    for (const run of data || []) {
+    for (const run of allRuns) {
       const runTime = new Date(run.started_at).getTime()
 
-      if (!currentGroup || runTime < currentGroup.startTime - 10 * 60 * 1000) {
+      if (!currentGroup || runTime < currentGroup.startTime - 15 * 60 * 1000) {
         // Start a new group
         if (currentGroup) {
           grouped.push(currentGroup)
@@ -260,15 +374,12 @@ export default function AdminDashboard() {
 
       // Add this run as a stage
       const stage = {
-        stage: run.run_type?.replace('_discovery', '') || 'unknown',
+        stage: run.type,
+        subtype: run.subtype,
         success: run.status === 'completed' || run.status === 'partial',
         duration_ms: (run.duration_seconds || 0) * 1000,
-        details: {
-          articles_discovered: run.articles_discovered || 0,
-          articles_new: run.articles_new || 0,
-          status: run.status
-        },
-        error: run.error_summary ? JSON.stringify(run.error_summary).substring(0, 100) : undefined
+        details: run.details,
+        error: run.error
       }
 
       currentGroup.metadata.stages.push(stage)
@@ -659,7 +770,7 @@ function OverviewView({ stats, loading }: { stats: Stats | null; loading: boolea
                   <span className="text-[#bdbdbd]">{run.run_type}</span>
                 </div>
                 <span className="text-[#757575]">
-                  {new Date(run.started_at).toLocaleDateString()}
+                  {formatFullDateET(run.started_at)} ET
                 </span>
               </div>
             ))}
@@ -757,7 +868,7 @@ function OverviewView({ stats, loading }: { stats: Stats | null; loading: boolea
                     </span>
                   </div>
                   <span className="text-[#757575]">
-                    {job.completed_at ? new Date(job.completed_at).toLocaleTimeString() : 'Running...'}
+                    {job.completed_at ? `${formatTimeET(job.completed_at)} ET` : 'Running...'}
                   </span>
                 </div>
               ))}
@@ -783,8 +894,7 @@ function OverviewView({ stats, loading }: { stats: Stats | null; loading: boolea
                   <div className="text-[#757575] text-xs">{user.full_name || 'No name'}</div>
                 </div>
                 <div className="text-[#757575] text-xs">
-                  {new Date(user.created_at).toLocaleDateString()} at{' '}
-                  {new Date(user.created_at).toLocaleTimeString()}
+                  {formatFullDateET(user.created_at)} ET
                 </div>
               </div>
             ))}
@@ -844,9 +954,19 @@ function PipelineView({
 }) {
   const [expandedRun, setExpandedRun] = useState<string | null>(null)
 
-  const getStageIcon = (stageName: string) => {
+  const getStageIcon = (stageName: string, subtype?: string) => {
+    // Check subtype first for discovery stages
+    if (stageName === 'discovery') {
+      switch (subtype) {
+        case 'rss': return Rss
+        case 'sitemap': return Layers
+        case 'cse': return Search
+        case 'firecrawl': return Globe
+        case 'fireplexity': return Globe
+        default: return Rss
+      }
+    }
     switch (stageName) {
-      case 'discovery': return Rss
       case 'worker': return Activity
       case 'metadata': return FileText
       case 'embedding': return Zap
@@ -864,6 +984,13 @@ function PipelineView({
       case 'matching': return 'text-green-400 bg-green-500/10'
       default: return 'text-gray-400 bg-gray-500/10'
     }
+  }
+
+  const getStageName = (stage: string, subtype?: string) => {
+    if (stage === 'discovery' && subtype) {
+      return subtype.charAt(0).toUpperCase() + subtype.slice(1)
+    }
+    return stage.charAt(0).toUpperCase() + stage.slice(1)
   }
 
   const formatDuration = (ms: number) => {
@@ -960,19 +1087,12 @@ function PipelineView({
                     <div className="text-left">
                       <div className="flex items-center gap-2">
                         <span className="text-white font-medium">
-                          {new Date(run.started_at).toLocaleDateString('en-US', {
-                            weekday: 'short',
-                            month: 'short',
-                            day: 'numeric'
-                          })}
+                          {formatDateOnlyET(run.started_at)}
                         </span>
                         <span className="text-[#757575]">
-                          {new Date(run.started_at).toLocaleTimeString('en-US', {
-                            hour: 'numeric',
-                            minute: '2-digit',
-                            hour12: true
-                          })}
+                          {formatTimeET(run.started_at)}
                         </span>
+                        <span className="text-[#5a5a5a] text-xs">ET</span>
                       </div>
                       <div className="flex items-center gap-2 mt-1">
                         <span className={`text-xs px-2 py-0.5 rounded ${
@@ -1006,7 +1126,7 @@ function PipelineView({
                 {isExpanded && stages.length > 0 && (
                   <div className="border-t border-[#2e2e2e] p-4 space-y-3">
                     {stages.map((stage: any, index: number) => {
-                      const StageIcon = getStageIcon(stage.stage)
+                      const StageIcon = getStageIcon(stage.stage, stage.subtype)
                       const stageColor = getStageColor(stage.stage)
 
                       return (
@@ -1022,7 +1142,7 @@ function PipelineView({
                           {/* Stage Info */}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
-                              <span className="text-white font-medium capitalize">{stage.stage}</span>
+                              <span className="text-white font-medium">{getStageName(stage.stage, stage.subtype)}</span>
                               {stage.success ? (
                                 <CheckCircle className="w-4 h-4 text-green-400" />
                               ) : (
@@ -1037,8 +1157,9 @@ function PipelineView({
                             {stage.details && (
                               <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
                                 {Object.entries(stage.details).map(([key, value]) => {
-                                  // Skip nested objects for display
+                                  // Skip nested objects and status (shown separately)
                                   if (typeof value === 'object' && value !== null) return null
+                                  if (key === 'status') return null
                                   return (
                                     <div key={key} className="flex items-center gap-1">
                                       <span className="text-[#757575]">{key.replace(/_/g, ' ')}:</span>
@@ -1053,7 +1174,7 @@ function PipelineView({
 
                             {/* Error Message */}
                             {stage.error && (
-                              <div className="mt-2 text-xs text-red-400 bg-red-500/10 px-2 py-1 rounded">
+                              <div className="mt-2 text-xs text-red-400 bg-red-500/10 px-2 py-1 rounded truncate">
                                 {stage.error}
                               </div>
                             )}
@@ -1162,7 +1283,7 @@ function ScrapingView({
               {scrapeRuns.map(run => (
                 <tr key={run.id} className="border-b border-[#2e2e2e] last:border-0 hover:bg-[#212121]">
                   <td className="p-4 text-[#9e9e9e] text-sm">
-                    {new Date(run.started_at).toLocaleDateString()}
+                    {formatFullDateET(run.started_at)} ET
                   </td>
                   <td className="p-4 text-right text-[#757575] text-sm">
                     {run.duration_seconds ? `${run.duration_seconds}s` : '-'}
@@ -1217,7 +1338,7 @@ function ScrapingView({
                   </td>
                   <td className="p-4 text-[#9e9e9e] text-sm">{article.source_name}</td>
                   <td className="p-4 text-[#757575] text-xs">
-                    {new Date(article.scraped_at).toLocaleDateString()}
+                    {formatFullDateET(article.scraped_at)} ET
                   </td>
                   <td className="p-4">
                     {article.processed ? (
@@ -1316,7 +1437,7 @@ function UsersView({
                   <td className="p-4 text-white text-sm">{user.email}</td>
                   <td className="p-4 text-[#9e9e9e] text-sm">{user.full_name || '-'}</td>
                   <td className="p-4 text-[#757575] text-sm">
-                    {new Date(user.created_at).toLocaleDateString()}
+                    {formatFullDateET(user.created_at)} ET
                   </td>
                 </tr>
               ))}
@@ -1339,7 +1460,7 @@ function UsersView({
                   <td className="p-4 text-white text-sm">{org.name}</td>
                   <td className="p-4 text-[#9e9e9e] text-sm">{org.industry || '-'}</td>
                   <td className="p-4 text-[#757575] text-sm">
-                    {new Date(org.created_at).toLocaleDateString()}
+                    {formatFullDateET(org.created_at)} ET
                   </td>
                 </tr>
               ))}
@@ -1432,7 +1553,7 @@ function SourcesView({
                 </td>
                 <td className="p-4 text-[#757575] text-xs">
                   {source.last_successful_scrape
-                    ? new Date(source.last_successful_scrape).toLocaleDateString()
+                    ? `${formatFullDateET(source.last_successful_scrape)} ET`
                     : 'Never'
                   }
                 </td>
