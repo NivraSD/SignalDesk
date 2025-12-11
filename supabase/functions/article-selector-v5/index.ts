@@ -245,13 +245,31 @@ Return ONLY a JSON array of ${articles.length} integers, nothing else:`;
     const data = await response.json();
     const content = data.content[0].text.trim();
 
-    // Extract JSON array
+    // Extract JSON array - be very aggressive about cleaning
     const bracketStart = content.indexOf('[');
     const bracketEnd = content.lastIndexOf(']');
-    if (bracketStart === -1 || bracketEnd === -1) return new Map();
+    if (bracketStart === -1 || bracketEnd === -1) {
+      console.error('No JSON array found in response:', content.substring(0, 200));
+      return new Map();
+    }
 
     let jsonContent = content.substring(bracketStart, bracketEnd + 1);
-    jsonContent = jsonContent.replace(/\/\/[^\n]*/g, '').replace(/,\s*\]/g, ']');
+
+    // Clean up common issues:
+    // 1. Remove // comments
+    jsonContent = jsonContent.replace(/\/\/[^\n]*/g, '');
+    // 2. Remove /* */ comments
+    jsonContent = jsonContent.replace(/\/\*[\s\S]*?\*\//g, '');
+    // 3. Remove newlines and extra whitespace inside array
+    jsonContent = jsonContent.replace(/\s+/g, ' ');
+    // 4. Fix trailing commas
+    jsonContent = jsonContent.replace(/,\s*\]/g, ']');
+    // 5. Fix multiple commas
+    jsonContent = jsonContent.replace(/,\s*,/g, ',');
+    // 6. Ensure it's just numbers and commas
+    jsonContent = jsonContent.replace(/[^\[\]0-9,\s]/g, '');
+
+    console.log(`Claude score response (cleaned): ${jsonContent.substring(0, 100)}...`);
 
     const scores = JSON.parse(jsonContent);
     const scoreMap = new Map<string, number>();

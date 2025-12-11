@@ -153,18 +153,22 @@ serve(async (req) => {
     const duration = Math.round((Date.now() - startTime) / 1000);
 
     // Update batch run record
-    await supabase
+    const { error: updateError } = await supabase
       .from('batch_scrape_runs')
       .update({
         status: 'completed',
+        completed_at: new Date().toISOString(),
         articles_discovered: totalArticles,
         articles_new: newArticles,
-        articles_duplicate: duplicateArticles,
         sources_successful: sourcesSuccessful,
         sources_failed: sourcesFailed,
         duration_seconds: duration
       })
       .eq('id', runId);
+
+    if (updateError) {
+      console.error('Failed to update batch run:', updateError);
+    }
 
     const summary = {
       sources_processed: sourcesSuccessful + sourcesFailed,

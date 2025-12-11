@@ -21,6 +21,113 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
 })
 
 /**
+ * Sync ALL intelligence_targets to company_profile
+ * Called after any target change to keep company_profile (source of truth for analysis) in sync
+ * Syncs: competitors, stakeholders/influencers, topics, and keywords
+ */
+async function syncTargetsToCompanyProfile(organizationId: string) {
+  try {
+    console.log(`🔄 Syncing ALL targets to company_profile for org: ${organizationId}`)
+
+    // Get ALL active targets for this org
+    const { data: allTargets, error: targetsError } = await supabase
+      .from('intelligence_targets')
+      .select('name, type, priority')
+      .eq('organization_id', organizationId)
+      .eq('active', true)
+      .order('priority', { ascending: false })
+
+    if (targetsError) {
+      console.error('Failed to fetch targets:', targetsError)
+      return
+    }
+
+    // Get current company_profile
+    const { data: org, error: orgError } = await supabase
+      .from('organizations')
+      .select('company_profile')
+      .eq('id', organizationId)
+      .single()
+
+    if (orgError) {
+      console.error('Failed to fetch organization:', orgError)
+      return
+    }
+
+    const profile = org?.company_profile || {}
+
+    // Group targets by type
+    const competitors = allTargets?.filter(t => t.type === 'competitor') || []
+    const influencers = allTargets?.filter(t => t.type === 'influencer') || []
+    const topics = allTargets?.filter(t => t.type === 'topic') || []
+    const keywords = allTargets?.filter(t => t.type === 'keyword') || []
+
+    // Split competitors by priority (high/critical = direct, medium/low = indirect)
+    const directCompetitors = competitors
+      .filter(c => c.priority === 'critical' || c.priority === 'high')
+      .map(c => c.name)
+    const indirectCompetitors = competitors
+      .filter(c => c.priority === 'medium' || c.priority === 'low')
+      .map(c => c.name)
+
+    // Split influencers into stakeholder categories based on name patterns
+    const regulators = influencers
+      .filter(i => /FDA|CMS|HHS|SEC|FTC|DOJ|EPA|regulatory|regulator/i.test(i.name))
+      .map(i => i.name)
+    const analysts = influencers
+      .filter(i => /analyst|research|Gartner|Forrester|IDC/i.test(i.name))
+      .map(i => i.name)
+    const otherInfluencers = influencers
+      .filter(i => !regulators.includes(i.name) && !analysts.includes(i.name))
+      .map(i => i.name)
+
+    // Build updated profile
+    const updatedProfile = {
+      ...profile,
+      // Update competition section
+      competition: {
+        ...(profile.competition || {}),
+        direct_competitors: directCompetitors,
+        indirect_competitors: indirectCompetitors
+      },
+      // Update stakeholders section
+      stakeholders: {
+        ...(profile.stakeholders || {}),
+        regulators: regulators.length > 0 ? regulators : (profile.stakeholders?.regulators || []),
+        key_analysts: analysts.length > 0 ? analysts : (profile.stakeholders?.key_analysts || []),
+        influencers: otherInfluencers
+      },
+      // Update topics/keywords
+      topics: topics.map(t => t.name),
+      keywords: keywords.map(k => k.name),
+      // Also update trending.hot_topics if topics exist
+      trending: {
+        ...(profile.trending || {}),
+        hot_topics: topics.length > 0 ? topics.map(t => t.name) : (profile.trending?.hot_topics || [])
+      }
+    }
+
+    // Save back to organization
+    const { error: updateError } = await supabase
+      .from('organizations')
+      .update({ company_profile: updatedProfile })
+      .eq('id', organizationId)
+
+    if (updateError) {
+      console.error('Failed to update company_profile:', updateError)
+      return
+    }
+
+    console.log(`✅ Synced to company_profile:`)
+    console.log(`   Competitors: ${directCompetitors.length} direct, ${indirectCompetitors.length} indirect`)
+    console.log(`   Stakeholders: ${regulators.length} regulators, ${analysts.length} analysts, ${otherInfluencers.length} other`)
+    console.log(`   Topics: ${topics.length}, Keywords: ${keywords.length}`)
+  } catch (err) {
+    console.error('syncTargetsToCompanyProfile error:', err)
+  }
+}
+
+/**
  * GET /api/organizations/targets?organization_id={uuid}
  * Get all targets for an organization
  */
@@ -144,6 +251,9 @@ export async function POST(req: NextRequest) {
 
         console.log(`✅ Saved ${inserted.length} targets via direct PostgreSQL`)
 
+        // Sync to company_profile
+        await syncTargetsToCompanyProfile(organization_id)
+
         return NextResponse.json({
           success: true,
           targets: inserted,
@@ -175,6 +285,9 @@ export async function POST(req: NextRequest) {
       if (fallbackError) {
         throw fallbackError
       }
+
+      // Sync to company_profile
+      await syncTargetsToCompanyProfile(organization_id)
 
       return NextResponse.json({
         success: true,
@@ -247,6 +360,11 @@ export async function PUT(req: NextRequest) {
       )
     }
 
+    // Sync all target types to company_profile
+    if (updated?.organization_id) {
+      await syncTargetsToCompanyProfile(updated.organization_id)
+    }
+
     return NextResponse.json({
       success: true,
       target: updated
@@ -276,6 +394,13 @@ export async function DELETE(req: NextRequest) {
       )
     }
 
+    // Get target info before deleting (for sync)
+    const { data: target } = await supabase
+      .from('intelligence_targets')
+      .select('organization_id, type')
+      .eq('id', id)
+      .single()
+
     // Soft delete - set active = false
     const { error } = await supabase
       .from('intelligence_targets')
@@ -288,6 +413,11 @@ export async function DELETE(req: NextRequest) {
         { error: 'Failed to delete target' },
         { status: 500 }
       )
+    }
+
+    // Sync all target types to company_profile
+    if (target?.organization_id) {
+      await syncTargetsToCompanyProfile(target.organization_id)
     }
 
     return NextResponse.json({

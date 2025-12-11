@@ -614,7 +614,7 @@ Return ONLY valid JSON in this format:
 }
 
 CRITICAL - QUALITY OVER QUANTITY:
-- key_developments should include ONLY the 8-12 MOST STRATEGICALLY RELEVANT stories
+- key_developments should include ONLY the 10-15 MOST STRATEGICALLY RELEVANT stories
 - BEFORE INCLUDING ANY STORY, ask: "Does this mention a tracked competitor, stakeholder, or directly affect ${organization?.name}'s business?"
 - EXCLUDE generic macro news (Fed policy, currency movements, unrelated country economics, general tech M&A)
 - Each development MUST have source attribution (source + url fields)
@@ -1341,7 +1341,7 @@ Generate your COMMUNICATIONS INTELLIGENCE BRIEF as valid JSON:
 }
 
 CRITICAL INSTRUCTIONS - QUALITY OVER QUANTITY:
-${articleOnlyMode ? `- Include ONLY 8-12 key_developments from the ${enrichedArticles.length} articles - choose the MOST strategically relevant` : `- Include ONLY 8-12 key_developments from the ${topEvents.length} events - choose the MOST strategically relevant`}
+${articleOnlyMode ? `- Include ONLY 10-15 key_developments from the ${enrichedArticles.length} articles - choose the MOST strategically relevant` : `- Include ONLY 10-15 key_developments from the ${topEvents.length} events - choose the MOST strategically relevant`}
 - EVERY entry MUST have source and url fields - copy the URL exactly from the article/event data
 - "pr_implication" should explain how this affects ${organization?.name}'s communications (NOT business impact)
 - Sort by recency: "today" FIRST, then "this_week", then "older" - RECENT NEWS DOMINATES
@@ -1377,7 +1377,7 @@ Before responding, verify:
 ✅ Every key_development has a pr_implication (not business impact)
 ✅ Recent stories (today/this_week) appear before older stories
 ✅ The executive_summary focuses on PR/communications implications
-✅ You've included 8-12 HIGH-QUALITY developments (not 15-25 mediocre ones)
+✅ You've included 10-15 HIGH-QUALITY developments (not 20-30 mediocre ones)
 ✅ Every story passes the STRATEGIC RELEVANCE FILTER above`;
     
   } else {

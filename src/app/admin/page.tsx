@@ -124,27 +124,27 @@ export default function AdminDashboard() {
         totalMatchesResult,
         recentEmbedJobsResult
       ] = await Promise.all([
-        supabase.from('user_profiles').select('*', { count: 'exact' }),
-        supabase.from('organizations').select('*', { count: 'exact' }),
-        supabase.from('raw_articles').select('*', { count: 'exact' }),
-        supabase.from('processed_articles').select('*', { count: 'exact' }),
-        supabase.from('source_registry').select('*').eq('active', true),
-        supabase.from('batch_scrape_runs').select('*').order('started_at', { ascending: false }).limit(10),
-        supabase.from('raw_articles').select('*', { count: 'exact' }).gte('scraped_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
-        supabase.from('raw_articles').select('*', { count: 'exact' }).gte('scraped_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
+        supabase.from('user_profiles').select('id', { count: 'exact', head: true }),
+        supabase.from('organizations').select('id', { count: 'exact', head: true }),
+        supabase.from('raw_articles').select('id', { count: 'exact', head: true }),
+        supabase.from('processed_articles').select('id', { count: 'exact', head: true }),
+        supabase.from('source_registry').select('id,source_name,source_url,source_type,monitor_method,tier,reliability_score,last_successful_scrape,active').eq('active', true),
+        supabase.from('batch_scrape_runs').select('id,run_type,status,started_at,completed_at,articles_discovered,articles_new,duration_seconds,error_summary').order('started_at', { ascending: false }).limit(10),
+        supabase.from('raw_articles').select('id', { count: 'exact', head: true }).gte('scraped_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
+        supabase.from('raw_articles').select('id', { count: 'exact', head: true }).gte('scraped_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
         // Queue status queries
-        supabase.from('raw_articles').select('*', { count: 'exact', head: true }).eq('scrape_status', 'pending'),
-        supabase.from('raw_articles').select('*', { count: 'exact', head: true }).eq('scrape_status', 'processing'),
-        supabase.from('raw_articles').select('*', { count: 'exact', head: true }).eq('scrape_status', 'completed'),
-        supabase.from('raw_articles').select('*', { count: 'exact', head: true }).eq('scrape_status', 'failed'),
-        supabase.from('raw_articles').select('*', { count: 'exact', head: true }).eq('scrape_status', 'metadata_only'),
+        supabase.from('raw_articles').select('id', { count: 'exact', head: true }).eq('scrape_status', 'pending'),
+        supabase.from('raw_articles').select('id', { count: 'exact', head: true }).eq('scrape_status', 'processing'),
+        supabase.from('raw_articles').select('id', { count: 'exact', head: true }).eq('scrape_status', 'completed'),
+        supabase.from('raw_articles').select('id', { count: 'exact', head: true }).eq('scrape_status', 'failed'),
+        supabase.from('raw_articles').select('id', { count: 'exact', head: true }).eq('scrape_status', 'metadata_only'),
         // Embedding stats
-        supabase.from('raw_articles').select('*', { count: 'exact', head: true }).not('embedding', 'is', null),
-        supabase.from('raw_articles').select('*', { count: 'exact', head: true }).is('embedding', null).eq('scrape_status', 'completed'),
-        supabase.from('intelligence_targets').select('*', { count: 'exact', head: true }).not('embedding', 'is', null),
-        supabase.from('intelligence_targets').select('*', { count: 'exact', head: true }),
-        supabase.from('target_article_matches').select('*', { count: 'exact', head: true }),
-        supabase.from('embedding_jobs').select('*').order('completed_at', { ascending: false }).limit(5)
+        supabase.from('raw_articles').select('id', { count: 'exact', head: true }).not('embedded_at', 'is', null),
+        supabase.from('raw_articles').select('id', { count: 'exact', head: true }).is('embedded_at', null).eq('scrape_status', 'completed'),
+        supabase.from('intelligence_targets').select('id', { count: 'exact', head: true }).not('embedded_at', 'is', null),
+        supabase.from('intelligence_targets').select('id', { count: 'exact', head: true }),
+        supabase.from('target_article_matches').select('id', { count: 'exact', head: true }),
+        supabase.from('embedding_jobs').select('id,job_type,status,items_processed,items_total,completed_at').order('completed_at', { ascending: false }).limit(5)
       ])
 
       // Get recent signups (last 30 days)
@@ -196,7 +196,7 @@ export default function AdminDashboard() {
   async function loadRawArticles() {
     const { data } = await supabase
       .from('raw_articles')
-      .select('*')
+      .select('id,title,url,source_name,scraped_at,scrape_status,processed')
       .order('scraped_at', { ascending: false })
       .limit(100)
     setRawArticles(data || [])
@@ -205,7 +205,7 @@ export default function AdminDashboard() {
   async function loadAllScrapeRuns() {
     const { data } = await supabase
       .from('batch_scrape_runs')
-      .select('*')
+      .select('id,run_type,status,started_at,completed_at,articles_discovered,articles_new,duration_seconds,error_summary')
       .order('started_at', { ascending: false })
       .limit(50)
     setScrapeRuns(data || [])
@@ -214,7 +214,7 @@ export default function AdminDashboard() {
   async function loadAllSources() {
     const { data } = await supabase
       .from('source_registry')
-      .select('*')
+      .select('id,source_name,source_url,source_type,monitor_method,tier,reliability_score,last_successful_scrape,active,industries')
       .order('tier', { ascending: true })
     setSources(data || [])
   }
@@ -222,23 +222,96 @@ export default function AdminDashboard() {
   async function loadAllUsers() {
     const { data } = await supabase
       .from('user_profiles')
-      .select('*')
+      .select('id,email,full_name,created_at')
       .order('created_at', { ascending: false })
     setUsers(data || [])
   }
 
   async function loadPipelineRuns() {
+    // Load recent batch_scrape_runs and group by approximate time
+    // This is what actually shows pipeline activity since the orchestrator doesn't work
     const { data } = await supabase
-      .from('pipeline_runs')
-      .select('*')
+      .from('batch_scrape_runs')
+      .select('id,run_type,status,started_at,completed_at,articles_discovered,articles_new,duration_seconds,error_summary')
       .order('started_at', { ascending: false })
-      .limit(20)
-    setPipelineRuns(data || [])
+      .limit(50)
+
+    // Group runs that started within 10 minutes of each other as a "pipeline run"
+    const grouped: any[] = []
+    let currentGroup: any = null
+
+    for (const run of data || []) {
+      const runTime = new Date(run.started_at).getTime()
+
+      if (!currentGroup || runTime < currentGroup.startTime - 10 * 60 * 1000) {
+        // Start a new group
+        if (currentGroup) {
+          grouped.push(currentGroup)
+        }
+        currentGroup = {
+          id: run.id,
+          started_at: run.started_at,
+          startTime: runTime,
+          status: 'completed',
+          duration_seconds: 0,
+          metadata: { stages: [] }
+        }
+      }
+
+      // Add this run as a stage
+      const stage = {
+        stage: run.run_type?.replace('_discovery', '') || 'unknown',
+        success: run.status === 'completed' || run.status === 'partial',
+        duration_ms: (run.duration_seconds || 0) * 1000,
+        details: {
+          articles_discovered: run.articles_discovered || 0,
+          articles_new: run.articles_new || 0,
+          status: run.status
+        },
+        error: run.error_summary ? JSON.stringify(run.error_summary).substring(0, 100) : undefined
+      }
+
+      currentGroup.metadata.stages.push(stage)
+      currentGroup.duration_seconds += run.duration_seconds || 0
+
+      if (run.status === 'failed') {
+        currentGroup.status = 'partial'
+      }
+      if (run.status === 'running') {
+        currentGroup.status = 'running'
+      }
+    }
+
+    if (currentGroup) {
+      grouped.push(currentGroup)
+    }
+
+    setPipelineRuns(grouped)
   }
 
   async function triggerScrape(type: string) {
     setTriggeringScrape(type)
     try {
+      if (type === 'pipeline') {
+        // Run all discovery functions in parallel instead of the orchestrator
+        // This avoids timeout issues
+        const results = await Promise.allSettled([
+          supabase.functions.invoke('batch-scraper-v5-orchestrator-rss', { body: {} }),
+          supabase.functions.invoke('batch-scraper-v5-orchestrator-sitemap', { body: {} }),
+          supabase.functions.invoke('batch-scraper-v5-orchestrator-cse', { body: {} }),
+          supabase.functions.invoke('batch-scraper-v5-orchestrator-fireplexity', { body: {} })
+        ])
+
+        const failures = results.filter(r => r.status === 'rejected')
+        if (failures.length === results.length) {
+          throw new Error('All discovery functions failed')
+        }
+
+        // Refresh stats after triggering
+        setTimeout(loadStats, 3000)
+        return
+      }
+
       let functionName: string
       let body: any = { triggered_by: user?.email || 'admin' }
 
@@ -247,15 +320,10 @@ export default function AdminDashboard() {
         body = { batch_size: 50 }
       } else if (type === 'embed') {
         functionName = 'batch-embed-articles'
-        body = { batch_size: 100, max_batches: 10, hours_back: 48 }
+        body = { batch_size: 100, max_batches: 5, hours_back: 48 }
       } else if (type === 'match') {
         functionName = 'batch-match-signals'
         body = { hours_back: 48 }
-      } else if (type === 'pipeline') {
-        functionName = 'daily-pipeline-orchestrator'
-        body = {}
-      } else if (type === 'all') {
-        functionName = 'batch-scraper-v5-orchestrator'
       } else {
         functionName = `batch-scraper-v5-orchestrator-${type}`
       }
@@ -367,7 +435,7 @@ export default function AdminDashboard() {
                 ) : (
                   <Zap className="w-4 h-4" />
                 )}
-                Run Full Pipeline
+                Run All Discovery
               </button>
               <div className="border-t border-[#2e2e2e] my-2" />
               <button
