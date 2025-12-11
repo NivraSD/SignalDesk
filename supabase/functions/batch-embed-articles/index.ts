@@ -139,8 +139,9 @@ serve(async (req) => {
     while (batchNumber < maxBatches) {
       batchNumber++;
 
-      // Get articles that need embedding (from last N hours)
-      // Now includes ANY article that has content to embed:
+      // Get articles that need embedding
+      // Use scraped_at (not created_at) so re-scraped articles get re-embedded
+      // Include any article with embeddable content:
       // - completed: has full_content (best)
       // - metadata_only: may have description
       // - pending: may have description from RSS
@@ -149,11 +150,11 @@ serve(async (req) => {
         .select('id, title, description, source_name, full_content, extracted_metadata')
         .is('embedding', null)
         .in('scrape_status', ['completed', 'metadata_only', 'pending'])
-        .gte('created_at', sinceTime)
+        .gte('scraped_at', sinceTime)
         .not('title', 'is', null)
         // Prioritize completed articles (have full_content) first
         .order('scrape_status', { ascending: true })  // 'completed' comes before 'pending' alphabetically
-        .order('created_at', { ascending: false })
+        .order('scraped_at', { ascending: false })
         .limit(batchSize);
 
       if (fetchError) {
@@ -165,24 +166,18 @@ serve(async (req) => {
         break;
       }
 
-      // Filter out articles with no meaningful content (title-only = sparse, won't match well)
-      const articlesToEmbed = articles.filter(a => a.full_content || a.description);
-      const skippedTitleOnly = articles.length - articlesToEmbed.length;
+      // Embed all articles including title-only (some sources like Bloomberg only have titles)
+      const articlesToEmbed = articles;
 
       // Count content types for logging
       const withFullContent = articlesToEmbed.filter(a => a.full_content).length;
       const withDescription = articlesToEmbed.filter(a => !a.full_content && a.description).length;
+      const titleOnly = articlesToEmbed.filter(a => !a.full_content && !a.description).length;
 
-      console.log(`   Batch ${batchNumber}: Processing ${articlesToEmbed.length} articles (skipped ${skippedTitleOnly} title-only)...`);
+      console.log(`   Batch ${batchNumber}: Processing ${articlesToEmbed.length} articles...`);
       console.log(`      - ${withFullContent} with full content`);
       console.log(`      - ${withDescription} with description only`);
-
-      if (articlesToEmbed.length === 0) {
-        console.log(`   Batch ${batchNumber}: No articles with content to embed, skipping...`);
-        // Still increment processed count for the skipped ones
-        totalProcessed += skippedTitleOnly;
-        continue;
-      }
+      console.log(`      - ${titleOnly} title-only`);
 
       // Build embedding texts
       const texts = articlesToEmbed.map(a => buildEmbeddingText(a as Article));
@@ -218,7 +213,7 @@ serve(async (req) => {
         }
       }
 
-      totalProcessed += articlesToEmbed.length + skippedTitleOnly;
+      totalProcessed += articlesToEmbed.length;
       totalSuccess += batchSuccess;
       totalFailed += batchFailed;
 

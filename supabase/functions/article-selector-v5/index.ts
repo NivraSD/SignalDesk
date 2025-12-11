@@ -34,6 +34,53 @@ const ALWAYS_BLOCK_SOURCES = new Set([
   'prnewswire', 'einewswire', 'marketwatch press release'
 ]);
 
+// Industry-specific source relevance (Stage 2 filtering)
+// Maps org industries to sources that are directly relevant
+const INDUSTRY_SOURCES: Record<string, Set<string>> = {
+  'marketing': new Set(['adweek', 'prweek', 'pr daily', 'digiday', 'campaign', 'ad age', 'marketing week', 'the drum', 'mediapost', 'adexchanger', 'marketing dive', 'modern retail']),
+  'advertising': new Set(['adweek', 'prweek', 'campaign', 'ad age', 'the drum', 'mediapost', 'adexchanger', 'digiday']),
+  'integrated marketing': new Set(['adweek', 'prweek', 'pr daily', 'digiday', 'campaign', 'ad age', 'marketing week', 'the drum', 'mediapost', 'adexchanger', 'marketing dive', 'modern retail', 'provoke media', "o'dwyer's"]),
+  'finance': new Set(['bloomberg', 'reuters', 'financial times', 'wall street journal', 'wsj', 'barrons', 'seeking alpha', 'the information']),
+  'technology': new Set(['techcrunch', 'the verge', 'wired', 'ars technica', 'venturebeat', 'the information', 'mit technology review']),
+  'healthcare': new Set(['stat news', 'fierce healthcare', 'modern healthcare', 'medcity news', 'healthcare dive', 'biopharma dive']),
+  'retail': new Set(['retail dive', 'modern retail', 'chain store age', 'grocery dive', 'wwd', 'business of fashion']),
+  'energy': new Set(['utility dive', 'recharge news', 'greentech media', 'cleantechnica']),
+};
+
+// Irrelevant source categories for specific industries
+// Articles from these sources should be heavily penalized for these industries
+const IRRELEVANT_SOURCES: Record<string, Set<string>> = {
+  'marketing': new Set(['csis', 'brookings institution', 'pew research', 'fcc', 'federal reserve', 'sec', 'ftc']),
+  'advertising': new Set(['csis', 'brookings institution', 'pew research', 'fcc', 'federal reserve', 'sec', 'ftc']),
+  'integrated marketing': new Set(['csis', 'brookings institution', 'pew research', 'fcc', 'federal reserve', 'sec', 'ftc']),
+};
+
+function isIndustryRelevantSource(sourceName: string, industry: string): boolean {
+  const industryLower = industry.toLowerCase();
+  const sourceNameLower = sourceName.toLowerCase();
+
+  const relevantSources = INDUSTRY_SOURCES[industryLower];
+  if (relevantSources) {
+    for (const src of relevantSources) {
+      if (sourceNameLower.includes(src)) return true;
+    }
+  }
+  return false;
+}
+
+function isIndustryIrrelevantSource(sourceName: string, industry: string): boolean {
+  const industryLower = industry.toLowerCase();
+  const sourceNameLower = sourceName.toLowerCase();
+
+  const irrelevantSources = IRRELEVANT_SOURCES[industryLower];
+  if (irrelevantSources) {
+    for (const src of irrelevantSources) {
+      if (sourceNameLower.includes(src)) return true;
+    }
+  }
+  return false;
+}
+
 interface TargetMatch {
   target_id: string;
   target_name: string;
@@ -71,12 +118,13 @@ interface V4Article {
   url: string;
   source_name: string;
   published_at: string;
-  relevance_score: number;  // Now Claude-scored, not just embedding similarity
+  relevance_score: number;  // Claude-scored for RANKING (not filtering)
   matched_targets: string[];
   signal_strength: string;
   signal_category: string;
   is_priority_source?: boolean;
   source_tier?: number;  // 1=critical, 2=high, 3=other
+  priority_tier?: 'high' | 'medium' | 'low';  // For enrichment/synthesis prioritization
 }
 
 // Check if article is garbage (malformed scrape, no real content)
@@ -148,21 +196,26 @@ async function scoreArticlesWithClaude(
 
   const competitorList = competitors.length > 0 ? competitors.slice(0, 10).join(', ') : 'key competitors';
 
-  const prompt = `You are scoring articles for BUSINESS RELEVANCE to a company.
+  const prompt = `You are scoring articles for DIRECT BUSINESS RELEVANCE to a specific company. Be STRICT.
 
 ${intelligenceContext}
 
 SCORING (return ONE integer 0-100 per article):
-90-100: CRITICAL - Mentions company/competitors by name: ${competitorList}
-70-89: HIGH VALUE - Target customers, M&A, regulatory, industry-specific developments
-50-69: RELEVANT - Industry news, market trends in company's sectors
-30-49: BACKGROUND - Tangential relevance
-0-29: NOT RELEVANT - Wrong industry, consumer news, unrelated tech
+90-100: CRITICAL - Directly mentions this company or competitors BY NAME: ${competitorList}
+70-89: HIGH VALUE - Directly about this company's specific industry, clients, or services
+50-69: RELEVANT - News about this company's actual market/sector with clear business implications
+30-49: WEAK - Tangentially related, might be interesting but not actionable
+0-29: NOT RELEVANT - Different industry, wrong sector, no business connection
 
-⚠️ ANTI-GARBAGE RULES:
-- Generic "AI" news is NOT relevant unless it affects THIS company's industry
-- Press releases score 20-30 points LOWER than equivalent journalism
-- "Tech giant does X" is NOT relevant unless it directly affects this company
+⚠️ STRICT FILTERING RULES - Score 20 or LOWER for:
+- Think tank articles about geopolitics, national security, or government policy (unless directly about advertising/marketing regulation)
+- Generic "AI" articles about chips, semiconductors, or global tech competition (NOT relevant to marketing agencies)
+- Media company M&A (like Paramount, Warner Bros) unless it directly involves advertising agencies
+- Political news, international relations, defense articles
+- Articles where the company's industry is NOT the central focus
+- Press releases (score 20-30 points LOWER than equivalent journalism)
+
+The article must be DIRECTLY relevant to ${intelligenceContext.split('\n')[0]} - not just tangentially related to a keyword.
 
 ARTICLES:
 ${articleList}
@@ -299,6 +352,7 @@ serve(async (req) => {
     let totalMatches = 0;
     let filteredBlocked = 0;
     let filteredGarbage = 0;
+    let filteredIndustryIrrelevant = 0;
     let filteredOld = 0;
 
     for (const target of targets || []) {
@@ -345,10 +399,19 @@ serve(async (req) => {
           } catch { /* keep if date parsing fails */ }
         }
 
+        // Filter 4 (Stage 2): Industry-irrelevant sources
+        // Skip think tanks, policy orgs for marketing/advertising companies
+        if (isIndustryIrrelevantSource(a.source_name, industry)) {
+          filteredIndustryIrrelevant++;
+          continue;
+        }
+
         // Determine source tier
         let sourceTier = 3;
         if (criticalSources.has(srcLower)) sourceTier = 1;
         else if (highPrioritySources.has(srcLower)) sourceTier = 2;
+        // Boost industry-relevant sources (e.g., AdWeek for marketing orgs)
+        else if (isIndustryRelevantSource(a.source_name, industry)) sourceTier = 2;
 
         const existing = articleMap.get(a.id);
         if (existing) {
@@ -382,7 +445,61 @@ serve(async (req) => {
     console.log(`   Filtered blocked: ${filteredBlocked}`);
     console.log(`   Filtered garbage: ${filteredGarbage}`);
     console.log(`   Filtered old: ${filteredOld}`);
+    console.log(`   Filtered industry-irrelevant: ${filteredIndustryIrrelevant}`);
     console.log(`   Candidates remaining: ${articleMap.size}`);
+
+    // STEP 1.5: Include recent Tier 1 articles directly (bypass embedding match)
+    // This ensures important sources like Bloomberg get to Claude for ranking
+    // even if their title-only embeddings don't match specific targets
+    console.log('\n📊 STEP 1.5: Including recent Tier 1 articles...');
+    const TIER1_DIRECT_SOURCES = ['bloomberg', 'reuters', 'wall street journal', 'wsj'];
+    const MAX_TIER1_DIRECT = 15; // Max articles per Tier 1 source to add directly
+    let tier1Added = 0;
+
+    for (const sourceName of TIER1_DIRECT_SOURCES) {
+      // Skip if we already have enough from this source via embedding matches
+      const existingFromSource = Array.from(articleMap.values())
+        .filter(a => a.source_name.toLowerCase().includes(sourceName)).length;
+
+      if (existingFromSource >= MAX_TIER1_DIRECT) continue;
+
+      const toAdd = MAX_TIER1_DIRECT - existingFromSource;
+
+      const { data: tier1Articles } = await supabase
+        .from('raw_articles')
+        .select('id, title, description, url, source_name, published_at, scraped_at')
+        .ilike('source_name', `%${sourceName}%`)
+        .gte('scraped_at', sinceTime)
+        .not('title', 'is', null)
+        .order('scraped_at', { ascending: false })
+        .limit(toAdd);
+
+      if (!tier1Articles) continue;
+
+      for (const a of tier1Articles) {
+        if (articleMap.has(a.id)) continue; // Already have it
+        if (isGarbageArticle({ title: a.title, description: a.description })) continue;
+
+        articleMap.set(a.id, {
+          id: a.id,
+          title: a.title,
+          description: a.description,
+          url: a.url,
+          source_name: a.source_name,
+          published_at: a.published_at || a.scraped_at,
+          relevance_score: 0,
+          embedding_score: 0.30, // Low score since not matched by embedding
+          matched_targets: ['[Direct Tier 1]'], // Marker that it was directly included
+          signal_strength: 'weak',
+          signal_category: 'general',
+          is_priority_source: true,
+          source_tier: 1
+        });
+        tier1Added++;
+      }
+    }
+    console.log(`   Added ${tier1Added} Tier 1 articles directly`);
+    console.log(`   Total candidates now: ${articleMap.size}`);
 
     // STEP 2: Apply source caps BEFORE Claude scoring (to limit API calls)
     console.log('\n📊 STEP 2: Applying source tier caps...');
@@ -447,15 +564,19 @@ serve(async (req) => {
       }));
     }
 
-    // STEP 4: Final filtering with diversity constraint
-    console.log('\n📊 STEP 4: Final filtering with diversity...');
-    const MIN_RELEVANCE = 40; // Minimum Claude score to include
+    // STEP 4: Ranking with diversity constraint (NO relevance filtering - Claude is for ranking, not gating)
+    console.log('\n📊 STEP 4: Ranking with diversity...');
+    // Claude relevance score is now used for RANKING and ENRICHMENT PRIORITY, not filtering
+    // Stage 1 (embedding thresholds) + Stage 2 (source filtering) handle relevance filtering
     const MAX_SOURCE_PERCENT = 0.25; // No single source > 25% of results
     const TARGET_TOTAL = 60; // Target number of articles
 
-    // First filter by relevance and sort
-    const relevantArticles = v4Articles
-      .filter(a => a.relevance_score >= MIN_RELEVANCE)
+    // Add priority_tier based on Claude score (for enrichment/synthesis prioritization)
+    const rankedArticles = v4Articles
+      .map(a => ({
+        ...a,
+        priority_tier: a.relevance_score >= 70 ? 'high' : a.relevance_score >= 50 ? 'medium' : 'low'
+      }))
       .sort((a, b) => {
         // Sort by relevance score first (best articles first)
         if (b.relevance_score !== a.relevance_score) {
@@ -464,6 +585,8 @@ serve(async (req) => {
         // Then by tier
         return (a.source_tier || 3) - (b.source_tier || 3);
       });
+
+    const relevantArticles = rankedArticles;
 
     // Apply diversity constraint: no single source > 25%
     const finalArticles: typeof relevantArticles = [];
@@ -482,8 +605,12 @@ serve(async (req) => {
       }
     }
 
-    console.log(`   After relevance filter: ${relevantArticles.length}`);
+    const highPriority = finalArticles.filter(a => a.priority_tier === 'high').length;
+    const mediumPriority = finalArticles.filter(a => a.priority_tier === 'medium').length;
+    const lowPriority = finalArticles.filter(a => a.priority_tier === 'low').length;
+    console.log(`   Total ranked: ${rankedArticles.length}`);
     console.log(`   After diversity constraint (max ${MAX_SOURCE_PERCENT * 100}% per source): ${finalArticles.length}`);
+    console.log(`   Priority tiers: ${highPriority} high, ${mediumPriority} medium, ${lowPriority} low`);
 
     // Build target matches for V5 format
     const targetMatches: TargetMatch[] = [];
@@ -568,10 +695,12 @@ serve(async (req) => {
         filtered_blocked: filteredBlocked,
         filtered_garbage: filteredGarbage,
         filtered_old: filteredOld,
+        filtered_industry_irrelevant: filteredIndustryIrrelevant,
         after_quality_filter: articleMap.size,
         after_source_caps: cappedArticles.length,
         final_articles: outputArticles.length,
-        from_priority_sources: prioritySourceCount
+        from_priority_sources: prioritySourceCount,
+        priority_breakdown: { high: highPriority, medium: mediumPriority, low: lowPriority }
       },
       target_signals: targetMatches,
       connections,

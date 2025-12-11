@@ -19,6 +19,7 @@ import {
   Globe,
   Loader2,
   ChevronRight,
+  ChevronDown,
   ExternalLink,
   Settings,
   LogOut,
@@ -30,14 +31,17 @@ import {
   Filter,
   Zap,
   Target,
-  Link2
+  Link2,
+  Rss,
+  Search,
+  Layers
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { isPlatformAdmin } from '@/lib/admin/config'
 import { Logo } from '@/components/ui/Logo'
 
-type AdminView = 'overview' | 'scraping' | 'users' | 'sources'
+type AdminView = 'overview' | 'pipeline' | 'scraping' | 'users' | 'sources'
 
 interface Stats {
   totalUsers: number
@@ -78,6 +82,7 @@ export default function AdminDashboard() {
   const [rawArticles, setRawArticles] = useState<any[]>([])
   const [users, setUsers] = useState<any[]>([])
   const [orgs, setOrgs] = useState<any[]>([])
+  const [pipelineRuns, setPipelineRuns] = useState<any[]>([])
 
   // Check admin access
   useEffect(() => {
@@ -222,6 +227,15 @@ export default function AdminDashboard() {
     setUsers(data || [])
   }
 
+  async function loadPipelineRuns() {
+    const { data } = await supabase
+      .from('pipeline_runs')
+      .select('*')
+      .order('started_at', { ascending: false })
+      .limit(20)
+    setPipelineRuns(data || [])
+  }
+
   async function triggerScrape(type: string) {
     setTriggeringScrape(type)
     try {
@@ -237,6 +251,9 @@ export default function AdminDashboard() {
       } else if (type === 'match') {
         functionName = 'batch-match-signals'
         body = { hours_back: 48 }
+      } else if (type === 'pipeline') {
+        functionName = 'daily-pipeline-orchestrator'
+        body = {}
       } else if (type === 'all') {
         functionName = 'batch-scraper-v5-orchestrator'
       } else {
@@ -304,6 +321,7 @@ export default function AdminDashboard() {
           <nav className="space-y-1">
             {[
               { id: 'overview', label: 'Overview', icon: BarChart3 },
+              { id: 'pipeline', label: 'Pipeline', icon: Activity },
               { id: 'scraping', label: 'Scraping', icon: Database },
               { id: 'users', label: 'Users & Orgs', icon: Users },
               { id: 'sources', label: 'Sources', icon: Globe },
@@ -312,7 +330,9 @@ export default function AdminDashboard() {
                 key={item.id}
                 onClick={() => {
                   setActiveView(item.id as AdminView)
-                  if (item.id === 'scraping') {
+                  if (item.id === 'pipeline') {
+                    loadPipelineRuns()
+                  } else if (item.id === 'scraping') {
                     loadAllScrapeRuns()
                     loadRawArticles()
                   } else if (item.id === 'users') {
@@ -337,6 +357,19 @@ export default function AdminDashboard() {
           <div className="mt-8 pt-8 border-t border-[#1a1a1a]">
             <div className="text-[#757575] text-xs font-semibold uppercase tracking-wider mb-3">Quick Actions</div>
             <div className="space-y-2">
+              <button
+                onClick={() => triggerScrape('pipeline')}
+                disabled={!!triggeringScrape}
+                className="w-full flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-[#c75d3a] to-[#e07b5a] hover:from-[#d66c4a] hover:to-[#f08a6a] rounded-lg text-sm text-white font-medium transition-colors disabled:opacity-50"
+              >
+                {triggeringScrape === 'pipeline' ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Zap className="w-4 h-4" />
+                )}
+                Run Full Pipeline
+              </button>
+              <div className="border-t border-[#2e2e2e] my-2" />
               <button
                 onClick={() => triggerScrape('rss')}
                 disabled={!!triggeringScrape}
@@ -445,6 +478,14 @@ export default function AdminDashboard() {
         <main className="ml-56 flex-1 p-8">
           {activeView === 'overview' && (
             <OverviewView stats={stats} loading={loading} />
+          )}
+          {activeView === 'pipeline' && (
+            <PipelineView
+              pipelineRuns={pipelineRuns}
+              onRefresh={loadPipelineRuns}
+              triggerPipeline={() => triggerScrape('pipeline')}
+              isTriggering={triggeringScrape === 'pipeline'}
+            />
           )}
           {activeView === 'scraping' && (
             <ScrapingView
@@ -715,6 +756,250 @@ function StatCard({
           {trend}
         </div>
       )}
+    </div>
+  )
+}
+
+// ============================================================================
+// PIPELINE VIEW
+// ============================================================================
+function PipelineView({
+  pipelineRuns,
+  onRefresh,
+  triggerPipeline,
+  isTriggering
+}: {
+  pipelineRuns: any[]
+  onRefresh: () => void
+  triggerPipeline: () => void
+  isTriggering: boolean
+}) {
+  const [expandedRun, setExpandedRun] = useState<string | null>(null)
+
+  const getStageIcon = (stageName: string) => {
+    switch (stageName) {
+      case 'discovery': return Rss
+      case 'worker': return Activity
+      case 'metadata': return FileText
+      case 'embedding': return Zap
+      case 'matching': return Target
+      default: return Layers
+    }
+  }
+
+  const getStageColor = (stageName: string) => {
+    switch (stageName) {
+      case 'discovery': return 'text-blue-400 bg-blue-500/10'
+      case 'worker': return 'text-orange-400 bg-orange-500/10'
+      case 'metadata': return 'text-cyan-400 bg-cyan-500/10'
+      case 'embedding': return 'text-purple-400 bg-purple-500/10'
+      case 'matching': return 'text-green-400 bg-green-500/10'
+      default: return 'text-gray-400 bg-gray-500/10'
+    }
+  }
+
+  const formatDuration = (ms: number) => {
+    if (ms < 1000) return `${ms}ms`
+    if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`
+    return `${Math.round(ms / 60000)}m ${Math.round((ms % 60000) / 1000)}s`
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl text-white font-semibold mb-2">Pipeline Runs</h1>
+          <p className="text-[#757575]">Monitor unified pipeline execution with all stages</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onRefresh}
+            className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] hover:bg-[#2e2e2e] rounded-lg text-sm text-[#bdbdbd] transition-colors"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Refresh
+          </button>
+          <button
+            onClick={triggerPipeline}
+            disabled={isTriggering}
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#c75d3a] to-[#e07b5a] hover:from-[#d66c4a] hover:to-[#f08a6a] rounded-lg text-sm text-white font-medium transition-colors disabled:opacity-50"
+          >
+            {isTriggering ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Play className="w-4 h-4" />
+            )}
+            Run Pipeline
+          </button>
+        </div>
+      </div>
+
+      {/* Pipeline Schedule Info */}
+      <div className="bg-[#1a1a1a] rounded-xl border border-[#2e2e2e] p-4">
+        <div className="flex items-center gap-3 text-sm">
+          <Clock className="w-4 h-4 text-[#c75d3a]" />
+          <span className="text-[#9e9e9e]">Scheduled runs:</span>
+          <span className="text-white">4x daily at 12am, 6am, 12pm, 6pm EST</span>
+          <span className="text-[#757575]">(5, 11, 17, 23 UTC)</span>
+        </div>
+      </div>
+
+      {/* Pipeline Runs List */}
+      <div className="space-y-4">
+        {pipelineRuns.length === 0 ? (
+          <div className="bg-[#1a1a1a] rounded-xl border border-[#2e2e2e] p-12 text-center">
+            <Layers className="w-12 h-12 text-[#3d3d3d] mx-auto mb-4" />
+            <p className="text-[#757575]">No pipeline runs yet</p>
+            <p className="text-[#5a5a5a] text-sm mt-1">Run the pipeline manually or wait for the scheduled run</p>
+          </div>
+        ) : (
+          pipelineRuns.map((run) => {
+            const isExpanded = expandedRun === run.id
+            const stages = run.metadata?.stages || []
+            const successfulStages = stages.filter((s: any) => s.success).length
+            const totalStages = stages.length
+
+            return (
+              <div
+                key={run.id}
+                className="bg-[#1a1a1a] rounded-xl border border-[#2e2e2e] overflow-hidden"
+              >
+                {/* Run Header */}
+                <button
+                  onClick={() => setExpandedRun(isExpanded ? null : run.id)}
+                  className="w-full flex items-center justify-between p-4 hover:bg-[#212121] transition-colors"
+                >
+                  <div className="flex items-center gap-4">
+                    {/* Status Icon */}
+                    <div className={`p-2 rounded-lg ${
+                      run.status === 'completed' ? 'bg-green-500/10' :
+                      run.status === 'partial' ? 'bg-yellow-500/10' :
+                      run.status === 'failed' ? 'bg-red-500/10' :
+                      'bg-blue-500/10'
+                    }`}>
+                      {run.status === 'completed' ? (
+                        <CheckCircle className="w-5 h-5 text-green-400" />
+                      ) : run.status === 'partial' ? (
+                        <AlertTriangle className="w-5 h-5 text-yellow-400" />
+                      ) : run.status === 'failed' ? (
+                        <XCircle className="w-5 h-5 text-red-400" />
+                      ) : (
+                        <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />
+                      )}
+                    </div>
+
+                    {/* Run Info */}
+                    <div className="text-left">
+                      <div className="flex items-center gap-2">
+                        <span className="text-white font-medium">
+                          {new Date(run.started_at).toLocaleDateString('en-US', {
+                            weekday: 'short',
+                            month: 'short',
+                            day: 'numeric'
+                          })}
+                        </span>
+                        <span className="text-[#757575]">
+                          {new Date(run.started_at).toLocaleTimeString('en-US', {
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            hour12: true
+                          })}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className={`text-xs px-2 py-0.5 rounded ${
+                          run.status === 'completed' ? 'bg-green-500/10 text-green-400' :
+                          run.status === 'partial' ? 'bg-yellow-500/10 text-yellow-400' :
+                          run.status === 'failed' ? 'bg-red-500/10 text-red-400' :
+                          'bg-blue-500/10 text-blue-400'
+                        }`}>
+                          {run.status}
+                        </span>
+                        <span className="text-[#757575] text-xs">
+                          {successfulStages}/{totalStages} stages
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    {/* Duration */}
+                    <div className="text-right">
+                      <div className="text-white font-medium">{run.duration_seconds}s</div>
+                      <div className="text-[#757575] text-xs">duration</div>
+                    </div>
+
+                    {/* Expand/Collapse */}
+                    <ChevronDown className={`w-5 h-5 text-[#757575] transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                  </div>
+                </button>
+
+                {/* Expanded Stage Details */}
+                {isExpanded && stages.length > 0 && (
+                  <div className="border-t border-[#2e2e2e] p-4 space-y-3">
+                    {stages.map((stage: any, index: number) => {
+                      const StageIcon = getStageIcon(stage.stage)
+                      const stageColor = getStageColor(stage.stage)
+
+                      return (
+                        <div
+                          key={index}
+                          className="flex items-start gap-4 p-3 bg-[#0d0d0d] rounded-lg"
+                        >
+                          {/* Stage Icon */}
+                          <div className={`p-2 rounded-lg ${stageColor.split(' ')[1]}`}>
+                            <StageIcon className={`w-4 h-4 ${stageColor.split(' ')[0]}`} />
+                          </div>
+
+                          {/* Stage Info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="text-white font-medium capitalize">{stage.stage}</span>
+                              {stage.success ? (
+                                <CheckCircle className="w-4 h-4 text-green-400" />
+                              ) : (
+                                <XCircle className="w-4 h-4 text-red-400" />
+                              )}
+                              <span className="text-[#757575] text-xs">
+                                {formatDuration(stage.duration_ms)}
+                              </span>
+                            </div>
+
+                            {/* Stage Details */}
+                            {stage.details && (
+                              <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                                {Object.entries(stage.details).map(([key, value]) => {
+                                  // Skip nested objects for display
+                                  if (typeof value === 'object' && value !== null) return null
+                                  return (
+                                    <div key={key} className="flex items-center gap-1">
+                                      <span className="text-[#757575]">{key.replace(/_/g, ' ')}:</span>
+                                      <span className="text-[#9e9e9e]">
+                                        {typeof value === 'number' ? value.toLocaleString() : String(value)}
+                                      </span>
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            )}
+
+                            {/* Error Message */}
+                            {stage.error && (
+                              <div className="mt-2 text-xs text-red-400 bg-red-500/10 px-2 py-1 rounded">
+                                {stage.error}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )
+          })
+        )}
+      </div>
     </div>
   )
 }

@@ -10,6 +10,11 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const FIRECRAWL_API_KEY = Deno.env.get('FIRECRAWL_API_KEY') || 'fc-3048810124b640eb99293880a4ab25d0';
 
+// Timeouts and limits
+const API_TIMEOUT_MS = 20000; // 20 seconds per API call
+const MAX_SOURCES_DEFAULT = 15; // Reduced from 50 to avoid Edge Function timeout
+const STUCK_RUN_THRESHOLD_MINUTES = 10; // Mark runs older than this as failed
+
 interface Source {
   id: string;
   source_name: string;
@@ -17,6 +22,7 @@ interface Source {
   monitor_method: string;
   industries: string[];
   tier: number;
+  consecutive_failures?: number;
   last_successful_scrape?: string;
 }
 
@@ -35,7 +41,24 @@ serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const maxSources = body.max_sources || 50; // Increased from 10 to process more sources
+    const maxSources = body.max_sources || MAX_SOURCES_DEFAULT;
+
+    // CLEANUP: Mark stuck "running" fireplexity runs as failed
+    const stuckThreshold = new Date(Date.now() - STUCK_RUN_THRESHOLD_MINUTES * 60 * 1000).toISOString();
+    const { data: stuckRuns } = await supabase
+      .from('batch_scrape_runs')
+      .update({
+        status: 'failed',
+        error_message: 'Timed out (cleanup by new run)'
+      })
+      .eq('run_type', 'firecrawl_discovery')
+      .eq('status', 'running')
+      .lt('started_at', stuckThreshold)
+      .select('id');
+
+    if (stuckRuns && stuckRuns.length > 0) {
+      console.log(`🧹 Cleaned up ${stuckRuns.length} stuck firecrawl runs`);
+    }
 
     // Create batch run record
     await supabase
@@ -179,23 +202,49 @@ serve(async (req) => {
 });
 
 // ============================================================================
+// Helper: Fetch with timeout using AbortController
+// ============================================================================
+async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+    return response;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+// ============================================================================
 // Helper: Discover articles via Firecrawl Map API
 // ============================================================================
 async function discoverViaFirecrawlMap(source: Source, supabase: any): Promise<{ articles: number, newCount: number, duplicateCount: number }> {
-  // Use Firecrawl Map to discover article URLs on the site
-  const mapResponse = await fetch('https://api.firecrawl.dev/v1/map', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${FIRECRAWL_API_KEY}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      url: source.source_url,
-      search: 'article news',  // Search for article-related pages
-      limit: 50,  // Limit URLs per source for cost control
-      includeSubdomains: false
-    })
-  });
+  // Use Firecrawl Map to discover article URLs on the site (with timeout)
+  let mapResponse: Response;
+  try {
+    mapResponse = await fetchWithTimeout('https://api.firecrawl.dev/v1/map', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${FIRECRAWL_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        url: source.source_url,
+        search: 'article news',  // Search for article-related pages
+        limit: 50,  // Limit URLs per source for cost control
+        includeSubdomains: false
+      })
+    }, API_TIMEOUT_MS);
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      throw new Error(`API timeout after ${API_TIMEOUT_MS / 1000}s`);
+    }
+    throw error;
+  }
 
   if (!mapResponse.ok) {
     const errorText = await mapResponse.text();

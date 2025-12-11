@@ -9,10 +9,28 @@ import { corsHeaders } from '../_shared/cors.ts';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-// Similarity thresholds
+// Similarity thresholds - different by target type
+// Lowered to allow more candidates through - Claude ranking handles quality
+// Title-only sources like Bloomberg need lower thresholds to match
+const THRESHOLD_BY_TYPE: Record<string, number> = {
+  topic: 0.42,           // Topics are broad but Claude will filter
+  keyword: 0.42,         // Keywords are broad too
+  competitor: 0.35,      // Company names - lower for title-only matching
+  stakeholder: 0.38,     // People/orgs
+  influencer: 0.38,      // People
+  regulator: 0.38,       // Regulatory bodies
+  customer: 0.35,        // Company names
+  partner: 0.35,         // Company names
+  default: 0.38          // Default threshold
+};
+
 const STRONG_SIGNAL_THRESHOLD = 0.50;
 const MODERATE_SIGNAL_THRESHOLD = 0.40;
-const WEAK_SIGNAL_THRESHOLD = 0.35;
+const WEAK_SIGNAL_THRESHOLD = 0.32;
+
+function getThresholdForTargetType(targetType: string): number {
+  return THRESHOLD_BY_TYPE[targetType.toLowerCase()] || THRESHOLD_BY_TYPE.default;
+}
 
 interface Target {
   id: string;
@@ -119,12 +137,15 @@ serve(async (req) => {
     // For each target, find matching articles using the SQL function
     for (const target of targets as Target[]) {
       try {
+        // Use per-target-type threshold (topics need higher threshold than competitors)
+        const targetThreshold = Math.max(minSimilarity, getThresholdForTargetType(target.target_type));
+
         // Use the match_articles_to_target SQL function
         const { data: matches, error: matchError } = await supabase.rpc(
           'match_articles_to_target',
           {
             target_embedding: target.embedding,
-            similarity_threshold: minSimilarity,
+            similarity_threshold: targetThreshold,
             max_results: maxArticlesPerTarget,
             since_time: sinceTime
           }
