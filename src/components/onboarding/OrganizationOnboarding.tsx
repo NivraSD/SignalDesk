@@ -422,6 +422,21 @@ export default function OrganizationOnboarding({
         console.log(`✅ Successfully saved ${targetsData.count || 0} targets`)
       }
 
+      // 2b. Embed targets immediately (generates rich Claude context for semantic matching)
+      console.log('🎯 Embedding targets with Claude-enhanced context...')
+      try {
+        const embedResponse = await supabase.functions.invoke('batch-embed-targets', {
+          body: { organization_id: organization.id }
+        })
+        if (embedResponse.error) {
+          console.warn('⚠️ Target embedding failed (will retry via cron):', embedResponse.error)
+        } else {
+          console.log(`✅ Embedded ${embedResponse.data?.embedded || 0} targets (avg context: ${embedResponse.data?.avg_context_length || 0} chars)`)
+        }
+      } catch (embedError) {
+        console.warn('⚠️ Target embedding error (will retry via cron):', embedError)
+      }
+
       // 3. Update strategic context in organization profile
       if (fullProfile && (targetCustomers || brandPersonality || strategicPriorities.length > 0)) {
         console.log('💾 Updating strategic context in profile...')
