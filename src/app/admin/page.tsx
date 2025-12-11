@@ -230,7 +230,7 @@ export default function AdminDashboard() {
 
       if (type === 'worker') {
         functionName = 'batch-scraper-v5-worker'
-        body = { batch_size: 10 }
+        body = { batch_size: 50 }
       } else if (type === 'embed') {
         functionName = 'batch-embed-articles'
         body = { batch_size: 100, max_batches: 10, hours_back: 48 }
