@@ -741,8 +741,8 @@ export default function SignalsModule() {
               {/* Why It Matters - Business Implication (Primary Focus) */}
               {selectedSignal.analysis.business_implications && selectedSignal.analysis.business_implications.length > 0 && (
                 <div className="p-4 bg-[var(--burnt-orange-muted)] rounded-lg border border-[var(--burnt-orange)]/30">
-                  <h4 className="text-[0.7rem] uppercase tracking-wide text-[var(--burnt-orange)] mb-2 flex items-center gap-1.5" style={{ fontFamily: 'var(--font-display)' }}>
-                    <AlertTriangle className="w-3.5 h-3.5" />
+                  <h4 className="text-[0.7rem] uppercase tracking-wide text-white mb-2 flex items-center gap-1.5" style={{ fontFamily: 'var(--font-display)' }}>
+                    <AlertTriangle className="w-3.5 h-3.5 text-[var(--burnt-orange)]" />
                     Why This Matters
                   </h4>
                   <p className="text-white leading-relaxed">{selectedSignal.analysis.business_implications[0]}</p>
@@ -752,11 +752,11 @@ export default function SignalsModule() {
               {/* Suggested Action */}
               {selectedSignal.analysis.recommended_actions && selectedSignal.analysis.recommended_actions.length > 0 && (
                 <div className="p-4 bg-green-500/10 rounded-lg border border-green-500/20">
-                  <h4 className="text-[0.7rem] uppercase tracking-wide text-green-400 mb-2 flex items-center gap-1.5" style={{ fontFamily: 'var(--font-display)' }}>
-                    <CheckCircle className="w-3.5 h-3.5" />
+                  <h4 className="text-[0.7rem] uppercase tracking-wide text-white mb-2 flex items-center gap-1.5" style={{ fontFamily: 'var(--font-display)' }}>
+                    <CheckCircle className="w-3.5 h-3.5 text-green-400" />
                     Suggested Action
                   </h4>
-                  <p className="text-[var(--grey-200)] leading-relaxed">{selectedSignal.analysis.recommended_actions[0]}</p>
+                  <p className="text-white leading-relaxed">{selectedSignal.analysis.recommended_actions[0]}</p>
                 </div>
               )}
 
