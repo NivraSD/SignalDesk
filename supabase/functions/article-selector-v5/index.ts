@@ -447,22 +447,43 @@ serve(async (req) => {
       }));
     }
 
-    // STEP 4: Final filtering and sorting
-    console.log('\n📊 STEP 4: Final filtering...');
+    // STEP 4: Final filtering with diversity constraint
+    console.log('\n📊 STEP 4: Final filtering with diversity...');
     const MIN_RELEVANCE = 40; // Minimum Claude score to include
+    const MAX_SOURCE_PERCENT = 0.25; // No single source > 25% of results
+    const TARGET_TOTAL = 60; // Target number of articles
 
-    const finalArticles = v4Articles
+    // First filter by relevance and sort
+    const relevantArticles = v4Articles
       .filter(a => a.relevance_score >= MIN_RELEVANCE)
       .sort((a, b) => {
-        // Sort by tier first, then by relevance score
-        if ((a.source_tier || 3) !== (b.source_tier || 3)) {
-          return (a.source_tier || 3) - (b.source_tier || 3);
+        // Sort by relevance score first (best articles first)
+        if (b.relevance_score !== a.relevance_score) {
+          return b.relevance_score - a.relevance_score;
         }
-        return b.relevance_score - a.relevance_score;
-      })
-      .slice(0, 100); // Max 100 articles
+        // Then by tier
+        return (a.source_tier || 3) - (b.source_tier || 3);
+      });
 
-    console.log(`   Final articles: ${finalArticles.length}`);
+    // Apply diversity constraint: no single source > 25%
+    const finalArticles: typeof relevantArticles = [];
+    const diversitySourceCount: Record<string, number> = {};
+
+    for (const article of relevantArticles) {
+      const src = article.source_name;
+      const currentCount = diversitySourceCount[src] || 0;
+      const maxForSource = Math.ceil(TARGET_TOTAL * MAX_SOURCE_PERCENT);
+
+      if (currentCount < maxForSource) {
+        finalArticles.push(article);
+        diversitySourceCount[src] = currentCount + 1;
+
+        if (finalArticles.length >= 100) break; // Hard cap at 100
+      }
+    }
+
+    console.log(`   After relevance filter: ${relevantArticles.length}`);
+    console.log(`   After diversity constraint (max ${MAX_SOURCE_PERCENT * 100}% per source): ${finalArticles.length}`);
 
     // Build target matches for V5 format
     const targetMatches: TargetMatch[] = [];
