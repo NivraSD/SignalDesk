@@ -110,6 +110,16 @@ export default function TargetManagementTab({
         throw new Error(data.error || 'Failed to add target')
       }
 
+      // Embed new target immediately
+      try {
+        const { supabase } = await import('@/lib/supabase/client')
+        await supabase.functions.invoke('batch-embed-targets', {
+          body: { organization_id: organizationId }
+        })
+      } catch (e) {
+        console.warn('Target embedding deferred to cron:', e)
+      }
+
       setNewTarget({ name: '', type: 'competitor', priority: 'medium' })
       setShowAddForm(false)
       await loadTargets()
@@ -318,6 +328,22 @@ export default function TargetManagementTab({
 
         if (!response.ok) {
           throw new Error(data.error || 'Failed to add targets')
+        }
+
+        // Embed new targets immediately for semantic matching
+        console.log('🎯 Embedding new targets with Claude-enhanced context...')
+        try {
+          const { supabase } = await import('@/lib/supabase/client')
+          const embedResponse = await supabase.functions.invoke('batch-embed-targets', {
+            body: { organization_id: organizationId }
+          })
+          if (embedResponse.error) {
+            console.warn('⚠️ Target embedding failed (will retry via cron):', embedResponse.error)
+          } else {
+            console.log(`✅ Embedded ${embedResponse.data?.embedded || 0} targets`)
+          }
+        } catch (embedError) {
+          console.warn('⚠️ Target embedding error (will retry via cron):', embedError)
         }
       }
 
