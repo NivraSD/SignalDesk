@@ -57,6 +57,19 @@ serve(async (req) => {
 
     if (!queuedArticles || queuedArticles.length === 0) {
       console.log('   ℹ️  Queue is empty - no articles to process\n');
+
+      // Mark run as completed even when queue is empty
+      await supabase
+        .from('batch_scrape_runs')
+        .update({
+          status: 'completed',
+          completed_at: new Date().toISOString(),
+          articles_discovered: 0,
+          articles_new: 0,
+          duration_seconds: Math.floor((Date.now() - startTime) / 1000)
+        })
+        .eq('id', runId);
+
       return new Response(JSON.stringify({
         success: true,
         message: 'Queue is empty',
