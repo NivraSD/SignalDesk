@@ -12,7 +12,7 @@ if (!supabaseAnonKey) {
 }
 
 // Singleton pattern to prevent multiple GoTrueClient instances
-// This can happen with HMR in development
+// This can happen with HMR in development or module re-imports in production
 declare global {
   // eslint-disable-next-line no-var
   var supabaseClient: SupabaseClient | undefined
@@ -20,6 +20,5 @@ declare global {
 
 export const supabase = globalThis.supabaseClient ?? createClient(supabaseUrl, supabaseAnonKey)
 
-if (process.env.NODE_ENV !== 'production') {
-  globalThis.supabaseClient = supabase
-}
+// Store singleton globally to prevent duplicate instances
+globalThis.supabaseClient = supabase
