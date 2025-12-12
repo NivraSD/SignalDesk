@@ -19,7 +19,7 @@ interface ContentItem {
   type: string
   topic: string
   target?: string
-  platform?: string
+  platform?: 'linkedin' | 'twitter' | 'instagram' | string
   brief: ContentBrief
   urgency: string
 }
@@ -96,6 +96,30 @@ export default function OpportunitiesModule() {
 
   useEffect(() => {
     fetchOpportunities()
+
+    // Subscribe to real-time changes on opportunities table
+    if (organization?.id) {
+      const channel = supabase
+        .channel('opportunities-module-realtime')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'opportunities',
+            filter: `organization_id=eq.${organization.id}`
+          },
+          (payload) => {
+            console.log('🔔 OpportunitiesModule: Change detected', payload.eventType)
+            fetchOpportunities()
+          }
+        )
+        .subscribe()
+
+      return () => {
+        supabase.removeChannel(channel)
+      }
+    }
   }, [organization])
 
   // Fetch generated content when selecting an executed opportunity
@@ -836,7 +860,19 @@ ${opp.execution_plan?.success_metrics?.map((m: any) => `- ${JSON.stringify(m)}`)
                         {campaign.content_items.map((item, itemIdx) => (
                           <div key={itemIdx} className="p-3 bg-[var(--grey-900)] rounded border border-[var(--grey-800)]">
                             <div className="flex items-center justify-between mb-2">
-                              <span className="text-xs font-medium text-white">{item.type}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-medium text-white">{item.type}</span>
+                                {item.platform && (
+                                  <span className={`px-2 py-0.5 text-xs rounded ${
+                                    item.platform === 'linkedin' ? 'bg-blue-500/20 text-blue-400' :
+                                    item.platform === 'twitter' ? 'bg-sky-500/20 text-sky-400' :
+                                    item.platform === 'instagram' ? 'bg-pink-500/20 text-pink-400' :
+                                    'bg-[var(--grey-700)] text-[var(--grey-300)]'
+                                  }`}>
+                                    {item.platform}
+                                  </span>
+                                )}
+                              </div>
                               <span className={`px-2 py-0.5 text-xs rounded ${
                                 item.urgency === 'immediate' ? 'bg-[var(--burnt-orange-muted)] text-[var(--burnt-orange)]' :
                                 item.urgency === 'this_week' ? 'bg-[var(--grey-700)] text-[var(--grey-300)]' :

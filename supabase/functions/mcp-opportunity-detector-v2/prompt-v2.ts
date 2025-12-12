@@ -191,7 +191,10 @@ For EACH opportunity you detect, you must provide:
 4. Content types you can recommend (platform can create these):
    - media_pitch: Pitches to journalists/outlets
    - media_list: Targeted journalist lists with contact info (IMPORTANT: Use media_targeting guidance to generate)
-   - social_post: LinkedIn/Twitter/Instagram posts
+   - social_post: Social media posts with platform specified
+     * platform: "linkedin" - Professional thought leadership, B2B content, long-form insights
+     * platform: "twitter" - Quick takes, news commentary, thread-style content, hot takes
+     * platform: "instagram" - Visual storytelling, brand personality, infographics, behind-the-scenes
    - thought_leadership: Blog posts, articles, op-eds
    - press_release: Formal announcements
    - email_campaign: Email sequences to customers/prospects
@@ -199,6 +202,13 @@ For EACH opportunity you detect, you must provide:
    - image: Visual content (social media graphics, Instagram posts)
    - partnership_outreach: Collaboration proposals
    - user_action: Other custom tactics
+
+   SOCIAL MEDIA BEST PRACTICE: Include multiple platform-specific posts for each opportunity.
+   - LinkedIn: Professional audience, industry insights, thought leadership
+   - Twitter: Real-time commentary, news reaction, viral potential, hot takes
+   - Instagram: Visual storytelling, brand moments, carousel posts, behind-the-scenes
+
+   DO NOT create only LinkedIn posts - mix platforms based on the opportunity!
 
    DO NOT RECOMMEND: webinars, events, podcasts, videos (platform cannot create these)
 
@@ -296,6 +306,44 @@ Return ONLY a JSON array with this EXACT structure:
               },
               "urgency": "immediate",
               "estimated_effort": "15 minutes"
+            },
+            {
+              "type": "social_post",
+              "platform": "twitter",
+              "topic": "Hot take: Security isn't a feature, it's a foundation",
+              "brief": {
+                "angle": "Quick, punchy take on the security breach news",
+                "key_points": [
+                  "Reference the industry event without naming competitor",
+                  "Position security as foundational, not checkbox",
+                  "Tease our security practices"
+                ],
+                "tone": "Confident, slightly provocative, industry insider",
+                "length": "280 characters max or 3-tweet thread",
+                "cta": "Link to security page or blog post",
+                "examples": ["Hot take format", "Use relevant hashtags like #cybersecurity #infosec"]
+              },
+              "urgency": "immediate",
+              "estimated_effort": "10 minutes"
+            },
+            {
+              "type": "social_post",
+              "platform": "instagram",
+              "topic": "Behind the scenes: Our security team in action",
+              "brief": {
+                "angle": "Humanize security - show the team and process",
+                "key_points": [
+                  "Visual of security dashboard or team",
+                  "Carousel showing 3 key security practices",
+                  "Make security approachable and transparent"
+                ],
+                "tone": "Authentic, educational, human",
+                "length": "Carousel: 3-5 slides, Caption: 150-200 words",
+                "cta": "Link in bio for security whitepaper",
+                "examples": ["Include team photos if available", "Use simple infographic visuals"]
+              },
+              "urgency": "this_week",
+              "estimated_effort": "30 minutes"
             },
             {
               "type": "media_pitch",

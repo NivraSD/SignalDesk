@@ -146,6 +146,7 @@ serve(async (req) => {
 
     let totalPatternsDetected = 0;
     let signalsCreated = 0;
+    let signalsUpdated = 0;  // Track deduplicated signals
     const errors: string[] = [];
 
     // Process each organization's targets
@@ -179,52 +180,95 @@ serve(async (req) => {
             console.log(`       Found ${patterns.length} patterns`);
             totalPatternsDetected += patterns.length;
 
-            // Save patterns as signals
+            // Save patterns as signals (with deduplication)
             for (const pattern of patterns) {
-              const signal = {
-                organization_id: orgId,
-                signal_type: 'pattern',
-                signal_subtype: `pattern_${pattern.pattern_type}`,
-                title: pattern.title,
-                description: pattern.description,
-                primary_target_id: target.id,
-                primary_target_name: target.name,
-                primary_target_type: target.target_type,
-                confidence_score: Math.round(pattern.confidence * 100),
-                significance_score: calculateSignificance(pattern, target),
-                urgency: determineUrgency(pattern),
-                impact_level: determineImpact(pattern, target),
-                evidence: {
-                  data_points: pattern.evidence,
-                  pattern_type: pattern.pattern_type,
-                  time_horizon: pattern.time_horizon
-                },
-                reasoning: pattern.description,
-                pattern_data: {
-                  pattern_type: pattern.pattern_type,
-                  time_horizon: pattern.time_horizon,
-                  accumulated_context_snapshot: {
-                    total_facts: target.accumulated_context?.total_facts,
-                    sentiment_current: target.accumulated_context?.sentiment?.current,
-                    primary_activity: target.accumulated_context?.insights?.primary_activity
-                  }
-                },
-                business_implication: pattern.business_implication,
-                suggested_action: pattern.recommended_action || null,
-                source_pipeline: 'analyze-target-patterns',
-                model_version: 'claude-sonnet-4',
-                status: 'active'
-              };
+              // Check for similar existing signal
+              const similarSignal = await findSimilarSignal(
+                supabase,
+                orgId,
+                target.id,
+                pattern.title,
+                pattern.pattern_type
+              );
 
-              const { error: signalError } = await supabase
-                .from('signals')
-                .insert(signal);
+              if (similarSignal) {
+                // Update existing signal instead of creating duplicate
+                const newConfidence = Math.min(95, similarSignal.confidence_score + 5);
+                const newDetectionCount = (similarSignal.detection_count || 1) + 1;
 
-              if (signalError) {
-                console.error(`       Failed to save signal: ${signalError.message}`);
-                errors.push(`Signal save error for ${target.name}: ${signalError.message}`);
+                const { error: updateError } = await supabase
+                  .from('signals')
+                  .update({
+                    confidence_score: newConfidence,
+                    detection_count: newDetectionCount,
+                    last_detected_at: new Date().toISOString(),
+                    // Append new evidence to existing
+                    evidence: {
+                      ...similarSignal.evidence,
+                      data_points: [
+                        ...(similarSignal.evidence?.data_points || []),
+                        ...pattern.evidence.slice(0, 2)  // Add up to 2 new evidence points
+                      ].slice(-10)  // Keep last 10 evidence points
+                    },
+                    updated_at: new Date().toISOString()
+                  })
+                  .eq('id', similarSignal.id);
+
+                if (updateError) {
+                  console.error(`       Failed to update signal: ${updateError.message}`);
+                } else {
+                  console.log(`       ↗ Strengthened existing signal: "${similarSignal.title.substring(0, 50)}..." (count: ${newDetectionCount})`);
+                  signalsUpdated++;
+                }
               } else {
-                signalsCreated++;
+                // Create new signal
+                const signal = {
+                  organization_id: orgId,
+                  signal_type: 'pattern',
+                  signal_subtype: `pattern_${pattern.pattern_type}`,
+                  title: pattern.title,
+                  description: pattern.description,
+                  primary_target_id: target.id,
+                  primary_target_name: target.name,
+                  primary_target_type: target.target_type,
+                  confidence_score: Math.round(pattern.confidence * 100),
+                  significance_score: calculateSignificance(pattern, target),
+                  urgency: determineUrgency(pattern),
+                  impact_level: determineImpact(pattern, target),
+                  evidence: {
+                    data_points: pattern.evidence,
+                    pattern_type: pattern.pattern_type,
+                    time_horizon: pattern.time_horizon
+                  },
+                  reasoning: pattern.description,
+                  pattern_data: {
+                    pattern_type: pattern.pattern_type,
+                    time_horizon: pattern.time_horizon,
+                    accumulated_context_snapshot: {
+                      total_facts: target.accumulated_context?.total_facts,
+                      sentiment_current: target.accumulated_context?.sentiment?.current,
+                      primary_activity: target.accumulated_context?.insights?.primary_activity
+                    }
+                  },
+                  business_implication: pattern.business_implication,
+                  suggested_action: pattern.recommended_action || null,
+                  source_pipeline: 'analyze-target-patterns',
+                  model_version: 'claude-sonnet-4',
+                  detection_count: 1,
+                  last_detected_at: new Date().toISOString(),
+                  status: 'active'
+                };
+
+                const { error: signalError } = await supabase
+                  .from('signals')
+                  .insert(signal);
+
+                if (signalError) {
+                  console.error(`       Failed to save signal: ${signalError.message}`);
+                  errors.push(`Signal save error for ${target.name}: ${signalError.message}`);
+                } else {
+                  signalsCreated++;
+                }
               }
             }
           } else {
@@ -256,6 +300,7 @@ serve(async (req) => {
       targets_analyzed: targets.length,
       patterns_detected: totalPatternsDetected,
       signals_created: signalsCreated,
+      signals_updated: signalsUpdated,
       duration_seconds: duration,
       errors: errors.length > 0 ? errors : undefined
     };
@@ -264,6 +309,7 @@ serve(async (req) => {
     console.log(`   Targets analyzed: ${targets.length}`);
     console.log(`   Patterns detected: ${totalPatternsDetected}`);
     console.log(`   Signals created: ${signalsCreated}`);
+    console.log(`   Signals strengthened: ${signalsUpdated}`);
     console.log(`   Duration: ${duration}s`);
 
     return new Response(JSON.stringify(summary), {
@@ -377,10 +423,20 @@ Return 0-3 pattern analyses as JSON array:
 
 RULES:
 - Only report patterns with REAL evidence from the data above
-- Be specific - cite actual numbers and facts from the summary
 - If no meaningful patterns exist or data is too limited, return []
 - Focus on actionable intelligence, not obvious observations
 - Confidence should reflect how much data supports the pattern (0.5-0.9 range)
+
+CRITICAL - WRITE FOR BUSINESS USERS:
+- NEVER mention internal metrics like "significance scores", "fact counts", or "detection methods"
+- NEVER say things like "75% of facts were high-significance" or "4 intelligence facts occurred"
+- The title should describe WHAT is happening, not HOW we detected it
+- The description should explain the real-world situation and why it matters
+- Write like you're briefing a busy executive - they want to know what's happening and what to do, not how your analysis works
+- BAD: "Concentrated High-Impact Intelligence Burst in AI Advertising"
+- GOOD: "AI Tools Reshaping Digital Ad Buying - Major Platforms Shifting to Automated Systems"
+- BAD: "All 4 intelligence facts occurred within the last 7 days with 75% being high-significance"
+- GOOD: "Google and Meta both announced AI-powered ad tools this week, signaling an industry-wide shift"
 
 Return ONLY the JSON array.`;
 
@@ -493,4 +549,109 @@ function determineImpact(pattern: PatternAnalysis, target: Target): string {
     return 'medium';
   }
   return 'low';
+}
+
+// ============================================================================
+// Helper: Find similar existing signal to avoid duplicates
+// ============================================================================
+async function findSimilarSignal(
+  supabase: any,
+  orgId: string,
+  targetId: string,
+  newTitle: string,
+  patternType: string
+): Promise<any | null> {
+  // Look for active signals from the same target in the last 7 days
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+  const { data: existingSignals, error } = await supabase
+    .from('signals')
+    .select('id, title, confidence_score, detection_count, evidence')
+    .eq('organization_id', orgId)
+    .eq('primary_target_id', targetId)
+    .eq('signal_type', 'pattern')
+    .eq('status', 'active')
+    .gte('created_at', sevenDaysAgo.toISOString())
+    .order('created_at', { ascending: false })
+    .limit(20);
+
+  if (error || !existingSignals || existingSignals.length === 0) {
+    return null;
+  }
+
+  // Extract key terms from new title for comparison
+  const newTerms = extractKeyTerms(newTitle);
+
+  // Find the most similar signal
+  let bestMatch: any = null;
+  let bestScore = 0;
+
+  // Key phrases that indicate same topic regardless of wording
+  const keyPhrases = ['gen z', 'digital advertising', 'consumer behavior', 'ai integration',
+    'ai-driven', 'fintech', 'banking disruption', 'advertising transformation',
+    'agency transformation', 'consumer trust'];
+  const newTitleLower = newTitle.toLowerCase();
+
+  for (const signal of existingSignals) {
+    const existingTerms = extractKeyTerms(signal.title);
+    const similarity = calculateTermSimilarity(newTerms, existingTerms);
+    const existingTitleLower = signal.title.toLowerCase();
+
+    // Check 1: Term overlap >= 25%
+    if (similarity > 0.25 && similarity > bestScore) {
+      bestScore = similarity;
+      bestMatch = signal;
+    }
+
+    // Check 2: Shared key phrase (topic match)
+    for (const phrase of keyPhrases) {
+      if (newTitleLower.includes(phrase) && existingTitleLower.includes(phrase)) {
+        // Key phrase match - consider it a strong duplicate
+        if (bestScore < 0.6) {
+          bestScore = 0.6;
+          bestMatch = signal;
+        }
+        break;
+      }
+    }
+  }
+
+  return bestMatch;
+}
+
+// Extract key terms from a title for comparison
+function extractKeyTerms(title: string): Set<string> {
+  // Common stop words to ignore
+  const stopWords = new Set([
+    'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
+    'of', 'with', 'by', 'from', 'is', 'are', 'was', 'were', 'be', 'been',
+    'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would',
+    'could', 'should', 'may', 'might', 'must', 'shall', 'can', 'need',
+    'across', 'between', 'through', 'during', 'before', 'after', 'above',
+    'below', 'into', 'out', 'off', 'over', 'under', 'again', 'further',
+    'then', 'once', 'here', 'there', 'when', 'where', 'why', 'how', 'all',
+    'each', 'few', 'more', 'most', 'other', 'some', 'such', 'no', 'not',
+    'only', 'own', 'same', 'so', 'than', 'too', 'very', 'just', 'also',
+    'driving', 'emerging', 'signals', 'indicating', 'shows', 'reveals',
+    'accelerating', 'transformation', 'shift', 'trend', 'pattern'
+  ]);
+
+  const terms = title
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, '')
+    .split(/\s+/)
+    .filter(term => term.length > 2 && !stopWords.has(term));
+
+  return new Set(terms);
+}
+
+// Calculate Jaccard similarity between two term sets
+function calculateTermSimilarity(set1: Set<string>, set2: Set<string>): number {
+  if (set1.size === 0 || set2.size === 0) return 0;
+
+  const intersection = new Set([...set1].filter(x => set2.has(x)));
+  const union = new Set([...set1, ...set2]);
+
+  return intersection.size / union.size;
 }

@@ -604,7 +604,7 @@ async function detectOpportunitiesV2(
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 12000, // Reduced from 20k to prevent timeout - enough for 3-5 opportunities
+        max_tokens: 16000, // Increased to handle larger response with multi-platform social content
         temperature: 0.7,
         system: OPPORTUNITY_SYSTEM_PROMPT_V2,
         messages: [{
@@ -650,7 +650,7 @@ async function detectOpportunitiesV2(
     } catch (e) {
       console.error('Parse failed:', e.message)
 
-      // Fallback: extract JSON array
+      // Fallback 1: Try to extract JSON array between brackets
       const firstBracket = content.indexOf('[')
       const lastBracket = content.lastIndexOf(']')
 
@@ -660,8 +660,60 @@ async function detectOpportunitiesV2(
           opportunities = JSON.parse(extracted)
           console.log('✅ Extracted V2 opportunities:', opportunities.length)
         } catch (e2) {
-          console.error('Fallback parse failed:', e2.message)
-          return []
+          console.error('Fallback 1 parse failed:', e2.message)
+
+          // Fallback 2: Try to salvage complete opportunity objects from truncated JSON
+          // This handles cases where Claude's response was cut off mid-opportunity
+          console.log('🔧 Attempting JSON repair for truncated response...')
+
+          try {
+            // Find all complete opportunity objects by looking for the pattern
+            // that ends each opportunity: "auto_executable": true/false, "detection_metadata": {...}}
+            const arrayContent = content.substring(firstBracket + 1)
+            const salvaged: any[] = []
+
+            // Split by the detection_metadata pattern which marks the end of each opportunity
+            const opportunityBlocks = arrayContent.split(/\}\s*,\s*\{/)
+
+            for (let i = 0; i < opportunityBlocks.length; i++) {
+              let block = opportunityBlocks[i]
+
+              // Add back the braces that split removed
+              if (i > 0) block = '{' + block
+              if (i < opportunityBlocks.length - 1) block = block + '}'
+              else {
+                // Last block - try to close it properly if truncated
+                if (!block.trim().endsWith('}')) {
+                  // Find the last complete field and close the object
+                  const lastCompleteField = block.lastIndexOf('",')
+                  if (lastCompleteField > 0) {
+                    block = block.substring(0, lastCompleteField + 1) + '}'
+                  }
+                }
+              }
+
+              try {
+                const parsed = JSON.parse(block)
+                if (parsed.title && parsed.execution_plan) {
+                  salvaged.push(parsed)
+                  console.log(`  ✅ Salvaged opportunity: "${parsed.title}"`)
+                }
+              } catch {
+                // This block couldn't be parsed, skip it
+              }
+            }
+
+            if (salvaged.length > 0) {
+              opportunities = salvaged
+              console.log(`🔧 Salvaged ${salvaged.length} opportunities from truncated response`)
+            } else {
+              console.error('Could not salvage any opportunities from truncated JSON')
+              return []
+            }
+          } catch (e3) {
+            console.error('JSON repair failed:', e3.message)
+            return []
+          }
         }
       } else {
         console.error('Could not find JSON array in response')

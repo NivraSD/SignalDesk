@@ -46,6 +46,28 @@ export default function DailyBrief({ organizationId, onNavigate }: DailyBriefPro
 
   useEffect(() => {
     loadBriefData()
+
+    // Subscribe to real-time changes on opportunities table
+    const channel = supabase
+      .channel('daily-brief-opportunities')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'opportunities',
+          filter: `organization_id=eq.${organizationId}`
+        },
+        () => {
+          console.log('📊 DailyBrief: Opportunities changed, refreshing...')
+          loadBriefData()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [organizationId])
 
   const loadBriefData = async () => {
