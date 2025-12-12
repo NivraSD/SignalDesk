@@ -703,7 +703,7 @@ export default function AdminDashboard() {
 
       <div className="flex pt-14">
         {/* Sidebar */}
-        <aside className="fixed left-0 top-14 bottom-0 w-56 bg-[#0d0d0d] border-r border-[#1a1a1a] p-4">
+        <aside className="fixed left-0 top-14 bottom-0 w-56 bg-[#0d0d0d] border-r border-[#1a1a1a] p-4 flex flex-col">
           <nav className="space-y-1">
             {[
               { id: 'overview', label: 'Overview', icon: BarChart3 },
@@ -747,7 +747,7 @@ export default function AdminDashboard() {
           </nav>
 
           {/* Quick Actions */}
-          <div className="mt-8 pt-8 border-t border-[#1a1a1a]">
+          <div className="mt-8 pt-8 border-t border-[#1a1a1a] flex-1 overflow-y-auto pb-16">
             <div className="text-[#757575] text-xs font-semibold uppercase tracking-wider mb-3">Quick Actions</div>
             <div className="space-y-2">
               <button
@@ -851,7 +851,8 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <div className="absolute bottom-4 left-4 right-4">
+          {/* Fixed bottom refresh button */}
+          <div className="pt-4 border-t border-[#1a1a1a] bg-[#0d0d0d]">
             <button
               onClick={loadStats}
               disabled={loading}
