@@ -35,7 +35,8 @@ import {
   Rss,
   Search,
   Layers,
-  Brain
+  Brain,
+  Sparkles
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/components/auth/AuthProvider'
