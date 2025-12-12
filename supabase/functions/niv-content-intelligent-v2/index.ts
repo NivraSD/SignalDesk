@@ -1884,6 +1884,9 @@ ${section.visual_suggestion ? `*Visual: ${section.visual_suggestion}*` : ''}
                 specificKeyPoints: ownedReq.keyPoints || [],
                 positioning: positioning || '',
                 currentDate: currentDate,
+                // Pass platform for social posts (twitter, linkedin, instagram)
+                platform: ownedReq.platform,
+                platforms: ownedReq.platform ? [ownedReq.platform] : undefined,
                 fullFramework: {
                   campaignContext: campaignContext,
                   phase: phase,
@@ -6670,7 +6673,7 @@ ${targetAudiences.length > 0 ? `**TARGET AUDIENCE:**\n${targetAudiences[0]}` : '
 - End with a compelling call-to-action
 
 Write ONLY the blog post content. No meta-commentary.`,
-    'social-post': `Create ${parameters.variations || 3} distinct, platform-specific social media posts:
+    'social-post': `${parameters.platform ? `Create ONE ${parameters.platform.toUpperCase()} post` : `Create ${parameters.variations || 3} distinct, platform-specific social media posts`}:
 
 **TODAY'S DATE:** ${currentDate}
 
@@ -6684,7 +6687,7 @@ ${positioning ? `Positioning: ${positioning}` : ''}
 **KEY MESSAGES:**
 ${keyMessages.length > 0 ? keyMessages.map((msg)=>`- ${msg}`).join('\n') : '- Innovation and impact'}
 
-**PLATFORMS:** ${parameters.platforms?.join(', ') || 'Twitter, LinkedIn, Facebook'}
+**TARGET PLATFORM${parameters.platform ? '' : 'S'}:** ${parameters.platform || parameters.platforms?.join(', ') || 'Twitter, LinkedIn, Facebook'}
 
 **CRITICAL PLATFORM-SPECIFIC REQUIREMENTS:**
 
@@ -6720,15 +6723,20 @@ FOR INSTAGRAM:
 ${parameters.includeHashtags ? '- 10-15 relevant hashtags (mix of popular and niche)' : '- No hashtags'}
 
 **GENERAL REQUIREMENTS:**
-- Create ${parameters.variations || 3} GENUINELY DIFFERENT posts
-- Each must have unique angle, not just reworded
+${parameters.platform ? `- Create ONE optimized ${parameters.platform.toUpperCase()} post
+- Follow the ${parameters.platform.toUpperCase()} platform requirements above STRICTLY` : `- Create ${parameters.variations || 3} GENUINELY DIFFERENT posts
+- Each must have unique angle, not just reworded`}
 - Align with strategic brief and key messages
 - Include compelling hooks
 - Reference current context (${currentDate})
 - Platform voice must match channel
 
 **OUTPUT FORMAT:**
-
+${parameters.platform ? `
+Platform: ${parameters.platform}
+---
+[Actual post content respecting character limits for ${parameters.platform}]
+---` : `
 Platform: [Platform Name]
 ---
 [Actual post content respecting character limits]
@@ -6742,9 +6750,9 @@ Platform: [Platform Name]
 Platform: [Platform Name]
 ---
 [Actual post content respecting character limits]
----
+---`}
 
-Write ONLY the posts. No explanations. STRICTLY respect character limits.`,
+Write ONLY the post${parameters.platform ? '' : 's'}. No explanations. STRICTLY respect character limits.`,
     'media-pitch': `Write a compelling, personalized media pitch email:
 
 **TODAY'S DATE:** ${currentDate}

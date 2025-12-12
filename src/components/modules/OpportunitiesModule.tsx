@@ -347,7 +347,8 @@ ${opp.execution_plan?.success_metrics?.map((m: any) => `- ${JSON.stringify(m)}`)
             type: item.type,
             stakeholder: campaign.stakeholder_name,
             purpose: item.topic,
-            keyPoints: item.brief?.key_points || []
+            keyPoints: item.brief?.key_points || [],
+            platform: item.platform // Pass platform for social posts (twitter, linkedin, instagram)
           }
 
           if (item.type === 'press_release' || item.type === 'media_pitch' || item.type === 'media_list') {
