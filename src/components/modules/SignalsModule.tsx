@@ -415,14 +415,19 @@ export default function SignalsModule() {
               <span className="w-1.5 h-1.5 bg-[var(--burnt-orange)] rounded-full" />
               Intelligence Signals
             </div>
-            <h1
-              className="text-[1.5rem] font-normal text-white"
-              style={{ fontFamily: 'var(--font-serif)' }}
-            >
-              Market & Competitive Signals
-            </h1>
+            <div className="flex items-center gap-3">
+              <h1
+                className="text-[1.5rem] font-normal text-white"
+                style={{ fontFamily: 'var(--font-serif)' }}
+              >
+                Market & Competitive Signals
+              </h1>
+              <span className="px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded">
+                Beta
+              </span>
+            </div>
             <p className="text-[var(--grey-400)] text-sm mt-1">
-              AI-detected patterns, connections, and opportunities across your intelligence targets
+              AI-detected patterns and predictions. Learning system active - accuracy improves over time.
             </p>
           </div>
 
