@@ -18,14 +18,26 @@ serve(async (req) => {
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
   const startTime = Date.now();
+  const runId = crypto.randomUUID();
 
   // Read batch_size from request body if provided, otherwise use default
   const requestBody = await req.json().catch(() => ({}));
   const batchSize = requestBody.batch_size || BATCH_SIZE;
 
   console.log('🔥 BATCH SCRAPER V5 - WORKER (MCP-Firecrawl Parallel Batch Scraper)');
+  console.log(`   Run ID: ${runId}`);
   console.log(`   Time: ${new Date().toISOString()}`);
   console.log(`   Batch size: ${batchSize}\n`);
+
+  // Create batch run record for tracking
+  await supabase
+    .from('batch_scrape_runs')
+    .insert({
+      id: runId,
+      run_type: 'worker',
+      status: 'running',
+      triggered_by: req.headers.get('user-agent') || 'cron'
+    });
 
   try {
     // ========================================================================
@@ -237,8 +249,24 @@ serve(async (req) => {
     console.log(`   Queue remaining: ${queuedArticles.length - successCount - failedCount}`);
     console.log('='.repeat(80));
 
+    // Update batch run record
+    await supabase
+      .from('batch_scrape_runs')
+      .update({
+        status: 'completed',
+        completed_at: new Date().toISOString(),
+        articles_discovered: queuedArticles.length,
+        articles_new: successCount,
+        articles_processed: successCount,
+        sources_successful: successCount,
+        sources_failed: failedCount,
+        duration_seconds: duration
+      })
+      .eq('id', runId);
+
     return new Response(JSON.stringify({
       success: true,
+      run_id: runId,
       summary: {
         processed: queuedArticles.length,
         successful: successCount,
@@ -252,6 +280,17 @@ serve(async (req) => {
 
   } catch (error: any) {
     console.error('❌ WORKER FAILED:', error.message);
+
+    // Update batch run record with failure
+    await supabase
+      .from('batch_scrape_runs')
+      .update({
+        status: 'failed',
+        completed_at: new Date().toISOString(),
+        error_message: error.message,
+        duration_seconds: Math.floor((Date.now() - startTime) / 1000)
+      })
+      .eq('id', runId);
 
     return new Response(JSON.stringify({
       success: false,

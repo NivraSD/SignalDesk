@@ -267,7 +267,7 @@ export default function AdminDashboard() {
     const [scrapeRunsResult, embeddingJobsResult, pipelineRunsResult] = await Promise.all([
       supabase
         .from('batch_scrape_runs')
-        .select('id,run_type,status,started_at,completed_at,articles_discovered,articles_new,duration_seconds,error_summary,sources_successful,sources_failed')
+        .select('id,run_type,status,started_at,completed_at,articles_discovered,articles_new,articles_processed,duration_seconds,error_summary,error_message,sources_successful,sources_failed')
         .order('started_at', { ascending: false })
         .limit(100),
       supabase
@@ -285,12 +285,34 @@ export default function AdminDashboard() {
     // Combine all runs into a unified timeline
     const allRuns: any[] = []
 
-    // Add discovery runs (batch_scrape_runs)
+    // Add batch_scrape_runs - categorize by run_type
     for (const run of scrapeRunsResult.data || []) {
+      const runType = run.run_type || 'unknown'
+
+      // Determine the stage type based on run_type
+      let type = 'discovery'
+      let subtype = runType.replace('_discovery', '').replace('firecrawl_', '')
+
+      if (runType === 'worker' || runType.includes('worker')) {
+        type = 'worker'
+        subtype = 'content'
+      } else if (runType === 'matching' || runType.includes('match')) {
+        type = 'matching'
+        subtype = 'signals'
+      } else if (runType.includes('discovery') || ['rss', 'sitemap', 'cse', 'firecrawl', 'fireplexity'].includes(runType)) {
+        type = 'discovery'
+        // Clean up subtype for discovery runs
+        if (runType === 'firecrawl_discovery') subtype = 'firecrawl'
+        else if (runType === 'rss_discovery') subtype = 'rss'
+        else if (runType === 'sitemap_discovery') subtype = 'sitemap'
+        else if (runType === 'cse_discovery') subtype = 'cse'
+        else subtype = runType.replace('_discovery', '')
+      }
+
       allRuns.push({
         id: run.id,
-        type: 'discovery',
-        subtype: run.run_type?.replace('_discovery', '') || 'unknown',
+        type,
+        subtype,
         status: run.status,
         started_at: run.started_at,
         completed_at: run.completed_at,
@@ -298,11 +320,12 @@ export default function AdminDashboard() {
         details: {
           articles_discovered: run.articles_discovered || 0,
           articles_new: run.articles_new || 0,
+          articles_processed: run.articles_processed || 0,
           sources_successful: run.sources_successful || 0,
           sources_failed: run.sources_failed || 0,
           status: run.status
         },
-        error: run.error_summary ? JSON.stringify(run.error_summary).substring(0, 200) : undefined
+        error: run.error_summary ? JSON.stringify(run.error_summary).substring(0, 200) : (run.error_message || undefined)
       })
     }
 
@@ -971,6 +994,10 @@ function PipelineView({
       case 'metadata': return FileText
       case 'embedding': return Zap
       case 'matching': return Target
+      case 'facts': return FileText
+      case 'patterns': return TrendingUp
+      case 'connections': return Link2
+      case 'cleanup': return Filter
       default: return Layers
     }
   }
@@ -982,14 +1009,35 @@ function PipelineView({
       case 'metadata': return 'text-cyan-400 bg-cyan-500/10'
       case 'embedding': return 'text-purple-400 bg-purple-500/10'
       case 'matching': return 'text-green-400 bg-green-500/10'
+      case 'facts': return 'text-yellow-400 bg-yellow-500/10'
+      case 'patterns': return 'text-pink-400 bg-pink-500/10'
+      case 'connections': return 'text-indigo-400 bg-indigo-500/10'
+      case 'cleanup': return 'text-gray-400 bg-gray-500/10'
       default: return 'text-gray-400 bg-gray-500/10'
     }
   }
 
   const getStageName = (stage: string, subtype?: string) => {
-    if (stage === 'discovery' && subtype) {
-      return subtype.charAt(0).toUpperCase() + subtype.slice(1)
+    // Map stage+subtype to human-readable names
+    const stageNames: Record<string, string> = {
+      'discovery:rss': 'RSS Discovery',
+      'discovery:sitemap': 'Sitemap Discovery',
+      'discovery:cse': 'CSE Discovery',
+      'discovery:firecrawl': 'Firecrawl Discovery',
+      'discovery:fireplexity': 'Firecrawl Discovery',
+      'worker:content': 'Content Extraction',
+      'embedding:articles': 'Article Embedding',
+      'embedding:targets': 'Target Embedding',
+      'matching:signals': 'Signal Matching',
+      'facts:extraction': 'Fact Extraction',
+      'patterns:analysis': 'Pattern Analysis',
+      'connections:detection': 'Connection Detection',
+      'cleanup:articles': 'Article Cleanup'
     }
+
+    const key = subtype ? `${stage}:${subtype}` : stage
+    if (stageNames[key]) return stageNames[key]
+    if (subtype) return subtype.charAt(0).toUpperCase() + subtype.slice(1)
     return stage.charAt(0).toUpperCase() + stage.slice(1)
   }
 

@@ -1,12 +1,17 @@
 # SignalDesk V3 - Comprehensive System Status
-*Last Updated: November 21, 2025 - Industry-Aware Connection Intelligence System*
+*Last Updated: December 11, 2025 - Target Intelligence System (Dossier-Based)*
 
 ## Executive Summary
 
 SignalDesk V3 is a fully operational AI-powered strategic communications platform that transforms how organizations discover opportunities, generate strategies, and create content. The system leverages multiple AI providers (Claude, Google Vertex AI, Gamma) through a sophisticated orchestration layer to deliver end-to-end strategic communications capabilities.
 
+**Major December 2025 Updates:**
+- ✅ **Target Intelligence System V2** - NEW dossier-based intelligence accumulation system that replaces the old prediction/connection detection. Builds persistent "dossiers" on tracked targets (competitors, stakeholders, partners) with fact extraction, pattern analysis, and cross-target connection detection. See `TARGET_INTELLIGENCE_SYSTEM_DESIGN.md` for full architecture. (Dec 11, 2025)
+- ✅ **Pipeline Admin Dashboard** - Real-time monitoring of all pipeline stages (Discovery → Worker → Embedding → Matching → Facts → Patterns → Connections) with EST timezone display (Dec 11, 2025)
+- ✅ **Article Cleanup System** - Automated 14-day retention policy for processed articles to manage database size (Dec 11, 2025)
+
 **Major November 2025 Updates:**
-- ✅ **Connection Intelligence System** - Industry-aware detection of entity relationships and cross-entity patterns with 3 connection types, industry-specific templates (commodities, PR, tech), and complete UI dashboard (Nov 21, 2025)
+- ⚠️ **Connection Intelligence System** - DEPRECATED: Replaced by Target Intelligence System V2. Original industry-aware detection of entity relationships (Nov 21, 2025)
 - ✅ **GEO-VECTOR Campaigns** - Complete campaign generation with AI query ownership + schema updates (Nov 7, 2025)
 - ✅ **Strategic Planning Module V3** - Campaign-specific execution with dedicated strategic_planning_items database (Nov 7, 2025)
 - ✅ **GEO Schema Pipeline** - Intelligent schema updates targeting Organization schema with proper field addition logic (Nov 7, 2025)
@@ -23,7 +28,7 @@ SignalDesk V3 is a fully operational AI-powered strategic communications platfor
 - ✅ **ExecutionManager V3 Support** - Auto-extraction of content from Blueprint V3 tactical orchestration
 - ✅ **MCP Architecture** - 40+ specialized edge functions following Model Context Protocol pattern
 - ✅ **Frontend Integration** - BlueprintV3Presentation with color-coded execution ownership
-- ✅ **Stakeholder Prediction System** - Complete tracking with validation and accuracy metrics (Production Ready) - Oct 27, 2025
+- ⚠️ **Stakeholder Prediction System (DEPRECATED)** - Replaced by Target Intelligence System V2. Original prediction tracking with validation (Oct 27, 2025)
 - ✅ **NIV Advisor & Command Center V2** - Conversational AI advisor with intelligent routing (Oct 24, 2025)
 - ✅ **Memory Vault V2** - Complete overhaul with OpenMemory-inspired enhancements (Oct 24-26, 2025)
 - ✅ **NIV Memory Vault Integration** - Composite scoring for proven template discovery (Oct 26, 2025)
@@ -31,7 +36,8 @@ SignalDesk V3 is a fully operational AI-powered strategic communications platfor
 - ✅ **GEO Intelligence Monitor** - AI visibility testing across Claude, Gemini, Perplexity, and ChatGPT with intelligent query generation and citation tracking (Oct 27, 2025)
 
 ### Core Capabilities Status
-- ✅ **Connection Intelligence System** - Industry-aware cross-entity pattern detection with co-occurrence, temporal correlation, and thematic overlap analysis. Generates industry-specific signals (supply chain disruption, competitive coordination, reputational cascade for commodities; client reputation threat, media narrative shift for PR). Complete UI dashboard with signal filtering and entity network visualization (Nov 21, 2025)
+- ✅ **Target Intelligence System V2** - NEW dossier-based intelligence system replacing old prediction/connection detection. Four-layer architecture: (1) Signal Matching via embeddings, (2) Fact Extraction from matched articles, (3) Pattern Analysis on accumulated context, (4) Cross-Target Connection Detection. Each target builds a persistent "dossier" with facts, relationships, sentiment trends, and geographic activity. See `TARGET_INTELLIGENCE_SYSTEM_DESIGN.md` (Dec 11, 2025)
+- ⚠️ **Connection Intelligence System (DEPRECATED)** - Replaced by Target Intelligence System V2. Original industry-aware cross-entity pattern detection (Nov 21, 2025)
 - ✅ **GEO-VECTOR Campaigns** - Complete AI query ownership campaigns with schema updates and content recommendations (Nov 7, 2025)
 - ✅ **Strategic Planning Module V3** - Campaign execution with 91+ tactical items, database persistence, and GEO integration (Nov 7, 2025)
 - ✅ **Schema.org Generation** - Complete pipeline with Firecrawl Map discovery, AI entity extraction, and GEO enhancements (Oct 31, 2025)
@@ -41,10 +47,10 @@ SignalDesk V3 is a fully operational AI-powered strategic communications platfor
 - ✅ **NIV Advisor** - 25-year veteran conversational AI advisor with intelligent routing (Oct 24, 2025)
 - ✅ **Command Center V2** - NIV Panel with real-time streaming responses and organization context
 - ✅ **NIV Strategic Framework Generation** - Using niv-fireplexity for research, 140s timeout
-- ✅ **Intelligence Pipeline** - Discovery → Monitor → Enrichment → Synthesis → Opportunities → Pattern Detection → Connection Detection
+- ✅ **Intelligence Pipeline V2** - Discovery → Worker → Embedding → Matching → Fact Extraction → Pattern Analysis → Connection Detection (Dec 11, 2025)
 - ✅ **Real-Time Intelligence** - Frontend-orchestrated monitoring (Oct 3, 2025 - PRODUCTION READY)
 - ✅ **GEO Intelligence Monitor** - AI visibility testing across Claude, Gemini, Perplexity, and ChatGPT (Production Ready - Oct 27, 2025)
-- ✅ **Stakeholder Predictions** - AI-powered prediction tracking with validation and accuracy metrics (Production Ready - Oct 27, 2025)
+- ⚠️ **Stakeholder Predictions (DEPRECATED)** - Replaced by Target Intelligence System V2 pattern analysis (Oct 27, 2025)
 - ✅ **Content Generation** - Multi-modal (text, image, video, presentations) with platform-specific formatting
 - ✅ **Opportunity Engine V2** - Execution-ready opportunities with real-time content generation
 - ✅ **Crisis Command Center** - Full crisis management suite with AI advisor and response generation
@@ -910,16 +916,18 @@ const [geoError, setGeoError] = useState<string | null>(null)
 - **Duplicate Prevention**: Checks for existing active crises before creating new events
 - **Toggle Control**: Can be enabled/disabled in Real-Time Monitor settings
 
-### 4.5 Stakeholder Prediction System ✅
+### 4.5 Stakeholder Prediction System ⚠️ DEPRECATED
 
-**Status: Production Ready - October 27, 2025**
-**Latest Update: Complete Tracking & Validation System with Target Integration - October 27, 2025**
+**Status: DEPRECATED - Replaced by Target Intelligence System V2 (December 11, 2025)**
+**Original Status: Production Ready - October 27, 2025**
 
-The Stakeholder Prediction System uses AI-powered pattern analysis to predict stakeholder actions before they happen, enabling proactive strategic positioning. Now includes automated outcome monitoring, validation tracking, and accuracy metrics.
+> ⚠️ **DEPRECATION NOTICE**: This system has been replaced by the **Target Intelligence System V2** (see Section 4.7). The new system provides pattern detection through accumulated intelligence dossiers rather than one-shot prediction analysis. Pattern signals are now generated from `accumulated_context` data with historical fact analysis.
 
-#### What It Does:
+The original Stakeholder Prediction System used AI-powered pattern analysis to predict stakeholder actions. It has been superseded by the more sophisticated dossier-based approach in Target Intelligence System V2.
 
-Unlike reactive intelligence that tells you what happened, the prediction system forecasts **what stakeholders will likely do next** based on historical behavioral patterns and recent intelligence signals.
+#### Original Purpose:
+
+Unlike reactive intelligence that tells you what happened, the prediction system forecasted **what stakeholders will likely do next** based on behavioral patterns.
 
 #### Architecture:
 
@@ -1334,12 +1342,14 @@ This shifts organizations from **reactive crisis management** to **proactive str
 
 ---
 
-### 4.6 Connection Intelligence System ✅
+### 4.6 Connection Intelligence System ⚠️ DEPRECATED
 
-**Status: Production Ready - November 21, 2025**
-**Latest Update: Industry-Aware Cross-Entity Pattern Detection with Complete UI Dashboard**
+**Status: DEPRECATED - Replaced by Target Intelligence System V2 (December 11, 2025)**
+**Original Status: Production Ready - November 21, 2025**
 
-The Connection Intelligence System detects relationships and patterns between entities (competitors, stakeholders, topics) based on industry-specific contexts. Unlike individual entity pattern detection, this system finds connections between multiple entities to surface coordinated behaviors, supply chain impacts, and industry-wide trends.
+> ⚠️ **DEPRECATION NOTICE**: This system has been replaced by the **Target Intelligence System V2** (see Section 4.7). The new system uses a dossier-based approach with persistent fact accumulation rather than one-shot article analysis. See `TARGET_INTELLIGENCE_SYSTEM_DESIGN.md` for the new architecture.
+
+The original Connection Intelligence System detected relationships and patterns between entities (competitors, stakeholders, topics) based on industry-specific contexts. Unlike individual entity pattern detection, this system found connections between multiple entities to surface coordinated behaviors, supply chain impacts, and industry-wide trends.
 
 #### What It Does:
 
@@ -1557,7 +1567,152 @@ ECOSYSTEM_SHIFT: OpenAI, Anthropic, Google
 - ✅ Pipeline integration complete
 - ✅ Industry profiles seeded (commodities, PR, tech)
 
-**Status:** Production Ready - Full industry-aware connection detection operational
+**Status:** DEPRECATED - Replaced by Target Intelligence System V2
+
+---
+
+### 4.7 Target Intelligence System V2 ✅
+
+**Status: Production Ready - December 11, 2025**
+**Design Document:** `TARGET_INTELLIGENCE_SYSTEM_DESIGN.md`
+
+The Target Intelligence System V2 is a complete redesign of how SignalDesk tracks and analyzes intelligence targets (competitors, stakeholders, partners, topics). Instead of one-shot analysis of daily articles, it builds persistent "dossiers" that accumulate knowledge over time.
+
+#### Why This Replaces the Old System:
+
+| Old System (Deprecated) | New System (V2) |
+|------------------------|-----------------|
+| Each analysis starts fresh with today's articles | Builds on accumulated intelligence history |
+| `accumulated_context` field existed but unused | `accumulated_context` actively maintained per target |
+| Pattern detection: single article analysis | Pattern detection: 30+ facts with trend analysis |
+| Connection detection: same-day articles only | Connection detection: cross-target relationship mapping |
+| Inefficient: sends raw articles to Claude | Efficient: extracts facts once, analyzes structured data |
+
+#### Four-Layer Architecture:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         TARGET INTELLIGENCE SYSTEM V2                        │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  LAYER 1: SIGNAL MATCHING (existing)                                         │
+│  ═══════════════════════════════════                                         │
+│  batch-embed-articles → batch-match-signals → target_article_matches         │
+│                                                                              │
+│  LAYER 2: FACT EXTRACTION (new)                                              │
+│  ═══════════════════════════════                                             │
+│  target_article_matches → extract-target-facts → target_intelligence_facts   │
+│                                     ↓                                        │
+│                         Update accumulated_context                           │
+│                                                                              │
+│  LAYER 3: PATTERN ANALYSIS (redesigned)                                      │
+│  ══════════════════════════════════════                                      │
+│  accumulated_context → analyze-target-patterns → signals (pattern type)      │
+│                                                                              │
+│  LAYER 4: CONNECTION DETECTION (redesigned)                                  │
+│  ══════════════════════════════════════════                                  │
+│  Cross-target accumulated_context → detect-connections → signals (connection)│
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### New Database Components:
+
+**`target_intelligence_facts` table:**
+- Stores individual facts extracted from matched articles
+- Tracks fact_type (expansion, partnership, acquisition, etc.)
+- Links to targets, articles, and organizations
+- Includes sentiment, confidence, and significance scores
+- Geographic and industry sector tracking
+
+**`intelligence_targets.accumulated_context` (now actively used):**
+- `total_facts`, `facts_last_7d`, `facts_last_30d`
+- `fact_type_distribution` - what types of facts accumulate
+- `sentiment` - current score, trend, and history
+- `geographic_activity` - where the target is active
+- `relationship_map` - entities this target connects to
+- `topic_clusters` - themes from extracted facts
+- `recent_highlights` - top 5 significant recent facts
+
+#### Edge Functions:
+
+| Function | Purpose | Schedule |
+|----------|---------|----------|
+| `extract-target-facts` | Extract facts from matched articles, update accumulated_context | Every 2 hours |
+| `analyze-target-patterns` | Analyze accumulated context for trajectory/anomaly/trend | Daily at 3 AM ET |
+| `detect-cross-target-connections` | Find relationships between targets | Daily at 4 AM ET |
+
+#### Fact Types:
+
+- **expansion** - Geographic or market expansion
+- **contraction** - Market exit, downsizing
+- **partnership** - New or strengthened alliances
+- **acquisition** - M&A activity
+- **product_launch** - New offerings
+- **leadership_change** - Executive moves
+- **financial** - Earnings, funding
+- **legal_regulatory** - Lawsuits, compliance
+- **crisis** - Negative events, scandals
+- **strategy** - Pivots, restructuring
+- **technology** - Tech investments
+
+#### Signal Types Generated:
+
+**Pattern Signals:**
+- `trajectory` - Target is expanding/contracting/pivoting
+- `anomaly` - Unusual activity compared to baseline
+- `trend` - Consistent direction over time
+- `shift` - Recent change from historical patterns
+- `milestone` - Significant marking event
+
+**Connection Signals:**
+- `shared_relationship` - Multiple targets linked via common entity
+- `market_convergence` - Targets moving into same space
+- `timing_correlation` - Coordinated activity patterns
+- `competitive_clash` - Direct competition detected
+- `supply_chain` - Upstream/downstream relationships
+
+#### Pipeline Integration:
+
+```
+DAILY PIPELINE:
+═══════════════
+1. Discovery (RSS, Sitemap, Firecrawl, CSE) → new article URLs
+2. Worker (batch-scraper-v5-worker) → article content scraped
+3. Embedding (batch-embed-articles) → vectors generated
+4. Matching (batch-match-signals) → target_article_matches
+5. Fact Extraction (extract-target-facts) → facts + accumulated_context
+6. Pattern Analysis (analyze-target-patterns) → pattern signals
+7. Connection Detection (detect-cross-target-connections) → connection signals
+```
+
+#### Admin Pipeline View:
+
+The Pipeline tab in `/admin` now shows all 7 stages with:
+- Real-time status (running/completed/failed)
+- Stage-specific metrics (articles processed, facts extracted, signals created)
+- EST timezone display
+- 15-minute grouping to show pipeline runs as cohesive units
+
+#### Files:
+
+```
+NEW FILES:
+├── TARGET_INTELLIGENCE_SYSTEM_DESIGN.md (design doc)
+├── supabase/migrations/
+│   ├── 20251211_target_intelligence_facts.sql
+│   └── 20251211_pattern_analysis_cron.sql
+├── supabase/functions/
+│   ├── extract-target-facts/index.ts
+│   ├── analyze-target-patterns/index.ts
+│   └── detect-cross-target-connections/index.ts
+
+MODIFIED:
+├── src/app/admin/page.tsx (Pipeline view with all stages)
+├── src/components/modules/SignalsModule.tsx (pattern + connection signals)
+```
+
+**Status:** Production Ready - Full dossier-based intelligence system operational
 
 ---
 
