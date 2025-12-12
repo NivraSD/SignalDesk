@@ -6565,6 +6565,7 @@ function normalizeContentTypeForMCP(rawType) {
     'whitepaper': 'white-paper',
     'social-media-post': 'social-post',
     'social-post': 'social-post',
+    'socialpost': 'social-post', // social_post with underscore becomes socialpost after normalization
     'blog-post': 'blog-post',
     'blogpost': 'blog-post',
     'media-pitch': 'media-pitch',
