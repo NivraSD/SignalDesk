@@ -263,6 +263,14 @@ export default function AdminDashboard() {
     setUsers(data || [])
   }
 
+  async function loadAllOrgs() {
+    const { data } = await supabase
+      .from('organizations')
+      .select('id,name,industry,created_at')
+      .order('created_at', { ascending: false })
+    setOrgs(data || [])
+  }
+
   async function loadPipelineRuns() {
     // Load all pipeline-related runs: discovery, worker, embedding, matching
     const [scrapeRunsResult, embeddingJobsResult, pipelineRunsResult] = await Promise.all([
@@ -641,6 +649,7 @@ export default function AdminDashboard() {
                     loadRawArticles()
                   } else if (item.id === 'users') {
                     loadAllUsers()
+                    loadAllOrgs()
                   } else if (item.id === 'sources') {
                     loadAllSources()
                   }
@@ -800,7 +809,7 @@ export default function AdminDashboard() {
             />
           )}
           {activeView === 'users' && (
-            <UsersView users={users} orgs={orgs} onRefresh={loadAllUsers} />
+            <UsersView users={users} orgs={orgs} onRefresh={() => { loadAllUsers(); loadAllOrgs() }} />
           )}
           {activeView === 'sources' && (
             <SourcesView sources={sources} onRefresh={loadAllSources} />
