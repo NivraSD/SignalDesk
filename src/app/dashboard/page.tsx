@@ -43,7 +43,7 @@ import NIVFloatingAssistant from '@/components/niv/NIVFloatingAssistant'
 // Signal type for unified signals table
 interface SidebarSignal {
   id: string
-  signal_type: 'pattern' | 'connection' | 'movement' | 'predictive' | 'opportunity'
+  signal_type: 'pattern' | 'connection' | 'movement' | 'predictive' | 'opportunity' | 'cascade_alert'
   signal_subtype?: string
   title: string
   description: string

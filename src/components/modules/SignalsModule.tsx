@@ -22,7 +22,7 @@ import { useAppStore } from '@/stores/useAppStore'
 import { supabase } from '@/lib/supabase/client'
 
 // Signal types from unified schema
-type SignalType = 'movement' | 'connection' | 'predictive' | 'opportunity' | 'pattern'
+type SignalType = 'movement' | 'connection' | 'predictive' | 'opportunity' | 'pattern' | 'cascade_alert'
 type SignalUrgency = 'immediate' | 'near_term' | 'monitoring'
 type FeedbackStatus = 'accurate' | 'inaccurate' | 'pending'
 type OutcomeValue = 'high_value' | 'some_value' | 'no_value' | 'pending'
@@ -85,7 +85,8 @@ const SIGNAL_ICONS: Record<SignalType, typeof TrendingUp> = {
   connection: Link2,
   predictive: Sparkles,
   opportunity: Lightbulb,
-  pattern: Target
+  pattern: Target,
+  cascade_alert: AlertTriangle
 }
 
 const SIGNAL_COLORS: Record<SignalType, string> = {
@@ -93,7 +94,8 @@ const SIGNAL_COLORS: Record<SignalType, string> = {
   connection: 'text-purple-400 bg-purple-500/20 border-purple-500/30',
   predictive: 'text-amber-400 bg-amber-500/20 border-amber-500/30',
   opportunity: 'text-green-400 bg-green-500/20 border-green-500/30',
-  pattern: 'text-cyan-400 bg-cyan-500/20 border-cyan-500/30'
+  pattern: 'text-cyan-400 bg-cyan-500/20 border-cyan-500/30',
+  cascade_alert: 'text-red-400 bg-red-500/20 border-red-500/30'
 }
 
 const URGENCY_COLORS: Record<SignalUrgency, string> = {
@@ -376,7 +378,7 @@ export default function SignalsModule() {
   }
 
   const getSignalIcon = (type: SignalType) => {
-    const Icon = SIGNAL_ICONS[type]
+    const Icon = SIGNAL_ICONS[type] || Zap // Fallback icon for unknown types
     return <Icon className="w-4 h-4" />
   }
 
