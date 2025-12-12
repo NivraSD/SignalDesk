@@ -2522,7 +2522,7 @@ export default function OrganizationOnboarding({
                   )}
 
                   {/* Show buttons if generation hasn't started or failed */}
-                  <div className="mt-6 flex gap-3">
+                  <div className="mt-6 flex gap-3 relative z-10">
                     {!schemaGenerationStarted && (
                       <>
                         <button
@@ -2587,9 +2587,9 @@ export default function OrganizationOnboarding({
                           onClose()
                         }}
                         disabled={!createdOrganization}
-                        className="flex-1 px-6 py-3 bg-[var(--burnt-orange)] hover:bg-[var(--burnt-orange-light)] disabled:bg-[var(--grey-800)] disabled:text-[var(--grey-600)] disabled:cursor-not-allowed text-white rounded-lg transition-all flex items-center justify-center gap-2 font-medium"
+                        className="w-full min-h-[52px] px-8 py-4 bg-[var(--burnt-orange)] hover:bg-[var(--burnt-orange-light)] active:scale-[0.98] disabled:bg-[var(--grey-800)] disabled:text-[var(--grey-600)] disabled:cursor-not-allowed text-white text-lg rounded-xl transition-all flex items-center justify-center gap-3 font-semibold shadow-lg hover:shadow-xl cursor-pointer select-none"
                       >
-                        <Check className="w-5 h-5" />
+                        <Check className="w-6 h-6" />
                         Complete Onboarding
                       </button>
                     )}
