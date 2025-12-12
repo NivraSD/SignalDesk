@@ -471,12 +471,12 @@ export default function AdminDashboard() {
           .eq('organization_id', org.id)
           .eq('is_active', true)
           .gt('fact_count', 0),
-        // Pattern signals
+        // Pattern signals (signal_type = 'predictive' from analyze-target-patterns)
         supabase
           .from('signals')
           .select('id', { count: 'exact', head: true })
           .eq('organization_id', org.id)
-          .eq('signal_type', 'pattern')
+          .eq('signal_type', 'predictive')
           .eq('status', 'active'),
         // Connection signals
         supabase
