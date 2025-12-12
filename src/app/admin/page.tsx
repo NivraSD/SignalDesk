@@ -320,8 +320,9 @@ export default function AdminDashboard() {
       // Calculate summary stats
       const predictions = predictionsResult.data || []
       const totalPredictions = predictions.length
-      const validatedPredictions = predictions.filter(p => p.validation_status !== 'pending')
-      const accuratePredictions = predictions.filter(p => p.validation_status === 'accurate')
+      const validatedPredictions = predictions.filter(p => p.was_accurate !== null)
+      const accuratePredictions = predictions.filter(p => p.was_accurate === true)
+      const inaccuratePredictions = predictions.filter(p => p.was_accurate === false)
       const overallAccuracy = validatedPredictions.length > 0
         ? (accuratePredictions.length / validatedPredictions.length * 100).toFixed(1)
         : null
@@ -334,11 +335,11 @@ export default function AdminDashboard() {
         cascadeAlerts: cascadeAlertsResult.data || [],
         summary: {
           totalPredictions,
-          pendingValidation: predictions.filter(p => p.validation_status === 'pending').length,
+          pendingValidation: predictions.filter(p => p.was_accurate === null).length,
           validated: validatedPredictions.length,
           accurate: accuratePredictions.length,
-          inaccurate: predictions.filter(p => p.validation_status === 'inaccurate').length,
-          inconclusive: predictions.filter(p => p.validation_status === 'inconclusive').length,
+          inaccurate: inaccuratePredictions.length,
+          inconclusive: 0, // Not used in current schema
           overallAccuracy
         }
       })
@@ -2168,33 +2169,32 @@ function LearningView({
                   <td className="p-4">
                     <div className="text-white text-sm font-medium mb-1 line-clamp-1">{p.predicted_outcome}</div>
                     <div className="text-[#757575] text-xs line-clamp-1">
-                      Verify: {p.verification_criteria || 'N/A'}
+                      {p.prediction_reasoning?.slice(0, 100) || 'N/A'}...
                     </div>
                   </td>
                   <td className="p-4 text-center">
                     <span className={`font-medium ${
-                      p.confidence_score >= 0.7 ? 'text-green-400' :
-                      p.confidence_score >= 0.5 ? 'text-yellow-400' :
+                      p.predicted_confidence >= 0.7 ? 'text-green-400' :
+                      p.predicted_confidence >= 0.5 ? 'text-yellow-400' :
                       'text-red-400'
                     }`}>
-                      {Math.round((p.confidence_score || 0) * 100)}%
+                      {Math.round((p.predicted_confidence || 0) * 100)}%
                     </span>
                   </td>
                   <td className="p-4 text-center text-[#9e9e9e] text-sm">
-                    {p.prediction_timeframe_days || '?'} days
+                    {p.predicted_timeframe_days || '?'} days
                   </td>
                   <td className="p-4 text-center">
                     <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      p.validation_status === 'accurate' ? 'bg-green-500/20 text-green-400' :
-                      p.validation_status === 'inaccurate' ? 'bg-red-500/20 text-red-400' :
-                      p.validation_status === 'inconclusive' ? 'bg-gray-500/20 text-gray-400' :
+                      p.was_accurate === true ? 'bg-green-500/20 text-green-400' :
+                      p.was_accurate === false ? 'bg-red-500/20 text-red-400' :
                       'bg-yellow-500/20 text-yellow-400'
                     }`}>
-                      {p.validation_status || 'pending'}
+                      {p.was_accurate === true ? 'accurate' : p.was_accurate === false ? 'inaccurate' : 'pending'}
                     </span>
                   </td>
                   <td className="p-4 text-[#757575] text-sm whitespace-nowrap">
-                    {formatFullDateET(p.created_at)} ET
+                    {formatFullDateET(p.predicted_at || p.created_at)} ET
                   </td>
                 </tr>
               ))}
