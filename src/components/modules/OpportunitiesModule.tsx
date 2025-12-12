@@ -98,8 +98,10 @@ export default function OpportunitiesModule() {
     fetchOpportunities()
 
     // Subscribe to real-time changes on opportunities table
+    let channel: ReturnType<typeof supabase.channel> | null = null
+
     if (organization?.id) {
-      const channel = supabase
+      channel = supabase
         .channel('opportunities-module-realtime')
         .on(
           'postgres_changes',
@@ -114,11 +116,22 @@ export default function OpportunitiesModule() {
             fetchOpportunities()
           }
         )
-        .subscribe()
+        .subscribe((status) => {
+          console.log('🔔 OpportunitiesModule subscription status:', status)
+        })
+    }
 
-      return () => {
+    // Polling fallback every 30 seconds (in case realtime fails)
+    const pollInterval = setInterval(() => {
+      console.log('🔄 OpportunitiesModule: Polling for updates...')
+      fetchOpportunities()
+    }, 30000)
+
+    return () => {
+      if (channel) {
         supabase.removeChannel(channel)
       }
+      clearInterval(pollInterval)
     }
   }, [organization])
 
