@@ -513,7 +513,7 @@ export default function SignalsModule() {
             >
               All
             </button>
-            {(['pattern', 'connection', 'movement', 'predictive', 'opportunity'] as SignalType[]).map(type => (
+            {(['pattern', 'connection', 'movement', 'predictive'] as SignalType[]).map(type => (
               <button
                 key={type}
                 onClick={() => setFilterType(type)}
@@ -550,43 +550,44 @@ export default function SignalsModule() {
             >
               All
             </button>
-            {(['immediate', 'near_term', 'monitoring'] as SignalUrgency[]).map(urgency => (
-              <button
-                key={urgency}
-                onClick={() => setFilterUrgency(urgency)}
-                className={`px-3 py-1.5 text-[0.75rem] rounded-md transition-colors ${
-                  filterUrgency === urgency
-                    ? 'bg-[var(--burnt-orange)] text-white'
-                    : 'bg-[var(--grey-800)] text-[var(--grey-400)] hover:text-white'
-                }`}
-                style={{ fontFamily: 'var(--font-display)' }}
-              >
-                {URGENCY_LABELS[urgency]}
-              </button>
-            ))}
+            <button
+              onClick={() => setFilterUrgency('immediate')}
+              className={`px-3 py-1.5 text-[0.75rem] rounded-md transition-colors flex items-center gap-1.5 ${
+                filterUrgency === 'immediate'
+                  ? 'bg-[var(--burnt-orange)] text-white'
+                  : 'bg-[var(--grey-800)] text-[var(--grey-400)] hover:text-white'
+              }`}
+              style={{ fontFamily: 'var(--font-display)' }}
+            >
+              <AlertTriangle className="w-3.5 h-3.5" />
+              Immediate
+            </button>
+            <button
+              onClick={() => setFilterUrgency('near_term')}
+              className={`px-3 py-1.5 text-[0.75rem] rounded-md transition-colors flex items-center gap-1.5 ${
+                filterUrgency === 'near_term'
+                  ? 'bg-[var(--burnt-orange)] text-white'
+                  : 'bg-[var(--grey-800)] text-[var(--grey-400)] hover:text-white'
+              }`}
+              style={{ fontFamily: 'var(--font-display)' }}
+            >
+              <Clock className="w-3.5 h-3.5" />
+              Near Term
+            </button>
+            <button
+              onClick={() => setFilterUrgency('monitoring')}
+              className={`px-3 py-1.5 text-[0.75rem] rounded-md transition-colors flex items-center gap-1.5 ${
+                filterUrgency === 'monitoring'
+                  ? 'bg-[var(--burnt-orange)] text-white'
+                  : 'bg-[var(--grey-800)] text-[var(--grey-400)] hover:text-white'
+              }`}
+              style={{ fontFamily: 'var(--font-display)' }}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              Monitoring
+            </button>
           </div>
         </div>
-
-        {/* Target Filter (if targets exist) */}
-        {targets.length > 0 && (
-          <>
-            <div className="w-px h-6 bg-[var(--grey-700)]" />
-            <div className="flex items-center gap-2">
-              <Target className="w-4 h-4 text-[var(--grey-500)]" />
-              <select
-                value={filterTarget}
-                onChange={(e) => setFilterTarget(e.target.value)}
-                className="bg-[var(--grey-800)] text-[var(--grey-300)] text-[0.75rem] rounded-md px-3 py-1.5 border border-[var(--grey-700)] focus:outline-none focus:border-[var(--burnt-orange)]"
-                style={{ fontFamily: 'var(--font-display)' }}
-              >
-                <option value="all">All Targets</option>
-                {targets.map(t => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
-                ))}
-              </select>
-            </div>
-          </>
-        )}
       </div>
 
       {/* Content */}

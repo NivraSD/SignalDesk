@@ -183,7 +183,7 @@ serve(async (req) => {
             for (const pattern of patterns) {
               const signal = {
                 organization_id: orgId,
-                signal_type: 'predictive',
+                signal_type: 'pattern',
                 signal_subtype: `pattern_${pattern.pattern_type}`,
                 title: pattern.title,
                 description: pattern.description,
