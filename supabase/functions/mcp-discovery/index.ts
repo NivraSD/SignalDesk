@@ -9,7 +9,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
-import { searchWebForCompetitors, fetchYahooFinanceCompetitors } from './external-data-fetcher.ts';
+import { searchWebForCompetitors, fetchYahooFinanceCompetitors, searchWebForCurrentProducts } from './external-data-fetcher.ts';
 import { getIndustryCompetitors, discoverSubCategory } from './industry-competitors.ts';
 
 // Environment setup
@@ -244,7 +244,22 @@ async function createOrganizationProfile(args: any) {
 
     // Get sources from master-source-registry with semantic matching
     const sourcesData = await gatherSourcesData(industryData.industry, organization_name, initialDescription);
-    
+
+    // STEP 1b: Fetch real-time product/service information from web search
+    // This helps overcome Claude's knowledge cutoff for recently released products
+    console.log('🌐 Step 1b: Fetching real-time product information from web search...');
+    let realTimeProductInfo = null;
+    try {
+      realTimeProductInfo = await searchWebForCurrentProducts(organization_name);
+      if (realTimeProductInfo.rawSnippets.length > 0) {
+        console.log(`   ✅ Found ${realTimeProductInfo.rawSnippets.length} web snippets for current product info`);
+      } else {
+        console.log(`   ⚠️ No web results found - will rely on Claude's knowledge`);
+      }
+    } catch (e) {
+      console.log(`   ⚠️ Web search failed - will rely on Claude's knowledge`);
+    }
+
     // STEP 2: Use Claude to analyze company and identify competitors independently
     console.log('🤖 Step 2: Using Claude to analyze company and identify competitors...');
 
@@ -257,7 +272,8 @@ async function createOrganizationProfile(args: any) {
       key_markets,
       business_model,
       gap_filling_mode,
-      gap_context
+      gap_context,
+      realTimeProductInfo
     );
 
     // GAP-FILLING MODE: Return simplified profile immediately, skip validation
@@ -798,7 +814,8 @@ async function analyzeAndEnhanceProfile(
   key_markets: string[] = [],
   business_model?: string,
   gap_filling_mode: boolean = false,
-  gap_context: any = null
+  gap_context: any = null,
+  realTimeProductInfo: { products: string[], services: string[], recentLaunches: string[], rawSnippets: string[] } | null = null
 ) {
   // GAP-FILLING MODE: Generate targeted profile to fill specific gaps
   if (gap_filling_mode && gap_context) {
@@ -829,6 +846,15 @@ ${key_markets.length > 0 ? `- Key Markets: ${key_markets.join(', ')}` : ''}
 ${business_model ? `- Business Model: ${business_model}` : ''}
 ${industryData.company_size?.employees ? `- Company Size: ${industryData.company_size.employees} employees` : ''}
 ${industryData.company_size?.revenue_tier ? `- Revenue Tier: ${industryData.company_size.revenue_tier}` : ''}
+${realTimeProductInfo && realTimeProductInfo.rawSnippets.length > 0 ? `
+🌐 REAL-TIME WEB SEARCH RESULTS (CURRENT INFO - USE THIS FOR ACCURATE PRODUCTS/SERVICES):
+The following snippets are from LIVE web search results and contain CURRENT information about ${organization_name}'s products and services. Use this to ensure you list their LATEST products, not outdated ones:
+
+${realTimeProductInfo.rawSnippets.slice(0, 10).map(s => `• ${s}`).join('\n')}
+${realTimeProductInfo.recentLaunches.length > 0 ? `\nRecent launches found: ${realTimeProductInfo.recentLaunches.join(', ')}` : ''}
+
+⚠️ IMPORTANT: Use the web search results above to identify ${organization_name}'s CURRENT products and services. Your training data may be outdated - the web search results are from TODAY.
+` : ''}
 
 🎯 CRITICAL: Use the product lines and markets above to generate SPECIFIC search queries.
    For example, if product lines include "CRM Software" and "Sales Automation",
@@ -958,9 +984,12 @@ NOW, provide your COMPREHENSIVE profile in this JSON format:
       "Competitor 2 Name",
       "Competitor 3 Name",
       "List 10-15 ACTUAL competitors who serve the SAME customers with SIMILAR products/services",
+      "⚠️ CRITICAL: NEVER include ${organization_name} itself in the competitors list - you are identifying WHO THEY COMPETE AGAINST",
       "⚠️ CRITICAL: Identify competitors based on BUSINESS MODEL, CUSTOMER BASE, AND COMPANY SIZE",
+      "🎯 INDUSTRY MATCHING: Find companies in the EXACT same industry. For AI companies like OpenAI/Anthropic, list other AI labs (Anthropic, OpenAI, Cohere, Mistral, Google DeepMind) - NOT generic tech giants like Apple/Microsoft",
       "🎯 SIZE MATCHING: Find competitors of SIMILAR SIZE - a 50-person agency competes with other 50-200 person shops, NOT WPP/Publicis giants",
       "🎯 NICHE MATCHING: Match the specific specialty - experiential agencies compete with experiential agencies, not general creative shops",
+      "Example: For Anthropic (AI safety company), competitors are: OpenAI, Google DeepMind, Cohere, Mistral AI, xAI, Inflection AI - NOT Apple, Microsoft, Samsung",
       "Example: For a mid-size experiential marketing agency, competitors are: Set Creative, TBA Global, NVE Experience Agency, Sparks, MAS Event + Design, Inspira Marketing - NOT Momentum (owned by Interpublic) or Jack Morton (owned by Interpublic)",
       "Example: For 'Buck Mason' (premium menswear brand), competitors are Bonobos, Everlane, Todd Snyder - NOT Walmart, Target",
       "Use CURRENT company names (if rebranded, use new name: 'BrandTech Group' not 'You & Mr Jones')"
@@ -1688,12 +1717,26 @@ function mergeAndValidateCompetitors(
   console.log(`   📊 Claude identified: ${claudeCompetitors.length} competitors`);
   console.log(`   📚 Registry has: ${registryCompetitors.length} competitors`);
 
+  const orgLower = organizationName.toLowerCase();
+
+  // CRITICAL: Filter out the company itself from competitors
+  // (in case Claude included it despite instructions)
+  const filteredClaudeCompetitors = claudeCompetitors.filter(comp => {
+    const compLower = comp.toLowerCase();
+    const isSelf = compLower === orgLower ||
+                   compLower.includes(orgLower) ||
+                   orgLower.includes(compLower);
+    if (isSelf) {
+      console.log(`   ⚠️ Removing self from competitors: ${comp}`);
+    }
+    return !isSelf;
+  });
+
   // Start with Claude's competitors (they're context-aware)
-  const merged = [...claudeCompetitors];
+  const merged = [...filteredClaudeCompetitors];
 
   // Keywords that indicate generic/wrong competitors to filter out
   const genericRetailers = ['walmart', 'target', 'costco', 'home depot', 'lowes', 'cvs', 'walgreens', 'kroger', 'best buy'];
-  const orgLower = organizationName.toLowerCase();
   const descLower = description.toLowerCase();
 
   // Check if this is a specialized business (not a mass merchant)

@@ -506,10 +506,24 @@ export function discoverSubCategory(organization: string, industry: string, desc
   
   if (!industryData) return null;
   
+  // First, check if org name appears in any subcategory's competitor list
+  const orgLower = organization.toLowerCase();
+  for (const [subCategory, competitors] of Object.entries(industryData)) {
+    if (subCategory === 'general') continue;
+    if (Array.isArray(competitors)) {
+      for (const comp of competitors) {
+        if (comp.toLowerCase().includes(orgLower) || orgLower.includes(comp.toLowerCase())) {
+          console.log(`   🎯 Matched ${organization} to ${subCategory} via competitor list`);
+          return subCategory;
+        }
+      }
+    }
+  }
+
   // Keywords to match for each sub-category
   const subCategoryKeywords = {
     technology: {
-      ai_ml: ['artificial intelligence', 'AI', 'machine learning', 'LLM', 'neural', 'deep learning'],
+      ai_ml: ['artificial intelligence', 'AI', 'machine learning', 'LLM', 'neural', 'deep learning', 'anthropic', 'openai', 'claude', 'gpt', 'chatgpt', 'foundation model', 'large language model', 'generative ai'],
       cybersecurity: ['security', 'firewall', 'threat', 'vulnerability', 'encryption', 'cyber'],
       saas_enterprise: ['SaaS', 'cloud software', 'enterprise software', 'subscription software'],
       fintech: ['payments', 'financial technology', 'banking platform', 'trading', 'crypto'],

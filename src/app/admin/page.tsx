@@ -41,7 +41,7 @@ import { useAuth } from '@/components/auth/AuthProvider'
 import { isPlatformAdmin } from '@/lib/admin/config'
 import { Logo } from '@/components/ui/Logo'
 
-type AdminView = 'overview' | 'pipeline' | 'scraping' | 'users' | 'sources'
+type AdminView = 'overview' | 'pipeline' | 'scraping' | 'users' | 'sources' | 'intelligence'
 
 // Helper to format dates in Eastern Time
 const formatDateET = (dateStr: string, options?: Intl.DateTimeFormatOptions) => {
@@ -118,6 +118,7 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState<any[]>([])
   const [orgs, setOrgs] = useState<any[]>([])
   const [pipelineRuns, setPipelineRuns] = useState<any[]>([])
+  const [intelligenceStats, setIntelligenceStats] = useState<any[]>([])
 
   // Check admin access
   useEffect(() => {
@@ -423,6 +424,95 @@ export default function AdminDashboard() {
     setPipelineRuns(grouped)
   }
 
+  async function loadIntelligenceStats() {
+    // Get all organizations with their intelligence stats
+    const { data: organizations } = await supabase
+      .from('organizations')
+      .select('id, name')
+      .order('name')
+
+    if (!organizations) {
+      setIntelligenceStats([])
+      return
+    }
+
+    // Get stats for each organization
+    const statsPromises = organizations.map(async (org) => {
+      const [
+        factsResult,
+        factsLast7dResult,
+        targetsResult,
+        targetsWithContextResult,
+        patternSignalsResult,
+        connectionSignalsResult,
+        recentFactsResult
+      ] = await Promise.all([
+        // Total facts
+        supabase
+          .from('target_intelligence_facts')
+          .select('id', { count: 'exact', head: true })
+          .eq('organization_id', org.id),
+        // Facts in last 7 days
+        supabase
+          .from('target_intelligence_facts')
+          .select('id', { count: 'exact', head: true })
+          .eq('organization_id', org.id)
+          .gte('extracted_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
+        // Total active targets
+        supabase
+          .from('intelligence_targets')
+          .select('id', { count: 'exact', head: true })
+          .eq('organization_id', org.id)
+          .eq('is_active', true),
+        // Targets with fact_count > 0
+        supabase
+          .from('intelligence_targets')
+          .select('id', { count: 'exact', head: true })
+          .eq('organization_id', org.id)
+          .eq('is_active', true)
+          .gt('fact_count', 0),
+        // Pattern signals
+        supabase
+          .from('signals')
+          .select('id', { count: 'exact', head: true })
+          .eq('organization_id', org.id)
+          .eq('signal_type', 'pattern')
+          .eq('status', 'active'),
+        // Connection signals
+        supabase
+          .from('signals')
+          .select('id', { count: 'exact', head: true })
+          .eq('organization_id', org.id)
+          .eq('signal_type', 'connection')
+          .eq('status', 'active'),
+        // Recent facts (last 5)
+        supabase
+          .from('target_intelligence_facts')
+          .select('id, fact_type, fact_summary, extracted_at, article_source')
+          .eq('organization_id', org.id)
+          .order('extracted_at', { ascending: false })
+          .limit(5)
+      ])
+
+      return {
+        id: org.id,
+        name: org.name,
+        totalFacts: factsResult.count || 0,
+        factsLast7d: factsLast7dResult.count || 0,
+        totalTargets: targetsResult.count || 0,
+        targetsWithFacts: targetsWithContextResult.count || 0,
+        patternSignals: patternSignalsResult.count || 0,
+        connectionSignals: connectionSignalsResult.count || 0,
+        recentFacts: recentFactsResult.data || []
+      }
+    })
+
+    const allStats = await Promise.all(statsPromises)
+    // Sort by total facts descending
+    allStats.sort((a, b) => b.totalFacts - a.totalFacts)
+    setIntelligenceStats(allStats)
+  }
+
   async function triggerScrape(type: string) {
     setTriggeringScrape(type)
     try {
@@ -458,6 +548,15 @@ export default function AdminDashboard() {
       } else if (type === 'match') {
         functionName = 'batch-match-signals'
         body = { hours_back: 48 }
+      } else if (type === 'facts') {
+        functionName = 'extract-target-facts'
+        body = { max_matches: 100 }
+      } else if (type === 'patterns') {
+        functionName = 'analyze-target-patterns'
+        body = { min_facts: 2, max_targets: 50 }
+      } else if (type === 'connections') {
+        functionName = 'detect-cross-target-connections'
+        body = { min_facts: 2, max_targets: 30 }
       } else {
         functionName = `batch-scraper-v5-orchestrator-${type}`
       }
@@ -524,6 +623,7 @@ export default function AdminDashboard() {
             {[
               { id: 'overview', label: 'Overview', icon: BarChart3 },
               { id: 'pipeline', label: 'Pipeline', icon: Activity },
+              { id: 'intelligence', label: 'Intelligence', icon: Target },
               { id: 'scraping', label: 'Scraping', icon: Database },
               { id: 'users', label: 'Users & Orgs', icon: Users },
               { id: 'sources', label: 'Sources', icon: Globe },
@@ -534,6 +634,8 @@ export default function AdminDashboard() {
                   setActiveView(item.id as AdminView)
                   if (item.id === 'pipeline') {
                     loadPipelineRuns()
+                  } else if (item.id === 'intelligence') {
+                    loadIntelligenceStats()
                   } else if (item.id === 'scraping') {
                     loadAllScrapeRuns()
                     loadRawArticles()
@@ -702,6 +804,14 @@ export default function AdminDashboard() {
           )}
           {activeView === 'sources' && (
             <SourcesView sources={sources} onRefresh={loadAllSources} />
+          )}
+          {activeView === 'intelligence' && (
+            <IntelligenceView
+              stats={intelligenceStats}
+              onRefresh={loadIntelligenceStats}
+              onTrigger={triggerScrape}
+              isTriggering={triggeringScrape}
+            />
           )}
         </main>
       </div>
@@ -1620,6 +1730,202 @@ function SourcesView({
             ))}
           </tbody>
         </table>
+      </div>
+    </div>
+  )
+}
+
+// ============================================================================
+// INTELLIGENCE VIEW
+// ============================================================================
+function IntelligenceView({
+  stats,
+  onRefresh,
+  onTrigger,
+  isTriggering
+}: {
+  stats: any[]
+  onRefresh: () => void
+  onTrigger: (type: string) => void
+  isTriggering: string | null
+}) {
+  const [expandedOrg, setExpandedOrg] = useState<string | null>(null)
+
+  // Calculate totals
+  const totals = stats.reduce((acc, org) => ({
+    facts: acc.facts + org.totalFacts,
+    factsLast7d: acc.factsLast7d + org.factsLast7d,
+    targets: acc.targets + org.totalTargets,
+    targetsWithFacts: acc.targetsWithFacts + org.targetsWithFacts,
+    patterns: acc.patterns + org.patternSignals,
+    connections: acc.connections + org.connectionSignals
+  }), { facts: 0, factsLast7d: 0, targets: 0, targetsWithFacts: 0, patterns: 0, connections: 0 })
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl text-white font-semibold mb-2">Target Intelligence</h1>
+          <p className="text-[#757575]">Fact extraction, pattern analysis, and connection detection by organization</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onRefresh}
+            className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] hover:bg-[#2e2e2e] rounded-lg text-sm text-[#bdbdbd] transition-colors"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      {/* Summary Stats */}
+      <div className="grid grid-cols-6 gap-4">
+        <div className="bg-[#1a1a1a] rounded-xl border border-[#2e2e2e] p-4">
+          <div className="text-[#757575] text-xs uppercase mb-1">Total Facts</div>
+          <div className="text-2xl text-white font-bold">{totals.facts.toLocaleString()}</div>
+          <div className="text-green-400 text-xs mt-1">+{totals.factsLast7d} last 7d</div>
+        </div>
+        <div className="bg-[#1a1a1a] rounded-xl border border-[#2e2e2e] p-4">
+          <div className="text-[#757575] text-xs uppercase mb-1">Active Targets</div>
+          <div className="text-2xl text-white font-bold">{totals.targets}</div>
+          <div className="text-[#757575] text-xs mt-1">{totals.targetsWithFacts} with facts</div>
+        </div>
+        <div className="bg-[#1a1a1a] rounded-xl border border-[#2e2e2e] p-4">
+          <div className="text-[#757575] text-xs uppercase mb-1">Pattern Signals</div>
+          <div className="text-2xl text-pink-400 font-bold">{totals.patterns}</div>
+        </div>
+        <div className="bg-[#1a1a1a] rounded-xl border border-[#2e2e2e] p-4">
+          <div className="text-[#757575] text-xs uppercase mb-1">Connections</div>
+          <div className="text-2xl text-indigo-400 font-bold">{totals.connections}</div>
+        </div>
+        <div className="bg-[#1a1a1a] rounded-xl border border-[#2e2e2e] p-4 col-span-2">
+          <div className="text-[#757575] text-xs uppercase mb-2">Trigger Functions</div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => onTrigger('facts')}
+              disabled={!!isTriggering}
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 bg-yellow-500/20 hover:bg-yellow-500/30 rounded text-xs text-yellow-400 transition-colors disabled:opacity-50"
+            >
+              {isTriggering === 'facts' ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileText className="w-3 h-3" />}
+              Extract Facts
+            </button>
+            <button
+              onClick={() => onTrigger('patterns')}
+              disabled={!!isTriggering}
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 bg-pink-500/20 hover:bg-pink-500/30 rounded text-xs text-pink-400 transition-colors disabled:opacity-50"
+            >
+              {isTriggering === 'patterns' ? <Loader2 className="w-3 h-3 animate-spin" /> : <TrendingUp className="w-3 h-3" />}
+              Analyze Patterns
+            </button>
+            <button
+              onClick={() => onTrigger('connections')}
+              disabled={!!isTriggering}
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 bg-indigo-500/20 hover:bg-indigo-500/30 rounded text-xs text-indigo-400 transition-colors disabled:opacity-50"
+            >
+              {isTriggering === 'connections' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Link2 className="w-3 h-3" />}
+              Detect Connections
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Per-Organization Table */}
+      <div className="bg-[#1a1a1a] rounded-xl border border-[#2e2e2e] overflow-hidden">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-[#2e2e2e]">
+              <th className="text-left p-4 text-[#757575] text-xs font-semibold uppercase">Organization</th>
+              <th className="text-right p-4 text-[#757575] text-xs font-semibold uppercase">Facts</th>
+              <th className="text-right p-4 text-[#757575] text-xs font-semibold uppercase">Last 7d</th>
+              <th className="text-right p-4 text-[#757575] text-xs font-semibold uppercase">Targets</th>
+              <th className="text-right p-4 text-[#757575] text-xs font-semibold uppercase">With Facts</th>
+              <th className="text-right p-4 text-[#757575] text-xs font-semibold uppercase">Patterns</th>
+              <th className="text-right p-4 text-[#757575] text-xs font-semibold uppercase">Connections</th>
+              <th className="text-center p-4 text-[#757575] text-xs font-semibold uppercase"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {stats.map(org => (
+              <>
+                <tr
+                  key={org.id}
+                  className="border-b border-[#2e2e2e] hover:bg-[#212121] cursor-pointer"
+                  onClick={() => setExpandedOrg(expandedOrg === org.id ? null : org.id)}
+                >
+                  <td className="p-4">
+                    <div className="text-white font-medium">{org.name}</div>
+                  </td>
+                  <td className="p-4 text-right">
+                    <span className="text-white font-medium">{org.totalFacts}</span>
+                  </td>
+                  <td className="p-4 text-right">
+                    <span className={org.factsLast7d > 0 ? 'text-green-400' : 'text-[#757575]'}>
+                      {org.factsLast7d > 0 ? `+${org.factsLast7d}` : '0'}
+                    </span>
+                  </td>
+                  <td className="p-4 text-right text-[#9e9e9e]">{org.totalTargets}</td>
+                  <td className="p-4 text-right">
+                    <span className={org.targetsWithFacts > 0 ? 'text-blue-400' : 'text-[#757575]'}>
+                      {org.targetsWithFacts}
+                    </span>
+                  </td>
+                  <td className="p-4 text-right">
+                    <span className={org.patternSignals > 0 ? 'text-pink-400 font-medium' : 'text-[#757575]'}>
+                      {org.patternSignals}
+                    </span>
+                  </td>
+                  <td className="p-4 text-right">
+                    <span className={org.connectionSignals > 0 ? 'text-indigo-400 font-medium' : 'text-[#757575]'}>
+                      {org.connectionSignals}
+                    </span>
+                  </td>
+                  <td className="p-4 text-center">
+                    <ChevronDown className={`w-4 h-4 text-[#757575] transition-transform ${expandedOrg === org.id ? 'rotate-180' : ''}`} />
+                  </td>
+                </tr>
+                {expandedOrg === org.id && org.recentFacts.length > 0 && (
+                  <tr key={`${org.id}-details`}>
+                    <td colSpan={8} className="p-0">
+                      <div className="bg-[#0d0d0d] p-4 border-b border-[#2e2e2e]">
+                        <div className="text-[#757575] text-xs uppercase mb-3">Recent Facts Extracted</div>
+                        <div className="space-y-2">
+                          {org.recentFacts.map((fact: any) => (
+                            <div key={fact.id} className="flex items-start gap-3 text-sm">
+                              <span className={`px-2 py-0.5 rounded text-xs ${
+                                fact.fact_type === 'expansion' ? 'bg-green-500/10 text-green-400' :
+                                fact.fact_type === 'partnership' ? 'bg-blue-500/10 text-blue-400' :
+                                fact.fact_type === 'acquisition' ? 'bg-purple-500/10 text-purple-400' :
+                                fact.fact_type === 'leadership_change' ? 'bg-orange-500/10 text-orange-400' :
+                                fact.fact_type === 'financial' ? 'bg-yellow-500/10 text-yellow-400' :
+                                fact.fact_type === 'crisis' ? 'bg-red-500/10 text-red-400' :
+                                'bg-[#3d3d3d] text-[#9e9e9e]'
+                              }`}>
+                                {fact.fact_type}
+                              </span>
+                              <span className="text-[#bdbdbd] flex-1">{fact.fact_summary}</span>
+                              <span className="text-[#757575] text-xs whitespace-nowrap">
+                                {formatFullDateET(fact.extracted_at)} ET
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </>
+            ))}
+          </tbody>
+        </table>
+
+        {stats.length === 0 && (
+          <div className="p-12 text-center">
+            <Target className="w-12 h-12 text-[#3d3d3d] mx-auto mb-4" />
+            <p className="text-[#757575]">No intelligence data yet</p>
+            <p className="text-[#5a5a5a] text-sm mt-1">Run the fact extraction function to populate data</p>
+          </div>
+        )}
       </div>
     </div>
   )

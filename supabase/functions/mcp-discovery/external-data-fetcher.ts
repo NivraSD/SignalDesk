@@ -144,6 +144,102 @@ export async function searchWebForCompetitors(organizationName: string): Promise
   }
 }
 
+// Search web for current products/services using niv-fireplexity (Firecrawl-powered search)
+// This helps overcome Claude's knowledge cutoff for recently released products
+export async function searchWebForCurrentProducts(organizationName: string): Promise<{
+  products: string[],
+  services: string[],
+  recentLaunches: string[],
+  rawSnippets: string[]
+}> {
+  console.log(`🔍 Searching web for ${organizationName} current products/services via niv-fireplexity`);
+
+  try {
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+    const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+    // Call niv-fireplexity for comprehensive web search
+    const searchQuery = `${organizationName} products services offerings 2025 latest`;
+
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/niv-fireplexity`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        query: searchQuery,
+        searchMode: 'quick', // Fast search for discovery
+        useCache: true,
+        organizationId: organizationName
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`niv-fireplexity error: ${response.status} - ${errorText}`);
+      return { products: [], services: [], recentLaunches: [], rawSnippets: [] };
+    }
+
+    const data = await response.json();
+
+    if (!data.success || !data.results) {
+      console.log(`   ⚠️ No results from niv-fireplexity`);
+      return { products: [], services: [], recentLaunches: [], rawSnippets: [] };
+    }
+
+    // Extract relevant snippets from search results
+    const rawSnippets: string[] = [];
+    const products = new Set<string>();
+    const recentLaunches = new Set<string>();
+
+    for (const result of data.results.slice(0, 10)) {
+      // Add title and description as snippets
+      if (result.title && result.title.length > 10) {
+        rawSnippets.push(result.title);
+      }
+      if (result.description && result.description.length > 30) {
+        rawSnippets.push(result.description);
+      }
+
+      // Extract from content if available
+      if (result.content) {
+        // Get first few sentences
+        const sentences = result.content.split(/[.!?]/).slice(0, 3);
+        for (const sentence of sentences) {
+          const cleaned = sentence.trim();
+          if (cleaned.length > 30 && cleaned.length < 300) {
+            rawSnippets.push(cleaned);
+          }
+        }
+      }
+    }
+
+    // Also use the summary if available
+    if (data.summary && data.summary.length > 50) {
+      rawSnippets.unshift(data.summary);
+    }
+
+    console.log(`   ✅ niv-fireplexity returned ${data.results.length} results, extracted ${rawSnippets.length} snippets`);
+
+    return {
+      products: Array.from(products).slice(0, 10),
+      services: [],
+      recentLaunches: Array.from(recentLaunches).slice(0, 5),
+      rawSnippets: rawSnippets.slice(0, 15)
+    };
+
+  } catch (error) {
+    console.error('niv-fireplexity search error:', error);
+    return {
+      products: [],
+      services: [],
+      recentLaunches: [],
+      rawSnippets: []
+    };
+  }
+}
+
 // Combined fetcher that uses both sources
 export async function fetchRealTimeCompetitors(organizationName: string): Promise<{
   yahooFinance: string[],
