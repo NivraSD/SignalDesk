@@ -203,6 +203,34 @@ export default function Dashboard() {
     }
   }, [organization?.id])
 
+  // Real-time subscription for opportunities in Hub
+  useEffect(() => {
+    if (!organization?.id) return
+
+    const channel = supabase
+      .channel('hub-opportunities-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'opportunities',
+          filter: `organization_id=eq.${organization.id}`
+        },
+        (payload) => {
+          console.log('🔔 Hub: Opportunities change detected', payload.eventType)
+          loadOpportunities()
+        }
+      )
+      .subscribe((status) => {
+        console.log('🔔 Hub opportunities subscription status:', status)
+      })
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [organization?.id])
+
   const loadOpportunities = async () => {
     if (!organization?.id) return
 

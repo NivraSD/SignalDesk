@@ -37,16 +37,53 @@ export default function GeoIntelModule() {
         .eq('signal_type', 'geo_synthesis')
         .order('created_at', { ascending: false })
         .limit(1)
-        .single()
 
-      if (!error && data?.data) {
-        setGeoResults(data.data)
+      if (!error && data && data.length > 0 && data[0]?.data) {
+        console.log('📊 Loaded saved GEO synthesis from database')
+        setGeoResults(data[0].data)
+      } else {
+        console.log('No existing GEO synthesis found')
       }
     } catch (error) {
       // No existing results, that's fine
-      console.log('No existing GEO synthesis found')
+      console.log('No existing GEO synthesis found:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  // Save GEO results to database for persistence
+  const saveGeoResults = async (results: any) => {
+    if (!organization?.id || !results) return
+
+    try {
+      // Delete old synthesis for this org (keep only latest)
+      await supabase
+        .from('geo_intelligence')
+        .delete()
+        .eq('organization_id', organization.id)
+        .eq('signal_type', 'geo_synthesis')
+
+      // Save new synthesis
+      const { error } = await supabase
+        .from('geo_intelligence')
+        .insert({
+          organization_id: organization.id,
+          signal_type: 'geo_synthesis',
+          platform: 'all',
+          priority: 'high',
+          data: results,
+          recommendation: null,
+          created_at: new Date().toISOString()
+        })
+
+      if (error) {
+        console.error('Failed to save GEO synthesis:', error)
+      } else {
+        console.log('✅ GEO synthesis saved to database')
+      }
+    } catch (error) {
+      console.error('Error saving GEO synthesis:', error)
     }
   }
 
@@ -186,6 +223,10 @@ export default function GeoIntelModule() {
       }
 
       setGeoResults(monitorData)
+
+      // Save to database for persistence across refreshes
+      await saveGeoResults(monitorData)
+
       setScanProgress('')
     } catch (error: any) {
       console.error('GEO scan failed:', error)

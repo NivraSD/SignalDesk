@@ -671,8 +671,160 @@ async function testGeminiMetaAnalysis(
   industry: string,
   website: string | undefined
 ): Promise<any[]> {
-  console.log('⚠️ Gemini meta-analysis not yet implemented, using fallback')
-  return testGeminiVisibility(queries, organizationName)
+  console.log(`🔮 Running Gemini meta-analysis for ${organizationName}`)
+  console.log(`📋 Testing ${queries.length} queries: ${queries.slice(0, 5).map(q => q.query).join(' | ')}`)
+
+  const GOOGLE_API_KEY = Deno.env.get('GOOGLE_API_KEY')
+  if (!GOOGLE_API_KEY) {
+    console.log('⚠️ Google API key not found, skipping Gemini')
+    return []
+  }
+
+  const signals: any[] = []
+
+  try {
+    // Use same meta-analysis prompt approach as Claude
+    const prompt = buildMetaAnalysisPrompt(organizationName, industry, website, queries)
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key=${GOOGLE_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            role: 'user',
+            parts: [{ text: prompt }]
+          }],
+          generationConfig: {
+            temperature: 0.3,
+            maxOutputTokens: 4096
+          },
+          tools: [{ google_search: {} }]
+        })
+      }
+    )
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('❌ Gemini API error:', errorText)
+      return []
+    }
+
+    const data = await response.json()
+    const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
+
+    // Extract grounding sources if available
+    const groundingMetadata = data.candidates?.[0]?.groundingMetadata
+    const groundingSources = groundingMetadata?.groundingChunks?.map((chunk: any) => ({
+      url: chunk.web?.uri || '',
+      title: chunk.web?.title || ''
+    })) || []
+
+    console.log(`📚 Gemini grounding sources: ${groundingSources.length}`)
+    if (groundingSources.length > 0) {
+      console.log(`   Sources: ${groundingSources.slice(0, 3).map((s: any) => s.url).join(', ')}`)
+    }
+
+    // Parse JSON response (same as Claude)
+    let analysis: any
+    try {
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/)
+      if (jsonMatch) {
+        analysis = JSON.parse(jsonMatch[0])
+        console.log('✅ Parsed Gemini meta-analysis:', {
+          overall_visibility: analysis.overall_visibility,
+          query_results_count: analysis.query_results?.length || 0,
+          recommendations_count: analysis.recommendations?.length || 0
+        })
+      } else {
+        throw new Error('No JSON found in response')
+      }
+    } catch (parseError) {
+      console.error('❌ Failed to parse Gemini meta-analysis:', parseError)
+      console.log('Raw response preview:', responseText.substring(0, 500))
+      return []
+    }
+
+    // Convert to signals (same structure as Claude)
+    for (const queryResult of (analysis.query_results || [])) {
+      if (queryResult.target_mentioned) {
+        signals.push({
+          type: 'ai_visibility',
+          platform: 'gemini',
+          priority: queryResult.target_rank <= 3 ? 'high' : 'medium',
+          data: {
+            query: queryResult.query,
+            mentioned: true,
+            position: queryResult.target_rank || 999,
+            context: queryResult.why_these_appeared,
+            competitors_mentioned: queryResult.organizations_mentioned || [],
+            sources_cited: queryResult.sources_cited || groundingSources.map((s: any) => s.url),
+            meta_insights: {
+              what_target_needs: queryResult.what_target_needs
+            }
+          },
+          recommendation: {
+            action: queryResult.target_rank > 3 ? 'improve_ranking' : 'maintain_visibility',
+            reasoning: `Ranked #${queryResult.target_rank}: ${queryResult.why_these_appeared}`
+          }
+        })
+      } else {
+        signals.push({
+          type: 'visibility_gap',
+          platform: 'gemini',
+          priority: 'high',
+          data: {
+            query: queryResult.query,
+            mentioned: false,
+            competitors_mentioned: queryResult.organizations_mentioned || [],
+            sources_cited: queryResult.sources_cited || groundingSources.map((s: any) => s.url),
+            meta_insights: {
+              why_missing: queryResult.why_these_appeared,
+              what_target_needs: queryResult.what_target_needs
+            }
+          },
+          recommendation: {
+            action: 'improve_visibility',
+            reasoning: queryResult.what_target_needs
+          }
+        })
+      }
+    }
+
+    // Add competitive intelligence signal
+    if (analysis.competitive_intelligence) {
+      signals.push({
+        type: 'competitive_intelligence',
+        platform: 'gemini',
+        priority: 'medium',
+        data: {
+          ...analysis.competitive_intelligence,
+          grounding_sources: groundingSources
+        }
+      })
+    }
+
+    // Add source intelligence signal
+    if (analysis.source_intelligence) {
+      signals.push({
+        type: 'source_intelligence',
+        platform: 'gemini',
+        priority: 'medium',
+        data: {
+          ...analysis.source_intelligence,
+          grounding_sources: groundingSources
+        }
+      })
+    }
+
+    console.log(`✅ Gemini meta-analysis complete: ${signals.length} signals`)
+
+  } catch (error) {
+    console.error('❌ Gemini meta-analysis error:', error)
+  }
+
+  return signals
 }
 
 async function testPerplexityMetaAnalysis(
@@ -819,7 +971,8 @@ async function testGeminiVisibility(
       )
 
       if (!response.ok) {
-        console.error('Gemini API error:', await response.text())
+        const errorText = await response.text()
+        console.error(`Gemini API error for "${q.query}":`, errorText)
         continue
       }
 
@@ -827,12 +980,31 @@ async function testGeminiVisibility(
       const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
 
       // EXTRACT GROUNDING SOURCES (the goldmine for PR!)
-      const groundingMetadata = data.candidates?.[0]?.groundingMetadata
-      const sources = groundingMetadata?.groundingChunks?.map((chunk: any) => ({
-        url: chunk.web?.uri || '',
-        title: chunk.web?.title || '',
-        snippet: chunk.web?.snippet || ''
-      })) || []
+      // Check multiple possible locations for grounding data
+      const candidate = data.candidates?.[0]
+      const groundingMetadata = candidate?.groundingMetadata ||
+                                candidate?.groundingChunks ||
+                                data.groundingMetadata
+
+      // Try different paths for sources
+      let sources: any[] = []
+      if (groundingMetadata?.groundingChunks) {
+        sources = groundingMetadata.groundingChunks.map((chunk: any) => ({
+          url: chunk.web?.uri || chunk.uri || '',
+          title: chunk.web?.title || chunk.title || '',
+          snippet: chunk.web?.snippet || chunk.snippet || ''
+        }))
+      } else if (groundingMetadata?.searchEntryPoint?.renderedContent) {
+        // Alternative: rendered content from search
+        console.log(`  📄 Gemini has searchEntryPoint but no chunks for "${q.query}"`)
+      } else if (groundingMetadata?.webSearchQueries) {
+        console.log(`  🔎 Gemini searched: ${groundingMetadata.webSearchQueries.join(', ')}`)
+      }
+
+      // Log raw grounding metadata structure for debugging
+      if (sources.length === 0 && groundingMetadata) {
+        console.log(`  🔍 Grounding metadata keys: ${Object.keys(groundingMetadata).join(', ')}`)
+      }
 
       console.log(`  📚 Gemini cited ${sources.length} sources for "${q.query}"`)
       if (sources.length > 0) {

@@ -99,6 +99,8 @@ export default function OpportunitiesModule() {
 
     // Subscribe to real-time changes on opportunities table
     let channel: ReturnType<typeof supabase.channel> | null = null
+    let isRealtimeConnected = false
+    let pollInterval: NodeJS.Timeout | null = null
 
     if (organization?.id) {
       channel = supabase
@@ -118,20 +120,36 @@ export default function OpportunitiesModule() {
         )
         .subscribe((status) => {
           console.log('🔔 OpportunitiesModule subscription status:', status)
+          isRealtimeConnected = status === 'SUBSCRIBED'
+
+          // Stop polling if realtime is connected
+          if (isRealtimeConnected && pollInterval) {
+            console.log('🔔 Realtime connected - stopping polling')
+            clearInterval(pollInterval)
+            pollInterval = null
+          }
         })
     }
 
-    // Polling fallback every 30 seconds (in case realtime fails)
-    const pollInterval = setInterval(() => {
-      console.log('🔄 OpportunitiesModule: Polling for updates...')
-      fetchOpportunities()
-    }, 30000)
+    // Only start polling if realtime fails to connect after 5 seconds
+    const pollStartTimeout = setTimeout(() => {
+      if (!isRealtimeConnected) {
+        console.log('🔄 Realtime not connected - starting polling fallback')
+        pollInterval = setInterval(() => {
+          console.log('🔄 OpportunitiesModule: Polling for updates...')
+          fetchOpportunities()
+        }, 30000)
+      }
+    }, 5000)
 
     return () => {
       if (channel) {
         supabase.removeChannel(channel)
       }
-      clearInterval(pollInterval)
+      if (pollInterval) {
+        clearInterval(pollInterval)
+      }
+      clearTimeout(pollStartTimeout)
     }
   }, [organization])
 
