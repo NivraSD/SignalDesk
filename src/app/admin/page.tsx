@@ -34,14 +34,15 @@ import {
   Link2,
   Rss,
   Search,
-  Layers
+  Layers,
+  Brain
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { isPlatformAdmin } from '@/lib/admin/config'
 import { Logo } from '@/components/ui/Logo'
 
-type AdminView = 'overview' | 'pipeline' | 'scraping' | 'users' | 'sources' | 'intelligence'
+type AdminView = 'overview' | 'pipeline' | 'scraping' | 'users' | 'sources' | 'intelligence' | 'learning'
 
 // Helper to format dates in Eastern Time
 const formatDateET = (dateStr: string, options?: Intl.DateTimeFormatOptions) => {
@@ -119,6 +120,7 @@ export default function AdminDashboard() {
   const [orgs, setOrgs] = useState<any[]>([])
   const [pipelineRuns, setPipelineRuns] = useState<any[]>([])
   const [intelligenceStats, setIntelligenceStats] = useState<any[]>([])
+  const [learningData, setLearningData] = useState<any>(null)
 
   // Check admin access
   useEffect(() => {
@@ -269,6 +271,80 @@ export default function AdminDashboard() {
       .select('id,name,industry,created_at')
       .order('created_at', { ascending: false })
     setOrgs(data || [])
+  }
+
+  async function loadLearningData() {
+    try {
+      const [
+        predictionsResult,
+        accuracyMetricsResult,
+        amplificationResult,
+        cascadePatternsResult,
+        cascadeAlertsResult
+      ] = await Promise.all([
+        // Recent predictions from signal_outcomes
+        supabase
+          .from('signal_outcomes')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(50),
+        // Accuracy metrics per target
+        supabase
+          .from('signal_accuracy_metrics')
+          .select('*')
+          .order('total_predictions', { ascending: false })
+          .limit(20),
+        // Entity amplification (high scores)
+        supabase
+          .from('entity_signal_amplification')
+          .select('*')
+          .gte('amplification_score', 30)
+          .order('amplification_score', { ascending: false })
+          .limit(20),
+        // Cascade patterns
+        supabase
+          .from('cascade_patterns')
+          .select('*')
+          .eq('is_active', true)
+          .order('confidence', { ascending: false }),
+        // Recent cascade alerts (signals with type cascade_alert)
+        supabase
+          .from('signals')
+          .select('*')
+          .eq('signal_type', 'cascade_alert')
+          .order('created_at', { ascending: false })
+          .limit(10)
+      ])
+
+      // Calculate summary stats
+      const predictions = predictionsResult.data || []
+      const totalPredictions = predictions.length
+      const validatedPredictions = predictions.filter(p => p.validation_status !== 'pending')
+      const accuratePredictions = predictions.filter(p => p.validation_status === 'accurate')
+      const overallAccuracy = validatedPredictions.length > 0
+        ? (accuratePredictions.length / validatedPredictions.length * 100).toFixed(1)
+        : null
+
+      setLearningData({
+        predictions,
+        accuracyMetrics: accuracyMetricsResult.data || [],
+        amplification: amplificationResult.data || [],
+        cascadePatterns: cascadePatternsResult.data || [],
+        cascadeAlerts: cascadeAlertsResult.data || [],
+        summary: {
+          totalPredictions,
+          pendingValidation: predictions.filter(p => p.validation_status === 'pending').length,
+          validated: validatedPredictions.length,
+          accurate: accuratePredictions.length,
+          inaccurate: predictions.filter(p => p.validation_status === 'inaccurate').length,
+          inconclusive: predictions.filter(p => p.validation_status === 'inconclusive').length,
+          overallAccuracy
+        }
+      })
+    } catch (error) {
+      console.error('Failed to load learning data:', error)
+      setLearningData({ predictions: [], accuracyMetrics: [], amplification: [], cascadePatterns: [], cascadeAlerts: [], summary: {} })
+    }
   }
 
   async function loadPipelineRuns() {
@@ -632,6 +708,7 @@ export default function AdminDashboard() {
               { id: 'overview', label: 'Overview', icon: BarChart3 },
               { id: 'pipeline', label: 'Pipeline', icon: Activity },
               { id: 'intelligence', label: 'Intelligence', icon: Target },
+              { id: 'learning', label: 'Learning', icon: Brain },
               { id: 'scraping', label: 'Scraping', icon: Database },
               { id: 'users', label: 'Users & Orgs', icon: Users },
               { id: 'sources', label: 'Sources', icon: Globe },
@@ -644,6 +721,8 @@ export default function AdminDashboard() {
                     loadPipelineRuns()
                   } else if (item.id === 'intelligence') {
                     loadIntelligenceStats()
+                  } else if (item.id === 'learning') {
+                    loadLearningData()
                   } else if (item.id === 'scraping') {
                     loadAllScrapeRuns()
                     loadRawArticles()
@@ -820,6 +899,12 @@ export default function AdminDashboard() {
               onRefresh={loadIntelligenceStats}
               onTrigger={triggerScrape}
               isTriggering={triggeringScrape}
+            />
+          )}
+          {activeView === 'learning' && (
+            <LearningView
+              data={learningData}
+              onRefresh={loadLearningData}
             />
           )}
         </main>
@@ -1936,6 +2021,395 @@ function IntelligenceView({
           </div>
         )}
       </div>
+    </div>
+  )
+}
+
+// ============================================================================
+// LEARNING VIEW - Prediction tracking, accuracy, and pattern learning
+// ============================================================================
+function LearningView({
+  data,
+  onRefresh
+}: {
+  data: any
+  onRefresh: () => void
+}) {
+  const [activeTab, setActiveTab] = useState<'predictions' | 'accuracy' | 'amplification' | 'cascades'>('predictions')
+
+  if (!data) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <Brain className="w-12 h-12 text-[#3d3d3d] mx-auto mb-4" />
+          <p className="text-[#757575]">Loading learning system data...</p>
+          <button
+            onClick={onRefresh}
+            className="mt-4 px-4 py-2 bg-[#c75d3a] hover:bg-[#d66c4a] rounded-lg text-sm text-white transition-colors"
+          >
+            Load Data
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  const { predictions, accuracyMetrics, amplification, cascadePatterns, cascadeAlerts, summary } = data
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl text-white font-semibold mb-2 flex items-center gap-3">
+            Intelligence Learning System
+            <span className="px-2 py-0.5 text-xs font-semibold uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded">
+              Beta
+            </span>
+          </h1>
+          <p className="text-[#757575]">Track prediction accuracy, cross-org patterns, and cascade detection</p>
+        </div>
+        <button
+          onClick={onRefresh}
+          className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] hover:bg-[#2e2e2e] rounded-lg text-sm text-[#bdbdbd] transition-colors"
+        >
+          <RefreshCw className="w-4 h-4" />
+          Refresh
+        </button>
+      </div>
+
+      {/* Summary Stats */}
+      <div className="grid grid-cols-6 gap-4">
+        <div className="bg-[#1a1a1a] rounded-xl border border-[#2e2e2e] p-4">
+          <div className="text-[#757575] text-xs uppercase mb-1">Total Predictions</div>
+          <div className="text-2xl text-white font-bold">{summary.totalPredictions || 0}</div>
+        </div>
+        <div className="bg-[#1a1a1a] rounded-xl border border-[#2e2e2e] p-4">
+          <div className="text-[#757575] text-xs uppercase mb-1">Pending Validation</div>
+          <div className="text-2xl text-yellow-400 font-bold">{summary.pendingValidation || 0}</div>
+        </div>
+        <div className="bg-[#1a1a1a] rounded-xl border border-[#2e2e2e] p-4">
+          <div className="text-[#757575] text-xs uppercase mb-1">Validated</div>
+          <div className="text-2xl text-blue-400 font-bold">{summary.validated || 0}</div>
+        </div>
+        <div className="bg-[#1a1a1a] rounded-xl border border-[#2e2e2e] p-4">
+          <div className="text-[#757575] text-xs uppercase mb-1">Accurate</div>
+          <div className="text-2xl text-green-400 font-bold">{summary.accurate || 0}</div>
+        </div>
+        <div className="bg-[#1a1a1a] rounded-xl border border-[#2e2e2e] p-4">
+          <div className="text-[#757575] text-xs uppercase mb-1">Inaccurate</div>
+          <div className="text-2xl text-red-400 font-bold">{summary.inaccurate || 0}</div>
+        </div>
+        <div className="bg-gradient-to-br from-[#1a1a1a] to-[#2e2e2e] rounded-xl border border-[#3d3d3d] p-4">
+          <div className="text-[#757575] text-xs uppercase mb-1">Overall Accuracy</div>
+          <div className="text-2xl font-bold">
+            {summary.overallAccuracy ? (
+              <span className={parseFloat(summary.overallAccuracy) >= 60 ? 'text-green-400' : parseFloat(summary.overallAccuracy) >= 40 ? 'text-yellow-400' : 'text-red-400'}>
+                {summary.overallAccuracy}%
+              </span>
+            ) : (
+              <span className="text-[#5a5a5a]">--</span>
+            )}
+          </div>
+          <div className="text-[#5a5a5a] text-xs mt-1">Target: &gt;60%</div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-2 border-b border-[#2e2e2e] pb-2">
+        {[
+          { id: 'predictions', label: 'Predictions', count: predictions.length },
+          { id: 'accuracy', label: 'Accuracy by Target', count: accuracyMetrics.length },
+          { id: 'amplification', label: 'Cross-Org Amplification', count: amplification.length },
+          { id: 'cascades', label: 'Cascade Patterns', count: cascadePatterns.length }
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as any)}
+            className={`px-4 py-2 rounded-lg text-sm transition-colors flex items-center gap-2 ${
+              activeTab === tab.id
+                ? 'bg-[#c75d3a] text-white'
+                : 'bg-[#1a1a1a] text-[#9e9e9e] hover:text-white hover:bg-[#2e2e2e]'
+            }`}
+          >
+            {tab.label}
+            <span className={`text-xs px-1.5 py-0.5 rounded ${activeTab === tab.id ? 'bg-white/20' : 'bg-[#3d3d3d]'}`}>
+              {tab.count}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'predictions' && (
+        <div className="bg-[#1a1a1a] rounded-xl border border-[#2e2e2e] overflow-hidden">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-[#2e2e2e]">
+                <th className="text-left p-4 text-[#757575] text-xs font-semibold uppercase">Prediction</th>
+                <th className="text-center p-4 text-[#757575] text-xs font-semibold uppercase">Confidence</th>
+                <th className="text-center p-4 text-[#757575] text-xs font-semibold uppercase">Timeframe</th>
+                <th className="text-center p-4 text-[#757575] text-xs font-semibold uppercase">Status</th>
+                <th className="text-left p-4 text-[#757575] text-xs font-semibold uppercase">Created</th>
+              </tr>
+            </thead>
+            <tbody>
+              {predictions.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="p-12 text-center">
+                    <Sparkles className="w-12 h-12 text-[#3d3d3d] mx-auto mb-4" />
+                    <p className="text-[#757575]">No predictions generated yet</p>
+                    <p className="text-[#5a5a5a] text-sm mt-1">Predictions are created from signals automatically</p>
+                  </td>
+                </tr>
+              ) : predictions.map((p: any) => (
+                <tr key={p.id} className="border-b border-[#2e2e2e] hover:bg-[#212121]">
+                  <td className="p-4">
+                    <div className="text-white text-sm font-medium mb-1 line-clamp-1">{p.predicted_outcome}</div>
+                    <div className="text-[#757575] text-xs line-clamp-1">
+                      Verify: {p.verification_criteria || 'N/A'}
+                    </div>
+                  </td>
+                  <td className="p-4 text-center">
+                    <span className={`font-medium ${
+                      p.confidence_score >= 0.7 ? 'text-green-400' :
+                      p.confidence_score >= 0.5 ? 'text-yellow-400' :
+                      'text-red-400'
+                    }`}>
+                      {Math.round((p.confidence_score || 0) * 100)}%
+                    </span>
+                  </td>
+                  <td className="p-4 text-center text-[#9e9e9e] text-sm">
+                    {p.prediction_timeframe_days || '?'} days
+                  </td>
+                  <td className="p-4 text-center">
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${
+                      p.validation_status === 'accurate' ? 'bg-green-500/20 text-green-400' :
+                      p.validation_status === 'inaccurate' ? 'bg-red-500/20 text-red-400' :
+                      p.validation_status === 'inconclusive' ? 'bg-gray-500/20 text-gray-400' :
+                      'bg-yellow-500/20 text-yellow-400'
+                    }`}>
+                      {p.validation_status || 'pending'}
+                    </span>
+                  </td>
+                  <td className="p-4 text-[#757575] text-sm whitespace-nowrap">
+                    {formatFullDateET(p.created_at)} ET
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {activeTab === 'accuracy' && (
+        <div className="bg-[#1a1a1a] rounded-xl border border-[#2e2e2e] overflow-hidden">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-[#2e2e2e]">
+                <th className="text-left p-4 text-[#757575] text-xs font-semibold uppercase">Target</th>
+                <th className="text-center p-4 text-[#757575] text-xs font-semibold uppercase">Total</th>
+                <th className="text-center p-4 text-[#757575] text-xs font-semibold uppercase">Accurate</th>
+                <th className="text-center p-4 text-[#757575] text-xs font-semibold uppercase">Accuracy Rate</th>
+                <th className="text-center p-4 text-[#757575] text-xs font-semibold uppercase">Avg Confidence</th>
+                <th className="text-center p-4 text-[#757575] text-xs font-semibold uppercase">Calibration</th>
+              </tr>
+            </thead>
+            <tbody>
+              {accuracyMetrics.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="p-12 text-center">
+                    <Target className="w-12 h-12 text-[#3d3d3d] mx-auto mb-4" />
+                    <p className="text-[#757575]">No accuracy metrics yet</p>
+                    <p className="text-[#5a5a5a] text-sm mt-1">Metrics populate as predictions are validated</p>
+                  </td>
+                </tr>
+              ) : accuracyMetrics.map((m: any) => {
+                const calibrationError = m.avg_confidence && m.accuracy_rate
+                  ? Math.abs(m.avg_confidence - m.accuracy_rate)
+                  : null
+                return (
+                  <tr key={m.id} className="border-b border-[#2e2e2e] hover:bg-[#212121]">
+                    <td className="p-4">
+                      <div className="text-white text-sm font-medium">{m.target_name || 'Unknown'}</div>
+                      <div className="text-[#757575] text-xs">{m.target_type || ''}</div>
+                    </td>
+                    <td className="p-4 text-center text-white font-medium">{m.total_predictions || 0}</td>
+                    <td className="p-4 text-center text-green-400">{m.accurate_predictions || 0}</td>
+                    <td className="p-4 text-center">
+                      <span className={`font-bold ${
+                        (m.accuracy_rate || 0) >= 0.6 ? 'text-green-400' :
+                        (m.accuracy_rate || 0) >= 0.4 ? 'text-yellow-400' :
+                        'text-red-400'
+                      }`}>
+                        {Math.round((m.accuracy_rate || 0) * 100)}%
+                      </span>
+                    </td>
+                    <td className="p-4 text-center text-[#9e9e9e]">
+                      {Math.round((m.avg_confidence || 0) * 100)}%
+                    </td>
+                    <td className="p-4 text-center">
+                      {calibrationError !== null ? (
+                        <span className={`${calibrationError <= 0.1 ? 'text-green-400' : calibrationError <= 0.2 ? 'text-yellow-400' : 'text-red-400'}`}>
+                          {calibrationError <= 0.1 ? 'Good' : calibrationError <= 0.2 ? 'Fair' : 'Poor'}
+                        </span>
+                      ) : (
+                        <span className="text-[#5a5a5a]">--</span>
+                      )}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {activeTab === 'amplification' && (
+        <div className="bg-[#1a1a1a] rounded-xl border border-[#2e2e2e] overflow-hidden">
+          <div className="p-4 border-b border-[#2e2e2e]">
+            <p className="text-[#9e9e9e] text-sm">
+              Entities appearing in signals across multiple organizations. High amplification = significant market-wide trend.
+            </p>
+          </div>
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-[#2e2e2e]">
+                <th className="text-left p-4 text-[#757575] text-xs font-semibold uppercase">Entity</th>
+                <th className="text-center p-4 text-[#757575] text-xs font-semibold uppercase">Signal Count</th>
+                <th className="text-center p-4 text-[#757575] text-xs font-semibold uppercase">Orgs</th>
+                <th className="text-center p-4 text-[#757575] text-xs font-semibold uppercase">Industries</th>
+                <th className="text-center p-4 text-[#757575] text-xs font-semibold uppercase">Velocity</th>
+                <th className="text-center p-4 text-[#757575] text-xs font-semibold uppercase">Amplification</th>
+              </tr>
+            </thead>
+            <tbody>
+              {amplification.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="p-12 text-center">
+                    <Globe className="w-12 h-12 text-[#3d3d3d] mx-auto mb-4" />
+                    <p className="text-[#757575]">No cross-org amplification detected</p>
+                    <p className="text-[#5a5a5a] text-sm mt-1">This tracks entities appearing across multiple organizations</p>
+                  </td>
+                </tr>
+              ) : amplification.map((a: any) => (
+                <tr key={a.id} className="border-b border-[#2e2e2e] hover:bg-[#212121]">
+                  <td className="p-4">
+                    <div className="text-white text-sm font-medium">{a.entity_name}</div>
+                    <div className="text-[#757575] text-xs">{a.entity_type || 'entity'}</div>
+                  </td>
+                  <td className="p-4 text-center text-white">{a.signal_count || 0}</td>
+                  <td className="p-4 text-center text-blue-400 font-medium">{a.organization_count || 0}</td>
+                  <td className="p-4 text-center text-[#9e9e9e]">{a.industry_count || 0}</td>
+                  <td className="p-4 text-center text-[#9e9e9e]">
+                    {(a.velocity || 0).toFixed(1)}/day
+                  </td>
+                  <td className="p-4 text-center">
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="w-16 h-2 bg-[#2e2e2e] rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full ${
+                            a.amplification_score >= 70 ? 'bg-red-500' :
+                            a.amplification_score >= 50 ? 'bg-orange-500' :
+                            'bg-yellow-500'
+                          }`}
+                          style={{ width: `${Math.min(a.amplification_score, 100)}%` }}
+                        />
+                      </div>
+                      <span className={`font-bold text-sm ${
+                        a.amplification_score >= 70 ? 'text-red-400' :
+                        a.amplification_score >= 50 ? 'text-orange-400' :
+                        'text-yellow-400'
+                      }`}>
+                        {Math.round(a.amplification_score)}
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {activeTab === 'cascades' && (
+        <div className="space-y-6">
+          {/* Cascade Patterns */}
+          <div className="bg-[#1a1a1a] rounded-xl border border-[#2e2e2e] overflow-hidden">
+            <div className="p-4 border-b border-[#2e2e2e]">
+              <h3 className="text-white font-medium">Active Cascade Patterns</h3>
+              <p className="text-[#757575] text-sm mt-1">Learned temporal sequences that predict follow-on events</p>
+            </div>
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-[#2e2e2e]">
+                  <th className="text-left p-4 text-[#757575] text-xs font-semibold uppercase">Pattern</th>
+                  <th className="text-center p-4 text-[#757575] text-xs font-semibold uppercase">Times Observed</th>
+                  <th className="text-center p-4 text-[#757575] text-xs font-semibold uppercase">Accuracy</th>
+                  <th className="text-center p-4 text-[#757575] text-xs font-semibold uppercase">Confidence</th>
+                </tr>
+              </thead>
+              <tbody>
+                {cascadePatterns.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="p-8 text-center">
+                      <p className="text-[#757575]">No cascade patterns active</p>
+                    </td>
+                  </tr>
+                ) : cascadePatterns.map((p: any) => (
+                  <tr key={p.id} className="border-b border-[#2e2e2e] hover:bg-[#212121]">
+                    <td className="p-4">
+                      <div className="text-white text-sm font-medium">{p.pattern_name}</div>
+                      <div className="text-[#757575] text-xs line-clamp-1">{p.pattern_description}</div>
+                    </td>
+                    <td className="p-4 text-center text-white">{p.times_observed || 0}</td>
+                    <td className="p-4 text-center">
+                      <span className={`font-medium ${
+                        (p.accuracy_rate || 0) >= 0.6 ? 'text-green-400' :
+                        (p.accuracy_rate || 0) >= 0.4 ? 'text-yellow-400' :
+                        'text-[#757575]'
+                      }`}>
+                        {Math.round((p.accuracy_rate || 0) * 100)}%
+                      </span>
+                    </td>
+                    <td className="p-4 text-center text-[#9e9e9e]">
+                      {Math.round((p.confidence || 0) * 100)}%
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Recent Cascade Alerts */}
+          <div className="bg-[#1a1a1a] rounded-xl border border-[#2e2e2e] overflow-hidden">
+            <div className="p-4 border-b border-[#2e2e2e]">
+              <h3 className="text-white font-medium">Recent Cascade Alerts</h3>
+              <p className="text-[#757575] text-sm mt-1">Signals triggered by cascade pattern matching</p>
+            </div>
+            {cascadeAlerts.length === 0 ? (
+              <div className="p-8 text-center">
+                <p className="text-[#757575]">No cascade alerts generated yet</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-[#2e2e2e]">
+                {cascadeAlerts.map((alert: any) => (
+                  <div key={alert.id} className="p-4 hover:bg-[#212121]">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="text-white font-medium text-sm">{alert.title}</div>
+                        <div className="text-[#757575] text-sm mt-1 line-clamp-2">{alert.description}</div>
+                      </div>
+                      <span className="text-[#757575] text-xs whitespace-nowrap ml-4">
+                        {formatFullDateET(alert.created_at)} ET
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
