@@ -47,7 +47,7 @@ CREATE POLICY "Users can read cached briefs for their org"
   FOR SELECT
   USING (
     organization_id IN (
-      SELECT id FROM organizations WHERE user_id = auth.uid()
+      SELECT organization_id FROM profiles WHERE user_id = auth.uid()
     )
   );
 
