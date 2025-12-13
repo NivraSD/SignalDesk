@@ -47,7 +47,9 @@ type AdminView = 'overview' | 'pipeline' | 'scraping' | 'users' | 'sources' | 'i
 
 // Helper to format dates in Eastern Time
 const formatDateET = (dateStr: string, options?: Intl.DateTimeFormatOptions) => {
-  const date = new Date(dateStr)
+  // Supabase returns timestamps in UTC without 'Z' suffix - add it to ensure proper parsing
+  const utcDateStr = dateStr.includes('Z') || dateStr.includes('+') ? dateStr : dateStr + 'Z'
+  const date = new Date(utcDateStr)
   return date.toLocaleString('en-US', {
     timeZone: 'America/New_York',
     ...options
