@@ -46,6 +46,7 @@ DO $$ BEGIN PERFORM cron.unschedule('generate-predictions'); EXCEPTION WHEN OTHE
 DO $$ BEGIN PERFORM cron.unschedule('learning-predictions'); EXCEPTION WHEN OTHERS THEN NULL; END $$;
 DO $$ BEGIN PERFORM cron.unschedule('pre-generate-briefs'); EXCEPTION WHEN OTHERS THEN NULL; END $$;
 DO $$ BEGIN PERFORM cron.unschedule('morning-pre-generate'); EXCEPTION WHEN OTHERS THEN NULL; END $$;
+DO $$ BEGIN PERFORM cron.unschedule('morning-generate-briefs'); EXCEPTION WHEN OTHERS THEN NULL; END $$;
 
 -- ============================================================================
 -- MORNING PIPELINE: 11:00-12:30 UTC (6:00-7:30 AM EST) -> Ready by 8 AM EST
@@ -204,7 +205,7 @@ SELECT cron.schedule(
   $$
 );
 
--- 12:40 UTC (7:40 AM EST) - Pre-generate briefs (cache for instant dashboard loading)
+-- 12:40 UTC (7:40 AM EST) - Pre-generate article selections (fast cache)
 SELECT cron.schedule(
   'morning-pre-generate',
   '40 12 * * *',
@@ -213,6 +214,19 @@ SELECT cron.schedule(
     url := 'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/pre-generate-briefs',
     headers := '{"Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTEyOTYzNywiZXhwIjoyMDcwNzA1NjM3fQ.WO35k7riuKT2QXj_YvbtRwzLwi3Pev30-X9Yziej2pM", "Content-Type": "application/json"}'::jsonb,
     body := '{"max_orgs": 20, "hours_back": 24}'::jsonb
+  );
+  $$
+);
+
+-- 12:50 UTC (7:50 AM EST) - Generate full executive briefs (relevance + enrichment + synthesis)
+SELECT cron.schedule(
+  'morning-generate-briefs',
+  '50 12 * * *',
+  $$
+  SELECT net.http_post(
+    url := 'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/generate-morning-briefs',
+    headers := '{"Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTEyOTYzNywiZXhwIjoyMDcwNzA1NjM3fQ.WO35k7riuKT2QXj_YvbtRwzLwi3Pev30-X9Yziej2pM", "Content-Type": "application/json"}'::jsonb,
+    body := '{"max_orgs": 10, "hours_back": 24}'::jsonb
   );
   $$
 );
