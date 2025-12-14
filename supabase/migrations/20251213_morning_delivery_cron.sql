@@ -218,18 +218,8 @@ SELECT cron.schedule(
   $$
 );
 
--- 12:50 UTC (7:50 AM EST) - Generate full executive briefs (relevance + enrichment + synthesis)
-SELECT cron.schedule(
-  'morning-generate-briefs',
-  '50 12 * * *',
-  $$
-  SELECT net.http_post(
-    url := 'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/generate-morning-briefs',
-    headers := '{"Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTEyOTYzNywiZXhwIjoyMDcwNzA1NjM3fQ.WO35k7riuKT2QXj_YvbtRwzLwi3Pev30-X9Yziej2pM", "Content-Type": "application/json"}'::jsonb,
-    body := '{"max_orgs": 10, "hours_back": 24}'::jsonb
-  );
-  $$
-);
+-- NOTE: Full synthesis caching disabled for now - users run pipeline on-demand
+-- The pre-generate-briefs job above caches article selections for faster loading
 
 -- ============================================================================
 -- AFTERNOON PIPELINE: 17:00-18:00 UTC (12:00-1:00 PM EST)

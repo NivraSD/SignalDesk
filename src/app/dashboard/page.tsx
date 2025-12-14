@@ -180,30 +180,17 @@ export default function Dashboard() {
   // Load latest synthesis and opportunities when organization changes
   useEffect(() => {
     if (organization?.id) {
-      // First check for cached morning brief (pre-generated for instant load)
-      const loadSynthesis = async () => {
-        try {
-          // Check cached_briefs first (from generate-morning-briefs)
-          const cachedBrief = await IntelligenceService.getCachedBrief(organization.id)
-          if (cachedBrief?.synthesis) {
-            console.log('🎉 Using pre-generated morning brief!')
-            setExecutiveSynthesis(cachedBrief.synthesis)
-            return
-          }
-
-          // Fall back to executive_synthesis table
-          const synthesis = await IntelligenceService.getLatestSynthesis(organization.id)
-          if (synthesis) {
-            setExecutiveSynthesis(synthesis.synthesis_data || synthesis)
-          } else {
-            setExecutiveSynthesis(null)
-          }
-        } catch (error) {
-          console.error('Failed to load synthesis:', error)
+      // Load latest synthesis
+      IntelligenceService.getLatestSynthesis(organization.id).then(synthesis => {
+        if (synthesis) {
+          setExecutiveSynthesis(synthesis.synthesis_data || synthesis)
+        } else {
           setExecutiveSynthesis(null)
         }
-      }
-      loadSynthesis()
+      }).catch(error => {
+        console.error('Failed to load synthesis:', error)
+        setExecutiveSynthesis(null)
+      })
 
       // Load opportunities
       loadOpportunities()

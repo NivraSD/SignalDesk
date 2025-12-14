@@ -59,35 +59,6 @@ export class IntelligenceService {
       console.log('🚀 Starting pipeline for organization:', orgName, 'Industry:', industry)
       console.log('📋 organizationId parameter:', organizationId, 'Type:', typeof organizationId)
 
-      // CHECK FOR CACHED BRIEF FIRST (pre-generated morning briefs)
-      const cachedBrief = await IntelligenceService.getCachedBrief(organizationId)
-      if (cachedBrief) {
-        console.log('🎉 Using pre-generated morning brief! Skipping full pipeline.')
-        onProgress?.('cached-brief', 'completed', cachedBrief)
-
-        // Return cached data in the same format as the pipeline would
-        return {
-          pipelineRunId: `cached-${Date.now()}`,
-          success: true,
-          fromCache: true,
-          cachedAt: cachedBrief.generated_at,
-          discoveryData: null,
-          articleSelectionData: { articles: cachedBrief.articles || [] },
-          enrichmentData: cachedBrief.enriched_data,
-          executiveSynthesis: cachedBrief.synthesis,
-          synthesis: cachedBrief.synthesis,
-          opportunities: cachedBrief.synthesis?.opportunities || [],
-          statistics: {
-            articlesSelected: cachedBrief.articles?.length || 0,
-            avgRelevanceScore: 0,
-            eventsExtracted: cachedBrief.enriched_data?.extracted_data?.events?.length || 0,
-            opportunitiesIdentified: cachedBrief.synthesis?.opportunities?.length || 0
-          }
-        }
-      }
-
-      console.log('📦 No cached brief available, running full pipeline...')
-
       // Fetch company profile from database to get product_lines and other key info
       const { data: orgData, error: orgError } = await supabase
         .from('organizations')
@@ -447,35 +418,6 @@ export class IntelligenceService {
   ) {
     try {
       console.log('🔄 Running monitoring pipeline for:', organizationName)
-
-      // CHECK FOR CACHED BRIEF FIRST (pre-generated morning briefs)
-      const cachedBrief = await IntelligenceService.getCachedBrief(organizationId)
-      if (cachedBrief) {
-        console.log('🎉 Using pre-generated morning brief! Skipping full pipeline.')
-        onProgress?.('cached-brief', 'completed', cachedBrief)
-
-        // Return cached data in the same format as the pipeline would
-        return {
-          pipelineRunId: `cached-${Date.now()}`,
-          success: true,
-          fromCache: true,
-          cachedAt: cachedBrief.generated_at,
-          profile: null,
-          articleSelectionData: { articles: cachedBrief.articles || [] },
-          enrichmentData: cachedBrief.enriched_data,
-          executiveSynthesis: cachedBrief.synthesis,
-          synthesis: cachedBrief.synthesis,
-          opportunities: cachedBrief.synthesis?.opportunities || [],
-          statistics: {
-            articlesSelected: cachedBrief.articles?.length || 0,
-            avgRelevanceScore: 0,
-            eventsExtracted: cachedBrief.enriched_data?.extracted_data?.events?.length || 0,
-            opportunitiesIdentified: cachedBrief.synthesis?.opportunities?.length || 0
-          }
-        }
-      }
-
-      console.log('📦 No cached brief available, running full pipeline...')
 
       // STEP 1: Load existing profile from database (don't re-run discovery)
       console.log('📥 Loading existing profile from database...')

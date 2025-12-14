@@ -49,6 +49,9 @@ interface Signal {
   description: string;
   primary_target_name: string | null;
   primary_target_type: string | null;
+  evidence: any | null;
+  reasoning: string | null;
+  business_implication: string | null;
   created_at: string;
 }
 
@@ -109,12 +112,13 @@ serve(async (req) => {
 
     console.log(`   Loaded ${patterns.length} cascade patterns`);
 
-    // Get recent signals
+    // Get recent signals (exclude cascade_alerts to prevent circular triggering)
     let signalQuery = supabase
       .from('signals')
-      .select('id, organization_id, signal_type, signal_subtype, title, description, primary_target_name, primary_target_type, created_at')
+      .select('id, organization_id, signal_type, signal_subtype, title, description, primary_target_name, primary_target_type, evidence, reasoning, business_implication, created_at')
       .gte('created_at', cutoffTime)
       .eq('status', 'active')
+      .neq('signal_type', 'cascade_alert')  // Prevent cascade alerts from triggering on themselves
       .order('created_at', { ascending: false });
 
     if (organizationId) {
@@ -291,12 +295,29 @@ async function createCascadeAlert(
     (new Date(nextStep.expected_date).getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
   );
 
+  // Build context from the trigger signal
+  const triggerContext = triggerSignal.description || triggerSignal.title;
+  const evidencePoints = triggerSignal.evidence?.data_points || [];
+  const triggerReasoning = triggerSignal.reasoning || '';
+
+  // Create a meaningful description that explains WHY this alert was triggered
+  const description = `${pattern.pattern_description || pattern.pattern_name}: ${triggerContext.slice(0, 150)}${triggerContext.length > 150 ? '...' : ''}
+
+Based on this trigger, we expect: ${nextStep.description} within ~${daysUntil} days.`;
+
+  // Build comprehensive reasoning that includes the original evidence
+  const reasoning = `TRIGGER: ${triggerSignal.title}
+
+${triggerReasoning ? `WHY THIS MATTERS: ${triggerReasoning}\n\n` : ''}PATTERN HISTORY: This "${pattern.pattern_name}" cascade has been observed ${pattern.times_observed} time(s)${pattern.accuracy_rate ? ` with ${Math.round(pattern.accuracy_rate * 100)}% accuracy` : ''}.
+
+EXPECTED NEXT: ${nextStep.description} (typically within ${nextStep.delay_days} days of trigger)`;
+
   const alertSignal = {
     organization_id: triggerSignal.organization_id,
     signal_type: 'cascade_alert',
     signal_subtype: pattern.pattern_type,
-    title: `Cascade Alert: ${pattern.pattern_name}`,
-    description: `Based on "${triggerSignal.title.slice(0, 50)}...", historical patterns suggest: ${nextStep.description} expected in ~${daysUntil} days. Pattern confidence: ${Math.round(pattern.confidence * 100)}%.`,
+    title: `${pattern.pattern_name}: ${triggerSignal.primary_target_name || 'Alert'}`,
+    description,
     primary_target_name: triggerSignal.primary_target_name,
     primary_target_type: triggerSignal.primary_target_type,
     confidence_score: Math.round(pattern.confidence * 100),
@@ -306,8 +327,11 @@ async function createCascadeAlert(
     evidence: {
       trigger_signal_title: triggerSignal.title,
       trigger_signal_id: triggerSignal.id,
+      trigger_signal_description: triggerSignal.description,
+      trigger_evidence: evidencePoints.slice(0, 5),  // Include up to 5 evidence points from trigger
       pattern_times_observed: pattern.times_observed,
-      pattern_accuracy: pattern.accuracy_rate
+      pattern_accuracy: pattern.accuracy_rate,
+      expected_next_step: nextStep
     },
     pattern_data: {
       cascade_pattern_id: pattern.id,
@@ -315,8 +339,8 @@ async function createCascadeAlert(
       trigger_signal_id: triggerSignal.id,
       expected_timeline: timeline.expected_steps
     },
-    reasoning: `This pattern has been observed ${pattern.times_observed} times with ${Math.round((pattern.accuracy_rate || 0) * 100)}% accuracy.`,
-    business_implication: `Monitor for ${nextStep.action} from ${nextStep.entity_type} entities.`,
+    reasoning,
+    business_implication: triggerSignal.business_implication || `Monitor for ${nextStep.action} from ${nextStep.entity_type} entities.`,
     source_pipeline: 'detect-cascade-patterns',
     status: 'active'
   };
