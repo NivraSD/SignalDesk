@@ -17,6 +17,127 @@ const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY })
 
 /**
+ * Summarize and save conversation to company_profile.recent_conversations
+ */
+async function summarizeAndSaveConversation(
+  organizationId: string,
+  conversationHistory: any[],
+  contentGenerated: string | null = null
+): Promise<void> {
+  try {
+    if (!organizationId || conversationHistory.length < 2) {
+      console.log('⏭️ Skipping conversation save - insufficient data')
+      return
+    }
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+
+    const { data: org, error: fetchError } = await supabase
+      .from('organizations')
+      .select('company_profile')
+      .eq('id', organizationId)
+      .single()
+
+    if (fetchError || !org) {
+      console.warn('⚠️ Could not fetch org for conversation save:', fetchError?.message)
+      return
+    }
+
+    const recentMessages = conversationHistory.slice(-10)
+    const conversationText = recentMessages
+      .map((m: any) => `${m.role === 'user' ? 'User' : 'NIV'}: ${m.content?.substring(0, 500)}`)
+      .join('\n')
+
+    const summaryResponse = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY!,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-3-5-haiku-20241022',
+        max_tokens: 300,
+        messages: [{
+          role: 'user',
+          content: `Summarize this conversation in 1-2 sentences. List 2-3 key topics.
+
+CONVERSATION:
+${conversationText}
+
+${contentGenerated ? `CONTENT GENERATED: ${contentGenerated}` : ''}
+
+Respond in JSON: {"summary": "...", "topics": ["topic1", "topic2"], "content_created": "type or null"}`
+        }]
+      })
+    })
+
+    if (!summaryResponse.ok) {
+      console.error('❌ Summary generation failed:', await summaryResponse.text())
+      return
+    }
+
+    const summaryData = await summaryResponse.json()
+    const summaryText = summaryData.content?.[0]?.text || ''
+
+    let summary: { summary: string; topics: string[]; content_created: string | null }
+    try {
+      const jsonMatch = summaryText.match(/\{[\s\S]*\}/)
+      summary = jsonMatch ? JSON.parse(jsonMatch[0]) : {
+        summary: summaryText.substring(0, 200),
+        topics: [],
+        content_created: contentGenerated
+      }
+    } catch {
+      summary = {
+        summary: summaryText.substring(0, 200),
+        topics: [],
+        content_created: contentGenerated
+      }
+    }
+
+    const profile = org.company_profile || {}
+    const recentConversations = profile.recent_conversations || { conversations: [] }
+
+    const now = new Date().toISOString()
+    const conversationId = `conv_${Date.now()}`
+
+    const conversationEntry = {
+      id: conversationId,
+      summary: summary.summary,
+      topics: summary.topics || [],
+      content_created: summary.content_created || contentGenerated,
+      timestamp: now,
+      message_count: conversationHistory.length
+    }
+
+    recentConversations.conversations = [
+      conversationEntry,
+      ...recentConversations.conversations.filter((c: any) => c.id !== conversationId)
+    ].slice(0, 5)
+    recentConversations.last_updated = now
+
+    const { error: updateError } = await supabase
+      .from('organizations')
+      .update({
+        company_profile: {
+          ...profile,
+          recent_conversations: recentConversations
+        }
+      })
+      .eq('id', organizationId)
+
+    if (updateError) {
+      console.error('❌ Failed to save conversation:', updateError)
+    } else {
+      console.log(`✅ Conversation saved: "${summary.summary.substring(0, 50)}..."`)
+    }
+  } catch (error) {
+    console.error('❌ Exception saving conversation:', error)
+  }
+}
+
+/**
  * Infer topic from query by looking for keywords
  */
 function inferTopic(query: string): string {
@@ -2206,6 +2327,8 @@ async function getMcpDiscovery(organizationInput: string = '7a2835cb-11ee-4512-a
         brand_voice: companyProfile.brand_voice || null,
         // Recent work the user has been working on
         recent_work: companyProfile.recent_work || null,
+        // Recent conversations for continuity
+        recent_conversations: companyProfile.recent_conversations || null,
         _raw: companyProfile
       }
     }
@@ -3114,6 +3237,25 @@ Save strategic recommendations for when explicitly requested.\n`
           message += `- Recent content created: ${recentContent}\n`
         }
       }
+    }
+
+    // Add recent conversations context if available
+    if (toolResults.discoveryData.recent_conversations?.conversations?.length > 0) {
+      const convos = toolResults.discoveryData.recent_conversations.conversations.slice(0, 3)
+      message += `\n**PREVIOUS CONVERSATIONS:**\n`
+      convos.forEach((c: any, i: number) => {
+        const daysAgo = Math.floor((Date.now() - new Date(c.timestamp).getTime()) / (1000 * 60 * 60 * 24))
+        const timeDesc = daysAgo === 0 ? 'today' : daysAgo === 1 ? 'yesterday' : `${daysAgo} days ago`
+        message += `${i + 1}. (${timeDesc}) ${c.summary}`
+        if (c.topics?.length > 0) {
+          message += ` [Topics: ${c.topics.join(', ')}]`
+        }
+        if (c.content_created) {
+          message += ` → Created: ${c.content_created}`
+        }
+        message += `\n`
+      })
+      message += `*Build on these previous discussions when relevant.*\n`
     }
   }
 
@@ -5443,11 +5585,13 @@ Respond with JSON only:
         keywords: orgProfile.keywords?.slice(0, 10) || [],
         industry: orgProfile.industry,
         brand_voice: orgProfile.brand_voice || null,
-        recent_work: orgProfile.recent_work || null
+        recent_work: orgProfile.recent_work || null,
+        recent_conversations: orgProfile.recent_conversations || null
       }
       console.log(`🎯 Loaded profile for ${effectiveOrgName}: ${toolResults.discoveryData.competitors.length} competitors, ${toolResults.discoveryData.keywords.length} keywords`)
       if (orgProfile.brand_voice) console.log(`  Brand voice configured: formality=${orgProfile.brand_voice.formality}, adjectives=${orgProfile.brand_voice.adjectives?.length || 0}`)
       if (orgProfile.recent_work) console.log(`  Recent work: ${orgProfile.recent_work.opportunities?.length || 0} opps, ${orgProfile.recent_work.campaigns?.length || 0} campaigns`)
+      if (orgProfile.recent_conversations?.conversations?.length) console.log(`  Recent conversations: ${orgProfile.recent_conversations.conversations.length}`)
     } else {
       // Provide default discovery data if profile loading failed
       toolResults.discoveryData = {

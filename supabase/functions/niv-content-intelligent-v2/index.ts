@@ -70,6 +70,140 @@ const VOYAGE_API_KEY = Deno.env.get('VOYAGE_API_KEY');
     console.error(`❌ Async embedding generation failed for ${contentId}:`, error);
   }
 }
+
+/**
+ * Summarize and save conversation to company_profile.recent_conversations
+ * Triggers when content is generated or after substantive exchanges
+ */
+async function summarizeAndSaveConversation(
+  organizationId: string,
+  conversationHistory: any[],
+  contentGenerated: string | null = null
+): Promise<void> {
+  try {
+    // Skip if no organization or insufficient conversation
+    if (!organizationId || conversationHistory.length < 2) {
+      console.log('⏭️ Skipping conversation save - insufficient data');
+      return;
+    }
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+
+    // Get current company_profile
+    const { data: org, error: fetchError } = await supabase
+      .from('organizations')
+      .select('company_profile')
+      .eq('id', organizationId)
+      .single();
+
+    if (fetchError || !org) {
+      console.warn('⚠️ Could not fetch org for conversation save:', fetchError?.message);
+      return;
+    }
+
+    // Build conversation text for summary
+    const recentMessages = conversationHistory.slice(-10); // Last 10 messages
+    const conversationText = recentMessages
+      .map((m: any) => `${m.role === 'user' ? 'User' : 'NIV'}: ${m.content?.substring(0, 500)}`)
+      .join('\n');
+
+    // Use Claude to generate a quick summary
+    const summaryResponse = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-3-5-haiku-20241022',
+        max_tokens: 300,
+        messages: [{
+          role: 'user',
+          content: `Summarize this conversation in 1-2 sentences. Also list 2-3 key topics discussed.
+
+CONVERSATION:
+${conversationText}
+
+${contentGenerated ? `CONTENT GENERATED: ${contentGenerated}` : ''}
+
+Respond in JSON format:
+{"summary": "...", "topics": ["topic1", "topic2"], "content_created": "type of content or null"}`
+        }]
+      })
+    });
+
+    if (!summaryResponse.ok) {
+      console.error('❌ Summary generation failed:', await summaryResponse.text());
+      return;
+    }
+
+    const summaryData = await summaryResponse.json();
+    const summaryText = summaryData.content?.[0]?.text || '';
+
+    // Parse the JSON response
+    let summary: { summary: string; topics: string[]; content_created: string | null };
+    try {
+      // Extract JSON from response (handle markdown code blocks)
+      const jsonMatch = summaryText.match(/\{[\s\S]*\}/);
+      summary = jsonMatch ? JSON.parse(jsonMatch[0]) : {
+        summary: summaryText.substring(0, 200),
+        topics: [],
+        content_created: contentGenerated
+      };
+    } catch {
+      summary = {
+        summary: summaryText.substring(0, 200),
+        topics: [],
+        content_created: contentGenerated
+      };
+    }
+
+    const profile = org.company_profile || {};
+    const recentConversations = profile.recent_conversations || { conversations: [] };
+
+    const now = new Date().toISOString();
+    const conversationId = `conv_${Date.now()}`;
+
+    // Build the conversation entry
+    const conversationEntry = {
+      id: conversationId,
+      summary: summary.summary,
+      topics: summary.topics || [],
+      content_created: summary.content_created || contentGenerated,
+      timestamp: now,
+      message_count: conversationHistory.length
+    };
+
+    // Add to front, cap at 5 conversations
+    recentConversations.conversations = [
+      conversationEntry,
+      ...recentConversations.conversations.filter((c: any) => c.id !== conversationId)
+    ].slice(0, 5);
+    recentConversations.last_updated = now;
+
+    // Save back to company_profile
+    const { error: updateError } = await supabase
+      .from('organizations')
+      .update({
+        company_profile: {
+          ...profile,
+          recent_conversations: recentConversations
+        }
+      })
+      .eq('id', organizationId);
+
+    if (updateError) {
+      console.error('❌ Failed to save conversation:', updateError);
+    } else {
+      console.log(`✅ Conversation saved: "${summary.summary.substring(0, 50)}..."`);
+    }
+  } catch (error) {
+    console.error('❌ Exception saving conversation:', error);
+    // Non-blocking - don't fail the main response
+  }
+}
+
 /**
  * Infer topic from query by looking for keywords
  */ function inferTopic(query) {
@@ -2459,6 +2593,12 @@ ${campaignContext.timeline || 'Not specified'}
               }
             });
           }
+
+          // Save conversation summary (fire-and-forget)
+          summarizeAndSaveConversation(organizationId, conversationHistory, `Image: ${toolUse.input.prompt?.substring(0, 50)}`).catch((err) => {
+            console.error('❌ Failed to save conversation:', err);
+          });
+
           return new Response(JSON.stringify({
             success: true,
             mode: 'image_generated',
@@ -4586,6 +4726,12 @@ ${section.talking_points.map((point)=>`- ${point}`).join('\n')}
           conversationId
         };
         console.log('📤 FINAL RESPONSE TO FRONTEND:', JSON.stringify(finalResponse, null, 2));
+
+        // Save conversation summary (fire-and-forget, don't block response)
+        summarizeAndSaveConversation(organizationId, conversationHistory, `Media plan: ${strategy.subject}`).catch((err) => {
+          console.error('❌ Failed to save conversation:', err);
+        });
+
         return new Response(JSON.stringify(finalResponse), {
           headers: {
             ...corsHeaders,
@@ -5596,6 +5742,8 @@ async function getOrgProfile(organizationId, organizationName) {
       brand_voice: companyProfile.brand_voice || null,
       // Recent work the user has been working on
       recent_work: companyProfile.recent_work || null,
+      // Recent conversations for continuity
+      recent_conversations: companyProfile.recent_conversations || null,
       // Pass the full company_profile for advanced use cases
       _raw: companyProfile
     };
@@ -5762,6 +5910,24 @@ async function callClaude(context, research, orgProfile, conversationState, conv
         orgContext += `\n- Recent content created: ${recentContent}`;
       }
     }
+  }
+
+  // Add recent conversations context if available
+  if (orgProfile.recent_conversations?.conversations?.length > 0) {
+    const convos = orgProfile.recent_conversations.conversations.slice(0, 3); // Last 3
+    orgContext += `\n\n**PREVIOUS CONVERSATIONS:**`;
+    convos.forEach((c: any, i: number) => {
+      const daysAgo = Math.floor((Date.now() - new Date(c.timestamp).getTime()) / (1000 * 60 * 60 * 24));
+      const timeDesc = daysAgo === 0 ? 'today' : daysAgo === 1 ? 'yesterday' : `${daysAgo} days ago`;
+      orgContext += `\n${i + 1}. (${timeDesc}) ${c.summary}`;
+      if (c.topics?.length > 0) {
+        orgContext += ` [Topics: ${c.topics.join(', ')}]`;
+      }
+      if (c.content_created) {
+        orgContext += ` → Created: ${c.content_created}`;
+      }
+    });
+    orgContext += `\n*Use this context to build on previous discussions when relevant.*`;
   }
 
   // Build system prompt with organization context
