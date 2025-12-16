@@ -1,11 +1,12 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { X as CloseIcon, Building2, Target, Globe, Loader2, Save, AlertCircle, RefreshCw, CheckCircle, FileText, Copy, Users } from 'lucide-react'
+import { X as CloseIcon, Building2, Target, Globe, Loader2, Save, AlertCircle, RefreshCw, CheckCircle, FileText, Copy, Users, Mic2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import TargetManagementTab from './TargetManagementTab'
 import GeoTargetsTab from './GeoTargetsTab'
 import CompanyProfileTab from './CompanyProfileTab'
+import BrandVoiceTab from './BrandVoiceTab'
 
 interface OrganizationSettingsProps {
   isOpen: boolean
@@ -15,7 +16,7 @@ interface OrganizationSettingsProps {
   onUpdate?: () => void
 }
 
-type TabId = 'about' | 'profile' | 'intelligence' | 'geo'
+type TabId = 'about' | 'profile' | 'voice' | 'intelligence' | 'geo'
 
 export default function OrganizationSettings({
   isOpen,
@@ -222,6 +223,7 @@ export default function OrganizationSettings({
   const tabs = [
     { id: 'about' as TabId, name: 'About', icon: Building2 },
     { id: 'profile' as TabId, name: 'Company Profile', icon: Users },
+    { id: 'voice' as TabId, name: 'Brand Voice', icon: Mic2 },
     { id: 'intelligence' as TabId, name: 'Intelligence Targets', icon: Target },
     { id: 'geo' as TabId, name: 'GEO Targets', icon: Globe }
   ]
@@ -606,6 +608,13 @@ export default function OrganizationSettings({
 
           {activeTab === 'profile' && (
             <CompanyProfileTab
+              organizationId={organizationId}
+              organizationName={organizationName}
+            />
+          )}
+
+          {activeTab === 'voice' && (
+            <BrandVoiceTab
               organizationId={organizationId}
               organizationName={organizationName}
             />

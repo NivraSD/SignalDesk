@@ -2202,6 +2202,10 @@ async function getMcpDiscovery(organizationInput: string = '7a2835cb-11ee-4512-a
         key_markets: companyProfile.key_markets || [],
         business_model: companyProfile.business_model || '',
         leadership: companyProfile.leadership || [],
+        // Brand voice and style guidelines
+        brand_voice: companyProfile.brand_voice || null,
+        // Recent work the user has been working on
+        recent_work: companyProfile.recent_work || null,
         _raw: companyProfile
       }
     }
@@ -3062,6 +3066,55 @@ Save strategic recommendations for when explicitly requested.\n`
     message += `*Industry: ${toolResults.discoveryData.industry || 'Technology'}*\n`
     message += `*Key Competitors: ${toolResults.discoveryData.competitors?.slice(0, 3).join(', ') || 'None listed'}*\n`
     message += `IMPORTANT: Always refer to the client as "${toolResults.discoveryData.organizationName}" not "we" or "your organization"\n`
+
+    // Add brand voice guidelines if configured
+    if (toolResults.discoveryData.brand_voice) {
+      const bv = toolResults.discoveryData.brand_voice
+      message += `\n**BRAND VOICE GUIDELINES:**\n`
+
+      // Interpret slider values
+      const formality = bv.formality || 50
+      const technicality = bv.technicality || 50
+      const boldness = bv.boldness || 50
+
+      const formalityDesc = formality < 33 ? 'casual and conversational' : formality > 66 ? 'formal and professional' : 'balanced'
+      const techDesc = technicality < 33 ? 'accessible to general audiences' : technicality > 66 ? 'technical and detailed' : 'moderately technical'
+      const boldDesc = boldness < 33 ? 'conservative and measured' : boldness > 66 ? 'bold and confident' : 'balanced'
+
+      message += `- Tone: ${formalityDesc}, ${techDesc}, ${boldDesc}\n`
+      if (bv.adjectives && bv.adjectives.length > 0) {
+        message += `- Voice should feel: ${bv.adjectives.join(', ')}\n`
+      }
+      if (bv.references && bv.references.length > 0) {
+        message += `- Style references: ${bv.references.join(', ')}\n`
+      }
+      if (bv.avoid && bv.avoid.length > 0) {
+        message += `- AVOID: ${bv.avoid.join(', ')}\n`
+      }
+      if (bv.notes) {
+        message += `- Additional notes: ${bv.notes}\n`
+      }
+    }
+
+    // Add recent work context if available
+    if (toolResults.discoveryData.recent_work) {
+      const rw = toolResults.discoveryData.recent_work
+      const hasRecentWork = (rw.opportunities?.length > 0) || (rw.campaigns?.length > 0) || (rw.content?.length > 0)
+
+      if (hasRecentWork) {
+        message += `\n**RECENT WORK CONTEXT:**\n`
+        if (rw.opportunities && rw.opportunities.length > 0) {
+          message += `- Active opportunities: ${rw.opportunities.map((o: any) => o.title).join(', ')}\n`
+        }
+        if (rw.campaigns && rw.campaigns.length > 0) {
+          message += `- Active campaigns: ${rw.campaigns.map((c: any) => c.title).join(', ')}\n`
+        }
+        if (rw.content && rw.content.length > 0) {
+          const recentContent = rw.content.slice(0, 5).map((c: any) => c.title).join(', ')
+          message += `- Recent content created: ${recentContent}\n`
+        }
+      }
+    }
   }
 
   // Add Memory Vault guidance if available
@@ -5388,9 +5441,13 @@ Respond with JSON only:
         organizationName: effectiveOrgName,
         competitors: orgProfile.competition?.direct_competitors?.slice(0, 5) || [],
         keywords: orgProfile.keywords?.slice(0, 10) || [],
-        industry: orgProfile.industry
+        industry: orgProfile.industry,
+        brand_voice: orgProfile.brand_voice || null,
+        recent_work: orgProfile.recent_work || null
       }
       console.log(`🎯 Loaded profile for ${effectiveOrgName}: ${toolResults.discoveryData.competitors.length} competitors, ${toolResults.discoveryData.keywords.length} keywords`)
+      if (orgProfile.brand_voice) console.log(`  Brand voice configured: formality=${orgProfile.brand_voice.formality}, adjectives=${orgProfile.brand_voice.adjectives?.length || 0}`)
+      if (orgProfile.recent_work) console.log(`  Recent work: ${orgProfile.recent_work.opportunities?.length || 0} opps, ${orgProfile.recent_work.campaigns?.length || 0} campaigns`)
     } else {
       // Provide default discovery data if profile loading failed
       toolResults.discoveryData = {

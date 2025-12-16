@@ -130,6 +130,11 @@ export async function POST(request: NextRequest) {
       const updateTime = Date.now() - startTime
       console.log(`✅ Content updated in ${updateTime}ms: ${updatedContent.id}${embedding ? ' (with embedding)' : ' (no embedding)'}`)
 
+      // Update recent_work in company_profile (fire-and-forget)
+      updateRecentWork(org_id, updateTitle, content.type || 'general', folder || '', contentId).catch((err) => {
+        console.error('Failed to update recent_work:', err)
+      })
+
       return NextResponse.json({
         success: true,
         id: updatedContent.id,
@@ -297,6 +302,12 @@ export async function POST(request: NextRequest) {
         console.error('Failed to queue intelligence job:', err)
         // Don't fail the save if queueing fails
       })
+
+      // Update recent_work in company_profile (fire-and-forget)
+      updateRecentWork(org_id, contentTitle, content.type || 'general', folder || '', savedContentId).catch((err) => {
+        console.error('Failed to update recent_work:', err)
+        // Don't fail the save if recent_work update fails
+      })
     }
 
     // Log performance metric
@@ -322,6 +333,126 @@ export async function POST(request: NextRequest) {
       error: error instanceof Error ? error.message : 'Failed to save content',
       details: error
     }, { status: 500 })
+  }
+}
+
+// Update recent_work in company_profile
+async function updateRecentWork(
+  organizationId: string,
+  contentTitle: string,
+  contentType: string,
+  folder: string,
+  contentId: string
+): Promise<void> {
+  try {
+    // Skip if no organization
+    if (!organizationId) return
+
+    // Determine what type of recent work this is
+    const isOpportunity = folder?.toLowerCase().includes('opportunities')
+    const isCampaign = folder?.toLowerCase().includes('campaign')
+    const isOverview = contentTitle?.toLowerCase().includes('overview') || contentTitle?.toLowerCase().includes('blueprint')
+
+    // Only track high-level items: opportunity overviews, campaign blueprints, or standalone content
+    // Skip individual execution pieces (presentations, emails, social posts within campaigns/opportunities)
+    if ((isOpportunity || isCampaign) && !isOverview) {
+      console.log(`⏭️ Skipping recent_work update for execution piece: ${contentTitle}`)
+      return
+    }
+
+    // Get current company_profile
+    const { data: org, error: fetchError } = await supabase
+      .from('organizations')
+      .select('company_profile')
+      .eq('id', organizationId)
+      .single()
+
+    if (fetchError || !org) {
+      console.warn('⚠️ Could not fetch org for recent_work update:', fetchError?.message)
+      return
+    }
+
+    const profile = org.company_profile || {}
+    const recentWork = profile.recent_work || {
+      opportunities: [],
+      campaigns: [],
+      content: []
+    }
+
+    const now = new Date().toISOString()
+
+    // Build the work item
+    const workItem = {
+      id: contentId,
+      title: contentTitle,
+      type: contentType,
+      created_at: now
+    }
+
+    if (isOpportunity && isOverview) {
+      // Extract opportunity name from folder (e.g., "Opportunities/Ulta Beauty CFO Transition")
+      const oppName = folder?.split('/')[1] || contentTitle
+      const oppItem = {
+        id: contentId,
+        title: oppName,
+        status: 'active',
+        created_at: now,
+        overview: contentTitle
+      }
+      // Add to front, remove duplicates by title, cap at 5
+      recentWork.opportunities = [
+        oppItem,
+        ...recentWork.opportunities.filter((o: any) => o.title !== oppName)
+      ].slice(0, 5)
+      console.log(`📋 Added opportunity to recent_work: ${oppName}`)
+    } else if (isCampaign && isOverview) {
+      // Extract campaign name from folder
+      const campaignName = folder?.split('/')[1] || contentTitle
+      const campaignItem = {
+        id: contentId,
+        title: campaignName,
+        status: 'active',
+        created_at: now,
+        blueprint: contentTitle
+      }
+      // Add to front, remove duplicates by title, cap at 3
+      recentWork.campaigns = [
+        campaignItem,
+        ...recentWork.campaigns.filter((c: any) => c.title !== campaignName)
+      ].slice(0, 3)
+      console.log(`📋 Added campaign to recent_work: ${campaignName}`)
+    } else if (!isOpportunity && !isCampaign) {
+      // Standalone content (not part of opportunity/campaign)
+      // Add to front, remove duplicates by id, cap at 10
+      recentWork.content = [
+        workItem,
+        ...recentWork.content.filter((c: any) => c.id !== contentId)
+      ].slice(0, 10)
+      console.log(`📋 Added content to recent_work: ${contentTitle}`)
+    }
+
+    // Update last_updated
+    recentWork.last_updated = now
+
+    // Save back to company_profile
+    const { error: updateError } = await supabase
+      .from('organizations')
+      .update({
+        company_profile: {
+          ...profile,
+          recent_work: recentWork
+        }
+      })
+      .eq('id', organizationId)
+
+    if (updateError) {
+      console.error('❌ Failed to update recent_work:', updateError)
+    } else {
+      console.log(`✅ recent_work updated for org ${organizationId}`)
+    }
+  } catch (error) {
+    console.error('❌ Exception updating recent_work:', error)
+    // Don't fail the save if recent_work update fails
   }
 }
 

@@ -5592,6 +5592,10 @@ async function getOrgProfile(organizationId, organizationName) {
       indirect_competitors: companyProfile.competition?.indirect_competitors || [],
       // Keywords for search
       keywords: keywords,
+      // Brand voice and style guidelines
+      brand_voice: companyProfile.brand_voice || null,
+      // Recent work the user has been working on
+      recent_work: companyProfile.recent_work || null,
       // Pass the full company_profile for advanced use cases
       _raw: companyProfile
     };
@@ -5707,6 +5711,57 @@ async function callClaude(context, research, orgProfile, conversationState, conv
   if (orgProfile.leadership && orgProfile.leadership.length > 0) {
     const leaders = orgProfile.leadership.slice(0, 3).map((l: any) => `${l.name} (${l.title})`).join(', ');
     orgContext += `\n- Leadership: ${leaders}`;
+  }
+
+  // Add brand voice guidelines if defined
+  if (orgProfile.brand_voice) {
+    const bv = orgProfile.brand_voice;
+    orgContext += `\n\n**BRAND VOICE GUIDELINES:**`;
+
+    // Interpret slider values
+    const formality = bv.formality || 50;
+    const technicality = bv.technicality || 50;
+    const boldness = bv.boldness || 50;
+
+    const formalityDesc = formality < 33 ? 'casual and conversational' : formality > 66 ? 'formal and professional' : 'balanced';
+    const techDesc = technicality < 33 ? 'accessible to general audiences' : technicality > 66 ? 'technical and detailed' : 'moderately technical';
+    const boldDesc = boldness < 33 ? 'conservative and measured' : boldness > 66 ? 'bold and confident' : 'balanced';
+
+    orgContext += `\n- Tone: ${formalityDesc}, ${techDesc}, ${boldDesc}`;
+
+    if (bv.adjectives && bv.adjectives.length > 0) {
+      orgContext += `\n- Voice should feel: ${bv.adjectives.join(', ')}`;
+    }
+    if (bv.references && bv.references.length > 0) {
+      orgContext += `\n- Style references: ${bv.references.join(', ')}`;
+    }
+    if (bv.avoid && bv.avoid.length > 0) {
+      orgContext += `\n- AVOID: ${bv.avoid.join(', ')}`;
+    }
+    if (bv.notes) {
+      orgContext += `\n- Additional notes: ${bv.notes}`;
+    }
+  }
+
+  // Add recent work context if available
+  if (orgProfile.recent_work) {
+    const rw = orgProfile.recent_work;
+    const hasRecentWork = (rw.opportunities?.length > 0) || (rw.campaigns?.length > 0) || (rw.content?.length > 0);
+
+    if (hasRecentWork) {
+      orgContext += `\n\n**RECENT WORK CONTEXT:**`;
+
+      if (rw.opportunities && rw.opportunities.length > 0) {
+        orgContext += `\n- Active opportunities: ${rw.opportunities.map((o: any) => o.title).join(', ')}`;
+      }
+      if (rw.campaigns && rw.campaigns.length > 0) {
+        orgContext += `\n- Active campaigns: ${rw.campaigns.map((c: any) => c.title).join(', ')}`;
+      }
+      if (rw.content && rw.content.length > 0) {
+        const recentContent = rw.content.slice(0, 5).map((c: any) => c.title).join(', ');
+        orgContext += `\n- Recent content created: ${recentContent}`;
+      }
+    }
   }
 
   // Build system prompt with organization context
