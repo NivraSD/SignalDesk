@@ -8,7 +8,7 @@ interface IntelligenceTarget {
   id: string
   organization_id: string
   name: string
-  type: 'competitor' | 'topic' | 'keyword' | 'influencer' | 'stakeholder'
+  type: 'competitor' | 'topic' | 'keyword' | 'influencer' | 'customer' | 'investor' | 'partner' | 'supplier' | 'regulator' | 'stakeholder'
   priority: 'low' | 'medium' | 'high' | 'critical'
   threat_level?: number
   keywords?: string[]
@@ -235,29 +235,47 @@ export default function TargetManagementTab({
     if (discoveredItems?.competitors) {
       discoveredItems.competitors.forEach((comp: string) => {
         const exists = targets.some(t => t.name.toLowerCase() === comp.toLowerCase() && t.type === 'competitor')
-        if (!exists) allItems.add(comp)
+        if (!exists) allItems.add(`competitor:${comp}`)
       })
     }
 
     if (discoveredItems?.topics) {
       discoveredItems.topics.forEach((topic: string) => {
         const exists = targets.some(t => t.name.toLowerCase() === topic.toLowerCase() && t.type === 'topic')
-        if (!exists) allItems.add(topic)
+        if (!exists) allItems.add(`topic:${topic}`)
       })
     }
 
     if (discoveredItems?.stakeholders) {
-      const allStakeholders = [
-        ...(discoveredItems.stakeholders.regulators || []),
-        ...(discoveredItems.stakeholders.influencers || []),
-        ...(discoveredItems.stakeholders.major_customers || [])
-      ]
-      allStakeholders.forEach((stakeholder: string) => {
-        const exists = targets.some(t =>
-          t.name.toLowerCase() === stakeholder.toLowerCase() &&
-          (t.type === 'influencer' || t.type === 'stakeholder')
-        )
-        if (!exists) allItems.add(stakeholder)
+      // Regulators
+      (discoveredItems.stakeholders.regulators || []).forEach((name: string) => {
+        const exists = targets.some(t => t.name.toLowerCase() === name.toLowerCase() && t.type === 'regulator')
+        if (!exists) allItems.add(`regulator:${name}`)
+      })
+      // Influencers
+      (discoveredItems.stakeholders.influencers || []).forEach((name: string) => {
+        const exists = targets.some(t => t.name.toLowerCase() === name.toLowerCase() && t.type === 'influencer')
+        if (!exists) allItems.add(`influencer:${name}`)
+      })
+      // Customers
+      (discoveredItems.stakeholders.major_customers || []).forEach((name: string) => {
+        const exists = targets.some(t => t.name.toLowerCase() === name.toLowerCase() && t.type === 'customer')
+        if (!exists) allItems.add(`customer:${name}`)
+      })
+      // Investors
+      (discoveredItems.stakeholders.major_investors || []).forEach((name: string) => {
+        const exists = targets.some(t => t.name.toLowerCase() === name.toLowerCase() && t.type === 'investor')
+        if (!exists) allItems.add(`investor:${name}`)
+      })
+      // Partners
+      (discoveredItems.stakeholders.key_partners || []).forEach((name: string) => {
+        const exists = targets.some(t => t.name.toLowerCase() === name.toLowerCase() && t.type === 'partner')
+        if (!exists) allItems.add(`partner:${name}`)
+      })
+      // Suppliers
+      (discoveredItems.stakeholders.key_suppliers || []).forEach((name: string) => {
+        const exists = targets.some(t => t.name.toLowerCase() === name.toLowerCase() && t.type === 'supplier')
+        if (!exists) allItems.add(`supplier:${name}`)
       })
     }
 
@@ -272,46 +290,22 @@ export default function TargetManagementTab({
       console.log('🔵 Saving discovery: selected items =', selectedDiscoveryItems.size)
       const targetsToAdd: any[] = []
 
-      if (discoveredItems.competitors) {
-        discoveredItems.competitors.forEach((comp: string) => {
-          if (selectedDiscoveryItems.has(comp)) {
-            const exists = targets.some(t => t.name.toLowerCase() === comp.toLowerCase() && t.type === 'competitor')
-            if (!exists) {
-              targetsToAdd.push({ name: comp, type: 'competitor', priority: 'high' })
-            }
-          }
-        })
-      }
+      // Parse prefixed selection items (e.g., "competitor:OpenAI", "customer:Nike")
+      selectedDiscoveryItems.forEach((item: string) => {
+        const [type, ...nameParts] = item.split(':')
+        const name = nameParts.join(':') // Handle names with colons
 
-      if (discoveredItems.topics) {
-        discoveredItems.topics.forEach((topic: string) => {
-          if (selectedDiscoveryItems.has(topic)) {
-            const exists = targets.some(t => t.name.toLowerCase() === topic.toLowerCase() && t.type === 'topic')
-            if (!exists) {
-              targetsToAdd.push({ name: topic, type: 'topic', priority: 'medium' })
-            }
-          }
-        })
-      }
+        if (!name) return // Skip malformed items
 
-      if (discoveredItems.stakeholders) {
-        const allStakeholders = [
-          ...(discoveredItems.stakeholders.regulators || []),
-          ...(discoveredItems.stakeholders.influencers || []),
-          ...(discoveredItems.stakeholders.major_customers || [])
-        ]
-        allStakeholders.forEach((stakeholder: string) => {
-          if (selectedDiscoveryItems.has(stakeholder)) {
-            const exists = targets.some(t =>
-              t.name.toLowerCase() === stakeholder.toLowerCase() &&
-              (t.type === 'influencer' || t.type === 'stakeholder')
-            )
-            if (!exists) {
-              targetsToAdd.push({ name: stakeholder, type: 'stakeholder', priority: 'medium' })
-            }
-          }
-        })
-      }
+        const exists = targets.some(t =>
+          t.name.toLowerCase() === name.toLowerCase() && t.type === type
+        )
+
+        if (!exists) {
+          const priority = ['competitor', 'regulator'].includes(type) ? 'high' : 'medium'
+          targetsToAdd.push({ name, type, priority })
+        }
+      })
 
       if (targetsToAdd.length > 0) {
         const response = await fetch('/api/organizations/targets', {
@@ -385,6 +379,11 @@ export default function TargetManagementTab({
       case 'topic': return 'bg-blue-500/20 text-blue-400 border-blue-500/30'
       case 'keyword': return 'bg-green-500/20 text-green-400 border-green-500/30'
       case 'influencer': return 'bg-purple-500/20 text-purple-400 border-purple-500/30'
+      case 'customer': return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+      case 'investor': return 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+      case 'partner': return 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30'
+      case 'supplier': return 'bg-orange-500/20 text-orange-400 border-orange-500/30'
+      case 'regulator': return 'bg-rose-500/20 text-rose-400 border-rose-500/30'
       case 'stakeholder': return 'bg-purple-500/20 text-purple-400 border-purple-500/30'
       default: return 'bg-gray-500/20 text-gray-400 border-gray-500/30'
     }
@@ -494,6 +493,11 @@ export default function TargetManagementTab({
                         style={{ background: 'var(--grey-800)', border: '1px solid var(--grey-700)' }}
                       >
                         <option value="competitor">Competitor</option>
+                        <option value="customer">Customer</option>
+                        <option value="investor">Investor</option>
+                        <option value="partner">Partner</option>
+                        <option value="supplier">Supplier</option>
+                        <option value="regulator">Regulator</option>
                         <option value="topic">Topic</option>
                         <option value="keyword">Keyword</option>
                         <option value="influencer">Influencer</option>
@@ -657,18 +661,19 @@ export default function TargetManagementTab({
               </div>
 
               <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                {/* Show competitors, topics, stakeholders similar to original */}
+                {/* Competitors */}
                 {discoveredItems.competitors && discoveredItems.competitors.length > 0 && (
                   <div>
                     <h4 className="text-sm font-medium text-white mb-2" style={{ fontFamily: 'var(--font-display)' }}>Competitors ({discoveredItems.competitors.length})</h4>
                     <div className="grid grid-cols-2 gap-2">
-                      {discoveredItems.competitors.map((comp: string) => {
-                        const exists = targets.some(t => t.name.toLowerCase() === comp.toLowerCase() && t.type === 'competitor')
-                        const isSelected = selectedDiscoveryItems.has(comp)
+                      {discoveredItems.competitors.map((name: string) => {
+                        const key = `competitor:${name}`
+                        const exists = targets.some(t => t.name.toLowerCase() === name.toLowerCase() && t.type === 'competitor')
+                        const isSelected = selectedDiscoveryItems.has(key)
                         return (
                           <button
-                            key={comp}
-                            onClick={() => !exists && toggleDiscoveryItem(comp)}
+                            key={key}
+                            onClick={() => !exists && toggleDiscoveryItem(key)}
                             disabled={exists}
                             className={`p-2 rounded border text-sm ${
                               exists ? 'bg-[var(--grey-800)] border-[var(--grey-700)] text-[var(--grey-500)]' :
@@ -676,7 +681,7 @@ export default function TargetManagementTab({
                               'bg-red-500/10 border-red-500/30 text-red-300 hover:bg-red-500/20'
                             }`}
                           >
-                            {comp}
+                            {name}
                           </button>
                         )
                       })}
@@ -684,17 +689,19 @@ export default function TargetManagementTab({
                   </div>
                 )}
 
+                {/* Topics */}
                 {discoveredItems.topics && discoveredItems.topics.length > 0 && (
                   <div className="mt-4">
                     <h4 className="text-sm font-medium text-white mb-2" style={{ fontFamily: 'var(--font-display)' }}>Topics ({discoveredItems.topics.length})</h4>
                     <div className="grid grid-cols-2 gap-2">
-                      {discoveredItems.topics.map((topic: string) => {
-                        const exists = targets.some(t => t.name.toLowerCase() === topic.toLowerCase() && t.type === 'topic')
-                        const isSelected = selectedDiscoveryItems.has(topic)
+                      {discoveredItems.topics.map((name: string) => {
+                        const key = `topic:${name}`
+                        const exists = targets.some(t => t.name.toLowerCase() === name.toLowerCase() && t.type === 'topic')
+                        const isSelected = selectedDiscoveryItems.has(key)
                         return (
                           <button
-                            key={topic}
-                            onClick={() => !exists && toggleDiscoveryItem(topic)}
+                            key={key}
+                            onClick={() => !exists && toggleDiscoveryItem(key)}
                             disabled={exists}
                             className={`p-2 rounded border text-sm ${
                               exists ? 'bg-[var(--grey-800)] border-[var(--grey-700)] text-[var(--grey-500)]' :
@@ -702,7 +709,7 @@ export default function TargetManagementTab({
                               'bg-[var(--burnt-orange-muted)]/50 border-[var(--burnt-orange)]/30 text-[var(--burnt-orange)] hover:bg-[var(--burnt-orange-muted)]'
                             }`}
                           >
-                            {topic}
+                            {name}
                           </button>
                         )
                       })}
@@ -710,30 +717,142 @@ export default function TargetManagementTab({
                   </div>
                 )}
 
+                {/* Stakeholders */}
                 {discoveredItems.stakeholders && (
                   <>
+                    {/* Customers */}
+                    {discoveredItems.stakeholders.major_customers && discoveredItems.stakeholders.major_customers.length > 0 && (
+                      <div className="mt-4">
+                        <h4 className="text-sm font-medium text-white mb-2" style={{ fontFamily: 'var(--font-display)' }}>Customers ({discoveredItems.stakeholders.major_customers.length})</h4>
+                        <div className="grid grid-cols-2 gap-2">
+                          {discoveredItems.stakeholders.major_customers.map((name: string) => {
+                            const key = `customer:${name}`
+                            const exists = targets.some(t => t.name.toLowerCase() === name.toLowerCase() && t.type === 'customer')
+                            const isSelected = selectedDiscoveryItems.has(key)
+                            return (
+                              <button
+                                key={key}
+                                onClick={() => !exists && toggleDiscoveryItem(key)}
+                                disabled={exists}
+                                className={`p-2 rounded border text-sm ${
+                                  exists ? 'bg-[var(--grey-800)] border-[var(--grey-700)] text-[var(--grey-500)]' :
+                                  isSelected ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300' :
+                                  'bg-emerald-500/10 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/20'
+                                }`}
+                              >
+                                {name}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Investors */}
+                    {discoveredItems.stakeholders.major_investors && discoveredItems.stakeholders.major_investors.length > 0 && (
+                      <div className="mt-4">
+                        <h4 className="text-sm font-medium text-white mb-2" style={{ fontFamily: 'var(--font-display)' }}>Investors ({discoveredItems.stakeholders.major_investors.length})</h4>
+                        <div className="grid grid-cols-2 gap-2">
+                          {discoveredItems.stakeholders.major_investors.map((name: string) => {
+                            const key = `investor:${name}`
+                            const exists = targets.some(t => t.name.toLowerCase() === name.toLowerCase() && t.type === 'investor')
+                            const isSelected = selectedDiscoveryItems.has(key)
+                            return (
+                              <button
+                                key={key}
+                                onClick={() => !exists && toggleDiscoveryItem(key)}
+                                disabled={exists}
+                                className={`p-2 rounded border text-sm ${
+                                  exists ? 'bg-[var(--grey-800)] border-[var(--grey-700)] text-[var(--grey-500)]' :
+                                  isSelected ? 'bg-amber-500/20 border-amber-500 text-amber-300' :
+                                  'bg-amber-500/10 border-amber-500/30 text-amber-300 hover:bg-amber-500/20'
+                                }`}
+                              >
+                                {name}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Partners */}
+                    {discoveredItems.stakeholders.key_partners && discoveredItems.stakeholders.key_partners.length > 0 && (
+                      <div className="mt-4">
+                        <h4 className="text-sm font-medium text-white mb-2" style={{ fontFamily: 'var(--font-display)' }}>Partners ({discoveredItems.stakeholders.key_partners.length})</h4>
+                        <div className="grid grid-cols-2 gap-2">
+                          {discoveredItems.stakeholders.key_partners.map((name: string) => {
+                            const key = `partner:${name}`
+                            const exists = targets.some(t => t.name.toLowerCase() === name.toLowerCase() && t.type === 'partner')
+                            const isSelected = selectedDiscoveryItems.has(key)
+                            return (
+                              <button
+                                key={key}
+                                onClick={() => !exists && toggleDiscoveryItem(key)}
+                                disabled={exists}
+                                className={`p-2 rounded border text-sm ${
+                                  exists ? 'bg-[var(--grey-800)] border-[var(--grey-700)] text-[var(--grey-500)]' :
+                                  isSelected ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300' :
+                                  'bg-cyan-500/10 border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/20'
+                                }`}
+                              >
+                                {name}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Suppliers */}
+                    {discoveredItems.stakeholders.key_suppliers && discoveredItems.stakeholders.key_suppliers.length > 0 && (
+                      <div className="mt-4">
+                        <h4 className="text-sm font-medium text-white mb-2" style={{ fontFamily: 'var(--font-display)' }}>Suppliers ({discoveredItems.stakeholders.key_suppliers.length})</h4>
+                        <div className="grid grid-cols-2 gap-2">
+                          {discoveredItems.stakeholders.key_suppliers.map((name: string) => {
+                            const key = `supplier:${name}`
+                            const exists = targets.some(t => t.name.toLowerCase() === name.toLowerCase() && t.type === 'supplier')
+                            const isSelected = selectedDiscoveryItems.has(key)
+                            return (
+                              <button
+                                key={key}
+                                onClick={() => !exists && toggleDiscoveryItem(key)}
+                                disabled={exists}
+                                className={`p-2 rounded border text-sm ${
+                                  exists ? 'bg-[var(--grey-800)] border-[var(--grey-700)] text-[var(--grey-500)]' :
+                                  isSelected ? 'bg-orange-500/20 border-orange-500 text-orange-300' :
+                                  'bg-orange-500/10 border-orange-500/30 text-orange-300 hover:bg-orange-500/20'
+                                }`}
+                              >
+                                {name}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Regulators */}
                     {discoveredItems.stakeholders.regulators && discoveredItems.stakeholders.regulators.length > 0 && (
                       <div className="mt-4">
                         <h4 className="text-sm font-medium text-white mb-2" style={{ fontFamily: 'var(--font-display)' }}>Regulators ({discoveredItems.stakeholders.regulators.length})</h4>
                         <div className="grid grid-cols-2 gap-2">
-                          {discoveredItems.stakeholders.regulators.map((stakeholder: string) => {
-                            const exists = targets.some(t =>
-                              t.name.toLowerCase() === stakeholder.toLowerCase() &&
-                              (t.type === 'stakeholder' || t.type === 'influencer')
-                            )
-                            const isSelected = selectedDiscoveryItems.has(stakeholder)
+                          {discoveredItems.stakeholders.regulators.map((name: string) => {
+                            const key = `regulator:${name}`
+                            const exists = targets.some(t => t.name.toLowerCase() === name.toLowerCase() && t.type === 'regulator')
+                            const isSelected = selectedDiscoveryItems.has(key)
                             return (
                               <button
-                                key={stakeholder}
-                                onClick={() => !exists && toggleDiscoveryItem(stakeholder)}
+                                key={key}
+                                onClick={() => !exists && toggleDiscoveryItem(key)}
                                 disabled={exists}
                                 className={`p-2 rounded border text-sm ${
                                   exists ? 'bg-[var(--grey-800)] border-[var(--grey-700)] text-[var(--grey-500)]' :
-                                  isSelected ? 'bg-purple-500/20 border-purple-500 text-purple-300' :
-                                  'bg-purple-500/10 border-purple-500/30 text-purple-300 hover:bg-purple-500/20'
+                                  isSelected ? 'bg-rose-500/20 border-rose-500 text-rose-300' :
+                                  'bg-rose-500/10 border-rose-500/30 text-rose-300 hover:bg-rose-500/20'
                                 }`}
                               >
-                                {stakeholder}
+                                {name}
                               </button>
                             )
                           })}
@@ -741,20 +860,19 @@ export default function TargetManagementTab({
                       </div>
                     )}
 
+                    {/* Influencers */}
                     {discoveredItems.stakeholders.influencers && discoveredItems.stakeholders.influencers.length > 0 && (
                       <div className="mt-4">
                         <h4 className="text-sm font-medium text-white mb-2" style={{ fontFamily: 'var(--font-display)' }}>Influencers ({discoveredItems.stakeholders.influencers.length})</h4>
                         <div className="grid grid-cols-2 gap-2">
-                          {discoveredItems.stakeholders.influencers.map((stakeholder: string) => {
-                            const exists = targets.some(t =>
-                              t.name.toLowerCase() === stakeholder.toLowerCase() &&
-                              (t.type === 'stakeholder' || t.type === 'influencer')
-                            )
-                            const isSelected = selectedDiscoveryItems.has(stakeholder)
+                          {discoveredItems.stakeholders.influencers.map((name: string) => {
+                            const key = `influencer:${name}`
+                            const exists = targets.some(t => t.name.toLowerCase() === name.toLowerCase() && t.type === 'influencer')
+                            const isSelected = selectedDiscoveryItems.has(key)
                             return (
                               <button
-                                key={stakeholder}
-                                onClick={() => !exists && toggleDiscoveryItem(stakeholder)}
+                                key={key}
+                                onClick={() => !exists && toggleDiscoveryItem(key)}
                                 disabled={exists}
                                 className={`p-2 rounded border text-sm ${
                                   exists ? 'bg-[var(--grey-800)] border-[var(--grey-700)] text-[var(--grey-500)]' :
@@ -762,36 +880,7 @@ export default function TargetManagementTab({
                                   'bg-purple-500/10 border-purple-500/30 text-purple-300 hover:bg-purple-500/20'
                                 }`}
                               >
-                                {stakeholder}
-                              </button>
-                            )
-                          })}
-                        </div>
-                      </div>
-                    )}
-
-                    {discoveredItems.stakeholders.major_customers && discoveredItems.stakeholders.major_customers.length > 0 && (
-                      <div className="mt-4">
-                        <h4 className="text-sm font-medium text-white mb-2" style={{ fontFamily: 'var(--font-display)' }}>Major Customers ({discoveredItems.stakeholders.major_customers.length})</h4>
-                        <div className="grid grid-cols-2 gap-2">
-                          {discoveredItems.stakeholders.major_customers.map((stakeholder: string) => {
-                            const exists = targets.some(t =>
-                              t.name.toLowerCase() === stakeholder.toLowerCase() &&
-                              (t.type === 'stakeholder' || t.type === 'influencer')
-                            )
-                            const isSelected = selectedDiscoveryItems.has(stakeholder)
-                            return (
-                              <button
-                                key={stakeholder}
-                                onClick={() => !exists && toggleDiscoveryItem(stakeholder)}
-                                disabled={exists}
-                                className={`p-2 rounded border text-sm ${
-                                  exists ? 'bg-[var(--grey-800)] border-[var(--grey-700)] text-[var(--grey-500)]' :
-                                  isSelected ? 'bg-purple-500/20 border-purple-500 text-purple-300' :
-                                  'bg-purple-500/10 border-purple-500/30 text-purple-300 hover:bg-purple-500/20'
-                                }`}
-                              >
-                                {stakeholder}
+                                {name}
                               </button>
                             )
                           })}

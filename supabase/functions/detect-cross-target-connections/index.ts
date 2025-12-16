@@ -438,37 +438,63 @@ ${overlaps.topicOverlaps.length > 0
     ).join('\n')
   : 'None detected'}
 
-TASK: Identify meaningful CONNECTIONS between these targets that would be valuable for the organization to know about.
+TASK: Find connections between targets that PREDICT what could happen NEXT.
 
-Look for:
-1. SHARED_RELATIONSHIP: Targets linked through common entities (partners, suppliers, customers)
-2. MARKET_CONVERGENCE: Multiple targets moving into the same market or space
-3. TIMING_CORRELATION: Activity patterns suggesting coordination or reaction to each other
-4. COMPETITIVE_CLASH: Targets competing in the same area
-5. SUPPLY_CHAIN: Upstream/downstream relationships between targets
-6. TOPIC_OVERLAP: Targets focusing on similar themes or trends
+Your goal is NOT to report that targets are connected. Your goal is to answer:
+"What does this connection suggest COULD HAPPEN that we should prepare for?"
+
+CONNECTION TYPES TO LOOK FOR:
+1. SHARED_RELATIONSHIP: Targets linked through common entities - what does this create? (opportunity? risk? conflict?)
+2. MARKET_CONVERGENCE: Multiple targets moving into same space - who wins? what disruption follows?
+3. TIMING_CORRELATION: Coordinated activity - are they working together? racing each other?
+4. COMPETITIVE_CLASH: Direct competition brewing - what's the likely outcome for each player?
+5. SUPPLY_CHAIN: Upstream/downstream links - where are the vulnerabilities? opportunities?
+6. TOPIC_OVERLAP: Shared focus areas - is this a trend we need to get ahead of?
+
+FOR EACH CONNECTION, ANSWER:
+- "So what?" - Why does this connection matter to our organization?
+- "What happens next?" - What scenario does this connection set up?
+- "What should we do?" - How should we position given this dynamic?
 
 Return 0-4 connections as JSON array:
 [
   {
     "connection_type": "shared_relationship|market_convergence|timing_correlation|competitive_clash|supply_chain|topic_overlap",
-    "title": "Clear, specific title (max 100 chars)",
+    "title": "Predictive headline: What this connection leads to (max 100 chars)",
     "targets_involved": ["Target Name 1", "Target Name 2"],
     "shared_elements": ["Element 1", "Element 2"],
-    "description": "What the connection is and why it matters (2-3 sentences)",
-    "evidence": ["Specific data point 1", "Specific data point 2"],
+    "description": "Here's what's happening, and here's what it suggests is coming next (2-3 sentences)",
+    "evidence": ["Evidence point 1", "Evidence point 2"],
     "strength": 0.7,
-    "business_implication": "What this means for the organization"
+    "business_implication": "What we should prepare for and what we should do now"
   }
 ]
+
+QUALITY STANDARDS:
+
+🔮 PREDICTIVE, NOT DESCRIPTIVE:
+- BAD: "Both competitors are present in the Asian market" (obvious fact)
+- GOOD: "Competitor A and B are both making aggressive Asian moves - expect price war in Q2 that could spill into our markets"
+
+💡 FIND THE NON-OBVIOUS:
+- BAD: "These targets share a common supplier" (data point)
+- GOOD: "Both rely on TSMC for critical chips - their rivalry may create supply allocation conflicts we could exploit"
+
+⚡ ACTIONABLE INSIGHTS:
+- BAD: "Interesting overlap in focus areas" (so what?)
+- GOOD: "Both are pivoting to sustainability messaging before 2025 regulations - we need positioning before they own this narrative"
+
+🎯 SCENARIO BUILDING:
+- BAD: "Timing suggests coordination" (observation)
+- GOOD: "Joint announcements suggest partnership talks - if confirmed, creates formidable competitor; recommend accelerating our own alliance discussions"
 
 RULES:
 - Only report connections with CLEAR evidence from the data above
 - Target names must EXACTLY match the names in the target list
-- Be specific - cite actual data from the summaries
-- If no meaningful connections exist, return []
-- Focus on connections that provide actionable intelligence
-- Strength should reflect how strong the evidence is (0.4-0.9 range)
+- Be specific about WHAT could happen and WHEN
+- If no meaningful PREDICTIVE connections exist, return []
+- Strength should reflect confidence in the PREDICTION (0.4-0.85 range)
+- Avoid vague implications - be specific about scenarios and actions
 
 Return ONLY the JSON array.`;
 

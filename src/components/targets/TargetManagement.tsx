@@ -8,7 +8,7 @@ interface IntelligenceTarget {
   id: string
   organization_id: string
   name: string
-  type: 'competitor' | 'topic' | 'keyword' | 'influencer'
+  type: 'competitor' | 'topic' | 'keyword' | 'influencer' | 'customer' | 'investor' | 'partner' | 'supplier' | 'regulator' | 'stakeholder'
   priority: 'low' | 'medium' | 'high' | 'critical'
   threat_level?: number
   keywords?: string[]
@@ -399,6 +399,12 @@ export default function TargetManagement({
       case 'topic': return 'bg-blue-500/20 text-blue-400 border-blue-500/30'
       case 'keyword': return 'bg-green-500/20 text-green-400 border-green-500/30'
       case 'influencer': return 'bg-purple-500/20 text-purple-400 border-purple-500/30'
+      case 'customer': return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+      case 'investor': return 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+      case 'partner': return 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30'
+      case 'supplier': return 'bg-orange-500/20 text-orange-400 border-orange-500/30'
+      case 'regulator': return 'bg-rose-500/20 text-rose-400 border-rose-500/30'
+      case 'stakeholder': return 'bg-purple-500/20 text-purple-400 border-purple-500/30'
       default: return 'bg-gray-500/20 text-gray-400 border-gray-500/30'
     }
   }
@@ -531,6 +537,11 @@ export default function TargetManagement({
                             className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white focus:border-cyan-500 focus:outline-none"
                           >
                             <option value="competitor">Competitor</option>
+                            <option value="customer">Customer</option>
+                            <option value="investor">Investor</option>
+                            <option value="partner">Partner</option>
+                            <option value="supplier">Supplier</option>
+                            <option value="regulator">Regulator</option>
                             <option value="topic">Topic</option>
                             <option value="keyword">Keyword</option>
                             <option value="influencer">Influencer</option>

@@ -14,6 +14,7 @@ const FIRECRAWL_API_KEY = Deno.env.get('FIRECRAWL_API_KEY') || 'fc-3048810124b64
 const API_TIMEOUT_MS = 20000; // 20 seconds per API call
 const MAX_SOURCES_DEFAULT = 15; // Reduced from 50 to avoid Edge Function timeout
 const STUCK_RUN_THRESHOLD_MINUTES = 10; // Mark runs older than this as failed
+const MAX_ARTICLE_AGE_DAYS = 14; // Skip articles with old dates in URL
 
 interface Source {
   id: string;
@@ -275,6 +276,16 @@ async function discoverViaFirecrawlMap(source: Source, supabase: any): Promise<{
         return false;
       }
 
+      // DATE FILTERING: Skip URLs with old dates in them
+      const dateInUrl = extractDateFromUrl(url);
+      if (dateInUrl) {
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - MAX_ARTICLE_AGE_DAYS);
+        if (dateInUrl < cutoffDate) {
+          return false; // URL date is too old
+        }
+      }
+
       // Exclude obvious non-article pages
       const isExcluded =
         lowerUrl.includes('/category') ||
@@ -339,4 +350,41 @@ async function discoverViaFirecrawlMap(source: Source, supabase: any): Promise<{
     newCount: newArticles.length,
     duplicateCount: articles.length - newArticles.length
   };
+}
+
+// ============================================================================
+// Helper: Extract date from URL patterns
+// ============================================================================
+function extractDateFromUrl(url: string): Date | null {
+  // Pattern 1: /YYYY/MM/DD/ or /YYYY/MM/
+  const slashPattern = url.match(/\/(\d{4})\/(\d{2})(?:\/(\d{2}))?/);
+  if (slashPattern) {
+    const [, year, month, day] = slashPattern;
+    const yearNum = parseInt(year);
+    // Sanity check: year should be reasonable (2000-2030)
+    if (yearNum >= 2000 && yearNum <= 2030) {
+      return new Date(yearNum, parseInt(month) - 1, day ? parseInt(day) : 1);
+    }
+  }
+
+  // Pattern 2: YYYY-MM-DD in URL
+  const dashPattern = url.match(/(20\d{2})-(\d{2})-(\d{2})/);
+  if (dashPattern) {
+    const [, year, month, day] = dashPattern;
+    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+  }
+
+  // Pattern 3: -YYYYMMDD (some sites use this)
+  const compactPattern = url.match(/-?(20\d{2})(\d{2})(\d{2})(?:[^0-9]|$)/);
+  if (compactPattern) {
+    const [, year, month, day] = compactPattern;
+    const monthNum = parseInt(month);
+    const dayNum = parseInt(day);
+    // Sanity check: valid month and day
+    if (monthNum >= 1 && monthNum <= 12 && dayNum >= 1 && dayNum <= 31) {
+      return new Date(parseInt(year), monthNum - 1, dayNum);
+    }
+  }
+
+  return null;
 }

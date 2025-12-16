@@ -10,6 +10,7 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 const BATCH_SIZE = 10; // Reduced from 25 to avoid timeouts with slow sites (WSJ, etc) - mcp-firecrawl scrapes 5 in parallel
+const MAX_ARTICLE_AGE_DAYS = 14; // Reject articles older than this
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -207,6 +208,29 @@ serve(async (req) => {
           }
         }
 
+        // DATE FILTERING: Reject articles older than MAX_ARTICLE_AGE_DAYS
+        if (publishedDate) {
+          const articleDate = new Date(publishedDate);
+          const cutoffDate = new Date();
+          cutoffDate.setDate(cutoffDate.getDate() - MAX_ARTICLE_AGE_DAYS);
+
+          if (articleDate < cutoffDate) {
+            // Article is too old - mark as failed and skip
+            await supabase
+              .from('raw_articles')
+              .update({
+                scrape_status: 'failed',
+                scrape_attempts: 3, // Max out attempts
+                processing_error: `Article too old: ${publishedDate.split('T')[0]} (>${MAX_ARTICLE_AGE_DAYS} days)`
+              })
+              .eq('id', articleId);
+
+            failedCount++;
+            console.log(`   ⏰ ${result.metadata?.title?.substring(0, 40) || 'Article'}: Too old (${publishedDate.split('T')[0]})`);
+            continue;
+          }
+        }
+
         const { error: updateError } = await supabase
           .from('raw_articles')
           .update({
@@ -333,7 +357,27 @@ function validateArticleContent(
   const titleLower = title.toLowerCase();
   const urlLower = url.toLowerCase();
 
-  // 0. Reject non-article file types (XML sitemaps, archives, etc.)
+  // 0a. Reject garbage titles (XML filenames, numeric IDs, date-only titles)
+  const garbageTitlePatterns = [
+    /^article\s*\d+xml$/i,           // "article 14819xml"
+    /^\d+\s+\d+\s+\d+$/,             // "2 1 1915105" (Upstream IDs)
+    /^\d{4}\s+\d{2}\s+\d{2}$/,       // "2025 02 14" (date-only titles)
+    /^\d{4}-\d{2}-\d{2}$/,           // "2025-02-14" (ISO date-only)
+    /^[a-f0-9]{8,}$/i,               // hex IDs only
+    /^untitled$/i,                   // Literally "untitled"
+  ];
+
+  for (const pattern of garbageTitlePatterns) {
+    if (pattern.test(title.trim())) {
+      return {
+        is_valid: false,
+        reason: `Garbage title: "${title}"`,
+        confidence: 1.0
+      };
+    }
+  }
+
+  // 0b. Reject non-article file types (XML sitemaps, archives, etc.)
   if (urlLower.endsWith('.xml') || urlLower.includes('/archive/') && urlLower.match(/\d{4}\/\w+\.xml$/)) {
     return {
       is_valid: false,

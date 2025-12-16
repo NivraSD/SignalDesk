@@ -398,45 +398,77 @@ BASELINE COMPARISON (established ${baseline.established_at}):
 - Current vs baseline: ${(ctx.facts_last_7d || 0) > (baseline.avg_facts_per_week || 0) * 1.5 ? 'ELEVATED ACTIVITY' : (ctx.facts_last_7d || 0) < (baseline.avg_facts_per_week || 1) * 0.5 ? 'REDUCED ACTIVITY' : 'Normal'}
 ` : 'No baseline established yet (need 30+ facts)'}
 
-TASK: Identify meaningful patterns in this accumulated intelligence about ${target.name}.
+TASK: Generate PREDICTIVE, FORWARD-LOOKING intelligence about ${target.name}.
 
-Look for:
-1. TRAJECTORY: Is the target expanding, contracting, pivoting? What direction are they moving?
-2. ANOMALIES: Any unusual activity compared to recent patterns?
-3. TRENDS: Consistent direction over time (sentiment shifts, geographic focus, activity type concentration)
-4. SHIFTS: Recent changes from historical patterns
-5. MILESTONES: Significant events that mark a turning point
+Your goal is NOT to summarize what happened. Your goal is to answer: "WHAT COULD HAPPEN NEXT?"
+
+Look for NON-OBVIOUS patterns that suggest FUTURE events:
+1. TRAJECTORY: Where is this target heading? What's their next logical move?
+2. ANOMALIES: What unusual activity might signal something brewing beneath the surface?
+3. TRENDS: What building momentum suggests an inflection point is coming?
+4. SHIFTS: What recent changes could cascade into bigger disruptions?
+5. MILESTONES: What recent events set up domino effects we should watch?
+
+FOR EACH PATTERN, ANSWER:
+- "So what?" - Why should we care about this pattern?
+- "What's next?" - What does this pattern suggest will happen in 1-6 months?
+- "What should we watch for?" - What early warning signs would confirm/deny this prediction?
 
 Return 0-3 pattern analyses as JSON array:
 [
   {
     "pattern_type": "trajectory|anomaly|trend|shift|milestone",
-    "title": "Clear, specific title (max 100 chars)",
-    "description": "What the pattern is and what it means (2-3 sentences)",
-    "evidence": ["Specific data point 1", "Specific data point 2"],
+    "title": "Predictive headline: What could happen next (max 100 chars)",
+    "description": "Connect the dots: Here's what we're seeing, and here's what it suggests is coming (2-3 sentences)",
+    "evidence": ["Evidence point 1 that supports the prediction", "Evidence point 2"],
     "confidence": 0.7,
     "time_horizon": "1-month|3-months|6-months",
-    "business_implication": "What this means for our organization",
-    "recommended_action": "Suggested response (optional)"
+    "business_implication": "What this means for our organization and what we should prepare for",
+    "recommended_action": "Specific proactive step to take now (not 'monitor closely')"
   }
 ]
 
+QUALITY STANDARDS:
+
+🚨 REJECT GENERIC INDUSTRY PATTERNS:
+- BAD: "AI adoption is accelerating in healthcare" (generic industry trend everyone knows)
+- BAD: "Cost reduction gaining momentum across the industry" (no specific actor, no specific threat)
+- BAD: "Market validation for AI-powered solutions" (vague positive spin, not actionable)
+- GOOD: "Anthropic is targeting healthcare with governance-focused AI that competes directly with our EMR integration" (specific competitor, specific move, specific threat)
+
+🎯 SPECIFIC ENTITY + SPECIFIC ACTION:
+- Every pattern MUST name a SPECIFIC entity doing a SPECIFIC thing
+- BAD: "The industry is moving toward X" (who? what specifically?)
+- GOOD: "[Company Name] just [specific action] which signals [specific implication for us]"
+
+🔮 THREAT OR OPPORTUNITY - NOT VALIDATION:
+- Don't tell them their market is "validated" - they already know their market exists
+- Tell them WHO is threatening their position or WHERE the opportunity is
+- BAD: "Growing demand validates our solution" (flattery, not intelligence)
+- GOOD: "Epic just partnered with Microsoft on AI documentation - they're coming for our core use case"
+
+⚡ ACTIONABLE IMPLICATIONS:
+- BAD: "Monitor this trend closely" (useless advice)
+- GOOD: "Brief sales team before Q2 - they need talking points on why we're different from [competitor]"
+
+💡 THE "SO WHAT" TEST:
+Ask: "If I told a busy executive this, would they say 'so what?' or 'we need to do something'?"
+- If the pattern is something everyone already knows, DON'T report it
+- If the pattern doesn't suggest a specific action, DON'T report it
+- If the pattern is just good news about the market, DON'T report it
+
 RULES:
 - Only report patterns with REAL evidence from the data above
-- If no meaningful patterns exist or data is too limited, return []
-- Focus on actionable intelligence, not obvious observations
-- Confidence should reflect how much data supports the pattern (0.5-0.9 range)
+- If no meaningful PREDICTIVE insights about SPECIFIC ENTITIES exist, return []
+- Prefer competitor/stakeholder patterns over generic topic patterns
+- Be specific about WHO, WHAT, WHEN, and WHAT TO DO
+- Confidence should reflect how much evidence supports the PREDICTION (0.5-0.85 range)
 
-CRITICAL - WRITE FOR BUSINESS USERS:
-- NEVER mention internal metrics like "significance scores", "fact counts", or "detection methods"
-- NEVER say things like "75% of facts were high-significance" or "4 intelligence facts occurred"
-- The title should describe WHAT is happening, not HOW we detected it
-- The description should explain the real-world situation and why it matters
-- Write like you're briefing a busy executive - they want to know what's happening and what to do, not how your analysis works
-- BAD: "Concentrated High-Impact Intelligence Burst in AI Advertising"
-- GOOD: "AI Tools Reshaping Digital Ad Buying - Major Platforms Shifting to Automated Systems"
-- BAD: "All 4 intelligence facts occurred within the last 7 days with 75% being high-significance"
-- GOOD: "Google and Meta both announced AI-powered ad tools this week, signaling an industry-wide shift"
+CRITICAL - WRITE FOR STRATEGIC DECISION-MAKERS:
+- NEVER mention internal metrics or analysis process
+- The title should name WHO is doing WHAT, not describe a vague trend
+- Write like you're a trusted advisor warning about a specific competitive move
+- Generic industry commentary is WORTHLESS - specific competitive intelligence is VALUABLE
 
 Return ONLY the JSON array.`;
 

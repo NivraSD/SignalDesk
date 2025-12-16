@@ -18,6 +18,7 @@ const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')!;
 const MAX_MATCHES_PER_RUN = 50;  // Process up to 50 matches per run
 const MAX_ARTICLES_PER_BATCH = 10;  // Batch this many articles per Claude call
 const MIN_SIMILARITY_FOR_EXTRACTION = 0.40;  // Only extract from strong matches
+const ENABLE_COMPETITOR_SEARCH = true;  // Also run active competitor search
 
 interface Match {
   id: string;
@@ -54,6 +55,14 @@ interface ExtractedFact {
   significance_score: number;
   geographic_region?: string;
   industry_sector?: string;
+}
+
+interface CompetitorSearchResult {
+  competitor: string;
+  title: string;
+  url?: string;
+  category: string;
+  snippet?: string;
 }
 
 interface AccumulatedContext {
@@ -265,12 +274,130 @@ serve(async (req) => {
       }
     }
 
+    // PHASE 2: Active Competitor Search (for orgs with sparse article coverage)
+    let competitorFactsExtracted = 0;
+    if (ENABLE_COMPETITOR_SEARCH && organizationId && totalFactsExtracted < 5) {
+      console.log('\n🔍 PHASE 2: Active Competitor Search (sparse article coverage)');
+
+      try {
+        // Get org details
+        const { data: org } = await supabase
+          .from('organizations')
+          .select('name, industry, company_profile')
+          .eq('id', organizationId)
+          .single();
+
+        if (org) {
+          // Call competitor-intelligence-search
+          const searchResponse = await fetch(`${SUPABASE_URL}/functions/v1/competitor-intelligence-search`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              organization_id: organizationId,
+              organization_name: org.name
+            })
+          });
+
+          if (searchResponse.ok) {
+            const searchData = await searchResponse.json();
+            const results = searchData.results as CompetitorSearchResult[] || [];
+
+            console.log(`   Found ${results.length} competitor search results`);
+
+            if (results.length > 0) {
+              // Group results by competitor
+              const resultsByCompetitor = new Map<string, CompetitorSearchResult[]>();
+              for (const r of results) {
+                if (!resultsByCompetitor.has(r.competitor)) {
+                  resultsByCompetitor.set(r.competitor, []);
+                }
+                resultsByCompetitor.get(r.competitor)!.push(r);
+              }
+
+              // Process each competitor's results
+              for (const [competitorName, compResults] of resultsByCompetitor) {
+                // Find the target for this competitor
+                const { data: targetData } = await supabase
+                  .from('intelligence_targets')
+                  .select('id, name, target_type, priority, monitoring_context, accumulated_context')
+                  .eq('organization_id', organizationId)
+                  .ilike('name', competitorName)
+                  .eq('is_active', true)
+                  .single();
+
+                if (!targetData) {
+                  console.log(`     No target found for competitor: ${competitorName}`);
+                  continue;
+                }
+
+                console.log(`   Processing ${compResults.length} results for ${competitorName}`);
+
+                // Extract facts from search results
+                const facts = await extractFactsFromSearchResults(
+                  targetData,
+                  compResults,
+                  `Organization: ${org.name}\nIndustry: ${org.industry || 'N/A'}`
+                );
+
+                console.log(`     Extracted ${facts.length} facts from search`);
+
+                // Save facts
+                for (const fact of facts) {
+                  const { error: insertError } = await supabase
+                    .from('target_intelligence_facts')
+                    .upsert({
+                      organization_id: organizationId,
+                      target_id: targetData.id,
+                      article_id: null,  // No article - from search
+                      match_id: null,
+                      fact_type: fact.fact_type,
+                      fact_summary: fact.fact_summary,
+                      entities_mentioned: fact.entities_mentioned,
+                      relationships_detected: fact.relationships,
+                      sentiment_score: fact.sentiment_score,
+                      confidence_score: fact.confidence_score,
+                      significance_score: fact.significance_score,
+                      geographic_region: fact.geographic_region || null,
+                      industry_sector: fact.industry_sector || null,
+                      article_title: `[Search] ${compResults[0]?.title || competitorName}`,
+                      article_source: 'Competitor Search',
+                      article_published_at: new Date().toISOString(),
+                      extraction_model: 'claude-sonnet-4'
+                    }, {
+                      onConflict: 'target_id,fact_summary',
+                      ignoreDuplicates: true
+                    });
+
+                  if (!insertError) {
+                    competitorFactsExtracted++;
+                    totalFactsExtracted++;
+                  }
+                }
+
+                // Update accumulated context
+                if (facts.length > 0) {
+                  await updateAccumulatedContext(supabase, targetData.id, facts);
+                }
+              }
+            }
+          }
+        }
+      } catch (searchError: any) {
+        console.error(`   Competitor search error: ${searchError.message}`);
+        errors.push(`Competitor search: ${searchError.message}`);
+      }
+    }
+
     const duration = Math.round((Date.now() - startTime) / 1000);
 
     const summary = {
       success: true,
       matches_processed: matchesProcessed,
       facts_extracted: totalFactsExtracted,
+      competitor_facts: competitorFactsExtracted,
       targets_processed: matchesByTarget.size,
       duration_seconds: duration,
       errors: errors.length > 0 ? errors : undefined
@@ -419,6 +546,122 @@ Return ONLY the JSON array.`;
 
   } catch (error: any) {
     console.error(`     Claude extraction error: ${error.message}`);
+    return [];
+  }
+}
+
+async function extractFactsFromSearchResults(
+  target: { id: string; name: string; target_type: string; priority: string; monitoring_context: string | null },
+  searchResults: CompetitorSearchResult[],
+  orgContext: string
+): Promise<ExtractedFact[]> {
+
+  const prompt = `You are an intelligence analyst extracting facts about "${target.name}" (${target.target_type}) from web search results.
+
+ORGANIZATION CONTEXT:
+${orgContext}
+
+TARGET PROFILE:
+Name: ${target.name}
+Type: ${target.target_type}
+Priority: ${target.priority}
+Context: ${target.monitoring_context || 'N/A'}
+
+SEARCH RESULTS TO ANALYZE:
+${searchResults.map((r, i) => `
+[${i + 1}] "${r.title}"
+Category: ${r.category}
+URL: ${r.url || 'N/A'}
+${r.snippet ? `Snippet: ${r.snippet}` : ''}
+`).join('\n---\n')}
+
+TASK: Extract intelligence facts about ${target.name} from these search results.
+
+For EACH result that contains actionable intelligence, extract:
+1. fact_type: One of [expansion, contraction, partnership, acquisition, product_launch, leadership_change, financial, legal_regulatory, crisis, strategy, hiring, technology, market_position, other]
+2. fact_summary: One specific sentence describing the intelligence (include names, numbers if visible in title/snippet)
+3. entities_mentioned: Other companies, people, or places involved
+4. relationships: Relationships revealed
+5. sentiment_score: -1.0 to 1.0 (positive = good news for ${target.name})
+6. confidence_score: 0-1 (lower for titles-only, higher if snippet confirms)
+7. significance_score: 0-100
+
+RULES:
+- Focus on extracting REAL intelligence from the titles/snippets
+- If a title mentions "$300M ARR" - that's a financial fact
+- If it mentions "partnership" or "acquisition" - that's a relationship
+- Be conservative with confidence_score since these are just search results
+- Skip generic/unhelpful results (landing pages, about pages)
+
+Return JSON array:
+[
+  {
+    "article_index": 1,
+    "fact_type": "financial",
+    "fact_summary": "${target.name} reached $300M ARR milestone",
+    "entities_mentioned": [],
+    "relationships": [],
+    "sentiment_score": 0.8,
+    "confidence_score": 0.7,
+    "significance_score": 85,
+    "industry_sector": "Technology"
+  }
+]
+
+Return ONLY the JSON array. Return empty array [] if no meaningful facts can be extracted.`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 3000,
+        messages: [{
+          role: 'user',
+          content: prompt
+        }]
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Claude API error: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    const content = data.content?.[0]?.text || '';
+
+    // Parse JSON from response
+    const jsonMatch = content.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) {
+      console.log('     No facts found in search results');
+      return [];
+    }
+
+    const facts: ExtractedFact[] = JSON.parse(jsonMatch[0]);
+
+    // Validate and clean facts
+    return facts.filter(f => {
+      if (!f.fact_type || !f.fact_summary) return false;
+      if (f.article_index && (f.article_index < 1 || f.article_index > searchResults.length)) return false;
+      return true;
+    }).map(f => ({
+      ...f,
+      article_index: f.article_index || 1,
+      entities_mentioned: Array.isArray(f.entities_mentioned) ? f.entities_mentioned : [],
+      relationships: Array.isArray(f.relationships) ? f.relationships : [],
+      sentiment_score: Math.max(-1, Math.min(1, f.sentiment_score || 0)),
+      confidence_score: Math.max(0, Math.min(1, f.confidence_score || 0.5)),
+      significance_score: Math.max(0, Math.min(100, f.significance_score || 50))
+    }));
+
+  } catch (error: any) {
+    console.error(`     Search fact extraction error: ${error.message}`);
     return [];
   }
 }

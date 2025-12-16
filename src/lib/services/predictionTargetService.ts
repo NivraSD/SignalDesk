@@ -29,7 +29,7 @@ export class PredictionTargetService {
    */
   static async getPredictionsByTargetType(
     organizationId: string,
-    targetType: 'competitor' | 'topic' | 'keyword' | 'influencer'
+    targetType: 'competitor' | 'topic' | 'keyword' | 'influencer' | 'customer' | 'investor' | 'partner' | 'supplier' | 'regulator'
   ): Promise<PredictionWithTarget[]> {
     const { data, error } = await supabase
       .from('predictions_with_targets')

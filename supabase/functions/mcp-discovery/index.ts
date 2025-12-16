@@ -1003,9 +1003,38 @@ NOW, provide your COMPREHENSIVE profile in this JSON format:
     "regulators": ["ONLY for heavily regulated industries (finance, healthcare, energy, etc.). For creative/marketing/PR/tech firms, use EMPTY ARRAY []"],
     "key_analysts": ["IMPORTANT: 2-4 thought leaders, industry journalists, or influential voices. Examples: 'Scott Galloway - Marketing Professor', 'Ann Handley - Chief Content Officer', 'Gary Vaynerchuk - VaynerMedia'. These should be people whose opinions shape industry trends"],
     "activists": ["OPTIONAL: 1-2 activist groups or prominent critics if relevant to this org"],
-    "major_customers": [],
-    "major_investors": [],
-    "key_partners": []
+    "major_customers": [
+      "🚨 MUST BE SPECIFIC COMPANY NAMES - NEVER generic categories like 'Manufacturing companies' or 'Enterprise clients'",
+      "🎯 CRITICAL: 5-10 ACTUAL known customers/clients BY NAME. Research who their real clients are.",
+      "Examples: For Anthropic: 'Amazon', 'DuckDuckGo', 'Notion', 'Jasper', 'Copy.ai'. For Firecrawl: 'Notion', 'Perplexity', 'Cursor'",
+      "⛔ WRONG: 'Manufacturing companies', 'Enterprise clients', 'Large corporations' - these are useless",
+      "✅ RIGHT: 'Boeing', 'General Motors', 'Siemens' - specific trackable company names",
+      "If you don't know their actual customers, return EMPTY ARRAY [] - don't guess with categories"
+    ],
+    "major_investors": [
+      "🚨 MUST BE SPECIFIC INVESTOR NAMES - NEVER generic like 'Technology-focused VCs' or 'Growth equity firms'",
+      "🎯 CRITICAL: 3-5 ACTUAL investors BY NAME. Research who has actually invested.",
+      "Examples: 'Sequoia Capital', 'a16z', 'SoftBank Vision Fund', 'Google Ventures', 'Spark Capital'",
+      "⛔ WRONG: 'Growth equity firms', 'Technology VCs', 'Angel investors' - these are useless",
+      "✅ RIGHT: 'Spark Capital', 'Google', 'Salesforce Ventures' - specific trackable names",
+      "If you don't know their actual investors, return EMPTY ARRAY [] - don't guess with categories"
+    ],
+    "key_partners": [
+      "🚨 MUST BE SPECIFIC PARTNER NAMES - NEVER generic like 'Cloud providers' or 'Hardware vendors'",
+      "🎯 CRITICAL: 3-5 ACTUAL strategic/technology partners BY NAME",
+      "Examples: 'AWS', 'Salesforce', 'Microsoft Azure', 'NVIDIA', 'Snowflake'",
+      "⛔ WRONG: 'Cloud providers', 'Integration partners', 'Technology vendors' - these are useless",
+      "✅ RIGHT: 'AWS', 'Google Cloud', 'Databricks' - specific trackable company names",
+      "If you don't know their actual partners, return EMPTY ARRAY [] - don't guess"
+    ],
+    "key_suppliers": [
+      "🚨 MUST BE SPECIFIC SUPPLIER NAMES - NEVER generic like 'Hardware suppliers'",
+      "🎯 FOR MANUFACTURING/TRADING: ACTUAL suppliers BY NAME",
+      "Examples: 'TSMC', 'Foxconn', 'CATL', 'Samsung Display', 'BOE Technology'",
+      "⛔ WRONG: 'Chip suppliers', 'Manufacturing partners' - these are useless",
+      "✅ RIGHT: 'TSMC', 'Samsung', 'SK Hynix' - specific trackable company names",
+      "For service companies OR if you don't know, return EMPTY ARRAY []"
+    ]
   },
 
   "monitoring_guidance": {
@@ -1141,7 +1170,11 @@ ${industryData.competitors.length > 0 ? `\nKnown competitors: ${industryData.com
   "stakeholders": {
     "regulators": [],
     "key_analysts": ["Scott Galloway - NYU Marketing Professor", "Ann Handley - Chief Content Officer MarketingProfs", "Event Marketer Magazine editors", "BizBash editorial team"],
-    "activists": []
+    "activists": [],
+    "major_customers": ["Samsung", "Red Bull", "Nike", "Google", "Amazon", "Coca-Cola", "BMW"],
+    "major_investors": [],
+    "key_partners": ["Freeman (production partner)", "Encore (AV partner)", "GPJ (overflow partner)"],
+    "key_suppliers": []
   },
   "monitoring_guidance": {
     "analysts": {
@@ -1184,7 +1217,11 @@ ${industryData.competitors.length > 0 ? `\nKnown competitors: ${industryData.com
   "stakeholders": {
     "regulators": ["CFTC", "FERC", "DOE", "USDA"],
     "key_analysts": ["Ed Morse - Citigroup Energy", "Jeff Currie - Goldman Sachs Commodities"],
-    "activists": []
+    "activists": ["Greenpeace", "Sierra Club"],
+    "major_customers": ["Tokyo Electric Power", "JFE Steel", "Toyota Motor", "Nippon Steel"],
+    "major_investors": ["Government Pension Investment Fund (GPIF)", "BlackRock", "Vanguard"],
+    "key_partners": ["ADNOC (energy JV)", "CMA CGM (shipping)", "Vale (mining JV)"],
+    "key_suppliers": ["Saudi Aramco (crude)", "BHP (iron ore)", "Rio Tinto (copper)"]
   },
   "monitoring_guidance": {
     "regulators": {
@@ -1197,6 +1234,24 @@ ${industryData.competitors.length > 0 ? `\nKnown competitors: ${industryData.com
   }
 }
 
+✅ GOOD Example (AI/Technology Company like Anthropic):
+{
+  "competition": {
+    "direct_competitors": ["OpenAI", "Google DeepMind", "Cohere", "Mistral AI", "xAI", "Inflection AI", "Meta AI", "Amazon Bedrock"],
+    "indirect_competitors": ["Microsoft Azure OpenAI", "Google Vertex AI", "AWS SageMaker"],
+    "emerging_threats": ["Stability AI", "Hugging Face", "Cerebras"]
+  },
+  "stakeholders": {
+    "regulators": ["FTC", "EU AI Act regulators", "NIST AI RMF"],
+    "key_analysts": ["Gary Marcus - NYU", "Timnit Gebru - DAIR Institute", "Yoshua Bengio - Mila"],
+    "activists": ["AI Safety Institute", "Center for AI Safety", "Future of Life Institute"],
+    "major_customers": ["Amazon", "Notion", "DuckDuckGo", "Jasper", "Copy.ai"],
+    "major_investors": ["Google", "Spark Capital", "Menlo Ventures", "Salesforce Ventures"],
+    "key_partners": ["AWS (cloud infrastructure)", "Google Cloud (distribution)", "Scale AI (data)"],
+    "key_suppliers": ["NVIDIA (GPUs)", "AWS (compute)", "Google Cloud (TPUs)"]
+  }
+}
+
 REMEMBER:
 - Return 10-15 competitors minimum (not 4)
 - Use simple string arrays for all targets
@@ -1205,6 +1260,12 @@ REMEMBER:
 - **For lightly regulated industries: FOCUS on key_analysts (thought leaders, journalists, industry voices)**
 - Only use special_focus for exceptions (like "SEC only for comms regs")
 - BE SPECIFIC with real names - real companies, real agencies, real people
+
+🚨 CRITICAL - NEVER return generic categories for stakeholders:
+- ⛔ WRONG: "Manufacturing companies", "Technology-focused VCs", "Cloud providers", "Enterprise clients"
+- ✅ RIGHT: "Boeing", "Sequoia Capital", "AWS", "Netflix" - specific company/person names
+- If you don't know specific names for customers/investors/partners/suppliers, return EMPTY ARRAY []
+- Generic categories are USELESS for intelligence monitoring - we need trackable entities
 `;
 
   const message = await callAnthropic([{
@@ -2062,18 +2123,22 @@ async function createIntelligenceTargets(organizationId: string, profile: any) {
       }
     });
 
-    // Add stakeholders
+    // Add stakeholders with DISTINCT target types for better categorization
     const regulators = profile.stakeholders?.regulators || [];
     const keyAnalysts = profile.stakeholders?.key_analysts || [];
     const majorInvestors = profile.stakeholders?.major_investors || [];
     const majorCustomers = profile.stakeholders?.major_customers || [];
+    const keyPartners = profile.stakeholders?.key_partners || [];
+    const keySuppliers = profile.stakeholders?.key_suppliers || [];
+    const activists = profile.stakeholders?.activists || [];
 
+    // Regulators - high priority for compliance/risk
     regulators.forEach((name: string) => {
       if (name && typeof name === 'string') {
         targets.push({
           organization_id: organizationId,
           name: name.trim(),
-          type: 'stakeholder',
+          type: 'regulator', // Distinct type for regulatory bodies
           priority: 'high',
           monitoring_context: { category: 'regulator' },
           active: true
@@ -2081,6 +2146,7 @@ async function createIntelligenceTargets(organizationId: string, profile: any) {
       }
     });
 
+    // Key analysts/influencers - medium priority for thought leadership
     keyAnalysts.forEach((name: string) => {
       if (name && typeof name === 'string') {
         targets.push({
@@ -2094,27 +2160,71 @@ async function createIntelligenceTargets(organizationId: string, profile: any) {
       }
     });
 
+    // Major investors - high priority for strategic/financial signals
     majorInvestors.forEach((name: string) => {
       if (name && typeof name === 'string') {
         targets.push({
           organization_id: organizationId,
           name: name.trim(),
-          type: 'stakeholder',
-          priority: 'medium',
+          type: 'investor', // Distinct type for investors
+          priority: 'high',
           monitoring_context: { category: 'investor' },
           active: true
         });
       }
     });
 
+    // Major customers - high priority for revenue/relationship risk
     majorCustomers.forEach((name: string) => {
       if (name && typeof name === 'string') {
         targets.push({
           organization_id: organizationId,
           name: name.trim(),
-          type: 'stakeholder',
-          priority: 'medium',
+          type: 'customer', // Distinct type for customers
+          priority: 'high',
           monitoring_context: { category: 'customer' },
+          active: true
+        });
+      }
+    });
+
+    // Key partners - medium priority for partnership/alliance signals
+    keyPartners.forEach((name: string) => {
+      if (name && typeof name === 'string') {
+        targets.push({
+          organization_id: organizationId,
+          name: name.trim(),
+          type: 'partner', // Distinct type for partners
+          priority: 'medium',
+          monitoring_context: { category: 'partner' },
+          active: true
+        });
+      }
+    });
+
+    // Key suppliers - high priority for supply chain risk
+    keySuppliers.forEach((name: string) => {
+      if (name && typeof name === 'string') {
+        targets.push({
+          organization_id: organizationId,
+          name: name.trim(),
+          type: 'supplier', // Distinct type for suppliers
+          priority: 'high',
+          monitoring_context: { category: 'supplier' },
+          active: true
+        });
+      }
+    });
+
+    // Activists - medium priority for reputation/ESG monitoring
+    activists.forEach((name: string) => {
+      if (name && typeof name === 'string') {
+        targets.push({
+          organization_id: organizationId,
+          name: name.trim(),
+          type: 'influencer',
+          priority: 'medium',
+          monitoring_context: { category: 'activist' },
           active: true
         });
       }

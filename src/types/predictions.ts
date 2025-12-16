@@ -2,11 +2,24 @@
  * Prediction system types with intelligence targets integration
  */
 
+// All possible target types
+export type TargetType =
+  | 'competitor'
+  | 'topic'
+  | 'keyword'
+  | 'influencer'
+  | 'customer'
+  | 'investor'
+  | 'partner'
+  | 'supplier'
+  | 'regulator'
+  | 'stakeholder' // legacy
+
 export interface IntelligenceTarget {
   id: string
   organization_id: string
   name: string
-  type: 'competitor' | 'topic' | 'keyword' | 'influencer'
+  type: TargetType
   priority: 'low' | 'medium' | 'high'
   threat_level?: number
   keywords?: string[]
@@ -33,7 +46,7 @@ export interface Prediction {
   // Target integration (NEW)
   target_id?: string | null
   target_name?: string | null
-  target_type?: 'competitor' | 'topic' | 'keyword' | 'influencer' | null
+  target_type?: TargetType | null
 
   // Additional data
   data?: {
@@ -64,7 +77,7 @@ export interface PredictionWithTarget extends Prediction {
 
 export interface PredictionFilters {
   target_id?: string
-  target_type?: 'competitor' | 'topic' | 'keyword' | 'influencer'
+  target_type?: TargetType
   target_name?: string
   category?: Prediction['category']
   impact_level?: Prediction['impact_level']
@@ -78,6 +91,11 @@ export interface PredictionStats {
   total: number
   by_target_type: {
     competitor: number
+    customer: number
+    investor: number
+    partner: number
+    supplier: number
+    regulator: number
     topic: number
     keyword: number
     influencer: number

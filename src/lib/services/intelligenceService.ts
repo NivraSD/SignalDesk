@@ -3,36 +3,6 @@ import type { IntelligenceReport, Opportunity, PipelineRun, ExecutiveSynthesis }
 
 export class IntelligenceService {
   /**
-   * Check for cached executive synthesis (pre-generated morning briefs)
-   * Returns cached data if available and not expired, null otherwise
-   */
-  static async getCachedBrief(organizationId: string, hoursBack: number = 24): Promise<any | null> {
-    try {
-      const cacheKey = `synthesis_${hoursBack}h`
-
-      const { data: cachedBrief, error } = await supabase
-        .from('cached_briefs')
-        .select('cached_data, generated_at, expires_at')
-        .eq('organization_id', organizationId)
-        .eq('cache_type', 'executive_synthesis')
-        .eq('cache_key', cacheKey)
-        .gt('expires_at', new Date().toISOString())
-        .single()
-
-      if (error || !cachedBrief) {
-        console.log('📦 No cached brief available')
-        return null
-      }
-
-      console.log('✅ Found cached executive brief from', cachedBrief.generated_at)
-      return cachedBrief.cached_data
-    } catch (e) {
-      console.log('📦 Cache check failed, will run pipeline')
-      return null
-    }
-  }
-
-  /**
    * Start a new intelligence pipeline run (V5)
    * Pipeline flow:
    * 1. mcp-discovery (create company profile)
@@ -139,7 +109,8 @@ export class IntelligenceService {
         const articleResponse = await supabase.functions.invoke('article-selector-v5', {
           body: {
             organization_id: organizationId,
-            organization_name: orgName
+            organization_name: orgName,
+            use_today: true  // Use current date instead of rolling 24h
           }
         })
 
@@ -447,7 +418,8 @@ export class IntelligenceService {
       const articleResponse = await supabase.functions.invoke('article-selector-v5', {
         body: {
           organization_id: organizationId,
-          organization_name: organizationName
+          organization_name: organizationName,
+          use_today: true  // Use current date instead of rolling 24h
         }
       })
 

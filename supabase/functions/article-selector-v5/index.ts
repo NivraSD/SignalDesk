@@ -297,6 +297,7 @@ serve(async (req) => {
     const organizationId = body.organization_id;
     const organizationName = body.organization_name;
     const hoursBack = body.hours_back || DEFAULT_HOURS_BACK;
+    const useToday = body.use_today || false; // If true, use midnight UTC today instead of hours_back
     const minSignalStrength = body.min_signal_strength || 'weak';
     const maxArticlesPerTarget = body.max_articles_per_target || 50;
     const includeConnections = body.include_connections !== false;
@@ -349,7 +350,17 @@ serve(async (req) => {
     console.log(`   Critical sources: ${criticalSources.size}, High: ${highPrioritySources.size}`);
     console.log(`   Blocked sources: ${blockedSources.size}`);
 
-    const sinceTime = new Date(Date.now() - hoursBack * 60 * 60 * 1000).toISOString();
+    // Calculate sinceTime: either midnight UTC today or rolling hours_back
+    let sinceTime: string;
+    if (useToday) {
+      // Get midnight UTC today
+      const today = new Date();
+      today.setUTCHours(0, 0, 0, 0);
+      sinceTime = today.toISOString();
+      console.log(`   Using TODAY mode: since ${sinceTime}`);
+    } else {
+      sinceTime = new Date(Date.now() - hoursBack * 60 * 60 * 1000).toISOString();
+    }
 
     // Get intelligence targets
     const { data: targets, error: targetError } = await supabase
@@ -497,6 +508,14 @@ serve(async (req) => {
       for (const a of tier1Articles) {
         if (articleMap.has(a.id)) continue; // Already have it
         if (isGarbageArticle({ title: a.title, description: a.description })) continue;
+
+        // Filter old articles by published_at (same as embedding match filter)
+        const dateToCheck = a.published_at || a.scraped_at;
+        if (dateToCheck) {
+          try {
+            if (new Date(dateToCheck) < new Date(sinceTime)) continue;
+          } catch { /* keep if date parsing fails */ }
+        }
 
         articleMap.set(a.id, {
           id: a.id,
@@ -705,7 +724,7 @@ serve(async (req) => {
       duration_seconds: Math.round(duration / 1000),
       selection_method: 'v5.1_embeddings_plus_claude',
 
-      time_range: { hours_back: hoursBack, since: sinceTime },
+      time_range: { hours_back: useToday ? null : hoursBack, use_today: useToday, since: sinceTime },
       summary: {
         targets_with_signals: targetMatches.length,
         total_targets: targets?.length || 0,

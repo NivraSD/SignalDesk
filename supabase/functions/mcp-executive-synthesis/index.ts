@@ -597,13 +597,14 @@ CRITICAL RULES:
 
 Return ONLY valid JSON in this format:
 {
-  "executive_summary": "2-3 paragraph narrative overview of key developments [with source citations]",
+  "executive_summary": "2-3 paragraph narrative overview of key developments (NO inline source citations - key_developments provides sourcing)",
   "key_developments": [
     {
       "category": "competitor_move|stakeholder_action|market_trend|regulatory_change",
       "event": "What happened (be specific)",
       "impact": "Why this matters to ${organization?.name}",
       "source": "Article title",
+      "outlet": "News outlet name (e.g. Reuters, Bloomberg, WSJ)",
       "url": "Article URL",
       "recency": "today|this_week|older",
       "entity": "Primary company/entity involved"
@@ -617,7 +618,7 @@ CRITICAL - QUALITY OVER QUANTITY:
 - key_developments should include ONLY the 10-15 MOST STRATEGICALLY RELEVANT stories
 - BEFORE INCLUDING ANY STORY, ask: "Does this mention a tracked competitor, stakeholder, or directly affect ${organization?.name}'s business?"
 - EXCLUDE generic macro news (Fed policy, currency movements, unrelated country economics, general tech M&A)
-- Each development MUST have source attribution (source + url fields)
+- Each development MUST have source (article title), outlet (news publication), and url fields
 - Sort by recency (today first, then this week, then older)
 - Be specific in "event" field - include names, numbers, details from the actual events`;
 
@@ -1252,13 +1253,13 @@ ${metrics.length > 0 ? `METRICS:\n${metrics.map(m =>
 
 SYNTHESIS REQUIREMENTS:
 
-🚨 PRIORITY #0: CITE YOUR SOURCES (MANDATORY)
-Every claim in your synthesis MUST reference the source article:
-- When mentioning an event, include: [Source: {source name}, "{article title}"]
-- Example: "Account mobility accelerated with Weber Shandwick securing Carhartt [Source: PRWeek, "Weber Shandwick Wins Carhartt Account"]"
+🚨 PRIORITY #0: SOURCE TRACKING (MANDATORY)
+Every claim in your synthesis MUST be traceable to a source article:
+- DO NOT include inline citations like [Source: ...] in executive_summary - it clutters the narrative
+- INSTEAD: Ensure every major development has a corresponding entry in key_developments with full source, outlet, and url
 - The source information is provided with each event above (Source, URL, Article fields)
-- If you cannot cite a source for a claim, DO NOT include that claim
-- Synthesis without citations will be rejected
+- If you cannot find a source for a claim, DO NOT include that claim
+- The key_developments array IS your citation list
 
 🚨 PRIORITY #1: COMPREHENSIVE COVERAGE (USE ALL THE INTELLIGENCE)
 ${articleOnlyMode ? `You have ${enrichedArticles.length} articles to synthesize into a coherent narrative:
@@ -1320,7 +1321,7 @@ Generate your COMMUNICATIONS INTELLIGENCE BRIEF as valid JSON:
 
 {
   "synthesis": {
-    "executive_summary": "A 2-3 paragraph overview focused on PR IMPLICATIONS. What do these stories mean for ${organization?.name}'s communications? What narratives are forming? What should the comms team be aware of? Include source citations like [Source: Article Title]. Use \\n\\n to separate paragraphs.",
+    "executive_summary": "A 2-3 paragraph overview focused on PR IMPLICATIONS. What do these stories mean for ${organization?.name}'s communications? What narratives are forming? What should the comms team be aware of? DO NOT include inline source citations - the key_developments below provide the sourcing. Use \\n\\n to separate paragraphs.",
 
     "key_developments": [
       {
@@ -1328,6 +1329,7 @@ Generate your COMMUNICATIONS INTELLIGENCE BRIEF as valid JSON:
         "event": "Clear description of what happened (who, what, when)",
         "pr_implication": "What this means for ${organization?.name}'s PR/communications strategy - positioning, messaging, narrative, media relations",
         "source": "Article title - REQUIRED",
+        "outlet": "News outlet name (e.g. Reuters, Bloomberg, WSJ) - REQUIRED (copy from Source field in article data)",
         "url": "Full article URL - REQUIRED (copy exactly from the article data)",
         "recency": "today | this_week | older",
         "entity": "Company or person involved"
@@ -1342,7 +1344,9 @@ Generate your COMMUNICATIONS INTELLIGENCE BRIEF as valid JSON:
 
 CRITICAL INSTRUCTIONS - QUALITY OVER QUANTITY:
 ${articleOnlyMode ? `- Include ONLY 10-15 key_developments from the ${enrichedArticles.length} articles - choose the MOST strategically relevant` : `- Include ONLY 10-15 key_developments from the ${topEvents.length} events - choose the MOST strategically relevant`}
-- EVERY entry MUST have source and url fields - copy the URL exactly from the article/event data
+- EVERY entry MUST have source, outlet, and url fields - copy the URL exactly from the article/event data
+- "outlet" is the news publication name (Reuters, Bloomberg, WSJ, etc.) - copy from the "Source:" field in article data
+- "source" is the article title/headline
 - "pr_implication" should explain how this affects ${organization?.name}'s communications (NOT business impact)
 - Sort by recency: "today" FIRST, then "this_week", then "older" - RECENT NEWS DOMINATES
 - Be specific in "event" - use actual names, numbers, quotes
@@ -1373,10 +1377,10 @@ Before including ANY story, it MUST pass at least ONE of these tests:
 ═══════════════════════════════════════════════════════════
 
 Before responding, verify:
-✅ Every key_development has a source AND url field
+✅ Every key_development has source (article title), outlet (news publication name), AND url fields
 ✅ Every key_development has a pr_implication (not business impact)
 ✅ Recent stories (today/this_week) appear before older stories
-✅ The executive_summary focuses on PR/communications implications
+✅ The executive_summary focuses on PR/communications implications (NO inline source citations)
 ✅ You've included 10-15 HIGH-QUALITY developments (not 20-30 mediocre ones)
 ✅ Every story passes the STRATEGIC RELEVANCE FILTER above`;
     
