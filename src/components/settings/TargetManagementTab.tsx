@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { Target, Plus, X as CloseIcon, Save, Trash2, AlertCircle, CheckCircle, Loader, Sparkles } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 
 interface IntelligenceTarget {
   id: string
@@ -193,7 +193,6 @@ export default function TargetManagementTab({
       setError(null)
 
       // Call edge function directly (bypasses Vercel timeout)
-      const supabase = createClient()
       const { data, error } = await supabase.functions.invoke('mcp-discovery', {
         body: {
           tool: 'create_organization_profile',

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import { Download, Calendar, Target, FileText, TrendingUp, CheckCircle, Clock, AlertCircle } from 'lucide-react'
 
 interface StrategicCampaign {
@@ -78,7 +78,6 @@ export default function StrategicPlanningView({ campaignId }: { campaignId: stri
   }, [campaignId])
 
   const loadCampaign = async () => {
-    const supabase = createClient()
     const { data, error } = await supabase
       .from('strategic_campaigns')
       .select('*')

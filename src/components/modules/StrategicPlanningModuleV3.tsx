@@ -15,7 +15,7 @@ import {
   Filter,
   BarChart3
 } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 
 interface BlueprintData {
   overview?: {
@@ -243,7 +243,6 @@ export default function StrategicPlanningModuleV3({
 
     try {
       // TODO: Call nivContentIntelligentV2 to generate content
-      const supabase = createClient()
 
       // Simulate for now
       await new Promise(resolve => setTimeout(resolve, 2000))
