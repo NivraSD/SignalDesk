@@ -24,7 +24,7 @@ const SimpleIntelligence = () => {
   const [useRealPipeline, setUseRealPipeline] = useState(false)
 
   const pipelineStages: PipelineStage[] = [
-    { id: 'mcp-discovery', name: 'Discovery', status: 'pending', icon: Brain },
+    { id: 'mcp-discovery', name: 'Profile Init', status: 'pending', icon: Brain },
     { id: 'monitor-stage-1', name: 'Monitoring', status: 'pending', icon: Activity },
     { id: 'monitor-stage-2-relevance', name: 'Relevance Filter', status: 'pending', icon: Target },
     { id: 'monitor-stage-3-quality-control', name: 'Quality Control', status: 'pending', icon: AlertCircle },

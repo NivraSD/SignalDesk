@@ -220,7 +220,7 @@ async function createOrganizationProfile(args: any) {
   try {
     // STEP 0: Check for user-defined intelligence targets
     console.log('📋 Step 0: Checking for user-defined targets...');
-    const userTargets = await fetchUserDefinedTargets(organization_name);
+    const userTargets = await fetchUserDefinedTargets(organization_id);
 
     // STEP 1: Get available data from registries
     console.log('📚 Step 1: Gathering available data from registries...');
@@ -396,15 +396,17 @@ async function fetchWebsiteInfo(website: string) {
 }
 
 // Fetch user-defined intelligence targets from database
-async function fetchUserDefinedTargets(organization_name: string) {
+async function fetchUserDefinedTargets(organization_id: string) {
+  if (!organization_id) return null;
+
   try {
     console.log(`📋 Checking for user-defined intelligence targets...`);
 
     const { data, error } = await supabase
       .from('intelligence_targets')
       .select('*')
-      .eq('organization_name', organization_name)
-      .eq('active', true);
+      .eq('organization_id', organization_id)
+      .eq('is_active', true);
 
     if (error) {
       console.log(`   ⚠️ Error fetching targets: ${error.message}`);

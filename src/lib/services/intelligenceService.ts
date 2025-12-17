@@ -5,7 +5,7 @@ export class IntelligenceService {
   /**
    * Start a new intelligence pipeline run (V5)
    * Pipeline flow:
-   * 1. mcp-discovery (create company profile)
+   * 1. pipeline-init (fast profile loader - replaces mcp-discovery)
    * 2. article-selector (AI-powered relevance scoring from V5 batch scraper)
    * 3. target-intelligence-collector (save mentions)
    * 4. crisis-detector (detect crisis signals → crisis_events)
@@ -23,86 +23,46 @@ export class IntelligenceService {
     onProgress?: (stage: string, status: 'running' | 'completed' | 'failed', data?: any) => void
   ) {
     try {
-      const orgName = organizationName || 'Tesla'
-      const industry = industryHint || 'Electric Vehicles'
+      const orgName = organizationName || 'Unknown'
+      const industry = industryHint || 'Technology'
 
       console.log('🚀 Starting pipeline for organization:', orgName, 'Industry:', industry)
       console.log('📋 organizationId parameter:', organizationId, 'Type:', typeof organizationId)
 
-      // Fetch company profile from database to get product_lines and other key info
-      const { data: orgData, error: orgError } = await supabase
-        .from('organizations')
-        .select('company_profile, settings')
-        .eq('id', organizationId)
-        .single()
+      // Use lightweight pipeline-init instead of heavy mcp-discovery
+      // pipeline-init: loads existing profile, ensures targets exist (<10s vs 80s)
+      console.log('Calling pipeline-init (fast profile loader)...')
+      onProgress?.('mcp-discovery', 'running') // Keep stage name for UI compatibility
 
-      if (orgError) {
-        console.error('Failed to load organization:', orgError)
-      }
-
-      const companyProfile = orgData?.company_profile || {}
-      const website = companyProfile?.url || orgData?.settings?.url
-
-      console.log('📋 Company profile loaded:', {
-        hasProfile: !!companyProfile,
-        productLines: companyProfile.product_lines?.length || 0,
-        keyMarkets: companyProfile.key_markets?.length || 0,
-        website
-      })
-
-      // Start with mcp-discovery - passing company profile data
-      const payload = {
-        tool: 'create_organization_profile',
-        arguments: {
+      const { data, error } = await supabase.functions.invoke('pipeline-init', {
+        body: {
           organization_id: organizationId,
           organization_name: orgName,
-          industry_hint: industry,
-          website: website,
-          product_lines: companyProfile.product_lines || [],
-          key_markets: companyProfile.key_markets || [],
-          business_model: companyProfile.business_model,
-          save_to_persistence: true
+          min_targets: 10 // Generate targets if fewer than 10 exist
         }
-      }
-      
-      console.log('Calling mcp-discovery with payload:', payload)
-      onProgress?.('mcp-discovery', 'running')
-      
-      const { data, error } = await supabase.functions.invoke('mcp-discovery', {
-        body: payload
       })
 
       if (error) {
-        console.error('Edge function error:', error)
-        console.error('Error response:', error)
+        console.error('Pipeline init error:', error)
         onProgress?.('mcp-discovery', 'failed', error)
-
-        // Try to get more details about the error
-        if ((error as any).context) {
-          console.error('Error context:', (error as any).context)
-        }
         throw error
       }
 
-      console.log('Pipeline started successfully:', data)
+      console.log('Pipeline init complete:', {
+        duration_ms: data?.duration_ms,
+        targets: data?.targets?.total,
+        profile: data?.profile
+      })
       onProgress?.('mcp-discovery', 'completed', data)
 
-      // Parse MCP response format: { content: [{ type: "text", text: "..." }] }
-      let profile = data?.profile
-      if (!profile && data?.content?.[0]?.text) {
-        try {
-          const parsedContent = JSON.parse(data.content[0].text)
-          profile = parsedContent.profile || parsedContent
-        } catch (e) {
-          console.warn('Failed to parse MCP response, using data as-is')
-          profile = data
-        }
-      }
-
-      console.log('✅ Profile extracted:', profile ? 'Yes' : 'No')
+      // Use the company_profile from pipeline-init response
+      const profile = data?.company_profile || {}
+      const hasProfile = Object.keys(profile).length > 0
+      console.log('✅ Profile loaded:', hasProfile ? 'Yes' : 'No')
 
       // Use article-selector-v5 with pre-computed embedding matches
-      if (profile) {
+      // Continue even without profile - article-selector loads from DB anyway
+      {
         console.log('Starting article-selector-v5 (Embedding Match)')
         onProgress?.('article-selector', 'running')
 
