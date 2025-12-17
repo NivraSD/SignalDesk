@@ -2317,15 +2317,20 @@ async function createIntelligenceTargets(organizationId: string, profile: any) {
 
     // Upsert targets (avoid duplicates)
     for (const target of targets) {
+      // Use insert instead of upsert - cleaner for initial discovery
+      // The unique constraint is (organization_id, name, target_type)
       const { error } = await supabase
         .from('intelligence_targets')
-        .upsert(target, {
-          onConflict: 'organization_id,name',
-          ignoreDuplicates: true
+        .insert({
+          ...target,
+          is_active: true // Use correct column name
         });
 
-      if (error && !error.message.includes('duplicate')) {
-        console.warn(`   ⚠️ Failed to create target "${target.name}":`, error.message);
+      if (error) {
+        // Only warn if not a duplicate key error
+        if (!error.message?.includes('duplicate') && !error.code?.includes('23505')) {
+          console.warn(`   ⚠️ Failed to create target "${target.name}":`, error.message);
+        }
       }
     }
 
