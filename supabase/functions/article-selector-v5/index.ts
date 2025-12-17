@@ -418,20 +418,34 @@ serve(async (req) => {
         }
 
         // Filter 3: Old articles by published_at
-        // In TODAY mode: articles must be from today (EST) - max 24 hours for daily brief
-        // In rolling mode: use the sinceTime (hours_back)
-        const dateToCheck = a.published_at || a.scraped_at;
-        if (dateToCheck) {
+        // In TODAY mode: REQUIRE published_at (don't fallback to scraped_at)
+        // This prevents old articles with null published_at from slipping through
+        if (useToday) {
+          // For daily briefs, only include articles with a valid published_at within 24h
+          if (!a.published_at) {
+            filteredOld++;
+            continue; // Skip articles without published_at in TODAY mode
+          }
           try {
-            const articleDate = new Date(dateToCheck);
-            const maxAge = useToday
-              ? new Date(Date.now() - 24 * 60 * 60 * 1000) // 24 hours ago for daily brief
-              : new Date(sinceTime);
+            const articleDate = new Date(a.published_at);
+            const maxAge = new Date(Date.now() - 24 * 60 * 60 * 1000);
             if (articleDate < maxAge) {
               filteredOld++;
               continue;
             }
           } catch { /* keep if date parsing fails */ }
+        } else {
+          // In rolling mode, fallback to scraped_at is acceptable
+          const dateToCheck = a.published_at || a.scraped_at;
+          if (dateToCheck) {
+            try {
+              const articleDate = new Date(dateToCheck);
+              if (articleDate < new Date(sinceTime)) {
+                filteredOld++;
+                continue;
+              }
+            } catch { /* keep if date parsing fails */ }
+          }
         }
 
         // Filter 4 (Stage 2): Industry-irrelevant sources
@@ -515,16 +529,20 @@ serve(async (req) => {
         if (articleMap.has(a.id)) continue; // Already have it
         if (isGarbageArticle({ title: a.title, description: a.description })) continue;
 
-        // Filter old articles by published_at (24-hour window in TODAY mode for daily brief)
-        const dateToCheck = a.published_at || a.scraped_at;
-        if (dateToCheck) {
+        // Filter old articles - require published_at in TODAY mode
+        if (useToday) {
+          if (!a.published_at) continue; // Skip articles without published_at in TODAY mode
           try {
-            const articleDate = new Date(dateToCheck);
-            const maxAge = useToday
-              ? new Date(Date.now() - 24 * 60 * 60 * 1000) // 24 hours for daily brief
-              : new Date(sinceTime);
-            if (articleDate < maxAge) continue;
-          } catch { /* keep if date parsing fails */ }
+            const articleDate = new Date(a.published_at);
+            if (articleDate < new Date(Date.now() - 24 * 60 * 60 * 1000)) continue;
+          } catch { continue; }
+        } else {
+          const dateToCheck = a.published_at || a.scraped_at;
+          if (dateToCheck) {
+            try {
+              if (new Date(dateToCheck) < new Date(sinceTime)) continue;
+            } catch { /* keep if date parsing fails */ }
+          }
         }
 
         articleMap.set(a.id, {
