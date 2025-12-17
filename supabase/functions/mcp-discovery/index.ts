@@ -474,22 +474,102 @@ async function gatherIndustryData(organization_name: string, industry_hint?: str
 - "Consulting firm" = professional services/consulting
 - "General trading company" or "Sogo Shosha" = trading industry
 
-RESPOND WITH ONLY ONE OR TWO WORDS FROM THIS LIST (NO EXPLANATIONS):
-- public-relations
-- marketing
-- telecommunications
-- technology
-- consulting
-- finance
-- healthcare
-- retail
-- automotive
-- trading
-- manufacturing
-- energy
-- transportation
-- real-estate
-- media
+RESPOND WITH ONLY ONE INDUSTRY FROM THIS LIST:
+
+CONSUMER GOODS:
+- beauty (cosmetics, skincare, makeup, personal care brands)
+- fashion (apparel, clothing, accessories brands)
+- luxury-goods (high-end fashion, watches, jewelry)
+- food-beverage (CPG food/drink brands, NOT restaurants)
+- consumer-electronics (phones, gadgets, appliances)
+- home-goods (furniture, decor, housewares)
+- sporting-goods (athletic equipment, outdoor gear)
+- toys-games (toys, board games, video games)
+- pet-products (pet food, supplies, services)
+
+TECHNOLOGY:
+- software (SaaS, enterprise software, apps)
+- artificial-intelligence (AI/ML companies)
+- cybersecurity (security software, services)
+- cloud-computing (cloud infrastructure, platforms)
+- fintech (financial technology)
+- healthtech (health technology, digital health)
+- edtech (education technology)
+- proptech (real estate technology)
+- martech (marketing technology)
+- hardware (semiconductors, chips, devices)
+- robotics (robotics, automation)
+- blockchain (crypto, web3, blockchain)
+
+SERVICES:
+- public-relations (PR, communications agencies)
+- marketing (advertising, creative agencies)
+- consulting (management consulting, advisory)
+- legal (law firms, legal services)
+- accounting (accounting, audit firms)
+- staffing (recruiting, HR services)
+- facilities (cleaning, maintenance, security)
+
+FINANCE:
+- banking (banks, credit unions)
+- investment-banking (M&A, capital markets)
+- asset-management (hedge funds, private equity, VC)
+- insurance (insurance carriers, brokers)
+- payments (payment processing, cards)
+- lending (mortgages, loans, credit)
+
+HEALTHCARE:
+- pharmaceuticals (drug manufacturers)
+- biotech (biotechnology, life sciences)
+- medical-devices (medical equipment, diagnostics)
+- healthcare-providers (hospitals, clinics)
+- health-insurance (health plans, PBMs)
+- mental-health (therapy, psychiatry services)
+- wellness (fitness, nutrition, spa)
+
+INDUSTRIAL:
+- manufacturing (industrial manufacturing)
+- aerospace-defense (aircraft, defense contractors)
+- automotive (car manufacturers, OEMs)
+- chemicals (chemical manufacturers)
+- construction (builders, contractors)
+- engineering (engineering services)
+- mining (mining, metals extraction)
+- oil-gas (oil, natural gas, drilling)
+- utilities (electric, water, gas utilities)
+- renewable-energy (solar, wind, clean energy)
+
+RETAIL & HOSPITALITY:
+- retail (stores, e-commerce retailers - Walmart, Amazon, Target)
+- restaurants (QSR, fast casual, fine dining)
+- hotels (hospitality, lodging)
+- travel (airlines, OTAs, cruise lines)
+- entertainment (theme parks, venues, live events)
+- gaming (casinos, gambling)
+
+MEDIA & COMMUNICATIONS:
+- media (news, publishing, content)
+- entertainment-production (film, TV, streaming)
+- music (record labels, streaming, artists)
+- telecommunications (carriers, ISPs - AT&T, Verizon)
+- social-media (social platforms)
+- gaming-interactive (video game publishers)
+
+REAL ESTATE:
+- real-estate (property, REITs, development)
+- commercial-real-estate (office, industrial properties)
+- residential-real-estate (homebuilders, apartments)
+
+OTHER:
+- education (schools, universities)
+- nonprofit (NGOs, foundations, charities)
+- government (public sector, agencies)
+- agriculture (farming, agribusiness)
+- logistics (shipping, freight, 3PL)
+- trading (trading companies, commodities)
+- conglomerate (diversified holding companies)
+
+CRITICAL: A BRAND that makes products (like e.l.f. Cosmetics, Nike, Coca-Cola) is categorized by what they MAKE, not where they're sold. e.l.f. = beauty, Nike = fashion, Coca-Cola = food-beverage. "Retail" is ONLY for stores/retailers themselves.
 
 RESPOND WITH ONLY THE INDUSTRY NAME:`;
 
