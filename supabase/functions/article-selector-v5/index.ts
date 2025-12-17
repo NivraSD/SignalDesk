@@ -418,16 +418,14 @@ serve(async (req) => {
         }
 
         // Filter 3: Old articles by published_at
-        // In TODAY mode, use a 7-day window (articles published in last week)
-        // This catches weekend articles while filtering truly old content from feeds
+        // In TODAY mode: articles must be from today (EST) - max 24 hours for daily brief
+        // In rolling mode: use the sinceTime (hours_back)
         const dateToCheck = a.published_at || a.scraped_at;
         if (dateToCheck) {
           try {
             const articleDate = new Date(dateToCheck);
-            // In TODAY mode: allow articles from last 7 days
-            // In rolling mode: use the sinceTime (hours_back)
             const maxAge = useToday
-              ? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // 7 days ago
+              ? new Date(Date.now() - 24 * 60 * 60 * 1000) // 24 hours ago for daily brief
               : new Date(sinceTime);
             if (articleDate < maxAge) {
               filteredOld++;
@@ -517,13 +515,13 @@ serve(async (req) => {
         if (articleMap.has(a.id)) continue; // Already have it
         if (isGarbageArticle({ title: a.title, description: a.description })) continue;
 
-        // Filter old articles by published_at (use 7-day window in TODAY mode)
+        // Filter old articles by published_at (24-hour window in TODAY mode for daily brief)
         const dateToCheck = a.published_at || a.scraped_at;
         if (dateToCheck) {
           try {
             const articleDate = new Date(dateToCheck);
             const maxAge = useToday
-              ? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // 7 days ago
+              ? new Date(Date.now() - 24 * 60 * 60 * 1000) // 24 hours for daily brief
               : new Date(sinceTime);
             if (articleDate < maxAge) continue;
           } catch { /* keep if date parsing fails */ }
