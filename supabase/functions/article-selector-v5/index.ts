@@ -417,15 +417,18 @@ serve(async (req) => {
           continue;
         }
 
-        // Filter 3: Old articles
-        const dateToCheck = a.published_at || a.scraped_at;
-        if (dateToCheck) {
-          try {
-            if (new Date(dateToCheck) < new Date(sinceTime)) {
-              filteredOld++;
-              continue;
-            }
-          } catch { /* keep if date parsing fails */ }
+        // Filter 3: Old articles (skip in TODAY mode - matched_at constraint handles freshness)
+        // In TODAY mode, articles matched today may have been published yesterday
+        if (!useToday) {
+          const dateToCheck = a.published_at || a.scraped_at;
+          if (dateToCheck) {
+            try {
+              if (new Date(dateToCheck) < new Date(sinceTime)) {
+                filteredOld++;
+                continue;
+              }
+            } catch { /* keep if date parsing fails */ }
+          }
         }
 
         // Filter 4 (Stage 2): Industry-irrelevant sources
@@ -509,12 +512,14 @@ serve(async (req) => {
         if (articleMap.has(a.id)) continue; // Already have it
         if (isGarbageArticle({ title: a.title, description: a.description })) continue;
 
-        // Filter old articles by published_at (same as embedding match filter)
-        const dateToCheck = a.published_at || a.scraped_at;
-        if (dateToCheck) {
-          try {
-            if (new Date(dateToCheck) < new Date(sinceTime)) continue;
-          } catch { /* keep if date parsing fails */ }
+        // Filter old articles by published_at (skip in TODAY mode - scraped_at constraint handles freshness)
+        if (!useToday) {
+          const dateToCheck = a.published_at || a.scraped_at;
+          if (dateToCheck) {
+            try {
+              if (new Date(dateToCheck) < new Date(sinceTime)) continue;
+            } catch { /* keep if date parsing fails */ }
+          }
         }
 
         articleMap.set(a.id, {

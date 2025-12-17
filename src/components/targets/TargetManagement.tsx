@@ -204,7 +204,9 @@ export default function TargetManagement({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           organization_name: organizationName,
-          industry_hint: ''
+          organization_id: organizationId,
+          industry_hint: '',
+          save_profile: true // Save profile and create intelligence targets automatically
         })
       })
 
@@ -217,6 +219,9 @@ export default function TargetManagement({
       setDiscoveredItems(data.discovered)
       setSelectedDiscoveryItems(new Set())
       setShowDiscoveryResults(true)
+
+      // Refresh targets list to show newly created intelligence targets
+      await fetchTargets()
     } catch (err: any) {
       console.error('Failed to run discovery:', err)
       setError(err.message)

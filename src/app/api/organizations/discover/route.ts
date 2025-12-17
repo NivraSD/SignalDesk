@@ -66,9 +66,20 @@ export async function POST(req: NextRequest) {
     const profile = data.profile
 
     // Extract discovered items for user customization
+    // Combine topics from multiple sources (trending, market drivers/barriers, keywords)
+    const allTopics = [
+      ...(profile.trending?.hot_topics || []),
+      ...(profile.market?.market_drivers || []),
+      ...(profile.market?.market_barriers || []),
+      ...(profile.market?.key_metrics || []),
+      ...(profile.monitoring_config?.keywords || []).slice(0, 10) // Limit keywords
+    ].filter((t, i, arr) => arr.indexOf(t) === i) // Dedupe
+
     const discoveredItems = {
       competitors: profile.competition?.direct_competitors || [],
-      topics: profile.trending?.hot_topics || [],
+      indirect_competitors: profile.competition?.indirect_competitors || [],
+      emerging_threats: profile.competition?.emerging_threats || [],
+      topics: allTopics,
       stakeholders: {
         regulators: profile.stakeholders?.regulators || [],
         key_analysts: profile.stakeholders?.key_analysts || [],
@@ -76,7 +87,8 @@ export async function POST(req: NextRequest) {
         influencers: profile.stakeholders?.influencers || [],
         major_customers: profile.stakeholders?.major_customers || [],
         major_investors: profile.stakeholders?.major_investors || [],
-        key_partners: profile.stakeholders?.key_partners || []
+        key_partners: profile.stakeholders?.key_partners || [],
+        key_suppliers: profile.stakeholders?.key_suppliers || []
       },
       industry: profile.industry,
       sub_industry: profile.sub_industry,

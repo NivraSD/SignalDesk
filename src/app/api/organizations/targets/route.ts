@@ -220,11 +220,12 @@ export async function POST(req: NextRequest) {
         let paramIndex = 1
 
         targets.forEach((target: any) => {
-          placeholders.push(`($${paramIndex}, $${paramIndex+1}, $${paramIndex+2}, $${paramIndex+3}, $${paramIndex+4}, $${paramIndex+5}, $${paramIndex+6}, $${paramIndex+7}, $${paramIndex+8})`)
+          placeholders.push(`($${paramIndex}, $${paramIndex+1}, $${paramIndex+2}, $${paramIndex+3}, $${paramIndex+4}, $${paramIndex+5}, $${paramIndex+6}, $${paramIndex+7}, $${paramIndex+8}, $${paramIndex+9})`)
           values.push(
             organization_id,
             target.name,
             target.type,
+            target.type, // target_type must match type for frontend/backend consistency
             target.priority || 'medium',
             target.active !== false,
             target.keywords || null,
@@ -232,12 +233,12 @@ export async function POST(req: NextRequest) {
             target.industry_context || null,
             target.relevance_filter || null
           )
-          paramIndex += 9
+          paramIndex += 10
         })
 
         const insertSQL = `
           INSERT INTO intelligence_targets (
-            organization_id, name, type, priority, active, keywords,
+            organization_id, name, type, target_type, priority, active, keywords,
             monitoring_context, industry_context, relevance_filter
           ) VALUES ${placeholders.join(', ')}
           RETURNING *
@@ -272,6 +273,7 @@ export async function POST(req: NextRequest) {
         organization_id,
         name: target.name,
         type: target.type,
+        target_type: target.type, // Must match type for frontend/backend consistency
         priority: target.priority || 'medium',
         active: target.active !== false,
         keywords: target.keywords || []

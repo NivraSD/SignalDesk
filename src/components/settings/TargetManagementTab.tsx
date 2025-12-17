@@ -198,7 +198,7 @@ export default function TargetManagementTab({
           organization_name: organizationName,
           organization_id: organizationId,
           industry_hint: '',
-          save_profile: false // Don't save yet, let user customize first
+          save_profile: true // Save profile and create intelligence targets automatically
         })
       })
 
@@ -211,6 +211,9 @@ export default function TargetManagementTab({
       setDiscoveredItems(data.discovered)
       setSelectedDiscoveryItems(new Set())
       setShowDiscoveryResults(true)
+
+      // Refresh targets list to show newly created intelligence targets
+      await fetchTargets()
     } catch (err: any) {
       console.error('Failed to run discovery:', err)
       setError(err.message)
