@@ -2074,6 +2074,7 @@ async function createIntelligenceTargets(organizationId: string, profile: any) {
       organization_id: string;
       name: string;
       type: string;
+      target_type: string;  // Both columns must match for frontend/backend consistency
       priority: string;
       monitoring_context: any;
       active: boolean;
@@ -2090,6 +2091,7 @@ async function createIntelligenceTargets(organizationId: string, profile: any) {
           organization_id: organizationId,
           name: name.trim(),
           type: 'competitor',
+          target_type: 'competitor',
           priority: 'high',
           monitoring_context: { category: 'direct_competitor' },
           active: true
@@ -2103,6 +2105,7 @@ async function createIntelligenceTargets(organizationId: string, profile: any) {
           organization_id: organizationId,
           name: name.trim(),
           type: 'competitor',
+          target_type: 'competitor',
           priority: 'medium',
           monitoring_context: { category: 'indirect_competitor' },
           active: true
@@ -2116,6 +2119,7 @@ async function createIntelligenceTargets(organizationId: string, profile: any) {
           organization_id: organizationId,
           name: name.trim(),
           type: 'competitor',
+          target_type: 'competitor',
           priority: 'high',
           monitoring_context: { category: 'emerging_threat' },
           active: true
@@ -2138,7 +2142,8 @@ async function createIntelligenceTargets(organizationId: string, profile: any) {
         targets.push({
           organization_id: organizationId,
           name: name.trim(),
-          type: 'regulator', // Distinct type for regulatory bodies
+          type: 'regulator',
+          target_type: 'regulator',
           priority: 'high',
           monitoring_context: { category: 'regulator' },
           active: true
@@ -2153,6 +2158,7 @@ async function createIntelligenceTargets(organizationId: string, profile: any) {
           organization_id: organizationId,
           name: name.trim(),
           type: 'influencer',
+          target_type: 'influencer',
           priority: 'medium',
           monitoring_context: { category: 'analyst' },
           active: true
@@ -2166,7 +2172,8 @@ async function createIntelligenceTargets(organizationId: string, profile: any) {
         targets.push({
           organization_id: organizationId,
           name: name.trim(),
-          type: 'investor', // Distinct type for investors
+          type: 'investor',
+          target_type: 'investor',
           priority: 'high',
           monitoring_context: { category: 'investor' },
           active: true
@@ -2180,7 +2187,8 @@ async function createIntelligenceTargets(organizationId: string, profile: any) {
         targets.push({
           organization_id: organizationId,
           name: name.trim(),
-          type: 'customer', // Distinct type for customers
+          type: 'customer',
+          target_type: 'customer',
           priority: 'high',
           monitoring_context: { category: 'customer' },
           active: true
@@ -2194,7 +2202,8 @@ async function createIntelligenceTargets(organizationId: string, profile: any) {
         targets.push({
           organization_id: organizationId,
           name: name.trim(),
-          type: 'partner', // Distinct type for partners
+          type: 'partner',
+          target_type: 'partner',
           priority: 'medium',
           monitoring_context: { category: 'partner' },
           active: true
@@ -2208,7 +2217,8 @@ async function createIntelligenceTargets(organizationId: string, profile: any) {
         targets.push({
           organization_id: organizationId,
           name: name.trim(),
-          type: 'supplier', // Distinct type for suppliers
+          type: 'supplier',
+          target_type: 'supplier',
           priority: 'high',
           monitoring_context: { category: 'supplier' },
           active: true
@@ -2222,7 +2232,8 @@ async function createIntelligenceTargets(organizationId: string, profile: any) {
         targets.push({
           organization_id: organizationId,
           name: name.trim(),
-          type: 'influencer',
+          type: 'stakeholder',
+          target_type: 'stakeholder',
           priority: 'medium',
           monitoring_context: { category: 'activist' },
           active: true
@@ -2244,6 +2255,7 @@ async function createIntelligenceTargets(organizationId: string, profile: any) {
           organization_id: organizationId,
           name: topic.trim(),
           type: 'topic',
+          target_type: 'topic',
           priority: 'medium',
           monitoring_context: { category: 'keyword' },
           active: true
@@ -2258,6 +2270,7 @@ async function createIntelligenceTargets(organizationId: string, profile: any) {
           organization_id: organizationId,
           name: driver.trim(),
           type: 'topic',
+          target_type: 'topic',
           priority: 'high',
           monitoring_context: { category: 'market_driver' },
           active: true
@@ -2272,6 +2285,7 @@ async function createIntelligenceTargets(organizationId: string, profile: any) {
           organization_id: organizationId,
           name: barrier.trim(),
           type: 'topic',
+          target_type: 'topic',
           priority: 'high',
           monitoring_context: { category: 'market_barrier' },
           active: true
@@ -2286,6 +2300,7 @@ async function createIntelligenceTargets(organizationId: string, profile: any) {
           organization_id: organizationId,
           name: metric.trim(),
           type: 'topic',
+          target_type: 'topic',
           priority: 'medium',
           monitoring_context: { category: 'key_metric' },
           active: true
