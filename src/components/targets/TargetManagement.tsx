@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { Target, Plus, X as CloseIcon, Edit2, Save, Trash2, AlertCircle, CheckCircle, Loader, Sparkles } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { createClient } from '@/lib/supabase/client'
 
 interface IntelligenceTarget {
   id: string
@@ -199,24 +200,49 @@ export default function TargetManagement({
       setRunningDiscovery(true)
       setError(null)
 
-      const response = await fetch('/api/organizations/discover', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          organization_name: organizationName,
-          organization_id: organizationId,
-          industry_hint: '',
-          save_profile: true // Save profile and create intelligence targets automatically
-        })
+      // Call edge function directly (bypasses Vercel timeout)
+      const supabase = createClient()
+      const { data, error } = await supabase.functions.invoke('mcp-discovery', {
+        body: {
+          tool: 'create_organization_profile',
+          arguments: {
+            organization_name: organizationName,
+            organization_id: organizationId,
+            industry_hint: '',
+            save_to_persistence: true // Save profile and create intelligence targets
+          }
+        }
       })
 
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to run discovery')
+      if (error) {
+        throw new Error(error.message || 'Failed to run discovery')
       }
 
-      setDiscoveredItems(data.discovered)
+      if (!data?.success) {
+        throw new Error(data?.error || 'Discovery failed')
+      }
+
+      // Extract discovered items from profile
+      const profile = data.profile
+      const allTopics = [
+        ...(profile.trending?.hot_topics || []),
+        ...(profile.market?.market_drivers || []),
+        ...(profile.market?.market_barriers || []),
+        ...(profile.market?.key_metrics || []),
+        ...(profile.monitoring_config?.keywords || []).slice(0, 10)
+      ].filter((t: string, i: number, arr: string[]) => arr.indexOf(t) === i)
+
+      const discovered = {
+        competitors: profile.competition?.direct_competitors || [],
+        topics: allTopics,
+        stakeholders: {
+          regulators: profile.stakeholders?.regulators || [],
+          key_analysts: profile.stakeholders?.key_analysts || [],
+          activists: profile.stakeholders?.activists || []
+        }
+      }
+
+      setDiscoveredItems(discovered)
       setSelectedDiscoveryItems(new Set())
       setShowDiscoveryResults(true)
 
