@@ -2250,9 +2250,27 @@ async function createIntelligenceTargets(organizationId: string, profile: any) {
     const marketBarriers = profile.market?.market_barriers || [];
     const keyMetrics = profile.market?.key_metrics || [];
 
-    // Hot topics and keywords as medium priority
+    // Get organization name to filter out self-referential topics
+    const orgName = (profile.name || profile.organization_name || '').toLowerCase();
+    const orgNameParts = orgName.split(/\s+/).filter(p => p.length > 2); // Words > 2 chars
+
+    // Helper to check if a topic is self-referential
+    const isSelfReferential = (topic: string): boolean => {
+      const topicLower = topic.toLowerCase();
+      // Check if topic contains org name
+      if (orgName && topicLower.includes(orgName)) return true;
+      // Check if topic starts with any significant part of org name (e.g., "OpenAI" in "OpenAI funding")
+      for (const part of orgNameParts) {
+        if (topicLower.startsWith(part + ' ') || topicLower.startsWith(part + '-')) return true;
+      }
+      // Also filter out product names that are clearly company-specific
+      // (company's own leadership is handled elsewhere)
+      return false;
+    };
+
+    // Hot topics and keywords as medium priority (excluding self-referential)
     [...hotTopics, ...keywords].forEach((topic: string) => {
-      if (topic && typeof topic === 'string') {
+      if (topic && typeof topic === 'string' && !isSelfReferential(topic)) {
         targets.push({
           organization_id: organizationId,
           name: topic.trim(),

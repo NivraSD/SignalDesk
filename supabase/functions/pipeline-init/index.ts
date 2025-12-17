@@ -75,7 +75,7 @@ async function generateTargetsFromProfile(
   const leadership = (profile.leadership || []).map((l: any) => `${l.name} (${l.title})`).join(', ') || '';
 
   // Build a focused prompt using existing profile data - emphasize DIVERSE types
-  const prompt = `You are creating intelligence monitoring targets for a company. Generate a DIVERSE set of targets across ALL categories.
+  const prompt = `You are creating EXTERNAL intelligence monitoring targets for a company. The goal is to track COMPETITORS, INDUSTRY TRENDS, and EXTERNAL FORCES - NOT news about the company itself.
 
 COMPANY: ${orgName}
 INDUSTRY: ${industry}
@@ -86,21 +86,30 @@ BUSINESS MODEL: ${businessModel}
 KNOWN COMPETITORS: ${competitors}
 LEADERSHIP: ${leadership}
 
-IMPORTANT: You MUST generate targets in EACH of these categories (minimum counts shown):
+CRITICAL RULES - DO NOT VIOLATE:
+❌ NEVER include "${orgName}" as a target (the company should not monitor itself)
+❌ NEVER include "${orgName}" in topic names (e.g., NO "${orgName} funding", "${orgName} launches")
+❌ NEVER include the company's own products as topics (e.g., if company is OpenAI, NO "ChatGPT", "GPT-4")
+❌ NEVER include the company's own leadership as targets
+❌ Topics must be GENERIC industry trends, not company-specific news
 
-1. COMPETITORS (5-10): Direct competitors in the same space
-2. TOPICS (10-15): Industry trends, technologies, and keywords that would appear in relevant news articles. Think about what news topics this company would want to monitor. Examples: "AI automation", "browser automation tools", "enterprise data pipelines", "Series A funding", etc.
+REQUIRED CATEGORIES (generate targets in EACH):
+
+1. COMPETITORS (5-10): Direct competitors - other companies in the same space
+2. TOPICS (10-15): GENERIC industry trends and keywords. These should match news about the INDUSTRY, not the company.
+   ✅ Good examples: "AI regulation", "enterprise software adoption", "Series A funding trends", "browser automation market"
+   ❌ Bad examples: "${orgName} funding", "${orgName} launches", "${orgName} partnership"
 3. STAKEHOLDERS (3-5): Target customer segments, partners, industry bodies
 4. INFLUENCERS (3-5): Industry analysts, thought leaders, tech journalists who cover this space
 
-Return JSON only - you MUST include all 4 target types:
+Return JSON only:
 {
   "targets": [
     {"name": "Target Name", "type": "competitor|topic|stakeholder|influencer", "priority": "high|medium|low"}
   ]
 }
 
-Generate 30-40 targets total with the distribution above. Topics should be phrases that would match news article headlines.`;
+Generate 30-40 EXTERNAL targets. Remember: we want to monitor the OUTSIDE WORLD, not ourselves.`;
 
   try {
     const response = await callClaude(prompt, 2000);
