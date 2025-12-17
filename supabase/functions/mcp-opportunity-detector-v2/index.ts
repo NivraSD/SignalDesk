@@ -23,6 +23,34 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Retry helper for transient API errors (429, 500, 502, 503, 529)
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+  maxRetries = 3,
+  baseDelay = 2000
+): Promise<Response> {
+  const retryableStatuses = [429, 500, 502, 503, 529];
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const response = await fetch(url, options);
+
+    if (response.ok || !retryableStatuses.includes(response.status)) {
+      return response;
+    }
+
+    if (attempt < maxRetries) {
+      const delay = baseDelay * Math.pow(2, attempt); // Exponential backoff: 2s, 4s, 8s
+      console.log(`⚠️ API returned ${response.status}, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries})...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    } else {
+      return response; // Return the failed response on last attempt
+    }
+  }
+
+  throw new Error('Unexpected: retry loop exited without returning');
+}
+
 interface OpportunityDetectionRequest {
   organization_id: string;
   organization_name: string;
@@ -394,7 +422,7 @@ Start your response with [ and end with ] - nothing else.`;
     // const controller = new AbortController();
     // const timeoutId = setTimeout(() => controller.abort(), 50000); // 50 second timeout (leaving 10s buffer)
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetchWithRetry('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       // signal: controller.signal,
       headers: {
@@ -594,7 +622,7 @@ async function detectOpportunitiesV2(
   console.log('Prompt length:', prompt.length, 'characters')
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetchWithRetry('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
