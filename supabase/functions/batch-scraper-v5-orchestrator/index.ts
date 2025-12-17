@@ -95,10 +95,25 @@ serve(async (req) => {
 
         // Insert new articles
         let sourceNewArticles = 0;
+        // Filter out articles older than 7 days
+        const maxAgeDays = 7;
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - maxAgeDays);
+        let skippedOldArticles = 0;
+
         for (const article of articles) {
           if (existingUrlSet.has(article.url)) {
             duplicateArticles++;
             continue;
+          }
+
+          // Skip articles older than 7 days
+          if (article.published_at) {
+            const pubDate = new Date(article.published_at);
+            if (pubDate < cutoffDate) {
+              skippedOldArticles++;
+              continue;
+            }
           }
 
           const { error: insertError } = await supabase
