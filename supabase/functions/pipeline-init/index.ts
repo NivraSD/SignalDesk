@@ -66,31 +66,41 @@ async function generateTargetsFromProfile(
 
   console.log(`🎯 Generating targets from profile for ${orgName}`);
 
-  // Build a focused prompt using existing profile data
-  const prompt = `Given this company profile, extract intelligence monitoring targets.
+  // Extract existing data from profile
+  const productLines = (profile.product_lines || []).join(', ') || 'Not specified';
+  const keyMarkets = (profile.key_markets || []).join(', ') || 'Not specified';
+  const businessModel = profile.business_model || 'Not specified';
+  const competitors = (profile.competitors || profile.competition?.direct_competitors || []).slice(0, 10).join(', ') || 'Not specified';
+  const description = profile.description || '';
+  const leadership = (profile.leadership || []).map((l: any) => `${l.name} (${l.title})`).join(', ') || '';
+
+  // Build a focused prompt using existing profile data - emphasize DIVERSE types
+  const prompt = `You are creating intelligence monitoring targets for a company. Generate a DIVERSE set of targets across ALL categories.
 
 COMPANY: ${orgName}
 INDUSTRY: ${industry}
-PRODUCT LINES: ${(profile.product_lines || []).join(', ') || 'Not specified'}
-KEY MARKETS: ${(profile.key_markets || []).join(', ') || 'Not specified'}
-BUSINESS MODEL: ${profile.business_model || 'Not specified'}
-COMPETITORS: ${(profile.competitors || profile.competition?.direct_competitors || []).slice(0, 10).join(', ') || 'Not specified'}
+DESCRIPTION: ${description}
+PRODUCT LINES: ${productLines}
+KEY MARKETS: ${keyMarkets}
+BUSINESS MODEL: ${businessModel}
+KNOWN COMPETITORS: ${competitors}
+LEADERSHIP: ${leadership}
 
-Extract monitoring targets in these categories:
-1. COMPETITORS: Direct competitors to track (use any listed above, add 5-10 more relevant ones)
-2. TOPICS: Key industry topics, trends, and keywords relevant to this company
-3. STAKEHOLDERS: Key customers, partners, or industry bodies (only if known/relevant)
-4. REGULATORS: Only if heavily regulated industry (finance, healthcare, energy)
-5. INFLUENCERS: Industry thought leaders and analysts
+IMPORTANT: You MUST generate targets in EACH of these categories (minimum counts shown):
 
-Return JSON only:
+1. COMPETITORS (5-10): Direct competitors in the same space
+2. TOPICS (10-15): Industry trends, technologies, and keywords that would appear in relevant news articles. Think about what news topics this company would want to monitor. Examples: "AI automation", "browser automation tools", "enterprise data pipelines", "Series A funding", etc.
+3. STAKEHOLDERS (3-5): Target customer segments, partners, industry bodies
+4. INFLUENCERS (3-5): Industry analysts, thought leaders, tech journalists who cover this space
+
+Return JSON only - you MUST include all 4 target types:
 {
   "targets": [
-    {"name": "Target Name", "type": "competitor|topic|stakeholder|regulator|influencer", "priority": "high|medium|low"}
+    {"name": "Target Name", "type": "competitor|topic|stakeholder|influencer", "priority": "high|medium|low"}
   ]
 }
 
-Keep it focused - 30-50 total targets max. Quality over quantity.`;
+Generate 30-40 targets total with the distribution above. Topics should be phrases that would match news article headlines.`;
 
   try {
     const response = await callClaude(prompt, 2000);

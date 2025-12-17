@@ -2310,6 +2310,58 @@ async function createIntelligenceTargets(organizationId: string, profile: any) {
       }
     });
 
+    // FALLBACK: If no topics were created from trending/keywords/market, use product_lines and key_markets
+    const topicCount = targets.filter(t => t.type === 'topic').length;
+    if (topicCount < 5) {
+      console.log(`   ⚠️ Only ${topicCount} topics found, adding from product_lines and key_markets...`);
+
+      // Add product lines as topics
+      const productLines = profile.product_lines || [];
+      productLines.forEach((product: string) => {
+        if (product && typeof product === 'string') {
+          targets.push({
+            organization_id: organizationId,
+            name: product.trim(),
+            type: 'topic',
+            target_type: 'topic',
+            priority: 'high',
+            monitoring_context: { category: 'product_line' },
+            active: true
+          });
+        }
+      });
+
+      // Add key markets as topics
+      const keyMarkets = profile.key_markets || [];
+      keyMarkets.forEach((market: string) => {
+        if (market && typeof market === 'string') {
+          targets.push({
+            organization_id: organizationId,
+            name: market.trim(),
+            type: 'topic',
+            target_type: 'topic',
+            priority: 'medium',
+            monitoring_context: { category: 'key_market' },
+            active: true
+          });
+        }
+      });
+
+      // Add industry-related topics
+      const industry = profile.industry;
+      if (industry) {
+        targets.push({
+          organization_id: organizationId,
+          name: industry,
+          type: 'topic',
+          target_type: 'topic',
+          priority: 'high',
+          monitoring_context: { category: 'industry' },
+          active: true
+        });
+      }
+    }
+
     if (targets.length === 0) {
       console.log('⚠️ No intelligence targets to create from profile');
       return;
