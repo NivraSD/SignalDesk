@@ -2,6 +2,170 @@
 // Used by discovery MCP to identify key competitors in each industry
 
 export const INDUSTRY_COMPETITORS_DETAILED = {
+  // CONSUMER GOODS INDUSTRIES - Brands that MAKE products
+  beauty: {
+    general: [
+      'L\'Oréal', 'Estée Lauder', 'Coty', 'Shiseido', 'Revlon',
+      'e.l.f. Beauty', 'Ulta Beauty', 'Sephora', 'MAC', 'NYX'
+    ],
+    cosmetics: [
+      'e.l.f. Beauty', 'Maybelline', 'L\'Oréal Paris', 'NYX', 'MAC',
+      'Fenty Beauty', 'Charlotte Tilbury', 'Rare Beauty', 'NARS', 'Urban Decay'
+    ],
+    skincare: [
+      'CeraVe', 'The Ordinary', 'La Roche-Posay', 'Cetaphil', 'Neutrogena',
+      'Olay', 'Clinique', 'Drunk Elephant', 'Tatcha', 'Paula\'s Choice'
+    ],
+    haircare: [
+      'Olaplex', 'Moroccanoil', 'Redken', 'Paul Mitchell', 'Aveda',
+      'Schwarzkopf', 'L\'Oréal Professional', 'Matrix', 'Kerastase', 'Bumble and bumble'
+    ],
+    personal_care: [
+      'Dove', 'Nivea', 'Aveeno', 'Bath & Body Works', 'The Body Shop',
+      'Lush', 'Method', 'Mrs. Meyer\'s', 'Native', 'Harry\'s'
+    ],
+    luxury_beauty: [
+      'La Mer', 'SK-II', 'Tom Ford Beauty', 'Chanel Beauty', 'Dior Beauty',
+      'Guerlain', 'YSL Beauty', 'Lancôme', 'Sisley', 'La Prairie'
+    ]
+  },
+
+  fashion: {
+    general: [
+      'H&M', 'Zara', 'Uniqlo', 'Nike', 'Adidas',
+      'Gap', 'Levi\'s', 'Under Armour', 'Puma', 'New Balance'
+    ],
+    fast_fashion: [
+      'Zara', 'H&M', 'Uniqlo', 'Shein', 'Forever 21',
+      'Mango', 'Pull & Bear', 'Bershka', 'Primark', 'Fashion Nova'
+    ],
+    athletic_apparel: [
+      'Nike', 'Adidas', 'Under Armour', 'Lululemon', 'Puma',
+      'New Balance', 'Reebok', 'Asics', 'On Running', 'Gymshark'
+    ],
+    denim: [
+      'Levi\'s', 'Wrangler', 'Lee', 'American Eagle', 'True Religion',
+      '7 For All Mankind', 'Citizens of Humanity', 'AG Jeans', 'Frame', 'Hudson'
+    ],
+    outdoor_apparel: [
+      'The North Face', 'Patagonia', 'Columbia', 'Arc\'teryx', 'REI',
+      'Marmot', 'Mountain Hardwear', 'Outdoor Research', 'prAna', 'Cotopaxi'
+    ],
+    streetwear: [
+      'Supreme', 'Off-White', 'A Bathing Ape', 'Stüssy', 'Palace',
+      'Fear of God', 'Kith', 'Essentials', 'Anti Social Social Club', 'Rhude'
+    ]
+  },
+
+  luxury_goods: {
+    general: [
+      'LVMH', 'Kering', 'Hermès', 'Chanel', 'Prada',
+      'Richemont', 'Burberry', 'Gucci', 'Louis Vuitton', 'Dior'
+    ],
+    fashion_luxury: [
+      'Gucci', 'Louis Vuitton', 'Dior', 'Prada', 'Burberry',
+      'Balenciaga', 'Saint Laurent', 'Bottega Veneta', 'Valentino', 'Givenchy'
+    ],
+    watches_jewelry: [
+      'Rolex', 'Cartier', 'Omega', 'Patek Philippe', 'Tiffany & Co.',
+      'Bulgari', 'TAG Heuer', 'Chopard', 'Van Cleef & Arpels', 'Piaget'
+    ],
+    handbags: [
+      'Louis Vuitton', 'Hermès', 'Chanel', 'Gucci', 'Prada',
+      'Fendi', 'Celine', 'Loewe', 'Bottega Veneta', 'Saint Laurent'
+    ]
+  },
+
+  food_beverage: {
+    general: [
+      'Nestlé', 'PepsiCo', 'Coca-Cola', 'Unilever', 'Kraft Heinz',
+      'General Mills', 'Kellogg\'s', 'Mars', 'Mondelez', 'Danone'
+    ],
+    soft_drinks: [
+      'Coca-Cola', 'PepsiCo', 'Dr Pepper Snapple', 'Red Bull', 'Monster',
+      'Gatorade', 'Celsius', 'Prime', 'Liquid Death', 'Poppi'
+    ],
+    snacks: [
+      'Frito-Lay', 'Mondelez', 'Mars', 'Hershey\'s', 'Kellogg\'s',
+      'General Mills', 'KIND', 'Clif Bar', 'RXBAR', 'Quest'
+    ],
+    alcoholic_beverages: [
+      'Diageo', 'AB InBev', 'Pernod Ricard', 'Constellation Brands', 'Brown-Forman',
+      'Molson Coors', 'Heineken', 'Bacardi', 'Beam Suntory', 'Campari'
+    ],
+    coffee: [
+      'Starbucks', 'Nespresso', 'Keurig Dr Pepper', 'Lavazza', 'Peet\'s',
+      'Dunkin\'', 'Blue Bottle', 'Stumptown', 'Intelligentsia', 'La Colombe'
+    ]
+  },
+
+  consumer_electronics: {
+    general: [
+      'Apple', 'Samsung', 'Sony', 'LG', 'Bose',
+      'Dell', 'HP', 'Lenovo', 'Microsoft', 'Google'
+    ],
+    smartphones: [
+      'Apple', 'Samsung', 'Google', 'OnePlus', 'Xiaomi',
+      'Oppo', 'Vivo', 'Motorola', 'Nothing', 'Asus'
+    ],
+    audio: [
+      'Bose', 'Sony', 'Apple', 'JBL', 'Sonos',
+      'Sennheiser', 'Bang & Olufsen', 'Beats', 'Harman Kardon', 'Marshall'
+    ],
+    gaming_hardware: [
+      'Sony PlayStation', 'Microsoft Xbox', 'Nintendo', 'Razer', 'Logitech',
+      'SteelSeries', 'HyperX', 'Corsair', 'ASUS ROG', 'MSI'
+    ]
+  },
+
+  home_goods: {
+    general: [
+      'IKEA', 'Williams-Sonoma', 'Crate & Barrel', 'Pottery Barn', 'West Elm',
+      'Restoration Hardware', 'Wayfair', 'Bed Bath & Beyond', 'CB2', 'Article'
+    ],
+    furniture: [
+      'IKEA', 'Ashley Furniture', 'La-Z-Boy', 'Steelcase', 'Herman Miller',
+      'Ethan Allen', 'Rooms To Go', 'Article', 'Joybird', 'Floyd'
+    ],
+    home_decor: [
+      'Pottery Barn', 'Crate & Barrel', 'West Elm', 'CB2', 'Anthropologie',
+      'World Market', 'HomeGoods', 'At Home', 'Pier 1', 'Z Gallerie'
+    ]
+  },
+
+  sporting_goods: {
+    general: [
+      'Nike', 'Adidas', 'Under Armour', 'Puma', 'New Balance',
+      'The North Face', 'Columbia', 'Yeti', 'Callaway', 'TaylorMade'
+    ],
+    golf: [
+      'Callaway', 'TaylorMade', 'Titleist', 'Ping', 'Cobra',
+      'Cleveland', 'Bridgestone', 'Srixon', 'Mizuno', 'PXG'
+    ],
+    outdoor_equipment: [
+      'Yeti', 'Coleman', 'REI', 'Osprey', 'Kelty',
+      'Big Agnes', 'MSR', 'Black Diamond', 'Jetboil', 'Thermarest'
+    ]
+  },
+
+  pet_products: {
+    general: [
+      'Mars Petcare', 'Nestlé Purina', 'Hill\'s Pet', 'Blue Buffalo', 'Royal Canin',
+      'Chewy', 'BarkBox', 'Petco', 'PetSmart', 'Farmer\'s Dog'
+    ],
+    pet_food: [
+      'Purina', 'Blue Buffalo', 'Hill\'s Science Diet', 'Royal Canin', 'Iams',
+      'Farmer\'s Dog', 'Ollie', 'Nom Nom', 'Open Farm', 'Orijen'
+    ]
+  },
+
+  toys_games: {
+    general: [
+      'LEGO', 'Hasbro', 'Mattel', 'Spin Master', 'Funko',
+      'Nintendo', 'PlayStation', 'Xbox', 'Bandai Namco', 'Fisher-Price'
+    ]
+  },
+
   technology: {
     // Parent industry leaders
     general: [
@@ -386,12 +550,42 @@ export function getIndustryCompetitors(
     'insurance': 'finance',
     'wealth_management': 'finance',
     
-    // Retail variations
+    // Beauty/Cosmetics variations - map to beauty (NOT retail!)
+    'cosmetics': 'beauty',
+    'skincare': 'beauty',
+    'makeup': 'beauty',
+    'personal_care': 'beauty',
+    'haircare': 'beauty',
+
+    // Fashion/Apparel variations - map to fashion (NOT retail!)
+    'apparel': 'fashion',
+    'clothing': 'fashion',
+    'fast_fashion': 'fashion',
+    'athletic_apparel': 'fashion',
+    'streetwear': 'fashion',
+
+    // Luxury goods
+    'luxury': 'luxury_goods',
+    'luxury_fashion': 'luxury_goods',
+
+    // Food & Beverage variations
+    'food': 'food_beverage',
+    'beverage': 'food_beverage',
+    'cpg': 'food_beverage',
+    'snacks': 'food_beverage',
+    'drinks': 'food_beverage',
+
+    // Consumer Electronics
+    'electronics': 'consumer_electronics',
+    'smartphones': 'consumer_electronics',
+    'audio': 'consumer_electronics',
+
+    // Retail - ONLY actual retailers (stores that SELL other brands' products)
     'ecommerce': 'retail',
     'e_commerce': 'retail',
-    'fashion': 'retail',
-    'apparel': 'retail',
-    'consumer_goods': 'retail',
+    'department_store': 'retail',
+    'grocery_store': 'retail',
+    'big_box': 'retail',
     
     // Energy variations
     'oil': 'energy',

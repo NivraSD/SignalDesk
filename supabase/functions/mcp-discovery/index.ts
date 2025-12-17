@@ -176,7 +176,8 @@ async function createOrganizationProfile(args: any) {
     business_model,
     save_to_persistence = true,
     gap_filling_mode = false,
-    gap_context = null
+    gap_context = null,
+    wait_for_signals = false  // When true, wait for embedding+matching to complete (for onboarding)
   } = args;
 
   console.log(`🔍 Creating SMART organization profile for: ${organization_name}`);
@@ -312,7 +313,7 @@ async function createOrganizationProfile(args: any) {
     // STEP 5: Save to persistence if requested
     if (save_to_persistence && organization_id) {
       console.log('💾 Saving profile to organizations.company_profile...');
-      await saveProfile(organization_id, profile);
+      await saveProfile(organization_id, profile, wait_for_signals);
     } else if (save_to_persistence && !organization_id) {
       console.log('⚠️ Cannot save profile - organization_id not provided');
     }
@@ -2067,9 +2068,10 @@ function structureFinalProfile(profileData: any, organization_name: string) {
 }
 
 // Save profile to organizations.company_profile column
-async function saveProfile(organizationId: string, profile: any) {
+async function saveProfile(organizationId: string, profile: any, waitForSignals: boolean = false) {
   try {
     console.log(`💾 Saving profile to organizations.company_profile for org: ${organizationId}`);
+    console.log(`   Wait for signals: ${waitForSignals}`);
     console.log(`   Profile has ${Object.keys(profile.sources || {}).length} source categories`);
     console.log(`   Source categories: ${Object.keys(profile.sources || {}).join(', ')}`);
 
@@ -2140,7 +2142,7 @@ async function saveProfile(organizationId: string, profile: any) {
     console.log(`   Verified sources in saved profile: ${Object.keys(data[0].company_profile?.sources || {}).length} categories`);
 
     // Also create intelligence_targets from the profile
-    await createIntelligenceTargets(organizationId, profile);
+    await createIntelligenceTargets(organizationId, profile, waitForSignals);
   } catch (e) {
     console.error('❌ Error saving profile:', e);
     throw e;
@@ -2148,7 +2150,7 @@ async function saveProfile(organizationId: string, profile: any) {
 }
 
 // Create intelligence_targets from company profile (competitors, stakeholders, topics)
-async function createIntelligenceTargets(organizationId: string, profile: any) {
+async function createIntelligenceTargets(organizationId: string, profile: any, waitForSignals: boolean = false) {
   try {
     console.log('🎯 Creating intelligence targets from profile...');
 
@@ -2324,11 +2326,13 @@ async function createIntelligenceTargets(organizationId: string, profile: any) {
     });
 
     // Add key topics/keywords from multiple profile sources
-    const hotTopics = profile.trending?.hot_topics || [];
-    const keywords = profile.keywords || profile.monitoring_config?.keywords || [];
-    const marketDrivers = profile.market?.market_drivers || [];
-    const marketBarriers = profile.market?.market_barriers || [];
-    const keyMetrics = profile.market?.key_metrics || [];
+    // LIMIT: Max 15 topics total to avoid overwhelming users
+    const MAX_TOPICS = 15;
+    const hotTopics = (profile.trending?.hot_topics || []).slice(0, 5);
+    const keywords = (profile.keywords || profile.monitoring_config?.keywords || []).slice(0, 5);
+    const marketDrivers = (profile.market?.market_drivers || []).slice(0, 3);
+    const marketBarriers = (profile.market?.market_barriers || []).slice(0, 3);
+    const keyMetrics = (profile.market?.key_metrics || []).slice(0, 3);
 
     // Get organization name to filter out self-referential topics
     const orgName = (profile.name || profile.organization_name || '').toLowerCase();
@@ -2465,10 +2469,26 @@ async function createIntelligenceTargets(organizationId: string, profile: any) {
       return;
     }
 
-    console.log(`   Creating ${targets.length} intelligence targets...`);
+    // Final cap: Limit topics to MAX_TOPICS, keeping high priority ones first
+    const nonTopicTargets = targets.filter(t => t.type !== 'topic');
+    let topicTargets = targets.filter(t => t.type === 'topic');
+
+    if (topicTargets.length > MAX_TOPICS) {
+      console.log(`   ⚠️ Capping topics from ${topicTargets.length} to ${MAX_TOPICS}`);
+      // Sort by priority (high first) and take top MAX_TOPICS
+      topicTargets.sort((a, b) => {
+        const priorityOrder = { high: 0, medium: 1, low: 2 };
+        return (priorityOrder[a.priority] || 2) - (priorityOrder[b.priority] || 2);
+      });
+      topicTargets = topicTargets.slice(0, MAX_TOPICS);
+    }
+
+    const finalTargets = [...nonTopicTargets, ...topicTargets];
+
+    console.log(`   Creating ${finalTargets.length} intelligence targets (${nonTopicTargets.length} non-topics, ${topicTargets.length} topics)...`);
 
     // Upsert targets (avoid duplicates)
-    for (const target of targets) {
+    for (const target of finalTargets) {
       // Use insert instead of upsert - cleaner for initial discovery
       // The unique constraint is (organization_id, name, target_type)
       const { error } = await supabase
@@ -2489,7 +2509,22 @@ async function createIntelligenceTargets(organizationId: string, profile: any) {
     console.log(`✅ Created ${targets.length} intelligence targets`);
 
     // Trigger embedding for the new targets so they're ready for V5 article matching
-    await triggerTargetEmbedding(organizationId);
+    if (waitForSignals) {
+      // ONBOARDING MODE: Wait for embedding+matching to complete so user can use platform immediately
+      console.log('🔄 Waiting for signal pipeline to complete (onboarding mode)...');
+      try {
+        await triggerTargetEmbedding(organizationId);
+        console.log('✅ Signal pipeline complete - org ready for immediate use');
+      } catch (e) {
+        console.warn('⚠️ Signal pipeline failed during onboarding (user may need to refresh):', e);
+        // Still don't throw - user can use platform, just may have fewer signals initially
+      }
+    } else {
+      // NORMAL MODE: Fire-and-forget - do NOT await, as embedding takes too long and causes timeout
+      triggerTargetEmbedding(organizationId).catch(e => {
+        console.warn('⚠️ Background embedding failed (will be picked up by cron):', e);
+      });
+    }
   } catch (e) {
     console.error('❌ Error creating intelligence targets:', e);
     // Don't throw - this is non-blocking

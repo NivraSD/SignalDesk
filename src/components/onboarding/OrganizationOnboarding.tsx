@@ -432,6 +432,25 @@ export default function OrganizationOnboarding({
           console.warn('⚠️ Target embedding failed (will retry via cron):', embedResponse.error)
         } else {
           console.log(`✅ Embedded ${embedResponse.data?.embedded || 0} targets (avg context: ${embedResponse.data?.avg_context_length || 0} chars)`)
+
+          // 2c. Match targets to recent articles so user has signals immediately
+          // CRITICAL: Without this, new orgs have no target_article_matches and briefs have no relevant content
+          console.log('🔗 Matching targets to recent articles...')
+          try {
+            const matchResponse = await supabase.functions.invoke('batch-match-signals', {
+              body: {
+                organization_id: organization.id,
+                hours_back: 48  // Look back 48h for new orgs to have some matches
+              }
+            })
+            if (matchResponse.error) {
+              console.warn('⚠️ Signal matching failed (will retry via cron):', matchResponse.error)
+            } else {
+              console.log(`✅ Created ${matchResponse.data?.matches_created || 0} article matches - org ready for V5 article selection`)
+            }
+          } catch (matchError) {
+            console.warn('⚠️ Signal matching error (will retry via cron):', matchError)
+          }
         }
       } catch (embedError) {
         console.warn('⚠️ Target embedding error (will retry via cron):', embedError)
