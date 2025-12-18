@@ -2483,9 +2483,18 @@ async function createIntelligenceTargets(organizationId: string, profile: any, w
       topicTargets = topicTargets.slice(0, MAX_TOPICS);
     }
 
-    const finalTargets = [...nonTopicTargets, ...topicTargets];
+    // Filter out self-referential targets (org tracking itself)
+    const filteredNonTopicTargets = nonTopicTargets.filter(t => !isSelfReferential(t.name));
+    const filteredTopicTargets = topicTargets.filter(t => !isSelfReferential(t.name));
 
-    console.log(`   Creating ${finalTargets.length} intelligence targets (${nonTopicTargets.length} non-topics, ${topicTargets.length} topics)...`);
+    if (filteredNonTopicTargets.length < nonTopicTargets.length || filteredTopicTargets.length < topicTargets.length) {
+      const removed = (nonTopicTargets.length - filteredNonTopicTargets.length) + (topicTargets.length - filteredTopicTargets.length);
+      console.log(`   ⚠️ Filtered out ${removed} self-referential target(s) (org tracking itself)`);
+    }
+
+    const finalTargets = [...filteredNonTopicTargets, ...filteredTopicTargets];
+
+    console.log(`   Creating ${finalTargets.length} intelligence targets (${filteredNonTopicTargets.length} non-topics, ${filteredTopicTargets.length} topics)...`);
 
     // Upsert targets (avoid duplicates)
     for (const target of finalTargets) {
