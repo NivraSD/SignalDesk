@@ -40,20 +40,18 @@ import { IntelligenceService } from '@/lib/services/intelligenceService'
 import IntelligenceBriefDisplay from '@/components/IntelligenceBriefDisplay'
 import NIVFloatingAssistant from '@/components/niv/NIVFloatingAssistant'
 
-// Signal type for unified signals table
-interface SidebarSignal {
+// Prediction type for cascades sidebar
+interface SidebarPrediction {
   id: string
-  signal_type: 'pattern' | 'connection' | 'movement' | 'predictive' | 'opportunity' | 'cascade_alert'
-  signal_subtype?: string
-  title: string
-  description: string
-  primary_target_name?: string
-  confidence_score: number
-  significance_score?: number
-  urgency: 'immediate' | 'near_term' | 'monitoring'
-  impact_level: 'critical' | 'high' | 'medium' | 'low'
-  detected_at: string
-  business_implication?: string
+  predicted_outcome: string
+  predicted_timeframe_days: number
+  predicted_confidence: number
+  prediction_reasoning: string
+  created_at: string
+  intelligence_targets?: {
+    name: string
+    target_type: string
+  }
 }
 
 // Import existing modules for functionality
@@ -99,8 +97,8 @@ export default function Dashboard() {
   const [opportunities, setOpportunities] = useState<any[]>([])
   const [loadingOpportunities, setLoadingOpportunities] = useState(false)
 
-  // Unified signals for Hub sidebar (pattern + connection from target intelligence)
-  const [sidebarSignals, setSidebarSignals] = useState<SidebarSignal[]>([])
+  // Predictions for Hub sidebar (from signal_outcomes / Cascades)
+  const [sidebarPredictions, setSidebarPredictions] = useState<SidebarPrediction[]>([])
   const [loadingSidebarData, setLoadingSidebarData] = useState(false)
 
   // Crisis monitoring state
@@ -256,25 +254,27 @@ export default function Dashboard() {
 
     setLoadingSidebarData(true)
     try {
-      // Load from unified signals table - pattern and connection types from target intelligence
+      // Load predictions from signal_outcomes table (same as Cascades module)
       const { data, error } = await supabase
-        .from('signals')
-        .select('id, signal_type, signal_subtype, title, description, primary_target_name, confidence_score, significance_score, urgency, impact_level, detected_at, business_implication')
+        .from('signal_outcomes')
+        .select(`
+          id, predicted_outcome, predicted_timeframe_days, predicted_confidence,
+          prediction_reasoning, created_at,
+          intelligence_targets(name, target_type)
+        `)
         .eq('organization_id', organization.id)
-        .eq('status', 'active')
-        .in('signal_type', ['pattern', 'connection'])
-        .order('detected_at', { ascending: false })
-        .limit(10)
+        .order('created_at', { ascending: false })
+        .limit(6)
 
       if (error) {
-        console.error('Failed to load sidebar signals:', error)
-        setSidebarSignals([])
+        console.error('Failed to load sidebar predictions:', error)
+        setSidebarPredictions([])
       } else {
-        setSidebarSignals(data || [])
+        setSidebarPredictions(data || [])
       }
     } catch (error) {
       console.error('Failed to load sidebar data:', error)
-      setSidebarSignals([])
+      setSidebarPredictions([])
     } finally {
       setLoadingSidebarData(false)
     }
@@ -658,7 +658,7 @@ export default function Dashboard() {
               organization={organization}
               executiveSynthesis={executiveSynthesis}
               opportunities={opportunities}
-              sidebarSignals={sidebarSignals}
+              sidebarPredictions={sidebarPredictions}
               loadingSidebarData={loadingSidebarData}
               isRunningPipeline={isRunningPipeline}
               pipelineStage={pipelineStage}
@@ -846,7 +846,7 @@ function HubView({
   organization,
   executiveSynthesis,
   opportunities,
-  sidebarSignals,
+  sidebarPredictions,
   loadingSidebarData,
   isRunningPipeline,
   pipelineStage,
@@ -861,7 +861,7 @@ function HubView({
   organization: any
   executiveSynthesis: any
   opportunities: any[]
-  sidebarSignals: SidebarSignal[]
+  sidebarPredictions: SidebarPrediction[]
   loadingSidebarData: boolean
   isRunningPipeline: boolean
   pipelineStage: string
@@ -876,7 +876,6 @@ function HubView({
   const [expandedOppId, setExpandedOppId] = useState<string | null>(null)
   const [executingOppId, setExecutingOppId] = useState<string | null>(null)
   const [executionProgress, setExecutionProgress] = useState<{ current?: string; progress?: number }>({})
-  const [activeSidebarTab, setActiveSidebarTab] = useState<'signals'>('signals')
 
   // Helper function to create clean folder name from opportunity title
   const getOpportunityFolderName = (title: string): string => {
@@ -1307,9 +1306,9 @@ ${opp.strategic_context?.trigger_events?.map((e: string) => `- ${e}`).join('\n')
           <span className="flex items-center gap-2">
             <Zap className="w-3.5 h-3.5 text-[var(--burnt-orange)]" />
             Intelligence Cascades
-            {sidebarSignals.length > 0 && (
+            {sidebarPredictions.length > 0 && (
               <span className="px-1.5 py-0.5 text-[0.6rem] bg-[var(--burnt-orange)]/20 text-[var(--burnt-orange)] rounded">
-                {sidebarSignals.length}
+                {sidebarPredictions.length}
               </span>
             )}
           </span>
@@ -1321,58 +1320,55 @@ ${opp.strategic_context?.trigger_events?.map((e: string) => `- ${e}`).join('\n')
           </button>
         </div>
 
-        {/* Pattern Signals Section */}
-        {sidebarSignals.filter(s => s.signal_type === 'pattern').length > 0 && (
-          <div className="mb-4">
-            <div
-              className="text-[0.6rem] uppercase tracking-[0.1em] text-[var(--grey-600)] mb-2 flex items-center gap-1.5"
-              style={{ fontFamily: 'var(--font-display)' }}
-            >
-              <Target className="w-3 h-3 text-cyan-400" />
-              Patterns Detected
-            </div>
-            {sidebarSignals.filter(s => s.signal_type === 'pattern').slice(0, 3).map((signal, idx) => (
-              <IntelItem
-                key={signal.id || idx}
-                title={signal.title}
-                highlight={signal.urgency === 'immediate' ? '🔴' : signal.urgency === 'near_term' ? '🟠' : '🟢'}
-                meta={`${signal.primary_target_name || 'General'} · ${signal.impact_level}`}
-              />
-            ))}
+        {/* Predictions List */}
+        {sidebarPredictions.length > 0 ? (
+          <div className="space-y-2">
+            {sidebarPredictions.map((prediction, idx) => {
+              const confidencePct = Math.round(prediction.predicted_confidence * 100)
+              const isHighConfidence = confidencePct >= 70
+              const isImminent = prediction.predicted_timeframe_days <= 30
+              return (
+                <div
+                  key={prediction.id || idx}
+                  className="p-3 bg-[var(--grey-800)] rounded-lg cursor-pointer hover:bg-[var(--grey-700)] transition-colors"
+                  onClick={() => onNavigate('cascades')}
+                >
+                  <div className="flex items-start gap-2 mb-1.5">
+                    {/* Timeframe badge */}
+                    <span className={`px-1.5 py-0.5 text-[0.6rem] rounded flex items-center gap-1 shrink-0 ${
+                      isImminent
+                        ? 'bg-[var(--burnt-orange-muted)] text-[var(--burnt-orange)] border border-[var(--burnt-orange)]/30'
+                        : 'bg-[var(--grey-700)] text-[var(--grey-400)]'
+                    }`}>
+                      <Clock className="w-2.5 h-2.5" />
+                      {prediction.predicted_timeframe_days}d
+                    </span>
+                    {/* Confidence */}
+                    <span className={`text-[0.6rem] font-medium ${isHighConfidence ? 'text-green-400' : 'text-[var(--grey-400)]'}`}>
+                      {confidencePct}%
+                    </span>
+                  </div>
+                  <p className="text-[0.8rem] text-white leading-snug line-clamp-2 mb-1">
+                    {prediction.predicted_outcome}
+                  </p>
+                  {prediction.intelligence_targets?.name && (
+                    <span className="text-[0.65rem] text-[var(--grey-500)]">
+                      {prediction.intelligence_targets.name}
+                    </span>
+                  )}
+                </div>
+              )
+            })}
           </div>
-        )}
-
-        {/* Connection Signals Section */}
-        {sidebarSignals.filter(s => s.signal_type === 'connection').length > 0 && (
-          <div className="mb-4">
-            <div
-              className="text-[0.6rem] uppercase tracking-[0.1em] text-[var(--grey-600)] mb-2 flex items-center gap-1.5"
-              style={{ fontFamily: 'var(--font-display)' }}
-            >
-              <Activity className="w-3 h-3 text-purple-400" />
-              Cross-Target Connections
-            </div>
-            {sidebarSignals.filter(s => s.signal_type === 'connection').slice(0, 3).map((signal, idx) => (
-              <IntelItem
-                key={signal.id || idx}
-                title={signal.title}
-                highlight={`${signal.confidence_score || 0}%`}
-                meta={`${signal.impact_level} impact · ${signal.signal_subtype?.replace('connection_', '') || 'link'}`}
-              />
-            ))}
-          </div>
-        )}
-
-        {/* Empty State */}
-        {sidebarSignals.length === 0 && (
+        ) : (
           <div className="text-center py-8 text-[var(--grey-500)] text-sm">
             {loadingSidebarData ? (
               <div className="flex items-center justify-center gap-2">
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Loading signals...
+                Loading predictions...
               </div>
             ) : (
-              'No pattern or connection signals yet. Intelligence analysis runs daily after the scraping pipeline.'
+              'No predictions yet. Run the intelligence pipeline to generate forward-looking cascades.'
             )}
           </div>
         )}
