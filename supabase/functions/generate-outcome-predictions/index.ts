@@ -19,6 +19,64 @@ const MAX_SIGNALS_PER_RUN = 30;
 const MAX_CONNECTIONS_PER_RUN = 20;
 const DEFAULT_PREDICTION_WINDOW_DAYS = 30;
 
+interface OrgContext {
+  name: string;
+  industry: string | null;
+}
+
+// Cache for org lookups
+const orgCache = new Map<string, OrgContext>();
+
+// Helper to get org context
+async function getOrgContext(supabase: any, orgId: string): Promise<OrgContext | null> {
+  if (orgCache.has(orgId)) {
+    return orgCache.get(orgId)!;
+  }
+
+  const { data, error } = await supabase
+    .from('organizations')
+    .select('name, industry')
+    .eq('id', orgId)
+    .single();
+
+  if (error || !data) {
+    return null;
+  }
+
+  const ctx = { name: data.name, industry: data.industry };
+  orgCache.set(orgId, ctx);
+  return ctx;
+}
+
+// Helper to get target type for a signal
+async function getTargetType(supabase: any, targetId: string | null, orgId: string, targetName: string | null): Promise<string | null> {
+  if (!targetId && !targetName) return null;
+
+  // Try by ID first
+  if (targetId) {
+    const { data } = await supabase
+      .from('intelligence_targets')
+      .select('target_type')
+      .eq('id', targetId)
+      .single();
+    if (data?.target_type) return data.target_type;
+  }
+
+  // Fall back to name match within org
+  if (targetName) {
+    const { data } = await supabase
+      .from('intelligence_targets')
+      .select('target_type')
+      .eq('organization_id', orgId)
+      .ilike('name', targetName)
+      .limit(1)
+      .single();
+    if (data?.target_type) return data.target_type;
+  }
+
+  return null;
+}
+
 interface Signal {
   id: string;
   organization_id: string;
@@ -174,8 +232,12 @@ serve(async (req) => {
 
         console.log(`   Processing: ${signal.title.slice(0, 50)}...`);
 
+        // Get organization context for better predictions
+        const orgContext = await getOrgContext(supabase, signal.organization_id);
+        const targetType = await getTargetType(supabase, signal.primary_target_id, signal.organization_id, signal.primary_target_name);
+
         // Generate prediction using Claude
-        const prediction = await generatePrediction(signal);
+        const prediction = await generatePrediction(signal, orgContext, targetType);
 
         if (!prediction) {
           console.log(`     No prediction generated (signal may not be predictive)`);
@@ -283,15 +345,38 @@ serve(async (req) => {
   }
 });
 
-async function generatePrediction(signal: Signal): Promise<Prediction | null> {
-  const prompt = `You are an intelligence analyst generating a VERIFIABLE PREDICTION from an intelligence signal.
+async function generatePrediction(signal: Signal, orgContext: OrgContext | null, targetType: string | null): Promise<Prediction | null> {
+  // Build context about the relationship between org and target
+  const orgName = orgContext?.name || 'the organization';
+  const industry = orgContext?.industry || 'their industry';
+
+  let targetRelationship = '';
+  if (targetType && signal.primary_target_name) {
+    const relationshipMap: Record<string, string> = {
+      'competitor': `${signal.primary_target_name} is a COMPETITOR that ${orgName} is monitoring`,
+      'regulator': `${signal.primary_target_name} is a REGULATOR that affects ${orgName}'s operations`,
+      'influencer': `${signal.primary_target_name} is an INFLUENCER whose opinions matter to ${orgName}`,
+      'topic': `${signal.primary_target_name} is a strategic TOPIC that ${orgName} tracks`,
+      'partner': `${signal.primary_target_name} is a PARTNER of ${orgName}`,
+      'customer': `${signal.primary_target_name} is a CUSTOMER segment for ${orgName}`,
+    };
+    targetRelationship = relationshipMap[targetType] || `${signal.primary_target_name} is being tracked by ${orgName}`;
+  }
+
+  const prompt = `You are an intelligence analyst generating a VERIFIABLE PREDICTION for ${orgName} (${industry}).
+
+IMPORTANT CONTEXT:
+═══════════════════
+- You are generating predictions FOR ${orgName}, not about the general market
+- ${targetRelationship || 'This signal relates to their strategic intelligence'}
+- Predictions should be framed in terms of what ${orgName} should watch for or what will impact them
 
 SIGNAL DETAILS:
 ═══════════════
 Type: ${signal.signal_type}${signal.signal_subtype ? ` / ${signal.signal_subtype}` : ''}
 Title: ${signal.title}
 Description: ${signal.description}
-Target: ${signal.primary_target_name || 'N/A'} (${signal.primary_target_type || 'N/A'})
+Target: ${signal.primary_target_name || 'N/A'} (${targetType || signal.primary_target_type || 'N/A'})
 Confidence: ${signal.confidence_score}%
 ${signal.reasoning ? `Reasoning: ${signal.reasoning}` : ''}
 ${signal.business_implication ? `Business Implication: ${signal.business_implication}` : ''}
@@ -299,38 +384,39 @@ ${signal.business_implication ? `Business Implication: ${signal.business_implica
 Evidence:
 ${JSON.stringify(signal.evidence, null, 2)}
 
-TASK: Generate a specific, measurable prediction that can be validated.
+TASK: Generate a specific, measurable prediction that ${orgName} can use.
 
 RULES FOR GOOD PREDICTIONS:
-1. SPECIFIC: "Company X will announce acquisition of Y" NOT "Company X might do something"
-2. MEASURABLE: Must be verifiable through news/public information
-3. TIME-BOUND: Include a realistic timeframe (7-90 days typically)
-4. FALSIFIABLE: Must be possible to prove wrong
-5. GROUNDED: Based on the evidence in the signal
+1. RELEVANT TO ${orgName.toUpperCase()}: Frame predictions as market events, competitor moves, or opportunities that matter to ${orgName}
+2. SPECIFIC: "BCG will launch competing service in Q1" NOT "BCG might do something"
+3. MEASURABLE: Must be verifiable through news/public information
+4. TIME-BOUND: Include a realistic timeframe (7-90 days typically)
+5. FALSIFIABLE: Must be possible to prove wrong
+6. ACTIONABLE: ${orgName} can prepare or respond to this prediction
 
-EXAMPLES OF GOOD PREDICTIONS:
-- "OpenAI will announce a new model release within 30 days"
-- "Glencore will publish Chile expansion details within 45 days"
-- "FTC will announce formal investigation within 60 days"
-- "Company will respond to competitor announcement within 14 days"
+EXAMPLES FOR A CONSULTING FIRM TRACKING COMPETITORS:
+- "BCG will announce expansion into [specific market] within 45 days, creating direct competition"
+- "McKinsey will publish thought leadership on [topic] within 30 days that ${orgName} should respond to"
+- "Deloitte will announce a major client win in [sector] within 60 days"
+- "Regulatory announcement on [topic] will create new advisory opportunities within 45 days"
 
-EXAMPLES OF BAD PREDICTIONS (too vague):
-- "OpenAI will continue growing"
-- "Market conditions may change"
-- "Company might face challenges"
+BAD PREDICTIONS (not useful to ${orgName}):
+- "BCG will continue to exist" (not actionable)
+- "Market conditions may change" (too vague)
+- "Competition will increase" (not specific)
 
 Return a JSON object with your prediction:
 {
-  "predicted_outcome": "Specific, measurable prediction statement",
+  "predicted_outcome": "Specific prediction framed for what ${orgName} should watch for",
   "predicted_timeframe_days": 30,
   "predicted_confidence": 0.65,
-  "prediction_reasoning": "Why you expect this outcome based on the evidence",
-  "verification_criteria": ["What evidence would confirm this", "Another confirmation signal"],
+  "prediction_reasoning": "Why ${orgName} should expect this and how it affects them",
+  "verification_criteria": ["What news/events would confirm this", "Another confirmation signal"],
   "refutation_criteria": ["What would prove this wrong", "Another refutation signal"]
 }
 
 If this signal is NOT suitable for prediction (e.g., just a mention, no actionable pattern), return:
-{"skip": true, "reason": "Why this signal isn't predictive"}
+{"skip": true, "reason": "Why this signal isn't predictive for ${orgName}"}
 
 Return ONLY the JSON object.`;
 
