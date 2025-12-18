@@ -2041,6 +2041,19 @@ function LearningView({
   onRefresh: () => void
 }) {
   const [activeTab, setActiveTab] = useState<'predictions' | 'accuracy' | 'amplification' | 'cascades'>('predictions')
+  const [expandedPredictions, setExpandedPredictions] = useState<Set<string>>(new Set())
+
+  const togglePrediction = (id: string) => {
+    setExpandedPredictions(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+  }
 
   if (!data) {
     return (
@@ -2166,40 +2179,87 @@ function LearningView({
                     <p className="text-[#5a5a5a] text-sm mt-1">Predictions are created from signals automatically</p>
                   </td>
                 </tr>
-              ) : predictions.map((p: any) => (
-                <tr key={p.id} className="border-b border-[#2e2e2e] hover:bg-[#212121]">
-                  <td className="p-4">
-                    <div className="text-white text-sm font-medium mb-1 line-clamp-1">{p.predicted_outcome}</div>
-                    <div className="text-[#757575] text-xs line-clamp-1">
-                      {p.prediction_reasoning?.slice(0, 100) || 'N/A'}...
-                    </div>
-                  </td>
-                  <td className="p-4 text-center">
-                    <span className={`font-medium ${
-                      p.predicted_confidence >= 0.7 ? 'text-green-400' :
-                      p.predicted_confidence >= 0.5 ? 'text-yellow-400' :
-                      'text-red-400'
-                    }`}>
-                      {Math.round((p.predicted_confidence || 0) * 100)}%
-                    </span>
-                  </td>
-                  <td className="p-4 text-center text-[#9e9e9e] text-sm">
-                    {p.predicted_timeframe_days || '?'} days
-                  </td>
-                  <td className="p-4 text-center">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      p.was_accurate === true ? 'bg-green-500/20 text-green-400' :
-                      p.was_accurate === false ? 'bg-red-500/20 text-red-400' :
-                      'bg-yellow-500/20 text-yellow-400'
-                    }`}>
-                      {p.was_accurate === true ? 'accurate' : p.was_accurate === false ? 'inaccurate' : 'pending'}
-                    </span>
-                  </td>
-                  <td className="p-4 text-[#757575] text-sm whitespace-nowrap">
-                    {formatFullDateET(p.predicted_at || p.created_at)} ET
-                  </td>
-                </tr>
-              ))}
+              ) : predictions.map((p: any) => {
+                const isExpanded = expandedPredictions.has(p.id)
+                return (
+                  <React.Fragment key={p.id}>
+                    <tr
+                      className="border-b border-[#2e2e2e] hover:bg-[#212121] cursor-pointer"
+                      onClick={() => togglePrediction(p.id)}
+                    >
+                      <td className="p-4">
+                        <div className="flex items-start gap-2">
+                          <ChevronRight className={`w-4 h-4 text-[#757575] mt-0.5 flex-shrink-0 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                          <div>
+                            <div className={`text-white text-sm font-medium mb-1 ${isExpanded ? '' : 'line-clamp-1'}`}>{p.predicted_outcome}</div>
+                            {!isExpanded && (
+                              <div className="text-[#757575] text-xs line-clamp-1">
+                                {p.prediction_reasoning?.slice(0, 100) || 'N/A'}...
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-4 text-center">
+                        <span className={`font-medium ${
+                          p.predicted_confidence >= 0.7 ? 'text-green-400' :
+                          p.predicted_confidence >= 0.5 ? 'text-yellow-400' :
+                          'text-red-400'
+                        }`}>
+                          {Math.round((p.predicted_confidence || 0) * 100)}%
+                        </span>
+                      </td>
+                      <td className="p-4 text-center text-[#9e9e9e] text-sm">
+                        {p.predicted_timeframe_days || '?'} days
+                      </td>
+                      <td className="p-4 text-center">
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                          p.was_accurate === true ? 'bg-green-500/20 text-green-400' :
+                          p.was_accurate === false ? 'bg-red-500/20 text-red-400' :
+                          'bg-yellow-500/20 text-yellow-400'
+                        }`}>
+                          {p.was_accurate === true ? 'accurate' : p.was_accurate === false ? 'inaccurate' : 'pending'}
+                        </span>
+                      </td>
+                      <td className="p-4 text-[#757575] text-sm whitespace-nowrap">
+                        {formatFullDateET(p.predicted_at || p.created_at)} ET
+                      </td>
+                    </tr>
+                    {isExpanded && (
+                      <tr className="bg-[#141414]">
+                        <td colSpan={5} className="p-4 border-b border-[#2e2e2e]">
+                          <div className="pl-6 space-y-3">
+                            <div>
+                              <div className="text-[#757575] text-xs uppercase tracking-wider mb-1">Reasoning</div>
+                              <div className="text-[#bdbdbd] text-sm">{p.prediction_reasoning || 'N/A'}</div>
+                            </div>
+                            {p.prediction_evidence && (
+                              <div>
+                                <div className="text-[#757575] text-xs uppercase tracking-wider mb-1">Evidence</div>
+                                <div className="text-[#9e9e9e] text-xs font-mono bg-[#1a1a1a] p-2 rounded max-h-32 overflow-y-auto">
+                                  {typeof p.prediction_evidence === 'string'
+                                    ? p.prediction_evidence
+                                    : JSON.stringify(p.prediction_evidence, null, 2)}
+                                </div>
+                              </div>
+                            )}
+                            <div className="flex gap-6 text-xs">
+                              <div>
+                                <span className="text-[#757575]">Target: </span>
+                                <span className="text-[#bdbdbd]">{p.target_id ? 'Linked' : 'None'}</span>
+                              </div>
+                              <div>
+                                <span className="text-[#757575]">Expires: </span>
+                                <span className="text-[#bdbdbd]">{p.prediction_expires_at ? formatFullDateET(p.prediction_expires_at) : 'N/A'}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                )
+              })}
             </tbody>
           </table>
         </div>
