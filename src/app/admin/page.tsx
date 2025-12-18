@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Fragment } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   BarChart3,
@@ -2182,7 +2182,7 @@ function LearningView({
               ) : predictions.map((p: any) => {
                 const isExpanded = expandedPredictions.has(p.id)
                 return (
-                  <React.Fragment key={p.id}>
+                  <Fragment key={p.id}>
                     <tr
                       className="border-b border-[#2e2e2e] hover:bg-[#212121] cursor-pointer"
                       onClick={() => togglePrediction(p.id)}
@@ -2257,7 +2257,7 @@ function LearningView({
                         </td>
                       </tr>
                     )}
-                  </React.Fragment>
+                  </Fragment>
                 )
               })}
             </tbody>
