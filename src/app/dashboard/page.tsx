@@ -65,10 +65,10 @@ import MemoryVaultModule from '@/components/modules/MemoryVaultModule'
 import GeoIntelModule from '@/components/modules/GeoIntelModule'
 import ConnectionsModule from '@/components/modules/ConnectionsModule'
 import PredictionsModule from '@/components/modules/PredictionsModule'
-import SignalsModule from '@/components/modules/SignalsModule'
+import CascadesModule from '@/components/modules/CascadesModule'
 import SocialIntelligenceModule from '@/components/modules/SocialIntelligenceModule'
 
-type ModuleView = 'hub' | 'opportunities' | 'studio' | 'campaigns' | 'crisis' | 'vault' | 'geointel' | 'connections' | 'predictions' | 'signals' | 'social'
+type ModuleView = 'hub' | 'opportunities' | 'studio' | 'campaigns' | 'crisis' | 'vault' | 'geointel' | 'connections' | 'predictions' | 'cascades' | 'social'
 
 export default function Dashboard() {
   const router = useRouter()
@@ -642,7 +642,7 @@ export default function Dashboard() {
                 Intelligence
               </div>
 
-              <SidebarItem icon={Zap} label="Signals" onClick={() => setActiveModule('signals')} tourId="sidebar-signals" />
+              <SidebarItem icon={Zap} label="Cascades" onClick={() => setActiveModule('cascades')} tourId="sidebar-cascades" />
               <SidebarItem icon={Activity} label="Social" onClick={() => setActiveModule('social')} tourId="sidebar-social" />
               <SidebarItem icon={Globe} label="Geo Intel" onClick={() => setActiveModule('geointel')} tourId="sidebar-geointel" />
             </div>
@@ -719,10 +719,8 @@ export default function Dashboard() {
             </div>
           )}
 
-          {activeModule === 'signals' && (
-            <div className="flex-1 overflow-y-auto p-8">
-              <SignalsModule />
-            </div>
+          {activeModule === 'cascades' && (
+            <CascadesModule />
           )}
 
           {activeModule === 'social' && (
@@ -1308,7 +1306,7 @@ ${opp.strategic_context?.trigger_events?.map((e: string) => `- ${e}`).join('\n')
         >
           <span className="flex items-center gap-2">
             <Zap className="w-3.5 h-3.5 text-[var(--burnt-orange)]" />
-            Intelligence Signals
+            Intelligence Cascades
             {sidebarSignals.length > 0 && (
               <span className="px-1.5 py-0.5 text-[0.6rem] bg-[var(--burnt-orange)]/20 text-[var(--burnt-orange)] rounded">
                 {sidebarSignals.length}
@@ -1316,7 +1314,7 @@ ${opp.strategic_context?.trigger_events?.map((e: string) => `- ${e}`).join('\n')
             )}
           </span>
           <button
-            onClick={() => onNavigate('signals')}
+            onClick={() => onNavigate('cascades')}
             className="text-[var(--burnt-orange)] hover:underline text-[0.65rem]"
           >
             View All

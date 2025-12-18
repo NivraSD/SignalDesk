@@ -16,6 +16,7 @@ const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')!;
 
 // Configuration
 const MAX_SIGNALS_PER_RUN = 30;
+const MAX_CONNECTIONS_PER_RUN = 20;
 const DEFAULT_PREDICTION_WINDOW_DAYS = 30;
 
 interface Signal {
@@ -32,6 +33,22 @@ interface Signal {
   evidence: any;
   reasoning: string | null;
   business_implication: string | null;
+  created_at: string;
+  source_table?: 'signals' | 'connection_signals';
+}
+
+interface ConnectionSignal {
+  id: string;
+  organization_id: string;
+  signal_type: string;
+  signal_title: string;
+  signal_description: string;
+  primary_entity_name: string | null;
+  related_entities: any[];
+  strength_score: number;
+  confidence_score: number;
+  pattern_data: any;
+  prediction_generated: boolean;
   created_at: string;
 }
 
@@ -88,7 +105,47 @@ serve(async (req) => {
       throw new Error(`Failed to load signals: ${signalError.message}`);
     }
 
-    if (!signals || signals.length === 0) {
+    // Also fetch connection_signals that don't have predictions
+    const { data: connectionSignals, error: connError } = await supabase
+      .from('connection_signals')
+      .select('*')
+      .or('prediction_generated.is.null,prediction_generated.eq.false')
+      .order('created_at', { ascending: false })
+      .limit(MAX_CONNECTIONS_PER_RUN);
+
+    if (connError) {
+      console.log(`   Warning: Failed to load connection_signals: ${connError.message}`);
+    }
+
+    // Convert connection_signals to Signal format
+    const convertedConnections: Signal[] = (connectionSignals || []).map((conn: ConnectionSignal) => ({
+      id: conn.id,
+      organization_id: conn.organization_id,
+      signal_type: 'connection',
+      signal_subtype: conn.signal_type,
+      title: conn.signal_title,
+      description: conn.signal_description,
+      primary_target_id: null,
+      primary_target_name: conn.primary_entity_name,
+      primary_target_type: 'entity',
+      confidence_score: conn.confidence_score || conn.strength_score || 70,
+      evidence: {
+        related_entities: conn.related_entities,
+        pattern_data: conn.pattern_data
+      },
+      reasoning: conn.pattern_data?.business_implication || null,
+      business_implication: conn.pattern_data?.business_implication || null,
+      created_at: conn.created_at,
+      source_table: 'connection_signals' as const
+    }));
+
+    // Combine both sources
+    const allSignals: Signal[] = [
+      ...(signals || []).map((s: any) => ({ ...s, source_table: 'signals' as const })),
+      ...convertedConnections
+    ];
+
+    if (allSignals.length === 0) {
       console.log('   No signals needing predictions');
       return new Response(JSON.stringify({
         success: true,
@@ -100,17 +157,17 @@ serve(async (req) => {
       });
     }
 
-    console.log(`   Found ${signals.length} signals without predictions`);
+    console.log(`   Found ${signals?.length || 0} signals + ${convertedConnections.length} connection_signals`);
 
     let predictionsCreated = 0;
     let skipped = 0;
     const errors: string[] = [];
 
-    for (const signal of signals as Signal[]) {
+    for (const signal of allSignals) {
       try {
-        // Skip certain signal types that aren't predictable
-        if (['connection', 'mention'].includes(signal.signal_type)) {
-          console.log(`   Skipping ${signal.id}: non-predictive signal type`);
+        // Skip mention types that aren't predictive
+        if (signal.signal_type === 'mention') {
+          console.log(`   Skipping ${signal.id}: mention signal type`);
           skipped++;
           continue;
         }
@@ -123,11 +180,18 @@ serve(async (req) => {
         if (!prediction) {
           console.log(`     No prediction generated (signal may not be predictive)`);
 
-          // Mark as processed so we don't retry
-          await supabase
-            .from('signals')
-            .update({ has_prediction: true })
-            .eq('id', signal.id);
+          // Mark as processed so we don't retry - handle both tables
+          if (signal.source_table === 'connection_signals') {
+            await supabase
+              .from('connection_signals')
+              .update({ prediction_generated: true })
+              .eq('id', signal.id);
+          } else {
+            await supabase
+              .from('signals')
+              .update({ has_prediction: true })
+              .eq('id', signal.id);
+          }
 
           skipped++;
           continue;
@@ -161,11 +225,18 @@ serve(async (req) => {
           continue;
         }
 
-        // Mark signal as having a prediction
-        await supabase
-          .from('signals')
-          .update({ has_prediction: true })
-          .eq('id', signal.id);
+        // Mark signal as having a prediction - handle both tables
+        if (signal.source_table === 'connection_signals') {
+          await supabase
+            .from('connection_signals')
+            .update({ prediction_generated: true, prediction_id: signal.id })
+            .eq('id', signal.id);
+        } else {
+          await supabase
+            .from('signals')
+            .update({ has_prediction: true })
+            .eq('id', signal.id);
+        }
 
         predictionsCreated++;
         console.log(`     ✅ Created prediction: ${prediction.predicted_outcome.slice(0, 60)}...`);
@@ -180,7 +251,9 @@ serve(async (req) => {
 
     const summary = {
       success: true,
-      signals_processed: signals.length,
+      signals_processed: signals?.length || 0,
+      connection_signals_processed: convertedConnections.length,
+      total_processed: allSignals.length,
       predictions_created: predictionsCreated,
       skipped,
       duration_seconds: duration,
@@ -188,7 +261,8 @@ serve(async (req) => {
     };
 
     console.log(`\n📊 Prediction Generation Complete:`);
-    console.log(`   Signals processed: ${signals.length}`);
+    console.log(`   Signals processed: ${signals?.length || 0}`);
+    console.log(`   Connection signals processed: ${convertedConnections.length}`);
     console.log(`   Predictions created: ${predictionsCreated}`);
     console.log(`   Skipped: ${skipped}`);
     console.log(`   Duration: ${duration}s`);
