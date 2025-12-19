@@ -1709,7 +1709,6 @@ function ScrapingView({
             <thead>
               <tr className="border-b border-[#2e2e2e]">
                 <th className="text-left p-4 text-[#757575] text-xs font-semibold uppercase">Source</th>
-                <th className="text-left p-4 text-[#757575] text-xs font-semibold uppercase">Discovery</th>
                 <th className="text-right p-4 text-[#757575] text-xs font-semibold uppercase">Total</th>
                 <th className="text-right p-4 text-[#757575] text-xs font-semibold uppercase">Completed</th>
                 <th className="text-right p-4 text-[#757575] text-xs font-semibold uppercase">Failed</th>
@@ -1720,14 +1719,14 @@ function ScrapingView({
             <tbody>
               {loadingSourceStats ? (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-[#757575]">
+                  <td colSpan={6} className="p-8 text-center text-[#757575]">
                     <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
                     Loading source stats...
                   </td>
                 </tr>
               ) : sourceStats.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-[#757575]">
+                  <td colSpan={6} className="p-8 text-center text-[#757575]">
                     No source data found
                   </td>
                 </tr>
@@ -1738,17 +1737,6 @@ function ScrapingView({
                     <tr key={source.source} className="border-b border-[#2e2e2e] last:border-0 hover:bg-[#212121]">
                       <td className="p-4">
                         <div className="text-white text-sm">{source.source}</div>
-                      </td>
-                      <td className="p-4">
-                        <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${
-                          source.discovery === 'rss' ? 'bg-blue-500/10 text-blue-400' :
-                          source.discovery === 'sitemap' ? 'bg-purple-500/10 text-purple-400' :
-                          source.discovery === 'fireplexity' ? 'bg-orange-500/10 text-orange-400' :
-                          source.discovery === 'cse' ? 'bg-green-500/10 text-green-400' :
-                          'bg-[#3d3d3d] text-[#9e9e9e]'
-                        }`}>
-                          {source.discovery?.toUpperCase() || 'UNKNOWN'}
-                        </span>
                       </td>
                       <td className="p-4 text-right text-[#9e9e9e] text-sm font-medium">{source.total}</td>
                       <td className="p-4 text-right text-green-400 text-sm">{source.completed}</td>
