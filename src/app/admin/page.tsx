@@ -1490,19 +1490,18 @@ function ScrapingView({
       // Get all articles with their source and status
       const { data } = await supabase
         .from('raw_articles')
-        .select('source_name, scrape_status, discovery_source')
+        .select('source_name, scrape_status')
         .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()) // Last 7 days
 
       if (data) {
         // Aggregate by source
-        const sourceMap = new Map<string, { source: string, discovery: string, completed: number, failed: number, pending: number, total: number }>()
+        const sourceMap = new Map<string, { source: string, completed: number, failed: number, pending: number, total: number }>()
 
         for (const article of data) {
           const source = article.source_name || 'Unknown'
-          const discovery = article.discovery_source || 'unknown'
 
           if (!sourceMap.has(source)) {
-            sourceMap.set(source, { source, discovery, completed: 0, failed: 0, pending: 0, total: 0 })
+            sourceMap.set(source, { source, completed: 0, failed: 0, pending: 0, total: 0 })
           }
 
           const stats = sourceMap.get(source)!
