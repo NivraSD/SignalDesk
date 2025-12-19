@@ -1,5 +1,5 @@
 /**
- * Monitoring Stage 2: Enrichment - SIMPLIFIED PASS-THROUGH
+ * Monitoring Stage 2: Enrichment
  *
  * Previous version did complex event/entity extraction with Claude,
  * which caused issues:
@@ -7,13 +7,18 @@
  * - Garbage entities extracted from website boilerplate ("Keyboard", "Click", "sec")
  * - Synthesis over-prioritizing articles with richer extractions
  *
- * NEW APPROACH: Just pass through article metadata cleanly.
- * Let synthesis work directly with titles/descriptions.
- * This is simpler, faster, and avoids the complexity issues.
+ * CURRENT APPROACH:
+ * - Fetch full_content from database for articles (not passed from selector for efficiency)
+ * - Clean and extract summaries from full content when available
+ * - Pass through to synthesis with enriched summaries
  */
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
+
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 interface Article {
   id?: number;
@@ -106,14 +111,56 @@ serve(async (req) => {
     const startTime = Date.now();
     const { articles, profile, organization_name, coverage_report } = await req.json();
 
-    console.log(`📊 ENRICHMENT (PASS-THROUGH MODE)`);
+    console.log(`📊 ENRICHMENT`);
     console.log(`   Received ${articles?.length || 0} articles for ${organization_name}`);
 
-    if (!articles || !articles.length) {
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+
+    // Fetch full_content for articles that have UUIDs
+    // (articles from article-selector don't include full_content to keep payloads small)
+    const articleIds = (articles || [])
+      .map((a: Article) => a.id)
+      .filter((id: any) => typeof id === 'string' && id.includes('-')); // UUID format
+
+    let contentMap = new Map<string, string>();
+
+    if (articleIds.length > 0) {
+      console.log(`   Fetching full_content for ${articleIds.length} articles...`);
+      const fetchStart = Date.now();
+
+      // Fetch in batches of 20 to avoid payload limits
+      const BATCH_SIZE = 20;
+      for (let i = 0; i < articleIds.length; i += BATCH_SIZE) {
+        const batchIds = articleIds.slice(i, i + BATCH_SIZE);
+        const { data: contentData } = await supabase
+          .from('raw_articles')
+          .select('id, full_content')
+          .in('id', batchIds)
+          .not('full_content', 'is', null);
+
+        if (contentData) {
+          contentData.forEach((row: any) => {
+            if (row.full_content && row.full_content.length > 200) {
+              contentMap.set(row.id, row.full_content);
+            }
+          });
+        }
+      }
+
+      console.log(`   Fetched ${contentMap.size} articles with content (${Date.now() - fetchStart}ms)`);
+    }
+
+    // Merge full_content back into articles
+    const articlesWithContent = (articles || []).map((a: Article) => ({
+      ...a,
+      full_content: contentMap.get(a.id as string) || a.full_content
+    }));
+
+    if (!articlesWithContent || !articlesWithContent.length) {
       return new Response(JSON.stringify({
         success: true,
         articles: [],
-        stats: { total_articles: 0, processing_mode: 'pass-through' }
+        stats: { total_articles: 0, processing_mode: 'enrichment' }
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
@@ -121,7 +168,7 @@ serve(async (req) => {
 
     // Log article distribution by source
     const bySource: Record<string, number> = {};
-    articles.forEach((a: Article) => {
+    articlesWithContent.forEach((a: Article) => {
       const src = a.source || a.source_name || 'Unknown';
       bySource[src] = (bySource[src] || 0) + 1;
     });
@@ -129,15 +176,15 @@ serve(async (req) => {
     console.log(`   Distribution:`, bySource);
 
     // Log date range
-    const sortedByDate = [...articles].sort((a: Article, b: Article) =>
+    const sortedByDate = [...articlesWithContent].sort((a: Article, b: Article) =>
       new Date(b.published_at || 0).getTime() - new Date(a.published_at || 0).getTime()
     );
     if (sortedByDate.length > 0) {
       console.log(`   Date range: ${sortedByDate[sortedByDate.length - 1].published_at} to ${sortedByDate[0].published_at}`);
     }
 
-    // SIMPLE PASS-THROUGH: Clean up each article and pass it along
-    const enrichedArticles = articles.map((article: Article, idx: number) => {
+    // Process each article - extract clean summaries from full content when available
+    const enrichedArticles = articlesWithContent.map((article: Article, idx: number) => {
       const cleanTitle = cleanText(article.title || '');
       const cleanDescription = cleanText(article.description || '');
       const cleanSummary = extractCleanSummary(article);
@@ -181,8 +228,8 @@ serve(async (req) => {
     console.log(`\n✅ ENRICHMENT COMPLETE (${processingTime}ms)`);
     console.log(`   Articles: ${enrichedArticles.length}`);
     console.log(`   With clean content: ${withCleanContent}`);
+    console.log(`   Fetched from DB: ${contentMap.size}`);
     console.log(`   Trade sources: ${tradeSources}`);
-    console.log(`   Mode: PASS-THROUGH (no event extraction)`);
 
     // Build response - simplified structure for synthesis
     const response = {
@@ -233,11 +280,11 @@ serve(async (req) => {
       stats: {
         total_articles: enrichedArticles.length,
         articles_with_clean_content: withCleanContent,
+        fetched_from_db: contentMap.size,
         trade_source_articles: tradeSources,
         unique_sources: Object.keys(bySource).length,
         processing_time_ms: processingTime,
-        processing_mode: 'pass-through',
-        event_extraction: 'disabled'
+        processing_mode: 'content-enrichment'
       }
     };
 
