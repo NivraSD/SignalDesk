@@ -245,11 +245,29 @@ Return ONLY a JSON array of ${articles.length} integers, nothing else:`;
     const data = await response.json();
     const content = data.content[0].text.trim();
 
-    // Extract JSON array - be very aggressive about cleaning
+    // Extract JSON array - find the FIRST complete array by matching brackets
     const bracketStart = content.indexOf('[');
-    const bracketEnd = content.lastIndexOf(']');
-    if (bracketStart === -1 || bracketEnd === -1) {
+    if (bracketStart === -1) {
       console.error('No JSON array found in response:', content.substring(0, 200));
+      return new Map();
+    }
+
+    // Find matching closing bracket (not just the last one)
+    let depth = 0;
+    let bracketEnd = -1;
+    for (let i = bracketStart; i < content.length; i++) {
+      if (content[i] === '[') depth++;
+      else if (content[i] === ']') {
+        depth--;
+        if (depth === 0) {
+          bracketEnd = i;
+          break;
+        }
+      }
+    }
+
+    if (bracketEnd === -1) {
+      console.error('No matching closing bracket found:', content.substring(0, 200));
       return new Map();
     }
 
@@ -266,12 +284,26 @@ Return ONLY a JSON array of ${articles.length} integers, nothing else:`;
     jsonContent = jsonContent.replace(/,\s*\]/g, ']');
     // 5. Fix multiple commas
     jsonContent = jsonContent.replace(/,\s*,/g, ',');
-    // 6. Ensure it's just numbers and commas
+    // 6. Ensure it's just numbers and commas (keep only valid JSON array chars)
     jsonContent = jsonContent.replace(/[^\[\]0-9,\s]/g, '');
 
     console.log(`Claude score response (cleaned): ${jsonContent.substring(0, 100)}...`);
 
-    const scores = JSON.parse(jsonContent);
+    let scores: number[];
+    try {
+      scores = JSON.parse(jsonContent);
+    } catch (parseError) {
+      // Fallback: try to extract numbers directly
+      console.error('JSON parse failed, extracting numbers directly:', parseError);
+      const numberMatches = jsonContent.match(/\d+/g);
+      if (numberMatches && numberMatches.length === articles.length) {
+        scores = numberMatches.map(n => parseInt(n, 10));
+        console.log(`Extracted ${scores.length} scores via regex fallback`);
+      } else {
+        console.error(`Number count mismatch: found ${numberMatches?.length || 0}, expected ${articles.length}`);
+        return new Map();
+      }
+    }
     const scoreMap = new Map<string, number>();
 
     articles.forEach((article, i) => {
