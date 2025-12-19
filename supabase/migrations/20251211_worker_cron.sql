@@ -1,21 +1,22 @@
--- Worker Cron Job
--- Processes pending articles every 15 minutes with drain_queue mode
--- drain_queue=true loops until queue empty or 120s timeout (Edge Function limit is 150s)
--- This clears the queue much faster than single-batch mode
+-- Parallel Worker Cron Job
+-- Launches 3 parallel workers every 3 minutes for maximum throughput
+-- Each worker: drain_queue=true, loops until queue empty or 120s timeout
+-- 3 workers × ~100 articles each × 20 runs/hour = ~6000 articles/hour throughput
 
--- Clean up any existing worker job
+-- Clean up any existing worker jobs
 DO $$ BEGIN PERFORM cron.unschedule('scraper-worker'); EXCEPTION WHEN OTHERS THEN NULL; END $$;
+DO $$ BEGIN PERFORM cron.unschedule('parallel-scraper'); EXCEPTION WHEN OTHERS THEN NULL; END $$;
 
--- Schedule worker to run every 15 minutes in drain mode
--- With drain_queue, processes ~100 articles per 2-minute run = up to 400+ articles/hour
+-- Schedule parallel launcher to run every 3 minutes
+-- Launches 3 workers in parallel, each running in drain mode
 SELECT cron.schedule(
-  'scraper-worker',
-  '*/15 * * * *',
+  'parallel-scraper',
+  '*/3 * * * *',
   $$
   SELECT net.http_post(
-    url := 'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/batch-scraper-v5-worker',
+    url := 'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/parallel-scraper-launcher',
     headers := '{"Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTEyOTYzNywiZXhwIjoyMDcwNzA1NjM3fQ.WO35k7riuKT2QXj_YvbtRwzLwi3Pev30-X9Yziej2pM", "Content-Type": "application/json"}'::jsonb,
-    body := '{"batch_size": 10, "drain_queue": true}'::jsonb
+    body := '{"workers": 3, "batch_size": 10, "drain_queue": true}'::jsonb
   );
   $$
 );
@@ -23,4 +24,4 @@ SELECT cron.schedule(
 -- Verify
 SELECT jobid, jobname, schedule, active
 FROM cron.job
-WHERE jobname = 'scraper-worker';
+WHERE jobname = 'parallel-scraper';

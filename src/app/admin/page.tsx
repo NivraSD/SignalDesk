@@ -631,8 +631,8 @@ export default function AdminDashboard() {
         functionName = 'batch-scraper-v5-worker'
         body = { batch_size: 50 }
       } else if (type === 'worker-drain') {
-        functionName = 'batch-scraper-v5-worker'
-        body = { batch_size: 10, drain_queue: true }
+        functionName = 'parallel-scraper-launcher'
+        body = { workers: 3, batch_size: 10, drain_queue: true }
       } else if (type === 'embed') {
         functionName = 'batch-embed-articles'
         body = { batch_size: 100, max_batches: 5, hours_back: 48 }
@@ -840,7 +840,7 @@ export default function AdminDashboard() {
                 ) : (
                   <Zap className="w-4 h-4" />
                 )}
-                Drain Queue (~2min)
+                Parallel Drain (3x ~2min)
               </button>
               <button
                 onClick={() => triggerScrape('embed')}
@@ -1487,7 +1487,6 @@ function ScrapingView({
   async function loadSourceStats() {
     setLoadingSourceStats(true)
     try {
-      const supabase = createClientComponentClient()
       // Get all articles with their source and status
       const { data } = await supabase
         .from('raw_articles')

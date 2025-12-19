@@ -15,8 +15,8 @@ const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 // Timeouts and limits
 const WORKER_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes max for worker phase
-const WORKER_BATCH_SIZE = 20;
-const WORKER_DELAY_MS = 3000; // 3 seconds between worker batches
+const WORKER_BATCH_SIZE = 50; // Increased from 20 - Firecrawl handles 5 in parallel internally
+const WORKER_DELAY_MS = 2000; // 2 seconds between worker batches (was 3)
 const EMBED_BATCH_SIZE = 100;
 const EMBED_DELAY_MS = 5000; // 5 seconds between embedding batches to avoid rate limits
 const MAX_EMBED_BATCHES = 10;
