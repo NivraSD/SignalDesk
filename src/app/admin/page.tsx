@@ -630,6 +630,9 @@ export default function AdminDashboard() {
       if (type === 'worker') {
         functionName = 'batch-scraper-v5-worker'
         body = { batch_size: 50 }
+      } else if (type === 'worker-drain') {
+        functionName = 'batch-scraper-v5-worker'
+        body = { batch_size: 10, drain_queue: true }
       } else if (type === 'embed') {
         functionName = 'batch-embed-articles'
         body = { batch_size: 100, max_batches: 5, hours_back: 48 }
@@ -826,6 +829,18 @@ export default function AdminDashboard() {
                   <Activity className="w-4 h-4" />
                 )}
                 Process Queue
+              </button>
+              <button
+                onClick={() => triggerScrape('worker-drain')}
+                disabled={!!triggeringScrape}
+                className="w-full flex items-center gap-2 px-3 py-2 bg-orange-500/20 hover:bg-orange-500/30 rounded-lg text-sm text-orange-400 transition-colors disabled:opacity-50"
+              >
+                {triggeringScrape === 'worker-drain' ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Zap className="w-4 h-4" />
+                )}
+                Drain Queue (~2min)
               </button>
               <button
                 onClick={() => triggerScrape('embed')}

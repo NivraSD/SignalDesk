@@ -11,6 +11,8 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 const BATCH_SIZE = 10; // Reduced from 25 to avoid timeouts with slow sites (WSJ, etc) - mcp-firecrawl scrapes 5 in parallel
 const MAX_ARTICLE_AGE_DAYS = 14; // Reject articles older than this
+const MAX_DRAIN_TIME_MS = 120 * 1000; // 120 seconds max when draining (Edge Function timeout is 150s)
+const DRAIN_BATCH_DELAY_MS = 500; // 0.5 seconds between batches when draining
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -21,14 +23,16 @@ serve(async (req) => {
   const startTime = Date.now();
   const runId = crypto.randomUUID();
 
-  // Read batch_size from request body if provided, otherwise use default
+  // Read options from request body
   const requestBody = await req.json().catch(() => ({}));
   const batchSize = requestBody.batch_size || BATCH_SIZE;
+  const drainQueue = requestBody.drain_queue || false; // When true, keep processing until queue empty
 
   console.log('🔥 BATCH SCRAPER V5 - WORKER (MCP-Firecrawl Parallel Batch Scraper)');
   console.log(`   Run ID: ${runId}`);
   console.log(`   Time: ${new Date().toISOString()}`);
-  console.log(`   Batch size: ${batchSize}\n`);
+  console.log(`   Batch size: ${batchSize}`);
+  console.log(`   Drain queue: ${drainQueue}\n`);
 
   // Create batch run record for tracking
   await supabase
@@ -40,250 +44,348 @@ serve(async (req) => {
       triggered_by: req.headers.get('user-agent') || 'cron'
     });
 
+  // Track totals across all batches when draining
+  let totalProcessed = 0;
+  let totalSuccessful = 0;
+  let totalFailed = 0;
+  let batchCount = 0;
+
   try {
-    // ========================================================================
-    // STEP 1: Get articles from queue (pending or failed with <3 attempts)
-    // ========================================================================
-    const { data: queuedArticles, error: queueError } = await supabase
-      .from('raw_articles')
-      .select('id, url, title, source_name, scrape_priority, scrape_attempts')
-      .is('full_content', null)
-      .in('scrape_status', ['pending', 'failed'])
-      .lt('scrape_attempts', 3)
-      .order('scrape_priority', { ascending: true })  // High priority first (1=Tier 1)
-      .order('created_at', { ascending: false })       // Newest first
-      .limit(batchSize);
-
-    if (queueError) throw new Error(`Failed to load queue: ${queueError.message}`);
-
-    if (!queuedArticles || queuedArticles.length === 0) {
-      console.log('   ℹ️  Queue is empty - no articles to process\n');
-
-      // Mark run as completed even when queue is empty
-      await supabase
-        .from('batch_scrape_runs')
-        .update({
-          status: 'completed',
-          completed_at: new Date().toISOString(),
-          articles_discovered: 0,
-          articles_new: 0,
-          duration_seconds: Math.floor((Date.now() - startTime) / 1000)
-        })
-        .eq('id', runId);
-
-      return new Response(JSON.stringify({
-        success: true,
-        message: 'Queue is empty',
-        processed: 0
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    console.log(`📊 Found ${queuedArticles.length} articles in queue`);
-    console.log(`   Priority distribution: ${JSON.stringify(
-      queuedArticles.reduce((acc, a) => {
-        acc[`Tier ${a.scrape_priority}`] = (acc[`Tier ${a.scrape_priority}`] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>)
-    )}\n`);
-
-    // Mark articles as processing
-    const articleIds = queuedArticles.map(a => a.id);
-    await supabase
-      .from('raw_articles')
-      .update({
-        scrape_status: 'processing',
-        last_scrape_attempt: new Date().toISOString()
-      })
-      .in('id', articleIds);
-
-    // ========================================================================
-    // STEP 2: Call mcp-firecrawl batch_scrape_articles
-    // ========================================================================
-    console.log('🔥 Calling mcp-firecrawl for parallel batch scraping...\n');
-
-    const mcpPayload = {
-      method: 'tools/call',
-      params: {
-        name: 'batch_scrape_articles',
-        arguments: {
-          articles: queuedArticles.map(article => ({
-            url: article.url,
-            priority: article.scrape_priority,
-            metadata: {
-              id: article.id,
-              title: article.title,
-              source_name: article.source_name
-            }
-          })),
-          formats: ['markdown'],
-          onlyMainContent: true,  // Extract only main content, filter out navigation/boilerplate
-          maxTimeout: 30000  // Increased from 10s to 30s for sites with heavy JS/anti-scraping (WSJ, etc)
-        }
+    // Main processing loop - runs once normally, or until queue empty/timeout when draining
+    while (true) {
+      // Check timeout when draining
+      if (drainQueue && (Date.now() - startTime) >= MAX_DRAIN_TIME_MS) {
+        console.log(`\n⏱️  Drain timeout reached (${MAX_DRAIN_TIME_MS / 1000}s) - stopping`);
+        break;
       }
-    };
 
-    const mcpResponse = await fetch(`${SUPABASE_URL}/functions/v1/mcp-firecrawl`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(mcpPayload)
-    });
+      batchCount++;
+      if (drainQueue) {
+        console.log(`\n--- BATCH ${batchCount} (elapsed: ${Math.floor((Date.now() - startTime) / 1000)}s) ---`);
+      }
 
-    if (!mcpResponse.ok) {
-      throw new Error(`mcp-firecrawl failed: ${mcpResponse.status} ${await mcpResponse.text()}`);
-    }
+      // ========================================================================
+      // STEP 1: Get articles from queue (pending or failed with <3 attempts)
+      // ========================================================================
+      const { data: queuedArticles, error: queueError } = await supabase
+        .from('raw_articles')
+        .select('id, url, title, source_name, scrape_priority, scrape_attempts')
+        .is('full_content', null)
+        .in('scrape_status', ['pending', 'failed'])
+        .lt('scrape_attempts', 3)
+        .order('scrape_priority', { ascending: true })  // High priority first (1=Tier 1)
+        .order('created_at', { ascending: false })       // Newest first
+        .limit(batchSize);
 
-    const mcpData = await mcpResponse.json();
-    const mcpResult = JSON.parse(mcpData.content[0].text);
+      if (queueError) throw new Error(`Failed to load queue: ${queueError.message}`);
 
-    console.log('\n📊 mcp-firecrawl Results:');
-    console.log(`   Total requested: ${mcpResult.stats.total_requested}`);
-    console.log(`   Successful: ${mcpResult.stats.successful}`);
-    console.log(`   Failed: ${mcpResult.stats.failed}`);
-    console.log(`   Cached: ${mcpResult.stats.cached}`);
-    console.log(`   Freshly scraped: ${mcpResult.stats.freshly_scraped}\n`);
+      if (!queuedArticles || queuedArticles.length === 0) {
+        console.log('   ℹ️  Queue is empty - no articles to process\n');
 
-    // ========================================================================
-    // STEP 3: Update database with results
-    // ========================================================================
-    console.log('💾 Updating database with scraped content...\n');
+        // If draining and we've processed some, this is success
+        if (drainQueue && totalProcessed > 0) {
+          console.log(`✅ Queue drained! Processed ${totalProcessed} articles across ${batchCount - 1} batches`);
+          break;
+        }
 
-    let successCount = 0;
-    let failedCount = 0;
+        // Mark run as completed even when queue is empty
+        await supabase
+          .from('batch_scrape_runs')
+          .update({
+            status: 'completed',
+            completed_at: new Date().toISOString(),
+            articles_discovered: totalProcessed,
+            articles_new: totalSuccessful,
+            duration_seconds: Math.floor((Date.now() - startTime) / 1000)
+          })
+          .eq('id', runId);
 
-    for (const result of mcpResult.results) {
-      const articleId = result.metadata?.id;
-      if (!articleId) continue;
+        return new Response(JSON.stringify({
+          success: true,
+          message: 'Queue is empty',
+          processed: totalProcessed,
+          successful: totalSuccessful,
+          failed: totalFailed,
+          batches: batchCount - 1
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
 
-      if (result.success && result.data?.markdown) {
-        // Check content quality before storing
-        const qualityCheck = validateArticleContent(
-          result.data.markdown,
-          result.metadata?.title || '',
-          result.url
-        );
+      console.log(`📊 Found ${queuedArticles.length} articles in queue`);
+      console.log(`   Priority distribution: ${JSON.stringify(
+        queuedArticles.reduce((acc, a) => {
+          acc[`Tier ${a.scrape_priority}`] = (acc[`Tier ${a.scrape_priority}`] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>)
+      )}\n`);
 
-        // NEW APPROACH: Store even paywalled content with metadata flag
-        const isPaywall = qualityCheck.reason?.includes('Paywall');
-        const shouldStoreAnyway = isPaywall || qualityCheck.reason?.includes('Cookie consent wall');
+      // Mark articles as processing
+      const articleIds = queuedArticles.map(a => a.id);
+      await supabase
+        .from('raw_articles')
+        .update({
+          scrape_status: 'processing',
+          last_scrape_attempt: new Date().toISOString()
+        })
+        .in('id', articleIds);
 
-        if (!qualityCheck.is_valid && !shouldStoreAnyway) {
-          // Content failed quality check (non-paywall) - mark as failed
+      // ========================================================================
+      // STEP 2: Call mcp-firecrawl batch_scrape_articles
+      // ========================================================================
+      console.log('🔥 Calling mcp-firecrawl for parallel batch scraping...\n');
+
+      const mcpPayload = {
+        method: 'tools/call',
+        params: {
+          name: 'batch_scrape_articles',
+          arguments: {
+            articles: queuedArticles.map(article => ({
+              url: article.url,
+              priority: article.scrape_priority,
+              metadata: {
+                id: article.id,
+                title: article.title,
+                source_name: article.source_name
+              }
+            })),
+            formats: ['markdown'],
+            onlyMainContent: true,  // Extract only main content, filter out navigation/boilerplate
+            maxTimeout: 30000  // Increased from 10s to 30s for sites with heavy JS/anti-scraping (WSJ, etc)
+          }
+        }
+      };
+
+      const mcpResponse = await fetch(`${SUPABASE_URL}/functions/v1/mcp-firecrawl`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(mcpPayload)
+      });
+
+      if (!mcpResponse.ok) {
+        throw new Error(`mcp-firecrawl failed: ${mcpResponse.status} ${await mcpResponse.text()}`);
+      }
+
+      const mcpData = await mcpResponse.json();
+      const mcpResult = JSON.parse(mcpData.content[0].text);
+
+      console.log('\n📊 mcp-firecrawl Results:');
+      console.log(`   Total requested: ${mcpResult.stats.total_requested}`);
+      console.log(`   Successful: ${mcpResult.stats.successful}`);
+      console.log(`   Failed: ${mcpResult.stats.failed}`);
+      console.log(`   Cached: ${mcpResult.stats.cached}`);
+      console.log(`   Freshly scraped: ${mcpResult.stats.freshly_scraped}\n`);
+
+      // ========================================================================
+      // STEP 3: Update database with results
+      // ========================================================================
+      console.log('💾 Updating database with scraped content...\n');
+
+      let successCount = 0;
+      let failedCount = 0;
+
+      for (const result of mcpResult.results) {
+        const articleId = result.metadata?.id;
+        if (!articleId) continue;
+
+        if (result.success && result.data?.markdown) {
+          // Check content quality before storing
+          const qualityCheck = validateArticleContent(
+            result.data.markdown,
+            result.metadata?.title || '',
+            result.url
+          );
+
+          // NEW APPROACH: Store even paywalled content with metadata flag
+          const isPaywall = qualityCheck.reason?.includes('Paywall');
+          const shouldStoreAnyway = isPaywall || qualityCheck.reason?.includes('Cookie consent wall');
+
+          if (!qualityCheck.is_valid && !shouldStoreAnyway) {
+            // Content failed quality check (non-paywall) - mark as failed
+            const { error: updateError } = await supabase
+              .from('raw_articles')
+              .update({
+                scrape_status: 'failed',
+                scrape_attempts: 3, // Max out attempts to prevent retrying
+                processing_error: `Quality check failed: ${qualityCheck.reason}`
+              })
+              .eq('id', articleId);
+
+            if (!updateError) {
+              failedCount++;
+              console.log(`   ⚠️  ${result.metadata?.title?.substring(0, 50) || result.url.substring(0, 50)}: ${qualityCheck.reason}`);
+            }
+            continue;
+          }
+
+          // Successfully scraped - update with content (may include paywall flag)
+          // Extract published date from metadata
+          const metadata = result.data.metadata || {};
+          const publishedDateStr = metadata.publishedTime ||
+                                   metadata['article:published_time'] ||
+                                   metadata.datePublished ||
+                                   metadata.dateCreated ||
+                                   null;
+
+          // Convert to ISO string if valid
+          let publishedDate = null;
+          if (publishedDateStr) {
+            try {
+              publishedDate = new Date(publishedDateStr).toISOString();
+            } catch {
+              publishedDate = null;
+            }
+          }
+
+          // DATE FILTERING: Reject articles older than MAX_ARTICLE_AGE_DAYS
+          if (publishedDate) {
+            const articleDate = new Date(publishedDate);
+            const cutoffDate = new Date();
+            cutoffDate.setDate(cutoffDate.getDate() - MAX_ARTICLE_AGE_DAYS);
+
+            if (articleDate < cutoffDate) {
+              // Article is too old - mark as failed and skip
+              await supabase
+                .from('raw_articles')
+                .update({
+                  scrape_status: 'failed',
+                  scrape_attempts: 3, // Max out attempts
+                  processing_error: `Article too old: ${publishedDate.split('T')[0]} (>${MAX_ARTICLE_AGE_DAYS} days)`
+                })
+                .eq('id', articleId);
+
+              failedCount++;
+              console.log(`   ⏰ ${result.metadata?.title?.substring(0, 40) || 'Article'}: Too old (${publishedDate.split('T')[0]})`);
+              continue;
+            }
+          }
+
+          const { error: updateError } = await supabase
+            .from('raw_articles')
+            .update({
+              full_content: result.data.markdown,
+              scrape_status: 'completed',
+              scraped_at: new Date().toISOString(),
+              published_at: publishedDate, // Extract from metadata and convert to ISO
+              content_length: result.data.markdown.length,
+              raw_metadata: {
+                ...(result.data.metadata || {}),
+                scraping_method: 'mcp_firecrawl',
+                cached: result.cached || false,
+                quality_check: qualityCheck,
+                paywall: isPaywall || false,
+                limited_content: !qualityCheck.is_valid
+              }
+            })
+            .eq('id', articleId);
+
+          if (!updateError) {
+            successCount++;
+            const paywallNote = isPaywall ? ' [PAYWALL - headline only]' : '';
+            console.log(`   ✅ ${result.metadata.title?.substring(0, 50) || result.url.substring(0, 50)} (${result.data.markdown.length} chars${result.cached ? ', cached' : ''}${paywallNote})`);
+          } else {
+            console.error(`   ❌ DB update failed for ${articleId}: ${updateError.message}`);
+          }
+        } else {
+          // Failed to scrape - increment attempts
           const { error: updateError } = await supabase
             .from('raw_articles')
             .update({
               scrape_status: 'failed',
-              scrape_attempts: 3, // Max out attempts to prevent retrying
-              processing_error: `Quality check failed: ${qualityCheck.reason}`
+              scrape_attempts: supabase.rpc('increment_scrape_attempts', { article_id: articleId }),
+              processing_error: result.error || 'Unknown scraping error'
             })
             .eq('id', articleId);
 
           if (!updateError) {
             failedCount++;
-            console.log(`   ⚠️  ${result.metadata?.title?.substring(0, 50) || result.url.substring(0, 50)}: ${qualityCheck.reason}`);
-          }
-          continue;
-        }
-
-        // Successfully scraped - update with content (may include paywall flag)
-        // Extract published date from metadata
-        const metadata = result.data.metadata || {};
-        const publishedDateStr = metadata.publishedTime ||
-                                 metadata['article:published_time'] ||
-                                 metadata.datePublished ||
-                                 metadata.dateCreated ||
-                                 null;
-
-        // Convert to ISO string if valid
-        let publishedDate = null;
-        if (publishedDateStr) {
-          try {
-            publishedDate = new Date(publishedDateStr).toISOString();
-          } catch {
-            publishedDate = null;
+            console.log(`   ❌ ${result.metadata?.title?.substring(0, 50) || result.url.substring(0, 50)}: ${result.error}`);
           }
         }
+      }
 
-        // DATE FILTERING: Reject articles older than MAX_ARTICLE_AGE_DAYS
-        if (publishedDate) {
-          const articleDate = new Date(publishedDate);
-          const cutoffDate = new Date();
-          cutoffDate.setDate(cutoffDate.getDate() - MAX_ARTICLE_AGE_DAYS);
+      // Accumulate totals
+      totalProcessed += queuedArticles.length;
+      totalSuccessful += successCount;
+      totalFailed += failedCount;
 
-          if (articleDate < cutoffDate) {
-            // Article is too old - mark as failed and skip
-            await supabase
-              .from('raw_articles')
-              .update({
-                scrape_status: 'failed',
-                scrape_attempts: 3, // Max out attempts
-                processing_error: `Article too old: ${publishedDate.split('T')[0]} (>${MAX_ARTICLE_AGE_DAYS} days)`
-              })
-              .eq('id', articleId);
+      const batchDuration = Math.floor((Date.now() - startTime) / 1000);
 
-            failedCount++;
-            console.log(`   ⏰ ${result.metadata?.title?.substring(0, 40) || 'Article'}: Too old (${publishedDate.split('T')[0]})`);
-            continue;
-          }
-        }
+      console.log(`\n   Batch ${batchCount}: ${queuedArticles.length} processed, ${successCount} successful, ${failedCount} failed (${batchDuration}s elapsed)`);
 
-        const { error: updateError } = await supabase
-          .from('raw_articles')
+      // If not draining, return after one batch (original behavior)
+      if (!drainQueue) {
+        console.log('\n' + '='.repeat(80));
+        console.log('✅ WORKER COMPLETE (single batch)');
+        console.log(`   Duration: ${batchDuration}s`);
+        console.log(`   Processed: ${queuedArticles.length} articles`);
+        console.log(`   Successful: ${successCount}`);
+        console.log(`   Failed: ${failedCount}`);
+        console.log('='.repeat(80));
+
+        // Update batch run record
+        await supabase
+          .from('batch_scrape_runs')
           .update({
-            full_content: result.data.markdown,
-            scrape_status: 'completed',
-            scraped_at: new Date().toISOString(),
-            published_at: publishedDate, // Extract from metadata and convert to ISO
-            content_length: result.data.markdown.length,
-            raw_metadata: {
-              ...(result.data.metadata || {}),
-              scraping_method: 'mcp_firecrawl',
-              cached: result.cached || false,
-              quality_check: qualityCheck,
-              paywall: isPaywall || false,
-              limited_content: !qualityCheck.is_valid
-            }
+            status: 'completed',
+            completed_at: new Date().toISOString(),
+            articles_discovered: queuedArticles.length,
+            articles_new: successCount,
+            articles_processed: successCount,
+            sources_successful: successCount,
+            sources_failed: failedCount,
+            duration_seconds: batchDuration
           })
-          .eq('id', articleId);
+          .eq('id', runId);
 
-        if (!updateError) {
-          successCount++;
-          const paywallNote = isPaywall ? ' [PAYWALL - headline only]' : '';
-          console.log(`   ✅ ${result.metadata.title?.substring(0, 50) || result.url.substring(0, 50)} (${result.data.markdown.length} chars${result.cached ? ', cached' : ''}${paywallNote})`);
-        } else {
-          console.error(`   ❌ DB update failed for ${articleId}: ${updateError.message}`);
-        }
-      } else {
-        // Failed to scrape - increment attempts
-        const { error: updateError } = await supabase
-          .from('raw_articles')
-          .update({
-            scrape_status: 'failed',
-            scrape_attempts: supabase.rpc('increment_scrape_attempts', { article_id: articleId }),
-            processing_error: result.error || 'Unknown scraping error'
-          })
-          .eq('id', articleId);
+        return new Response(JSON.stringify({
+          success: true,
+          run_id: runId,
+          summary: {
+            processed: queuedArticles.length,
+            successful: successCount,
+            failed: failedCount,
+            duration_seconds: batchDuration,
+            mcp_stats: mcpResult.stats
+          }
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
 
-        if (!updateError) {
-          failedCount++;
-          console.log(`   ❌ ${result.metadata?.title?.substring(0, 50) || result.url.substring(0, 50)}: ${result.error}`);
-        }
+      // Draining: brief delay before next batch
+      await new Promise(r => setTimeout(r, DRAIN_BATCH_DELAY_MS));
+    } // End of while loop
+
+    // Cleanup: Reset any stuck "processing" articles back to pending
+    // This handles cases where we timed out mid-batch
+    if (drainQueue) {
+      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+      const { count: resetCount } = await supabase
+        .from('raw_articles')
+        .update({ scrape_status: 'pending' })
+        .eq('scrape_status', 'processing')
+        .lt('last_scrape_attempt', fiveMinutesAgo)
+        .select('id', { count: 'exact', head: true });
+
+      if (resetCount && resetCount > 0) {
+        console.log(`🔄 Reset ${resetCount} stuck "processing" articles to pending`);
       }
     }
 
-    const duration = Math.floor((Date.now() - startTime) / 1000);
+    // If we get here, we've finished draining (timeout or queue empty)
+    const totalDuration = Math.floor((Date.now() - startTime) / 1000);
 
     console.log('\n' + '='.repeat(80));
-    console.log('✅ WORKER COMPLETE');
-    console.log(`   Duration: ${duration}s`);
-    console.log(`   Processed: ${queuedArticles.length} articles`);
-    console.log(`   Successful: ${successCount}`);
-    console.log(`   Failed: ${failedCount}`);
-    console.log(`   Queue remaining: ${queuedArticles.length - successCount - failedCount}`);
+    console.log('✅ WORKER COMPLETE (drain mode)');
+    console.log(`   Duration: ${totalDuration}s`);
+    console.log(`   Batches: ${batchCount}`);
+    console.log(`   Total processed: ${totalProcessed} articles`);
+    console.log(`   Total successful: ${totalSuccessful}`);
+    console.log(`   Total failed: ${totalFailed}`);
     console.log('='.repeat(80));
 
     // Update batch run record
@@ -292,24 +394,25 @@ serve(async (req) => {
       .update({
         status: 'completed',
         completed_at: new Date().toISOString(),
-        articles_discovered: queuedArticles.length,
-        articles_new: successCount,
-        articles_processed: successCount,
-        sources_successful: successCount,
-        sources_failed: failedCount,
-        duration_seconds: duration
+        articles_discovered: totalProcessed,
+        articles_new: totalSuccessful,
+        articles_processed: totalSuccessful,
+        sources_successful: totalSuccessful,
+        sources_failed: totalFailed,
+        duration_seconds: totalDuration
       })
       .eq('id', runId);
 
     return new Response(JSON.stringify({
       success: true,
       run_id: runId,
+      drain_mode: true,
       summary: {
-        processed: queuedArticles.length,
-        successful: successCount,
-        failed: failedCount,
-        duration_seconds: duration,
-        mcp_stats: mcpResult.stats
+        batches: batchCount,
+        processed: totalProcessed,
+        successful: totalSuccessful,
+        failed: totalFailed,
+        duration_seconds: totalDuration
       }
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
