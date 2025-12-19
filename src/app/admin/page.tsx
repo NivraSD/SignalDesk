@@ -1479,7 +1479,56 @@ function ScrapingView({
   stats: Stats | null
   onRefresh: () => void
 }) {
-  const [activeTab, setActiveTab] = useState<'runs' | 'articles'>('runs')
+  const [activeTab, setActiveTab] = useState<'runs' | 'articles' | 'sources'>('runs')
+  const [sourceStats, setSourceStats] = useState<any[]>([])
+  const [loadingSourceStats, setLoadingSourceStats] = useState(false)
+
+  // Load source stats when switching to sources tab
+  async function loadSourceStats() {
+    setLoadingSourceStats(true)
+    try {
+      const supabase = createClientComponentClient()
+      // Get all articles with their source and status
+      const { data } = await supabase
+        .from('raw_articles')
+        .select('source_name, scrape_status, discovery_source')
+        .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()) // Last 7 days
+
+      if (data) {
+        // Aggregate by source
+        const sourceMap = new Map<string, { source: string, discovery: string, completed: number, failed: number, pending: number, total: number }>()
+
+        for (const article of data) {
+          const source = article.source_name || 'Unknown'
+          const discovery = article.discovery_source || 'unknown'
+
+          if (!sourceMap.has(source)) {
+            sourceMap.set(source, { source, discovery, completed: 0, failed: 0, pending: 0, total: 0 })
+          }
+
+          const stats = sourceMap.get(source)!
+          stats.total++
+          if (article.scrape_status === 'completed' || article.scrape_status === 'metadata_only') {
+            stats.completed++
+          } else if (article.scrape_status === 'failed') {
+            stats.failed++
+          } else {
+            stats.pending++
+          }
+        }
+
+        // Convert to array and sort by total desc
+        const sourceArray = Array.from(sourceMap.values())
+          .sort((a, b) => b.total - a.total)
+
+        setSourceStats(sourceArray)
+      }
+    } catch (error) {
+      console.error('Failed to load source stats:', error)
+    } finally {
+      setLoadingSourceStats(false)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -1536,6 +1585,16 @@ function ScrapingView({
           }`}
         >
           Articles
+        </button>
+        <button
+          onClick={() => { setActiveTab('sources'); if (sourceStats.length === 0) loadSourceStats(); }}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === 'sources'
+              ? 'text-[#c75d3a] border-[#c75d3a]'
+              : 'text-[#757575] border-transparent hover:text-white'
+          }`}
+        >
+          Sources
         </button>
       </div>
 
@@ -1631,6 +1690,85 @@ function ScrapingView({
                   </td>
                 </tr>
               ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {activeTab === 'sources' && (
+        <div className="bg-[#1a1a1a] rounded-xl border border-[#2e2e2e] overflow-hidden">
+          <div className="p-4 border-b border-[#2e2e2e] flex items-center justify-between">
+            <span className="text-[#757575] text-sm">Last 7 days • {sourceStats.length} sources</span>
+            <button
+              onClick={loadSourceStats}
+              disabled={loadingSourceStats}
+              className="text-xs text-[#c75d3a] hover:text-[#e07b5a] transition-colors disabled:opacity-50"
+            >
+              {loadingSourceStats ? 'Loading...' : 'Refresh'}
+            </button>
+          </div>
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-[#2e2e2e]">
+                <th className="text-left p-4 text-[#757575] text-xs font-semibold uppercase">Source</th>
+                <th className="text-left p-4 text-[#757575] text-xs font-semibold uppercase">Discovery</th>
+                <th className="text-right p-4 text-[#757575] text-xs font-semibold uppercase">Total</th>
+                <th className="text-right p-4 text-[#757575] text-xs font-semibold uppercase">Completed</th>
+                <th className="text-right p-4 text-[#757575] text-xs font-semibold uppercase">Failed</th>
+                <th className="text-right p-4 text-[#757575] text-xs font-semibold uppercase">Pending</th>
+                <th className="text-right p-4 text-[#757575] text-xs font-semibold uppercase">Success %</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loadingSourceStats ? (
+                <tr>
+                  <td colSpan={7} className="p-8 text-center text-[#757575]">
+                    <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
+                    Loading source stats...
+                  </td>
+                </tr>
+              ) : sourceStats.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="p-8 text-center text-[#757575]">
+                    No source data found
+                  </td>
+                </tr>
+              ) : (
+                sourceStats.map(source => {
+                  const successRate = source.total > 0 ? Math.round((source.completed / source.total) * 100) : 0
+                  return (
+                    <tr key={source.source} className="border-b border-[#2e2e2e] last:border-0 hover:bg-[#212121]">
+                      <td className="p-4">
+                        <div className="text-white text-sm">{source.source}</div>
+                      </td>
+                      <td className="p-4">
+                        <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${
+                          source.discovery === 'rss' ? 'bg-blue-500/10 text-blue-400' :
+                          source.discovery === 'sitemap' ? 'bg-purple-500/10 text-purple-400' :
+                          source.discovery === 'fireplexity' ? 'bg-orange-500/10 text-orange-400' :
+                          source.discovery === 'cse' ? 'bg-green-500/10 text-green-400' :
+                          'bg-[#3d3d3d] text-[#9e9e9e]'
+                        }`}>
+                          {source.discovery?.toUpperCase() || 'UNKNOWN'}
+                        </span>
+                      </td>
+                      <td className="p-4 text-right text-[#9e9e9e] text-sm font-medium">{source.total}</td>
+                      <td className="p-4 text-right text-green-400 text-sm">{source.completed}</td>
+                      <td className="p-4 text-right text-red-400 text-sm">{source.failed}</td>
+                      <td className="p-4 text-right text-yellow-400 text-sm">{source.pending}</td>
+                      <td className="p-4 text-right">
+                        <span className={`text-sm font-medium ${
+                          successRate >= 80 ? 'text-green-400' :
+                          successRate >= 50 ? 'text-yellow-400' :
+                          'text-red-400'
+                        }`}>
+                          {successRate}%
+                        </span>
+                      </td>
+                    </tr>
+                  )
+                })
+              )}
             </tbody>
           </table>
         </div>
