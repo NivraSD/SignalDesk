@@ -131,7 +131,7 @@ serve(async (req) => {
         .in('id', articleIds);
 
       // ========================================================================
-      // STEP 2: Call mcp-firecrawl batch_scrape_articles
+      // STEP 2: Call mcp-firecrawl batch_scrape_articles (with retry for 503)
       // ========================================================================
       console.log('🔥 Calling mcp-firecrawl for parallel batch scraping...\n');
 
@@ -151,22 +151,67 @@ serve(async (req) => {
             })),
             formats: ['markdown'],
             onlyMainContent: true,  // Extract only main content, filter out navigation/boilerplate
-            maxTimeout: 30000  // Increased from 10s to 30s for sites with heavy JS/anti-scraping (WSJ, etc)
+            maxTimeout: 30000,  // Increased from 10s to 30s for sites with heavy JS/anti-scraping (WSJ, etc)
+            // Extract published date using LLM when metadata doesn't have it
+            extractSchema: {
+              type: 'object',
+              properties: {
+                published_date: {
+                  type: 'string',
+                  description: 'The publication date of this article in ISO 8601 format (YYYY-MM-DDTHH:mm:ssZ). Look for dates near the title, byline, or at the top of the article.'
+                }
+              }
+            }
           }
         }
       };
 
-      const mcpResponse = await fetch(`${SUPABASE_URL}/functions/v1/mcp-firecrawl`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(mcpPayload)
-      });
+      // Retry logic for 503 BOOT_ERROR (cold start issues with Supabase Edge Functions)
+      const MAX_RETRIES = 3;
+      const RETRY_DELAYS = [2000, 4000, 8000]; // Exponential backoff: 2s, 4s, 8s
+      let mcpResponse: Response | null = null;
+      let lastError = '';
 
-      if (!mcpResponse.ok) {
-        throw new Error(`mcp-firecrawl failed: ${mcpResponse.status} ${await mcpResponse.text()}`);
+      for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+        if (attempt > 0) {
+          const delay = RETRY_DELAYS[attempt - 1] || 8000;
+          console.log(`   ⏳ Retry ${attempt}/${MAX_RETRIES} after ${delay}ms delay...`);
+          await new Promise(r => setTimeout(r, delay));
+        }
+
+        try {
+          mcpResponse = await fetch(`${SUPABASE_URL}/functions/v1/mcp-firecrawl`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(mcpPayload)
+          });
+
+          if (mcpResponse.ok) {
+            break; // Success!
+          }
+
+          // Check if retryable error (503 = BOOT_ERROR, 502 = Gateway, 504 = Timeout)
+          if (mcpResponse.status >= 500 && mcpResponse.status < 600) {
+            lastError = `${mcpResponse.status} ${await mcpResponse.text()}`;
+            console.log(`   ⚠️  mcp-firecrawl returned ${mcpResponse.status}, will retry...`);
+            mcpResponse = null; // Mark for retry
+          } else {
+            // Non-retryable error (4xx)
+            throw new Error(`mcp-firecrawl failed: ${mcpResponse.status} ${await mcpResponse.text()}`);
+          }
+        } catch (fetchError: any) {
+          // Network error - also retryable
+          lastError = fetchError.message;
+          console.log(`   ⚠️  Network error: ${fetchError.message}, will retry...`);
+          mcpResponse = null;
+        }
+      }
+
+      if (!mcpResponse || !mcpResponse.ok) {
+        throw new Error(`mcp-firecrawl failed after ${MAX_RETRIES} retries: ${lastError}`);
       }
 
       const mcpData = await mcpResponse.json();
@@ -222,7 +267,7 @@ serve(async (req) => {
           }
 
           // Successfully scraped - update with content (may include paywall flag)
-          // Extract published date from metadata
+          // Extract published date from metadata (try multiple sources)
           const metadata = result.data.metadata || {};
           const publishedDateStr = metadata.publishedTime ||
                                    metadata['article:published_time'] ||
@@ -236,6 +281,17 @@ serve(async (req) => {
             try {
               publishedDate = new Date(publishedDateStr).toISOString();
             } catch {
+              publishedDate = null;
+            }
+          }
+
+          // Fallback: Use LLM-extracted date if metadata didn't have it
+          if (!publishedDate && result.extracted?.published_date) {
+            try {
+              publishedDate = new Date(result.extracted.published_date).toISOString();
+              console.log(`   📅 Used LLM-extracted date: ${publishedDate}`);
+            } catch {
+              // Invalid date format from LLM
               publishedDate = null;
             }
           }
