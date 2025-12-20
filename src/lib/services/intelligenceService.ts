@@ -70,7 +70,7 @@ export class IntelligenceService {
           body: {
             organization_id: organizationId,
             organization_name: orgName,
-            use_today: true  // Use current date instead of rolling 24h
+            hours_back: 24  // Rolling 24h window - more lenient with published_at
           }
         })
 
@@ -379,7 +379,7 @@ export class IntelligenceService {
         body: {
           organization_id: organizationId,
           organization_name: organizationName,
-          use_today: true  // Use current date instead of rolling 24h
+          hours_back: 24  // Rolling 24h window - more lenient with published_at
         }
       })
 
