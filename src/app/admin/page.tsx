@@ -1491,7 +1491,7 @@ function ScrapingView({
       const { data } = await supabase
         .from('raw_articles')
         .select('source_name, scrape_status')
-        .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()) // Last 7 days
+        .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()) // Last 24 hours
 
       if (data) {
         // Aggregate by source
@@ -1696,7 +1696,7 @@ function ScrapingView({
       {activeTab === 'sources' && (
         <div className="bg-[#1a1a1a] rounded-xl border border-[#2e2e2e] overflow-hidden">
           <div className="p-4 border-b border-[#2e2e2e] flex items-center justify-between">
-            <span className="text-[#757575] text-sm">Last 7 days • {sourceStats.length} sources</span>
+            <span className="text-[#757575] text-sm">Last 24 hours • {sourceStats.length} sources</span>
             <button
               onClick={loadSourceStats}
               disabled={loadingSourceStats}
