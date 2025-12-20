@@ -14,7 +14,7 @@ interface Source {
   source_name: string;
   source_url: string;
   monitor_method: string;
-  monitor_config: { rss_url?: string } | null;
+  monitor_config: { rss_url?: string; feed_url?: string } | null;
   industries: string[];
   tier: number;
 }
@@ -28,9 +28,27 @@ serve(async (req) => {
   const runId = crypto.randomUUID();
   const startTime = Date.now();
 
-  console.log('📡 BATCH SCRAPER V5 - RSS ORCHESTRATOR');
+  // Get group parameter from query string or body
+  const url = new URL(req.url);
+  let group = parseInt(url.searchParams.get('group') || '0');
+
+  // Also check request body for group
+  if (!group && req.method === 'POST') {
+    try {
+      const body = await req.json();
+      group = parseInt(body.group || '0');
+    } catch {
+      // No body or invalid JSON, continue with group=0
+    }
+  }
+
+  const groupLabel = group ? ` (Group ${group})` : ' (All Groups)';
+
+  console.log('📡 BATCH SCRAPER V5 - RSS ORCHESTRATOR' + groupLabel);
   console.log(`   Run ID: ${runId}`);
-  console.log(`   Time: ${new Date().toISOString()}\n`);
+  console.log(`   Time: ${new Date().toISOString()}`);
+  if (group) console.log(`   Group: ${group}`);
+  console.log('');
 
   try {
     // Create batch run record
@@ -38,18 +56,23 @@ serve(async (req) => {
       .from('batch_scrape_runs')
       .insert({
         id: runId,
-        run_type: 'rss_discovery',
+        run_type: group ? `rss_discovery_g${group}` : 'rss_discovery',
         status: 'running',
         triggered_by: req.headers.get('user-agent') || 'manual'
       });
 
-    // Get active RSS sources only
-    const { data: sources, error: sourcesError } = await supabase
+    // Get active RSS sources - filter by group if specified
+    let query = supabase
       .from('source_registry')
       .select('*')
       .eq('active', true)
-      .eq('monitor_method', 'rss')
-      .order('tier', { ascending: true });
+      .eq('monitor_method', 'rss');
+
+    if (group) {
+      query = query.eq('rss_group', group);
+    }
+
+    const { data: sources, error: sourcesError } = await query.order('tier', { ascending: true });
 
     if (sourcesError) throw new Error(`Failed to load sources: ${sourcesError.message}`);
 
@@ -185,6 +208,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       success: true,
       run_id: runId,
+      group: group || 'all',
       summary: {
         sources_processed: sourcesSuccessful,
         sources_failed: sourcesFailed,
@@ -224,17 +248,22 @@ serve(async (req) => {
 // ============================================================================
 async function discoverViaRSS(source: Source): Promise<any[]> {
   // FIRST: Try configured RSS URL if it exists in monitor_config
-  if (source.monitor_config?.rss_url) {
-    try {
-      console.log(`   🔍 Trying configured RSS URL: ${source.monitor_config.rss_url}`);
+  // Support both 'rss_url' and 'feed_url' field names (sources use both)
+  const configuredUrl = source.monitor_config?.rss_url || source.monitor_config?.feed_url;
 
-      const response = await fetch(source.monitor_config.rss_url, {
-        headers: { 'User-Agent': 'SignalDesk-Scraper/5.0' }
+  if (configuredUrl) {
+    try {
+      console.log(`   🔍 Trying configured RSS URL: ${configuredUrl}`);
+
+      // Use redirect: 'follow' to handle 301/302 redirects (e.g., FT redirects to /rss/home/uk)
+      const response = await fetch(configuredUrl, {
+        headers: { 'User-Agent': 'SignalDesk-Scraper/5.0' },
+        redirect: 'follow'
       });
 
       if (response.ok) {
         const xml = await response.text();
-        const articles = parseRSSXML(xml, source.monitor_config.rss_url);
+        const articles = parseRSSXML(xml, configuredUrl);
 
         if (articles.length > 0) {
           console.log(`   ✅ Configured RSS URL worked! Found ${articles.length} articles`);
@@ -297,8 +326,16 @@ function parseRSSXML(xml: string, feedUrl: string): any[] {
     const authorMatch = item.match(/<(?:dc:)?creator(?:[^>]*)>(.*?)<\/(?:dc:)?creator>/s);
 
     if (titleMatch && linkMatch) {
+      // Strip CDATA wrapper and clean the URL (fixes bug where CDATA wasn't stripped from URLs)
+      let articleUrl = linkMatch[1].replace(/<!\[CDATA\[(.*?)\]\]>/gs, '$1').trim();
+
+      // Skip Google News redirect URLs - these need resolution to actual article URLs
+      if (articleUrl.includes('news.google.com/rss/articles/')) {
+        continue;
+      }
+
       articles.push({
-        url: linkMatch[1].trim(),
+        url: articleUrl,
         title: titleMatch[1].replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1').trim(),
         description: descMatch ? descMatch[1].replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1').trim() : undefined,
         author: authorMatch ? authorMatch[1].replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1').trim() : undefined,

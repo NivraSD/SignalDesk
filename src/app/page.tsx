@@ -1652,6 +1652,7 @@ export default function HomePage() {
           </div>
           <div className="landing-footer-links">
             <a href="#" className="landing-footer-link">Pricing</a>
+            <a href="/thoughts" className="landing-footer-link">Thoughts</a>
             <a href="/contact" className="landing-footer-link">Contact</a>
             <a href="#" className="landing-footer-link">Privacy</a>
           </div>

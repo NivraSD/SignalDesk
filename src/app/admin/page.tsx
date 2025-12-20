@@ -43,7 +43,7 @@ import { useAuth } from '@/components/auth/AuthProvider'
 import { isPlatformAdmin } from '@/lib/admin/config'
 import { Logo } from '@/components/ui/Logo'
 
-type AdminView = 'overview' | 'pipeline' | 'scraping' | 'users' | 'sources' | 'intelligence' | 'learning'
+type AdminView = 'overview' | 'pipeline' | 'scraping' | 'users' | 'sources' | 'intelligence' | 'learning' | 'blog'
 
 // Helper to format dates in Eastern Time
 const formatDateET = (dateStr: string, options?: Intl.DateTimeFormatOptions) => {
@@ -124,6 +124,7 @@ export default function AdminDashboard() {
   const [pipelineRuns, setPipelineRuns] = useState<any[]>([])
   const [intelligenceStats, setIntelligenceStats] = useState<any[]>([])
   const [learningData, setLearningData] = useState<any>(null)
+  const [blogPosts, setBlogPosts] = useState<any[]>([])
 
   // Check admin access
   useEffect(() => {
@@ -349,6 +350,14 @@ export default function AdminDashboard() {
       console.error('Failed to load learning data:', error)
       setLearningData({ predictions: [], accuracyMetrics: [], amplification: [], cascadePatterns: [], cascadeAlerts: [], summary: {} })
     }
+  }
+
+  async function loadBlogPosts() {
+    const { data } = await supabase
+      .from('blog_posts')
+      .select('*')
+      .order('created_at', { ascending: false })
+    setBlogPosts(data || [])
   }
 
   async function loadPipelineRuns() {
@@ -719,6 +728,7 @@ export default function AdminDashboard() {
               { id: 'scraping', label: 'Scraping', icon: Database },
               { id: 'users', label: 'Users & Orgs', icon: Users },
               { id: 'sources', label: 'Sources', icon: Globe },
+              { id: 'blog', label: 'Blog Posts', icon: Newspaper },
             ].map(item => (
               <button
                 key={item.id}
@@ -738,6 +748,8 @@ export default function AdminDashboard() {
                     loadAllOrgs()
                   } else if (item.id === 'sources') {
                     loadAllSources()
+                  } else if (item.id === 'blog') {
+                    loadBlogPosts()
                   }
                 }}
                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
@@ -925,6 +937,12 @@ export default function AdminDashboard() {
             <LearningView
               data={learningData}
               onRefresh={loadLearningData}
+            />
+          )}
+          {activeView === 'blog' && (
+            <BlogView
+              posts={blogPosts}
+              onRefresh={loadBlogPosts}
             />
           )}
         </main>
@@ -2613,6 +2631,347 @@ function LearningView({
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+// ============================================================================
+// BLOG VIEW
+// ============================================================================
+function BlogView({
+  posts,
+  onRefresh
+}: {
+  posts: any[]
+  onRefresh: () => void
+}) {
+  const [showEditor, setShowEditor] = useState(false)
+  const [editingPost, setEditingPost] = useState<any>(null)
+  const [saving, setSaving] = useState(false)
+  const [formData, setFormData] = useState({
+    title: '',
+    slug: '',
+    excerpt: '',
+    content: '',
+    author_name: 'Nivria Team',
+    tags: '',
+    published: false
+  })
+
+  const resetForm = () => {
+    setFormData({
+      title: '',
+      slug: '',
+      excerpt: '',
+      content: '',
+      author_name: 'Nivria Team',
+      tags: '',
+      published: false
+    })
+    setEditingPost(null)
+  }
+
+  const openEditor = (post?: any) => {
+    if (post) {
+      setEditingPost(post)
+      setFormData({
+        title: post.title || '',
+        slug: post.slug || '',
+        excerpt: post.excerpt || '',
+        content: post.content || '',
+        author_name: post.author_name || 'Nivria Team',
+        tags: (post.tags || []).join(', '),
+        published: post.published || false
+      })
+    } else {
+      resetForm()
+    }
+    setShowEditor(true)
+  }
+
+  const generateSlug = (title: string) => {
+    return title
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .trim()
+  }
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      const tagsArray = formData.tags
+        .split(',')
+        .map(t => t.trim())
+        .filter(t => t.length > 0)
+
+      const postData = {
+        title: formData.title,
+        slug: formData.slug || generateSlug(formData.title),
+        excerpt: formData.excerpt || null,
+        content: formData.content,
+        author_name: formData.author_name,
+        tags: tagsArray,
+        published: formData.published,
+        published_at: formData.published ? new Date().toISOString() : null
+      }
+
+      if (editingPost) {
+        await supabase
+          .from('blog_posts')
+          .update(postData)
+          .eq('id', editingPost.id)
+      } else {
+        await supabase
+          .from('blog_posts')
+          .insert(postData)
+      }
+
+      setShowEditor(false)
+      resetForm()
+      onRefresh()
+    } catch (error) {
+      console.error('Failed to save post:', error)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this post?')) return
+    await supabase.from('blog_posts').delete().eq('id', id)
+    onRefresh()
+  }
+
+  const togglePublish = async (post: any) => {
+    await supabase
+      .from('blog_posts')
+      .update({
+        published: !post.published,
+        published_at: !post.published ? new Date().toISOString() : null
+      })
+      .eq('id', post.id)
+    onRefresh()
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl text-white font-semibold mb-2">Blog Posts</h1>
+          <p className="text-[#757575]">Manage posts for the Thoughts page on nivria.ai</p>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={onRefresh}
+            className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] hover:bg-[#2e2e2e] rounded-lg text-sm text-[#bdbdbd] transition-colors"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Refresh
+          </button>
+          <button
+            onClick={() => openEditor()}
+            className="flex items-center gap-2 px-4 py-2 bg-[#c75d3a] hover:bg-[#d66c4a] rounded-lg text-sm text-white font-medium transition-colors"
+          >
+            <FileText className="w-4 h-4" />
+            New Post
+          </button>
+        </div>
+      </div>
+
+      {/* Editor Modal */}
+      {showEditor && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-8">
+          <div className="bg-[#1a1a1a] rounded-xl border border-[#2e2e2e] w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-[#2e2e2e] flex items-center justify-between">
+              <h2 className="text-xl text-white font-semibold">
+                {editingPost ? 'Edit Post' : 'New Post'}
+              </h2>
+              <button
+                onClick={() => { setShowEditor(false); resetForm(); }}
+                className="text-[#757575] hover:text-white"
+              >
+                <XCircle className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm text-[#9e9e9e] mb-2">Title</label>
+                <input
+                  type="text"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  className="w-full px-4 py-3 bg-[#0d0d0d] border border-[#2e2e2e] rounded-lg text-white focus:outline-none focus:border-[#c75d3a]"
+                  placeholder="Post title..."
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-[#9e9e9e] mb-2">Slug (URL)</label>
+                <input
+                  type="text"
+                  value={formData.slug}
+                  onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                  className="w-full px-4 py-3 bg-[#0d0d0d] border border-[#2e2e2e] rounded-lg text-white focus:outline-none focus:border-[#c75d3a]"
+                  placeholder="post-url-slug (auto-generated from title if empty)"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-[#9e9e9e] mb-2">Excerpt</label>
+                <textarea
+                  value={formData.excerpt}
+                  onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
+                  rows={2}
+                  className="w-full px-4 py-3 bg-[#0d0d0d] border border-[#2e2e2e] rounded-lg text-white focus:outline-none focus:border-[#c75d3a] resize-none"
+                  placeholder="Brief summary for the listing page..."
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-[#9e9e9e] mb-2">Content</label>
+                <textarea
+                  value={formData.content}
+                  onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                  rows={12}
+                  className="w-full px-4 py-3 bg-[#0d0d0d] border border-[#2e2e2e] rounded-lg text-white focus:outline-none focus:border-[#c75d3a] resize-none font-mono text-sm"
+                  placeholder="Write your post content here... Supports **bold**, *italic*, ## headers, and [links](url)"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-[#9e9e9e] mb-2">Author</label>
+                  <input
+                    type="text"
+                    value={formData.author_name}
+                    onChange={(e) => setFormData({ ...formData, author_name: e.target.value })}
+                    className="w-full px-4 py-3 bg-[#0d0d0d] border border-[#2e2e2e] rounded-lg text-white focus:outline-none focus:border-[#c75d3a]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-[#9e9e9e] mb-2">Tags (comma-separated)</label>
+                  <input
+                    type="text"
+                    value={formData.tags}
+                    onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+                    className="w-full px-4 py-3 bg-[#0d0d0d] border border-[#2e2e2e] rounded-lg text-white focus:outline-none focus:border-[#c75d3a]"
+                    placeholder="ai, communications, strategy"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  id="published"
+                  checked={formData.published}
+                  onChange={(e) => setFormData({ ...formData, published: e.target.checked })}
+                  className="w-4 h-4 rounded"
+                />
+                <label htmlFor="published" className="text-sm text-[#9e9e9e]">
+                  Publish immediately
+                </label>
+              </div>
+            </div>
+            <div className="p-6 border-t border-[#2e2e2e] flex justify-end gap-3">
+              <button
+                onClick={() => { setShowEditor(false); resetForm(); }}
+                className="px-4 py-2 text-[#9e9e9e] hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={saving || !formData.title || !formData.content}
+                className="flex items-center gap-2 px-6 py-2 bg-[#c75d3a] hover:bg-[#d66c4a] rounded-lg text-white font-medium transition-colors disabled:opacity-50"
+              >
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                {editingPost ? 'Update' : 'Create'} Post
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Posts List */}
+      <div className="bg-[#1a1a1a] rounded-xl border border-[#2e2e2e] overflow-hidden">
+        {posts.length === 0 ? (
+          <div className="p-12 text-center">
+            <Newspaper className="w-12 h-12 text-[#3d3d3d] mx-auto mb-4" />
+            <p className="text-[#757575]">No blog posts yet</p>
+            <button
+              onClick={() => openEditor()}
+              className="mt-4 text-[#c75d3a] hover:text-[#e07b5a] text-sm"
+            >
+              Create your first post →
+            </button>
+          </div>
+        ) : (
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-[#2e2e2e]">
+                <th className="text-left p-4 text-[#757575] text-xs font-semibold uppercase">Title</th>
+                <th className="text-left p-4 text-[#757575] text-xs font-semibold uppercase">Author</th>
+                <th className="text-left p-4 text-[#757575] text-xs font-semibold uppercase">Status</th>
+                <th className="text-left p-4 text-[#757575] text-xs font-semibold uppercase">Created</th>
+                <th className="text-right p-4 text-[#757575] text-xs font-semibold uppercase">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {posts.map(post => (
+                <tr key={post.id} className="border-b border-[#2e2e2e] last:border-0 hover:bg-[#212121]">
+                  <td className="p-4">
+                    <div className="text-white font-medium">{post.title}</div>
+                    <div className="text-[#757575] text-xs mt-1">/thoughts/{post.slug}</div>
+                  </td>
+                  <td className="p-4 text-[#9e9e9e] text-sm">{post.author_name}</td>
+                  <td className="p-4">
+                    <button
+                      onClick={() => togglePublish(post)}
+                      className={`px-2 py-1 rounded text-xs font-medium ${
+                        post.published
+                          ? 'bg-green-500/10 text-green-400'
+                          : 'bg-yellow-500/10 text-yellow-400'
+                      }`}
+                    >
+                      {post.published ? 'Published' : 'Draft'}
+                    </button>
+                  </td>
+                  <td className="p-4 text-[#757575] text-sm">
+                    {new Date(post.created_at).toLocaleDateString()}
+                  </td>
+                  <td className="p-4 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      {post.published && (
+                        <a
+                          href={`/thoughts/${post.slug}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-2 text-[#757575] hover:text-white transition-colors"
+                          title="View"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </a>
+                      )}
+                      <button
+                        onClick={() => openEditor(post)}
+                        className="p-2 text-[#757575] hover:text-[#c75d3a] transition-colors"
+                        title="Edit"
+                      >
+                        <Settings className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(post.id)}
+                        className="p-2 text-[#757575] hover:text-red-400 transition-colors"
+                        title="Delete"
+                      >
+                        <XCircle className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
     </div>
   )
 }

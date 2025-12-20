@@ -1,0 +1,4 @@
+# RSS Orchestrator - processes ~57 sources per group
+# Increased timeout to handle network latency and DB operations
+[function_config]
+timeout_sec = 120
