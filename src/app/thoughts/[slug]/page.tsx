@@ -16,6 +16,7 @@ interface BlogPost {
   published_at: string
   tags: string[]
   featured_image_url: string | null
+  footer: string | null
 }
 
 export default function BlogPostPage() {
@@ -250,6 +251,20 @@ export default function BlogPostPage() {
           }}
           dangerouslySetInnerHTML={{ __html: formatContent(post.content) }}
         />
+
+        {/* Footer / Sign-off */}
+        {post.footer && (
+          <div style={{
+            marginTop: '48px',
+            paddingTop: '32px',
+            borderTop: '1px solid rgba(255,255,255,0.08)',
+            color: 'var(--grey-400)',
+            fontSize: '16px',
+            lineHeight: 1.7
+          }}
+            dangerouslySetInnerHTML={{ __html: post.footer }}
+          />
+        )}
 
         {/* Back Link */}
         <div style={{

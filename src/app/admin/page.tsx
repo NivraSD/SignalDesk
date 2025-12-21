@@ -2656,6 +2656,7 @@ function BlogView({
     author_name: 'Nivria Team',
     tags: '',
     featured_image_url: '',
+    footer: '',
     published: false
   })
   const editorRef = useRef<HTMLDivElement>(null)
@@ -2747,6 +2748,13 @@ function BlogView({
     }
   }
 
+  const insertEmailLink = () => {
+    const email = prompt('Enter email address:')
+    if (email) {
+      execFormat('createLink', `mailto:${email}`)
+    }
+  }
+
   const resetForm = () => {
     setFormData({
       title: '',
@@ -2756,6 +2764,7 @@ function BlogView({
       author_name: 'Nivria Team',
       tags: '',
       featured_image_url: '',
+      footer: '',
       published: false
     })
     setEditingPost(null)
@@ -2772,6 +2781,7 @@ function BlogView({
         author_name: post.author_name || 'Nivria Team',
         tags: (post.tags || []).join(', '),
         featured_image_url: post.featured_image_url || '',
+        footer: post.footer || '',
         published: post.published || false
       })
       // Set editor content after it mounts
@@ -2819,6 +2829,7 @@ function BlogView({
         author_name: formData.author_name,
         tags: tagsArray,
         featured_image_url: formData.featured_image_url || null,
+        footer: formData.footer || null,
         published: formData.published,
         published_at: formData.published ? new Date().toISOString() : null
       }
@@ -3021,6 +3032,14 @@ function BlogView({
                   >
                     Image
                   </button>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => { e.preventDefault(); insertEmailLink(); }}
+                    className="px-3 py-1.5 bg-[#1a1a1a] hover:bg-[#2e2e2e] rounded text-sm text-white transition-colors"
+                    title="Insert Email Link"
+                  >
+                    Email
+                  </button>
                   <div className="w-px h-6 bg-[#2e2e2e] mx-1" />
                   <button
                     type="button"
@@ -3088,6 +3107,16 @@ function BlogView({
                     placeholder="ai, communications, strategy"
                   />
                 </div>
+              </div>
+              <div>
+                <label className="block text-sm text-[#9e9e9e] mb-2">Footer / Sign-off (optional)</label>
+                <textarea
+                  value={formData.footer}
+                  onChange={(e) => setFormData({ ...formData, footer: e.target.value })}
+                  rows={3}
+                  className="w-full px-4 py-3 bg-[#0d0d0d] border border-[#2e2e2e] rounded-lg text-white focus:outline-none focus:border-[#c75d3a] resize-none"
+                  placeholder="Your sign-off message, contact info, etc. (supports HTML)"
+                />
               </div>
               <div className="flex items-center gap-3">
                 <input
