@@ -2660,6 +2660,7 @@ function BlogView({
     published: false
   })
   const editorRef = useRef<HTMLDivElement>(null)
+  const footerRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [uploadingImage, setUploadingImage] = useState(false)
 
@@ -2755,6 +2756,33 @@ function BlogView({
     }
   }
 
+  // Footer editor functions
+  const execFormatFooter = (command: string, value?: string) => {
+    const savedRange = saveSelection()
+    if (footerRef.current) {
+      footerRef.current.focus()
+    }
+    restoreSelection(savedRange)
+    document.execCommand(command, false, value)
+    if (footerRef.current) {
+      setFormData(prev => ({ ...prev, footer: footerRef.current?.innerHTML || '' }))
+    }
+  }
+
+  const insertFooterLink = () => {
+    const url = prompt('Enter URL:')
+    if (url) {
+      execFormatFooter('createLink', url)
+    }
+  }
+
+  const insertFooterEmail = () => {
+    const email = prompt('Enter email address:')
+    if (email) {
+      execFormatFooter('createLink', `mailto:${email}`)
+    }
+  }
+
   const resetForm = () => {
     setFormData({
       title: '',
@@ -2789,12 +2817,18 @@ function BlogView({
         if (editorRef.current) {
           editorRef.current.innerHTML = post.content || ''
         }
+        if (footerRef.current) {
+          footerRef.current.innerHTML = post.footer || ''
+        }
       }, 0)
     } else {
       resetForm()
       setTimeout(() => {
         if (editorRef.current) {
           editorRef.current.innerHTML = ''
+        }
+        if (footerRef.current) {
+          footerRef.current.innerHTML = ''
         }
       }, 0)
     }
@@ -2818,8 +2852,9 @@ function BlogView({
         .map(t => t.trim())
         .filter(t => t.length > 0)
 
-      // Get content from contentEditable div
+      // Get content from contentEditable divs
       const contentHtml = editorRef.current?.innerHTML || formData.content
+      const footerHtml = footerRef.current?.innerHTML || formData.footer
 
       const postData = {
         title: formData.title,
@@ -2829,7 +2864,7 @@ function BlogView({
         author_name: formData.author_name,
         tags: tagsArray,
         featured_image_url: formData.featured_image_url || null,
-        footer: formData.footer || null,
+        footer: footerHtml || null,
         published: formData.published,
         published_at: formData.published ? new Date().toISOString() : null
       }
@@ -3110,12 +3145,62 @@ function BlogView({
               </div>
               <div>
                 <label className="block text-sm text-[#9e9e9e] mb-2">Footer / Sign-off (optional)</label>
-                <textarea
-                  value={formData.footer}
-                  onChange={(e) => setFormData({ ...formData, footer: e.target.value })}
-                  rows={3}
-                  className="w-full px-4 py-3 bg-[#0d0d0d] border border-[#2e2e2e] rounded-lg text-white focus:outline-none focus:border-[#c75d3a] resize-none"
-                  placeholder="Your sign-off message, contact info, etc. (supports HTML)"
+                {/* Footer Mini Toolbar */}
+                <div className="flex items-center gap-1 p-2 bg-[#1a1a1a] border border-[#2e2e2e] rounded-t-lg border-b-0">
+                  <button
+                    type="button"
+                    onMouseDown={(e) => { e.preventDefault(); execFormatFooter('bold'); }}
+                    className="px-2 py-1 bg-[#0d0d0d] hover:bg-[#2e2e2e] rounded text-sm text-white font-bold transition-colors"
+                    title="Bold"
+                  >
+                    B
+                  </button>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => { e.preventDefault(); execFormatFooter('italic'); }}
+                    className="px-2 py-1 bg-[#0d0d0d] hover:bg-[#2e2e2e] rounded text-sm text-white italic transition-colors"
+                    title="Italic"
+                  >
+                    I
+                  </button>
+                  <div className="w-px h-5 bg-[#2e2e2e] mx-1" />
+                  <button
+                    type="button"
+                    onMouseDown={(e) => { e.preventDefault(); insertFooterLink(); }}
+                    className="px-2 py-1 bg-[#0d0d0d] hover:bg-[#2e2e2e] rounded text-sm text-white transition-colors"
+                    title="Insert Link"
+                  >
+                    Link
+                  </button>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => { e.preventDefault(); insertFooterEmail(); }}
+                    className="px-2 py-1 bg-[#0d0d0d] hover:bg-[#2e2e2e] rounded text-sm text-white transition-colors"
+                    title="Insert Email Link"
+                  >
+                    Email
+                  </button>
+                </div>
+                {/* Footer ContentEditable Editor */}
+                <style>{`
+                  .footer-editor a { color: #c75d3a !important; text-decoration: underline; }
+                `}</style>
+                <div
+                  ref={footerRef}
+                  contentEditable
+                  onInput={() => {
+                    if (footerRef.current) {
+                      setFormData(prev => ({ ...prev, footer: footerRef.current?.innerHTML || '' }))
+                    }
+                  }}
+                  onPaste={(e) => {
+                    e.preventDefault()
+                    const text = e.clipboardData.getData('text/plain')
+                    document.execCommand('insertText', false, text)
+                  }}
+                  className="footer-editor w-full min-h-[80px] px-4 py-3 bg-[#0d0d0d] border border-[#2e2e2e] rounded-b-lg text-white focus:outline-none focus:border-[#c75d3a] overflow-y-auto"
+                  style={{ whiteSpace: 'pre-wrap' }}
+                  data-placeholder="Your sign-off message, contact info, etc."
                 />
               </div>
               <div className="flex items-center gap-3">
