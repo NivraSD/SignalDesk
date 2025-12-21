@@ -193,7 +193,8 @@ export default function BlogPostPage() {
           fontWeight: 400,
           lineHeight: 1.2,
           marginBottom: '32px',
-          letterSpacing: '-1px'
+          letterSpacing: '-1px',
+          color: '#c75d3a'
         }}>
           {post.title}
         </h1>
@@ -294,9 +295,11 @@ function formatContent(content: string): string {
     .replace(/\*\*(.*?)\*\*/g, '<strong style="color: var(--white); font-weight: 600">$1</strong>')
     // Italic
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    // Underline (pass through HTML <u> tags with styling)
+    .replace(/<u>(.*?)<\/u>/g, '<u style="text-decoration: underline">$1</u>')
     // Headers
-    .replace(/^## (.*$)/gm, '<h2 style="font-family: var(--font-serif); font-size: 28px; font-weight: 400; margin: 2em 0 1em; color: var(--white)">$1</h2>')
-    .replace(/^### (.*$)/gm, '<h3 style="font-family: var(--font-serif); font-size: 22px; font-weight: 400; margin: 1.5em 0 0.75em; color: var(--white)">$1</h3>')
+    .replace(/^## (.*$)/gm, '<h2 style="font-family: var(--font-serif); font-size: 28px; font-weight: 400; margin: 2em 0 1em; color: var(--accent)">$1</h2>')
+    .replace(/^### (.*$)/gm, '<h3 style="font-family: var(--font-serif); font-size: 22px; font-weight: 400; margin: 1.5em 0 0.75em; color: var(--accent)">$1</h3>')
     // Links
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" style="color: var(--accent); text-decoration: underline" target="_blank" rel="noopener">$1</a>')
     // Single newlines to <br>
