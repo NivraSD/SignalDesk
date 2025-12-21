@@ -201,7 +201,7 @@ async function updateSupabaseSecret(secretName: string, value: string): Promise<
     console.log(`   📤 Updating Supabase secret: ${secretName}`);
 
     // Use Supabase CLI to set secret
-    execSync(`npx supabase secrets set ${secretName}="${value}"`, {
+    execSync(`supabase secrets set ${secretName}="${value}"`, {
       stdio: 'pipe',
       encoding: 'utf-8'
     });

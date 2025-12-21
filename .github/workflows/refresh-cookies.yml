@@ -26,16 +26,18 @@ jobs:
           npm install playwright @playwright/test
           npx playwright install chromium
 
-      - name: Install Supabase CLI
-        run: npm install -g supabase
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
 
       - name: Login to Supabase
         run: |
-          echo "${{ secrets.SUPABASE_ACCESS_TOKEN }}" | npx supabase login --token -
+          supabase login --token ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
       - name: Link Supabase project
         run: |
-          npx supabase link --project-ref zskaxjtyuaqazydouifp
+          supabase link --project-ref zskaxjtyuaqazydouifp
 
       - name: Run cookie refresh script
         env:
