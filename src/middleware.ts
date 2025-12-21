@@ -50,7 +50,8 @@ export async function middleware(request: NextRequest) {
   }
 
   // If user is signed in and trying to access auth pages, redirect to onboarding
-  if (user && isPublicPath && path !== '/auth/callback') {
+  // But allow access to /thoughts pages (blog) for everyone
+  if (user && isPublicPath && path !== '/auth/callback' && !path.startsWith('/thoughts')) {
     const redirectUrl = request.nextUrl.clone()
     redirectUrl.pathname = '/onboarding'
     return NextResponse.redirect(redirectUrl)
