@@ -242,7 +242,16 @@ export default function BlogPostPage() {
         )}
 
         {/* Content */}
+        <style>{`
+          .blog-content h2 { color: #c75d3a !important; font-size: 28px; font-weight: 400; margin: 2em 0 1em; font-family: var(--font-serif); }
+          .blog-content h3 { color: #c75d3a !important; font-size: 22px; font-weight: 400; margin: 1.5em 0 0.75em; font-family: var(--font-serif); }
+          .blog-content a { color: #c75d3a !important; text-decoration: underline; }
+          .blog-content img { max-width: 100%; height: auto; margin: 16px 0; border-radius: 8px; }
+          .blog-content ul, .blog-content ol { margin: 1em 0; padding-left: 2em; }
+          .blog-content li { margin: 0.5em 0; }
+        `}</style>
         <div
+          className="blog-content"
           style={{
             color: 'var(--grey-300)',
             fontSize: '18px',
