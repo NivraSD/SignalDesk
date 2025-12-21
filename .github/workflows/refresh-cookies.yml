@@ -21,9 +21,9 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install Playwright
+      - name: Install dependencies
         run: |
-          npm install playwright @playwright/test
+          npm install playwright tsx typescript @types/node
           npx playwright install chromium
 
       - name: Setup Supabase CLI
@@ -57,7 +57,7 @@ jobs:
           WAPO_EMAIL: ${{ secrets.WAPO_EMAIL }}
           WAPO_PASSWORD: ${{ secrets.WAPO_PASSWORD }}
         run: |
-          npx ts-node scripts/cookie-refresh/refresh-cookies.ts
+          npx tsx scripts/cookie-refresh/refresh-cookies.ts
 
       - name: Notify on failure
         if: failure()
