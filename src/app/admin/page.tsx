@@ -3096,12 +3096,16 @@ function BlogView({
                     WYSIWYG Editor
                   </span>
                 </div>
-                {/* ContentEditable WYSIWYG Editor */}
+                {/* ContentEditable WYSIWYG Editor - matches display page exactly */}
                 <style>{`
-                  .blog-editor h2 { color: #c75d3a !important; font-size: 28px; font-weight: 400; margin: 1.5em 0 0.75em; font-family: var(--font-serif); }
-                  .blog-editor h3 { color: #c75d3a !important; font-size: 22px; font-weight: 400; margin: 1.25em 0 0.5em; font-family: var(--font-serif); }
+                  .blog-editor { font-size: 18px; line-height: 1.8; letter-spacing: 0.01em; color: var(--grey-300); }
+                  .blog-editor h2 { color: #c75d3a !important; font-size: 28px; font-weight: 400; margin: 2em 0 1em; font-family: "Playfair Display", Georgia, serif; }
+                  .blog-editor h3 { color: #c75d3a !important; font-size: 22px; font-weight: 400; margin: 1.5em 0 0.75em; font-family: "Playfair Display", Georgia, serif; }
                   .blog-editor a { color: #c75d3a !important; text-decoration: underline; }
                   .blog-editor img { max-width: 100%; height: auto; margin: 16px 0; border-radius: 8px; }
+                  .blog-editor ul, .blog-editor ol { margin: 1em 0; padding-left: 2em; }
+                  .blog-editor li { margin: 0.5em 0; }
+                  .blog-editor p { margin-bottom: 1.5em; }
                 `}</style>
                 <div
                   ref={editorRef}
