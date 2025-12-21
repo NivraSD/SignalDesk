@@ -3098,8 +3098,8 @@ function BlogView({
                 </div>
                 {/* ContentEditable WYSIWYG Editor */}
                 <style>{`
-                  .blog-editor h2 { color: #c75d3a !important; font-size: 24px; font-weight: 600; margin: 16px 0 8px; }
-                  .blog-editor h3 { color: #c75d3a !important; font-size: 20px; font-weight: 600; margin: 12px 0 6px; }
+                  .blog-editor h2 { color: #c75d3a !important; font-size: 28px; font-weight: 400; margin: 1.5em 0 0.75em; font-family: var(--font-serif); }
+                  .blog-editor h3 { color: #c75d3a !important; font-size: 22px; font-weight: 400; margin: 1.25em 0 0.5em; font-family: var(--font-serif); }
                   .blog-editor a { color: #c75d3a !important; text-decoration: underline; }
                   .blog-editor img { max-width: 100%; height: auto; margin: 16px 0; border-radius: 8px; }
                 `}</style>
