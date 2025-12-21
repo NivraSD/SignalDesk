@@ -38,7 +38,6 @@ const CONTENT_TYPES = [
   { id: 'thought-leadership', label: 'Thought Leadership', icon: TrendingUp, category: 'Written' },
   { id: 'case-study', label: 'Case Study', icon: FileCheck, category: 'Written' },
   { id: 'white-paper', label: 'White Paper', icon: FileText, category: 'Written' },
-  { id: 'ebook', label: 'eBook', icon: BookOpen, category: 'Written' },
   { id: 'qa-document', label: 'Q&A Document', icon: MessageSquare, category: 'Written' },
 
   // Social & Digital
@@ -70,6 +69,7 @@ const CONTENT_TYPES = [
 
   // Strategy & Messaging
   { id: 'media-plan', label: 'Media Plan', icon: FileCheck, category: 'Strategy' },
+  { id: 'proposal', label: 'Proposal', icon: FileText, category: 'Strategy' },
   { id: 'messaging', label: 'Messaging Framework', icon: MessageSquare, category: 'Strategy' },
   { id: 'brand-narrative', label: 'Brand Narrative', icon: BookOpen, category: 'Strategy' },
   { id: 'value-proposition', label: 'Value Proposition', icon: TrendingUp, category: 'Strategy' },

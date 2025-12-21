@@ -1615,6 +1615,129 @@ const CONTENT_GENERATION_TOOLS = [
       },
       required: ["schema_type", "content"]
     }
+  },
+  {
+    name: "analyze_rfp",
+    description: "Analyze an RFP (Request for Proposal) or client brief to extract key requirements, evaluation criteria, and scope. Use this when a user provides an RFP document or brief text and wants to create a proposal response. This tool extracts structured requirements that inform the proposal outline.",
+    input_schema: {
+      type: "object",
+      properties: {
+        rfp_content: {
+          type: "string",
+          description: "The full text of the RFP or brief to analyze"
+        },
+        client_name: {
+          type: "string",
+          description: "Name of the prospective client/organization issuing the RFP"
+        },
+        project_type: {
+          type: "string",
+          description: "Type of project (e.g., 'PR campaign', 'brand strategy', 'creative campaign', 'media buying', 'integrated marketing')"
+        }
+      },
+      required: ["rfp_content"]
+    }
+  },
+  {
+    name: "create_proposal_outline",
+    description: "Create a detailed proposal outline after analyzing an RFP. This outlines the complete proposal structure with sections, key points, and recommendations. The user will review and approve this before generating the final proposal as either a document or presentation.",
+    input_schema: {
+      type: "object",
+      properties: {
+        client_name: {
+          type: "string",
+          description: "Name of the prospective client"
+        },
+        project_title: {
+          type: "string",
+          description: "Title/name of the proposed project"
+        },
+        executive_summary: {
+          type: "string",
+          description: "Brief executive summary of the proposal (2-3 sentences)"
+        },
+        understanding_of_brief: {
+          type: "string",
+          description: "Demonstrate understanding of client needs and challenges"
+        },
+        strategic_approach: {
+          type: "string",
+          description: "High-level strategic approach and methodology"
+        },
+        proposed_solution: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              phase: { type: "string" },
+              description: { type: "string" },
+              deliverables: {
+                type: "array",
+                items: { type: "string" }
+              }
+            }
+          },
+          description: "Phased solution with deliverables for each phase"
+        },
+        team_and_capabilities: {
+          type: "string",
+          description: "Why your team/agency is uniquely qualified"
+        },
+        timeline: {
+          type: "string",
+          description: "Proposed timeline overview"
+        },
+        investment: {
+          type: "string",
+          description: "Budget/investment overview (can be placeholder if not discussed)"
+        },
+        case_studies: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              client: { type: "string" },
+              challenge: { type: "string" },
+              solution: { type: "string" },
+              results: { type: "string" }
+            }
+          },
+          description: "Relevant case studies from past work (from MemoryVault if available)"
+        },
+        next_steps: {
+          type: "array",
+          items: { type: "string" },
+          description: "Proposed next steps after proposal review"
+        }
+      },
+      required: ["client_name", "project_title", "executive_summary", "understanding_of_brief", "strategic_approach", "proposed_solution"]
+    }
+  },
+  {
+    name: "generate_proposal_document",
+    description: "Generate a complete proposal document based on an approved outline. Use this when the user has reviewed the proposal outline and wants a DOCUMENT format (not presentation). For presentation format, use generate_presentation instead.",
+    input_schema: {
+      type: "object",
+      properties: {
+        approved_outline: {
+          type: "object",
+          description: "The complete approved proposal outline from create_proposal_outline",
+          additionalProperties: true
+        },
+        format: {
+          type: "string",
+          description: "Output format preference",
+          enum: ["formal", "conversational", "executive"],
+          default: "formal"
+        },
+        include_appendix: {
+          type: "boolean",
+          description: "Whether to include an appendix with detailed case studies",
+          default: true
+        }
+      },
+      required: ["approved_outline"]
+    }
   }
 ];
 // Store conversation states in memory
@@ -4583,6 +4706,288 @@ ${section.talking_points.map((point)=>`- ${point}`).join('\n')}
             status: 500
           });
         }
+      }
+      // Handle RFP analysis
+      if (toolUse && toolUse.name === 'analyze_rfp') {
+        console.log('📋 Claude analyzing RFP');
+        console.log('📋 RFP content length:', toolUse.input.rfp_content?.length || 0);
+
+        // Store RFP analysis in conversation state
+        conversationState.rfpAnalysis = {
+          content: toolUse.input.rfp_content,
+          client_name: toolUse.input.client_name,
+          project_type: toolUse.input.project_type,
+          analyzed_at: new Date().toISOString()
+        };
+
+        // Search Memory Vault for relevant past proposals
+        let pastProposals = [];
+        try {
+          console.log('🔍 Searching Memory Vault for past proposals...');
+          const { data: proposals } = await supabase
+            .from('content_library')
+            .select('*')
+            .eq('organization_id', organizationId)
+            .or('folder.ilike.%proposal%,content_type.eq.proposal,metadata->>type.eq.proposal')
+            .order('created_at', { ascending: false })
+            .limit(5);
+
+          if (proposals && proposals.length > 0) {
+            pastProposals = proposals;
+            console.log(`✅ Found ${proposals.length} past proposals in Memory Vault`);
+          }
+        } catch (err) {
+          console.error('Error searching proposals:', err);
+        }
+
+        conversationState.pastProposals = pastProposals;
+
+        const analysisMessage = `I've analyzed the RFP${toolUse.input.client_name ? ` from ${toolUse.input.client_name}` : ''}. ${pastProposals.length > 0 ? `I also found ${pastProposals.length} relevant past proposal(s) in your Memory Vault that I can reference.` : ''}
+
+Ready to create your proposal outline. Would you like me to proceed?`;
+
+        return new Response(JSON.stringify({
+          success: true,
+          mode: 'rfp_analyzed',
+          message: analysisMessage,
+          rfpAnalysis: conversationState.rfpAnalysis,
+          pastProposalsFound: pastProposals.length,
+          conversationId
+        }), {
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'application/json'
+          }
+        });
+      }
+      // Handle proposal outline creation
+      if (toolUse && toolUse.name === 'create_proposal_outline') {
+        console.log('📋 Claude created proposal outline');
+        console.log('📋 Proposal outline:', JSON.stringify(toolUse.input, null, 2));
+
+        // Update state to outline review
+        conversationState.stage = 'proposal_review';
+        conversationState.proposalOutline = toolUse.input;
+
+        // Format the proposal outline for display
+        const outline = toolUse.input;
+        let proposalDisplay = `# Proposal: ${outline.project_title}
+
+**Client:** ${outline.client_name}
+
+## Executive Summary
+${outline.executive_summary}
+
+## Understanding of Brief
+${outline.understanding_of_brief}
+
+## Strategic Approach
+${outline.strategic_approach}
+
+## Proposed Solution
+${outline.proposed_solution.map((phase, i) => `
+### Phase ${i + 1}: ${phase.phase}
+${phase.description}
+
+**Deliverables:**
+${phase.deliverables.map(d => `- ${d}`).join('\n')}
+`).join('\n')}
+
+${outline.team_and_capabilities ? `## Team & Capabilities
+${outline.team_and_capabilities}
+` : ''}
+
+${outline.timeline ? `## Timeline
+${outline.timeline}
+` : ''}
+
+${outline.investment ? `## Investment
+${outline.investment}
+` : ''}
+
+${outline.case_studies && outline.case_studies.length > 0 ? `## Relevant Case Studies
+${outline.case_studies.map(cs => `
+### ${cs.client}
+**Challenge:** ${cs.challenge}
+**Solution:** ${cs.solution}
+**Results:** ${cs.results}
+`).join('\n')}` : ''}
+
+${outline.next_steps ? `## Next Steps
+${outline.next_steps.map(s => `- ${s}`).join('\n')}
+` : ''}
+
+---
+
+*Once you're happy with this outline, let me know if you'd like the final proposal as a **document** or a **presentation** (Gamma)!*`;
+
+        return new Response(JSON.stringify({
+          success: true,
+          mode: 'proposal_outline',
+          message: proposalDisplay,
+          proposalOutline: toolUse.input,
+          conversationId
+        }), {
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'application/json'
+          }
+        });
+      }
+      // Handle proposal document generation
+      if (toolUse && toolUse.name === 'generate_proposal_document') {
+        console.log('📄 Claude generating proposal document');
+        console.log('📄 Approved outline:', JSON.stringify(toolUse.input.approved_outline, null, 2));
+
+        conversationState.stage = 'generation';
+        const outline = toolUse.input.approved_outline;
+        const format = toolUse.input.format || 'formal';
+
+        // Generate the full proposal document
+        const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+        let proposalDocument = `# ${outline.project_title}
+
+**Prepared for:** ${outline.client_name}
+**Prepared by:** ${orgProfile.organizationName || 'Our Team'}
+**Date:** ${currentDate}
+
+---
+
+## Executive Summary
+
+${outline.executive_summary}
+
+---
+
+## Understanding Your Needs
+
+${outline.understanding_of_brief}
+
+---
+
+## Our Strategic Approach
+
+${outline.strategic_approach}
+
+---
+
+## Proposed Solution
+
+${outline.proposed_solution.map((phase, i) => `
+### Phase ${i + 1}: ${phase.phase}
+
+${phase.description}
+
+**Key Deliverables:**
+${phase.deliverables.map(d => `- ${d}`).join('\n')}
+`).join('\n')}
+
+---
+
+${outline.team_and_capabilities ? `## Why Us
+
+${outline.team_and_capabilities}
+
+---
+` : ''}
+
+${outline.timeline ? `## Timeline
+
+${outline.timeline}
+
+---
+` : ''}
+
+${outline.investment ? `## Investment
+
+${outline.investment}
+
+---
+` : ''}
+
+${outline.case_studies && outline.case_studies.length > 0 ? `## Proven Track Record
+
+${outline.case_studies.map(cs => `
+### ${cs.client}
+
+**The Challenge:** ${cs.challenge}
+
+**Our Solution:** ${cs.solution}
+
+**The Results:** ${cs.results}
+`).join('\n---\n')}
+
+---
+` : ''}
+
+## Next Steps
+
+${outline.next_steps ? outline.next_steps.map((s, i) => `${i + 1}. ${s}`).join('\n') : `1. Review this proposal
+2. Schedule a follow-up discussion
+3. Finalize scope and timeline
+4. Begin engagement`}
+
+---
+
+*We look forward to the opportunity to partner with ${outline.client_name}.*
+
+**${orgProfile.organizationName || 'Our Team'}**
+`;
+
+        // Save to Memory Vault
+        try {
+          console.log('💾 Saving proposal to Memory Vault');
+          const proposalId = crypto.randomUUID();
+
+          await supabase.from('content_library').insert({
+            id: proposalId,
+            organization_id: organizationId,
+            content_type: 'proposal',
+            title: outline.project_title,
+            content: proposalDocument,
+            metadata: {
+              client_name: outline.client_name,
+              format: format,
+              created_date: new Date().toISOString(),
+              phases: outline.proposed_solution.length,
+              has_case_studies: outline.case_studies?.length > 0
+            },
+            folder: 'proposals',
+            embedding: null,
+            embedding_model: null,
+            embedding_updated_at: null
+          });
+
+          console.log('✅ Saved proposal to Memory Vault');
+
+          // Generate embedding asynchronously
+          const proposalText = `${outline.project_title}\n${outline.client_name}\n${proposalDocument}`.substring(0, 8000);
+          generateEmbeddingAsync(proposalId, proposalText, organizationId).catch((err) => {
+            console.error(`Background embedding failed for proposal ${proposalId}:`, err);
+          });
+        } catch (saveError) {
+          console.error('❌ Error saving proposal to Memory Vault:', saveError);
+        }
+
+        return new Response(JSON.stringify({
+          success: true,
+          mode: 'proposal_generated',
+          message: proposalDocument,
+          content: proposalDocument,
+          contentType: 'proposal',
+          title: outline.project_title,
+          metadata: {
+            client_name: outline.client_name,
+            format: format
+          },
+          conversationId
+        }), {
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'application/json'
+          }
+        });
       }
       // Handle media plan generation (with approved strategy)
       if (toolUse && toolUse.name === 'generate_media_plan') {
