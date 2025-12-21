@@ -140,6 +140,18 @@ async function extractCookiesFromSource(
 
   } catch (error: any) {
     console.error(`   ❌ Failed to login to ${sourceName}: ${error.message}`);
+
+    // Take screenshot for debugging
+    try {
+      const screenshotPath = `/tmp/${sourceName}-error.png`;
+      await page.screenshot({ path: screenshotPath, fullPage: true });
+      console.log(`   📸 Screenshot saved: ${screenshotPath}`);
+
+      // Also log the page URL and title
+      console.log(`   📍 URL: ${page.url()}`);
+      console.log(`   📄 Title: ${await page.title()}`);
+    } catch {}
+
     await context.close();
 
     return {
@@ -153,14 +165,77 @@ async function extractCookiesFromSource(
 // Site-specific login implementations
 
 async function loginNYTimes(page: Page, email: string, password: string) {
-  // NYTimes has a multi-step login
-  await page.fill('input[name="email"]', email);
-  await page.click('button[type="submit"]');
-  await page.waitForTimeout(2000);
+  // NYTimes has a multi-step login - try multiple selector strategies
+  // Wait for page to be interactive
+  await page.waitForLoadState('domcontentloaded');
+  await page.waitForTimeout(3000);
 
-  await page.fill('input[name="password"]', password);
+  // Try different selectors for email field
+  const emailSelectors = [
+    'input[name="email"]',
+    'input[type="email"]',
+    'input[data-testid="email-input"]',
+    '#email',
+    'input[autocomplete="email"]'
+  ];
+
+  let emailFilled = false;
+  for (const selector of emailSelectors) {
+    try {
+      const element = await page.$(selector);
+      if (element) {
+        await element.fill(email);
+        emailFilled = true;
+        console.log(`   Found email field with: ${selector}`);
+        break;
+      }
+    } catch {}
+  }
+
+  if (!emailFilled) {
+    // Try by placeholder or label
+    try {
+      await page.getByPlaceholder(/email/i).fill(email);
+      emailFilled = true;
+      console.log('   Found email by placeholder');
+    } catch {}
+  }
+
+  if (!emailFilled) {
+    throw new Error('Could not find email input field');
+  }
+
+  // Click continue/submit button
   await page.click('button[type="submit"]');
-  await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 30000 });
+  await page.waitForTimeout(3000);
+
+  // Try different selectors for password field
+  const passwordSelectors = [
+    'input[name="password"]',
+    'input[type="password"]',
+    'input[data-testid="password-input"]',
+    '#password'
+  ];
+
+  let passwordFilled = false;
+  for (const selector of passwordSelectors) {
+    try {
+      const element = await page.$(selector);
+      if (element) {
+        await element.fill(password);
+        passwordFilled = true;
+        console.log(`   Found password field with: ${selector}`);
+        break;
+      }
+    } catch {}
+  }
+
+  if (!passwordFilled) {
+    throw new Error('Could not find password input field');
+  }
+
+  await page.click('button[type="submit"]');
+  await page.waitForTimeout(5000);
 }
 
 async function loginBloomberg(page: Page, email: string, password: string) {

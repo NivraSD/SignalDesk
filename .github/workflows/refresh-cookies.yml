@@ -59,8 +59,15 @@ jobs:
         run: |
           npx tsx scripts/cookie-refresh/refresh-cookies.ts
 
+      - name: Upload debug screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-screenshots
+          path: /tmp/*-error.png
+          if-no-files-found: ignore
+
       - name: Notify on failure
         if: failure()
         run: |
-          echo "Cookie refresh failed! Check the logs for details."
-          # Add Slack/email notification here if needed
+          echo "Cookie refresh failed! Check the logs and debug screenshots for details."
