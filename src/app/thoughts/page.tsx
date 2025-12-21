@@ -85,7 +85,8 @@ export default function ThoughtsPage() {
           fontSize: '48px',
           fontWeight: 400,
           marginBottom: '16px',
-          letterSpacing: '-1px'
+          letterSpacing: '-1px',
+          color: '#c75d3a'
         }}>
           Thoughts
         </h1>
@@ -159,7 +160,8 @@ export default function ThoughtsPage() {
                     fontWeight: 400,
                     marginBottom: '12px',
                     lineHeight: 1.3,
-                    transition: 'color 0.2s'
+                    transition: 'color 0.2s',
+                    color: '#c75d3a'
                   }}>
                     {post.title}
                   </h2>
