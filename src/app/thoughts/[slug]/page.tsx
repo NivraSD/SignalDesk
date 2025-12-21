@@ -263,16 +263,25 @@ export default function BlogPostPage() {
 
         {/* Footer / Sign-off */}
         {post.footer && (
-          <div style={{
-            marginTop: '48px',
-            paddingTop: '32px',
-            borderTop: '1px solid rgba(255,255,255,0.08)',
-            color: 'var(--grey-400)',
-            fontSize: '16px',
-            lineHeight: 1.7
-          }}
-            dangerouslySetInnerHTML={{ __html: post.footer }}
-          />
+          <>
+            <style>{`
+              .blog-footer a { color: #c75d3a !important; text-decoration: underline; }
+            `}</style>
+            <div
+              className="blog-footer"
+              style={{
+                marginTop: '48px',
+                paddingTop: '32px',
+                borderTop: '1px solid rgba(255,255,255,0.08)',
+                color: 'var(--grey-300)',
+                fontSize: '18px',
+                lineHeight: 1.8,
+                letterSpacing: '0.01em',
+                whiteSpace: 'pre-wrap'
+              }}
+              dangerouslySetInnerHTML={{ __html: post.footer }}
+            />
+          </>
         )}
 
         {/* Back Link */}
