@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, Fragment } from 'react'
+import { useState, useEffect, Fragment, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   BarChart3,
@@ -2655,8 +2655,97 @@ function BlogView({
     content: '',
     author_name: 'Nivria Team',
     tags: '',
+    featured_image_url: '',
     published: false
   })
+  const editorRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [uploadingImage, setUploadingImage] = useState(false)
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploadingImage(true)
+    try {
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
+      const filePath = `blog/${fileName}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('public-assets')
+        .upload(filePath, file, { cacheControl: '3600', upsert: false })
+
+      if (uploadError) throw uploadError
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('public-assets')
+        .getPublicUrl(filePath)
+
+      setFormData(prev => ({ ...prev, featured_image_url: publicUrl }))
+    } catch (error) {
+      console.error('Upload failed:', error)
+      alert('Failed to upload image')
+    } finally {
+      setUploadingImage(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  // Save current selection before button click steals focus
+  const saveSelection = () => {
+    const selection = window.getSelection()
+    if (selection && selection.rangeCount > 0) {
+      return selection.getRangeAt(0).cloneRange()
+    }
+    return null
+  }
+
+  // Restore selection
+  const restoreSelection = (range: Range | null) => {
+    if (range) {
+      const selection = window.getSelection()
+      if (selection) {
+        selection.removeAllRanges()
+        selection.addRange(range)
+      }
+    }
+  }
+
+  const execFormat = (command: string, value?: string) => {
+    // Save selection before the button click moves focus
+    const savedRange = saveSelection()
+
+    // Focus the editor
+    if (editorRef.current) {
+      editorRef.current.focus()
+    }
+
+    // Restore selection
+    restoreSelection(savedRange)
+
+    // Execute command
+    document.execCommand(command, false, value)
+
+    // Update content state
+    if (editorRef.current) {
+      setFormData(prev => ({ ...prev, content: editorRef.current?.innerHTML || '' }))
+    }
+  }
+
+  const insertLink = () => {
+    const url = prompt('Enter URL:')
+    if (url) {
+      execFormat('createLink', url)
+    }
+  }
+
+  const insertImage = () => {
+    const url = prompt('Enter image URL:')
+    if (url) {
+      execFormat('insertImage', url)
+    }
+  }
 
   const resetForm = () => {
     setFormData({
@@ -2666,6 +2755,7 @@ function BlogView({
       content: '',
       author_name: 'Nivria Team',
       tags: '',
+      featured_image_url: '',
       published: false
     })
     setEditingPost(null)
@@ -2681,10 +2771,22 @@ function BlogView({
         content: post.content || '',
         author_name: post.author_name || 'Nivria Team',
         tags: (post.tags || []).join(', '),
+        featured_image_url: post.featured_image_url || '',
         published: post.published || false
       })
+      // Set editor content after it mounts
+      setTimeout(() => {
+        if (editorRef.current) {
+          editorRef.current.innerHTML = post.content || ''
+        }
+      }, 0)
     } else {
       resetForm()
+      setTimeout(() => {
+        if (editorRef.current) {
+          editorRef.current.innerHTML = ''
+        }
+      }, 0)
     }
     setShowEditor(true)
   }
@@ -2706,13 +2808,17 @@ function BlogView({
         .map(t => t.trim())
         .filter(t => t.length > 0)
 
+      // Get content from contentEditable div
+      const contentHtml = editorRef.current?.innerHTML || formData.content
+
       const postData = {
         title: formData.title,
         slug: formData.slug || generateSlug(formData.title),
         excerpt: formData.excerpt || null,
-        content: formData.content,
+        content: contentHtml,
         author_name: formData.author_name,
         tags: tagsArray,
+        featured_image_url: formData.featured_image_url || null,
         published: formData.published,
         published_at: formData.published ? new Date().toISOString() : null
       }
@@ -2827,13 +2933,133 @@ function BlogView({
                 />
               </div>
               <div>
+                <label className="block text-sm text-[#9e9e9e] mb-2">Featured Image</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={formData.featured_image_url}
+                    onChange={(e) => setFormData({ ...formData, featured_image_url: e.target.value })}
+                    className="flex-1 px-4 py-3 bg-[#0d0d0d] border border-[#2e2e2e] rounded-lg text-white focus:outline-none focus:border-[#c75d3a]"
+                    placeholder="Paste URL or upload image..."
+                  />
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingImage}
+                    className="px-4 py-3 bg-[#2e2e2e] hover:bg-[#3d3d3d] rounded-lg text-sm text-white transition-colors disabled:opacity-50 whitespace-nowrap"
+                  >
+                    {uploadingImage ? 'Uploading...' : 'Upload'}
+                  </button>
+                </div>
+                {formData.featured_image_url && (
+                  <div className="mt-2 relative">
+                    <img
+                      src={formData.featured_image_url}
+                      alt="Preview"
+                      className="max-h-32 rounded-lg border border-[#2e2e2e]"
+                      onError={(e) => (e.currentTarget.style.display = 'none')}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, featured_image_url: '' })}
+                      className="absolute top-1 right-1 p-1 bg-red-500/80 hover:bg-red-500 rounded-full text-white"
+                    >
+                      <XCircle className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+              <div>
                 <label className="block text-sm text-[#9e9e9e] mb-2">Content</label>
-                <textarea
-                  value={formData.content}
-                  onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                  rows={12}
-                  className="w-full px-4 py-3 bg-[#0d0d0d] border border-[#2e2e2e] rounded-lg text-white focus:outline-none focus:border-[#c75d3a] resize-none font-mono text-sm"
-                  placeholder="Write your post content here... Supports **bold**, *italic*, ## headers, and [links](url)"
+                {/* WYSIWYG Toolbar */}
+                <div className="flex items-center gap-1 p-2 bg-[#0d0d0d] border border-[#2e2e2e] rounded-t-lg border-b-0">
+                  <button
+                    type="button"
+                    onMouseDown={(e) => { e.preventDefault(); execFormat('bold'); }}
+                    className="px-3 py-1.5 bg-[#1a1a1a] hover:bg-[#2e2e2e] rounded text-sm text-white font-bold transition-colors"
+                    title="Bold"
+                  >
+                    B
+                  </button>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => { e.preventDefault(); execFormat('italic'); }}
+                    className="px-3 py-1.5 bg-[#1a1a1a] hover:bg-[#2e2e2e] rounded text-sm text-white italic transition-colors"
+                    title="Italic"
+                  >
+                    I
+                  </button>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => { e.preventDefault(); execFormat('underline'); }}
+                    className="px-3 py-1.5 bg-[#1a1a1a] hover:bg-[#2e2e2e] rounded text-sm text-white underline transition-colors"
+                    title="Underline"
+                  >
+                    U
+                  </button>
+                  <div className="w-px h-6 bg-[#2e2e2e] mx-1" />
+                  <button
+                    type="button"
+                    onMouseDown={(e) => { e.preventDefault(); insertLink(); }}
+                    className="px-3 py-1.5 bg-[#1a1a1a] hover:bg-[#2e2e2e] rounded text-sm text-white transition-colors"
+                    title="Insert Link"
+                  >
+                    Link
+                  </button>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => { e.preventDefault(); insertImage(); }}
+                    className="px-3 py-1.5 bg-[#1a1a1a] hover:bg-[#2e2e2e] rounded text-sm text-white transition-colors"
+                    title="Insert Image"
+                  >
+                    Image
+                  </button>
+                  <div className="w-px h-6 bg-[#2e2e2e] mx-1" />
+                  <button
+                    type="button"
+                    onMouseDown={(e) => { e.preventDefault(); execFormat('formatBlock', '<h2>'); }}
+                    className="px-3 py-1.5 bg-[#1a1a1a] hover:bg-[#2e2e2e] rounded text-sm text-white transition-colors"
+                    title="Heading"
+                  >
+                    H2
+                  </button>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => { e.preventDefault(); execFormat('insertUnorderedList'); }}
+                    className="px-3 py-1.5 bg-[#1a1a1a] hover:bg-[#2e2e2e] rounded text-sm text-white transition-colors"
+                    title="Bullet List"
+                  >
+                    List
+                  </button>
+                  <span className="ml-auto text-xs text-[#757575]">
+                    WYSIWYG Editor
+                  </span>
+                </div>
+                {/* ContentEditable WYSIWYG Editor */}
+                <div
+                  ref={editorRef}
+                  contentEditable
+                  onInput={() => {
+                    if (editorRef.current) {
+                      setFormData(prev => ({ ...prev, content: editorRef.current?.innerHTML || '' }))
+                    }
+                  }}
+                  onPaste={(e) => {
+                    e.preventDefault()
+                    // Get plain text to strip Word formatting
+                    const text = e.clipboardData.getData('text/plain')
+                    // Insert as plain text
+                    document.execCommand('insertText', false, text)
+                  }}
+                  className="w-full min-h-[300px] px-4 py-3 bg-[#0d0d0d] border border-[#2e2e2e] rounded-b-lg text-white focus:outline-none focus:border-[#c75d3a] overflow-y-auto prose prose-invert max-w-none"
+                  style={{ whiteSpace: 'pre-wrap' }}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
