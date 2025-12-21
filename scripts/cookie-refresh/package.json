@@ -1,0 +1,16 @@
+{
+  "name": "cookie-refresh",
+  "version": "1.0.0",
+  "description": "Automated cookie refresh for premium news sources",
+  "scripts": {
+    "refresh": "ts-node refresh-cookies.ts"
+  },
+  "dependencies": {
+    "playwright": "^1.40.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.0.0"
+  }
+}
