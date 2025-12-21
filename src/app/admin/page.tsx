@@ -3043,6 +3043,12 @@ function BlogView({
                   </span>
                 </div>
                 {/* ContentEditable WYSIWYG Editor */}
+                <style>{`
+                  .blog-editor h2 { color: #c75d3a !important; font-size: 24px; font-weight: 600; margin: 16px 0 8px; }
+                  .blog-editor h3 { color: #c75d3a !important; font-size: 20px; font-weight: 600; margin: 12px 0 6px; }
+                  .blog-editor a { color: #c75d3a !important; text-decoration: underline; }
+                  .blog-editor img { max-width: 100%; height: auto; margin: 16px 0; border-radius: 8px; }
+                `}</style>
                 <div
                   ref={editorRef}
                   contentEditable
@@ -3058,7 +3064,7 @@ function BlogView({
                     // Insert as plain text
                     document.execCommand('insertText', false, text)
                   }}
-                  className="w-full min-h-[300px] px-4 py-3 bg-[#0d0d0d] border border-[#2e2e2e] rounded-b-lg text-white focus:outline-none focus:border-[#c75d3a] overflow-y-auto prose prose-invert max-w-none"
+                  className="blog-editor w-full min-h-[300px] px-4 py-3 bg-[#0d0d0d] border border-[#2e2e2e] rounded-b-lg text-white focus:outline-none focus:border-[#c75d3a] overflow-y-auto prose prose-invert max-w-none"
                   style={{ whiteSpace: 'pre-wrap' }}
                 />
               </div>
