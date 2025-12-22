@@ -1,10 +1,10 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { FileText, X as CloseIcon, Users, Shield, MessageSquare, AlertTriangle, CheckCircle, Package, Circle, ExternalLink } from 'lucide-react'
+import { FileText, X as CloseIcon, Users, Shield, MessageSquare, AlertTriangle, CheckCircle, Package, Circle, ExternalLink, Pencil, Plus, Trash2, Save } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { useAppStore } from '@/stores/useAppStore'
-import { fetchMemoryVaultContent } from '@/lib/memoryVaultAPI'
+import { fetchMemoryVaultContent, saveToMemoryVault } from '@/lib/memoryVaultAPI'
 
 interface CrisisPlanViewerProps {
   onClose: () => void
@@ -24,6 +24,13 @@ export default function CrisisPlanViewer({ onClose, plan: providedPlan, embedded
   const [loading, setLoading] = useState(!providedPlan)
   const [activeTab, setActiveTab] = useState('overview')
   const [draftedComms, setDraftedComms] = useState<DraftedComm[]>([])
+
+  // Edit state
+  const [editingScenario, setEditingScenario] = useState<number | null>(null)
+  const [editingTeamMember, setEditingTeamMember] = useState<number | null>(null)
+  const [editingStakeholder, setEditingStakeholder] = useState<number | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [hasChanges, setHasChanges] = useState(false)
 
   useEffect(() => {
     if (!providedPlan && organization) {
@@ -94,6 +101,119 @@ export default function CrisisPlanViewer({ onClose, plan: providedPlan, embedded
     } finally {
       setLoading(false)
     }
+  }
+
+  // Save plan to Memory Vault
+  const savePlan = async () => {
+    if (!organization?.id || !plan) return
+    setSaving(true)
+    try {
+      await saveToMemoryVault({
+        organization_id: organization.id,
+        content_type: 'crisis-plan',
+        title: `Crisis Management Plan - ${plan.industry || 'Updated'}`,
+        content: JSON.stringify(plan),
+        metadata: {
+          industry: plan.industry,
+          generatedDate: plan.generatedDate,
+          lastModified: new Date().toISOString()
+        }
+      })
+      setHasChanges(false)
+    } catch (err) {
+      console.error('Save plan error:', err)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // Update scenario
+  const updateScenario = (idx: number, field: string, value: any) => {
+    const newScenarios = [...(plan.scenarios || [])]
+    newScenarios[idx] = { ...newScenarios[idx], [field]: value }
+    setPlan({ ...plan, scenarios: newScenarios })
+    setHasChanges(true)
+  }
+
+  // Delete scenario
+  const deleteScenario = (idx: number) => {
+    const newScenarios = plan.scenarios?.filter((_: any, i: number) => i !== idx) || []
+    setPlan({ ...plan, scenarios: newScenarios })
+    setHasChanges(true)
+    setEditingScenario(null)
+  }
+
+  // Add new scenario
+  const addScenario = () => {
+    const newScenario = {
+      title: 'New Scenario',
+      description: '',
+      likelihood: 'Medium',
+      impact: 'Moderate',
+      isUniversal: false
+    }
+    setPlan({ ...plan, scenarios: [...(plan.scenarios || []), newScenario] })
+    setHasChanges(true)
+    setEditingScenario((plan.scenarios?.length || 0))
+  }
+
+  // Update team member
+  const updateTeamMember = (idx: number, field: string, value: any) => {
+    const newTeam = [...(plan.crisisTeam || [])]
+    newTeam[idx] = { ...newTeam[idx], [field]: value }
+    setPlan({ ...plan, crisisTeam: newTeam })
+    setHasChanges(true)
+  }
+
+  // Delete team member
+  const deleteTeamMember = (idx: number) => {
+    const newTeam = plan.crisisTeam?.filter((_: any, i: number) => i !== idx) || []
+    setPlan({ ...plan, crisisTeam: newTeam })
+    setHasChanges(true)
+    setEditingTeamMember(null)
+  }
+
+  // Add new team member
+  const addTeamMember = () => {
+    const newMember = {
+      role: 'New Role',
+      title: '',
+      name: '',
+      contact: '',
+      responsibilities: []
+    }
+    setPlan({ ...plan, crisisTeam: [...(plan.crisisTeam || []), newMember] })
+    setHasChanges(true)
+    setEditingTeamMember((plan.crisisTeam?.length || 0))
+  }
+
+  // Update stakeholder
+  const updateStakeholder = (idx: number, field: string, value: any) => {
+    const newStakeholders = [...(plan.stakeholders || [])]
+    newStakeholders[idx] = { ...newStakeholders[idx], [field]: value }
+    setPlan({ ...plan, stakeholders: newStakeholders })
+    setHasChanges(true)
+  }
+
+  // Delete stakeholder
+  const deleteStakeholder = (idx: number) => {
+    const newStakeholders = plan.stakeholders?.filter((_: any, i: number) => i !== idx) || []
+    setPlan({ ...plan, stakeholders: newStakeholders })
+    setHasChanges(true)
+    setEditingStakeholder(null)
+  }
+
+  // Add new stakeholder
+  const addStakeholder = () => {
+    const newStakeholder = {
+      name: 'New Stakeholder',
+      description: '',
+      impactLevel: 'Medium',
+      concerns: []
+    }
+    setPlan({ ...plan, stakeholders: [...(plan.stakeholders || []), newStakeholder] })
+    setHasChanges(true)
+    setEditingStakeholder((plan.stakeholders?.length || 0))
   }
 
   if (loading) {
@@ -251,33 +371,126 @@ export default function CrisisPlanViewer({ onClose, plan: providedPlan, embedded
           <div className="space-y-4">
             {plan.scenarios?.map((scenario: any, idx: number) => (
               <div key={idx} className="bg-zinc-800 border border-zinc-700 rounded-xl p-6">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-bold text-white mb-2" style={{ fontFamily: 'var(--font-display)' }}>{scenario.title}</h3>
-                    <p className="text-[var(--grey-300)] mb-3">{scenario.description}</p>
+                {editingScenario === idx ? (
+                  // Edit mode
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-xs text-[var(--grey-500)] mb-1 block">Title</label>
+                      <input
+                        type="text"
+                        value={scenario.title}
+                        onChange={(e) => updateScenario(idx, 'title', e.target.value)}
+                        className="w-full bg-zinc-900 border border-zinc-600 rounded-lg px-3 py-2 text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-[var(--grey-500)] mb-1 block">Description</label>
+                      <textarea
+                        value={scenario.description}
+                        onChange={(e) => updateScenario(idx, 'description', e.target.value)}
+                        rows={3}
+                        className="w-full bg-zinc-900 border border-zinc-600 rounded-lg px-3 py-2 text-white resize-none"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs text-[var(--grey-500)] mb-1 block">Likelihood</label>
+                        <select
+                          value={scenario.likelihood}
+                          onChange={(e) => updateScenario(idx, 'likelihood', e.target.value)}
+                          className="w-full bg-zinc-900 border border-zinc-600 rounded-lg px-3 py-2 text-white"
+                        >
+                          <option value="Low">Low</option>
+                          <option value="Medium">Medium</option>
+                          <option value="High">High</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs text-[var(--grey-500)] mb-1 block">Impact</label>
+                        <select
+                          value={scenario.impact}
+                          onChange={(e) => updateScenario(idx, 'impact', e.target.value)}
+                          className="w-full bg-zinc-900 border border-zinc-600 rounded-lg px-3 py-2 text-white"
+                        >
+                          <option value="Minor">Minor</option>
+                          <option value="Moderate">Moderate</option>
+                          <option value="Major">Major</option>
+                          <option value="Critical">Critical</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={scenario.isUniversal || false}
+                        onChange={(e) => updateScenario(idx, 'isUniversal', e.target.checked)}
+                        className="w-4 h-4"
+                      />
+                      <label className="text-sm text-[var(--grey-400)]">Universal scenario (applies to any crisis)</label>
+                    </div>
+                    <div className="flex items-center gap-2 pt-2">
+                      <button
+                        onClick={() => setEditingScenario(null)}
+                        className="px-4 py-2 bg-[var(--burnt-orange)] hover:brightness-110 text-white rounded-lg text-sm"
+                      >
+                        Done
+                      </button>
+                      <button
+                        onClick={() => deleteScenario(idx)}
+                        className="px-4 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-sm flex items-center gap-1"
+                      >
+                        <Trash2 className="w-4 h-4" /> Delete
+                      </button>
+                    </div>
                   </div>
-                  {scenario.isUniversal && (
-                    <span className="px-2 py-1 bg-[var(--burnt-orange)]/10 text-[var(--burnt-orange)] border border-[var(--burnt-orange)]/30 rounded text-xs">
-                      Universal
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-[var(--grey-400)]">Likelihood:</span>
-                    <span className={`text-sm font-semibold ${getLikelihoodColor(scenario.likelihood)}`}>
-                      {scenario.likelihood}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-[var(--grey-400)]">Impact:</span>
-                    <span className={`text-xs px-2 py-1 rounded border ${getSeverityColor(scenario.impact)}`}>
-                      {scenario.impact}
-                    </span>
-                  </div>
-                </div>
+                ) : (
+                  // View mode
+                  <>
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-bold text-white mb-2" style={{ fontFamily: 'var(--font-display)' }}>{scenario.title}</h3>
+                        <p className="text-[var(--grey-300)] mb-3">{scenario.description}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {scenario.isUniversal && (
+                          <span className="px-2 py-1 bg-[var(--burnt-orange)]/10 text-[var(--burnt-orange)] border border-[var(--burnt-orange)]/30 rounded text-xs">
+                            Universal
+                          </span>
+                        )}
+                        <button
+                          onClick={() => setEditingScenario(idx)}
+                          className="p-2 text-[var(--grey-400)] hover:text-white hover:bg-zinc-700 rounded-lg transition-colors"
+                          title="Edit scenario"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-[var(--grey-400)]">Likelihood:</span>
+                        <span className={`text-sm font-semibold ${getLikelihoodColor(scenario.likelihood)}`}>
+                          {scenario.likelihood}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-[var(--grey-400)]">Impact:</span>
+                        <span className={`text-xs px-2 py-1 rounded border ${getSeverityColor(scenario.impact)}`}>
+                          {scenario.impact}
+                        </span>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             ))}
+            {/* Add new scenario button */}
+            <button
+              onClick={addScenario}
+              className="w-full py-4 border-2 border-dashed border-zinc-700 hover:border-[var(--burnt-orange)] rounded-xl text-[var(--grey-400)] hover:text-[var(--burnt-orange)] transition-colors flex items-center justify-center gap-2"
+            >
+              <Plus className="w-5 h-5" /> Add Scenario
+            </button>
           </div>
         )}
 
@@ -285,38 +498,129 @@ export default function CrisisPlanViewer({ onClose, plan: providedPlan, embedded
           <div className="space-y-4">
             {plan.crisisTeam?.map((member: any, idx: number) => (
               <div key={idx} className="bg-zinc-800 border border-zinc-700 rounded-xl p-6">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <h3 className="text-lg font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>{member.role}</h3>
-                    <p className="text-sm text-[var(--grey-400)]">{member.title}</p>
-                    {member.name && (
-                      <p className="text-sm text-[var(--burnt-orange)] mt-1">{member.name}</p>
-                    )}
-                    {member.contact && (
-                      <p className="text-sm text-[var(--grey-500)] mt-1">{member.contact}</p>
-                    )}
+                {editingTeamMember === idx ? (
+                  // Edit mode
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs text-[var(--grey-500)] mb-1 block">Role</label>
+                        <input
+                          type="text"
+                          value={member.role}
+                          onChange={(e) => updateTeamMember(idx, 'role', e.target.value)}
+                          className="w-full bg-zinc-900 border border-zinc-600 rounded-lg px-3 py-2 text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-[var(--grey-500)] mb-1 block">Title</label>
+                        <input
+                          type="text"
+                          value={member.title || ''}
+                          onChange={(e) => updateTeamMember(idx, 'title', e.target.value)}
+                          className="w-full bg-zinc-900 border border-zinc-600 rounded-lg px-3 py-2 text-white"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs text-[var(--grey-500)] mb-1 block">Name (assigned person)</label>
+                        <input
+                          type="text"
+                          value={member.name || ''}
+                          onChange={(e) => updateTeamMember(idx, 'name', e.target.value)}
+                          className="w-full bg-zinc-900 border border-zinc-600 rounded-lg px-3 py-2 text-white"
+                          placeholder="Enter name when assigned"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-[var(--grey-500)] mb-1 block">Contact</label>
+                        <input
+                          type="text"
+                          value={member.contact || ''}
+                          onChange={(e) => updateTeamMember(idx, 'contact', e.target.value)}
+                          className="w-full bg-zinc-900 border border-zinc-600 rounded-lg px-3 py-2 text-white"
+                          placeholder="Email or phone"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs text-[var(--grey-500)] mb-1 block">Responsibilities (one per line)</label>
+                      <textarea
+                        value={(member.responsibilities || []).join('\n')}
+                        onChange={(e) => updateTeamMember(idx, 'responsibilities', e.target.value.split('\n').filter(r => r.trim()))}
+                        rows={4}
+                        className="w-full bg-zinc-900 border border-zinc-600 rounded-lg px-3 py-2 text-white resize-none"
+                        placeholder="Enter each responsibility on a new line"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2 pt-2">
+                      <button
+                        onClick={() => setEditingTeamMember(null)}
+                        className="px-4 py-2 bg-[var(--burnt-orange)] hover:brightness-110 text-white rounded-lg text-sm"
+                      >
+                        Done
+                      </button>
+                      <button
+                        onClick={() => deleteTeamMember(idx)}
+                        className="px-4 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-sm flex items-center gap-1"
+                      >
+                        <Trash2 className="w-4 h-4" /> Delete
+                      </button>
+                    </div>
                   </div>
-                  {member.name ? (
-                    <CheckCircle className="w-5 h-5 text-emerald-400" />
-                  ) : (
-                    <AlertTriangle className="w-5 h-5 text-amber-400" />
-                  )}
-                </div>
-                {member.responsibilities?.length > 0 && (
-                  <div className="mt-4">
-                    <div className="text-sm font-semibold text-[var(--grey-400)] mb-2">Responsibilities:</div>
-                    <ul className="space-y-1">
-                      {member.responsibilities.map((resp: string, ridx: number) => (
-                        <li key={ridx} className="text-sm text-[var(--grey-300)] flex items-start gap-2">
-                          <span className="text-[var(--burnt-orange)] mt-1">•</span>
-                          <span>{resp}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                ) : (
+                  // View mode
+                  <>
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <h3 className="text-lg font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>{member.role}</h3>
+                        <p className="text-sm text-[var(--grey-400)]">{member.title}</p>
+                        {member.name && (
+                          <p className="text-sm text-[var(--burnt-orange)] mt-1">{member.name}</p>
+                        )}
+                        {member.contact && (
+                          <p className="text-sm text-[var(--grey-500)] mt-1">{member.contact}</p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {member.name ? (
+                          <CheckCircle className="w-5 h-5 text-emerald-400" />
+                        ) : (
+                          <AlertTriangle className="w-5 h-5 text-amber-400" />
+                        )}
+                        <button
+                          onClick={() => setEditingTeamMember(idx)}
+                          className="p-2 text-[var(--grey-400)] hover:text-white hover:bg-zinc-700 rounded-lg transition-colors"
+                          title="Edit team member"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                    {member.responsibilities?.length > 0 && (
+                      <div className="mt-4">
+                        <div className="text-sm font-semibold text-[var(--grey-400)] mb-2">Responsibilities:</div>
+                        <ul className="space-y-1">
+                          {member.responsibilities.map((resp: string, ridx: number) => (
+                            <li key={ridx} className="text-sm text-[var(--grey-300)] flex items-start gap-2">
+                              <span className="text-[var(--burnt-orange)] mt-1">•</span>
+                              <span>{resp}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             ))}
+            {/* Add new team member button */}
+            <button
+              onClick={addTeamMember}
+              className="w-full py-4 border-2 border-dashed border-zinc-700 hover:border-[var(--burnt-orange)] rounded-xl text-[var(--grey-400)] hover:text-[var(--burnt-orange)] transition-colors flex items-center justify-center gap-2"
+            >
+              <Plus className="w-5 h-5" /> Add Team Member
+            </button>
           </div>
         )}
 
@@ -326,76 +630,155 @@ export default function CrisisPlanViewer({ onClose, plan: providedPlan, embedded
               const commPlan = getCommPlanForStakeholder(stakeholder.name)
               return (
                 <div key={idx} className="bg-zinc-800 border border-zinc-700 rounded-xl p-6">
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <h3 className="text-lg font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>{stakeholder.name}</h3>
-                      <p className="text-sm text-[var(--grey-400)]">{stakeholder.description}</p>
+                  {editingStakeholder === idx ? (
+                    // Edit mode
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-xs text-[var(--grey-500)] mb-1 block">Stakeholder Name</label>
+                        <input
+                          type="text"
+                          value={stakeholder.name}
+                          onChange={(e) => updateStakeholder(idx, 'name', e.target.value)}
+                          className="w-full bg-zinc-900 border border-zinc-600 rounded-lg px-3 py-2 text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-[var(--grey-500)] mb-1 block">Description</label>
+                        <textarea
+                          value={stakeholder.description || ''}
+                          onChange={(e) => updateStakeholder(idx, 'description', e.target.value)}
+                          rows={2}
+                          className="w-full bg-zinc-900 border border-zinc-600 rounded-lg px-3 py-2 text-white resize-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-[var(--grey-500)] mb-1 block">Impact Level</label>
+                        <select
+                          value={stakeholder.impactLevel}
+                          onChange={(e) => updateStakeholder(idx, 'impactLevel', e.target.value)}
+                          className="w-full bg-zinc-900 border border-zinc-600 rounded-lg px-3 py-2 text-white"
+                        >
+                          <option value="Low">Low</option>
+                          <option value="Medium">Medium</option>
+                          <option value="High">High</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs text-[var(--grey-500)] mb-1 block">Primary Concerns (one per line)</label>
+                        <textarea
+                          value={(stakeholder.concerns || []).join('\n')}
+                          onChange={(e) => updateStakeholder(idx, 'concerns', e.target.value.split('\n').filter(c => c.trim()))}
+                          rows={3}
+                          className="w-full bg-zinc-900 border border-zinc-600 rounded-lg px-3 py-2 text-white resize-none"
+                          placeholder="Enter each concern on a new line"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2 pt-2">
+                        <button
+                          onClick={() => setEditingStakeholder(null)}
+                          className="px-4 py-2 bg-[var(--burnt-orange)] hover:brightness-110 text-white rounded-lg text-sm"
+                        >
+                          Done
+                        </button>
+                        <button
+                          onClick={() => deleteStakeholder(idx)}
+                          className="px-4 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-sm flex items-center gap-1"
+                        >
+                          <Trash2 className="w-4 h-4" /> Delete
+                        </button>
+                      </div>
                     </div>
-                    <span className={`text-xs px-2 py-1 rounded border ${
-                      stakeholder.impactLevel === 'High' ? 'text-red-400 bg-red-500/10 border-red-500' :
-                      stakeholder.impactLevel === 'Medium' ? 'text-amber-400 bg-amber-500/10 border-amber-500' :
-                      'text-[var(--burnt-orange)] bg-[var(--burnt-orange)]/10 border-[var(--burnt-orange)]'
-                    }`}>
-                      {stakeholder.impactLevel} Impact
-                    </span>
-                  </div>
-
-                  {/* Concerns */}
-                  {stakeholder.concerns?.length > 0 && (
-                    <div className="mt-4">
-                      <div className="text-sm font-semibold text-[var(--grey-400)] mb-2">Primary Concerns:</div>
-                      <div className="flex flex-wrap gap-2">
-                        {stakeholder.concerns.map((concern: string, cidx: number) => (
-                          <span key={cidx} className="px-2 py-1 bg-zinc-900 text-[var(--grey-300)] text-xs rounded">
-                            {concern}
+                  ) : (
+                    // View mode
+                    <>
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <h3 className="text-lg font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>{stakeholder.name}</h3>
+                          <p className="text-sm text-[var(--grey-400)]">{stakeholder.description}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs px-2 py-1 rounded border ${
+                            stakeholder.impactLevel === 'High' ? 'text-red-400 bg-red-500/10 border-red-500' :
+                            stakeholder.impactLevel === 'Medium' ? 'text-amber-400 bg-amber-500/10 border-amber-500' :
+                            'text-[var(--burnt-orange)] bg-[var(--burnt-orange)]/10 border-[var(--burnt-orange)]'
+                          }`}>
+                            {stakeholder.impactLevel} Impact
                           </span>
-                        ))}
+                          <button
+                            onClick={() => setEditingStakeholder(idx)}
+                            className="p-2 text-[var(--grey-400)] hover:text-white hover:bg-zinc-700 rounded-lg transition-colors"
+                            title="Edit stakeholder"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  )}
 
-                  {/* Communication Approach */}
-                  {commPlan && (
-                    <div className="mt-4 pt-4 border-t border-zinc-700">
-                      <div className="text-sm font-semibold text-[var(--burnt-orange)] mb-3">Communication Approach</div>
-                      <div className="grid grid-cols-2 gap-3 mb-3">
-                        <div>
-                          <div className="text-xs text-[var(--grey-500)]">Primary Channel</div>
-                          <div className="text-sm text-white">{commPlan.primaryChannel}</div>
-                        </div>
-                        <div>
-                          <div className="text-xs text-[var(--grey-500)]">Timing</div>
-                          <div className="text-sm text-white">{commPlan.timing}</div>
-                        </div>
-                        <div>
-                          <div className="text-xs text-[var(--grey-500)]">Spokesperson</div>
-                          <div className="text-sm text-white">{commPlan.spokesperson}</div>
-                        </div>
-                        {commPlan.secondaryChannel && (
-                          <div>
-                            <div className="text-xs text-[var(--grey-500)]">Secondary Channel</div>
-                            <div className="text-sm text-white">{commPlan.secondaryChannel}</div>
-                          </div>
-                        )}
-                      </div>
-                      {commPlan.keyMessages?.length > 0 && (
-                        <div>
-                          <div className="text-xs text-[var(--grey-500)] mb-2">Key Messages:</div>
-                          <ul className="space-y-1">
-                            {commPlan.keyMessages.slice(0, 3).map((message: string, midx: number) => (
-                              <li key={midx} className="text-xs text-[var(--grey-300)] flex items-start gap-2">
-                                <span className="text-[var(--burnt-orange)]">•</span>
-                                <span>{message}</span>
-                              </li>
+                      {/* Concerns */}
+                      {stakeholder.concerns?.length > 0 && (
+                        <div className="mt-4">
+                          <div className="text-sm font-semibold text-[var(--grey-400)] mb-2">Primary Concerns:</div>
+                          <div className="flex flex-wrap gap-2">
+                            {stakeholder.concerns.map((concern: string, cidx: number) => (
+                              <span key={cidx} className="px-2 py-1 bg-zinc-900 text-[var(--grey-300)] text-xs rounded">
+                                {concern}
+                              </span>
                             ))}
-                          </ul>
+                          </div>
                         </div>
                       )}
-                    </div>
+
+                      {/* Communication Approach */}
+                      {commPlan && (
+                        <div className="mt-4 pt-4 border-t border-zinc-700">
+                          <div className="text-sm font-semibold text-[var(--burnt-orange)] mb-3">Communication Approach</div>
+                          <div className="grid grid-cols-2 gap-3 mb-3">
+                            <div>
+                              <div className="text-xs text-[var(--grey-500)]">Primary Channel</div>
+                              <div className="text-sm text-white">{commPlan.primaryChannel}</div>
+                            </div>
+                            <div>
+                              <div className="text-xs text-[var(--grey-500)]">Timing</div>
+                              <div className="text-sm text-white">{commPlan.timing}</div>
+                            </div>
+                            <div>
+                              <div className="text-xs text-[var(--grey-500)]">Spokesperson</div>
+                              <div className="text-sm text-white">{commPlan.spokesperson}</div>
+                            </div>
+                            {commPlan.secondaryChannel && (
+                              <div>
+                                <div className="text-xs text-[var(--grey-500)]">Secondary Channel</div>
+                                <div className="text-sm text-white">{commPlan.secondaryChannel}</div>
+                              </div>
+                            )}
+                          </div>
+                          {commPlan.keyMessages?.length > 0 && (
+                            <div>
+                              <div className="text-xs text-[var(--grey-500)] mb-2">Key Messages:</div>
+                              <ul className="space-y-1">
+                                {commPlan.keyMessages.slice(0, 3).map((message: string, midx: number) => (
+                                  <li key={midx} className="text-xs text-[var(--grey-300)] flex items-start gap-2">
+                                    <span className="text-[var(--burnt-orange)]">•</span>
+                                    <span>{message}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               )
             })}
+            {/* Add new stakeholder button */}
+            <button
+              onClick={addStakeholder}
+              className="w-full py-4 border-2 border-dashed border-zinc-700 hover:border-[var(--burnt-orange)] rounded-xl text-[var(--grey-400)] hover:text-[var(--burnt-orange)] transition-colors flex items-center justify-center gap-2"
+            >
+              <Plus className="w-5 h-5" /> Add Stakeholder
+            </button>
           </div>
         )}
 
@@ -508,13 +891,30 @@ export default function CrisisPlanViewer({ onClose, plan: providedPlan, embedded
         {planContent}
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-zinc-800 flex justify-end shrink-0">
-          <button
-            onClick={onClose}
-            className="px-6 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors"
-          >
-            Close
-          </button>
+        <div className="px-6 py-4 border-t border-zinc-800 flex justify-between items-center shrink-0">
+          <div>
+            {hasChanges && (
+              <span className="text-sm text-amber-400">Unsaved changes</span>
+            )}
+          </div>
+          <div className="flex items-center gap-3">
+            {hasChanges && (
+              <button
+                onClick={savePlan}
+                disabled={saving}
+                className="px-6 py-2 bg-[var(--burnt-orange)] hover:brightness-110 text-white rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50"
+              >
+                <Save className="w-4 h-4" />
+                {saving ? 'Saving...' : 'Save Changes'}
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="px-6 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors"
+            >
+              Close
+            </button>
+          </div>
         </div>
       </div>
     </div>
