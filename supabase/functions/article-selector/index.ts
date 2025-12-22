@@ -1,6 +1,6 @@
-// Article Selector V2 - AI-Powered Relevance
-// Intelligently selects articles based on company profile understanding
-// Uses Claude to score article relevance instead of rigid industry matching
+// Article Selector V3 - Uses target_article_matches
+// Leverages the semantic matching pipeline instead of doing its own source selection
+// Much simpler and more accurate
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -8,11 +8,10 @@ import { corsHeaders } from '../_shared/cors.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')!;
 
 const MAX_ARTICLES = 50; // Final article count to return
-const CANDIDATE_POOL_SIZE = 200; // Fetch more candidates for AI scoring
-const RELEVANCE_THRESHOLD = 45; // Minimum score to include (0-100) - Lowered to capture moderately relevant articles
+const MIN_SIMILARITY_SCORE = 0.35; // Minimum semantic similarity (35%)
+const MAX_PER_SOURCE = 8; // Max articles from any single source for diversity
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -22,229 +21,106 @@ serve(async (req) => {
   try {
     const { organization_id, organization_name } = await req.json();
 
-    console.log('📰 ARTICLE SELECTOR V2 (AI-Powered)');
-    console.log(`   Organization: ${organization_name}`);
+    console.log('📰 ARTICLE SELECTOR V3 (Using target_article_matches)');
+    console.log(`   Organization: ${organization_name || organization_id}`);
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
     // ================================================================
-    // STEP 1: Get full company profile with intelligence context
+    // STEP 1: Get organization ID if only name provided
     // ================================================================
-    // Support both organization_id and organization_name
-    // Prefer organization_name when both are provided (more reliable)
-    let query = supabase.from('organization_profiles').select('*');
+    let orgId = organization_id;
 
-    if (organization_name) {
-      query = query.eq('organization_name', organization_name);
-    } else if (organization_id) {
-      // organization_id can match either the profile's id or organization_id field
-      query = query.or(`id.eq.${organization_id},organization_id.eq.${organization_id}`);
-    } else {
-      throw new Error('Either organization_id or organization_name is required');
+    if (!orgId && organization_name) {
+      const { data: org } = await supabase
+        .from('organization_profiles')
+        .select('organization_id')
+        .eq('organization_name', organization_name)
+        .single();
+
+      orgId = org?.organization_id;
     }
 
-    const { data: org, error: orgError } = await query.single();
-
-    if (orgError || !org) {
-      throw new Error(`Failed to fetch organization: ${orgError?.message}`);
+    if (!orgId) {
+      throw new Error('Could not find organization');
     }
 
-    const profileData = org.profile_data || {};
-    const industry = profileData.industry || org.industry || 'unknown';
-
-    // Extract intelligence context - it may be an object with monitoring_prompt, or a string
-    let intelligenceContext = '';
-    if (profileData.intelligence_context) {
-      if (typeof profileData.intelligence_context === 'string') {
-        intelligenceContext = profileData.intelligence_context;
-      } else if (profileData.intelligence_context.monitoring_prompt) {
-        intelligenceContext = profileData.intelligence_context.monitoring_prompt;
-      }
-    }
-
-    console.log(`   Organization: ${org.organization_name}`);
-    console.log(`   Industry: ${industry}`);
-    console.log(`   Has intelligence context: ${!!intelligenceContext}`);
+    console.log(`   Organization ID: ${orgId}`);
 
     // ================================================================
-    // STEP 2: Get ALL available sources and let Claude select relevant ones
+    // STEP 2: Get matched articles from target_article_matches
     // ================================================================
-    // STRATEGY: Fetch all sources with their industry tags, ask Claude which sources
-    // are relevant for this organization, then get articles from those sources
-
-    // Get all active sources with their industries
-    const { data: allSources } = await supabase
-      .from('source_registry')
-      .select('source_name, tier, industries')
-      .eq('active', true)
-      .order('tier', { ascending: true });
-
-    console.log(`   Found ${allSources?.length || 0} total active sources`);
-
-    // Detect if this is a diversified/conglomerate company
-    const isDiversifiedCompany =
-      /conglomerate|diversified|holding|multi-industry|multiple sectors/i.test(intelligenceContext) ||
-      /conglomerate|diversified|holding/i.test(profileData.description || '') ||
-      ['Mitsui', 'Mitsubishi', 'Sumitomo', 'Berkshire Hathaway', 'General Electric'].some(name =>
-        organization_name?.includes(name)
-      );
-
-    console.log(`   Company type: ${isDiversifiedCompany ? 'DIVERSIFIED/CONGLOMERATE' : 'FOCUSED'}`);
-
-    // Ask Claude to select relevant sources for this organization
-    const sourceSelectionPrompt = `You are selecting news sources for ${organization_name}, a ${industry} company.
-
-ORGANIZATION CONTEXT:
-${intelligenceContext}
-
-COMPANY TYPE: ${isDiversifiedCompany ? 'DIVERSIFIED CONGLOMERATE - operates across multiple industries' : 'FOCUSED - operates in specific industry'}
-
-AVAILABLE SOURCES (${allSources?.length || 0} total):
-${allSources?.map(s => `- ${s.source_name} (Tier ${s.tier}): ${s.industries?.join(', ') || 'general'}`).join('\n')}
-
-Select 15-25 sources that are most relevant for monitoring this organization's competitive landscape and industry.
-
-${isDiversifiedCompany ? `
-PRIORITIZATION (for diversified conglomerate):
-1. Include BOTH Tier 1 general news (Bloomberg, WSJ, Reuters, FT) AND specialist sources
-2. Tier 1 sources are CRITICAL for conglomerates - they cover cross-industry deals, leadership, strategy
-3. Add specialist sources for each major business unit (e.g., logistics, energy, materials, finance)
-4. Conglomerates appear in general business news more than niche industry news
-` : `
-PRIORITIZATION (for focused company):
-1. Sources that cover the organization's industry directly
-2. Prioritize Tier 2/3 specialist sources over Tier 1 general news
-3. Sources that would have information about competitors, industry trends, and market developments
-`}
-
-Respond with ONLY a JSON array of source names:
-["Source Name 1", "Source Name 2", ...]`;
-
-    const sourceSelectionResponse = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        messages: [{
-          role: 'user',
-          content: sourceSelectionPrompt
-        }]
-      })
-    });
-
-    const sourceSelectionResult = await sourceSelectionResponse.json();
-
-    // Error handling for Claude API response
-    if (!sourceSelectionResult.content || !sourceSelectionResult.content[0]) {
-      console.error('❌ Claude API error:', JSON.stringify(sourceSelectionResult, null, 2));
-      throw new Error(`Claude API error: ${sourceSelectionResult.error?.message || 'Invalid response structure'}`);
-    }
-
-    const selectedSourcesText = sourceSelectionResult.content[0].text;
-    console.log('📝 Claude response:', selectedSourcesText.substring(0, 500));
-
-    const selectedSources = JSON.parse(selectedSourcesText.match(/\[.*\]/s)?.[0] || '[]');
-
-    console.log(`   Claude selected ${selectedSources.length} relevant sources`);
-
-    // Fetch articles from selected sources WITH SOURCE DIVERSITY
-    // Strategy: Get articles distributed across sources, not all from 1-2 sources
-    const articlesPerSource = Math.ceil(CANDIDATE_POOL_SIZE / Math.max(selectedSources.length, 10));
-    console.log(`   Fetching up to ${articlesPerSource} articles per source for diversity`);
-
-    // Calculate 24 hours ago for filtering
+    // This table already has semantic matches from the embedding pipeline!
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    console.log(`   Filtering articles from last 24 hours (since ${twentyFourHoursAgo})`);
 
-    const articlesBySource = await Promise.all(
-      selectedSources.map(async (sourceName: string) => {
-        const { data } = await supabase
-          .from('raw_articles')
-          .select(`
-            id,
-            source_id,
-            source_name,
-            url,
-            title,
-            description,
-            published_at,
-            created_at,
-            full_content,
-            raw_metadata,
-            source_registry!inner(tier, industries)
-          `)
-          .eq('scrape_status', 'completed')
-          .eq('source_name', sourceName)
-          // CRITICAL FIX: Filter by published_at (when article was published), not created_at
-          .gte('published_at', twentyFourHoursAgo)
-          // Accept articles with OR without full_content (preview-only articles still valuable)
-          .order('published_at', { ascending: false })  // Order by actual publication date
-          .limit(articlesPerSource);
+    const { data: matches, error: matchError } = await supabase
+      .from('target_article_matches')
+      .select(`
+        id,
+        similarity_score,
+        signal_category,
+        signal_strength,
+        match_reason,
+        article_id,
+        raw_articles!inner (
+          id,
+          url,
+          title,
+          description,
+          source_name,
+          published_at,
+          full_content,
+          content_length,
+          scrape_status
+        )
+      `)
+      .eq('organization_id', orgId)
+      .gte('matched_at', twentyFourHoursAgo)
+      .gte('similarity_score', MIN_SIMILARITY_SCORE)
+      .order('similarity_score', { ascending: false })
+      .limit(200); // Get pool of candidates
 
-        return data || [];
-      })
-    );
+    if (matchError) {
+      console.error('Error fetching matches:', matchError);
+      throw new Error(`Failed to fetch matches: ${matchError.message}`);
+    }
 
-    // Flatten and sort by recency (using published_at, not created_at)
-    const selectedArticles = articlesBySource
-      .flat()
-      .sort((a, b) => new Date(b.published_at || b.created_at).getTime() - new Date(a.published_at || a.created_at).getTime())
-      .slice(0, CANDIDATE_POOL_SIZE);
+    console.log(`   Found ${matches?.length || 0} semantic matches from last 24h`);
 
-    console.log(`   Fetched ${selectedArticles?.length || 0} articles from selected sources`);
-    const candidateArticles = selectedArticles || [];
-
-    if (!candidateArticles || candidateArticles.length === 0) {
+    if (!matches || matches.length === 0) {
       return new Response(JSON.stringify({
         success: true,
-        organization_id,
+        organization_id: orgId,
         organization_name,
         total_articles: 0,
         articles: [],
         sources: [],
         selected_at: new Date().toISOString(),
-        selection_method: 'v2_ai_relevance_scoring'
+        selection_method: 'v3_semantic_matches'
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
     // ================================================================
-    // STEP 3: AI-powered relevance scoring
+    // STEP 3: Quality validation - filter out garbage content
     // ================================================================
-    console.log(`   Scoring articles with Claude...`);
+    const qualityValidatedMatches = matches.filter(match => {
+      const article = match.raw_articles;
+      if (!article) return false;
 
-    const scoredArticles = await scoreArticlesWithAI(
-      candidateArticles,
-      organization_name || org.organization_name,
-      industry,
-      intelligenceContext,
-      profileData
-    );
+      // Only include completed scrapes
+      if (article.scrape_status !== 'completed') {
+        console.log(`   ⚠️  Skipping non-completed: "${article.title?.substring(0, 50)}..."`);
+        return false;
+      }
 
-    // Filter by threshold and take top N
-    const relevantArticles = scoredArticles
-      .filter(a => a.relevance_score >= RELEVANCE_THRESHOLD)
-      .slice(0, MAX_ARTICLES);
-
-    console.log(`   Articles above threshold (${RELEVANCE_THRESHOLD}): ${relevantArticles.length}`);
-
-    // ================================================================
-    // QUALITY VALIDATION: Filter out garbage content
-    // ================================================================
-    const qualityValidatedArticles = relevantArticles.filter(article => {
       const content = article.full_content || '';
       const hasDescription = article.description && article.description.length > 50;
 
-      // ACCEPT preview-only articles (headline + description) - valuable for intelligence
+      // Accept preview-only articles (headline + description) - still valuable
       if (content.length < 100 && hasDescription) {
-        console.log(`   ✅ Preview-only: "${article.title?.substring(0, 60)}..." (using title+description)`);
-        return true; // Keep preview-only articles
+        return true;
       }
 
       // For full content articles, validate quality
@@ -259,7 +135,7 @@ Respond with ONLY a JSON array of source names:
 
         const hasPaywall = paywallPatterns.some(p => p.test(content.substring(0, 2000)));
 
-        // Check for cookie wall (short content dominated by cookie text)
+        // Check for cookie wall
         const cookieIndicators = [
           /we use cookies/i,
           /cookie (policy|preferences)/i,
@@ -269,50 +145,36 @@ Respond with ONLY a JSON array of source names:
         const cookieCount = cookieIndicators.filter(p => p.test(content.substring(0, 2000))).length;
         const isCookieWall = content.length < 2000 && cookieCount >= 2;
 
-        // Check for navigation/UI garbage
+        // Check for structure (real articles have paragraphs)
         const hasStructure = (content.match(/\n\n/g) || []).length >= 3;
 
-        // Check for identical content (same length across multiple articles suggests paywall)
-        const contentLength = content.length;
-        const isDuplicateLength = contentLength > 0 && contentLength === 8713; // GreenTech Media paywall
-
-        const isValid = !hasPaywall && !isCookieWall && hasStructure && !isDuplicateLength && contentLength > 500;
+        const isValid = !hasPaywall && !isCookieWall && hasStructure && content.length > 500;
 
         if (!isValid) {
-          console.log(`   ⚠️  Rejected low-quality: "${article.title?.substring(0, 60)}..." (${content.length} chars, paywall: ${hasPaywall}, cookie: ${isCookieWall}, structure: ${hasStructure})`);
+          console.log(`   ⚠️  Rejected: "${article.title?.substring(0, 50)}..." (paywall: ${hasPaywall}, cookie: ${isCookieWall})`);
         }
 
         return isValid;
       }
 
       // Reject if no content AND no description
-      if (!hasDescription) {
-        console.log(`   ❌ No content or description: "${article.title?.substring(0, 60)}..."`);
-        return false;
-      }
-
-      return true;
+      return hasDescription;
     });
 
-    const rejectedCount = relevantArticles.length - qualityValidatedArticles.length;
-    console.log(`   Quality validation: ${qualityValidatedArticles.length} passed, ${rejectedCount} rejected`);
+    console.log(`   Quality validated: ${qualityValidatedMatches.length} articles`);
 
     // ================================================================
-    // SOURCE DIVERSITY ENFORCEMENT
+    // STEP 4: Source diversity enforcement
     // ================================================================
-    // Ensure we don't have all articles from just 1-2 sources
-    // Strategy: Take top articles but cap per source to force diversity
-    const MAX_PER_SOURCE = 8; // Max articles from any single source
-    const sourceArticleCounts = new Map();
-    const diverseArticles = [];
+    const sourceArticleCounts = new Map<string, number>();
+    const diverseArticles: typeof qualityValidatedMatches = [];
 
-    // First pass: Take top articles up to per-source limit
-    for (const article of qualityValidatedArticles) {
-      const source = article.source_name;
+    for (const match of qualityValidatedMatches) {
+      const source = match.raw_articles?.source_name || 'Unknown';
       const currentCount = sourceArticleCounts.get(source) || 0;
 
       if (currentCount < MAX_PER_SOURCE) {
-        diverseArticles.push(article);
+        diverseArticles.push(match);
         sourceArticleCounts.set(source, currentCount + 1);
       }
 
@@ -320,26 +182,27 @@ Respond with ONLY a JSON array of source names:
     }
 
     // Log source distribution
-    const sourceDistribution = {};
-    diverseArticles.forEach(a => {
-      sourceDistribution[a.source_name] = (sourceDistribution[a.source_name] || 0) + 1;
+    const sourceDistribution: Record<string, number> = {};
+    diverseArticles.forEach(m => {
+      const src = m.raw_articles?.source_name || 'Unknown';
+      sourceDistribution[src] = (sourceDistribution[src] || 0) + 1;
     });
-    console.log(`   Source diversity enforced:`, sourceDistribution);
-    console.log(`   Selected: ${diverseArticles.length} articles from ${Object.keys(sourceDistribution).length} sources`);
+    console.log(`   Source diversity:`, sourceDistribution);
 
     // ================================================================
-    // STEP 4: Format for enrichment pipeline
+    // STEP 5: Format for enrichment pipeline
     // ================================================================
-    const formattedArticles = diverseArticles.map(article => ({
-      url: article.url,
-      title: article.title,
-      description: article.description || '',
-      source: article.source_name,
-      published_at: article.published_at || article.created_at, // Fallback to scrape date if no pub date
-      full_content: article.full_content,
-      pr_score: article.relevance_score, // Use AI score as relevance
-      source_tier: article.source_registry?.tier || 2,
-      relevance_reasoning: article.relevance_reasoning
+    const formattedArticles = diverseArticles.map(match => ({
+      url: match.raw_articles?.url,
+      title: match.raw_articles?.title,
+      description: match.raw_articles?.description || '',
+      source: match.raw_articles?.source_name,
+      published_at: match.raw_articles?.published_at,
+      full_content: match.raw_articles?.full_content,
+      pr_score: Math.round(match.similarity_score * 100), // Convert to 0-100
+      relevance_reasoning: match.match_reason,
+      signal_category: match.signal_category,
+      signal_strength: match.signal_strength
     }));
 
     // ================================================================
@@ -347,28 +210,27 @@ Respond with ONLY a JSON array of source names:
     // ================================================================
     const response = {
       success: true,
-      organization_id,
-      organization_name: organization_name || org.organization_name,
-      industry: industry,
+      organization_id: orgId,
+      organization_name,
 
       // Statistics
-      total_articles: relevantArticles.length,
-      candidates_scored: candidateArticles.length,
+      total_articles: formattedArticles.length,
+      candidates_from_matches: matches.length,
+      quality_filtered: qualityValidatedMatches.length,
       avg_score: Math.round(
-        relevantArticles.reduce((sum, a) => sum + a.relevance_score, 0) /
-        (relevantArticles.length || 1)
+        diverseArticles.reduce((sum, m) => sum + m.similarity_score * 100, 0) /
+        (diverseArticles.length || 1)
       ),
 
       // Articles for enrichment
       articles: formattedArticles,
 
       // Source breakdown
-      sources: [...new Set(formattedArticles.map(a => a.source))],
+      sources: Object.keys(sourceDistribution),
 
       // Metadata
       selected_at: new Date().toISOString(),
-      selection_method: 'v2_ai_relevance_scoring',
-      scoring_model: 'claude-3-haiku-20240307'
+      selection_method: 'v3_semantic_matches'
     };
 
     console.log('✅ Article selection complete');
@@ -391,188 +253,3 @@ Respond with ONLY a JSON array of source names:
     });
   }
 });
-
-// ============================================================================
-// AI Relevance Scoring with Claude Haiku (fast + cheap)
-// ============================================================================
-async function scoreArticlesWithAI(
-  articles: any[],
-  organization_name: string,
-  industry: string,
-  intelligence_context: string,
-  company_profile: any
-): Promise<any[]> {
-
-  // Build COMPREHENSIVE strategic context for Claude - use ALL available profile data
-  const competitors = [
-    ...(company_profile.competition?.direct_competitors || []),
-    ...(company_profile.competition?.indirect_competitors || []),
-    ...(company_profile.competition?.emerging_threats || [])
-  ].filter(Boolean);
-
-  const stakeholders = [
-    ...(company_profile.stakeholders?.major_customers || []),
-    ...(company_profile.stakeholders?.key_partners || []),
-    ...(company_profile.stakeholders?.key_analysts || []),
-    ...(company_profile.stakeholders?.regulators || [])
-  ].filter(Boolean);
-
-  const topics = company_profile.topics || [];
-  const strategicContext = company_profile.strategic_context || '';
-  const forwardLooking = company_profile.forward_looking || '';
-  const serviceLines = company_profile.service_lines || [];
-
-  // Extract from nested company_profile object if it exists
-  const nestedProfile = company_profile.company_profile || {};
-  const productLines = nestedProfile.product_lines || company_profile.product_lines || [];
-  const markets = nestedProfile.key_markets || company_profile.market || company_profile.markets || [];
-  const strategicGoals = nestedProfile.strategic_goals || company_profile.strategic_goals || company_profile.goals || [];
-  const businessModel = nestedProfile.business_model || '';
-
-  const companyContext = `
-Company: ${organization_name}
-Industry: ${industry}
-${company_profile.description ? `\nBusiness: ${company_profile.description}` : ''}
-${businessModel ? `\nBusiness Model: ${businessModel}` : ''}
-
-${(serviceLines.length > 0 || productLines.length > 0) ? `\nService/Product Lines:
-${[...serviceLines, ...productLines].slice(0, 10).map(p => `  - ${p}`).join('\n')}` : ''}
-
-${Array.isArray(markets) && markets.length > 0 ? `\nKey Markets:
-${markets.slice(0, 8).map(m => `  - ${m}`).join('\n')}` : ''}
-
-${competitors.length > 0 ? `\nKey Competitors to Monitor:
-${competitors.slice(0, 15).map(c => `  - ${c}`).join('\n')}` : ''}
-
-${stakeholders.length > 0 ? `\nKey Stakeholders (Clients, Partners, Analysts):
-${stakeholders.slice(0, 10).map(s => `  - ${s}`).join('\n')}` : ''}
-
-${topics.length > 0 ? `\nStrategic Topics of Interest:
-${topics.slice(0, 10).map(t => `  - ${t}`).join('\n')}` : ''}
-
-${Array.isArray(strategicGoals) && strategicGoals.length > 0 ? `\nStrategic Goals:
-${strategicGoals.slice(0, 5).map(g => typeof g === 'object' ? `  - ${g.goal}: ${g.description}` : `  - ${g}`).join('\n')}` : ''}
-
-${strategicContext ? `\nStrategic Context: ${strategicContext}` : ''}
-${forwardLooking ? `\nFuture Outlook: ${forwardLooking}` : ''}
-${intelligence_context ? `\nIntelligence Focus: ${intelligence_context}` : ''}
-`.trim();
-
-  // Batch score articles (process in chunks of 20 for efficiency)
-  const BATCH_SIZE = 20;
-  const scoredArticles: any[] = [];
-
-  for (let i = 0; i < articles.length; i += BATCH_SIZE) {
-    const batch = articles.slice(i, i + BATCH_SIZE);
-
-    // Format articles for Claude
-    const articlesForScoring = batch.map((article, idx) => ({
-      id: idx,
-      source: article.source_name,
-      source_industries: article.source_registry?.industries || [],
-      title: article.title,
-      description: article.description || ''
-    }));
-
-    const prompt = `You are selecting articles for ${organization_name}'s executive intelligence briefing.
-
-PURPOSE: These articles will be analyzed and synthesized into an executive report that helps leadership understand:
-- What competitors are doing (moves, wins, strategy changes)
-- Industry trends and best practices they should know about
-- Market developments that create opportunities or threats
-
-${intelligence_context}
-
-ARTICLES TO SCORE:
-${JSON.stringify(articlesForScoring, null, 2)}
-
-SCORING RULES:
-- 90-100: Direct competitor intelligence (the companies/people listed above doing something)
-- 75-89: Industry trends and best practices relevant to ${industry}
-- 50-74: Market context that provides strategic backdrop
-- 0-49: Generic business news executives don't need
-
-Score each article. Respond with ONLY valid JSON:
-[
-  {"id": 0, "score": 85, "reasoning": "Brief explanation"},
-  ...
-]`;
-
-    try {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': ANTHROPIC_API_KEY,
-          'anthropic-version': '2023-06-01'
-        },
-        body: JSON.stringify({
-          model: 'claude-3-5-haiku-20241022', // Fast + cheap for scoring
-          max_tokens: 2000,
-          temperature: 0,
-          messages: [{
-            role: 'user',
-            content: prompt
-          }]
-        })
-      });
-
-      if (!response.ok) {
-        const errorBody = await response.text();
-        console.error(`Claude API error (${response.status}):`, errorBody);
-        throw new Error(`Claude API error: ${response.status} - ${errorBody}`);
-      }
-
-      const data = await response.json();
-      const scoresText = data.content[0].text;
-
-      // Parse JSON response
-      const scores = JSON.parse(scoresText);
-
-      // Map scores back to articles
-      for (const scoreData of scores) {
-        const article = batch[scoreData.id];
-        scoredArticles.push({
-          ...article,
-          relevance_score: scoreData.score,
-          relevance_reasoning: scoreData.reasoning
-        });
-      }
-
-    } catch (error) {
-      console.error(`⚠️ Failed to score batch ${i}-${i + BATCH_SIZE}:`, error);
-      console.log('   Using rule-based fallback scoring for this batch');
-
-      // Fallback: Use simple keyword matching for industry relevance
-      batch.forEach(article => {
-        const articleText = `${article.title} ${article.description}`.toLowerCase();
-        const industryLower = industry.toLowerCase();
-        const sourceIndustries = article.source_registry?.industries || [];
-
-        let score = 50; // Default medium relevance
-        let reasoning = 'AI scoring unavailable, used keyword matching';
-
-        // Boost score if source is tagged with matching industry
-        if (sourceIndustries.some((ind: string) => ind.toLowerCase().includes(industryLower))) {
-          score = 75;
-          reasoning = `Source covers ${industry} industry`;
-        }
-
-        // Boost score if article text mentions industry
-        if (articleText.includes(industryLower)) {
-          score = Math.min(score + 15, 90);
-          reasoning = `Article mentions ${industry}`;
-        }
-
-        scoredArticles.push({
-          ...article,
-          relevance_score: score,
-          relevance_reasoning: reasoning
-        });
-      });
-    }
-  }
-
-  // Sort by relevance score (highest first)
-  return scoredArticles.sort((a, b) => b.relevance_score - a.relevance_score);
-}

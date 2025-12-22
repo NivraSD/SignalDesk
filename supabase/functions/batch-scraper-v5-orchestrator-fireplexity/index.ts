@@ -1,6 +1,6 @@
-// Batch Scraper V5 - Firecrawl Map Orchestrator
-// Discovers article URLs using Firecrawl Map API for premium sources
-// Stores URLs in raw_articles for later content extraction
+// Batch Scraper V5 - Firecrawl CRAWL Orchestrator
+// Uses Firecrawl Crawl API to discover AND scrape articles in one pass
+// Much more reliable than Map + separate scrape approach
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -11,10 +11,11 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const FIRECRAWL_API_KEY = Deno.env.get('FIRECRAWL_API_KEY') || 'fc-3048810124b640eb99293880a4ab25d0';
 
 // Timeouts and limits
-const API_TIMEOUT_MS = 20000; // 20 seconds per API call
-const MAX_SOURCES_DEFAULT = 15; // Reduced from 50 to avoid Edge Function timeout
-const STUCK_RUN_THRESHOLD_MINUTES = 10; // Mark runs older than this as failed
-const MAX_ARTICLE_AGE_DAYS = 14; // Skip articles with old dates in URL
+const CRAWL_TIMEOUT_MS = 60000; // 60 seconds max wait per crawl
+const POLL_INTERVAL_MS = 3000; // Check every 3 seconds
+const MAX_SOURCES_DEFAULT = 5; // Fewer sources since crawl is more thorough
+const MAX_PAGES_PER_SOURCE = 25; // Limit pages per crawl for cost control
+const MAX_ARTICLE_AGE_DAYS = 14; // Skip articles with old dates
 
 interface Source {
   id: string;
@@ -27,6 +28,12 @@ interface Source {
   last_successful_scrape?: string;
 }
 
+interface CrawlResult {
+  markdown: string;
+  metadata: Record<string, any>;
+  sourceURL: string;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -36,54 +43,49 @@ serve(async (req) => {
   const runId = crypto.randomUUID();
   const startTime = Date.now();
 
-  console.log('🔥 BATCH SCRAPER V5 - FIRECRAWL MAP ORCHESTRATOR');
+  console.log('🔥 BATCH SCRAPER V5 - FIRECRAWL CRAWL ORCHESTRATOR');
   console.log(`   Run ID: ${runId}`);
-  console.log(`   Time: ${new Date().toISOString()}\n`);
+  console.log(`   Time: ${new Date().toISOString()}`);
+  console.log(`   Using CRAWL API (discover + scrape in one pass)\n`);
 
   try {
     const body = await req.json().catch(() => ({}));
     const maxSources = body.max_sources || MAX_SOURCES_DEFAULT;
-
-    // CLEANUP: Mark stuck "running" fireplexity runs as failed
-    const stuckThreshold = new Date(Date.now() - STUCK_RUN_THRESHOLD_MINUTES * 60 * 1000).toISOString();
-    const { data: stuckRuns } = await supabase
-      .from('batch_scrape_runs')
-      .update({
-        status: 'failed',
-        error_message: 'Timed out (cleanup by new run)'
-      })
-      .eq('run_type', 'firecrawl_discovery')
-      .eq('status', 'running')
-      .lt('started_at', stuckThreshold)
-      .select('id');
-
-    if (stuckRuns && stuckRuns.length > 0) {
-      console.log(`🧹 Cleaned up ${stuckRuns.length} stuck firecrawl runs`);
-    }
+    const testSourceIds = body.test_source_ids || null; // For testing specific sources
 
     // Create batch run record
     await supabase
       .from('batch_scrape_runs')
       .insert({
         id: runId,
-        run_type: 'firecrawl_discovery',
+        run_type: 'firecrawl_crawl',
         status: 'running',
         triggered_by: req.headers.get('user-agent') || 'manual'
       });
 
-    // Get active Firecrawl sources, prioritize least recently scraped
-    const { data: sources, error: sourcesError } = await supabase
+    // Get sources to crawl
+    let sourcesQuery = supabase
       .from('source_registry')
       .select('*')
       .eq('active', true)
-      .eq('monitor_method', 'firecrawl')
-      .order('last_successful_scrape', { ascending: true, nullsFirst: true })
-      .order('tier', { ascending: true })
-      .limit(maxSources);
+      .eq('monitor_method', 'firecrawl');
+
+    if (testSourceIds && testSourceIds.length > 0) {
+      // Testing specific sources
+      sourcesQuery = sourcesQuery.in('id', testSourceIds);
+    } else {
+      // Normal operation: prioritize least recently scraped
+      sourcesQuery = sourcesQuery
+        .order('last_successful_scrape', { ascending: true, nullsFirst: true })
+        .order('tier', { ascending: true })
+        .limit(maxSources);
+    }
+
+    const { data: sources, error: sourcesError } = await sourcesQuery;
 
     if (sourcesError) throw new Error(`Failed to load sources: ${sourcesError.message}`);
 
-    console.log(`📊 Found ${sources?.length || 0} active Firecrawl sources\\n`);
+    console.log(`📊 Processing ${sources?.length || 0} sources with Crawl API\n`);
 
     let totalArticles = 0;
     let newArticles = 0;
@@ -91,70 +93,49 @@ serve(async (req) => {
     let sourcesSuccessful = 0;
     let sourcesFailed = 0;
 
-    console.log('🔥 Discovering articles via Firecrawl Map...\\n');
+    // Process sources sequentially (crawl is async but we poll each to completion)
+    for (const source of sources || []) {
+      console.log(`\n🌐 Crawling: ${source.source_name}`);
+      console.log(`   URL: ${source.source_url}`);
 
-    // Process sources in parallel batches for speed
-    const BATCH_SIZE = 5; // Process 5 sources concurrently
-    const allSources = sources || [];
+      try {
+        const result = await crawlSource(source, supabase);
 
-    for (let i = 0; i < allSources.length; i += BATCH_SIZE) {
-      const batch = allSources.slice(i, i + BATCH_SIZE);
-      console.log(`   Batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(allSources.length / BATCH_SIZE)}: Processing ${batch.length} sources...`);
+        totalArticles += result.articles;
+        newArticles += result.newCount;
+        duplicateArticles += result.duplicateCount;
+        sourcesSuccessful++;
 
-      // Process batch in parallel
-      const batchResults = await Promise.allSettled(
-        batch.map(source => discoverViaFirecrawlMap(source, supabase))
-      );
+        console.log(`   ✅ Success: ${result.newCount} new, ${result.duplicateCount} duplicates, ${result.withContent} with content`);
 
-      // Aggregate results
-      for (let j = 0; j < batchResults.length; j++) {
-        const result = batchResults[j];
-        const source = batch[j];
+        // Update source success
+        await supabase
+          .from('source_registry')
+          .update({
+            last_successful_scrape: new Date().toISOString(),
+            consecutive_failures: 0
+          })
+          .eq('id', source.id);
 
-        if (result.status === 'fulfilled') {
-          totalArticles += result.value.articles;
-          newArticles += result.value.newCount;
-          duplicateArticles += result.value.duplicateCount;
-          sourcesSuccessful++;
+      } catch (error: any) {
+        console.error(`   ❌ Failed: ${error.message}`);
+        sourcesFailed++;
 
-          console.log(`   ✅ ${source.source_name}: ${result.value.newCount} new, ${result.value.duplicateCount} duplicates`);
-
-          // Update last successful scrape and reset consecutive failures
-          await supabase
-            .from('source_registry')
-            .update({
-              last_successful_scrape: new Date().toISOString(),
-              consecutive_failures: 0
-            })
-            .eq('id', source.id);
-
-        } else {
-          console.error(`   ❌ ${source.source_name}: ${result.reason?.message || 'Unknown error'}`);
-          sourcesFailed++;
-
-          // Increment consecutive failures and update last_successful_scrape
-          // This prevents infinite retries of failing sources
-          await supabase
-            .from('source_registry')
-            .update({
-              consecutive_failures: (source.consecutive_failures || 0) + 1,
-              // Still update timestamp so we don't keep retrying immediately
-              last_successful_scrape: new Date().toISOString()
-            })
-            .eq('id', source.id);
-        }
-      }
-
-      // Small delay between batches to avoid rate limiting
-      if (i + BATCH_SIZE < allSources.length) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Increment failure count
+        await supabase
+          .from('source_registry')
+          .update({
+            consecutive_failures: (source.consecutive_failures || 0) + 1,
+            last_successful_scrape: new Date().toISOString() // Still update to prevent immediate retry
+          })
+          .eq('id', source.id);
       }
     }
 
     const duration = Math.round((Date.now() - startTime) / 1000);
 
     // Update batch run record
-    const { error: updateError } = await supabase
+    await supabase
       .from('batch_scrape_runs')
       .update({
         status: 'completed',
@@ -167,31 +148,30 @@ serve(async (req) => {
       })
       .eq('id', runId);
 
-    if (updateError) {
-      console.error('Failed to update batch run:', updateError);
-    }
-
     const summary = {
       sources_processed: sourcesSuccessful + sourcesFailed,
+      sources_successful: sourcesSuccessful,
       sources_failed: sourcesFailed,
       articles_discovered: totalArticles,
-      new_urls: newArticles,
+      new_articles: newArticles,
       duplicates_skipped: duplicateArticles,
       duration_seconds: duration
     };
 
-    console.log('\\n📊 Summary:');
-    console.log(`   Sources processed: ${summary.sources_processed}`);
-    console.log(`   New URLs: ${summary.new_urls}`);
+    console.log('\n' + '='.repeat(60));
+    console.log('📊 CRAWL COMPLETE');
+    console.log(`   Sources: ${summary.sources_successful}/${summary.sources_processed} successful`);
+    console.log(`   New articles: ${summary.new_articles}`);
     console.log(`   Duplicates: ${summary.duplicates_skipped}`);
     console.log(`   Duration: ${duration}s`);
+    console.log('='.repeat(60));
 
     return new Response(
       JSON.stringify({ success: true, run_id: runId, summary }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Fatal error:', error);
 
     await supabase
@@ -207,163 +187,297 @@ serve(async (req) => {
 });
 
 // ============================================================================
-// Helper: Fetch with timeout using AbortController
+// Crawl a single source using Firecrawl Crawl API
 // ============================================================================
-async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number): Promise<Response> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
-  try {
-    const response = await fetch(url, {
-      ...options,
-      signal: controller.signal
-    });
-    return response;
-  } finally {
-    clearTimeout(timeoutId);
-  }
-}
-
-// ============================================================================
-// Helper: Discover articles via Firecrawl Map API
-// ============================================================================
-async function discoverViaFirecrawlMap(source: Source, supabase: any): Promise<{ articles: number, newCount: number, duplicateCount: number }> {
-  // Use Firecrawl Map to discover article URLs on the site (with timeout)
-  let mapResponse: Response;
-  try {
-    mapResponse = await fetchWithTimeout('https://api.firecrawl.dev/v1/map', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${FIRECRAWL_API_KEY}`,
-        'Content-Type': 'application/json'
+async function crawlSource(source: Source, supabase: any): Promise<{
+  articles: number;
+  newCount: number;
+  duplicateCount: number;
+  withContent: number;
+}> {
+  // Step 1: Start the crawl job
+  const crawlResponse = await fetch('https://api.firecrawl.dev/v1/crawl', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${FIRECRAWL_API_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      url: source.source_url,
+      limit: MAX_PAGES_PER_SOURCE,
+      scrapeOptions: {
+        formats: ['markdown'],
+        onlyMainContent: true,
+        waitFor: 2000, // Wait 2s for JS to render
       },
-      body: JSON.stringify({
-        url: source.source_url,
-        search: 'article news',  // Search for article-related pages
-        limit: 50,  // Limit URLs per source for cost control
-        includeSubdomains: false
-      })
-    }, API_TIMEOUT_MS);
-  } catch (error) {
-    if (error.name === 'AbortError') {
-      throw new Error(`API timeout after ${API_TIMEOUT_MS / 1000}s`);
-    }
-    throw error;
-  }
-
-  if (!mapResponse.ok) {
-    const errorText = await mapResponse.text();
-    throw new Error(`Firecrawl Map API error (${mapResponse.status}): ${errorText}`);
-  }
-
-  const mapData = await mapResponse.json();
-  const discoveredLinks = mapData.links || [];
-
-  if (discoveredLinks.length === 0) {
-    throw new Error('No links discovered');
-  }
-
-  // Filter URLs to find actual content (not category/profile pages)
-  // More permissive approach: if Firecrawl returned it, it's likely an article
-  // Only exclude obvious non-article pages
-  const articles = discoveredLinks
-    .filter((link: string | {url: string}) => {
-      const url = typeof link === 'string' ? link : link.url;
-      const lowerUrl = url.toLowerCase();
-
-      // Skip the exact source URL (the page we started from)
-      if (lowerUrl === source.source_url.toLowerCase()) {
-        return false;
-      }
-
-      // DATE FILTERING: Skip URLs with old dates in them
-      const dateInUrl = extractDateFromUrl(url);
-      if (dateInUrl) {
-        const cutoffDate = new Date();
-        cutoffDate.setDate(cutoffDate.getDate() - MAX_ARTICLE_AGE_DAYS);
-        if (dateInUrl < cutoffDate) {
-          return false; // URL date is too old
-        }
-      }
-
-      // Exclude obvious non-article pages
-      const isExcluded =
-        lowerUrl.includes('/category') ||
-        lowerUrl.includes('/tag/') ||
-        lowerUrl.includes('/author/') ||
-        lowerUrl.includes('/topics/') ||
-        lowerUrl.includes('/login') ||
-        lowerUrl.includes('/subscribe') ||
-        lowerUrl.includes('/signup') ||
-        lowerUrl.includes('/search') ||
-        lowerUrl.includes('/contact') ||
-        lowerUrl.includes('/about') ||
-        lowerUrl.includes('/privacy') ||
-        lowerUrl.includes('/terms') ||
-        lowerUrl.includes('/faq') ||
-        lowerUrl.includes('.pdf') ||
-        lowerUrl.includes('.xml') ||
-        lowerUrl.endsWith('/news') ||
-        lowerUrl.endsWith('/latest') ||
-        lowerUrl.endsWith('/archive') ||
-        // Skip if URL is just the domain or has only 1-2 path segments
-        (new URL(url).pathname.split('/').filter(Boolean).length < 2);
-
-      return !isExcluded;
+      excludePaths: [
+        '/category/*',
+        '/tag/*',
+        '/author/*',
+        '/login',
+        '/subscribe',
+        '/signup',
+        '/search',
+        '/contact',
+        '/about',
+        '/privacy',
+        '/terms',
+      ]
     })
-    .map((link: string | {url: string, title?: string}) => {
-      if (typeof link === 'string') {
-        return { url: link, title: link.split('/').pop()?.replace(/-/g, ' ') || 'Untitled' };
+  });
+
+  if (!crawlResponse.ok) {
+    const errorText = await crawlResponse.text();
+    throw new Error(`Crawl API error (${crawlResponse.status}): ${errorText}`);
+  }
+
+  const crawlData = await crawlResponse.json();
+  const crawlId = crawlData.id;
+
+  if (!crawlId) {
+    throw new Error('No crawl ID returned');
+  }
+
+  console.log(`   Started crawl job: ${crawlId}`);
+
+  // Step 2: Poll for completion
+  const startPoll = Date.now();
+  let crawlResult: any = null;
+
+  while (Date.now() - startPoll < CRAWL_TIMEOUT_MS) {
+    await new Promise(r => setTimeout(r, POLL_INTERVAL_MS));
+
+    const statusResponse = await fetch(`https://api.firecrawl.dev/v1/crawl/${crawlId}`, {
+      headers: {
+        'Authorization': `Bearer ${FIRECRAWL_API_KEY}`
       }
-      return { url: link.url, title: link.title || link.url.split('/').pop()?.replace(/-/g, ' ') || 'Untitled' };
     });
 
-  if (articles.length === 0) {
-    throw new Error('No valid articles after filtering');
+    if (!statusResponse.ok) {
+      throw new Error(`Status check failed: ${statusResponse.status}`);
+    }
+
+    const status = await statusResponse.json();
+
+    if (status.status === 'completed') {
+      crawlResult = status;
+      console.log(`   Crawl completed: ${status.total || 0} pages found`);
+      break;
+    } else if (status.status === 'failed') {
+      throw new Error(`Crawl failed: ${status.error || 'Unknown error'}`);
+    }
+
+    // Still running
+    console.log(`   Crawling... (${status.completed || 0}/${status.total || '?'} pages)`);
   }
+
+  if (!crawlResult) {
+    throw new Error(`Crawl timed out after ${CRAWL_TIMEOUT_MS / 1000}s`);
+  }
+
+  // Step 3: Process results
+  const pages = crawlResult.data || [];
+
+  if (pages.length === 0) {
+    throw new Error('No pages returned from crawl');
+  }
+
+  // Filter to actual articles (not category pages, etc.)
+  const articles = pages.filter((page: CrawlResult) => {
+    const url = page.sourceURL || page.metadata?.sourceURL || '';
+    return isValidArticleUrl(url, source.source_url);
+  });
+
+  console.log(`   Filtered to ${articles.length} valid articles from ${pages.length} pages`);
 
   // Check for duplicates
-  const urls = articles.map(a => a.url);
+  const urls = articles.map((a: CrawlResult) => a.sourceURL || a.metadata?.sourceURL);
   const { data: existingUrls } = await supabase
     .from('raw_articles')
     .select('url')
     .in('url', urls);
 
   const existingUrlSet = new Set((existingUrls || []).map((r: any) => r.url));
-  const newArticles = articles.filter(a => !existingUrlSet.has(a.url));
+  const newArticles = articles.filter((a: CrawlResult) => {
+    const url = a.sourceURL || a.metadata?.sourceURL;
+    return !existingUrlSet.has(url);
+  });
 
-  // Insert new articles
+  // Insert new articles WITH content already scraped
+  let withContentCount = 0;
+
   if (newArticles.length > 0) {
-    const records = newArticles.map(article => ({
-      source_id: source.id,
-      source_name: source.source_name,
-      url: article.url,
-      title: article.title,
-      scrape_status: 'pending'
-    }));
+    const records = newArticles.map((article: CrawlResult) => {
+      const url = article.sourceURL || article.metadata?.sourceURL || '';
+      const metadata = article.metadata || {};
+      const markdown = article.markdown || '';
 
-    await supabase.from('raw_articles').insert(records);
+      // Extract published date
+      let publishedDate = null;
+      const dateStr = metadata.publishedTime ||
+                      metadata['article:published_time'] ||
+                      metadata.datePublished ||
+                      extractDateFromUrl(url);
+
+      if (dateStr) {
+        try {
+          const date = new Date(dateStr);
+          // Check if too old
+          const cutoff = new Date();
+          cutoff.setDate(cutoff.getDate() - MAX_ARTICLE_AGE_DAYS);
+          if (date >= cutoff) {
+            publishedDate = date.toISOString();
+          }
+        } catch {}
+      }
+
+      // Determine title
+      const title = metadata.title ||
+                    metadata.ogTitle ||
+                    metadata['og:title'] ||
+                    url.split('/').pop()?.replace(/-/g, ' ') ||
+                    'Untitled';
+
+      const hasContent = markdown.length > 300;
+      if (hasContent) withContentCount++;
+
+      return {
+        source_id: source.id,
+        source_name: source.source_name,
+        url: url,
+        title: title,
+        full_content: hasContent ? markdown : null,
+        content_length: markdown.length,
+        published_at: publishedDate,
+        scrape_status: hasContent ? 'completed' : 'pending', // If no content, will retry with worker
+        scraped_at: hasContent ? new Date().toISOString() : null,
+        raw_metadata: {
+          ...metadata,
+          scraping_method: 'firecrawl_crawl',
+          crawl_id: crawlId
+        }
+      };
+    });
+
+    // Filter out articles without URLs
+    const validRecords = records.filter(r => r.url && r.url.length > 0);
+
+    if (validRecords.length > 0) {
+      const { error: insertError } = await supabase
+        .from('raw_articles')
+        .insert(validRecords);
+
+      if (insertError) {
+        console.error(`   Insert error: ${insertError.message}`);
+      }
+    }
   }
 
   return {
     articles: articles.length,
     newCount: newArticles.length,
-    duplicateCount: articles.length - newArticles.length
+    duplicateCount: articles.length - newArticles.length,
+    withContent: withContentCount
   };
+}
+
+// ============================================================================
+// Helper: Check if URL is a valid article (not category/landing page)
+// ============================================================================
+function isValidArticleUrl(url: string, sourceUrl: string): boolean {
+  const lowerUrl = url.toLowerCase();
+
+  let sourceDomain: string;
+  let pathname: string;
+
+  try {
+    sourceDomain = new URL(sourceUrl).hostname;
+    const urlObj = new URL(url);
+    if (urlObj.hostname !== sourceDomain) {
+      return false;
+    }
+    pathname = urlObj.pathname;
+  } catch {
+    return false;
+  }
+
+  // Skip the exact source URL
+  if (lowerUrl === sourceUrl.toLowerCase()) {
+    return false;
+  }
+
+  // Skip obvious non-article pages
+  const excludePatterns = [
+    '/category/',
+    '/categories/',
+    '/tag/',
+    '/tags/',
+    '/author/',
+    '/authors/',
+    '/topics/',
+    '/topic/',
+    '/login',
+    '/subscribe',
+    '/signup',
+    '/search',
+    '/contact',
+    '/about-us',
+    '/privacy-policy',
+    '/terms',
+    '/faq',
+    '.pdf',
+    '.xml',
+    '/feed/',
+    '/rss/',
+  ];
+
+  for (const pattern of excludePatterns) {
+    if (lowerUrl.includes(pattern)) {
+      return false;
+    }
+  }
+
+  // Check for article-like patterns that strongly indicate an article
+  // 1. Date in URL path (e.g., /2025/12/ or -2025-12 at end)
+  const hasDateInPath = /\/\d{4}\/\d{2}/.test(pathname);
+  const hasDateSuffix = /-\d{4}-\d{2}$/.test(pathname); // e.g., headline-2025-12
+
+  // 2. Article slug pattern (multiple hyphenated words)
+  const pathSegments = pathname.split('/').filter(Boolean);
+  const lastSegment = pathSegments[pathSegments.length - 1] || '';
+  const isArticleSlug = lastSegment.split('-').length >= 4; // At least 4 words hyphenated
+
+  // If it has date pattern or looks like an article slug, accept it
+  if (hasDateInPath || hasDateSuffix || isArticleSlug) {
+    return true;
+  }
+
+  // For paths without clear article indicators, require more structure
+  // Skip if only 1 segment and doesn't look like an article
+  if (pathSegments.length < 2) {
+    return false;
+  }
+
+  // Skip very short paths that are likely category pages
+  // e.g., /news, /tech, /latest (without article content)
+  if (pathSegments.length === 1 && lastSegment.length < 20) {
+    return false;
+  }
+
+  return true;
 }
 
 // ============================================================================
 // Helper: Extract date from URL patterns
 // ============================================================================
-function extractDateFromUrl(url: string): Date | null {
+function extractDateFromUrl(url: string): string | null {
   // Pattern 1: /YYYY/MM/DD/ or /YYYY/MM/
   const slashPattern = url.match(/\/(\d{4})\/(\d{2})(?:\/(\d{2}))?/);
   if (slashPattern) {
     const [, year, month, day] = slashPattern;
     const yearNum = parseInt(year);
-    // Sanity check: year should be reasonable (2000-2030)
     if (yearNum >= 2000 && yearNum <= 2030) {
-      return new Date(yearNum, parseInt(month) - 1, day ? parseInt(day) : 1);
+      return new Date(yearNum, parseInt(month) - 1, day ? parseInt(day) : 1).toISOString();
     }
   }
 
@@ -371,19 +485,7 @@ function extractDateFromUrl(url: string): Date | null {
   const dashPattern = url.match(/(20\d{2})-(\d{2})-(\d{2})/);
   if (dashPattern) {
     const [, year, month, day] = dashPattern;
-    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-  }
-
-  // Pattern 3: -YYYYMMDD (some sites use this)
-  const compactPattern = url.match(/-?(20\d{2})(\d{2})(\d{2})(?:[^0-9]|$)/);
-  if (compactPattern) {
-    const [, year, month, day] = compactPattern;
-    const monthNum = parseInt(month);
-    const dayNum = parseInt(day);
-    // Sanity check: valid month and day
-    if (monthNum >= 1 && monthNum <= 12 && dayNum >= 1 && dayNum <= 31) {
-      return new Date(parseInt(year), monthNum - 1, dayNum);
-    }
+    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day)).toISOString();
   }
 
   return null;

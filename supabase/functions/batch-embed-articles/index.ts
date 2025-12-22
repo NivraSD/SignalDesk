@@ -140,21 +140,24 @@ serve(async (req) => {
       batchNumber++;
 
       // Get articles that need embedding
-      // Use scraped_at (not created_at) so re-scraped articles get re-embedded
       // Include any article with embeddable content:
       // - completed: has full_content (best)
       // - metadata_only: may have description
-      // - pending: may have description from RSS
+      // - pending: may have description from RSS (IMPORTANT: don't wait for scraping!)
+      // - failed: still has title/description from RSS
+      //
+      // CRITICAL: Include articles with null scraped_at (brand new from RSS)
+      // Use created_at as fallback for time filtering
       const { data: articles, error: fetchError } = await supabase
         .from('raw_articles')
-        .select('id, title, description, source_name, full_content, extracted_metadata')
+        .select('id, title, description, source_name, full_content, extracted_metadata, created_at, scraped_at')
         .is('embedding', null)
-        .in('scrape_status', ['completed', 'metadata_only', 'pending'])
-        .gte('scraped_at', sinceTime)
+        .in('scrape_status', ['completed', 'metadata_only', 'pending', 'failed'])
+        .gte('created_at', sinceTime)  // Use created_at so we don't miss un-scraped articles
         .not('title', 'is', null)
         // Prioritize completed articles (have full_content) first
         .order('scrape_status', { ascending: true })  // 'completed' comes before 'pending' alphabetically
-        .order('scraped_at', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(batchSize);
 
       if (fetchError) {

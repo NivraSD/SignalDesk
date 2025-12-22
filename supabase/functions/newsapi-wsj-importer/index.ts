@@ -49,6 +49,11 @@ serve(async (req) => {
     let imported = 0
     let duplicates = 0
     let errors = 0
+    let skippedOld = 0
+
+    // Date filter: only import articles from last 2 days
+    const twoDaysAgo = new Date()
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2)
 
     for (const article of articles) {
       // Skip articles without title
@@ -56,6 +61,15 @@ serve(async (req) => {
 
       // Skip "removed" articles
       if (article.title === '[Removed]') continue
+
+      // Skip articles older than 2 days
+      if (article.publishedAt) {
+        const pubDate = new Date(article.publishedAt)
+        if (pubDate < twoDaysAgo) {
+          skippedOld++
+          continue
+        }
+      }
 
       const payload = {
         title: article.title,
@@ -93,6 +107,7 @@ serve(async (req) => {
       total_fetched: articles.length,
       imported: imported,
       duplicates: duplicates,
+      skipped_old: skippedOld,
       errors: errors
     }
 

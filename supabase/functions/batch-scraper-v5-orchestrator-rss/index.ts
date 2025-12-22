@@ -108,8 +108,9 @@ serve(async (req) => {
 
         const existingUrlSet = new Set((existingUrls || []).map(r => r.url));
 
-        // Insert new articles (filter out articles older than 7 days)
-        const maxAgeDays = 7;
+        // Insert new articles (filter out articles older than 2 days)
+        // Tightened from 7 days to prevent old articles polluting the pipeline
+        const maxAgeDays = 2;
         const cutoffDate = new Date();
         cutoffDate.setDate(cutoffDate.getDate() - maxAgeDays);
 

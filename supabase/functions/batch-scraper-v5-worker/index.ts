@@ -10,7 +10,7 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 const BATCH_SIZE = 10; // Reduced from 25 to avoid timeouts with slow sites (WSJ, etc) - mcp-firecrawl scrapes 5 in parallel
-const MAX_ARTICLE_AGE_DAYS = 14; // Reject articles older than this
+const MAX_ARTICLE_AGE_DAYS = 3; // Reject articles older than this
 const MAX_DRAIN_TIME_MS = 120 * 1000; // 120 seconds max when draining (Edge Function timeout is 150s)
 const DRAIN_BATCH_DELAY_MS = 500; // 0.5 seconds between batches when draining
 
@@ -319,23 +319,31 @@ serve(async (req) => {
             }
           }
 
+          // Build update object - only include published_at if we extracted one
+          // This preserves existing RSS-provided dates when scraping doesn't extract a date
+          const updateData: Record<string, any> = {
+            full_content: result.data.markdown,
+            scrape_status: 'completed',
+            scraped_at: new Date().toISOString(),
+            content_length: result.data.markdown.length,
+            raw_metadata: {
+              ...(result.data.metadata || {}),
+              scraping_method: 'mcp_firecrawl',
+              cached: result.cached || false,
+              quality_check: qualityCheck,
+              paywall: isPaywall || false,
+              limited_content: !qualityCheck.is_valid
+            }
+          };
+
+          // Only update published_at if we extracted a valid date
+          if (publishedDate) {
+            updateData.published_at = publishedDate;
+          }
+
           const { error: updateError } = await supabase
             .from('raw_articles')
-            .update({
-              full_content: result.data.markdown,
-              scrape_status: 'completed',
-              scraped_at: new Date().toISOString(),
-              published_at: publishedDate, // Extract from metadata and convert to ISO
-              content_length: result.data.markdown.length,
-              raw_metadata: {
-                ...(result.data.metadata || {}),
-                scraping_method: 'mcp_firecrawl',
-                cached: result.cached || false,
-                quality_check: qualityCheck,
-                paywall: isPaywall || false,
-                limited_content: !qualityCheck.is_valid
-              }
-            })
+            .update(updateData)
             .eq('id', articleId);
 
           if (!updateError) {
@@ -347,11 +355,15 @@ serve(async (req) => {
           }
         } else {
           // Failed to scrape - increment attempts
+          // Find the original article to get current attempt count
+          const originalArticle = queuedArticles.find(a => a.id === articleId);
+          const currentAttempts = originalArticle?.scrape_attempts || 0;
+
           const { error: updateError } = await supabase
             .from('raw_articles')
             .update({
               scrape_status: 'failed',
-              scrape_attempts: supabase.rpc('increment_scrape_attempts', { article_id: articleId }),
+              scrape_attempts: currentAttempts + 1,
               processing_error: result.error || 'Unknown scraping error'
             })
             .eq('id', articleId);
@@ -359,6 +371,8 @@ serve(async (req) => {
           if (!updateError) {
             failedCount++;
             console.log(`   ❌ ${result.metadata?.title?.substring(0, 50) || result.url.substring(0, 50)}: ${result.error}`);
+          } else {
+            console.error(`   ❌ DB update failed for ${articleId}: ${updateError.message}`);
           }
         }
       }

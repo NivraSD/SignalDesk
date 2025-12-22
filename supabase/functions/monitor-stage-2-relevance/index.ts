@@ -74,6 +74,12 @@ serve(async (req) => {
     const extractionFocus = intelligenceContext?.extraction_focus || [];
     const relevanceCriteria = intelligenceContext?.relevance_criteria || {};
 
+    // STRATEGIC CONTEXT: Org-specific scoring configuration
+    const scoringWeights = intelligenceContext?.scoring_weights || {};
+    const monitoringPrompt = intelligenceContext?.monitoring_prompt || '';
+    const analysisPerspective = intelligenceContext?.analysis_perspective || '';
+    const competitiveDynamics = profileData?.competition?.competitive_dynamics || '';
+
     // NEW: Extract stakeholders for relevance matching
     const stakeholders = profileData?.stakeholders || {};
     const regulators = stakeholders?.regulators || [];
@@ -97,12 +103,26 @@ serve(async (req) => {
       'businesswire', 'business wire', 'cision', 'accesswire', 'einewswire'
     ]);
 
+    // Sources that frequently have date issues or low quality - block entirely
+    const ALWAYS_BLOCK_SOURCES = new Set([
+      'bcg', 'boston consulting group',  // Old archive articles with fake dates
+      'mckinsey', 'mckinsey & company',  // Similar archive issues
+      'bain', 'bain & company',          // Similar archive issues
+      'the financial brand',             // RSS returns category pages with fake future dates (2026)
+      'finextra',                        // Low quality fintech spam
+      'pitchbook',                       // Paywalled/low value
+      'ai news'                          // Low quality AI aggregator
+    ]);
+
     console.log(`   Industry: ${industry}`);
     console.log(`   Source tiers: ${criticalSources.size} critical, ${highSources.size} high, ${blockedSources.size} blocked`);
     console.log(`   Competitors: ${competitors.length}`);
     console.log(`   Regulators: ${regulators.length}`);
     console.log(`   Key Questions: ${keyQuestions.length}`);
     console.log(`   Strategic Priorities: ${strategicPriorities.length}`);
+    console.log(`   Scoring Weights: ${Object.keys(scoringWeights).length} configured`);
+    console.log(`   Has Monitoring Prompt: ${monitoringPrompt.length > 0}`);
+    console.log(`   Has Analysis Perspective: ${analysisPerspective.length > 0}`);
 
     // Log input source distribution
     const inputSourceDist: Record<string, number> = {};
@@ -114,17 +134,85 @@ serve(async (req) => {
     console.log(`   Input distribution:`, inputSourceDist);
 
     // ================================================================
+    // STEP 0: DATE VALIDATION - Filter out old articles BEFORE scoring
+    // This catches articles with fake dates or old archive content
+    // ================================================================
+    console.log(`\n📅 DATE VALIDATION: Filtering old articles...`);
+
+    const MAX_AGE_DAYS = 7;
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - MAX_AGE_DAYS);
+
+    // Pattern to detect old years in URLs (e.g., /2014/, /2015/, /publications/2017/)
+    const OLD_YEAR_PATTERN = /\/(20(?:1[0-9]|2[0-3]))\//;  // Matches /2010/ through /2023/
+
+    const dateValidArticles: Article[] = [];
+    let rejectedNoDate = 0;
+    let rejectedOldDate = 0;
+    let rejectedOldUrl = 0;
+    let rejectedBlockedSource = 0;
+
+    for (const article of articles) {
+      // Check 0: Reject if source is always blocked
+      const sourceName = (article.source || article.source_name || '').toLowerCase();
+      if (ALWAYS_BLOCK_SOURCES.has(sourceName) || blockedSources.has(sourceName)) {
+        console.log(`   ❌ Blocked source (${sourceName}): ${article.title?.substring(0, 50)}`);
+        rejectedBlockedSource++;
+        continue;
+      }
+
+      // Check 1: Reject if URL contains old year patterns
+      if (article.url) {
+        const urlYearMatch = article.url.match(OLD_YEAR_PATTERN);
+        if (urlYearMatch) {
+          const urlYear = parseInt(urlYearMatch[1]);
+          if (urlYear < 2024) {
+            console.log(`   ❌ Old URL year (${urlYear}): ${article.title?.substring(0, 50)}`);
+            rejectedOldUrl++;
+            continue;
+          }
+        }
+      }
+
+      // Check 2: Must have published_at
+      if (!article.published_at) {
+        console.log(`   ❌ No published_at: ${article.title?.substring(0, 50)}`);
+        rejectedNoDate++;
+        continue;
+      }
+
+      // Check 3: published_at must be recent
+      const pubDate = new Date(article.published_at);
+      if (pubDate < cutoffDate) {
+        console.log(`   ❌ Old date (${article.published_at}): ${article.title?.substring(0, 50)}`);
+        rejectedOldDate++;
+        continue;
+      }
+
+      dateValidArticles.push(article);
+    }
+
+    console.log(`   Rejected - blocked source: ${rejectedBlockedSource}`);
+    console.log(`   Rejected - no published_at: ${rejectedNoDate}`);
+    console.log(`   Rejected - old date (>7 days): ${rejectedOldDate}`);
+    console.log(`   Rejected - old year in URL: ${rejectedOldUrl}`);
+    console.log(`   ✅ Valid articles: ${dateValidArticles.length}/${articles.length}`);
+
+    // Use date-validated articles for the rest of the pipeline
+    const articlesToScore = dateValidArticles;
+
+    // ================================================================
     // STEP 1: Score articles with Claude (use full_content if available)
     // ================================================================
-    console.log(`\n🤖 Scoring ${articles.length} articles with Claude...`);
+    console.log(`\n🤖 Scoring ${articlesToScore.length} articles with Claude...`);
 
     const batchSize = 25;
     const scoredArticles: any[] = [];
 
-    for (let i = 0; i < articles.length; i += batchSize) {
-      const batch = articles.slice(i, i + batchSize);
+    for (let i = 0; i < articlesToScore.length; i += batchSize) {
+      const batch = articlesToScore.slice(i, i + batchSize);
       const batchNum = Math.floor(i / batchSize) + 1;
-      const totalBatches = Math.ceil(articles.length / batchSize);
+      const totalBatches = Math.ceil(articlesToScore.length / batchSize);
 
       console.log(`   Batch ${batchNum}/${totalBatches} (${batch.length} articles)...`);
 
@@ -164,6 +252,33 @@ ${keyQuestions.map((q: string) => `- ${q}`).join('\n')}` : ''}
 
 ${extractionFocus.length > 0 ? `EXTRACTION FOCUS:
 ${extractionFocus.slice(0, 10).map((f: string) => `- ${f}`).join('\n')}` : ''}
+
+${monitoringPrompt ? `
+🎯 STRATEGIC MONITORING FOCUS (IMPORTANT - use this to guide your scoring):
+${monitoringPrompt}
+` : ''}
+
+${analysisPerspective ? `
+📊 ANALYSIS PERSPECTIVE:
+${analysisPerspective}
+` : ''}
+
+${Object.keys(scoringWeights).length > 0 ? `
+⚖️ CUSTOM SCORING WEIGHTS (apply these score adjustments):
+${Object.entries(scoringWeights).map(([category, weight]) => {
+  const weightNum = typeof weight === 'number' ? weight : 0;
+  const label = category.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  return `- ${label}: +${weightNum} points bonus`;
+}).join('\n')}
+
+When an article matches multiple categories, apply the HIGHEST applicable bonus (don't stack).
+Example: An article about a competitor's regulatory issue gets the higher of competitor_action or regulatory_news bonus.
+` : ''}
+
+${competitiveDynamics ? `
+🏁 COMPETITIVE DYNAMICS:
+${competitiveDynamics}
+` : ''}
 
 ⚠️ CRITICAL ANTI-HYPE FILTER: Generic "AI" or "technology" news is NOT automatically relevant!
 - "Company X launches AI feature" → ONLY relevant if Company X is a competitor, customer, or partner
@@ -396,6 +511,11 @@ Score ALL ${batch.length} articles.`;
     return new Response(JSON.stringify({
       relevant_articles: diverseArticles,
       total_input: articles.length,
+      date_validated: dateValidArticles.length,
+      rejected_blocked_source: rejectedBlockedSource,
+      rejected_no_date: rejectedNoDate,
+      rejected_old_date: rejectedOldDate,
+      rejected_old_url: rejectedOldUrl,
       total_scored: scoredArticles.length,
       total_output: diverseArticles.length,
       filtered_out: articles.length - diverseArticles.length,

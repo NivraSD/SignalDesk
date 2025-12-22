@@ -9,6 +9,20 @@ import { corsHeaders } from '../_shared/cors.ts';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
+// Sources to ALWAYS block from matching - these create noise not signal
+const ALWAYS_BLOCK_SOURCES = new Set([
+  'pr newswire', 'prnewswire', 'globenewswire', 'globe newswire',
+  'businesswire', 'business wire', 'cision', 'accesswire', 'einewswire',
+  'marketwatch press release',
+  'bcg', 'boston consulting group',  // Old archive articles
+  'mckinsey', 'mckinsey & company',
+  'bain', 'bain & company',
+  'the financial brand',  // Garbage RSS categories
+  'finextra',  // Low quality fintech spam
+  'pitchbook',  // Paywalled
+  'ai news'  // Low quality aggregator
+]);
+
 // Similarity thresholds - different by target type
 // Lowered to allow more candidates through - Claude ranking handles quality
 // Title-only sources like Bloomberg need lower thresholds to match
@@ -166,8 +180,28 @@ serve(async (req) => {
           continue;
         }
 
+        // Filter out blocked sources BEFORE creating match records
+        const filteredMatches = (matches as ArticleMatch[]).filter(m => {
+          const sourceLower = (m.source_name || '').toLowerCase();
+          if (ALWAYS_BLOCK_SOURCES.has(sourceLower)) {
+            return false;
+          }
+          return true;
+        });
+
+        if (filteredMatches.length === 0) {
+          targetResults.push({
+            target_id: target.id,
+            name: target.name,
+            matches: matches.length,
+            new_matches: 0
+          });
+          console.log(`   ${target.name}: ${matches.length} matches -> 0 after source filtering`);
+          continue;
+        }
+
         // Insert matches (using upsert to handle duplicates)
-        const matchRecords = (matches as ArticleMatch[]).map(m => ({
+        const matchRecords = filteredMatches.map(m => ({
           organization_id: target.organization_id,
           target_id: target.id,
           article_id: m.id,
@@ -194,17 +228,22 @@ serve(async (req) => {
         }
 
         const newMatchCount = upsertResult?.length || 0;
-        totalMatches += matches.length;
+        const blockedCount = matches.length - filteredMatches.length;
+        totalMatches += filteredMatches.length;
         totalNewMatches += newMatchCount;
 
         targetResults.push({
           target_id: target.id,
           name: target.name,
-          matches: matches.length,
+          matches: filteredMatches.length,
           new_matches: newMatchCount
         });
 
-        console.log(`   ${target.name}: ${matches.length} matches (${newMatchCount} new)`);
+        if (blockedCount > 0) {
+          console.log(`   ${target.name}: ${filteredMatches.length} matches (${blockedCount} blocked, ${newMatchCount} new)`);
+        } else {
+          console.log(`   ${target.name}: ${filteredMatches.length} matches (${newMatchCount} new)`);
+        }
       } catch (err) {
         console.error(`   Error processing target ${target.name}:`, err);
       }

@@ -95,8 +95,8 @@ serve(async (req) => {
 
         // Insert new articles
         let sourceNewArticles = 0;
-        // Filter out articles older than 7 days
-        const maxAgeDays = 7;
+        // Filter out articles older than 2 days
+        const maxAgeDays = 2;
         const cutoffDate = new Date();
         cutoffDate.setDate(cutoffDate.getDate() - maxAgeDays);
         let skippedOldArticles = 0;
@@ -107,7 +107,7 @@ serve(async (req) => {
             continue;
           }
 
-          // Skip articles older than 7 days
+          // Skip articles older than 2 days
           if (article.published_at) {
             const pubDate = new Date(article.published_at);
             if (pubDate < cutoffDate) {

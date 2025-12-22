@@ -47,30 +47,34 @@ export default function ThoughtsPage() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'var(--charcoal)',
+      background: '#111113',
       color: 'var(--white)',
       fontFamily: 'var(--font-primary)'
     }}>
-      {/* Header */}
+
+      {/* Header - Light theme like homepage */}
       <header style={{
         padding: '24px 48px',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        borderBottom: '1px solid rgba(255,255,255,0.1)'
+        background: '#faf9f7',
+        position: 'relative',
+        zIndex: 10
       }}>
         <Link href="/" style={{ textDecoration: 'none' }}>
-          <Logo variant="light" size="md" />
+          <Logo variant="dark" size="md" />
         </Link>
         <Link
           href="/"
           style={{
-            color: 'var(--grey-400)',
+            color: 'var(--grey-600)',
             textDecoration: 'none',
-            fontSize: '14px'
+            fontSize: '14px',
+            fontWeight: 500
           }}
         >
-          Back to home
+          ← Back to home
         </Link>
       </header>
 

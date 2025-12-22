@@ -31,7 +31,12 @@ const TIER1_SOURCES = new Set([
 
 const ALWAYS_BLOCK_SOURCES = new Set([
   'pr newswire', 'globenewswire', 'businesswire', 'cision', 'accesswire',
-  'prnewswire', 'einewswire', 'marketwatch press release'
+  'prnewswire', 'einewswire', 'marketwatch press release',
+  'bcg',  // BCG scraper grabs old archive articles with wrong dates
+  'the financial brand',  // RSS feed returns category pages with fake future dates (2026)
+  'finextra',  // Low quality fintech spam
+  'pitchbook',  // Paywalled/low value
+  'ai news'  // Low quality AI aggregator
 ]);
 
 // Industry-specific source relevance (Stage 2 filtering)
@@ -130,6 +135,7 @@ interface V4Article {
 // Check if article is garbage (malformed scrape, no real content)
 function isGarbageArticle(article: { title: string; description?: string | null }): boolean {
   const title = article.title || '';
+  const titleLower = title.toLowerCase().trim();
 
   // Numeric-only titles (malformed sitemap extraction like "566046")
   if (/^\d+$/.test(title.trim())) return true;
@@ -146,6 +152,26 @@ function isGarbageArticle(article: { title: string; description?: string | null 
   // Mostly non-alphabetic (likely garbled encoding)
   const alphaRatio = (title.match(/[a-zA-Z]/g) || []).length / title.length;
   if (alphaRatio < 0.5 && title.length > 10) return true;
+
+  // Navigation/category elements scraped as titles
+  const GARBAGE_PATTERNS = [
+    'most popular', 'most read', 'trending', 'top stories',
+    'feed', 'rss', 'newsletter', 'subscribe',
+    'banking technology', 'gen z banking', 'digital banking',
+    'latest news', 'breaking news', 'related articles',
+    'read more', 'see more', 'view all', 'load more',
+    'advertisement', 'sponsored', 'promoted'
+  ];
+  if (GARBAGE_PATTERNS.some(p => titleLower === p || titleLower === p + 's')) return true;
+
+  // Very generic 1-2 word titles that are likely navigation
+  const words = titleLower.split(/\s+/).filter(w => w.length > 0);
+  if (words.length <= 2 && !titleLower.includes(':') && !titleLower.includes('-')) {
+    // 1-2 word titles without punctuation are usually garbage
+    // Exception: proper nouns or specific terms
+    const genericWords = ['news', 'feed', 'home', 'about', 'contact', 'popular', 'trending', 'latest', 'more'];
+    if (words.some(w => genericWords.includes(w))) return true;
+  }
 
   return false;
 }
@@ -421,7 +447,7 @@ serve(async (req) => {
         .from('target_article_matches')
         .select(`
           similarity_score, signal_strength, signal_category,
-          article:raw_articles(id, title, description, url, source_name, published_at, scraped_at)
+          article:raw_articles(id, title, description, url, source_name, published_at, created_at)
         `)
         .eq('target_id', target.id)
         .gte('matched_at', sinceTime)
@@ -449,35 +475,63 @@ serve(async (req) => {
           continue;
         }
 
-        // Filter 3: Old articles by published_at
-        // In TODAY mode: REQUIRE published_at (don't fallback to scraped_at)
-        // This prevents old articles with null published_at from slipping through
-        if (useToday) {
-          // For daily briefs, only include articles with a valid published_at within 24h
-          if (!a.published_at) {
-            filteredOld++;
-            continue; // Skip articles without published_at in TODAY mode
-          }
+        // Filter 3: Old articles - Two-tier date filtering
+        // - If published_at exists: use STRICT 2-day window (user wants recent articles)
+        // - If published_at is NULL: require published_at for certain sources known
+        //   to scrape old articles (BoF, etc.), otherwise use created_at fallback
+        // NOTE: 7-day window was too long - users were getting articles from 5+ days ago
+        const MAX_PUBLISHED_AGE_DAYS = 2;  // STRICT: Only articles from last 2 days
+        const MAX_CREATED_AGE_HOURS = 48;  // 2-day window for created_at fallback
+
+        // Sources that often scrape old articles without extracting dates - REQUIRE published_at
+        const REQUIRE_PUBLISHED_AT = ['business of fashion', 'bof'];
+        const requiresDate = REQUIRE_PUBLISHED_AT.some(s => srcLower.includes(s));
+
+        if (a.published_at) {
+          // Has published_at - use generous window
+          const maxAgeMs = MAX_PUBLISHED_AGE_DAYS * 24 * 60 * 60 * 1000;
+          const maxAgeDate = new Date(Date.now() - maxAgeMs);
+          const now = new Date();
           try {
             const articleDate = new Date(a.published_at);
-            const maxAge = new Date(Date.now() - 24 * 60 * 60 * 1000);
-            if (articleDate < maxAge) {
+            // Filter out FUTURE dates (bad date extraction) - allow 1 day tolerance
+            const oneDayFromNow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+            if (articleDate > oneDayFromNow) {
               filteredOld++;
               continue;
             }
-          } catch { /* keep if date parsing fails */ }
-        } else {
-          // In rolling mode, fallback to scraped_at is acceptable
-          const dateToCheck = a.published_at || a.scraped_at;
-          if (dateToCheck) {
-            try {
-              const articleDate = new Date(dateToCheck);
-              if (articleDate < new Date(sinceTime)) {
-                filteredOld++;
-                continue;
-              }
-            } catch { /* keep if date parsing fails */ }
+            if (articleDate < maxAgeDate) {
+              filteredOld++;
+              continue;
+            }
+          } catch {
+            // Date parsing failed - skip to be safe
+            filteredOld++;
+            continue;
           }
+        } else if (requiresDate) {
+          // Source requires published_at but doesn't have it - skip
+          // (e.g., Business of Fashion often scrapes old articles without dates)
+          filteredOld++;
+          continue;
+        } else if (a.created_at) {
+          // No published_at - use STRICT window on created_at
+          const maxAgeMs = MAX_CREATED_AGE_HOURS * 60 * 60 * 1000;
+          const maxAgeDate = new Date(Date.now() - maxAgeMs);
+          try {
+            const createdDate = new Date(a.created_at);
+            if (createdDate < maxAgeDate) {
+              filteredOld++;
+              continue;
+            }
+          } catch {
+            filteredOld++;
+            continue;
+          }
+        } else {
+          // No date at all - skip
+          filteredOld++;
+          continue;
         }
 
         // Filter 4 (Stage 2): Industry-irrelevant sources
@@ -509,7 +563,7 @@ serve(async (req) => {
             description: a.description,
             url: a.url,
             source_name: a.source_name,
-            published_at: a.published_at || a.scraped_at,
+            published_at: a.published_at || a.created_at,
             relevance_score: 0, // Will be set by Claude
             embedding_score: m.similarity_score,
             matched_targets: [target.name],
@@ -529,78 +583,18 @@ serve(async (req) => {
     console.log(`   Filtered industry-irrelevant: ${filteredIndustryIrrelevant}`);
     console.log(`   Candidates remaining: ${articleMap.size}`);
 
-    // STEP 1.5: Include recent Tier 1 articles directly (bypass embedding match)
-    // This ensures important sources like Bloomberg get to Claude for ranking
-    // even if their title-only embeddings don't match specific targets
-    console.log('\n📊 STEP 1.5: Including recent Tier 1 articles...');
-    const TIER1_DIRECT_SOURCES = ['bloomberg', 'reuters', 'wall street journal', 'wsj'];
-    const MAX_TIER1_DIRECT = 15; // Max articles per Tier 1 source to add directly
-    let tier1Added = 0;
-
-    for (const sourceName of TIER1_DIRECT_SOURCES) {
-      // Skip if we already have enough from this source via embedding matches
-      const existingFromSource = Array.from(articleMap.values())
-        .filter(a => a.source_name.toLowerCase().includes(sourceName)).length;
-
-      if (existingFromSource >= MAX_TIER1_DIRECT) continue;
-
-      const toAdd = MAX_TIER1_DIRECT - existingFromSource;
-
-      const { data: tier1Articles } = await supabase
-        .from('raw_articles')
-        .select('id, title, description, url, source_name, published_at, scraped_at')
-        .ilike('source_name', `%${sourceName}%`)
-        .gte('scraped_at', sinceTime)
-        .not('title', 'is', null)
-        .order('scraped_at', { ascending: false })
-        .limit(toAdd);
-
-      if (!tier1Articles) continue;
-
-      for (const a of tier1Articles) {
-        if (articleMap.has(a.id)) continue; // Already have it
-        if (isGarbageArticle({ title: a.title, description: a.description })) continue;
-
-        // Filter old articles - require published_at in TODAY mode
-        if (useToday) {
-          if (!a.published_at) continue; // Skip articles without published_at in TODAY mode
-          try {
-            const articleDate = new Date(a.published_at);
-            if (articleDate < new Date(Date.now() - 24 * 60 * 60 * 1000)) continue;
-          } catch { continue; }
-        } else {
-          const dateToCheck = a.published_at || a.scraped_at;
-          if (dateToCheck) {
-            try {
-              if (new Date(dateToCheck) < new Date(sinceTime)) continue;
-            } catch { /* keep if date parsing fails */ }
-          }
-        }
-
-        articleMap.set(a.id, {
-          id: a.id,
-          title: a.title,
-          description: a.description,
-          url: a.url,
-          source_name: a.source_name,
-          published_at: a.published_at || a.scraped_at,
-          relevance_score: 0,
-          embedding_score: 0.30, // Low score since not matched by embedding
-          matched_targets: ['[Direct Tier 1]'], // Marker that it was directly included
-          signal_strength: 'weak',
-          signal_category: 'general',
-          is_priority_source: true,
-          source_tier: 1
-        });
-        tier1Added++;
-      }
-    }
-    console.log(`   Added ${tier1Added} Tier 1 articles directly`);
-    console.log(`   Total candidates now: ${articleMap.size}`);
+    // STEP 1.5: DISABLED - Direct Tier 1 injection was causing Bloomberg dominance
+    // The embedding matches already provide good source diversity when targets are
+    // properly set up. Injecting unmatched Tier 1 articles dilutes the signal.
+    // If an org wants more Bloomberg coverage, they should add it as a target.
+    console.log('\n📊 STEP 1.5: Skipped (Direct Tier 1 injection disabled)');
+    console.log(`   Total candidates: ${articleMap.size}`);
 
     // STEP 2: Apply source caps BEFORE Claude scoring (to limit API calls)
+    // NOTE: These caps were too restrictive (5 per tier3 source was killing article counts)
+    // Increased significantly to let more articles through - diversity constraint later handles balance
     console.log('\n📊 STEP 2: Applying source tier caps...');
-    const CAPS = { tier1: 20, tier2: 10, tier3: 5 }; // Per-source caps by tier
+    const CAPS = { tier1: 50, tier2: 30, tier3: 20 }; // Per-source caps by tier (relaxed)
     const sourceCount: Record<string, number> = {};
     const cappedArticles: Array<V4Article & { embedding_score: number }> = [];
 
@@ -665,8 +659,8 @@ serve(async (req) => {
     console.log('\n📊 STEP 4: Ranking with diversity...');
     // Claude relevance score is now used for RANKING and ENRICHMENT PRIORITY, not filtering
     // Stage 1 (embedding thresholds) + Stage 2 (source filtering) handle relevance filtering
-    const MAX_SOURCE_PERCENT = 0.25; // No single source > 25% of results
-    const TARGET_TOTAL = 60; // Target number of articles
+    const MAX_SOURCE_PERCENT = 0.30; // No single source > 30% of results
+    const TARGET_TOTAL = 150; // Target number of articles (increased from 60)
 
     // Add priority_tier based on Claude score (for enrichment/synthesis prioritization)
     const rankedArticles = v4Articles
@@ -698,7 +692,7 @@ serve(async (req) => {
         finalArticles.push(article);
         diversitySourceCount[src] = currentCount + 1;
 
-        if (finalArticles.length >= 100) break; // Hard cap at 100
+        if (finalArticles.length >= 200) break; // Hard cap at 200 (increased from 100)
       }
     }
 

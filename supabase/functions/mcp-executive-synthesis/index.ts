@@ -867,9 +867,9 @@ CRITICAL - QUALITY OVER QUANTITY:
 
       if (diffDays <= 0) return 'today';
       if (diffDays <= 1) return 'yesterday';
-      if (diffDays <= 7) return 'this_week';
-      if (diffDays <= 14) return 'last_2_weeks';
-      return 'older';
+      if (diffDays <= 3) return 'this_week';  // STRICT: 3 days max, not 7
+      if (diffDays <= 7) return 'last_2_weeks';  // Was 14, now 7
+      return 'older';  // Anything > 7 days is OLD
     };
 
     // Filter to prioritize recent articles and limit old ones
@@ -907,29 +907,32 @@ CRITICAL - QUALITY OVER QUANTITY:
       return (recencyOrder[a.calculated_recency] || 5) - (recencyOrder[b.calculated_recency] || 5);
     });
 
-    // Limit older articles - prioritize recent ones
-    // Include articles from last 14 days
+    // STRICT: Prioritize ONLY recent articles
+    // - "recent" = today, yesterday, this_week (0-3 days)
+    // - "less_recent" = last_2_weeks (4-7 days) - limit to 10
+    // - "unknown" = no date - limit to 5 (risky, could be old)
+    // - "older" = > 7 days - EXCLUDE entirely
     const recentArticles = sortedArticles.filter(a => ['today', 'yesterday', 'this_week'].includes(a.calculated_recency));
-    const twoWeekArticles = sortedArticles.filter(a => a.calculated_recency === 'last_2_weeks').slice(0, 15);
+    const lessRecentArticles = sortedArticles.filter(a => a.calculated_recency === 'last_2_weeks').slice(0, 10);
 
-    // INCLUDE unknown articles - they were scraped recently so likely fresh
-    // Don't punish articles just because their source doesn't publish dates
-    const unknownArticles = sortedArticles.filter(a => a.calculated_recency === 'unknown');
+    // LIMIT unknown articles - they could be old garbage
+    const unknownArticles = sortedArticles.filter(a => a.calculated_recency === 'unknown').slice(0, 5);
 
-    // Only EXCLUDE articles we know are definitely old
-    const excludedCount = sortedArticles.filter(a => a.calculated_recency === 'older').length;
+    // Count excluded
+    const excludedOlder = sortedArticles.filter(a => a.calculated_recency === 'older').length;
+    const excludedUnknown = sortedArticles.filter(a => a.calculated_recency === 'unknown').length - unknownArticles.length;
 
-    if (excludedCount > 0) {
-      console.log(`⚠️ EXCLUDED ${excludedCount} articles older than 14 days from synthesis`);
+    if (excludedOlder > 0) {
+      console.log(`⚠️ EXCLUDED ${excludedOlder} articles older than 7 days from synthesis`);
     }
 
-    if (unknownArticles.length > 0) {
-      console.log(`📰 INCLUDING ${unknownArticles.length} articles with unknown dates (assuming recent)`);
+    if (excludedUnknown > 0) {
+      console.log(`⚠️ LIMITED unknown-date articles: ${unknownArticles.length} included, ${excludedUnknown} excluded`);
     }
 
-    const prioritizedArticles = [...recentArticles, ...twoWeekArticles, ...unknownArticles].slice(0, 50);
+    const prioritizedArticles = [...recentArticles, ...lessRecentArticles, ...unknownArticles].slice(0, 50);
 
-    console.log(`📰 Prioritized ${prioritizedArticles.length} articles (${recentArticles.length} recent, ${twoWeekArticles.length} from past 2 weeks)`);
+    console.log(`📰 Prioritized ${prioritizedArticles.length} articles (${recentArticles.length} recent, ${lessRecentArticles.length} from 4-7 days, ${unknownArticles.length} unknown)`);
 
     const articleSummaries = prioritizedArticles.map((article, i) => ({
       headline: article.title,
@@ -1237,7 +1240,8 @@ ${topEvents.map((e, i) =>
 
 ⚠️ **CRITICAL RECENCY RULES:**
 - PRIORITIZE events from last 7 days (Today, Yesterday, X days ago) in your executive_summary
-- DE-EMPHASIZE events older than 2 weeks (X weeks ago, X months ago) unless they have ongoing strategic impact
+- DE-EMPHASIZE events older than 3 days unless they have major ongoing strategic impact
+- EXCLUDE events older than 1 week - focus on RECENT developments only
 - If an event is >1 month old (X months ago), ONLY include in executive_summary if it represents a major strategic shift
 - The executive_summary should FOCUS on what's happening NOW, not historical context
 
@@ -1275,9 +1279,16 @@ ${articleOnlyMode ? `You have ${enrichedArticles.length} articles to synthesize 
 - Your executive_summary should reflect the VOLUME of intelligence: ${topEvents.length} events is significant activity`}
 - Competitors to watch: ${discoveryTargets.competitors.slice(0, 15).join(', ')}
 
+⚠️ PRIORITY #1.5: SOURCE DIVERSITY (AVOID SINGLE-SOURCE DOMINANCE)
+- Your synthesis should draw from MULTIPLE news outlets, not just one dominant source
+- If 70%+ of your key_developments cite the same outlet (e.g., all Bloomberg), REBALANCE by including stories from other sources
+- When multiple outlets cover the same story, mention the variety: "per Bloomberg, Reuters, and WSJ"
+- Single-source dominance makes the brief look narrow - show breadth of media coverage
+- Actively look for stories from DIFFERENT sources to include, even if one source has more volume
+
 ⚠️ PRIORITY #2: RECENCY (TODAY > THIS WEEK > OLD NEWS)
 - Events from TODAY or THIS WEEK go in executive_summary
-- Events from 1-2 weeks ago = brief mention only if strategic
+- Events from 4-7 days ago = brief mention only if strategically important
 - Events from 2+ weeks ago = ignore unless ongoing strategic impact
 - NEVER lead with "5 days ago" when today's data exists
 - Check EVERY event date before writing
@@ -1558,9 +1569,9 @@ How to work with summaries:
 **CRITICAL: RECENCY PRIORITIZATION**
 Each event has a date stamp. Your executive_summary MUST prioritize by recency:
 1. **HIGHEST PRIORITY**: Events from today, yesterday, or within last 7 days
-2. **MEDIUM PRIORITY**: Events from 1-2 weeks ago (include only if strategically significant)
-3. **LOW PRIORITY**: Events older than 2 weeks (only mention if major ongoing strategic impact)
-4. **EXCLUDE**: Events older than 1 month should NOT appear in executive_summary unless they represent major strategic shifts still affecting today
+2. **MEDIUM PRIORITY**: Events from 4-7 days ago (brief mention only if strategically significant)
+3. **LOW PRIORITY/EXCLUDE**: Events older than 1 week (only mention if truly major ongoing impact)
+4. **HARD EXCLUDE**: Events older than 2 weeks should NOT appear at all
 
 **Example of GOOD recency handling:**
 "Today's monitoring reveals [recent events]. This builds on [quick context from older events if relevant]."

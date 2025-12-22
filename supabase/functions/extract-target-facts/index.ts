@@ -118,29 +118,75 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const organizationId = body.organization_id;  // Optional: filter to specific org
     const maxMatches = body.max_matches || MAX_MATCHES_PER_RUN;
+    const maxMatchesPerOrg = body.max_per_org || 10;  // Ensure fair distribution across orgs
 
-    // Get unprocessed matches with good similarity
-    let query = supabase
-      .from('target_article_matches')
-      .select(`
-        id,
-        organization_id,
-        target_id,
-        article_id,
-        similarity_score,
-        intelligence_targets(id, name, target_type, priority, monitoring_context, accumulated_context),
-        raw_articles(id, title, description, full_content, source_name, published_at)
-      `)
-      .or('facts_extracted.is.null,facts_extracted.eq.false')
-      .gte('similarity_score', MIN_SIMILARITY_FOR_EXTRACTION)
-      .order('similarity_score', { ascending: false })
-      .limit(maxMatches);
+    let matches: Match[] = [];
 
     if (organizationId) {
-      query = query.eq('organization_id', organizationId);
+      // Single org mode - process up to maxMatches for this org
+      const { data, error } = await supabase
+        .from('target_article_matches')
+        .select(`
+          id,
+          organization_id,
+          target_id,
+          article_id,
+          similarity_score,
+          intelligence_targets(id, name, target_type, priority, monitoring_context, accumulated_context),
+          raw_articles(id, title, description, full_content, source_name, published_at)
+        `)
+        .eq('organization_id', organizationId)
+        .or('facts_extracted.is.null,facts_extracted.eq.false')
+        .gte('similarity_score', MIN_SIMILARITY_FOR_EXTRACTION)
+        .order('similarity_score', { ascending: false })
+        .limit(maxMatches);
+
+      if (error) throw new Error(`Failed to load matches: ${error.message}`);
+      matches = (data || []) as Match[];
+    } else {
+      // Multi-org mode - get matches from ALL orgs fairly (round-robin)
+      // First, get all active orgs with pending matches
+      const { data: orgsWithMatches, error: orgError } = await supabase
+        .from('target_article_matches')
+        .select('organization_id')
+        .or('facts_extracted.is.null,facts_extracted.eq.false')
+        .gte('similarity_score', MIN_SIMILARITY_FOR_EXTRACTION);
+
+      if (orgError) throw new Error(`Failed to get orgs: ${orgError.message}`);
+
+      // Get unique org IDs
+      const uniqueOrgIds = [...new Set((orgsWithMatches || []).map(m => m.organization_id))];
+      console.log(`   Found ${uniqueOrgIds.length} orgs with pending matches`);
+
+      // Fetch up to maxMatchesPerOrg from each org
+      for (const orgId of uniqueOrgIds) {
+        const { data: orgMatches, error: matchError } = await supabase
+          .from('target_article_matches')
+          .select(`
+            id,
+            organization_id,
+            target_id,
+            article_id,
+            similarity_score,
+            intelligence_targets(id, name, target_type, priority, monitoring_context, accumulated_context),
+            raw_articles(id, title, description, full_content, source_name, published_at)
+          `)
+          .eq('organization_id', orgId)
+          .or('facts_extracted.is.null,facts_extracted.eq.false')
+          .gte('similarity_score', MIN_SIMILARITY_FOR_EXTRACTION)
+          .order('similarity_score', { ascending: false })
+          .limit(maxMatchesPerOrg);
+
+        if (!matchError && orgMatches) {
+          matches.push(...(orgMatches as Match[]));
+        }
+
+        // Don't exceed total limit
+        if (matches.length >= maxMatches) break;
+      }
     }
 
-    const { data: matches, error: matchError } = await query;
+    const matchError = null;  // Already handled above
 
     if (matchError) {
       throw new Error(`Failed to load matches: ${matchError.message}`);
@@ -170,7 +216,9 @@ serve(async (req) => {
       matchesByTarget.get(targetId)!.push(match);
     }
 
-    console.log(`   Grouped into ${matchesByTarget.size} targets`);
+    // Track unique orgs
+    const uniqueOrgs = new Set(matches.map(m => m.organization_id));
+    console.log(`   Grouped into ${matchesByTarget.size} targets across ${uniqueOrgs.size} orgs`);
 
     let totalFactsExtracted = 0;
     let matchesProcessed = 0;
@@ -399,11 +447,13 @@ serve(async (req) => {
       facts_extracted: totalFactsExtracted,
       competitor_facts: competitorFactsExtracted,
       targets_processed: matchesByTarget.size,
+      organizations_processed: uniqueOrgs.size,
       duration_seconds: duration,
       errors: errors.length > 0 ? errors : undefined
     };
 
     console.log(`\n📊 Extraction Complete:`);
+    console.log(`   Orgs processed: ${uniqueOrgs.size}`);
     console.log(`   Matches processed: ${matchesProcessed}`);
     console.log(`   Facts extracted: ${totalFactsExtracted}`);
     console.log(`   Duration: ${duration}s`);

@@ -182,25 +182,53 @@ async function batchScrapeArticles(args: any) {
           console.log(`   🔐 Using ${sourceName} authentication for: ${article.url.substring(0, 50)}`);
         }
 
+        // Use stealth proxy for sites with aggressive bot detection
+        // Stealth costs 5 credits per request, so only use for problematic sites
+        const stealthDomains = [
+          'bloomberg.com',
+          'nytimes.com',
+          'wsj.com',
+          'washingtonpost.com',
+          'theinformation.com',
+          'ft.com'  // FT can be tricky too
+        ];
+
+        const needsStealth = stealthDomains.some(domain => article.url.includes(domain));
+        if (needsStealth) {
+          scrapeBody.proxy = 'stealth';  // Use Firecrawl's stealth proxy
+          console.log(`   🥷 Using stealth proxy for: ${article.url.substring(0, 50)}`);
+        }
+
         // Add extraction schema if provided
         if (extractSchema) {
+          // Build a dynamic prompt based on what the schema is asking for
+          const schemaProperties = extractSchema.properties || extractSchema;
+          const fieldNames = Object.keys(schemaProperties);
+          const fieldDescriptions = fieldNames.map(name => {
+            const field = schemaProperties[name];
+            return field?.description || name.replace(/_/g, ' ');
+          });
+
+          const dynamicPrompt = `Extract the following information from this article: ${fieldDescriptions.join(', ')}. Be precise and use the exact format specified.`;
+
           // Log what we're sending to Firecrawl for first article
           if (batchIndex === 0 && articleIndex === 0) {
             console.log('📤 DEBUG - Sending to Firecrawl:', {
               url: article.url.substring(0, 50),
               has_extract: true,
-              schema_keys: Object.keys(extractSchema),
+              schema_keys: fieldNames,
+              prompt: dynamicPrompt.substring(0, 100),
               formats: formats
             });
           }
-          
+
           // For v2 API, we use the formats array with a json format object
           scrapeBody.formats = [
             'markdown',  // Always include markdown for content
             {
               type: 'json',
               schema: extractSchema,
-              prompt: "Extract the requested information (quotes, metrics, entities, key points) from this article."
+              prompt: dynamicPrompt
             }
           ];
         }
