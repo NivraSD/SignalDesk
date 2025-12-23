@@ -355,30 +355,36 @@ export default function Dashboard() {
       )
 
       const synthesisData = pipelineData?.synthesis || pipelineData?.executiveSynthesis
+      const pipelineOpportunities = pipelineData?.opportunities || []
+
       if (synthesisData) {
         setExecutiveSynthesis(synthesisData)
 
-        // Poll for opportunities with multiple retries
-        // Opportunity detector often times out but continues saving in background
-        const pollForOpportunities = async (maxRetries = 6, delay = 3000) => {
-          for (let i = 0; i < maxRetries; i++) {
-            await new Promise(resolve => setTimeout(resolve, delay))
-            const response = await fetch(`/api/opportunities?organization_id=${organization?.id}`)
-            const data = await response.json()
-            if (data.opportunities && data.opportunities.length > 0) {
-              setOpportunities(data.opportunities.slice(0, 5))
-              console.log(`✅ Opportunities loaded on attempt ${i + 1}:`, data.opportunities.length)
-              return true
+        // Use opportunities directly from pipeline response (pipeline waits for them)
+        if (pipelineOpportunities.length > 0) {
+          setOpportunities(pipelineOpportunities.slice(0, 5))
+          console.log('✅ Opportunities from pipeline:', pipelineOpportunities.length)
+        } else {
+          // Only poll if pipeline didn't return opportunities (timeout case)
+          console.log('⚠️ No opportunities in pipeline response, polling...')
+          const pollForOpportunities = async (maxRetries = 6, delay = 3000) => {
+            for (let i = 0; i < maxRetries; i++) {
+              await new Promise(resolve => setTimeout(resolve, delay))
+              const response = await fetch(`/api/opportunities?organization_id=${organization?.id}`)
+              const data = await response.json()
+              if (data.opportunities && data.opportunities.length > 0) {
+                setOpportunities(data.opportunities.slice(0, 5))
+                console.log(`✅ Opportunities loaded on attempt ${i + 1}:`, data.opportunities.length)
+                return true
+              }
+              console.log(`⏳ Polling for opportunities, attempt ${i + 1}/${maxRetries}...`)
             }
-            console.log(`⏳ Polling for opportunities, attempt ${i + 1}/${maxRetries}...`)
+            await loadOpportunities()
+            return false
           }
-          // Final attempt to load whatever is there
-          await loadOpportunities()
-          return false
+          pollForOpportunities()
         }
 
-        // Start polling in the background
-        pollForOpportunities()
         await loadSidebarData()
       } else {
         setPipelineError('No synthesis data received from pipeline')

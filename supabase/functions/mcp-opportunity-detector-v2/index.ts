@@ -632,7 +632,7 @@ async function detectOpportunitiesV2(
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 16000, // Increased to handle larger response with multi-platform social content
+        max_tokens: 16000,
         temperature: 0.7,
         system: OPPORTUNITY_SYSTEM_PROMPT_V2,
         messages: [{

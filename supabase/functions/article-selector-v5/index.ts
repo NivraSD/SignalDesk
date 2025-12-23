@@ -479,9 +479,9 @@ serve(async (req) => {
         // - If published_at exists: use STRICT 2-day window (user wants recent articles)
         // - If published_at is NULL: require published_at for certain sources known
         //   to scrape old articles (BoF, etc.), otherwise use created_at fallback
-        // NOTE: 7-day window was too long - users were getting articles from 5+ days ago
-        const MAX_PUBLISHED_AGE_DAYS = 2;  // STRICT: Only articles from last 2 days
-        const MAX_CREATED_AGE_HOURS = 48;  // 2-day window for created_at fallback
+        // NOTE: 2-day window still let in stale articles - tightened to 1 day
+        const MAX_PUBLISHED_AGE_DAYS = 1;  // STRICT: Only articles from last 24 hours
+        const MAX_CREATED_AGE_HOURS = 24;  // 1-day window for created_at fallback
 
         // Sources that often scrape old articles without extracting dates - REQUIRE published_at
         const REQUIRE_PUBLISHED_AT = ['business of fashion', 'bof'];
