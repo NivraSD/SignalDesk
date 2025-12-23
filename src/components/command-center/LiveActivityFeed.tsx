@@ -28,9 +28,54 @@ export default function LiveActivityFeed({ organizationId, onNavigate }: LiveAct
   useEffect(() => {
     loadActivities()
 
-    // Refresh every 30 seconds
-    const interval = setInterval(loadActivities, 30000)
-    return () => clearInterval(interval)
+    // Subscribe to real-time changes on opportunities table
+    const opportunitiesChannel = supabase
+      .channel('live-activity-opportunities')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'opportunities',
+          filter: `organization_id=eq.${organizationId}`
+        },
+        (payload) => {
+          console.log('📊 LiveActivityFeed: Opportunity change detected', payload.eventType)
+          loadActivities()
+        }
+      )
+      .subscribe((status) => {
+        console.log('📊 LiveActivityFeed opportunities subscription:', status)
+      })
+
+    // Subscribe to real-time changes on intelligence_summaries table
+    const intelligenceChannel = supabase
+      .channel('live-activity-intelligence')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'intelligence_summaries',
+          filter: `organization_id=eq.${organizationId}`
+        },
+        (payload) => {
+          console.log('📊 LiveActivityFeed: Intelligence change detected', payload.eventType)
+          loadActivities()
+        }
+      )
+      .subscribe((status) => {
+        console.log('📊 LiveActivityFeed intelligence subscription:', status)
+      })
+
+    // Fallback polling every 60 seconds (less frequent since we have real-time)
+    const interval = setInterval(loadActivities, 60000)
+
+    return () => {
+      supabase.removeChannel(opportunitiesChannel)
+      supabase.removeChannel(intelligenceChannel)
+      clearInterval(interval)
+    }
   }, [organizationId])
 
   const loadActivities = async () => {
@@ -305,7 +350,7 @@ export default function LiveActivityFeed({ organizationId, onNavigate }: LiveAct
 
       <div className="mt-4 pt-4 border-t border-gray-700">
         <p className="text-xs text-gray-500 text-center">
-          Auto-refreshes every 30 seconds
+          Real-time updates enabled
         </p>
       </div>
     </div>
