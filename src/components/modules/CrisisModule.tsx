@@ -664,9 +664,18 @@ export default function CrisisModule({ onOpenInStudio }: CrisisModuleProps) {
                               <h4 className="text-white font-semibold text-sm mb-1">{alert.title}</h4>
                               <p className="text-xs text-[var(--grey-400)] mb-2 line-clamp-2">{alert.summary}</p>
                               {articles.length > 0 && (
-                                <a href={articles[0].url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-400 hover:underline truncate block mb-2">
-                                  {articles[0].title || articles[0].url}
-                                </a>
+                                <div className="mb-2 space-y-1">
+                                  {articles.slice(0, 2).map((article: any, aIdx: number) => (
+                                    <div key={aIdx} className="bg-[var(--grey-900)]/50 p-2 rounded">
+                                      {article.crisis_signal && (
+                                        <p className="text-xs text-red-400 mb-1">⚠️ {article.crisis_signal}</p>
+                                      )}
+                                      <a href={article.url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-400 hover:underline truncate block">
+                                        {article.title || article.url}
+                                      </a>
+                                    </div>
+                                  ))}
+                                </div>
                               )}
                               <div className="flex items-center justify-between">
                                 <span className="text-xs text-[var(--grey-500)]">
@@ -980,23 +989,36 @@ export default function CrisisModule({ onOpenInStudio }: CrisisModuleProps) {
                             </div>
                           )}
 
-                          {/* Source Articles */}
+                          {/* Source Articles with Crisis Signals */}
                           {articles.length > 0 && (
                             <div className="mb-4">
-                              <h4 className="text-sm font-medium text-[var(--grey-400)] mb-2">Source Articles</h4>
+                              <h4 className="text-sm font-medium text-[var(--grey-400)] mb-2">Source Articles & Crisis Signals</h4>
                               <div className="space-y-2">
                                 {articles.map((article: any, aIdx: number) => (
-                                  <a
+                                  <div
                                     key={aIdx}
-                                    href={article.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center gap-2 p-3 bg-[var(--grey-800)]/50 rounded-lg hover:bg-[var(--grey-800)] group"
+                                    className="p-3 bg-[var(--grey-800)]/50 rounded-lg hover:bg-[var(--grey-800)] group"
                                   >
-                                    <FileText className="w-4 h-4 text-[var(--grey-500)] group-hover:text-blue-400" />
-                                    <span className="text-sm text-blue-400 hover:underline flex-1">{article.title || article.url}</span>
-                                    <ChevronRight className="w-4 h-4 text-[var(--grey-500)]" />
-                                  </a>
+                                    {article.crisis_signal && (
+                                      <p className="text-sm text-red-400 mb-2 flex items-start gap-2">
+                                        <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                                        <span>{article.crisis_signal}</span>
+                                      </p>
+                                    )}
+                                    <a
+                                      href={article.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="flex items-center gap-2"
+                                    >
+                                      <FileText className="w-4 h-4 text-[var(--grey-500)] group-hover:text-blue-400" />
+                                      <span className="text-sm text-blue-400 hover:underline flex-1">{article.title || article.url}</span>
+                                      <ChevronRight className="w-4 h-4 text-[var(--grey-500)]" />
+                                    </a>
+                                    {article.source && (
+                                      <p className="text-xs text-[var(--grey-500)] mt-1 ml-6">Source: {article.source}</p>
+                                    )}
+                                  </div>
                                 ))}
                               </div>
                             </div>

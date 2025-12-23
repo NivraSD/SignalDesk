@@ -398,9 +398,29 @@ IMPORTANT:
         }
       } else {
         // Create new crisis event
-        const crisisTitle = parsed.crisisCategory
-          ? `${parsed.crisisCategory.charAt(0).toUpperCase() + parsed.crisisCategory.slice(1)} Alert: ${organization_name}`
-          : `Crisis Alert for ${organization_name}`;
+        // Use the first evidence item for a more specific title
+        const primaryEvidence = parsed.evidence?.[0];
+        const crisisTitle = primaryEvidence?.crisis_signal
+          ? primaryEvidence.crisis_signal.substring(0, 100)
+          : parsed.crisisCategory
+            ? `${parsed.crisisCategory.charAt(0).toUpperCase() + parsed.crisisCategory.slice(1)} Alert: ${organization_name}`
+            : `Crisis Alert for ${organization_name}`;
+
+        // Build articles array from evidence with full context
+        const evidenceArticles = (parsed.evidence || []).map((e: any) => {
+          // Find the matching original article to get URL
+          const originalArticle = articles.find((a: any) =>
+            a.title === e.article_title ||
+            a.title?.includes(e.article_title?.substring(0, 30))
+          );
+          return {
+            title: e.article_title,
+            url: originalArticle?.url || '',
+            source: originalArticle?.source || 'Unknown',
+            crisis_signal: e.crisis_signal,
+            severity: e.severity
+          };
+        });
 
         const { data: newCrisis, error: insertError } = await supabase
           .from('crisis_events')
@@ -413,6 +433,14 @@ IMPORTANT:
             description: parsed.warningSignals?.join('; ') || 'Crisis signals detected from news monitoring',
             started_at: new Date().toISOString(),
             trigger_source: 'intelligence_pipeline',
+            trigger_data: {
+              risk_level: parsed.riskLevel,
+              warning_signals: parsed.warningSignals || [],
+              articles: evidenceArticles,  // Now includes crisis_signal per article
+              crisis_category: parsed.crisisCategory,
+              urgency: parsed.urgency,
+              affected_stakeholders: parsed.affectedStakeholders
+            },
             timeline: [{
               time: new Date().toISOString(),
               event_type: 'detection',
@@ -431,7 +459,7 @@ IMPORTANT:
               created_at: new Date().toISOString()
             })) || [],
             social_signals: parsed.evidence || [],
-            media_coverage: [],
+            media_coverage: evidenceArticles.map((a: any) => ({ title: a.title, url: a.url, source: a.source })),
             stakeholder_sentiment: {},
             metadata: {
               risk_level: parsed.riskLevel,
