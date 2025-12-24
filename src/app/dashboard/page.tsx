@@ -254,15 +254,15 @@ export default function Dashboard() {
 
     setLoadingSidebarData(true)
     try {
-      // Load predictions from signal_outcomes table (same as Cascades module)
+      // Load predictions from unified signals table (replaces legacy signal_outcomes)
       const { data, error } = await supabase
-        .from('signal_outcomes')
+        .from('signals')
         .select(`
-          id, predicted_outcome, predicted_timeframe_days, predicted_confidence,
-          prediction_reasoning, created_at,
-          intelligence_targets(name, target_type)
+          id, title, description, confidence_score, reasoning,
+          created_at, primary_target_name, signal_type, pattern_data
         `)
         .eq('organization_id', organization.id)
+        .in('signal_type', ['pattern', 'predictive'])
         .order('created_at', { ascending: false })
         .limit(6)
 
@@ -270,7 +270,18 @@ export default function Dashboard() {
         console.error('Failed to load sidebar predictions:', error)
         setSidebarPredictions([])
       } else {
-        setSidebarPredictions(data || [])
+        // Map to expected format for backward compatibility
+        const mappedData = (data || []).map(s => ({
+          id: s.id,
+          predicted_outcome: s.title,
+          predicted_confidence: s.confidence_score,
+          prediction_reasoning: s.reasoning || s.description,
+          predicted_timeframe_days: s.pattern_data?.time_horizon === '30-days' ? 30 :
+                                     s.pattern_data?.time_horizon === '6-months' ? 180 : 90,
+          created_at: s.created_at,
+          intelligence_targets: { name: s.primary_target_name, target_type: s.signal_type }
+        }))
+        setSidebarPredictions(mappedData)
       }
     } catch (error) {
       console.error('Failed to load sidebar data:', error)

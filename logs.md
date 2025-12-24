@@ -1,554 +1,394 @@
 [
 {
-"event_message": " Rejected - no published_at: 0\n",
-"event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "cd3aa8e6-826a-4930-891a-6a1d148070f2",
-"level": "info",
-"timestamp": 1766403937894000
-},
-{
-"event_message": " Rejected - old date (>7 days): 0\n",
-"event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "e93df22b-45af-4674-a9c3-ac032a440941",
-"level": "info",
-"timestamp": 1766403937894000
-},
-{
-"event_message": " Batch 1/8 (25 articles)...\n",
-"event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "23b679e3-5e34-4330-80b7-c8ee2802619d",
-"level": "info",
-"timestamp": 1766403937894000
-},
-{
-"event_message": " ✅ Valid articles: 200/200\n",
-"event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "09785313-5080-4c02-b95b-4f9b7ae12988",
-"level": "info",
-"timestamp": 1766403937894000
-},
-{
-"event_message": " Rejected - old year in URL: 0\n",
-"event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "33ab74b8-21ee-4ead-8cbc-663bada713f5",
-"level": "info",
-"timestamp": 1766403937894000
-},
-{
-"event_message": " Rejected - blocked source: 0\n",
-"event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "a2911d60-8995-46aa-afe7-a758ed54a019",
-"level": "info",
-"timestamp": 1766403937894000
-},
-{
-"event_message": "\n🤖 Scoring 200 articles with Claude...\n",
-"event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "5957ea79-ae15-4a8b-936e-7b66876f5acb",
-"level": "info",
-"timestamp": 1766403937894000
-},
-{
-"event_message": "\n📅 DATE VALIDATION: Filtering old articles...\n",
-"event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "02a11b2e-5730-4273-b993-214f68cc6095",
-"level": "info",
-"timestamp": 1766403937893000
-},
-{
-"event_message": " Input distribution: {\n \"Wall Street Journal\": 18,\n \"GreenTech Media\": 5,\n \"Carbon Brief\": 7,\n CleanTechnica: 2,\n Bloomberg: 23,\n Reuters: 11,\n \"Financial Times\": 5,\n \"WSJ Markets\": 16,\n \"Seeking Alpha\": 8,\n \"Crunchbase News\": 1,\n Skift: 1,\n \"Oilprice.com\": 20,\n \"Ars Technica\": 1,\n \"The Financial Brand\": 3,\n \"Seatrade Maritime\": 12,\n \"Agri-Pulse\": 13,\n \"Canary Media\": 2,\n Finextra: 3,\n \"Lloyds List\": 3,\n Splash247: 5,\n \"Automotive Dive\": 1,\n \"The Drive\": 2,\n Electrek: 2,\n Deadline: 1,\n FreightWaves: 3,\n \"EE Times\": 2,\n Rigzone: 2,\n \"Bloomberg Technology\": 3,\n \"3DPrint.com\": 1,\n \"South China Morning Post\": 6,\n \"Carrier Management\": 1,\n \"ESG Today\": 7,\n \"New York Times\": 1,\n \"Fast Company\": 1,\n \"NonProfit Quarterly\": 1,\n \"Dark Reading\": 1,\n \"WealthManagement.com\": 1,\n \"Federal News Network\": 1,\n \"Insurance Journal\": 3,\n Variety: 1\n}\n",
-"event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "09251af9-3d44-4f4b-b58c-62b6a3fcc581",
-"level": "info",
-"timestamp": 1766403937893000
-},
-{
-"event_message": " Strategic Priorities: 3\n",
-"event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "afd5b280-dd10-4a5f-b714-c988314f0eb0",
-"level": "info",
-"timestamp": 1766403937892000
-},
-{
-"event_message": " Has Monitoring Prompt: true\n",
-"event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "c23e79f9-45e9-4087-b9e5-d5943cb082a5",
-"level": "info",
-"timestamp": 1766403937892000
-},
-{
-"event_message": " Has Analysis Perspective: true\n",
-"event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "65589a53-432b-4898-8043-ac88807b815b",
-"level": "info",
-"timestamp": 1766403937892000
-},
-{
-"event_message": " Scoring Weights: 0 configured\n",
-"event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "f170b642-a7e6-41d9-a634-beb140e5f087",
-"level": "info",
-"timestamp": 1766403937892000
-},
-{
-"event_message": " Input sources: 40\n",
-"event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "d43f9827-2bd4-46f8-ab44-0a9f59041200",
-"level": "info",
-"timestamp": 1766403937892000
-},
-{
-"event_message": " Competitors: 15\n",
-"event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "f8984d55-eded-448a-9761-b50d19474d77",
-"level": "info",
-"timestamp": 1766403937891000
-},
-{
-"event_message": " Input articles: 200\n",
-"event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "1ec7af3a-8fa7-463c-b878-52423289c725",
-"level": "info",
-"timestamp": 1766403937891000
-},
-{
-"event_message": " Source tiers: 46 critical, 54 high, 0 blocked\n",
-"event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "1c350623-65f1-4139-b2b1-1f1c7d4e3094",
-"level": "info",
-"timestamp": 1766403937891000
-},
-{
-"event_message": " Industry: Trading\n",
-"event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "8b2f4180-d630-455c-acac-2b00b959c722",
-"level": "info",
-"timestamp": 1766403937891000
-},
-{
-"event_message": " Regulators: 6\n",
-"event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "9069ad4c-d954-4dfa-99a4-f9d094b9d4a4",
-"level": "info",
-"timestamp": 1766403937891000
-},
-{
-"event_message": " Key Questions: 5\n",
-"event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "82583862-3d40-4923-8456-9c7c920131f9",
-"level": "info",
-"timestamp": 1766403937891000
-},
-{
-"event_message": "🔍 RELEVANCE FILTER V2 for Mitsui & Co.\n",
-"event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "adf869e0-9354-4cf0-9bcf-dad1ed06172d",
-"level": "info",
-"timestamp": 1766403937890000
-},
-{
-"event_message": "Listening on http://localhost:9999/\n",
-"event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "d57ac804-452d-4aa7-adb3-faa822a3ad4c",
-"level": "info",
-"timestamp": 1766403937883000
-},
-{
-"event_message": "booted (time: 43ms)",
-"event_type": "Boot",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "130ac846-179c-433f-b030-edf9f09b6246",
+"event_message": "shutdown",
+"event_type": "Shutdown",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "04f22722-d26d-4b1e-8496-76ad31e84867",
 "level": "log",
-"timestamp": 1766403937878000
+"timestamp": 1766577610949000
 },
 {
 "event_message": "shutdown",
 "event_type": "Shutdown",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "36aec605-1f98-416d-8703-2d9b65b9efee",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "927c0c7e-144e-4ad3-8fa2-695b90d6b2d4",
 "level": "log",
-"timestamp": 1766403556021000
+"timestamp": 1766577610748000
 },
 {
-"event_message": " Scored relevant: 93\n",
+"event_message": "Http: connection closed before message completed\n at Object.respondWith (ext:runtime/01_http.js:280:19)\n at eventLoopTick (ext:core/01_core.js:175:7)\n at async Object.respondWith (ext:runtime/http.js:106:18)\n at async Server.#respond (https://deno.land/std@0.177.0/http/server.ts:230:7) {\n name: \"Http\"\n}\n",
 "event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "8279f6e1-512c-4ab5-b7fb-3a8bc8742c5f",
-"level": "info",
-"timestamp": 1766403427403000
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "df1ee829-7baa-4b8a-8069-9900d0a7a192",
+"level": "error",
+"timestamp": 1766577578931000
 },
 {
-"event_message": " Blocked source articles removed: 0\n",
+"event_message": "✅ Stored 3 V2 opportunities\n",
 "event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "f806ce53-aada-45ed-b009-26b421bfbca7",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "bf3e0ff4-1955-43f9-9df8-12e291769fdd",
 "level": "info",
-"timestamp": 1766403427403000
+"timestamp": 1766577578928000
 },
 {
-"event_message": " Output sources: 32\n",
+"event_message": "💡 Tip: Use generate-opportunity-presentation edge function to create Gamma presentations on-demand\n",
 "event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "d1b2b687-f8e0-450f-9f59-2a0c3269c67a",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "692d0317-7bf7-4cfb-ace7-2c474ca3d245",
 "level": "info",
-"timestamp": 1766403427403000
+"timestamp": 1766577578928000
 },
 {
-"event_message": " After diversity: 80\n",
+"event_message": " ✅ Saved: \"Food Security Leadership: Capitalize on Wheat Rally and Global Food Trade Challenges\" (9 content items)\n",
 "event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "928738e7-1d08-46f7-825d-1339803c59f0",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "b37a2b3d-7bcd-494b-b331-d686b225e84d",
 "level": "info",
-"timestamp": 1766403427403000
+"timestamp": 1766577578928000
 },
 {
-"event_message": "\n✅ RELEVANCE FILTER COMPLETE\n",
+"event_message": " ✅ Saved: \"Metals Market Leadership: Capitalize on Copper's Historic Rally and Gold's Record Highs\" (10 content items)\n",
 "event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "9ba5969f-78d0-4b6f-9e06-5278c804d84b",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "b631a68c-ea1a-49af-9457-5df50e53a429",
 "level": "info",
-"timestamp": 1766403427403000
+"timestamp": 1766577578861000
 },
 {
-"event_message": " Output distribution: {\n Bloomberg: 8,\n \"WealthManagement.com\": 6,\n \"Wall Street Journal\": 3,\n \"Federal News Network\": 1,\n Digiday: 2,\n \"PR Daily\": 2,\n BleepingComputer: 1,\n \"ESG Today\": 4,\n \"Financial Times\": 4,\n Finextra: 4,\n \"NextGov/FCW\": 1,\n \"Dark Reading\": 2,\n \"Fast Company\": 2,\n PitchBook: 7,\n \"Bloomberg Technology\": 4,\n \"New York Times\": 1,\n \"Toms Hardware\": 1,\n \"The Financial Brand\": 6,\n \"Carrier Management\": 1,\n FreightWaves: 2,\n \"HR Dive\": 2,\n \"Hotel Dive\": 1,\n \"RCR Wireless\": 1,\n \"Seeking Alpha\": 3,\n \"WSJ Markets\": 1,\n \"AI News\": 2,\n \"Modern Healthcare\": 2,\n \"The Verge\": 2,\n \"Lloyds List\": 1,\n \"Nations Restaurant News\": 1,\n Core77: 1,\n \"Fierce Telecom\": 1\n}\n",
+"event_message": "📰 Media targeting for \"Food Security Leadership: Capitalize on Wheat Rally and Global Food Trade Challenges\": {\n journalist_types: [\n \"Agricultural commodity journalists\",\n \"Food security and policy reporters\",\n \"Trade and supply chain journalists\",\n \"Government and policy beat reporters\"\n ],\n target_industries: [ \"agriculture\", \"food\", \"trade\", \"government\" ],\n target_outlets: [ \"AgriCensus\", \"World Grain\", \"Food Business Magazine\" ]\n}\n",
 "event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "15d76533-9759-4d5d-98cc-95b473f71215",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "9ff533c8-f3c0-45a0-a31c-9d9f44d64879",
 "level": "info",
-"timestamp": 1766403427403000
+"timestamp": 1766577578861000
 },
 {
-"event_message": " Input: 106 articles\n",
+"event_message": "📰 Media targeting for \"Metals Market Leadership: Capitalize on Copper's Historic Rally and Gold's Record Highs\": {\n journalist_types: [\n \"Commodity journalists covering metals markets\",\n \"Financial journalists covering precious metals and industrial commodities\",\n \"Mining and metals industry reporters\",\n \"Investment analysts covering commodity markets\"\n ],\n target_industries: [ \"commodities\", \"mining\", \"finance\" ],\n target_outlets: [ \"Bloomberg Commodities\", \"Reuters Metals\", \"Metal Bulletin\" ]\n}\n",
 "event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "56901a19-c2de-4be8-99a2-bb0e552d3355",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "7d932c56-cc74-4d44-92b5-8f1f0713e0df",
 "level": "info",
-"timestamp": 1766403427403000
+"timestamp": 1766577578803000
 },
 {
-"event_message": " Duration: 71s\n",
+"event_message": " ✅ Saved: \"Energy Crisis Navigation: Position as Stable Trading Partner Amid Global Supply Chain Disruptions\" (9 content items)\n",
 "event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "cc523733-0f7c-4edd-bba1-1747f7812022",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "c8b67cf7-4fdd-4003-b2dd-c32365e79b0f",
 "level": "info",
-"timestamp": 1766403427403000
+"timestamp": 1766577578802000
 },
 {
-"event_message": " Press release articles limited: 0\n",
+"event_message": "📰 Media targeting for \"Energy Crisis Navigation: Position as Stable Trading Partner Amid Global Supply Chain Disruptions\": {\n journalist_types: [\n \"Energy journalists covering oil and gas markets\",\n \"Commodity trading reporters\",\n \"Supply chain and logistics journalists\",\n \"Geopolitical risk analysts\"\n ],\n target_industries: [ \"energy\", \"commodities\", \"supply_chain\" ],\n target_outlets: [ \"Bloomberg Energy\", \"Reuters Energy\", \"Platts\" ]\n}\n",
 "event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "7fa476f5-88af-45af-aafe-c143d28a324e",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "5c406979-0e87-46f9-ac87-7e0af5907a69",
 "level": "info",
-"timestamp": 1766403427403000
+"timestamp": 1766577578623000
 },
 {
-"event_message": " Source caps: {\n \"The Financial Brand\": 6,\n Bloomberg: 12,\n \"Fast Company\": 10,\n \"ESG Today\": 6,\n Digiday: 6,\n \"WealthManagement.com\": 6,\n PitchBook: 12,\n \"Hotel Dive\": 6,\n \"Bloomberg Technology\": 6,\n \"Wall Street Journal\": 12,\n \"Financial Times\": 12,\n \"WSJ Markets\": 12,\n \"Seeking Alpha\": 12,\n \"AI News\": 10,\n \"Carrier Management\": 6,\n \"RCR Wireless\": 6,\n \"New York Times\": 12,\n Finextra: 6,\n \"The Verge\": 6,\n \"Modern Healthcare\": 6,\n \"NextGov/FCW\": 6,\n \"PR Daily\": 6,\n \"Federal News Network\": 6,\n \"Dark Reading\": 6,\n \"Lloyds List\": 6,\n \"Nations Restaurant News\": 6,\n FreightWaves: 6,\n \"HR Dive\": 6,\n Core77: 6,\n BleepingComputer: 6,\n \"Toms Hardware\": 6,\n \"Fierce Telecom\": 6\n}\n",
+"event_message": "✅ Generated 3/3 embeddings\n",
 "event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "366c0806-4425-4628-bebf-8733c6c77e6a",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "16ba6d72-038a-491e-bcb4-38f4a59577e4",
 "level": "info",
-"timestamp": 1766403427403000
+"timestamp": 1766577578622000
 },
 {
-"event_message": " Industry priority kept: 0 (0 boosted)\n",
+"event_message": "📦 Storing 3 V2 opportunities with execution plans...\n",
 "event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "11843906-c5c7-43b4-a8f9-84222a78f0d1",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "b076bf1f-ec82-4110-bc26-27e0f644da23",
 "level": "info",
-"timestamp": 1766403427402000
+"timestamp": 1766577578622000
 },
 {
-"event_message": " ✅ Batch 5: 5 relevant\n",
+"event_message": "🔍 Generating embeddings for 3 opportunities...\n",
 "event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "fd17b995-f630-42bf-bafc-1ac21e33e825",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "8d2ac0cf-bef5-4723-8c6d-92831389faae",
 "level": "info",
-"timestamp": 1766403427402000
+"timestamp": 1766577578357000
 },
 {
-"event_message": "\n📊 Enforcing source diversity with quality tiers...\n",
+"event_message": "Found 3 existing opportunities (3 V2) to clear\n",
 "event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "2f2d0854-0234-4ccc-b86d-8d9caf5cd6ba",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "ca4a93ae-1276-4f01-bca7-6e89e57e3b70",
 "level": "info",
-"timestamp": 1766403427402000
+"timestamp": 1766577578305000
 },
 {
-"event_message": "\n Total scored relevant: 93\n",
+"event_message": "✅ Final opportunities: 0 (keeping all - below threshold of 5)\n",
 "event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "43c14e55-75d0-4b6e-8fba-86298eeae1dd",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "3fdb1b48-c2d4-49ea-916e-ba93bc8662fe",
 "level": "info",
-"timestamp": 1766403427402000
+"timestamp": 1766577578234000
 },
 {
-"event_message": " Batch 5/5 (6 articles)...\n",
+"event_message": "🗑️ Clearing existing opportunities for organization_id: \"2587d753-85f8-4090-a971-10c91575c9d4\"\n",
 "event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "905d388f-dd3d-48c2-9303-0154dedee840",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "4a564b24-8d2a-4d97-b9c8-0ee11cd214cc",
 "level": "info",
-"timestamp": 1766403419999000
+"timestamp": 1766577578234000
 },
 {
-"event_message": " ✅ Batch 4: 21 relevant\n",
+"event_message": "⏭️ Skipping creative enhancement to prevent timeout\n",
 "event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "6134daec-dd32-4517-925a-bd257c6cc2f4",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "5f79d231-07d7-4e68-b4ba-7677850abc62",
 "level": "info",
-"timestamp": 1766403419999000
+"timestamp": 1766577578234000
 },
 {
-"event_message": " Batch 4/5 (25 articles)...\n",
+"event_message": "📊 Total opportunities after creative enhancement: 0\n",
 "event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "53089764-5cfa-47f7-bb87-93b3ba476881",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "257242a5-fe8f-4062-b9ea-87e2988b6ed8",
 "level": "info",
-"timestamp": 1766403405284000
+"timestamp": 1766577578234000
 },
 {
-"event_message": " ✅ Batch 3: 25 relevant\n",
+"event_message": "✅ Validated 3/3 V2 opportunities\n",
 "event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "5d832e5d-4e4e-4551-9471-1c598d24733d",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "cf509b48-e575-4c92-9178-8af332a556e1",
 "level": "info",
-"timestamp": 1766403405284000
+"timestamp": 1766577578233000
 },
 {
-"event_message": " ✅ Batch 2: 22 relevant\n",
+"event_message": "✅ Claude V2 response received, length: 50791\n",
 "event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "19e74350-b17d-41a5-89b9-fc5db7d926cc",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "b51c1799-2200-4f9c-bb9e-a56448090447",
 "level": "info",
-"timestamp": 1766403390357000
+"timestamp": 1766577578233000
 },
 {
-"event_message": " Batch 3/5 (25 articles)...\n",
+"event_message": " - \"Energy Crisis Navigation: Position as Stable Trading Partner Amid Global Supply Chain Disruptions\": 9 content items across 3 stakeholder campaigns\n",
 "event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "d013f033-0406-4f63-896b-b6a848029568",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "26c58a2c-ff36-4cbd-9ea6-59aad835d14d",
 "level": "info",
-"timestamp": 1766403390357000
+"timestamp": 1766577578233000
 },
 {
-"event_message": " Batch 2/5 (25 articles)...\n",
+"event_message": "🎨 Enhancing opportunities with creative angles...\n",
 "event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "156d4913-0877-4af2-9b0c-99337062de54",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "cc4bd6e6-829c-4c79-b665-1a16a0c1c96e",
 "level": "info",
-"timestamp": 1766403374661000
+"timestamp": 1766577578233000
 },
 {
-"event_message": " ✅ Batch 1: 20 relevant\n",
+"event_message": "⏭️ Skipping V1 detection (using V2 only)\n",
 "event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "4d7450b7-1b54-4217-937c-35a746b944fc",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "6a5e0b14-d38a-4fe2-928b-26352a8d93eb",
 "level": "info",
-"timestamp": 1766403374661000
+"timestamp": 1766577578233000
 },
 {
-"event_message": " Rejected - blocked source: 0\n",
+"event_message": " - \"Food Security Leadership: Capitalize on Wheat Rally and Global Food Trade Challenges\": 9 content items across 3 stakeholder campaigns\n",
 "event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "d2d92a74-1171-4ed2-9e06-f6dc1ef4ed84",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "8e7b4d5d-84eb-4ae1-abbf-ebd702ae50b3",
 "level": "info",
-"timestamp": 1766403356017000
+"timestamp": 1766577578233000
 },
 {
-"event_message": " Rejected - no published_at: 0\n",
+"event_message": "✅ Parsed V2 opportunities: 3\n",
 "event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "99cadc5e-e743-48a7-a66c-31e480fdc455",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "a3c9c749-6158-4423-92d7-149dfa96d462",
 "level": "info",
-"timestamp": 1766403356017000
+"timestamp": 1766577578233000
 },
 {
-"event_message": " Rejected - old date (>7 days): 0\n",
+"event_message": " - \"Metals Market Leadership: Capitalize on Copper's Historic Rally and Gold's Record Highs\": 10 content items across 3 stakeholder campaigns\n",
 "event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "58b566e7-8a3e-4692-bdce-5f134c48852d",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "fa0a27a3-b41e-49d4-85d3-94c472ba44ca",
 "level": "info",
-"timestamp": 1766403356017000
+"timestamp": 1766577578233000
 },
 {
-"event_message": " Rejected - old year in URL: 0\n",
+"event_message": "✅ V2 Detection Complete: Found 3 execution-ready opportunities\n",
 "event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "f7b103bb-1315-4297-ad93-2c5b3f4a3095",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "46221599-7d39-4b96-9e25-0a698508ace3",
 "level": "info",
-"timestamp": 1766403356017000
+"timestamp": 1766577578233000
 },
 {
-"event_message": "\n📅 DATE VALIDATION: Filtering old articles...\n",
+"event_message": "Prompt length: 31801 characters\n",
 "event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "d249e6ae-0e17-4527-8e16-a00c2534d148",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "493fbf54-c52d-4243-b56a-0d37c894716d",
 "level": "info",
-"timestamp": 1766403356017000
+"timestamp": 1766577411142000
 },
 {
-"event_message": " ✅ Valid articles: 106/106\n",
+"event_message": "Calling Claude Sonnet 4 for V2 opportunity generation...\n",
 "event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "c9167db6-12d0-45cc-876c-cb223a3f35ee",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "bfb21713-1fc8-479c-8355-b5bc2912c85d",
 "level": "info",
-"timestamp": 1766403356017000
+"timestamp": 1766577411142000
 },
 {
-"event_message": " Input distribution: {\n \"Agri-Pulse\": 1,\n \"The Financial Brand\": 20,\n Bloomberg: 8,\n \"Fast Company\": 2,\n \"ESG Today\": 4,\n Digiday: 2,\n Ragan: 1,\n \"The Verge\": 6,\n \"WealthManagement.com\": 7,\n PitchBook: 9,\n \"Hotel Dive\": 1,\n \"Bloomberg Technology\": 5,\n \"Wall Street Journal\": 3,\n \"Financial Times\": 4,\n \"WSJ Markets\": 1,\n \"Seeking Alpha\": 4,\n \"AI News\": 2,\n \"Carrier Management\": 1,\n \"RCR Wireless\": 1,\n \"New York Times\": 1,\n Finextra: 4,\n \"Modern Healthcare\": 2,\n \"NextGov/FCW\": 1,\n \"PR Daily\": 2,\n \"Federal News Network\": 1,\n \"Dark Reading\": 2,\n \"Lloyds List\": 1,\n \"Nations Restaurant News\": 1,\n FreightWaves: 2,\n \"HR Dive\": 2,\n Core77: 1,\n BleepingComputer: 1,\n \"Front Office Sports\": 1,\n \"Toms Hardware\": 1,\n \"Fierce Telecom\": 1\n}\n",
+"event_message": " 3. [NEWS] Oilprice.com: Record Discounts Accelerate Chinese Teapot Purchases of Russia’s ESPO Crude: Typ...\n",
 "event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "a5402c1f-91ea-4a40-b14a-03b063505a6f",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "e32b2103-3743-434a-b786-183b79083ad1",
 "level": "info",
-"timestamp": 1766403356017000
+"timestamp": 1766577411142000
 },
 {
-"event_message": "\n🤖 Scoring 106 articles with Claude...\n",
+"event_message": "🚀 V2 Opportunity Detection - Building execution-ready opportunities...\n",
 "event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "d35e1112-f813-42d4-badf-8e230d3a6190",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "de1e3cd5-d2da-4545-b277-6d4f5bb52a1c",
 "level": "info",
-"timestamp": 1766403356017000
+"timestamp": 1766577411141000
 },
 {
-"event_message": " Batch 1/5 (25 articles)...\n",
+"event_message": "🏢 Company Profile Data: {\n has_company_profile: true,\n industry: \"trading\",\n strategic_goals_count: 3,\n description: \"Mitsui & Co. is one of Japan's largest sogo shosha...\",\n service_lines: 5,\n product_lines: 5,\n has_strategic_context: true,\n leadership_count: 2\n}\n",
 "event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "759bb586-fe17-4e61-861e-965d773b0e46",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "93f462d0-05ec-482d-bf31-d5bbd1a897f5",
 "level": "info",
-"timestamp": 1766403356017000
+"timestamp": 1766577411141000
 },
 {
-"event_message": " Strategic Priorities: 3\n",
+"event_message": " 2. [NEWS] Oilprice.com: Iraq Becomes a Battleground for China and Western Oil Giants: Type your search a...\n",
 "event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "9bfad93c-452a-4ad0-b313-51545f7e07e0",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "a84f5494-d334-4b11-9ba3-99975a5938ad",
 "level": "info",
-"timestamp": 1766403356015000
+"timestamp": 1766577411141000
 },
 {
-"event_message": " Regulators: 6\n",
+"event_message": "🎯 Using V2 Opportunity Detection Engine...\n",
 "event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "692b07c4-3e9a-421b-b52c-e0be70048091",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "11492928-5049-473a-9c8c-e105936ac21f",
 "level": "info",
-"timestamp": 1766403356015000
+"timestamp": 1766577411141000
 },
 {
-"event_message": " Input sources: 35\n",
+"event_message": "📊 Intelligence Data Extraction: {\n totalEvents: 55,\n eventsAboutOrg: 0,\n eventsAboutCompetitors: 55,\n entities: 0,\n topics: 0,\n quotes: 0,\n competitors: 17\n}\n",
 "event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "b57c449d-b98c-4fb0-bace-133051ff081d",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "17ecb6a1-2d84-41fb-a6c6-ebc7339d6a8e",
 "level": "info",
-"timestamp": 1766403356015000
+"timestamp": 1766577411141000
 },
 {
-"event_message": " Scoring Weights: 0 configured\n",
+"event_message": " 1. [NEWS] Bloomberg: Why 2026 Is Poised to Be Another Rocky Year for Global Trade: The global trading...\n",
 "event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "9bc47730-46f0-428b-86f2-930d1da56051",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "f7d1f6c0-d646-4eb4-9e66-264906be6f1c",
 "level": "info",
-"timestamp": 1766403356015000
+"timestamp": 1766577411141000
 },
 {
-"event_message": " Competitors: 15\n",
+"event_message": "📰 V2: Found 55 events to analyze\n",
 "event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "2a97ed5d-f13a-4020-87dd-6d065929f9e5",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "3a780d01-8740-4aea-aa3c-39d61011c3ec",
 "level": "info",
-"timestamp": 1766403356015000
+"timestamp": 1766577411141000
 },
 {
-"event_message": " Has Monitoring Prompt: true\n",
+"event_message": " Created 55 events from articles\n",
 "event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "7c2aeec1-3390-4e14-a0e5-b112b972b2ac",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "841cb62c-02e7-4d59-8a2c-1307aa6cd785",
 "level": "info",
-"timestamp": 1766403356015000
+"timestamp": 1766577410942000
 },
 {
-"event_message": " Key Questions: 5\n",
+"event_message": "⚠️ NO EVENTS FOUND IN ENRICHED DATA\n",
 "event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "bb1d7928-158c-4771-a562-47010ff79bfd",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "471baf40-60ad-441d-9ca2-a247be5e6f48",
 "level": "info",
-"timestamp": 1766403356015000
+"timestamp": 1766577410942000
 },
 {
-"event_message": " Source tiers: 48 critical, 57 high, 0 blocked\n",
+"event_message": "📊 Input data check: {\n has_enriched_data: true,\n has_search_results: false,\n search_results_count: 0,\n organized_events: 0,\n extracted_data_events: 0,\n has_executive_synthesis: true,\n social_signals_count: 0,\n has_profile: true,\n enriched_articles: 55,\n knowledge_graph_entities: 0\n}\n",
 "event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "f3b996bb-5159-48f1-990b-bc83a72c7ec3",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "6dd1676f-4817-44f2-8abf-1ba6dba8f058",
 "level": "info",
-"timestamp": 1766403356015000
+"timestamp": 1766577410942000
 },
 {
-"event_message": " Has Analysis Perspective: true\n",
+"event_message": "📰 ARTICLE-ONLY MODE: Creating events from 55 articles\n",
 "event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "5924aa68-124f-4174-9059-fc51e3097619",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "21f31637-9f76-4576-98ad-06a86c3b883d",
 "level": "info",
-"timestamp": 1766403356015000
+"timestamp": 1766577410942000
 },
 {
-"event_message": " Industry: Professional Services\n",
+"event_message": "🎯 PR Opportunity Detection for Mitsui & Co.\n",
 "event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "0eb47d29-7bbd-4464-ac86-8ede51c4870d",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "90cfac45-6a35-41e8-bf1f-a1673f9a94a1",
 "level": "info",
-"timestamp": 1766403356015000
+"timestamp": 1766577410941000
 },
 {
-"event_message": "🔍 RELEVANCE FILTER V2 for FTI Consulting\n",
+"event_message": "🔑 Environment check: {\n has_url: true,\n has_service_key: true,\n has_anthropic: true,\n key_length: 219\n}\n",
 "event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "5ac215fd-88dd-46a0-a91f-ab2c5acfd712",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "183b19fa-044d-4329-962c-fc53d577dc7c",
 "level": "info",
-"timestamp": 1766403356015000
-},
-{
-"event_message": " Input articles: 106\n",
-"event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "fa853c0b-38fa-49b4-99bb-3da935c7fd64",
-"level": "info",
-"timestamp": 1766403356015000
+"timestamp": 1766577410936000
 },
 {
 "event_message": "Listening on http://localhost:9999/\n",
 "event_type": "Log",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "3ecdf551-d37a-4e34-aebc-404d5b087a43",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "28d903c4-c24a-477c-916b-f2cb303ffa9b",
 "level": "info",
-"timestamp": 1766403356008000
+"timestamp": 1766577410936000
 },
 {
-"event_message": "booted (time: 29ms)",
+"event_message": "booted (time: 36ms)",
 "event_type": "Boot",
-"function_id": "5c20d325-8fc3-4f31-8c0f-59bb5c908121",
-"id": "243b7f80-e91a-4aae-9374-2d1de369d1dd",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "dbe23258-65b4-4231-9512-a05187f02511",
 "level": "log",
-"timestamp": 1766403356006000
+"timestamp": 1766577410920000
+},
+{
+"event_message": "Listening on http://localhost:9999/\n",
+"event_type": "Log",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "798f579e-e6a4-4af3-8e80-9a36667fd25b",
+"level": "info",
+"timestamp": 1766577410741000
+},
+{
+"event_message": "🔑 Environment check: {\n has_url: true,\n has_service_key: true,\n has_anthropic: true,\n key_length: 219\n}\n",
+"event_type": "Log",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "0a030b72-c934-4e33-afa8-082e09d127bf",
+"level": "info",
+"timestamp": 1766577410740000
+},
+{
+"event_message": "booted (time: 37ms)",
+"event_type": "Boot",
+"function_id": "6f540416-89b7-4b61-b46c-6c49f04a1376",
+"id": "bf5f23df-de4b-4c95-82e4-3e3602181921",
+"level": "log",
+"timestamp": 1766577410724000
 }
 ]

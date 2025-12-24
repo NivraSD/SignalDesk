@@ -5,6 +5,7 @@ export const PLATFORM_ADMIN_EMAILS = [
   'j83621235@gmail.com',
   'jonathan@nivria.com',
   'jon@nivria.com',
+  'jl@nivria.ai',
   // Add more admin emails as needed
 ]
 
