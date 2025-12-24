@@ -28,6 +28,30 @@ export default function SuggestedActions({ organizationId, onNavigate }: Suggest
 
   useEffect(() => {
     generateSuggestions()
+
+    // Subscribe to real-time changes on opportunities table
+    const opportunitiesChannel = supabase
+      .channel('suggested-actions-opportunities')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'opportunities',
+          filter: `organization_id=eq.${organizationId}`
+        },
+        (payload) => {
+          console.log('⚡ SuggestedActions: Opportunity change detected', payload.eventType)
+          generateSuggestions()
+        }
+      )
+      .subscribe((status) => {
+        console.log('⚡ SuggestedActions opportunities subscription:', status)
+      })
+
+    return () => {
+      supabase.removeChannel(opportunitiesChannel)
+    }
   }, [organizationId])
 
   const generateSuggestions = async () => {
