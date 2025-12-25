@@ -43,9 +43,9 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'SignalDesk <notifications@nivria.ai>',
+        from: 'NIV <notifications@nivria.ai>',
         to: NOTIFY_EMAIL,
-        subject: `New SignalDesk User: ${userEmail}`,
+        subject: `New NIV User: ${userEmail}`,
         html: `
           <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
             <h2 style="color: #333;">New User Registration</h2>
@@ -55,7 +55,7 @@ serve(async (req) => {
               <p><strong>Registered:</strong> ${createdAt}</p>
             </div>
             <p style="color: #666; font-size: 12px; margin-top: 20px;">
-              This is an automated notification from SignalDesk.
+              This is an automated notification from NIV.
             </p>
           </div>
         `,

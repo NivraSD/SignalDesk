@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Mic2, Plus, X as CloseIcon, Save, Loader, CheckCircle, AlertCircle, Sparkles, RefreshCw } from 'lucide-react'
+import { Mic2, Plus, X as CloseIcon, Save, Loader, CheckCircle, AlertCircle, Sparkles, RefreshCw, Building2, Target, Users, Lightbulb } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface BrandVoice {
@@ -21,6 +21,26 @@ interface BrandVoice {
 
   // Free text notes
   notes: string
+}
+
+interface CompanyContext {
+  // The company's story / origin / background
+  company_story: string
+
+  // Key topics and areas of expertise the company wants to talk about
+  key_topics: string[]
+
+  // What makes the company different / unique value proposition
+  differentiators: string
+
+  // Founder background (optional)
+  founder_background: string
+
+  // Target audience description
+  target_audience: string
+
+  // Industry positioning / how they want to be seen
+  positioning: string
 }
 
 interface BrandVoiceTabProps {
@@ -55,6 +75,15 @@ export default function BrandVoiceTab({
     notes: ''
   })
 
+  const [companyContext, setCompanyContext] = useState<CompanyContext>({
+    company_story: '',
+    key_topics: [],
+    differentiators: '',
+    founder_background: '',
+    target_audience: '',
+    positioning: ''
+  })
+
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [analyzing, setAnalyzing] = useState(false)
@@ -64,6 +93,7 @@ export default function BrandVoiceTab({
   // Input states
   const [newReference, setNewReference] = useState('')
   const [newAvoid, setNewAvoid] = useState('')
+  const [newTopic, setNewTopic] = useState('')
 
   useEffect(() => {
     if (organizationId) {
@@ -83,17 +113,35 @@ export default function BrandVoiceTab({
       }
 
       const data = await response.json()
-      if (data.success && data.organization?.company_profile?.brand_voice) {
-        const bv = data.organization.company_profile.brand_voice
-        setBrandVoice({
-          formality: bv.formality ?? 50,
-          technicality: bv.technicality ?? 50,
-          boldness: bv.boldness ?? 50,
-          adjectives: bv.adjectives || [],
-          references: bv.references || [],
-          avoid: bv.avoid || [],
-          notes: bv.notes || ''
-        })
+      if (data.success && data.organization?.company_profile) {
+        const profile = data.organization.company_profile
+
+        // Load brand voice
+        if (profile.brand_voice) {
+          const bv = profile.brand_voice
+          setBrandVoice({
+            formality: bv.formality ?? 50,
+            technicality: bv.technicality ?? 50,
+            boldness: bv.boldness ?? 50,
+            adjectives: bv.adjectives || [],
+            references: bv.references || [],
+            avoid: bv.avoid || [],
+            notes: bv.notes || ''
+          })
+        }
+
+        // Load company context
+        if (profile.company_context) {
+          const cc = profile.company_context
+          setCompanyContext({
+            company_story: cc.company_story || '',
+            key_topics: cc.key_topics || [],
+            differentiators: cc.differentiators || '',
+            founder_background: cc.founder_background || '',
+            target_audience: cc.target_audience || '',
+            positioning: cc.positioning || ''
+          })
+        }
       }
     } catch (err: any) {
       console.error('Failed to load brand voice:', err)
@@ -113,10 +161,11 @@ export default function BrandVoiceTab({
       const getData = await getResponse.json()
       const currentProfile = getData.organization?.company_profile || {}
 
-      // Merge brand_voice into company_profile
+      // Merge brand_voice and company_context into company_profile
       const updatedProfile = {
         ...currentProfile,
-        brand_voice: brandVoice
+        brand_voice: brandVoice,
+        company_context: companyContext
       }
 
       const response = await fetch(`/api/organizations/profile?id=${organizationId}`, {
@@ -223,6 +272,22 @@ export default function BrandVoiceTab({
     }))
   }
 
+  const addTopic = () => {
+    if (!newTopic.trim()) return
+    setCompanyContext(prev => ({
+      ...prev,
+      key_topics: [...prev.key_topics, newTopic.trim()].slice(0, 10)
+    }))
+    setNewTopic('')
+  }
+
+  const removeTopic = (topic: string) => {
+    setCompanyContext(prev => ({
+      ...prev,
+      key_topics: prev.key_topics.filter(t => t !== topic)
+    }))
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -288,6 +353,140 @@ export default function BrandVoiceTab({
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Company Story & Context Section */}
+      <div className="p-6 rounded-xl" style={{ background: 'var(--grey-900)', border: '1px solid var(--grey-800)' }}>
+        <div className="flex items-center gap-2 mb-4">
+          <Building2 className="w-5 h-5" style={{ color: 'var(--burnt-orange)' }} />
+          <h4 className="text-white font-medium" style={{ fontFamily: 'var(--font-display)' }}>Company Context</h4>
+        </div>
+        <p className="text-sm mb-6" style={{ color: 'var(--grey-400)' }}>
+          Help Niv understand your company so it can create more relevant, informed content
+        </p>
+
+        <div className="space-y-5">
+          {/* Company Story */}
+          <div>
+            <label className="block text-sm font-medium text-white mb-2">Company Story</label>
+            <p className="text-xs mb-2" style={{ color: 'var(--grey-500)' }}>
+              Your origin story, mission, and what drives the company
+            </p>
+            <textarea
+              value={companyContext.company_story}
+              onChange={(e) => setCompanyContext(prev => ({ ...prev, company_story: e.target.value }))}
+              placeholder="e.g., Founded in 2018 by former healthcare executives who saw how AI could transform patient care. Our mission is to reduce administrative burden so doctors can focus on what matters - their patients..."
+              rows={3}
+              className="w-full px-3 py-2.5 rounded-lg text-white placeholder-[var(--grey-600)] focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)] resize-none"
+              style={{ background: 'var(--grey-800)', border: '1px solid var(--grey-700)' }}
+            />
+          </div>
+
+          {/* Key Topics */}
+          <div>
+            <label className="block text-sm font-medium text-white mb-2">Key Topics & Expertise</label>
+            <p className="text-xs mb-2" style={{ color: 'var(--grey-500)' }}>
+              Areas of expertise and topics the company wants to be known for
+            </p>
+            <div className="flex flex-wrap gap-2 mb-3">
+              {companyContext.key_topics.map((topic) => (
+                <span
+                  key={topic}
+                  className="px-3 py-1 rounded-full text-sm text-white flex items-center gap-2"
+                  style={{ background: 'var(--burnt-orange)' }}
+                >
+                  {topic}
+                  <button onClick={() => removeTopic(topic)} className="hover:text-red-200">
+                    <CloseIcon className="w-3 h-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="e.g., AI in Healthcare, Clinical Workflow Optimization..."
+                value={newTopic}
+                onChange={(e) => setNewTopic(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && addTopic()}
+                className="flex-1 px-3 py-2.5 rounded-lg text-white placeholder-[var(--grey-600)] focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)]"
+                style={{ background: 'var(--grey-800)', border: '1px solid var(--grey-700)' }}
+              />
+              <button
+                onClick={addTopic}
+                disabled={!newTopic.trim() || companyContext.key_topics.length >= 10}
+                className="px-4 py-2 rounded-lg flex items-center gap-2 disabled:opacity-50"
+                style={{ background: 'var(--burnt-orange)', color: 'white' }}
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Differentiators */}
+          <div>
+            <label className="block text-sm font-medium text-white mb-2">What Makes You Different</label>
+            <p className="text-xs mb-2" style={{ color: 'var(--grey-500)' }}>
+              Your unique value proposition - what sets you apart from competitors
+            </p>
+            <textarea
+              value={companyContext.differentiators}
+              onChange={(e) => setCompanyContext(prev => ({ ...prev, differentiators: e.target.value }))}
+              placeholder="e.g., Unlike generic AI solutions, we're built specifically for healthcare with HIPAA compliance baked in from day one. Our platform integrates with 50+ EHR systems..."
+              rows={2}
+              className="w-full px-3 py-2.5 rounded-lg text-white placeholder-[var(--grey-600)] focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)] resize-none"
+              style={{ background: 'var(--grey-800)', border: '1px solid var(--grey-700)' }}
+            />
+          </div>
+
+          {/* Target Audience */}
+          <div>
+            <label className="block text-sm font-medium text-white mb-2">Target Audience</label>
+            <p className="text-xs mb-2" style={{ color: 'var(--grey-500)' }}>
+              Who are you trying to reach with your content?
+            </p>
+            <textarea
+              value={companyContext.target_audience}
+              onChange={(e) => setCompanyContext(prev => ({ ...prev, target_audience: e.target.value }))}
+              placeholder="e.g., Hospital IT directors, healthcare CIOs, clinical informatics leaders at mid-to-large health systems..."
+              rows={2}
+              className="w-full px-3 py-2.5 rounded-lg text-white placeholder-[var(--grey-600)] focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)] resize-none"
+              style={{ background: 'var(--grey-800)', border: '1px solid var(--grey-700)' }}
+            />
+          </div>
+
+          {/* Positioning */}
+          <div>
+            <label className="block text-sm font-medium text-white mb-2">Industry Positioning</label>
+            <p className="text-xs mb-2" style={{ color: 'var(--grey-500)' }}>
+              How you want to be perceived in your industry
+            </p>
+            <textarea
+              value={companyContext.positioning}
+              onChange={(e) => setCompanyContext(prev => ({ ...prev, positioning: e.target.value }))}
+              placeholder="e.g., The trusted partner for healthcare AI transformation. We're not the flashiest, but we're the most reliable..."
+              rows={2}
+              className="w-full px-3 py-2.5 rounded-lg text-white placeholder-[var(--grey-600)] focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)] resize-none"
+              style={{ background: 'var(--grey-800)', border: '1px solid var(--grey-700)' }}
+            />
+          </div>
+
+          {/* Founder Background (optional) */}
+          <div>
+            <label className="block text-sm font-medium text-white mb-2">Founder Background <span className="text-[var(--grey-500)] font-normal">(optional)</span></label>
+            <p className="text-xs mb-2" style={{ color: 'var(--grey-500)' }}>
+              Relevant background on founders that adds credibility to content
+            </p>
+            <textarea
+              value={companyContext.founder_background}
+              onChange={(e) => setCompanyContext(prev => ({ ...prev, founder_background: e.target.value }))}
+              placeholder="e.g., Our CEO spent 15 years as a practicing physician and hospital administrator before founding the company. Our CTO led engineering at Epic for 8 years..."
+              rows={2}
+              className="w-full px-3 py-2.5 rounded-lg text-white placeholder-[var(--grey-600)] focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)] resize-none"
+              style={{ background: 'var(--grey-800)', border: '1px solid var(--grey-700)' }}
+            />
+          </div>
+        </div>
+      </div>
 
       {/* Voice Spectrum Sliders */}
       <div className="p-6 rounded-xl" style={{ background: 'var(--grey-900)', border: '1px solid var(--grey-800)' }}>

@@ -6145,6 +6145,8 @@ async function getOrgProfile(organizationId, organizationName) {
       keywords: keywords,
       // Brand voice and style guidelines
       brand_voice: companyProfile.brand_voice || null,
+      // Company context (story, topics, differentiators, founder background, etc.)
+      company_context: companyProfile.company_context || null,
       // Recent work the user has been working on
       recent_work: companyProfile.recent_work || null,
       // Recent conversations for continuity
@@ -6293,6 +6295,31 @@ async function callClaude(context, research, orgProfile, conversationState, conv
     }
     if (bv.notes) {
       orgContext += `\n- Additional notes: ${bv.notes}`;
+    }
+  }
+
+  // Add company context if defined (story, topics, differentiators, etc.)
+  if (orgProfile.company_context) {
+    const cc = orgProfile.company_context;
+    orgContext += `\n\n**COMPANY CONTEXT (use this to inform your content):**`;
+
+    if (cc.company_story) {
+      orgContext += `\n- Company Story: ${cc.company_story}`;
+    }
+    if (cc.key_topics && cc.key_topics.length > 0) {
+      orgContext += `\n- Key Topics & Expertise: ${cc.key_topics.join(', ')}`;
+    }
+    if (cc.differentiators) {
+      orgContext += `\n- What Makes Them Different: ${cc.differentiators}`;
+    }
+    if (cc.target_audience) {
+      orgContext += `\n- Target Audience: ${cc.target_audience}`;
+    }
+    if (cc.positioning) {
+      orgContext += `\n- Industry Positioning: ${cc.positioning}`;
+    }
+    if (cc.founder_background) {
+      orgContext += `\n- Founder Background: ${cc.founder_background}`;
     }
   }
 

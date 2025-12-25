@@ -68,7 +68,11 @@ export async function GET(req: NextRequest) {
       product_lines: org.company_profile?.product_lines || [],
       key_markets: org.company_profile?.key_markets || [],
       business_model: org.company_profile?.business_model || '',
-      strategic_goals: org.company_profile?.strategic_goals || []
+      strategic_goals: org.company_profile?.strategic_goals || [],
+      // Brand Voice settings
+      brand_voice: org.company_profile?.brand_voice || null,
+      // Company Context (for richer content generation)
+      company_context: org.company_profile?.company_context || null
     }
 
     console.log('📂 [GET] Returning simpleProfile:', {
@@ -163,6 +167,10 @@ export async function PUT(req: NextRequest) {
       key_markets: newProfile.key_markets?.length > 0 ? newProfile.key_markets : existing.key_markets || [],
       business_model: newProfile.business_model || existing.business_model || '',
       strategic_goals: newProfile.strategic_goals?.length > 0 ? newProfile.strategic_goals : existing.strategic_goals || [],
+      // Brand Voice settings - update if provided
+      brand_voice: newProfile.brand_voice || existing.brand_voice || null,
+      // Company Context (founder story, topics to discuss, etc.) - update if provided
+      company_context: newProfile.company_context || existing.company_context || null,
       // Also update nested intelligence fields if they exist (for backward compatibility)
       ...(existing.market && {
         market: {
