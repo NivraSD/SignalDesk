@@ -10,6 +10,15 @@ export async function GET(request: Request) {
 
   const supabase = await createClient()
 
+  const forwardedHost = request.headers.get('x-forwarded-host')
+  const isLocalEnv = process.env.NODE_ENV === 'development'
+
+  const getRedirectUrl = (path: string) => {
+    if (isLocalEnv) return `${origin}${path}`
+    if (forwardedHost) return `https://${forwardedHost}${path}`
+    return `${origin}${path}`
+  }
+
   // Handle email confirmation with token_hash
   if (token_hash && type) {
     const { error } = await supabase.auth.verifyOtp({
@@ -17,38 +26,26 @@ export async function GET(request: Request) {
       type: type as 'email' | 'signup' | 'recovery' | 'invite' | 'magiclink' | 'email_change',
     })
 
-    if (!error) {
-      const forwardedHost = request.headers.get('x-forwarded-host')
-      const isLocalEnv = process.env.NODE_ENV === 'development'
-
-      if (isLocalEnv) {
-        return NextResponse.redirect(`${origin}${next}`)
-      } else if (forwardedHost) {
-        return NextResponse.redirect(`https://${forwardedHost}${next}`)
-      } else {
-        return NextResponse.redirect(`${origin}${next}`)
-      }
+    if (error) {
+      console.error('OTP verification error:', error)
+      return NextResponse.redirect(`${origin}/auth/error#error=${error.message}`)
     }
+
+    return NextResponse.redirect(getRedirectUrl(next))
   }
 
-  // Handle OAuth callback with code
+  // Handle OAuth/PKCE callback with code
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code)
 
-    if (!error) {
-      const forwardedHost = request.headers.get('x-forwarded-host')
-      const isLocalEnv = process.env.NODE_ENV === 'development'
-
-      if (isLocalEnv) {
-        return NextResponse.redirect(`${origin}${next}`)
-      } else if (forwardedHost) {
-        return NextResponse.redirect(`https://${forwardedHost}${next}`)
-      } else {
-        return NextResponse.redirect(`${origin}${next}`)
-      }
+    if (error) {
+      console.error('Code exchange error:', error)
+      return NextResponse.redirect(`${origin}/auth/error#error=${encodeURIComponent(error.message)}`)
     }
+
+    return NextResponse.redirect(getRedirectUrl(next))
   }
 
-  // If error or no valid params, redirect to error page
-  return NextResponse.redirect(`${origin}/auth/error`)
+  // If no valid params, redirect to error page
+  return NextResponse.redirect(`${origin}/auth/error#error=no_code_or_token`)
 }
