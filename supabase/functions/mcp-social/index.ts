@@ -101,7 +101,7 @@ const TOOLS = [
   },
   {
     name: "generate_social_content",
-    description: "Generate platform-optimized social media content with strategic hooks and format optimization",
+    description: "Generate platform-optimized social media content with strategic hooks and format optimization. Automatically uses organization's brand voice and company context if organizationId is provided.",
     inputSchema: {
       type: "object",
       properties: {
@@ -109,12 +109,13 @@ const TOOLS = [
         platforms: {
           type: "array",
           items: { type: "string" },
-          description: "Target platforms (linkedin, twitter, instagram, tiktok, youtube)"
+          description: "Target platforms (linkedin, twitter, instagram, tiktok, youtube, threads)"
         },
+        organizationId: { type: "string", description: "Organization ID to pull brand voice and company context" },
         tone: {
           type: "string",
           enum: ["professional", "casual", "urgent", "inspirational", "educational"],
-          description: "Content tone",
+          description: "Content tone (overrides brand voice if specified)",
           default: "professional"
         },
         includeHashtags: { type: "boolean", description: "Generate hashtags", default: true },
@@ -291,91 +292,537 @@ async function analyzeSocialTrends(args: any) {
 
 async function identifyInfluencers(args: any) {
   const { topic, platform, minFollowers = 10000, engagementRate = 2, location } = args;
-  
-  // Generate influencer list
-  const influencers = [
-    {
-      name: "Tech Influencer 1",
-      handle: `@${topic.toLowerCase().replace(/\s/g, '')}expert`,
+
+  // First, try to get from curated database
+  const curatedResult = getIndustryInfluencers(topic, platform);
+
+  if (curatedResult.influencers && !curatedResult.message) {
+    // We have curated influencers for this industry/platform
+    const influencerList = Array.isArray(curatedResult.influencers)
+      ? curatedResult.influencers
+      : curatedResult.influencers[platform] || [];
+
+    return {
+      source: 'curated_database',
+      industry: topic,
       platform,
-      followers: Math.floor(Math.random() * 100000) + minFollowers,
-      engagementRate: (Math.random() * 5 + engagementRate).toFixed(2),
-      topics: [topic, 'innovation', 'technology'],
-      location: location || 'Global'
-    },
-    {
-      name: "Industry Leader",
-      handle: `@${topic.toLowerCase().replace(/\s/g, '')}leader`,
-      platform,
-      followers: Math.floor(Math.random() * 200000) + minFollowers,
-      engagementRate: (Math.random() * 4 + engagementRate).toFixed(2),
-      topics: [topic, 'leadership', 'strategy'],
-      location: location || 'Global'
+      influencers: influencerList.map((inf: any) => ({
+        ...inf,
+        platform,
+        verified: true,
+        note: 'From curated industry influencer database'
+      })),
+      totalFound: influencerList.length,
+      recommendation: `These are verified key voices in ${topic}. Consider engaging with their content, mentioning them in relevant posts, or exploring partnership opportunities.`,
+      tips: [
+        "Don't cold-pitch - engage authentically with their content first",
+        "Look for co-creation opportunities rather than just mentions",
+        "Study their content style and what resonates with their audience",
+        "Consider their audience overlap with your target market"
+      ]
+    };
+  }
+
+  // Fallback: Use Claude to suggest potential influencers based on topic
+  const prompt = `Identify 5-7 real, notable influencers for the topic "${topic}" on ${platform}.
+
+Requirements:
+- Must be REAL people/accounts (not made up)
+- Active on ${platform} as of 2024/2025
+- Minimum ${minFollowers.toLocaleString()} followers
+- Known for expertise in ${topic}
+${location ? `- Based in or focused on ${location}` : ''}
+
+For each influencer, provide:
+- name: Their real name
+- handle: Their ${platform} handle (with @ for Twitter/TikTok)
+- focus: 2-3 word description of their expertise
+- followers: Approximate follower count
+- why: One sentence on why they're influential in this space
+
+Return as JSON array.`;
+
+  try {
+    const completion = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      temperature: 0.3, // Lower temp for more accurate/factual responses
+      messages: [{ role: 'user', content: prompt }]
+    });
+
+    const responseText = completion.content[0].type === 'text' ? completion.content[0].text : '[]';
+    const jsonMatch = responseText.match(/\[[\s\S]*\]/);
+
+    if (jsonMatch) {
+      const influencers = JSON.parse(jsonMatch[0]);
+      return {
+        source: 'ai_generated',
+        industry: topic,
+        platform,
+        influencers: influencers.map((inf: any) => ({
+          ...inf,
+          platform,
+          verified: false,
+          note: 'AI-suggested - verify before outreach'
+        })),
+        totalFound: influencers.length,
+        warning: 'These influencers were AI-generated. Please verify their current status and follower counts before any outreach.',
+        availableCuratedIndustries: Object.keys(INDUSTRY_INFLUENCERS)
+      };
     }
-  ];
-  
+  } catch (error) {
+    console.error('Error generating influencer suggestions:', error);
+  }
+
+  // Final fallback
   return {
-    influencers,
-    totalFound: influencers.length,
-    averageEngagement: engagementRate,
+    source: 'none',
+    industry: topic,
     platform,
-    topic
+    message: `Could not find curated influencers for "${topic}" on ${platform}. Try one of these industries: ${Object.keys(INDUSTRY_INFLUENCERS).join(', ')}`,
+    influencers: [],
+    totalFound: 0,
+    availableCuratedIndustries: Object.keys(INDUSTRY_INFLUENCERS)
   };
 }
 
-// Platform strategy intelligence
+// Platform strategy intelligence - Updated for 2025 algorithms and tactics
 const PLATFORM_STRATEGIES = {
   linkedin: {
-    purpose: "B2B thought leadership, professional credibility, industry expertise",
-    bestFor: ["executive positioning", "B2B announcements", "industry insights", "company news", "partnerships", "hiring"],
-    format: "Thought leadership post (1200-1500 chars ideal), use line breaks for readability",
-    hooks: ["Start with a contrarian take", "Lead with a statistic", "Open with a question", "Share a lesson learned"],
-    tone: "Professional but human. Avoid corporate speak. Be direct.",
-    length: "300-1300 characters (sweet spot: 800-1200)",
-    hashtags: "1-3 relevant hashtags max",
-    engagement: "Ask questions, invite discussion, tag relevant people/companies"
+    purpose: "B2B thought leadership, professional credibility, industry expertise, career content",
+    bestFor: ["executive positioning", "B2B announcements", "industry insights", "company news", "partnerships", "hiring", "personal brand"],
+    format: "Native text posts with line breaks, Document carousels (PDF), Native video. Algorithm rewards DWELL TIME.",
+    hooks: [
+      "Contrarian take that challenges conventional wisdom",
+      "Personal story with business lesson",
+      "The uncomfortable truth about [topic]",
+      "I was wrong about [thing]. Here's what changed.",
+      "Stop doing [common practice]. Do this instead.",
+      "The [X] that got me [result]"
+    ],
+    tone: "Professional but vulnerable. Share failures, not just wins. Strong opinions loosely held. No corporate jargon.",
+    length: "Sweet spot: 1,000-1,300 chars. Use line breaks every 1-2 sentences. First line = hook, last line = CTA.",
+    hashtags: "3-5 hashtags MAX. Put at END of post, not inline. Mix broad (#leadership) with niche (#revops).",
+    engagement: "Reply to EVERY comment in first 2 hours. Ask genuine questions. Tag people who'd add value (not for reach).",
+    algorithm2025: [
+      "Dwell time is #1 factor - make people STOP and READ",
+      "Native content beats links - LinkedIn suppresses external URLs",
+      "Document carousels get 3x reach of text posts",
+      "Posting time matters less than hook quality",
+      "Comments from your network boost more than likes",
+      "Consistent posting (3-5x/week) builds momentum"
+    ],
+    optimalTimes: "Tue-Thu 7-8am, 12pm, 5-6pm in target timezone. Avoid weekends.",
+    viralFormats: [
+      "The 'I got fired/rejected and here's what happened' story",
+      "Carousel: X lessons from Y years doing Z",
+      "The 'here's my actual [salary/revenue/metrics]' transparency post",
+      "Contrarian take on popular industry opinion",
+      "Behind-the-scenes of a deal/launch/failure"
+    ]
   },
   twitter: {
-    purpose: "Real-time engagement, news commentary, quick takes, viral reach",
-    bestFor: ["breaking news", "hot takes", "live event commentary", "quick updates", "engaging conversations"],
-    format: "Single tweet (280 chars) or thread (3-7 tweets). First tweet MUST hook.",
-    hooks: ["Bold statement", "Surprising stat", "Controversial question", "Pattern interrupt"],
-    tone: "Sharp, punchy, confident. No fluff. Every word counts.",
-    length: "Single: 240-280 chars (leave room for engagement). Thread: 200-250 per tweet.",
-    hashtags: "1-2 max, must be relevant to conversation",
-    engagement: "Threads perform better. End with CTA or question."
+    purpose: "Real-time discourse, hot takes, industry conversations, thought leadership, news breaking",
+    bestFor: ["breaking news", "hot takes", "live commentary", "thread deep-dives", "community building", "X Spaces"],
+    format: "Single posts, Threads (still work), Long-form articles (X Premium), Spaces for audio.",
+    hooks: [
+      "Controversial opinion stated as fact",
+      "The thing nobody talks about:",
+      "Unpopular opinion: [take]",
+      "Hot take: [statement]",
+      "Everyone is sleeping on [thing]",
+      "This [thing] is about to change everything"
+    ],
+    tone: "Sharp, opinionated, confident. Take a stance. Humor works. Authenticity > polish.",
+    length: "Single: 200-280 chars. Threads: 5-12 tweets, each standalone valuable. Long-form: 1000-2500 words.",
+    hashtags: "0-1 hashtag. Hashtags feel outdated on X now. Rely on keywords instead.",
+    engagement: "Quote tweet > retweet. Reply to big accounts. Build in public. Threads with value get bookmarked.",
+    algorithm2025: [
+      "Premium subscribers get reach boost",
+      "Engagement in first 30 min is critical",
+      "Quote tweets with commentary outperform RTs",
+      "Images/video get less reach than text-only now",
+      "Long-form posts are being tested/pushed",
+      "Replies to viral posts can get massive reach"
+    ],
+    optimalTimes: "8-10am, 12-1pm, 7-9pm in target timezone. Weekends can work for certain niches.",
+    viralFormats: [
+      "The 'ratio' response to bad take",
+      "Thread: Here's exactly how I [did thing]",
+      "The 'this is the best [thing] I've seen' endorsement",
+      "Live reaction/commentary to industry event",
+      "The 'I'll say it: [controversial opinion]' post"
+    ]
   },
   instagram: {
-    purpose: "Visual storytelling, brand personality, behind-the-scenes, lifestyle content",
-    bestFor: ["product showcases", "team culture", "visual narratives", "customer stories", "event coverage"],
-    format: "Carousel (5-10 slides) or Reel (15-60s). Caption: 125-150 chars above fold, longer detail below.",
-    hooks: ["First slide/frame must stop scroll", "Use curiosity gap", "Bold text overlay", "Pattern interrupt"],
-    tone: "Authentic, visual-first, conversational. Emojis encouraged.",
-    length: "Caption: 1000-2200 chars. First line CRITICAL. Break into scannable sections.",
-    hashtags: "10-15 relevant hashtags (mix of popular + niche)",
-    engagement: "Carousel = high saves/shares. Reels = reach. Stories = connection."
+    purpose: "Visual brand building, lifestyle content, product showcase, community connection, Reels discovery",
+    bestFor: ["product showcases", "team culture", "behind-the-scenes", "customer stories", "tutorials", "lifestyle"],
+    format: "Reels (primary reach driver), Carousels (high saves), Stories (engagement), Broadcast Channels, Collabs.",
+    hooks: [
+      "First frame MUST stop the scroll - text overlay required",
+      "POV: You just [relatable situation]",
+      "Watch until the end for [payoff]",
+      "The [thing] nobody shows you",
+      "3 signs you need to [action]",
+      "This changed everything for me"
+    ],
+    tone: "Authentic, relatable, visually cohesive. Polished but not fake. Personality matters.",
+    length: "Reels: 7-15 seconds for reach, 30-60 for depth. Carousels: 7-10 slides. Caption: Hook in first 125 chars.",
+    hashtags: "5-10 hashtags in caption or first comment. Mix: 3 broad, 3 medium, 3 niche. Avoid banned hashtags.",
+    engagement: "Stories for daily connection. Broadcast channels for super fans. Collab posts for cross-pollination.",
+    algorithm2025: [
+      "Reels are 2x reach of static posts",
+      "Watch time and replays are key Reels metrics",
+      "Shares to DMs/Stories boost more than likes",
+      "Posting Reels to Stories increases reach",
+      "Carousel saves = algorithm gold",
+      "Broadcast Channels build owned audience"
+    ],
+    optimalTimes: "11am-1pm and 7-9pm weekdays. Sunday evenings work well.",
+    viralFormats: [
+      "Before/after transformation",
+      "Day in the life of [role]",
+      "Carousel: Swipe for the [reveal/answer]",
+      "Get ready with me + story",
+      "POV Reels with trending audio",
+      "Tutorial with text overlay step-by-step"
+    ]
   },
   tiktok: {
-    purpose: "Entertainment, education through entertainment, viral trends, authentic connection",
-    bestFor: ["educational content", "trend participation", "behind-the-scenes", "explainers", "storytelling"],
-    format: "15-60 second video. Hook in first 2 seconds or scroll. Text overlay essential.",
-    hooks: ["POV format", "Trend participation", "Surprising reveal", "Relatable problem", "Before/after"],
-    tone: "Raw, authentic, unpolished. Corporate polish KILLS engagement. Be human.",
-    length: "Video: 21-34 seconds ideal. Caption: Short, punchy, 1-2 lines max.",
-    hashtags: "3-5 hashtags (trending + niche). Check trending sounds.",
-    engagement: "Use trending sounds. Reply to comments with videos. Duet/stitch."
+    purpose: "Entertainment-first education, trend participation, authentic brand personality, discovery engine",
+    bestFor: ["educational content", "trends", "behind-the-scenes", "explainers", "storytelling", "B2B surprisingly"],
+    format: "Vertical video 9:16. Now supports up to 10 minutes. Photo carousels. Text-on-screen essential.",
+    hooks: [
+      "Hook in FIRST SECOND or they scroll",
+      "POV: [relatable scenario]",
+      "Things that just make sense in [industry]",
+      "Wait for it...",
+      "The [thing] they don't tell you about [topic]",
+      "Replying to @[user] [their question]"
+    ],
+    tone: "Unpolished, authentic, human. Corporate = death. Show personality. Trends matter but don't force them.",
+    length: "7-15 seconds for virality. 30-60 for depth. 1-3 min for story/tutorial. Text on screen for silent viewing.",
+    hashtags: "3-5 hashtags. TikTok SEO is real now - keywords in caption matter more than hashtags.",
+    engagement: "Reply to comments with video. Stitch/Duet. Use trending sounds. Post 1-3x daily for growth.",
+    algorithm2025: [
+      "TikTok SEO is massive - searchable captions matter",
+      "Photo carousels are blowing up (new format)",
+      "Watch time % is #1 ranking factor",
+      "Longer videos (2-3 min) getting pushed for certain niches",
+      "Sounds still matter but less than 2023",
+      "Consistency > virality for growth"
+    ],
+    optimalTimes: "12-3pm and 7-11pm. Weekends actually perform well.",
+    viralFormats: [
+      "Storytime with hook",
+      "Day in the life",
+      "Photo carousel with storytelling",
+      "Reply to comment with full video",
+      "Trend participation with niche twist",
+      "The 'I need to talk about [thing]' format"
+    ]
   },
   youtube: {
-    purpose: "Long-form education, deep dives, tutorials, storytelling",
-    bestFor: ["product demos", "thought leadership", "case studies", "interviews", "educational series"],
-    format: "Short (60s) or Long (8-15 min). Title + Thumbnail critical. First 30s = retention.",
-    hooks: ["Tease the payoff", "Address pain point", "Show transformation", "Pattern interrupt"],
-    tone: "Authoritative but conversational. Pace matters. Edit tight.",
-    length: "Shorts: 30-60s. Long: 8-15 min ideal (completion rate matters)",
-    hashtags: "Tags in description, not hashtags in title",
-    engagement: "CTA to subscribe. Pinned comment with question. End screen."
+    purpose: "Long-form authority building, searchable content library, Shorts for discovery, community building",
+    bestFor: ["tutorials", "deep dives", "thought leadership", "interviews", "case studies", "product demos", "vlogs"],
+    format: "Long-form (8-15 min), Shorts (under 60s), Community posts, Premieres, Live streams.",
+    hooks: [
+      "First 30 seconds determines if they stay",
+      "Tease the payoff immediately",
+      "Open with the transformation/result",
+      "Pattern interrupt in first 5 seconds",
+      "Address the pain point directly",
+      "'By the end of this video, you'll know exactly how to...'"
+    ],
+    tone: "Authoritative but personable. Pacing matters. Edit tight. Energy high but authentic.",
+    length: "Shorts: 30-58 seconds. Long: 8-15 min sweet spot. 20+ min for deep authority content.",
+    hashtags: "Use tags in video settings. 3-5 relevant hashtags in description. Keywords in title > hashtags.",
+    engagement: "Pinned comment with question. Reply to comments (especially first hour). Community posts between videos.",
+    algorithm2025: [
+      "Click-through rate (thumbnail + title) is #1",
+      "Average view duration determines reach",
+      "Shorts can drive subscribers to long-form",
+      "Community posts keep channel active between uploads",
+      "Consistency in posting schedule matters",
+      "YouTube Search is still massive - SEO matters"
+    ],
+    optimalTimes: "2-4pm for publishing (algorithm pushes over next hours). Shorts: anytime.",
+    viralFormats: [
+      "The complete guide to [topic]",
+      "I tried [thing] for 30 days",
+      "Reacting to [industry thing]",
+      "How I [achieved result] - full breakdown",
+      "The truth about [controversial topic]",
+      "Shorts: Quick tip format with text overlay"
+    ]
+  },
+  threads: {
+    purpose: "Text-based conversations, community building, cross-posting from X, early adopter advantage",
+    bestFor: ["casual updates", "community engagement", "cross-platform presence", "text-first content"],
+    format: "Text posts up to 500 chars. Image support. Can cross-post to Instagram.",
+    hooks: [
+      "Casual, conversational openers",
+      "Questions to the community",
+      "Hot takes (but less aggressive than X)",
+      "Behind-the-scenes updates"
+    ],
+    tone: "More casual than LinkedIn, less combative than X. Community-focused. Instagram audience crossover.",
+    length: "500 chars max. Shorter feels more native. Can thread for longer thoughts.",
+    hashtags: "Hashtags work. Use 2-3 relevant ones.",
+    engagement: "Reply to comments. Quote post others. Building community matters more than virality here.",
+    algorithm2025: [
+      "Still growing - early adopter advantage",
+      "Cross-posting from Instagram can boost both",
+      "Less competitive than X for reach",
+      "Good for B2C brands with Instagram presence"
+    ],
+    optimalTimes: "Similar to Instagram - 11am-1pm, 7-9pm.",
+    viralFormats: [
+      "Question prompts",
+      "Casual updates that feel like texts to friends",
+      "Cross-posted Instagram content with added context"
+    ]
   }
 };
+
+// Industry Influencer Database - Curated list of key voices by industry
+// These are real influential accounts to reference (not for automated outreach)
+const INDUSTRY_INFLUENCERS: Record<string, {
+  linkedin: { name: string; handle: string; focus: string; followers: string }[];
+  twitter: { name: string; handle: string; focus: string; followers: string }[];
+  tiktok?: { name: string; handle: string; focus: string; followers: string }[];
+  youtube?: { name: string; handle: string; focus: string; followers: string }[];
+}> = {
+  "technology": {
+    linkedin: [
+      { name: "Satya Nadella", handle: "satyanadella", focus: "AI, Enterprise Tech, Leadership", followers: "10M+" },
+      { name: "Reid Hoffman", handle: "raboreid", focus: "Startups, AI, Entrepreneurship", followers: "3M+" },
+      { name: "Lenny Rachitsky", handle: "lennyrachitsky", focus: "Product Management, Growth", followers: "500K+" },
+      { name: "Avinash Kaushik", handle: "avinashkaushik", focus: "Analytics, Digital Marketing", followers: "300K+" },
+      { name: "Rand Fishkin", handle: "randfish", focus: "SEO, Marketing, Startups", followers: "200K+" }
+    ],
+    twitter: [
+      { name: "Elon Musk", handle: "@elonmusk", focus: "Tech, SpaceX, Tesla", followers: "150M+" },
+      { name: "Sam Altman", handle: "@sama", focus: "AI, OpenAI, Startups", followers: "3M+" },
+      { name: "Paul Graham", handle: "@paulg", focus: "Startups, Y Combinator", followers: "1.5M+" },
+      { name: "Garry Tan", handle: "@garrytan", focus: "Startups, Y Combinator", followers: "500K+" },
+      { name: "Balaji Srinivasan", handle: "@balaboris", focus: "Crypto, Tech Trends", followers: "1M+" }
+    ],
+    youtube: [
+      { name: "Marques Brownlee", handle: "MKBHD", focus: "Tech Reviews, Consumer Tech", followers: "18M+" },
+      { name: "Linus Tech Tips", handle: "LinusTechTips", focus: "PC Hardware, Tech", followers: "15M+" },
+      { name: "Y Combinator", handle: "ycombinator", focus: "Startups, Founders", followers: "1M+" }
+    ]
+  },
+  "saas": {
+    linkedin: [
+      { name: "Jason Lemkin", handle: "jasonlk", focus: "SaaS, Sales, Startups", followers: "300K+" },
+      { name: "David Sacks", handle: "davidsacks", focus: "SaaS, Venture Capital", followers: "200K+" },
+      { name: "Tomasz Tunguz", handle: "ttunguz", focus: "SaaS Metrics, VC", followers: "150K+" },
+      { name: "Kyle Poyar", handle: "kylepoyar", focus: "PLG, Pricing, Growth", followers: "100K+" },
+      { name: "Elena Verna", handle: "elenaverna", focus: "Growth, PLG", followers: "100K+" }
+    ],
+    twitter: [
+      { name: "Jason Lemkin", handle: "@jasonlk", focus: "SaaS, Sales", followers: "200K+" },
+      { name: "Hiten Shah", handle: "@hnshah", focus: "SaaS, Product", followers: "300K+" },
+      { name: "Patrick Campbell", handle: "@paboricampbell", focus: "SaaS Pricing", followers: "50K+" }
+    ]
+  },
+  "healthcare": {
+    linkedin: [
+      { name: "Eric Topol", handle: "erictopol", focus: "Digital Health, AI in Medicine", followers: "500K+" },
+      { name: "John Halamka", handle: "johnhalamka", focus: "Health IT, Digital Transformation", followers: "100K+" },
+      { name: "Atul Gawande", handle: "atulgawande", focus: "Healthcare Policy, Surgery", followers: "200K+" }
+    ],
+    twitter: [
+      { name: "Eric Topol", handle: "@eaboricTopol", focus: "Digital Health, Research", followers: "700K+" },
+      { name: "Bob Wachter", handle: "@Bob_Wachter", focus: "Hospital Medicine", followers: "300K+" },
+      { name: "Vinay Prasad", handle: "@VPrasadMDMPH", focus: "Healthcare Policy", followers: "400K+" }
+    ]
+  },
+  "finance": {
+    linkedin: [
+      { name: "Jamie Dimon", handle: "jamie-dimon", focus: "Banking, Economy", followers: "1M+" },
+      { name: "Ray Dalio", handle: "raydalio", focus: "Investing, Economics", followers: "3M+" },
+      { name: "Mohamed El-Erian", handle: "mohamedaborian", focus: "Economics, Markets", followers: "500K+" }
+    ],
+    twitter: [
+      { name: "Jim Cramer", handle: "@jimcramer", focus: "Stocks, Markets", followers: "2M+" },
+      { name: "Cathie Wood", handle: "@CathieDWood", focus: "Innovation Investing", followers: "1.5M+" },
+      { name: "Chamath Palihapitiya", handle: "@chamath", focus: "VC, Markets", followers: "1.5M+" }
+    ],
+    tiktok: [
+      { name: "Humphrey Yang", handle: "@humphreytalks", focus: "Personal Finance", followers: "3M+" },
+      { name: "Erika Kullberg", handle: "@erikakullberg", focus: "Money Tips, Law", followers: "10M+" }
+    ]
+  },
+  "marketing": {
+    linkedin: [
+      { name: "Ann Handley", handle: "annhandley", focus: "Content Marketing", followers: "500K+" },
+      { name: "Neil Patel", handle: "neilkpatel", focus: "SEO, Digital Marketing", followers: "500K+" },
+      { name: "Gary Vaynerchuk", handle: "garyvaynerchuk", focus: "Social Media, Branding", followers: "5M+" },
+      { name: "Seth Godin", handle: "sethgodin", focus: "Marketing Philosophy", followers: "1M+" },
+      { name: "Dave Gerhardt", handle: "davegerhardt", focus: "B2B Marketing", followers: "100K+" }
+    ],
+    twitter: [
+      { name: "Gary Vaynerchuk", handle: "@garyvee", focus: "Social, Branding", followers: "3M+" },
+      { name: "Rand Fishkin", handle: "@randfish", focus: "SEO, Startups", followers: "500K+" },
+      { name: "Amanda Natividad", handle: "@amandanat", focus: "Content, Growth", followers: "100K+" }
+    ],
+    youtube: [
+      { name: "Gary Vaynerchuk", handle: "GaryVee", focus: "Marketing, Motivation", followers: "4M+" },
+      { name: "Neil Patel", handle: "NeilPatel", focus: "SEO, Marketing", followers: "1M+" }
+    ]
+  },
+  "retail": {
+    linkedin: [
+      { name: "Doug McMillon", handle: "dougmcmillon", focus: "Retail, Walmart", followers: "500K+" },
+      { name: "Andy Jassy", handle: "andyjassy", focus: "Amazon, E-commerce", followers: "300K+" }
+    ],
+    twitter: [
+      { name: "Jason Del Rey", handle: "@DelRey", focus: "Retail, E-commerce News", followers: "100K+" },
+      { name: "Sucharita Kodali", handle: "@SupplyChainit", focus: "Retail Analytics", followers: "50K+" }
+    ]
+  },
+  "sustainability": {
+    linkedin: [
+      { name: "Paul Polman", handle: "paulpolman", focus: "Sustainable Business", followers: "500K+" },
+      { name: "Christiana Figueres", handle: "christiana-figueres", focus: "Climate Action", followers: "200K+" }
+    ],
+    twitter: [
+      { name: "Greta Thunberg", handle: "@GretaThunberg", focus: "Climate Activism", followers: "5M+" },
+      { name: "Bill Gates", handle: "@BillGates", focus: "Climate, Energy", followers: "60M+" }
+    ]
+  },
+  "ai": {
+    linkedin: [
+      { name: "Andrew Ng", handle: "andrewyng", focus: "AI, Machine Learning", followers: "1M+" },
+      { name: "Fei-Fei Li", handle: "faborifaborili", focus: "AI Research, Ethics", followers: "200K+" },
+      { name: "Cassie Kozyrkov", handle: "kozyrkov", focus: "Decision Science, AI", followers: "200K+" }
+    ],
+    twitter: [
+      { name: "Andrej Karpathy", handle: "@karpathy", focus: "AI, Tesla AI", followers: "800K+" },
+      { name: "Yann LeCun", handle: "@ylecun", focus: "AI Research, Meta", followers: "600K+" },
+      { name: "Emad Mostaque", handle: "@EMostaque", focus: "Generative AI", followers: "200K+" }
+    ],
+    youtube: [
+      { name: "Two Minute Papers", handle: "TwoMinutePapers", focus: "AI Research Explained", followers: "1.5M+" },
+      { name: "Lex Fridman", handle: "lexfridman", focus: "AI Podcasts, Interviews", followers: "3M+" }
+    ]
+  },
+  "hr": {
+    linkedin: [
+      { name: "Josh Bersin", handle: "joshbersin", focus: "HR Tech, Future of Work", followers: "500K+" },
+      { name: "Adam Grant", handle: "adaborygrant", focus: "Org Psychology, Work", followers: "5M+" },
+      { name: "Brené Brown", handle: "brenebrown", focus: "Leadership, Culture", followers: "3M+" }
+    ],
+    twitter: [
+      { name: "Adam Grant", handle: "@AdamMGrant", focus: "Work, Psychology", followers: "500K+" },
+      { name: "Laszlo Bock", handle: "@LaszloBock", focus: "HR, Google Alumni", followers: "100K+" }
+    ]
+  },
+  "beauty": {
+    linkedin: [
+      { name: "Emily Weiss", handle: "emilyweiss", focus: "Glossier, Beauty", followers: "100K+" }
+    ],
+    tiktok: [
+      { name: "Mikayla Nogueira", handle: "@mikaylanogueira", focus: "Beauty Reviews", followers: "15M+" },
+      { name: "Alix Earle", handle: "@alixearle", focus: "GRWM, Lifestyle", followers: "7M+" },
+      { name: "Meredith Duxbury", handle: "@meredithduxbury", focus: "Makeup Tutorials", followers: "17M+" }
+    ],
+    youtube: [
+      { name: "James Charles", handle: "jamescharles", focus: "Makeup", followers: "23M+" },
+      { name: "NikkieTutorials", handle: "NikkieTutorials", focus: "Makeup", followers: "14M+" }
+    ]
+  },
+  "food": {
+    tiktok: [
+      { name: "Keith Lee", handle: "@keith_lee125", focus: "Food Reviews", followers: "16M+" },
+      { name: "Emily Mariko", handle: "@emilymariko", focus: "Recipes, ASMR", followers: "12M+" },
+      { name: "The Pasta Queen", handle: "@thepastaqueen", focus: "Italian Cooking", followers: "5M+" }
+    ],
+    youtube: [
+      { name: "Joshua Weissman", handle: "JoshuaWeissman", focus: "Cooking, Recipes", followers: "9M+" },
+      { name: "Babish Culinary Universe", handle: "baborishculinaryuniverse", focus: "Cooking", followers: "10M+" }
+    ]
+  }
+};
+
+// Get influencers for a specific industry
+function getIndustryInfluencers(industry: string, platform?: string): any {
+  const industryLower = industry.toLowerCase();
+
+  // Map common variations to our keys
+  const industryMap: Record<string, string> = {
+    'tech': 'technology',
+    'software': 'saas',
+    'b2b software': 'saas',
+    'enterprise software': 'saas',
+    'health': 'healthcare',
+    'medical': 'healthcare',
+    'pharma': 'healthcare',
+    'financial services': 'finance',
+    'banking': 'finance',
+    'fintech': 'finance',
+    'advertising': 'marketing',
+    'martech': 'marketing',
+    'ecommerce': 'retail',
+    'e-commerce': 'retail',
+    'consumer goods': 'retail',
+    'cpg': 'retail',
+    'climate': 'sustainability',
+    'green': 'sustainability',
+    'esg': 'sustainability',
+    'artificial intelligence': 'ai',
+    'machine learning': 'ai',
+    'human resources': 'hr',
+    'people ops': 'hr',
+    'cosmetics': 'beauty',
+    'skincare': 'beauty',
+    'restaurant': 'food',
+    'hospitality': 'food'
+  };
+
+  const mappedIndustry = industryMap[industryLower] || industryLower;
+  const influencers = INDUSTRY_INFLUENCERS[mappedIndustry];
+
+  if (!influencers) {
+    return {
+      industry: industry,
+      message: `No curated influencer list for "${industry}". Consider searching manually or using general tech/marketing influencers as a starting point.`,
+      availableIndustries: Object.keys(INDUSTRY_INFLUENCERS)
+    };
+  }
+
+  if (platform) {
+    const platformLower = platform.toLowerCase();
+    const platformInfluencers = influencers[platformLower as keyof typeof influencers];
+    if (platformInfluencers) {
+      return {
+        industry,
+        platform,
+        influencers: platformInfluencers,
+        count: platformInfluencers.length
+      };
+    } else {
+      return {
+        industry,
+        platform,
+        message: `No influencers curated for ${platform} in ${industry}`,
+        availablePlatforms: Object.keys(influencers)
+      };
+    }
+  }
+
+  return {
+    industry,
+    influencers,
+    platformCount: Object.keys(influencers).reduce((acc, p) => {
+      acc[p] = influencers[p as keyof typeof influencers]?.length || 0;
+      return acc;
+    }, {} as Record<string, number>)
+  };
+}
 
 // Intelligent platform selection based on goals
 function recommendPlatforms(args: {
@@ -487,6 +934,7 @@ async function generateSocialContent(args: any) {
   const {
     message,
     platforms,
+    organizationId,
     tone = 'professional',
     includeHashtags = true,
     includeEmojis = false,
@@ -496,24 +944,97 @@ async function generateSocialContent(args: any) {
     narrative = ''
   } = args;
 
+  // Fetch org profile if organizationId provided
+  let orgContext = '';
+  let brandVoice: any = null;
+  let companyContext: any = null;
+
+  if (organizationId) {
+    try {
+      const { data: org } = await supabase
+        .from('organizations')
+        .select('name, industry, company_profile')
+        .eq('id', organizationId)
+        .single();
+
+      if (org) {
+        brandVoice = org.company_profile?.brand_voice;
+        companyContext = org.company_profile?.company_context;
+
+        orgContext = `\nORGANIZATION CONTEXT:
+Company: ${org.name}
+Industry: ${org.industry || 'Not specified'}`;
+
+        if (companyContext) {
+          if (companyContext.company_story) {
+            orgContext += `\nCompany Story: ${companyContext.company_story}`;
+          }
+          if (companyContext.key_topics?.length > 0) {
+            orgContext += `\nKey Topics/Expertise: ${companyContext.key_topics.join(', ')}`;
+          }
+          if (companyContext.differentiators) {
+            orgContext += `\nDifferentiators: ${companyContext.differentiators}`;
+          }
+          if (companyContext.target_audience) {
+            orgContext += `\nTarget Audience: ${companyContext.target_audience}`;
+          }
+          if (companyContext.positioning) {
+            orgContext += `\nPositioning: ${companyContext.positioning}`;
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching org profile:', error);
+    }
+  }
+
+  // Build brand voice instructions
+  let brandVoiceInstructions = '';
+  if (brandVoice) {
+    const formality = brandVoice.formality || 50;
+    const technicality = brandVoice.technicality || 50;
+    const boldness = brandVoice.boldness || 50;
+
+    const formalityDesc = formality < 33 ? 'casual and conversational' : formality > 66 ? 'formal and professional' : 'balanced';
+    const techDesc = technicality < 33 ? 'accessible to general audiences' : technicality > 66 ? 'technical and detailed' : 'moderately technical';
+    const boldDesc = boldness < 33 ? 'conservative and measured' : boldness > 66 ? 'bold and confident' : 'balanced';
+
+    brandVoiceInstructions = `\nBRAND VOICE (CRITICAL - follow these guidelines):
+- Tone: ${formalityDesc}, ${techDesc}, ${boldDesc}`;
+
+    if (brandVoice.adjectives?.length > 0) {
+      brandVoiceInstructions += `\n- Voice should feel: ${brandVoice.adjectives.join(', ')}`;
+    }
+    if (brandVoice.references?.length > 0) {
+      brandVoiceInstructions += `\n- Style inspiration: ${brandVoice.references.join(', ')}`;
+    }
+    if (brandVoice.avoid?.length > 0) {
+      brandVoiceInstructions += `\n- NEVER use: ${brandVoice.avoid.join(', ')}`;
+    }
+    if (brandVoice.notes) {
+      brandVoiceInstructions += `\n- Additional notes: ${brandVoice.notes}`;
+    }
+  }
+
   const content: any = {};
 
   for (const platform of platforms) {
     const strategy = PLATFORM_STRATEGIES[platform as keyof typeof PLATFORM_STRATEGIES];
 
     if (!strategy) {
-      // Fallback for unknown platforms
       content[platform] = message;
       continue;
     }
 
     const prompt = `You are a world-class social media strategist creating ${platform} content.
+${orgContext}
+${brandVoiceInstructions}
 
 STRATEGIC CONTEXT:
 Platform: ${platform}
 Platform Purpose: ${strategy.purpose}
 Goal: ${goal || 'engagement and visibility'}
-Audience: ${audience || 'professional audience'}
+Audience: ${audience || companyContext?.target_audience || 'professional audience'}
 ${narrative ? `Campaign Narrative: ${narrative}` : ''}
 
 CORE MESSAGE:
@@ -521,11 +1042,14 @@ ${message}
 
 ${keyMessages.length > 0 ? `KEY POINTS TO INCLUDE:\n${keyMessages.map((m: string) => `- ${m}`).join('\n')}` : ''}
 
-PLATFORM STRATEGY:
-${strategy.format}
+2025 PLATFORM BEST PRACTICES:
+Format: ${strategy.format}
+${strategy.algorithm2025 ? `\nAlgorithm Insights:\n${strategy.algorithm2025.map((a: string) => `• ${a}`).join('\n')}` : ''}
 
-HOOKS THAT WORK:
-${strategy.hooks.join(' | ')}
+HOOKS THAT WORK ON ${platform.toUpperCase()}:
+${strategy.hooks.join('\n• ')}
+
+${strategy.viralFormats ? `\nVIRAL FORMATS TO CONSIDER:\n${strategy.viralFormats.map((f: string) => `• ${f}`).join('\n')}` : ''}
 
 TONE GUIDE:
 ${strategy.tone}
@@ -540,27 +1064,31 @@ ${includeEmojis ? 'Use emojis strategically to add personality and break up text
 ENGAGEMENT STRATEGY:
 ${strategy.engagement}
 
+OPTIMAL POSTING: ${strategy.optimalTimes || 'Check platform analytics'}
+
 CRITICAL INSTRUCTIONS:
-1. DO NOT be formulaic or corporate
+1. DO NOT be formulaic or corporate${brandVoice?.avoid?.length > 0 ? ` - specifically avoid: ${brandVoice.avoid.join(', ')}` : ''}
 2. Lead with the HOOK - first line must grab attention
 3. Be specific and concrete - avoid generic statements
 4. Write like a human, not a brand
 5. Follow platform best practices for ${platform}
 6. Optimize for ${strategy.length}
 7. Include a clear CTA or engagement trigger
+${companyContext?.key_topics?.length > 0 ? `8. Tie back to company expertise: ${companyContext.key_topics.slice(0, 3).join(', ')}` : ''}
 
-${platform === 'linkedin' ? 'LINKEDIN SPECIFIC: Use line breaks for readability. Avoid walls of text. Be professional but human - no corporate jargon.' : ''}
-${platform === 'twitter' ? 'TWITTER SPECIFIC: Be punchy. Every word counts. Create curiosity or controversy. Make it shareable.' : ''}
-${platform === 'instagram' ? 'INSTAGRAM SPECIFIC: First line critical (125 chars). Use line breaks. Create visual description. End with question or CTA.' : ''}
-${platform === 'tiktok' ? 'TIKTOK SPECIFIC: Write the SCRIPT/CONCEPT for video. Include hook, main content, payoff. 15-30 seconds. Be authentic, not polished.' : ''}
-${platform === 'youtube' ? 'YOUTUBE SPECIFIC: Write video concept with title, hook, structure, and CTA. Include thumbnail idea.' : ''}
+${platform === 'linkedin' ? 'LINKEDIN SPECIFIC: Use line breaks for readability. Avoid walls of text. Be professional but human - no corporate jargon. Dwell time matters - make it worth reading.' : ''}
+${platform === 'twitter' ? 'TWITTER SPECIFIC: Be punchy. Every word counts. Create curiosity or controversy. Make it shareable. Consider if this works as a thread.' : ''}
+${platform === 'instagram' ? 'INSTAGRAM SPECIFIC: First line critical (125 chars). Use line breaks. Think visually. End with question or CTA. Describe what the visual should be.' : ''}
+${platform === 'tiktok' ? 'TIKTOK SPECIFIC: Write the SCRIPT/CONCEPT for video. Include hook, main content, payoff. 15-30 seconds. Be authentic, not polished. Think about text overlays.' : ''}
+${platform === 'youtube' ? 'YOUTUBE SPECIFIC: Write video concept with title, hook, structure, and CTA. Include thumbnail idea and retention hooks.' : ''}
+${platform === 'threads' ? 'THREADS SPECIFIC: Casual, conversational. Less aggressive than X. Community-focused. Instagram audience crossover.' : ''}
 
 Generate the content now. Be creative, strategic, and platform-native.`;
 
     const completion = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: platform === 'linkedin' ? 800 : platform === 'instagram' ? 1000 : 500,
-      temperature: 0.8, // Higher temp for more creative, less formulaic content
+      max_tokens: platform === 'linkedin' ? 1000 : platform === 'instagram' ? 1200 : platform === 'youtube' ? 1500 : 600,
+      temperature: 0.8,
       messages: [{ role: 'user', content: prompt }]
     });
 
@@ -572,9 +1100,12 @@ Generate the content now. Be creative, strategic, and platform-native.`;
     message,
     tone,
     platforms,
+    usedBrandVoice: !!brandVoice,
+    usedCompanyContext: !!companyContext,
     strategy_notes: platforms.map((p: string) => ({
       platform: p,
-      strategy: PLATFORM_STRATEGIES[p as keyof typeof PLATFORM_STRATEGIES]?.purpose || 'General social content'
+      strategy: PLATFORM_STRATEGIES[p as keyof typeof PLATFORM_STRATEGIES]?.purpose || 'General social content',
+      optimalTimes: PLATFORM_STRATEGIES[p as keyof typeof PLATFORM_STRATEGIES]?.optimalTimes || 'Check platform analytics'
     }))
   };
 }
