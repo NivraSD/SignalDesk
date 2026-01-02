@@ -15,8 +15,8 @@ const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')!;
 
 // Configuration
-const MAX_SIGNALS_PER_RUN = 30;
-const MAX_CONNECTIONS_PER_RUN = 20;
+const MAX_SIGNALS_PER_ORG = 10; // Process up to 10 signals per organization
+const MAX_CONNECTIONS_PER_ORG = 5;
 const DEFAULT_PREDICTION_WINDOW_DAYS = 30;
 const CONSOLIDATION_THRESHOLD = 3; // Consolidate if 3+ signals about same target
 const MAX_PREDICTIONS_PER_TARGET = 2; // Max predictions per target after consolidation
@@ -134,221 +134,275 @@ serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const organizationId = body.organization_id;
-    const maxSignals = body.max_signals || MAX_SIGNALS_PER_RUN;
-    const hoursBack = body.hours_back || 48;
+    const singleOrgId = body.organization_id; // If specified, only process this org
+    const maxSignalsPerOrg = body.max_signals_per_org || MAX_SIGNALS_PER_ORG;
+    const hoursBack = body.hours_back || 168; // Default to 7 days lookback to catch missed signals
 
     const cutoffTime = new Date(Date.now() - hoursBack * 60 * 60 * 1000).toISOString();
 
-    // Get recent signals that don't have predictions yet
-    let query = supabase
-      .from('signals')
-      .select(`
-        id, organization_id, signal_type, signal_subtype, title, description,
-        primary_target_id, primary_target_name, primary_target_type,
-        confidence_score, evidence, reasoning, business_implication, created_at,
-        has_prediction
-      `)
-      .gte('created_at', cutoffTime)
-      .eq('status', 'active')
-      .or('has_prediction.is.null,has_prediction.eq.false')
-      .order('created_at', { ascending: false })
-      .limit(maxSignals);
+    // ========================================================================
+    // STEP 1: Get all active organizations (or single org if specified)
+    // ========================================================================
+    let orgsToProcess: { id: string; name: string }[] = [];
 
-    if (organizationId) {
-      query = query.eq('organization_id', organizationId);
-    }
+    if (singleOrgId) {
+      const { data: org } = await supabase
+        .from('organizations')
+        .select('id, name')
+        .eq('id', singleOrgId)
+        .single();
+      if (org) orgsToProcess = [org];
+    } else {
+      // Get all orgs that have signals needing predictions
+      const { data: orgsWithSignals } = await supabase
+        .from('signals')
+        .select('organization_id')
+        .gte('created_at', cutoffTime)
+        .eq('status', 'active')
+        .or('has_prediction.is.null,has_prediction.eq.false');
 
-    const { data: signals, error: signalError } = await query;
-
-    if (signalError) {
-      throw new Error(`Failed to load signals: ${signalError.message}`);
-    }
-
-    // Also fetch connection_signals that don't have predictions
-    // IMPORTANT: Filter by organization_id to avoid mixing signals from different orgs
-    let connQuery = supabase
-      .from('connection_signals')
-      .select('*')
-      .or('prediction_generated.is.null,prediction_generated.eq.false')
-      .order('created_at', { ascending: false })
-      .limit(MAX_CONNECTIONS_PER_RUN);
-
-    if (organizationId) {
-      connQuery = connQuery.eq('organization_id', organizationId);
-    }
-
-    const { data: connectionSignals, error: connError } = await connQuery;
-
-    if (connError) {
-      console.log(`   Warning: Failed to load connection_signals: ${connError.message}`);
-    }
-
-    // Convert connection_signals to Signal format
-    const convertedConnections: Signal[] = (connectionSignals || []).map((conn: ConnectionSignal) => ({
-      id: conn.id,
-      organization_id: conn.organization_id,
-      signal_type: 'connection',
-      signal_subtype: conn.signal_type,
-      title: conn.signal_title,
-      description: conn.signal_description,
-      primary_target_id: null,
-      primary_target_name: conn.primary_entity_name,
-      primary_target_type: 'entity',
-      confidence_score: conn.confidence_score || conn.strength_score || 70,
-      evidence: {
-        related_entities: conn.related_entities,
-        pattern_data: conn.pattern_data
-      },
-      reasoning: conn.pattern_data?.business_implication || null,
-      business_implication: conn.pattern_data?.business_implication || null,
-      created_at: conn.created_at,
-      source_table: 'connection_signals' as const
-    }));
-
-    // Combine both sources
-    const combinedSignals: Signal[] = [
-      ...(signals || []).map((s: any) => ({ ...s, source_table: 'signals' as const })),
-      ...convertedConnections
-    ];
-
-    // DIVERSITY: Ensure we pick signals from different targets, not just one dominant target
-    // Group by target, then interleave to get variety
-    const MAX_PER_TARGET = 1; // Max predictions per target to ensure diversity
-    const targetGroups = new Map<string, Signal[]>();
-
-    for (const signal of combinedSignals) {
-      const targetKey = signal.primary_target_name || 'unknown';
-      if (!targetGroups.has(targetKey)) {
-        targetGroups.set(targetKey, []);
+      if (orgsWithSignals && orgsWithSignals.length > 0) {
+        const uniqueOrgIds = [...new Set(orgsWithSignals.map(s => s.organization_id))];
+        const { data: orgs } = await supabase
+          .from('organizations')
+          .select('id, name')
+          .in('id', uniqueOrgIds);
+        orgsToProcess = orgs || [];
       }
-      targetGroups.get(targetKey)!.push(signal);
     }
 
-    // Interleave signals from different targets for diversity
-    const allSignals: Signal[] = [];
-    let hasMore = true;
-    let round = 0;
+    console.log(`   Processing ${orgsToProcess.length} organizations`);
 
-    while (hasMore && allSignals.length < maxSignals) {
-      hasMore = false;
-      for (const [targetName, signals] of targetGroups) {
-        if (round < signals.length && round < MAX_PER_TARGET) {
-          allSignals.push(signals[round]);
-          hasMore = true;
-          if (allSignals.length >= maxSignals) break;
-        }
-      }
-      round++;
-    }
-
-    console.log(`   Target diversity: ${targetGroups.size} different targets, max ${MAX_PER_TARGET} per target`);
-
-    if (allSignals.length === 0) {
-      console.log('   No signals needing predictions');
+    if (orgsToProcess.length === 0) {
+      console.log('   No organizations with signals needing predictions');
       return new Response(JSON.stringify({
         success: true,
+        organizations_processed: 0,
         signals_processed: 0,
         predictions_created: 0,
-        message: 'No new signals to process'
+        message: 'No signals to process'
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    console.log(`   Found ${signals?.length || 0} signals + ${convertedConnections.length} connection_signals`);
-
-    let predictionsCreated = 0;
-    let skipped = 0;
-    const errors: string[] = [];
+    let totalSignalsProcessed = 0;
+    let totalConnectionsProcessed = 0;
+    let totalPredictionsCreated = 0;
+    let totalSkipped = 0;
+    const allErrors: string[] = [];
+    const orgResults: { org: string; predictions: number }[] = [];
 
     // ========================================================================
-    // CONSOLIDATION: Group signals by target to avoid redundant predictions
+    // STEP 2: Process each organization separately
     // ========================================================================
-    const signalsByTarget = new Map<string, Signal[]>();
-    const orphanSignals: Signal[] = [];
+    for (const org of orgsToProcess) {
+      console.log(`\n   📊 Processing org: ${org.name} (${org.id})`);
 
-    for (const signal of allSignals) {
-      // Extract target key from primary_target_name OR from related entities
-      let targetKey: string | null = null;
+      // Get signals for THIS org only
+      const { data: signals, error: signalError } = await supabase
+        .from('signals')
+        .select(`
+          id, organization_id, signal_type, signal_subtype, title, description,
+          primary_target_id, primary_target_name, primary_target_type,
+          confidence_score, evidence, reasoning, business_implication, created_at,
+          has_prediction
+        `)
+        .eq('organization_id', org.id)
+        .gte('created_at', cutoffTime)
+        .eq('status', 'active')
+        .or('has_prediction.is.null,has_prediction.eq.false')
+        .order('created_at', { ascending: false })
+        .limit(maxSignalsPerOrg);
 
-      if (signal.primary_target_name) {
-        targetKey = signal.primary_target_name.toLowerCase().trim();
-      } else if (signal.evidence?.related_entities?.length > 0) {
-        // For connection signals, use first related entity as target
-        const relatedEntity = signal.evidence.related_entities[0];
-        if (typeof relatedEntity === 'string') {
-          targetKey = relatedEntity.toLowerCase().trim();
-        } else if (relatedEntity?.name) {
-          targetKey = relatedEntity.name.toLowerCase().trim();
+      if (signalError) {
+        console.error(`     Error loading signals for ${org.name}: ${signalError.message}`);
+        allErrors.push(`${org.name}: ${signalError.message}`);
+        continue;
+      }
+
+      // Get connection_signals for THIS org only
+      const { data: connectionSignals } = await supabase
+        .from('connection_signals')
+        .select('*')
+        .eq('organization_id', org.id)
+        .or('prediction_generated.is.null,prediction_generated.eq.false')
+        .order('created_at', { ascending: false })
+        .limit(MAX_CONNECTIONS_PER_ORG);
+
+      // Convert connection_signals to Signal format
+      const convertedConnections: Signal[] = (connectionSignals || []).map((conn: ConnectionSignal) => ({
+        id: conn.id,
+        organization_id: conn.organization_id,
+        signal_type: 'connection',
+        signal_subtype: conn.signal_type,
+        title: conn.signal_title,
+        description: conn.signal_description,
+        primary_target_id: null,
+        primary_target_name: conn.primary_entity_name,
+        primary_target_type: 'entity',
+        confidence_score: conn.confidence_score || conn.strength_score || 70,
+        evidence: {
+          related_entities: conn.related_entities,
+          pattern_data: conn.pattern_data
+        },
+        reasoning: conn.pattern_data?.business_implication || null,
+        business_implication: conn.pattern_data?.business_implication || null,
+        created_at: conn.created_at,
+        source_table: 'connection_signals' as const
+      }));
+
+      // Combine both sources for this org
+      const allSignals: Signal[] = [
+        ...(signals || []).map((s: any) => ({ ...s, source_table: 'signals' as const })),
+        ...convertedConnections
+      ];
+
+      if (allSignals.length === 0) {
+        console.log(`     No signals needing predictions for ${org.name}`);
+        continue;
+      }
+
+      console.log(`     Found ${signals?.length || 0} signals + ${convertedConnections.length} connections`);
+      totalSignalsProcessed += signals?.length || 0;
+      totalConnectionsProcessed += convertedConnections.length;
+
+      let orgPredictionsCreated = 0;
+      let orgSkipped = 0;
+
+      // ========================================================================
+      // CONSOLIDATION: Group signals by target to avoid redundant predictions
+      // ========================================================================
+      const signalsByTarget = new Map<string, Signal[]>();
+      const orphanSignals: Signal[] = [];
+
+      for (const signal of allSignals) {
+        // Extract target key from primary_target_name OR from related entities
+        let targetKey: string | null = null;
+
+        if (signal.primary_target_name) {
+          targetKey = signal.primary_target_name.toLowerCase().trim();
+        } else if (signal.evidence?.related_entities?.length > 0) {
+          // For connection signals, use first related entity as target
+          const relatedEntity = signal.evidence.related_entities[0];
+          if (typeof relatedEntity === 'string') {
+            targetKey = relatedEntity.toLowerCase().trim();
+          } else if (relatedEntity?.name) {
+            targetKey = relatedEntity.name.toLowerCase().trim();
+          }
+        }
+
+        if (targetKey) {
+          const existing = signalsByTarget.get(targetKey) || [];
+          existing.push(signal);
+          signalsByTarget.set(targetKey, existing);
+        } else {
+          orphanSignals.push(signal);
         }
       }
 
-      if (targetKey) {
-        const existing = signalsByTarget.get(targetKey) || [];
-        existing.push(signal);
-        signalsByTarget.set(targetKey, existing);
-      } else {
-        orphanSignals.push(signal);
-      }
-    }
+      console.log(`     Grouped into ${signalsByTarget.size} targets + ${orphanSignals.length} ungrouped`);
 
-    console.log(`   Grouped into ${signalsByTarget.size} targets + ${orphanSignals.length} ungrouped signals`);
+      // Process grouped signals with consolidation
+      for (const [targetKey, targetSignals] of signalsByTarget) {
+        try {
+          if (targetSignals.length >= CONSOLIDATION_THRESHOLD) {
+            // CONSOLIDATION MODE: Multiple signals about same target -> consolidated prediction(s)
+            console.log(`     🔄 Consolidating ${targetSignals.length} signals for: ${targetKey}`);
 
-    // Process grouped signals with consolidation
-    for (const [targetKey, targetSignals] of signalsByTarget) {
-      try {
-        if (targetSignals.length >= CONSOLIDATION_THRESHOLD) {
-          // CONSOLIDATION MODE: Multiple signals about same target -> consolidated prediction(s)
-          console.log(`   🔄 Consolidating ${targetSignals.length} signals for target: ${targetKey}`);
+            const orgContext = await getOrgContext(supabase, targetSignals[0].organization_id);
+            const targetType = await getTargetType(supabase, targetSignals[0].primary_target_id, targetSignals[0].organization_id, targetSignals[0].primary_target_name);
 
-          const orgContext = await getOrgContext(supabase, targetSignals[0].organization_id);
-          const targetType = await getTargetType(supabase, targetSignals[0].primary_target_id, targetSignals[0].organization_id, targetSignals[0].primary_target_name);
+            // Generate consolidated predictions (max 2)
+            const consolidatedPredictions = await generateConsolidatedPredictions(
+              targetSignals,
+              targetKey,
+              orgContext,
+              targetType
+            );
 
-          // Generate consolidated predictions (max 2)
-          const consolidatedPredictions = await generateConsolidatedPredictions(
-            targetSignals,
-            targetKey,
-            orgContext,
-            targetType
-          );
+            for (const prediction of consolidatedPredictions) {
+              // Use first signal as the "anchor" but reference all signal IDs
+              const anchorSignal = targetSignals[0];
 
-          for (const prediction of consolidatedPredictions) {
-            // Use first signal as the "anchor" but reference all signal IDs
-            const anchorSignal = targetSignals[0];
+              const { error: insertError } = await supabase
+                .from('signal_outcomes')
+                .insert({
+                  signal_id: anchorSignal.source_table === 'connection_signals' ? null : anchorSignal.id,
+                  organization_id: anchorSignal.organization_id,
+                  target_id: anchorSignal.primary_target_id,
+                  predicted_outcome: prediction.predicted_outcome,
+                  predicted_timeframe_days: prediction.predicted_timeframe_days,
+                  predicted_confidence: prediction.predicted_confidence,
+                  prediction_reasoning: prediction.prediction_reasoning,
+                  prediction_evidence: JSON.stringify({
+                    consolidated_from_signals: targetSignals.map(s => s.id),
+                    signal_count: targetSignals.length,
+                    signal_titles: targetSignals.map(s => s.title),
+                    verification_criteria: prediction.verification_criteria,
+                    refutation_criteria: prediction.refutation_criteria
+                  }),
+                  prediction_expires_at: new Date(
+                    Date.now() + prediction.predicted_timeframe_days * 1.5 * 24 * 60 * 60 * 1000
+                  ).toISOString()
+                });
 
-            const { error: insertError } = await supabase
-              .from('signal_outcomes')
-              .insert({
-                signal_id: anchorSignal.source_table === 'connection_signals' ? null : anchorSignal.id,
-                organization_id: anchorSignal.organization_id,
-                target_id: anchorSignal.primary_target_id,
-                predicted_outcome: prediction.predicted_outcome,
-                predicted_timeframe_days: prediction.predicted_timeframe_days,
-                predicted_confidence: prediction.predicted_confidence,
-                prediction_reasoning: prediction.prediction_reasoning,
-                prediction_evidence: JSON.stringify({
-                  consolidated_from_signals: targetSignals.map(s => s.id),
-                  signal_count: targetSignals.length,
-                  signal_titles: targetSignals.map(s => s.title),
-                  verification_criteria: prediction.verification_criteria,
-                  refutation_criteria: prediction.refutation_criteria
-                }),
-                prediction_expires_at: new Date(
-                  Date.now() + prediction.predicted_timeframe_days * 1.5 * 24 * 60 * 60 * 1000
-                ).toISOString()
-              });
+              if (!insertError) {
+                orgPredictionsCreated++;
+                console.log(`       ✅ Consolidated: ${prediction.predicted_outcome.slice(0, 50)}...`);
+              } else {
+                allErrors.push(`${org.name} - ${targetKey}: ${insertError.message}`);
+              }
+            }
 
-            if (!insertError) {
-              predictionsCreated++;
-              console.log(`     ✅ Consolidated: ${prediction.predicted_outcome.slice(0, 60)}...`);
-            } else {
-              errors.push(`Save error for consolidated ${targetKey}: ${insertError.message}`);
+            // Mark all signals as having predictions
+            for (const signal of targetSignals) {
+              if (signal.source_table === 'connection_signals') {
+                await supabase
+                  .from('connection_signals')
+                  .update({ prediction_generated: true })
+                  .eq('id', signal.id);
+              } else {
+                await supabase
+                  .from('signals')
+                  .update({ has_prediction: true })
+                  .eq('id', signal.id);
+              }
+            }
+
+          } else {
+            // INDIVIDUAL MODE: Few signals, process normally
+            for (const signal of targetSignals) {
+              const result = await processIndividualSignal(signal, supabase, orgCache);
+              if (result.created) orgPredictionsCreated++;
+              if (result.skipped) orgSkipped++;
+              if (result.error) allErrors.push(`${org.name}: ${result.error}`);
             }
           }
+        } catch (err: any) {
+          console.error(`     Error processing target ${targetKey}: ${err.message}`);
+          allErrors.push(`${org.name} - ${targetKey}: ${err.message}`);
+        }
+      }
 
-          // Mark all signals as having predictions
-          for (const signal of targetSignals) {
+      // Process orphan signals (no target identified)
+      for (const signal of orphanSignals) {
+        try {
+          // Skip mention types that aren't predictive
+          if (signal.signal_type === 'mention') {
+            orgSkipped++;
+            continue;
+          }
+
+          // Get organization context for better predictions
+          const orgContext = await getOrgContext(supabase, signal.organization_id);
+          const targetType = await getTargetType(supabase, signal.primary_target_id, signal.organization_id, signal.primary_target_name);
+
+          // Generate prediction using Claude
+          const prediction = await generatePrediction(signal, orgContext, targetType);
+
+          if (!prediction) {
+            // Mark as processed so we don't retry - handle both tables
             if (signal.source_table === 'connection_signals') {
               await supabase
                 .from('connection_signals')
@@ -360,50 +414,43 @@ serve(async (req) => {
                 .update({ has_prediction: true })
                 .eq('id', signal.id);
             }
+
+            orgSkipped++;
+            continue;
           }
 
-        } else {
-          // INDIVIDUAL MODE: Few signals, process normally
-          for (const signal of targetSignals) {
-            const result = await processIndividualSignal(signal, supabase, orgCache);
-            if (result.created) predictionsCreated++;
-            if (result.skipped) skipped++;
-            if (result.error) errors.push(result.error);
+          // Save the prediction
+          const { error: insertError } = await supabase
+            .from('signal_outcomes')
+            .insert({
+              signal_id: signal.source_table === 'connection_signals' ? null : signal.id,
+              organization_id: signal.organization_id,
+              target_id: signal.primary_target_id,
+              predicted_outcome: prediction.predicted_outcome,
+              predicted_timeframe_days: prediction.predicted_timeframe_days,
+              predicted_confidence: prediction.predicted_confidence,
+              prediction_reasoning: prediction.prediction_reasoning,
+              prediction_evidence: JSON.stringify({
+                original_signal_title: signal.title,
+                signal_evidence: signal.evidence,
+                verification_criteria: prediction.verification_criteria,
+                refutation_criteria: prediction.refutation_criteria
+              }),
+              prediction_expires_at: new Date(
+                Date.now() + prediction.predicted_timeframe_days * 1.5 * 24 * 60 * 60 * 1000
+              ).toISOString()
+            });
+
+          if (insertError) {
+            allErrors.push(`${org.name} - signal ${signal.id}: ${insertError.message}`);
+            continue;
           }
-        }
-      } catch (err: any) {
-        console.error(`   Error processing target ${targetKey}: ${err.message}`);
-        errors.push(`Target ${targetKey}: ${err.message}`);
-      }
-    }
 
-    // Process orphan signals (no target identified)
-    for (const signal of orphanSignals) {
-      try {
-        // Skip mention types that aren't predictive
-        if (signal.signal_type === 'mention') {
-          console.log(`   Skipping ${signal.id}: mention signal type`);
-          skipped++;
-          continue;
-        }
-
-        console.log(`   Processing: ${signal.title.slice(0, 50)}...`);
-
-        // Get organization context for better predictions
-        const orgContext = await getOrgContext(supabase, signal.organization_id);
-        const targetType = await getTargetType(supabase, signal.primary_target_id, signal.organization_id, signal.primary_target_name);
-
-        // Generate prediction using Claude
-        const prediction = await generatePrediction(signal, orgContext, targetType);
-
-        if (!prediction) {
-          console.log(`     No prediction generated (signal may not be predictive)`);
-
-          // Mark as processed so we don't retry - handle both tables
+          // Mark signal as having a prediction - handle both tables
           if (signal.source_table === 'connection_signals') {
             await supabase
               .from('connection_signals')
-              .update({ prediction_generated: true })
+              .update({ prediction_generated: true, prediction_id: signal.id })
               .eq('id', signal.id);
           } else {
             await supabase
@@ -412,79 +459,46 @@ serve(async (req) => {
               .eq('id', signal.id);
           }
 
-          skipped++;
-          continue;
+          orgPredictionsCreated++;
+          console.log(`       ✅ Created: ${prediction.predicted_outcome.slice(0, 50)}...`);
+
+        } catch (err: any) {
+          allErrors.push(`${org.name} - signal ${signal.id}: ${err.message}`);
         }
-
-        // Save the prediction
-        const { error: insertError } = await supabase
-          .from('signal_outcomes')
-          .insert({
-            signal_id: signal.source_table === 'connection_signals' ? null : signal.id,
-            organization_id: signal.organization_id,
-            target_id: signal.primary_target_id,
-            predicted_outcome: prediction.predicted_outcome,
-            predicted_timeframe_days: prediction.predicted_timeframe_days,
-            predicted_confidence: prediction.predicted_confidence,
-            prediction_reasoning: prediction.prediction_reasoning,
-            prediction_evidence: JSON.stringify({
-              original_signal_title: signal.title,
-              signal_evidence: signal.evidence,
-              verification_criteria: prediction.verification_criteria,
-              refutation_criteria: prediction.refutation_criteria
-            }),
-            prediction_expires_at: new Date(
-              Date.now() + prediction.predicted_timeframe_days * 1.5 * 24 * 60 * 60 * 1000
-            ).toISOString()
-          });
-
-        if (insertError) {
-          console.error(`     Failed to save prediction: ${insertError.message}`);
-          errors.push(`Save error for signal ${signal.id}: ${insertError.message}`);
-          continue;
-        }
-
-        // Mark signal as having a prediction - handle both tables
-        if (signal.source_table === 'connection_signals') {
-          await supabase
-            .from('connection_signals')
-            .update({ prediction_generated: true, prediction_id: signal.id })
-            .eq('id', signal.id);
-        } else {
-          await supabase
-            .from('signals')
-            .update({ has_prediction: true })
-            .eq('id', signal.id);
-        }
-
-        predictionsCreated++;
-        console.log(`     ✅ Created prediction: ${prediction.predicted_outcome.slice(0, 60)}...`);
-
-      } catch (err: any) {
-        console.error(`     Error processing signal ${signal.id}: ${err.message}`);
-        errors.push(`Process error for ${signal.id}: ${err.message}`);
       }
-    }
+
+      // Track org results
+      totalPredictionsCreated += orgPredictionsCreated;
+      totalSkipped += orgSkipped;
+      if (orgPredictionsCreated > 0) {
+        orgResults.push({ org: org.name, predictions: orgPredictionsCreated });
+      }
+      console.log(`     📈 ${org.name}: ${orgPredictionsCreated} predictions created`);
+    } // End of org loop
 
     const duration = Math.round((Date.now() - startTime) / 1000);
 
     const summary = {
       success: true,
-      signals_processed: signals?.length || 0,
-      connection_signals_processed: convertedConnections.length,
-      total_processed: allSignals.length,
-      predictions_created: predictionsCreated,
-      skipped,
+      organizations_processed: orgsToProcess.length,
+      signals_processed: totalSignalsProcessed,
+      connection_signals_processed: totalConnectionsProcessed,
+      predictions_created: totalPredictionsCreated,
+      skipped: totalSkipped,
+      org_breakdown: orgResults,
       duration_seconds: duration,
-      errors: errors.length > 0 ? errors : undefined
+      errors: allErrors.length > 0 ? allErrors.slice(0, 10) : undefined
     };
 
     console.log(`\n📊 Prediction Generation Complete:`);
-    console.log(`   Signals processed: ${signals?.length || 0}`);
-    console.log(`   Connection signals processed: ${convertedConnections.length}`);
-    console.log(`   Predictions created: ${predictionsCreated}`);
-    console.log(`   Skipped: ${skipped}`);
+    console.log(`   Organizations processed: ${orgsToProcess.length}`);
+    console.log(`   Total signals: ${totalSignalsProcessed} + ${totalConnectionsProcessed} connections`);
+    console.log(`   Predictions created: ${totalPredictionsCreated}`);
+    console.log(`   Skipped: ${totalSkipped}`);
     console.log(`   Duration: ${duration}s`);
+    if (orgResults.length > 0) {
+      console.log(`   Breakdown: ${orgResults.map(r => `${r.org}(${r.predictions})`).join(', ')}`);
+    }
 
     return new Response(JSON.stringify(summary), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
