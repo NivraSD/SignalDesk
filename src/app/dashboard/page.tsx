@@ -907,8 +907,8 @@ function HubView({
     const folderName = getOpportunityFolderName(opp.title)
     console.log('📁 Using folder name:', folderName)
 
-    if (!opp.version || opp.version !== 2 || !opp.execution_plan) {
-      console.error('❌ Not a V2 opportunity or missing execution plan')
+    if (!opp.execution_plan?.stakeholder_campaigns?.length) {
+      console.error('❌ Missing execution plan with stakeholder campaigns')
       return
     }
 
@@ -1416,7 +1416,8 @@ function ExpandableOpportunityCard({
   const timeWindow = opportunity.strategic_context?.time_window || opportunity.time_window || '48h window'
   const isHigh = score >= 90
   const isMedium = score >= 70 && score < 90
-  const isV2 = opportunity.version === 2 && opportunity.execution_plan
+  const isV2 = opportunity.version === 2
+  const hasExecutionPlan = !!opportunity.execution_plan?.stakeholder_campaigns?.length
   const isExecuted = opportunity.executed
 
   return (
@@ -1549,8 +1550,8 @@ function ExpandableOpportunityCard({
             </div>
           )}
 
-          {/* Execution Plan Summary - V2 Only */}
-          {isV2 && opportunity.execution_plan && (
+          {/* Execution Plan Summary - V2 with execution plan */}
+          {hasExecutionPlan && (
             <div className="mt-4">
               <h5
                 className="text-[0.7rem] uppercase tracking-[0.1em] text-white mb-3"
@@ -1608,8 +1609,8 @@ function ExpandableOpportunityCard({
             </div>
           )}
 
-          {/* Execute Button - V2 only, not executed */}
-          {isV2 && !isExecuted && (
+          {/* Execute Button - V2 with execution plan, not executed */}
+          {hasExecutionPlan && !isExecuted && (
             <div className="mt-4 space-y-2">
               <button
                 onClick={(e) => {
@@ -1648,11 +1649,19 @@ function ExpandableOpportunityCard({
             </div>
           )}
 
-          {/* Non-V2 Message */}
+          {/* Message when execution plan is missing */}
+          {isV2 && !hasExecutionPlan && !isExecuted && (
+            <div className="mt-4 p-3 bg-[var(--grey-800)] rounded-lg text-center">
+              <p className="text-[0.8rem] text-[var(--grey-500)]">
+                Execution plan not available. Regenerate the intelligence brief to enable campaign execution.
+              </p>
+            </div>
+          )}
+          {/* Legacy V1 opportunity message */}
           {!isV2 && (
             <div className="mt-4 p-3 bg-[var(--grey-800)] rounded-lg text-center">
               <p className="text-[0.8rem] text-[var(--grey-500)]">
-                This opportunity requires V2 format for execution. View in Opportunities tab for more details.
+                Legacy opportunity format. View in Opportunities tab for details.
               </p>
             </div>
           )}
