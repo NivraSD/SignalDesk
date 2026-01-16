@@ -2684,7 +2684,8 @@ ${campaignContext.timeline || 'Not specified'}
     const isStrategyPhase = shouldPresentResearchFirst || conversationState.stage === 'research_review' || conversationHistory.length < 4 // Early conversation needs strategic thinking
     ;
     const claudeResponseData = await callClaude(conversationContext, freshResearch ? researchResults : conversationState.researchResults, orgProfile, conversationState, conversationHistory, shouldPresentResearchFirst, isStrategyPhase, // Use Sonnet for strategy/research phases
-      understanding // Pass understanding so we can check ready_to_generate
+      understanding, // Pass understanding so we can check ready_to_generate
+      editingContext // Pass editing context for schema editing in Studio
     );
     console.log('✅ Claude response generated');
     console.log('🔍 Stop reason:', claudeResponseData.stop_reason);
@@ -6333,7 +6334,7 @@ function detectResearchNeed(message, history) {
   return false;
 }
 // Helper: Call Claude for natural conversation
-async function callClaude(context, research, orgProfile, conversationState, conversationHistory = [], shouldPresentResearchFirst = false, useStrategyModel = false, understanding = null) {
+async function callClaude(context, research, orgProfile, conversationState, conversationHistory = [], shouldPresentResearchFirst = false, useStrategyModel = false, understanding = null, editingContext = null) {
   // Build organization context with full profile
   let orgContext = `- Name: ${orgProfile.organizationName}
 - Industry: ${orgProfile.industry}`;
