@@ -8,6 +8,59 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
 const VOYAGE_API_KEY = Deno.env.get('VOYAGE_API_KEY');
+
+/**
+ * Deep merge for schema.org content
+ * - Merges @graph arrays by matching @type (or @id if present)
+ * - Concatenates other arrays (award, hasCredential, knowsAbout, etc.)
+ * - Recursively merges nested objects
+ */
+function deepMergeSchemaContent(existing: any, updates: any): any {
+  if (!existing) return updates;
+  if (!updates) return existing;
+
+  // If either is not an object, return updates (primitive replacement)
+  if (typeof existing !== 'object' || typeof updates !== 'object') {
+    return updates;
+  }
+
+  // Handle arrays
+  if (Array.isArray(existing) && Array.isArray(updates)) {
+    // For @graph arrays, merge items by @type or @id
+    if (existing.some((item: any) => item?.['@type']) && updates.some((item: any) => item?.['@type'])) {
+      const merged = [...existing];
+      for (const updateItem of updates) {
+        const matchKey = updateItem['@id'] || updateItem['@type'];
+        const existingIndex = merged.findIndex((item: any) =>
+          (updateItem['@id'] && item['@id'] === updateItem['@id']) ||
+          (!updateItem['@id'] && item['@type'] === updateItem['@type'])
+        );
+        if (existingIndex >= 0) {
+          // Merge into existing item
+          merged[existingIndex] = deepMergeSchemaContent(merged[existingIndex], updateItem);
+        } else {
+          // Add new item
+          merged.push(updateItem);
+        }
+      }
+      return merged;
+    }
+    // For other arrays (strings, simple objects), concatenate
+    return [...existing, ...updates];
+  }
+
+  // Handle objects - recursively merge
+  const result = { ...existing };
+  for (const key of Object.keys(updates)) {
+    if (key in result) {
+      result[key] = deepMergeSchemaContent(result[key], updates[key]);
+    } else {
+      result[key] = updates[key];
+    }
+  }
+  return result;
+}
+
 /**
  * Generate embedding using Voyage AI voyage-3-large
  * Returns null on error (non-blocking - content saved even if embedding fails)
@@ -1840,10 +1893,11 @@ serve(async (req)=>{
   try {
     const requestBody = await req.json();
     const { message, conversationHistory = [], organizationContext, stage = 'full', campaignContext, // Auto-execute mode params
-    preloadedStrategy, requestedContentType, autoExecute, saveFolder } = requestBody;
+    preloadedStrategy, requestedContentType, autoExecute, saveFolder, editingContext } = requestBody;
     const conversationId = organizationContext?.conversationId || `conv-${Date.now()}`;
     const organizationId = organizationContext?.organizationId || 'OpenAI';
     const organizationName = organizationContext?.organizationName || organizationId;
+    console.log(`🔑 NIV Organization Context: ID=${organizationId}, Name=${organizationName}`);
     // Initialize Supabase client for function invocations (Memory Vault, etc.)
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
     // 🎯 AUTO-DETECTION: Detect when request should use campaign_generation mode
@@ -5283,6 +5337,7 @@ Return ONLY valid JSON, no other text.`
 
               // Handle get_schemas as a chained call
               if (nextToolUse.name === 'get_schemas') {
+                console.log(`📋 Chained get_schemas for org_id=${organizationId}`);
                 let query = supabase
                   .from('content_library')
                   .select('id, title, content, metadata, folder, updated_at')
@@ -5295,7 +5350,7 @@ Return ONLY valid JSON, no other text.`
                 }
 
                 const { data: schemas } = await query;
-                console.log(`✅ Chained get_schemas: Found ${schemas?.length || 0} schemas`);
+                console.log(`✅ Chained get_schemas: Found ${schemas?.length || 0} schemas for org_id=${organizationId}`);
 
                 // Now ask Claude what to do with the schemas + extracted products
                 const schemaList = (schemas || []).map((s: any) => ({
@@ -5353,17 +5408,23 @@ Return ONLY valid JSON, no other text.`
                       .single();
 
                     if (currentSchema) {
-                      let updatedContent = currentSchema.content;
+                      // Parse content if it's stored as a JSON string
+                      let parsedContent = currentSchema.content;
+                      if (typeof parsedContent === 'string') {
+                        try { parsedContent = JSON.parse(parsedContent); } catch (e) { console.error('Failed to parse schema content:', e); }
+                      }
+
+                      let updatedContent = parsedContent;
                       const action = updateToolUse.input.action || 'merge';
 
                       if (action === 'merge') {
-                        updatedContent = { ...currentSchema.content, ...updateToolUse.input.updates };
+                        updatedContent = deepMergeSchemaContent(parsedContent, updateToolUse.input.updates);
                       } else if (action === 'add_to_array' && updateToolUse.input.array_field) {
                         const arrayField = updateToolUse.input.array_field;
-                        const existingArray = currentSchema.content[arrayField] || [];
+                        const existingArray = parsedContent[arrayField] || [];
                         const newItems = updateToolUse.input.updates[arrayField] || updateToolUse.input.updates;
                         updatedContent = {
-                          ...currentSchema.content,
+                          ...parsedContent,
                           [arrayField]: [...existingArray, ...(Array.isArray(newItems) ? newItems : [newItems])]
                         };
                       }
@@ -5425,17 +5486,23 @@ Return ONLY valid JSON, no other text.`
                   .single();
 
                 if (currentSchema) {
-                  let updatedContent = currentSchema.content;
+                  // Parse content if it's stored as a JSON string
+                  let parsedContent = currentSchema.content;
+                  if (typeof parsedContent === 'string') {
+                    try { parsedContent = JSON.parse(parsedContent); } catch (e) { console.error('Failed to parse schema content:', e); }
+                  }
+
+                  let updatedContent = parsedContent;
                   const action = nextToolUse.input.action || 'merge';
 
                   if (action === 'merge') {
-                    updatedContent = { ...currentSchema.content, ...nextToolUse.input.updates };
+                    updatedContent = deepMergeSchemaContent(parsedContent, nextToolUse.input.updates);
                   } else if (action === 'add_to_array' && nextToolUse.input.array_field) {
                     const arrayField = nextToolUse.input.array_field;
-                    const existingArray = currentSchema.content[arrayField] || [];
+                    const existingArray = parsedContent[arrayField] || [];
                     const newItems = nextToolUse.input.updates[arrayField] || nextToolUse.input.updates;
                     updatedContent = {
-                      ...currentSchema.content,
+                      ...parsedContent,
                       [arrayField]: [...existingArray, ...(Array.isArray(newItems) ? newItems : [newItems])]
                     };
                   }
@@ -5504,7 +5571,7 @@ Return ONLY valid JSON, no other text.`
 
       // Handle get_schemas - list organization schemas
       if (toolUse && toolUse.name === 'get_schemas') {
-        console.log('📋 Getting organization schemas');
+        console.log(`📋 Getting organization schemas for org_id=${organizationId}`);
         try {
           let query = supabase
             .from('content_library')
@@ -5595,19 +5662,25 @@ Return ONLY valid JSON, no other text.`
                 if (fetchErr || !currentSchema) {
                   console.error('Schema not found for chained update');
                 } else {
-                  let updatedContent = currentSchema.content;
+                  // Parse content if it's stored as a JSON string
+                  let parsedContent = currentSchema.content;
+                  if (typeof parsedContent === 'string') {
+                    try { parsedContent = JSON.parse(parsedContent); } catch (e) { console.error('Failed to parse schema content:', e); }
+                  }
+
+                  let updatedContent = parsedContent;
                   const action = nextToolUse.input.action || 'merge';
 
                   if (action === 'merge') {
-                    updatedContent = { ...currentSchema.content, ...nextToolUse.input.updates };
+                    updatedContent = deepMergeSchemaContent(parsedContent, nextToolUse.input.updates);
                   } else if (action === 'replace') {
                     updatedContent = nextToolUse.input.updates;
                   } else if (action === 'add_to_array' && nextToolUse.input.array_field) {
                     const arrayField = nextToolUse.input.array_field;
-                    const existingArray = currentSchema.content[arrayField] || [];
+                    const existingArray = parsedContent[arrayField] || [];
                     const newItems = nextToolUse.input.updates[arrayField] || nextToolUse.input.updates;
                     updatedContent = {
-                      ...currentSchema.content,
+                      ...parsedContent,
                       [arrayField]: [...existingArray, ...(Array.isArray(newItems) ? newItems : [newItems])]
                     };
                   }
@@ -5691,22 +5764,33 @@ Return ONLY valid JSON, no other text.`
             throw new Error('Schema not found');
           }
 
-          let updatedContent = currentSchema.content;
+          // Parse content if it's stored as a JSON string
+          let parsedContent = currentSchema.content;
+          if (typeof parsedContent === 'string') {
+            try {
+              parsedContent = JSON.parse(parsedContent);
+            } catch (e) {
+              console.error('Failed to parse schema content as JSON:', e);
+              throw new Error('Schema content is not valid JSON');
+            }
+          }
+
+          let updatedContent = parsedContent;
           const action = toolUse.input.action || 'merge';
 
           if (action === 'merge') {
             // Deep merge updates into existing content
-            updatedContent = { ...currentSchema.content, ...toolUse.input.updates };
+            updatedContent = deepMergeSchemaContent(parsedContent, toolUse.input.updates);
           } else if (action === 'replace') {
             // Replace entire content
             updatedContent = toolUse.input.updates;
           } else if (action === 'add_to_array' && toolUse.input.array_field) {
             // Add items to an array field
             const arrayField = toolUse.input.array_field;
-            const existingArray = currentSchema.content[arrayField] || [];
+            const existingArray = parsedContent[arrayField] || [];
             const newItems = toolUse.input.updates[arrayField] || toolUse.input.updates;
             updatedContent = {
-              ...currentSchema.content,
+              ...parsedContent,
               [arrayField]: [...existingArray, ...(Array.isArray(newItems) ? newItems : [newItems])]
             };
           }
@@ -6362,12 +6446,62 @@ async function callClaude(context, research, orgProfile, conversationState, conv
     orgContext += `\n*Use this context to build on previous discussions when relevant.*`;
   }
 
+  // Build editing context instructions if user is editing content in Studio
+  let editingContextInstructions = '';
+  if (editingContext?.isEditing && editingContext?.sourceContentId) {
+    console.log(`📝 Editing context detected: ${editingContext.contentType} - ${editingContext.contentTitle} (ID: ${editingContext.sourceContentId})`);
+    editingContextInstructions = `
+
+**🎯 EDITING MODE ACTIVE:**
+The user has a ${editingContext.contentType || 'content item'} open in Studio and wants to edit it.
+
+**CRITICAL - SCHEMA BEING EDITED:**
+- Content ID: ${editingContext.sourceContentId}
+- Title: ${editingContext.contentTitle || 'Untitled'}
+- Type: ${editingContext.contentType || 'unknown'}
+- Folder: ${editingContext.folder || 'root'}
+
+**CURRENT CONTENT:**
+\`\`\`json
+${editingContext.currentContent || '(content not provided)'}
+\`\`\`
+
+**🚨 MANDATORY ACTION - USE update_schema TOOL:**
+When the user asks you to edit, modify, add to, or update this schema:
+1. You ALREADY KNOW the schema_id: "${editingContext.sourceContentId}"
+2. DO NOT call get_schemas - you already have the schema ID
+3. IMMEDIATELY call update_schema with:
+   - schema_id: "${editingContext.sourceContentId}"
+   - action: "merge" (to add/modify properties while preserving existing data)
+   - updates: the JSON-LD changes to make
+
+**Example for adding an award:**
+If user says "add an award for Best CEO 2024":
+→ Call update_schema({
+    schema_id: "${editingContext.sourceContentId}",
+    action: "merge",
+    updates: {
+      "@graph": [{
+        "@type": "Organization",
+        "award": ["Best CEO 2024"]
+      }]
+    }
+  })
+
+**DO NOT:**
+- Just say "I'll add..." without calling the tool
+- Ask "which schema do you want to edit" - they have it open
+- Call get_schemas to find the schema - you have the ID
+- Respond with just text - you MUST call update_schema
+`;
+  }
+
   // Build system prompt with organization context
   const enhancedSystemPrompt = getNivContentSystemPrompt() + `
 
 **ORGANIZATION CONTEXT:**
 ${orgContext}
-
+${editingContextInstructions}
 **CONVERSATION STATE:**
 - Current stage: ${conversationState.stage}
 - Strategy chosen: ${conversationState.strategyChosen || 'none yet'}
