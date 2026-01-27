@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createAuthClient } from '@/lib/supabase/auth-client'
@@ -12,10 +12,40 @@ export default function UpdatePasswordPage() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [sessionReady, setSessionReady] = useState(false)
+  const [checkingSession, setCheckingSession] = useState(true)
   const [message, setMessage] = useState<{ type: 'error' | 'success', text: string } | null>(null)
   const router = useRouter()
 
   const supabase = createAuthClient()
+
+  useEffect(() => {
+    // Listen for auth state changes - Supabase will automatically
+    // process the recovery token from the URL hash
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        // Recovery token was valid, session is now active
+        setSessionReady(true)
+        setCheckingSession(false)
+      } else if (event === 'SIGNED_IN' && session) {
+        // Also handle if already signed in via recovery
+        setSessionReady(true)
+        setCheckingSession(false)
+      }
+    })
+
+    // Also check if there's already a session (in case event already fired)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setSessionReady(true)
+      }
+      setCheckingSession(false)
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [supabase])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -64,6 +94,55 @@ export default function UpdatePasswordPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Show loading while checking session
+  if (checkingSession) {
+    return (
+      <div className="grid-split">
+        <div className="flex flex-col justify-center items-center px-20 bg-white">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--burnt-orange)] mx-auto mb-4"></div>
+            <p style={{ color: 'var(--grey-500)' }}>Verifying reset link...</p>
+          </div>
+        </div>
+        <div style={{ background: 'var(--charcoal)' }} />
+      </div>
+    )
+  }
+
+  // Show error if no valid session
+  if (!sessionReady) {
+    return (
+      <div className="grid-split">
+        <div className="flex flex-col justify-center px-20 bg-white">
+          <div className="max-w-[360px]">
+            <div className="mb-12">
+              <Link href="/">
+                <Logo variant="dark" size="md" />
+              </Link>
+            </div>
+            <div className="mb-8">
+              <h1
+                className="text-3xl font-normal mb-2 headline-serif"
+                style={{ color: 'var(--charcoal)' }}
+              >
+                Link expired
+              </h1>
+              <p className="text-sm" style={{ color: 'var(--grey-500)' }}>
+                This password reset link is invalid or has expired. Please request a new one.
+              </p>
+            </div>
+            <Link href="/auth/reset-password">
+              <Button variant="primary" size="lg" className="w-full">
+                Request new link
+              </Button>
+            </Link>
+          </div>
+        </div>
+        <div style={{ background: 'var(--charcoal)' }} />
+      </div>
+    )
   }
 
   return (
