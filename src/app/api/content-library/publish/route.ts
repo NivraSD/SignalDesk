@@ -72,10 +72,8 @@ export async function POST(request: NextRequest) {
         .eq('id', org.id)
     }
 
-    // Build canonical URL
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL
-      || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
-      || 'https://nivria.ai'
+    // Build canonical URL - use production domain, not VERCEL_URL (which gives preview URLs)
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://nivria.ai'
     const canonicalUrl = `${baseUrl}/media/${vertical}/${slug}`
 
     // Publish: set published_at, clear unpublished_at
