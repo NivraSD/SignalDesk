@@ -42,7 +42,7 @@ export async function middleware(request: NextRequest) {
     } = await supabase.auth.getUser()
 
     // Public paths that don't require authentication
-    const publicPaths = ['/auth/login', '/auth/signup', '/auth/reset-password', '/auth/callback', '/auth/error', '/auth/update-password', '/platform', '/contact', '/thoughts', '/energy', '/fintech', '/defense', '/org']
+    const publicPaths = ['/auth/login', '/auth/signup', '/auth/reset-password', '/auth/callback', '/auth/error', '/auth/update-password', '/platform', '/contact', '/thoughts', '/media', '/org']
     const isPublicPath = publicPaths.some(publicPath => path.startsWith(publicPath))
 
     // If user is not signed in and trying to access protected route, redirect to login
@@ -55,7 +55,7 @@ export async function middleware(request: NextRequest) {
 
     // If user is signed in and trying to access auth pages, redirect to onboarding
     // But allow access to public content pages (blog, media network) for everyone
-    const mediaNetworkPaths = ['/thoughts', '/energy', '/fintech', '/defense', '/org']
+    const mediaNetworkPaths = ['/thoughts', '/media', '/org']
     const isMediaNetworkPath = mediaNetworkPaths.some(p => path.startsWith(p))
     if (user && isPublicPath && path !== '/auth/callback' && !isMediaNetworkPath) {
       const redirectUrl = request.nextUrl.clone()

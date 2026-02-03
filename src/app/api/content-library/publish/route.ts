@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL
       || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
       || 'https://nivria.ai'
-    const canonicalUrl = `${baseUrl}/${vertical}/${slug}`
+    const canonicalUrl = `${baseUrl}/media/${vertical}/${slug}`
 
     // Publish: set published_at, clear unpublished_at
     const { error: updateError } = await supabase

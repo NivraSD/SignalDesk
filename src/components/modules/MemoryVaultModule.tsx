@@ -2748,7 +2748,7 @@ function ContentLibraryTab({
                   {(selectedContent.content_type === 'thought-leadership' || selectedContent.content_type === 'press-release') && (
                     selectedContent.published_at && !selectedContent.unpublished_at ? (
                       <a
-                        href={selectedContent.canonical_url || `/${selectedContent.vertical}/${selectedContent.content_slug}`}
+                        href={selectedContent.canonical_url || `/media/${selectedContent.vertical}/${selectedContent.content_slug}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors"

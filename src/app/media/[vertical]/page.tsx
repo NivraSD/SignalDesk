@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Metadata } from 'next'
 import { createClient } from '@supabase/supabase-js'
+import { getVertical, isValidVertical } from '@/lib/config/verticals'
 import { Logo } from '@/components/ui/Logo'
 
 const supabase = createClient(
@@ -10,51 +11,45 @@ const supabase = createClient(
 )
 
 interface PageProps {
-  params: Promise<{ slug: string }>
-}
-
-async function getOrg(slug: string) {
-  const { data } = await supabase
-    .from('organizations')
-    .select('id, name, slug, industry, description')
-    .eq('slug', slug)
-    .single()
-
-  return data
+  params: Promise<{ vertical: string }>
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { slug } = await params
-  const org = await getOrg(slug)
-  if (!org) return {}
-
-  const description = org.description || `Published content from ${org.name}`
+  const { vertical: verticalSlug } = await params
+  const vertical = getVertical(verticalSlug)
+  if (!vertical) return {}
 
   return {
-    title: `${org.name} | Nivria Media Network`,
-    description,
+    title: `${vertical.label} | Nivria Media Network`,
+    description: vertical.description,
     openGraph: {
-      title: `${org.name} | Nivria Media Network`,
-      description,
-      type: 'profile',
+      title: `${vertical.label} | Nivria Media Network`,
+      description: vertical.description,
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${vertical.label} | Nivria Media Network`,
+      description: vertical.description,
     },
   }
 }
 
 export const revalidate = 60
 
-export default async function OrgPage({ params }: PageProps) {
-  const { slug } = await params
-  const org = await getOrg(slug)
+export default async function VerticalPage({ params }: PageProps) {
+  const { vertical: verticalSlug } = await params
 
-  if (!org) {
+  if (!isValidVertical(verticalSlug)) {
     notFound()
   }
 
+  const vertical = getVertical(verticalSlug)!
+
   const { data: articles } = await supabase
     .from('content_library')
-    .select('id, title, content_slug, content_type, meta_description, author_name, published_at, vertical')
-    .eq('organization_id', org.id)
+    .select('id, title, content_slug, content_type, meta_description, author_name, published_at, vertical, organization_id')
+    .eq('vertical', verticalSlug)
     .not('published_at', 'is', null)
     .is('unpublished_at', null)
     .order('published_at', { ascending: false })
@@ -111,53 +106,20 @@ export default async function OrgPage({ params }: PageProps) {
           fontFamily: 'var(--font-serif)',
           fontSize: '48px',
           fontWeight: 400,
-          marginBottom: '8px',
+          marginBottom: '16px',
           letterSpacing: '-1px',
           color: '#c75d3a',
         }}>
-          {org.name}
+          {vertical.label}
         </h1>
-
-        {org.industry && (
-          <div style={{ marginBottom: '8px' }}>
-            <span style={{
-              display: 'inline-block',
-              background: 'rgba(199, 93, 58, 0.15)',
-              color: 'var(--accent)',
-              padding: '4px 12px',
-              borderRadius: '20px',
-              fontSize: '12px',
-              textTransform: 'capitalize',
-            }}>
-              {org.industry}
-            </span>
-          </div>
-        )}
-
-        {org.description && (
-          <p style={{
-            color: 'var(--grey-400)',
-            fontSize: '18px',
-            marginBottom: '64px',
-            lineHeight: 1.6,
-          }}>
-            {org.description}
-          </p>
-        )}
-
-        {!org.description && (
-          <div style={{ marginBottom: '64px' }} />
-        )}
-
-        <h2 style={{
-          fontFamily: 'var(--font-serif)',
-          fontSize: '24px',
-          fontWeight: 400,
-          color: 'var(--grey-300)',
-          marginBottom: '32px',
+        <p style={{
+          color: 'var(--grey-400)',
+          fontSize: '18px',
+          marginBottom: '64px',
+          lineHeight: 1.6,
         }}>
-          Published Content
-        </h2>
+          {vertical.description}
+        </p>
 
         {!articles || articles.length === 0 ? (
           <div style={{
@@ -168,7 +130,7 @@ export default async function OrgPage({ params }: PageProps) {
             border: '1px solid rgba(255,255,255,0.05)',
           }}>
             <p style={{ color: 'var(--grey-500)', fontSize: '16px' }}>
-              No published content yet.
+              No articles yet. Check back soon.
             </p>
           </div>
         ) : (
@@ -182,7 +144,7 @@ export default async function OrgPage({ params }: PageProps) {
                 }}
               >
                 <Link
-                  href={`/media/${article.vertical}/${article.content_slug}`}
+                  href={`/media/${verticalSlug}/${article.content_slug}`}
                   style={{ textDecoration: 'none', color: 'inherit' }}
                 >
                   <div style={{ marginBottom: '16px' }}>
@@ -198,20 +160,11 @@ export default async function OrgPage({ params }: PageProps) {
                     <span style={{
                       color: 'var(--accent)',
                       fontSize: '12px',
-                      textTransform: 'capitalize',
-                    }}>
-                      {article.vertical}
-                    </span>
-                    <span style={{ color: 'var(--grey-600)', margin: '0 12px' }}>|</span>
-                    <span style={{
-                      color: 'var(--grey-500)',
-                      fontSize: '12px',
-                      textTransform: 'capitalize',
                     }}>
                       {article.content_type.replace(/-/g, ' ')}
                     </span>
                   </div>
-                  <h3 style={{
+                  <h2 style={{
                     fontFamily: 'var(--font-serif)',
                     fontSize: '28px',
                     fontWeight: 400,
@@ -220,7 +173,7 @@ export default async function OrgPage({ params }: PageProps) {
                     color: '#c75d3a',
                   }}>
                     {article.title}
-                  </h3>
+                  </h2>
                   {article.meta_description && (
                     <p style={{
                       color: 'var(--grey-400)',
