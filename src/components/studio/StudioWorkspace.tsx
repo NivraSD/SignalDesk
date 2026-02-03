@@ -36,6 +36,7 @@ const StudioWorkspace = forwardRef<StudioWorkspaceRef, StudioWorkspaceProps>(({
   const [copied, setCopied] = useState(false)
   const [saving, setSaving] = useState(false)
   const [editableContent, setEditableContent] = useState('')
+  const [editableTitle, setEditableTitle] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   // Expose focus method to parent
@@ -48,7 +49,7 @@ const StudioWorkspace = forwardRef<StudioWorkspaceRef, StudioWorkspaceProps>(({
     }
   }))
 
-  // Update editable content when content prop changes
+  // Update editable content and title when content prop changes
   useEffect(() => {
     if (content) {
       if (typeof content.content === 'string') {
@@ -58,6 +59,7 @@ const StudioWorkspace = forwardRef<StudioWorkspaceRef, StudioWorkspaceProps>(({
       } else if (typeof content.content === 'object') {
         setEditableContent(JSON.stringify(content.content, null, 2))
       }
+      setEditableTitle(content.title || '')
     }
   }, [content])
 
@@ -80,6 +82,15 @@ const StudioWorkspace = forwardRef<StudioWorkspaceRef, StudioWorkspaceProps>(({
       const sourceContentId = content.metadata?.sourceContentId
       const isUpdate = !!sourceContentId
 
+      // Resolve title: use edited title, or fall back to content title, or extract from body
+      const resolvedTitle = editableTitle.trim() || content.title || (() => {
+        const text = editableContent
+        const heading = text.match(/^#\s+(.+)$/m)
+        if (heading) return heading[1].trim()
+        const first = text.split('\n').find((l: string) => l.trim().length > 0)
+        return first ? first.trim().slice(0, 120) : `${content.type} - ${new Date().toLocaleDateString()}`
+      })()
+
       if (isUpdate) {
         // Update existing content in Memory Vault
         console.log('📝 Updating existing content:', sourceContentId)
@@ -89,7 +100,7 @@ const StudioWorkspace = forwardRef<StudioWorkspaceRef, StudioWorkspaceProps>(({
           body: JSON.stringify({
             id: sourceContentId,
             content: editableContent,
-            title: content.title,
+            title: resolvedTitle,
             folder: sourceFolder || content.metadata?.folder
           })
         })
@@ -109,7 +120,7 @@ const StudioWorkspace = forwardRef<StudioWorkspaceRef, StudioWorkspaceProps>(({
           body: JSON.stringify({
             content: {
               type: content.type,
-              title: content.title || `${content.type} - ${new Date().toLocaleDateString()}`,
+              title: resolvedTitle,
               content: editableContent,
               organization_id: organization?.id,
               timestamp: new Date().toISOString(),
@@ -190,10 +201,11 @@ const StudioWorkspace = forwardRef<StudioWorkspaceRef, StudioWorkspaceProps>(({
                 </span>
                 <input
                   type="text"
-                  defaultValue={content.title || 'Untitled'}
+                  value={editableTitle}
+                  onChange={(e) => setEditableTitle(e.target.value)}
                   className="bg-transparent border-none text-white text-sm font-medium focus:outline-none min-w-0 flex-1 truncate"
                   style={{ fontFamily: 'var(--font-display)' }}
-                  placeholder="Untitled"
+                  placeholder="Enter title..."
                 />
               </>
             )}

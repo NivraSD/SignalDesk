@@ -374,13 +374,26 @@ export default function StudioNIVPanel({
     }
   }
 
+  // Extract title from content body when API doesn't provide one
+  const extractTitleFromContent = (content: any): string | undefined => {
+    const text = typeof content === 'string' ? content : content?.text || content?.body || ''
+    if (!text) return undefined
+    // Try markdown heading
+    const headingMatch = text.match(/^#\s+(.+)$/m)
+    if (headingMatch) return headingMatch[1].trim()
+    // Try first non-empty line, truncated
+    const firstLine = text.split('\n').find((l: string) => l.trim().length > 0)
+    if (firstLine && firstLine.trim().length > 0) return firstLine.trim().slice(0, 120)
+    return undefined
+  }
+
   // Handle content generated
   const handleContentGenerated = (response: any) => {
     const contentItem: ContentItem = {
       id: `content-${Date.now()}`,
       type: response.contentType || selectedContentType,
       content: response.content,
-      title: response.title,
+      title: response.title || extractTitleFromContent(response.content),
       metadata: response.metadata,
       saved: false,
       timestamp: Date.now()
@@ -413,7 +426,7 @@ export default function StudioNIVPanel({
           id: `content-${uniqueId}`,
           type: item.type || item.contentType,
           content: isImage ? { imageUrl } : item.content,
-          title: item.title || item.message,
+          title: item.title || item.message || extractTitleFromContent(isImage ? null : item.content),
           metadata: isImage ? { type: 'image', imageUrl, prompt: item.imagePrompt } : item.metadata,
           saved: false,
           timestamp: Date.now()
