@@ -6,6 +6,7 @@ interface ArticleData {
   publishedAt: string
   canonicalUrl: string
   orgName?: string
+  orgSlug?: string
   vertical?: string
   contentSignature?: string
 }
@@ -26,6 +27,18 @@ export function generateArticleJsonLd(article: ArticleData) {
     jsonLd.description = article.description
   }
 
+  // Publisher (organization) — always include if available
+  if (article.orgName) {
+    jsonLd.publisher = {
+      '@type': 'Organization',
+      name: article.orgName,
+    }
+    if (article.orgSlug) {
+      jsonLd.publisher.url = `https://nivria.ai/org/${article.orgSlug}`
+    }
+  }
+
+  // Author — linked to publisher org if both exist
   if (article.authorName) {
     jsonLd.author = {
       '@type': 'Person',
@@ -34,12 +47,11 @@ export function generateArticleJsonLd(article: ArticleData) {
     if (article.authorTitle) {
       jsonLd.author.jobTitle = article.authorTitle
     }
-  }
-
-  if (article.orgName) {
-    jsonLd.publisher = {
-      '@type': 'Organization',
-      name: article.orgName,
+    if (article.orgName) {
+      jsonLd.author.affiliation = {
+        '@type': 'Organization',
+        name: article.orgName,
+      }
     }
   }
 

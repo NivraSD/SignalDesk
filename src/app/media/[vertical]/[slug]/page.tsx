@@ -54,7 +54,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const vertical = getVertical(verticalSlug)
   const title = article.title
-  const description = article.meta_description || `${title} — ${vertical?.label || verticalSlug} | Nivria Media Network`
+  const orgName = article.organizations?.name
+  const description = article.meta_description || `${title}${orgName ? ` by ${orgName}` : ''} — ${vertical?.label || verticalSlug} | Nivria Media Network`
 
   return {
     title: `${title} | ${vertical?.label || verticalSlug} | Nivria`,
@@ -105,6 +106,7 @@ export default async function ArticlePage({ params }: PageProps) {
     publishedAt: article.published_at,
     canonicalUrl: article.canonical_url || `/media/${verticalSlug}/${slug}`,
     orgName: org?.name,
+    orgSlug: org?.slug,
     vertical: vertical.label,
     contentSignature: article.content_signature || undefined,
   })
@@ -195,6 +197,21 @@ export default async function ArticlePage({ params }: PageProps) {
                 {article.author_name}
                 {article.author_title && `, ${article.author_title}`}
               </span>
+            </>
+          )}
+          {org?.name && (
+            <>
+              <span style={{ color: 'var(--grey-600)', margin: '0 12px' }}>|</span>
+              <Link
+                href={`/org/${org.slug}`}
+                style={{
+                  color: 'var(--grey-400)',
+                  fontSize: '13px',
+                  textDecoration: 'none',
+                }}
+              >
+                {org.name}
+              </Link>
             </>
           )}
           <span style={{ color: 'var(--grey-600)', margin: '0 12px' }}>|</span>
