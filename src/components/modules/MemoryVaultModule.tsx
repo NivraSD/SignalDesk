@@ -2714,15 +2714,21 @@ function ContentLibraryTab({
                             {savingTitle && <Loader className="w-4 h-4 animate-spin" style={{ color: 'var(--burnt-orange)' }} />}
                           </div>
                         ) : (
-                          <h2
-                            className="text-xl font-semibold cursor-pointer group/title"
-                            style={{ color: 'var(--white)', fontFamily: 'var(--font-display)' }}
-                            onClick={() => { setEditTitleValue(selectedContent.title); setEditingTitle(true) }}
-                            title="Click to edit title"
-                          >
-                            {selectedContent.title}
-                            <Edit className="w-3.5 h-3.5 ml-2 inline-block opacity-0 group-hover/title:opacity-50 transition-opacity" />
-                          </h2>
+                          <div className="flex items-center gap-2">
+                            <h2
+                              className="text-xl font-semibold"
+                              style={{ color: 'var(--white)', fontFamily: 'var(--font-display)' }}
+                            >
+                              {selectedContent.title}
+                            </h2>
+                            <button
+                              onClick={() => { setEditTitleValue(selectedContent.title); setEditingTitle(true) }}
+                              className="p-1 rounded hover:bg-white/10 transition-colors"
+                              title="Edit title"
+                            >
+                              <Edit className="w-4 h-4" style={{ color: 'var(--grey-400)' }} />
+                            </button>
+                          </div>
                         )}
                         <div className="flex items-center gap-3 mt-1">
                           <span
