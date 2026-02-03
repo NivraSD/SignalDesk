@@ -3,17 +3,26 @@ import { createClient } from '@supabase/supabase-js'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
+const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
 export async function POST(request: NextRequest) {
   try {
-    const { contentId } = await request.json()
+    const body = await request.json()
+    const { contentId, regenerate } = body
 
     if (!contentId) {
       return NextResponse.json(
         { success: false, error: 'contentId is required' },
         { status: 400 }
+      )
+    }
+
+    if (!GOOGLE_API_KEY) {
+      return NextResponse.json(
+        { success: false, error: 'GOOGLE_API_KEY is not configured. Add it to your environment variables.' },
+        { status: 500 }
       )
     }
 
@@ -39,8 +48,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Skip if already has a cover image
-    if (content.cover_image_url) {
+    // Skip if already has a cover image (unless regenerating)
+    if (content.cover_image_url && !regenerate) {
       return NextResponse.json({
         success: true,
         coverImageUrl: content.cover_image_url,
@@ -54,52 +63,100 @@ export async function POST(request: NextRequest) {
       : content.content?.body || content.content?.text || content.content?.content || ''
     const snippet = bodyText.slice(0, 200).replace(/\n/g, ' ').trim()
 
-    const prompt = `Professional editorial cover image for an article titled '${content.title}'. ${snippet ? `Topic: ${snippet}.` : ''} Abstract, modern, warm earth tones, dark background. No text, no faces.`
+    const prompt = `Generate a professional editorial cover image for an article titled '${content.title}'. ${snippet ? `Topic: ${snippet}.` : ''} Abstract, modern, warm earth tones, dark background. No text, no faces, no people. Wide 16:9 aspect ratio composition.`
 
-    // Call Vertex AI edge function (same pattern as /api/visual/image/route.ts)
-    const response = await fetch(`${SUPABASE_URL}/functions/v1/vertex-ai-visual`, {
+    // Call Gemini 2.0 Flash directly via Google AI API (no Vertex AI billing needed)
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GOOGLE_API_KEY}`
+
+    const response = await fetch(endpoint, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        type: 'image',
-        prompt,
-        aspectRatio: '16:9',
-        style: 'professional',
-        numberOfImages: 1,
-      }),
+        contents: [{
+          role: 'user',
+          parts: [{ text: prompt }]
+        }],
+        generationConfig: {
+          responseModalities: ['IMAGE', 'TEXT'],
+          temperature: 1.0,
+          topP: 0.95,
+          topK: 40,
+          maxOutputTokens: 8192
+        }
+      })
     })
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('Vertex AI Visual error:', errorText)
-      throw new Error(`Edge function returned ${response.status}`)
+      console.error('Gemini Flash image error:', response.status, errorText)
+      throw new Error(`Gemini API returned ${response.status}: ${errorText.slice(0, 200)}`)
     }
 
     const data = await response.json()
 
-    if (!data.success || !data.images || data.images.length === 0) {
+    // Extract image from response
+    let imageBase64: string | null = null
+    let mimeType = 'image/png'
+
+    if (data.candidates?.[0]?.content?.parts) {
+      for (const part of data.candidates[0].content.parts) {
+        if (part.inlineData?.data) {
+          imageBase64 = part.inlineData.data
+          mimeType = part.inlineData.mimeType || 'image/png'
+          break
+        }
+      }
+    }
+
+    if (!imageBase64) {
       throw new Error('Image generation did not return a valid image')
     }
 
-    const imageUrl = data.images[0].url
+    // Upload to Supabase Storage
+    const ext = mimeType === 'image/jpeg' ? 'jpg' : 'png'
+    const filePath = `cover-images/${contentId}-${Date.now()}.${ext}`
+    const imageBuffer = Buffer.from(imageBase64, 'base64')
 
-    // Write the cover image URL back to content_library
+    // Ensure the bucket exists (ignore error if already exists)
+    await supabase.storage.createBucket('cover-images', {
+      public: true,
+      fileSizeLimit: 10 * 1024 * 1024,
+    }).catch(() => {})
+
+    const { error: uploadError } = await supabase.storage
+      .from('cover-images')
+      .upload(filePath, imageBuffer, {
+        contentType: mimeType,
+        upsert: true,
+      })
+
+    let coverImageUrl: string
+
+    if (uploadError) {
+      console.error('Storage upload error:', uploadError)
+      // Fall back to data URL stored directly in DB
+      coverImageUrl = `data:${mimeType};base64,${imageBase64}`
+    } else {
+      // Get public URL from storage
+      const { data: { publicUrl } } = supabase.storage
+        .from('cover-images')
+        .getPublicUrl(filePath)
+      coverImageUrl = publicUrl
+    }
+
+    // Update content_library with the cover image URL
     const { error: updateError } = await supabase
       .from('content_library')
-      .update({ cover_image_url: imageUrl })
+      .update({ cover_image_url: coverImageUrl })
       .eq('id', contentId)
 
     if (updateError) {
       console.error('Failed to save cover image URL:', updateError)
-      throw new Error('Failed to save cover image URL')
     }
 
     return NextResponse.json({
       success: true,
-      coverImageUrl: imageUrl,
+      coverImageUrl,
     })
   } catch (error) {
     console.error('Cover image generation error:', error)

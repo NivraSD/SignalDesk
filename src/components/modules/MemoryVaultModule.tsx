@@ -8,7 +8,7 @@ import {
   Filter, X, ChevronRight, ChevronDown, Download, Trash2, Eye,
   BarChart3, Zap, CheckCircle, AlertCircle, Loader, Edit,
   FolderPlus, MoreVertical, Move, Copy, FolderOpen, File, ExternalLink, Target,
-  ArrowLeft, Globe
+  ArrowLeft, Globe, ImagePlus, RefreshCw
 } from 'lucide-react'
 import { useAppStore } from '@/stores/useAppStore'
 import { createClient } from '@supabase/supabase-js'
@@ -64,6 +64,7 @@ interface ContentItem {
   author_name?: string | null
   author_title?: string | null
   meta_description?: string | null
+  cover_image_url?: string | null
   // Execution tracking
   executed?: boolean
   executed_at?: string
@@ -217,6 +218,9 @@ export default function MemoryVaultModule({ onOpenInStudio }: MemoryVaultModuleP
   const [publishAuthorTitle, setPublishAuthorTitle] = useState('')
   const [publishMetaDesc, setPublishMetaDesc] = useState('')
   const [publishing, setPublishing] = useState(false)
+  const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null)
+  const [generatingCoverImage, setGeneratingCoverImage] = useState(false)
+  const [coverImageError, setCoverImageError] = useState<string | null>(null)
 
   // Brand Assets State
   const [brandAssets, setBrandAssets] = useState<BrandAsset[]>([])
@@ -952,6 +956,31 @@ export default function MemoryVaultModule({ onOpenInStudio }: MemoryVaultModuleP
     }
   }
 
+  const handleGenerateCoverImage = async (regenerate = false) => {
+    if (!itemToPublish) return
+    setGeneratingCoverImage(true)
+    setCoverImageError(null)
+    try {
+      const res = await fetch('/api/content-library/generate-cover-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contentId: itemToPublish.id, regenerate }),
+      })
+      const data = await res.json()
+      if (!data.success) throw new Error(data.error)
+      setCoverImagePreview(data.coverImageUrl)
+      // Update local state
+      setContentItems(prev => prev.map(i =>
+        i.id === itemToPublish.id ? { ...i, cover_image_url: data.coverImageUrl } : i
+      ))
+    } catch (error) {
+      console.error('Cover image generation error:', error)
+      setCoverImageError(error instanceof Error ? error.message : 'Failed to generate cover image')
+    } finally {
+      setGeneratingCoverImage(false)
+    }
+  }
+
   const handlePublishContent = async () => {
     if (!itemToPublish) return
     setPublishing(true)
@@ -996,6 +1025,8 @@ export default function MemoryVaultModule({ onOpenInStudio }: MemoryVaultModuleP
       setPublishAuthorName('')
       setPublishAuthorTitle('')
       setPublishMetaDesc('')
+      setCoverImagePreview(null)
+      setCoverImageError(null)
       window.open(data.publishedUrl, '_blank')
     } catch (error) {
       console.error('Publish error:', error)
@@ -1822,6 +1853,8 @@ export default function MemoryVaultModule({ onOpenInStudio }: MemoryVaultModuleP
               setPublishAuthorName('')
               setPublishAuthorTitle('')
               setPublishMetaDesc('')
+              setCoverImagePreview(item.cover_image_url || null)
+              setCoverImageError(null)
               setShowPublishDialog(true)
             }}
           />
@@ -2467,6 +2500,71 @@ export default function MemoryVaultModule({ onOpenInStudio }: MemoryVaultModuleP
                   className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-[var(--burnt-orange)] resize-none"
                 />
               </div>
+
+              {/* Cover Image — only for thought-leadership */}
+              {itemToPublish.content_type === 'thought-leadership' && (
+                <div>
+                  <label className="block text-xs font-medium text-[var(--grey-400)] mb-2 uppercase tracking-wider">
+                    Cover Image
+                  </label>
+
+                  {coverImagePreview ? (
+                    <div className="space-y-2">
+                      <div className="relative rounded-lg overflow-hidden border border-zinc-700" style={{ aspectRatio: '16/9' }}>
+                        <img
+                          src={coverImagePreview}
+                          alt="Cover preview"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <button
+                        onClick={() => handleGenerateCoverImage(true)}
+                        disabled={generatingCoverImage}
+                        className="w-full px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-lg text-xs text-[var(--grey-300)] transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
+                      >
+                        {generatingCoverImage ? (
+                          <>
+                            <Loader className="w-3 h-3 animate-spin" />
+                            Regenerating...
+                          </>
+                        ) : (
+                          <>
+                            <RefreshCw className="w-3 h-3" />
+                            Regenerate Cover Image
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <button
+                        onClick={() => handleGenerateCoverImage(false)}
+                        disabled={generatingCoverImage}
+                        className="w-full px-3 py-3 bg-zinc-800 hover:bg-zinc-700 border border-dashed border-zinc-600 rounded-lg text-sm text-[var(--grey-300)] transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        {generatingCoverImage ? (
+                          <>
+                            <Loader className="w-4 h-4 animate-spin" />
+                            Generating cover image...
+                          </>
+                        ) : (
+                          <>
+                            <ImagePlus className="w-4 h-4" />
+                            Generate AI Cover Image
+                          </>
+                        )}
+                      </button>
+                      <p className="text-[10px] text-[var(--grey-600)] text-center">
+                        Uses Gemini Flash to create an editorial cover image
+                      </p>
+                    </div>
+                  )}
+
+                  {coverImageError && (
+                    <p className="text-xs text-red-400 mt-1">{coverImageError}</p>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="flex gap-2 mt-6">
@@ -2496,6 +2594,8 @@ export default function MemoryVaultModule({ onOpenInStudio }: MemoryVaultModuleP
                 onClick={() => {
                   setShowPublishDialog(false)
                   setItemToPublish(null)
+                  setCoverImagePreview(null)
+                  setCoverImageError(null)
                 }}
                 className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors text-[var(--grey-300)]"
               >
