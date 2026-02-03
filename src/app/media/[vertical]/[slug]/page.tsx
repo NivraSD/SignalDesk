@@ -16,16 +16,35 @@ interface PageProps {
 }
 
 async function getArticle(verticalSlug: string, slug: string) {
-  const { data } = await supabase
+  // Fetch article without join first (join can fail if FK isn't set up)
+  const { data, error } = await supabase
     .from('content_library')
-    .select('*, organizations(name, slug, industry, description)')
+    .select('*')
     .eq('vertical', verticalSlug)
     .eq('content_slug', slug)
     .not('published_at', 'is', null)
     .is('unpublished_at', null)
     .single()
 
-  return data
+  if (error) {
+    console.error('Article query error:', error)
+    return null
+  }
+
+  if (!data) return null
+
+  // Fetch org separately
+  let org = null
+  if (data.organization_id) {
+    const { data: orgData } = await supabase
+      .from('organizations')
+      .select('name, slug, industry, description')
+      .eq('id', data.organization_id)
+      .single()
+    org = orgData
+  }
+
+  return { ...data, organizations: org }
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
