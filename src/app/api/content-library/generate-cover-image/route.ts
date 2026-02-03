@@ -65,8 +65,8 @@ export async function POST(request: NextRequest) {
 
     const prompt = `Generate a professional editorial cover image for an article titled '${content.title}'. ${snippet ? `Topic: ${snippet}.` : ''} Abstract, modern, warm earth tones, dark background. No text, no faces, no people. Wide 16:9 aspect ratio composition.`
 
-    // Call Gemini 2.0 Flash directly via Google AI API (no Vertex AI billing needed)
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GOOGLE_API_KEY}`
+    // Call Gemini 2.5 Flash Image via Google AI API (no Vertex AI billing needed)
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${GOOGLE_API_KEY}`
 
     const response = await fetch(endpoint, {
       method: 'POST',
