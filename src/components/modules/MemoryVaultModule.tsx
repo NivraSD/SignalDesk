@@ -1036,6 +1036,33 @@ export default function MemoryVaultModule({ onOpenInStudio }: MemoryVaultModuleP
     }
   }
 
+  const handleUnpublishContent = async (item: ContentItem) => {
+    if (!confirm('Unpublish this article? It will be removed from the media network.')) return
+    try {
+      const res = await fetch('/api/content-library/publish', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contentId: item.id }),
+      })
+      const data = await res.json()
+      if (!data.success) throw new Error(data.error)
+
+      const updated = contentItems.map(i =>
+        i.id === item.id
+          ? { ...i, unpublished_at: new Date().toISOString() }
+          : i
+      )
+      setContentItems(updated)
+      setFolderTree(buildFolderTree(updated))
+      if (selectedContent?.id === item.id) {
+        setSelectedContent(updated.find(i => i.id === item.id) || null)
+      }
+    } catch (error) {
+      console.error('Unpublish error:', error)
+      alert(`Failed to unpublish: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
+
   // Export content - NEW: Word, PowerPoint, Google Docs/Slides
   const handleExport = async (item: ContentItem, format: 'word' | 'powerpoint' | 'google-docs' | 'google-slides') => {
     try {
@@ -1857,6 +1884,7 @@ export default function MemoryVaultModule({ onOpenInStudio }: MemoryVaultModuleP
               setCoverImageError(null)
               setShowPublishDialog(true)
             }}
+            onUnpublishContent={handleUnpublishContent}
           />
         )}
 
@@ -2640,7 +2668,8 @@ function ContentLibraryTab({
   setEditingTitle,
   savingTitle,
   onSaveTitle,
-  onPublishContent
+  onPublishContent,
+  onUnpublishContent
 }: {
   folderTree: FolderNode[]
   selectedContent: ContentItem | null
@@ -2671,6 +2700,7 @@ function ContentLibraryTab({
   savingTitle: boolean
   onSaveTitle: (item: ContentItem, newTitle: string) => void
   onPublishContent: (item: ContentItem) => void
+  onUnpublishContent: (item: ContentItem) => void
 }) {
   // Local state for result form
   const [resultValue, setResultValue] = useState('')
@@ -2928,21 +2958,37 @@ function ContentLibraryTab({
                   {/* Publish Button - for thought-leadership and press-release content */}
                   {(selectedContent.content_type === 'thought-leadership' || selectedContent.content_type === 'press-release') && (
                     selectedContent.published_at && !selectedContent.unpublished_at ? (
-                      <a
-                        href={selectedContent.canonical_url || `/media/${selectedContent.vertical}/${selectedContent.content_slug}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors"
-                        style={{
-                          background: 'var(--burnt-orange)',
-                          color: 'var(--white)',
-                          fontFamily: 'var(--font-display)'
-                        }}
-                        title="View Published Article"
-                      >
-                        <Globe className="w-4 h-4" />
-                        <span className="text-sm font-medium">View Published</span>
-                      </a>
+                      <>
+                        <a
+                          href={selectedContent.canonical_url || `/media/${selectedContent.vertical}/${selectedContent.content_slug}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors"
+                          style={{
+                            background: 'var(--burnt-orange)',
+                            color: 'var(--white)',
+                            fontFamily: 'var(--font-display)'
+                          }}
+                          title="View Published Article"
+                        >
+                          <Globe className="w-4 h-4" />
+                          <span className="text-sm font-medium">View</span>
+                        </a>
+                        <button
+                          onClick={() => onUnpublishContent(selectedContent)}
+                          className="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors border"
+                          style={{
+                            background: 'transparent',
+                            borderColor: 'var(--grey-700)',
+                            color: 'var(--grey-400)',
+                            fontFamily: 'var(--font-display)'
+                          }}
+                          title="Unpublish from Media Network"
+                        >
+                          <X className="w-4 h-4" />
+                          <span className="text-sm font-medium">Unpublish</span>
+                        </button>
+                      </>
                     ) : (
                       <button
                         onClick={() => onPublishContent(selectedContent)}

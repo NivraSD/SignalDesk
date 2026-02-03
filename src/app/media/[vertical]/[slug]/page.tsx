@@ -136,9 +136,19 @@ export default async function ArticlePage({ params }: PageProps) {
   }
 
   // Extract content body - handle both string and object formats
-  const contentBody = typeof article.content === 'string'
+  let contentBody = typeof article.content === 'string'
     ? article.content
     : article.content?.body || article.content?.text || article.content?.content || JSON.stringify(article.content, null, 2)
+
+  // Strip leading title if it duplicates the article title (AI often includes it)
+  if (contentBody && article.title) {
+    const titlePattern = article.title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    contentBody = contentBody
+      .replace(new RegExp(`^#+ *${titlePattern}\\s*\\n*`, 'i'), '')
+      .replace(new RegExp(`^\\*\\*${titlePattern}\\*\\*\\s*\\n*`, 'i'), '')
+      .replace(new RegExp(`^${titlePattern}\\s*\\n*`, 'i'), '')
+      .trimStart()
+  }
 
   return (
     <div style={{
@@ -314,8 +324,6 @@ export default async function ArticlePage({ params }: PageProps) {
 
         {/* Content Body */}
         <style>{`
-          .article-content h2 { color: #c75d3a !important; font-size: 28px; font-weight: 400; margin: 2em 0 1em; font-family: var(--font-serif); }
-          .article-content h3 { color: #c75d3a !important; font-size: 22px; font-weight: 400; margin: 1.5em 0 0.75em; font-family: var(--font-serif); }
           .article-content a { color: #c75d3a !important; text-decoration: underline; }
           .article-content img { max-width: 100%; height: auto; margin: 16px 0; border-radius: 8px; }
           .article-content ul, .article-content ol { margin: 1em 0; padding-left: 2em; }
@@ -464,15 +472,19 @@ export default async function ArticlePage({ params }: PageProps) {
 }
 
 function formatContent(content: string): string {
-  return content
+  // Strip markdown headers (## / ###) — convert to bold section labels
+  let processed = content
+    .replace(/^### (.*$)/gm, '\n**$1**\n')
+    .replace(/^## (.*$)/gm, '\n**$1**\n')
+    .replace(/^# (.*$)/gm, '\n**$1**\n')
+
+  return processed
     .split(/\n\n+/)
     .map(para => `<p style="margin-bottom: 1.5em">${para}</p>`)
     .join('')
     .replace(/\*\*(.*?)\*\*/g, '<strong style="color: var(--white); font-weight: 600">$1</strong>')
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
     .replace(/<u>(.*?)<\/u>/g, '<u style="text-decoration: underline">$1</u>')
-    .replace(/^## (.*$)/gm, '<h2 style="font-family: var(--font-serif); font-size: 28px; font-weight: 400; margin: 2em 0 1em; color: var(--accent)">$1</h2>')
-    .replace(/^### (.*$)/gm, '<h3 style="font-family: var(--font-serif); font-size: 22px; font-weight: 400; margin: 1.5em 0 0.75em; color: var(--accent)">$1</h3>')
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" style="color: var(--accent); text-decoration: underline" target="_blank" rel="noopener">$1</a>')
     .replace(/\n/g, '<br>')
 }
