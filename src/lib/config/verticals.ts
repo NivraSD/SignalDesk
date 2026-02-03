@@ -6,19 +6,24 @@ export interface Vertical {
 
 export const VERTICALS: Vertical[] = [
   {
-    slug: 'energy',
-    label: 'Energy',
-    description: 'Strategic communications and thought leadership in energy, utilities, and sustainability.',
+    slug: 'commodities',
+    label: 'Commodities',
+    description: 'Strategic communications and thought leadership in energy, metals, agriculture, and global commodity markets.',
   },
   {
-    slug: 'fintech',
-    label: 'Fintech',
-    description: 'Insights and press coverage across financial technology, banking, and digital payments.',
+    slug: 'tech',
+    label: 'Tech',
+    description: 'Insights and press coverage across technology, AI, SaaS, and digital innovation.',
   },
   {
-    slug: 'defense',
-    label: 'Defense',
-    description: 'Analysis and thought leadership in defense, aerospace, and national security.',
+    slug: 'consulting',
+    label: 'Consulting',
+    description: 'Thought leadership in management consulting, advisory, and professional services.',
+  },
+  {
+    slug: 'finance',
+    label: 'Finance',
+    description: 'Analysis and thought leadership in banking, fintech, capital markets, and financial services.',
   },
 ]
 

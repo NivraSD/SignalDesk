@@ -1778,7 +1778,7 @@ export default function MemoryVaultModule({ onOpenInStudio }: MemoryVaultModuleP
             contentItems={contentItems}
             onPublishContent={(item) => {
               setItemToPublish(item)
-              setPublishVertical('energy')
+              setPublishVertical('commodities')
               setPublishAuthorName('')
               setPublishAuthorTitle('')
               setPublishMetaDesc('')
@@ -2369,9 +2369,10 @@ export default function MemoryVaultModule({ onOpenInStudio }: MemoryVaultModuleP
                   onChange={e => setPublishVertical(e.target.value)}
                   className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-[var(--burnt-orange)]"
                 >
-                  <option value="energy">Energy</option>
-                  <option value="fintech">Fintech</option>
-                  <option value="defense">Defense</option>
+                  <option value="commodities">Commodities</option>
+                  <option value="tech">Tech</option>
+                  <option value="consulting">Consulting</option>
+                  <option value="finance">Finance</option>
                 </select>
               </div>
 
