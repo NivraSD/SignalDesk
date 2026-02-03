@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     // Fetch the content item
     const { data: content, error: fetchError } = await supabase
       .from('content_library')
-      .select('id, title, content_type, organization_id, content_slug, published_at')
+      .select('id, title, content_type, organization_id, content_slug, published_at, cover_image_url')
       .eq('id', contentId)
       .single()
 

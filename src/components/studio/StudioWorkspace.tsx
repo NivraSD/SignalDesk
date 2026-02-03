@@ -132,6 +132,14 @@ const StudioWorkspace = forwardRef<StudioWorkspaceRef, StudioWorkspaceProps>(({
 
         const result = await response.json()
         if (result.success) {
+          // Fire-and-forget cover image generation for thought-leadership
+          if (result.id && content.type === 'thought-leadership') {
+            fetch('/api/content-library/generate-cover-image', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ contentId: result.id })
+            }).catch(() => {}) // non-blocking
+          }
           onContentSave({ ...content, saved: true })
         }
       }

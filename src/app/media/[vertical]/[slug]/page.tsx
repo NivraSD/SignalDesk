@@ -57,6 +57,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const orgName = article.organizations?.name
   const description = article.meta_description || `${title}${orgName ? ` by ${orgName}` : ''} — ${vertical?.label || verticalSlug} | Nivria Media Network`
 
+  const ogImages = article.cover_image_url ? [{ url: article.cover_image_url }] : undefined
+
   return {
     title: `${title} | ${vertical?.label || verticalSlug} | Nivria`,
     description,
@@ -68,11 +70,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       authors: article.author_name ? [article.author_name] : undefined,
       section: vertical?.label,
       url: article.canonical_url,
+      images: ogImages,
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
+      images: ogImages,
     },
     alternates: {
       canonical: article.canonical_url,
@@ -109,6 +113,7 @@ export default async function ArticlePage({ params }: PageProps) {
     orgSlug: org?.slug,
     vertical: vertical.label,
     contentSignature: article.content_signature || undefined,
+    coverImageUrl: article.cover_image_url || undefined,
   })
 
   // Get related articles
@@ -242,12 +247,62 @@ export default async function ArticlePage({ params }: PageProps) {
           {article.title}
         </h1>
 
+        {/* Hero Image */}
+        {article.cover_image_url ? (
+          <div style={{
+            marginBottom: '32px',
+            borderRadius: '12px',
+            overflow: 'hidden',
+            border: '1px solid rgba(255,255,255,0.06)',
+          }}>
+            <img
+              src={article.cover_image_url}
+              alt={article.title}
+              style={{
+                width: '100%',
+                height: 'auto',
+                display: 'block',
+                aspectRatio: '16/9',
+                objectFit: 'cover',
+              }}
+            />
+          </div>
+        ) : article.content_type === 'press-release' ? (
+          <div style={{
+            marginBottom: '32px',
+            borderRadius: '12px',
+            overflow: 'hidden',
+            background: 'linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%)',
+            padding: '32px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '16px',
+            border: '1px solid rgba(91, 155, 213, 0.2)',
+          }}>
+            <span style={{ fontSize: '40px' }} role="img" aria-label="announcement">📢</span>
+            <div>
+              <div style={{
+                fontSize: '14px',
+                fontWeight: 600,
+                color: '#5b9bd5',
+                textTransform: 'uppercase',
+                letterSpacing: '1px',
+              }}>
+                Press Release
+              </div>
+              <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginTop: '4px' }}>
+                Official announcement
+              </div>
+            </div>
+          </div>
+        ) : null}
+
         {/* Content type badge */}
         <div style={{ marginBottom: '48px' }}>
           <span style={{
             display: 'inline-block',
-            background: 'rgba(199, 93, 58, 0.15)',
-            color: 'var(--accent)',
+            background: article.content_type === 'press-release' ? 'rgba(15, 52, 96, 0.3)' : 'rgba(199, 93, 58, 0.15)',
+            color: article.content_type === 'press-release' ? '#5b9bd5' : 'var(--accent)',
             padding: '4px 12px',
             borderRadius: '20px',
             fontSize: '12px',

@@ -9,6 +9,7 @@ interface ArticleData {
   orgSlug?: string
   vertical?: string
   contentSignature?: string
+  coverImageUrl?: string
 }
 
 /**
@@ -57,6 +58,10 @@ export function generateArticleJsonLd(article: ArticleData) {
 
   if (article.vertical) {
     jsonLd.articleSection = article.vertical
+  }
+
+  if (article.coverImageUrl) {
+    jsonLd.image = article.coverImageUrl
   }
 
   return jsonLd
