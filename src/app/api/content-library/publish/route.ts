@@ -106,6 +106,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Fire-and-forget cover image generation for thought-leadership without one
+    if (content.content_type === 'thought-leadership' && !content.cover_image_url) {
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://nivria.ai'
+      fetch(`${appUrl}/api/content-library/generate-cover-image`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contentId }),
+      }).catch(() => {}) // non-blocking
+    }
+
     return NextResponse.json({
       success: true,
       publishedUrl: canonicalUrl,
