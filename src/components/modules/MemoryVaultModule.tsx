@@ -1810,6 +1810,12 @@ export default function MemoryVaultModule({ onOpenInStudio }: MemoryVaultModuleP
             getResultFieldForType={getResultFieldForType}
             selectedFolder={selectedFolder}
             contentItems={contentItems}
+            editingTitle={editingTitle}
+            editTitleValue={editTitleValue}
+            setEditTitleValue={setEditTitleValue}
+            setEditingTitle={setEditingTitle}
+            savingTitle={savingTitle}
+            onSaveTitle={handleSaveTitle}
             onPublishContent={(item) => {
               setItemToPublish(item)
               setPublishVertical('commodities')
@@ -2528,6 +2534,12 @@ function ContentLibraryTab({
   getResultFieldForType,
   selectedFolder,
   contentItems,
+  editingTitle,
+  editTitleValue,
+  setEditTitleValue,
+  setEditingTitle,
+  savingTitle,
+  onSaveTitle,
   onPublishContent
 }: {
   folderTree: FolderNode[]
@@ -2552,6 +2564,12 @@ function ContentLibraryTab({
   getResultFieldForType: (contentType: string) => { label: string; placeholder: string; resultType: string }
   selectedFolder: string | null
   contentItems: ContentItem[]
+  editingTitle: boolean
+  editTitleValue: string
+  setEditTitleValue: (v: string) => void
+  setEditingTitle: (v: boolean) => void
+  savingTitle: boolean
+  onSaveTitle: (item: ContentItem, newTitle: string) => void
   onPublishContent: (item: ContentItem) => void
 }) {
   // Local state for result form
@@ -2703,10 +2721,10 @@ function ContentLibraryTab({
                               value={editTitleValue}
                               onChange={e => setEditTitleValue(e.target.value)}
                               onKeyDown={e => {
-                                if (e.key === 'Enter') handleSaveTitle(selectedContent, editTitleValue)
+                                if (e.key === 'Enter') onSaveTitle(selectedContent, editTitleValue)
                                 if (e.key === 'Escape') setEditingTitle(false)
                               }}
-                              onBlur={() => handleSaveTitle(selectedContent, editTitleValue)}
+                              onBlur={() => onSaveTitle(selectedContent, editTitleValue)}
                               className="text-xl font-semibold bg-transparent border-b-2 outline-none w-full"
                               style={{ color: 'var(--white)', fontFamily: 'var(--font-display)', borderColor: 'var(--burnt-orange)' }}
                               disabled={savingTitle}
