@@ -204,6 +204,11 @@ export default function MemoryVaultModule({ onOpenInStudio }: MemoryVaultModuleP
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('')
   const [mergingTemplate, setMergingTemplate] = useState(false)
 
+  // Title editing state
+  const [editingTitle, setEditingTitle] = useState(false)
+  const [editTitleValue, setEditTitleValue] = useState('')
+  const [savingTitle, setSavingTitle] = useState(false)
+
   // Publish dialog state
   const [showPublishDialog, setShowPublishDialog] = useState(false)
   const [itemToPublish, setItemToPublish] = useState<ContentItem | null>(null)
@@ -918,6 +923,35 @@ export default function MemoryVaultModule({ onOpenInStudio }: MemoryVaultModuleP
   }
 
   // Publish content to media network
+  const handleSaveTitle = async (item: ContentItem, newTitle: string) => {
+    if (!newTitle.trim() || newTitle.trim() === item.title) {
+      setEditingTitle(false)
+      return
+    }
+    setSavingTitle(true)
+    try {
+      const res = await fetch('/api/content-library', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: item.id, title: newTitle.trim() })
+      })
+      if (res.ok) {
+        // Update local state
+        setContentItems(prev => prev.map(ci =>
+          ci.id === item.id ? { ...ci, title: newTitle.trim() } : ci
+        ))
+        if (selectedContent?.id === item.id) {
+          setSelectedContent({ ...selectedContent, title: newTitle.trim() })
+        }
+      }
+    } catch (err) {
+      console.error('Failed to save title:', err)
+    } finally {
+      setSavingTitle(false)
+      setEditingTitle(false)
+    }
+  }
+
   const handlePublishContent = async () => {
     if (!itemToPublish) return
     setPublishing(true)
@@ -2662,12 +2696,34 @@ function ContentLibraryTab({
                         <FileText className="w-5 h-5" style={{ color: 'var(--burnt-orange)' }} />
                       </div>
                       <div>
-                        <h2
-                          className="text-xl font-semibold"
-                          style={{ color: 'var(--white)', fontFamily: 'var(--font-display)' }}
-                        >
-                          {selectedContent.title}
-                        </h2>
+                        {editingTitle ? (
+                          <div className="flex items-center gap-2">
+                            <input
+                              autoFocus
+                              value={editTitleValue}
+                              onChange={e => setEditTitleValue(e.target.value)}
+                              onKeyDown={e => {
+                                if (e.key === 'Enter') handleSaveTitle(selectedContent, editTitleValue)
+                                if (e.key === 'Escape') setEditingTitle(false)
+                              }}
+                              onBlur={() => handleSaveTitle(selectedContent, editTitleValue)}
+                              className="text-xl font-semibold bg-transparent border-b-2 outline-none w-full"
+                              style={{ color: 'var(--white)', fontFamily: 'var(--font-display)', borderColor: 'var(--burnt-orange)' }}
+                              disabled={savingTitle}
+                            />
+                            {savingTitle && <Loader className="w-4 h-4 animate-spin" style={{ color: 'var(--burnt-orange)' }} />}
+                          </div>
+                        ) : (
+                          <h2
+                            className="text-xl font-semibold cursor-pointer group/title"
+                            style={{ color: 'var(--white)', fontFamily: 'var(--font-display)' }}
+                            onClick={() => { setEditTitleValue(selectedContent.title); setEditingTitle(true) }}
+                            title="Click to edit title"
+                          >
+                            {selectedContent.title}
+                            <Edit className="w-3.5 h-3.5 ml-2 inline-block opacity-0 group-hover/title:opacity-50 transition-opacity" />
+                          </h2>
+                        )}
                         <div className="flex items-center gap-3 mt-1">
                           <span
                             className="px-2 py-0.5 rounded text-xs font-medium capitalize"

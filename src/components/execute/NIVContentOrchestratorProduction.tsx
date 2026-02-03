@@ -1817,10 +1817,27 @@ export default function NIVContentOrchestratorProduction({
           content = result.content || result
         }
 
+        // Extract title from API response metadata or from content body
+        let extractedTitle = result.metadata?.title || result.title || context.title || context.headline
+        if (!extractedTitle && typeof content === 'string') {
+          // Try first markdown heading
+          const headingMatch = content.match(/^#\s+(.+)$/m)
+          if (headingMatch) {
+            extractedTitle = headingMatch[1].trim()
+          } else {
+            // Use first non-empty line, truncated
+            const firstLine = content.split('\n').find((l: string) => l.trim().length > 0)
+            if (firstLine && firstLine.trim().length > 0) {
+              extractedTitle = firstLine.trim().slice(0, 120)
+            }
+          }
+        }
+
         // Create content item
         const contentItem = {
           id: `content-${Date.now()}`,
           type,
+          title: extractedTitle || undefined,
           content,
           metadata: {
             ...context,
