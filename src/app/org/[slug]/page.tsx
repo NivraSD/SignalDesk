@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Metadata } from 'next'
 import { createClient } from '@supabase/supabase-js'
+import { generateOrgProfileJsonLd, generateBreadcrumbJsonLd } from '@/lib/utils/jsonld'
 import { Logo } from '@/components/ui/Logo'
 
 const supabase = createClient(
@@ -68,6 +69,15 @@ export default async function OrgPage({ params }: PageProps) {
     })
   }
 
+  const orgJsonLdArray = generateOrgProfileJsonLd(
+    { name: org.name, slug: org.slug, industry: org.industry, description: org.description },
+    articles?.length || 0,
+  )
+  const breadcrumbJsonLd = generateBreadcrumbJsonLd([
+    { name: 'Nivria Media Network', url: 'https://nivria.ai' },
+    { name: org.name, url: `https://nivria.ai/org/${org.slug}` },
+  ])
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -75,6 +85,19 @@ export default async function OrgPage({ params }: PageProps) {
       color: 'var(--white)',
       fontFamily: 'var(--font-primary)',
     }}>
+      {/* JSON-LD */}
+      {orgJsonLdArray.map((schema, i) => (
+        <script
+          key={i}
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+        />
+      ))}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
+
       {/* Header */}
       <header style={{
         padding: '24px 48px',
@@ -255,15 +278,46 @@ export default async function OrgPage({ params }: PageProps) {
         )}
       </main>
 
-      {/* Footer */}
+      {/* About + Footer */}
       <footer style={{
-        padding: '40px 48px',
         borderTop: '1px solid rgba(255,255,255,0.08)',
-        textAlign: 'center',
       }}>
-        <p style={{ color: 'var(--grey-600)', fontSize: '13px' }}>
-          &copy; {new Date().getFullYear()} Nivria
-        </p>
+        <div style={{
+          maxWidth: '800px',
+          margin: '0 auto',
+          padding: '48px 24px 24px',
+        }}>
+          {/* Breadcrumb nav */}
+          <nav style={{ marginBottom: '24px', fontSize: '13px', color: 'var(--grey-600)' }}>
+            <Link href="/" style={{ color: 'var(--grey-500)', textDecoration: 'none' }}>Nivria</Link>
+            <span style={{ margin: '0 8px' }}>/</span>
+            <span style={{ color: 'var(--grey-400)' }}>{org.name}</span>
+          </nav>
+
+          <div style={{
+            padding: '24px 0',
+            borderTop: '1px solid rgba(255,255,255,0.05)',
+          }}>
+            <p style={{
+              color: 'var(--grey-500)',
+              fontSize: '14px',
+              lineHeight: 1.7,
+              maxWidth: '560px',
+            }}>
+              Nivria Media Network is a platform where leading professionals share unique insights and announcements. Focused on the latest developments from industry leaders.
+            </p>
+          </div>
+
+          <div style={{
+            paddingTop: '24px',
+            borderTop: '1px solid rgba(255,255,255,0.05)',
+            textAlign: 'center',
+          }}>
+            <p style={{ color: 'var(--grey-600)', fontSize: '13px' }}>
+              &copy; {new Date().getFullYear()} Nivria
+            </p>
+          </div>
+        </div>
       </footer>
     </div>
   )

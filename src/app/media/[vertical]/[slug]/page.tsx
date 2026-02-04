@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { Metadata } from 'next'
 import { createClient } from '@supabase/supabase-js'
 import { getVertical, isValidVertical } from '@/lib/config/verticals'
-import { generateArticleJsonLd } from '@/lib/utils/jsonld'
+import { generateArticleJsonLd, generateBreadcrumbJsonLd } from '@/lib/utils/jsonld'
 import { Logo } from '@/components/ui/Logo'
 
 const supabase = createClient(
@@ -161,6 +161,14 @@ export default async function ArticlePage({ params }: PageProps) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(generateBreadcrumbJsonLd([
+          { name: 'Nivria Media Network', url: 'https://nivria.ai' },
+          { name: vertical.label, url: `https://nivria.ai/media/${verticalSlug}` },
+          { name: article.title, url: article.canonical_url || `https://nivria.ai/media/${verticalSlug}/${slug}` },
+        ])) }}
       />
 
       {/* Header */}
@@ -457,15 +465,48 @@ export default async function ArticlePage({ params }: PageProps) {
         </div>
       </article>
 
-      {/* Footer */}
+      {/* About + Footer */}
       <footer style={{
-        padding: '40px 48px',
         borderTop: '1px solid rgba(255,255,255,0.08)',
-        textAlign: 'center',
       }}>
-        <p style={{ color: 'var(--grey-600)', fontSize: '13px' }}>
-          &copy; {new Date().getFullYear()} Nivria
-        </p>
+        <div style={{
+          maxWidth: '720px',
+          margin: '0 auto',
+          padding: '48px 24px 24px',
+        }}>
+          {/* Breadcrumb nav */}
+          <nav style={{ marginBottom: '24px', fontSize: '13px', color: 'var(--grey-600)' }}>
+            <Link href="/" style={{ color: 'var(--grey-500)', textDecoration: 'none' }}>Nivria</Link>
+            <span style={{ margin: '0 8px' }}>/</span>
+            <Link href={`/media/${verticalSlug}`} style={{ color: 'var(--grey-500)', textDecoration: 'none' }}>{vertical.label}</Link>
+            <span style={{ margin: '0 8px' }}>/</span>
+            <span style={{ color: 'var(--grey-400)' }}>{article.title.length > 50 ? article.title.slice(0, 50) + '...' : article.title}</span>
+          </nav>
+
+          <div style={{
+            padding: '24px 0',
+            borderTop: '1px solid rgba(255,255,255,0.05)',
+          }}>
+            <p style={{
+              color: 'var(--grey-500)',
+              fontSize: '14px',
+              lineHeight: 1.7,
+              maxWidth: '560px',
+            }}>
+              Nivria Media Network is a platform where leading professionals share unique insights and announcements in {vertical.label.toLowerCase()}. Focused on the latest developments from industry leaders.
+            </p>
+          </div>
+
+          <div style={{
+            paddingTop: '24px',
+            borderTop: '1px solid rgba(255,255,255,0.05)',
+            textAlign: 'center',
+          }}>
+            <p style={{ color: 'var(--grey-600)', fontSize: '13px' }}>
+              &copy; {new Date().getFullYear()} Nivria
+            </p>
+          </div>
+        </div>
       </footer>
     </div>
   )
