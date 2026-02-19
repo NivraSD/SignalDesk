@@ -191,13 +191,19 @@ export default function CrisisTeamManager({ crisis, onUpdate }: CrisisTeamManage
                   className="w-full bg-zinc-900 text-white px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)]"
                 />
                 <div className="grid grid-cols-2 gap-3">
-                  <input
-                    type="text"
+                  <select
                     value={newTask.assignee}
                     onChange={(e) => setNewTask({ ...newTask, assignee: e.target.value })}
-                    placeholder="Assignee"
                     className="bg-zinc-900 text-white px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)]"
-                  />
+                  >
+                    <option value="">Select assignee...</option>
+                    {Object.values(teamStatus).map((member: any, idx: number) => (
+                      <option key={idx} value={member.role || member.name}>
+                        {member.role}{member.name ? ` - ${member.name}` : ''}
+                      </option>
+                    ))}
+                    <option value="Other">Other</option>
+                  </select>
                   <select
                     value={newTask.priority}
                     onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })}
