@@ -466,7 +466,7 @@ export default function CrisisPlanViewer({ onClose, plan: providedPlan, embedded
                         </button>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-4 mb-4">
                       <div className="flex items-center gap-2">
                         <span className="text-sm text-[var(--grey-400)]">Likelihood:</span>
                         <span className={`text-sm font-semibold ${getLikelihoodColor(scenario.likelihood)}`}>
@@ -480,6 +480,64 @@ export default function CrisisPlanViewer({ onClose, plan: providedPlan, embedded
                         </span>
                       </div>
                     </div>
+
+                    {/* Trigger Indicators */}
+                    {scenario.triggerIndicators?.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-zinc-700">
+                        <div className="text-sm font-semibold text-amber-400 mb-2">Trigger Indicators</div>
+                        <ul className="space-y-1">
+                          {scenario.triggerIndicators.map((indicator: string, tidx: number) => (
+                            <li key={tidx} className="text-xs text-[var(--grey-300)] flex items-start gap-2">
+                              <span className="text-amber-400 mt-0.5">⚠</span>
+                              <span>{indicator}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* Immediate Response Steps */}
+                    {scenario.immediateSteps?.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-zinc-700">
+                        <div className="text-sm font-semibold text-[var(--burnt-orange)] mb-2">Immediate Response Steps</div>
+                        <ol className="space-y-1">
+                          {scenario.immediateSteps.map((step: string, sidx: number) => (
+                            <li key={sidx} className="text-xs text-[var(--grey-300)] flex items-start gap-2">
+                              <span className="text-[var(--burnt-orange)] font-mono text-xs min-w-[16px]">{sidx + 1}.</span>
+                              <span>{step}</span>
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+                    )}
+
+                    {/* Escalation + Recovery + Affected Stakeholders */}
+                    {(scenario.escalationCriteria || scenario.recoveryTimeline || scenario.affectedStakeholders?.length > 0) && (
+                      <div className="mt-3 pt-3 border-t border-zinc-700 grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {scenario.escalationCriteria && (
+                          <div>
+                            <div className="text-xs text-[var(--grey-500)] mb-1">Escalation Criteria</div>
+                            <div className="text-sm text-white">{scenario.escalationCriteria}</div>
+                          </div>
+                        )}
+                        {scenario.recoveryTimeline && (
+                          <div>
+                            <div className="text-xs text-[var(--grey-500)] mb-1">Recovery Timeline</div>
+                            <div className="text-sm text-white">{scenario.recoveryTimeline}</div>
+                          </div>
+                        )}
+                        {scenario.affectedStakeholders?.length > 0 && (
+                          <div className="md:col-span-2">
+                            <div className="text-xs text-[var(--grey-500)] mb-1">Affected Stakeholders</div>
+                            <div className="flex flex-wrap gap-1">
+                              {scenario.affectedStakeholders.map((s: string, aidx: number) => (
+                                <span key={aidx} className="px-2 py-0.5 bg-zinc-900 text-[var(--grey-300)] text-xs rounded">{s}</span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </>
                 )}
               </div>

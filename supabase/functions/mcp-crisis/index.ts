@@ -778,23 +778,28 @@ async function generateCrisisPlan(args: any) {
 
 ${companyContext}
 
-Focus on industry-specific crises relevant to this company's profile, markets, and product lines.
+Focus on industry-specific crises relevant to this company's profile, markets, and product lines. Each scenario should be a complete mini-playbook.
 
 Return ONLY a valid JSON object in this format:
 {
   "scenarios": [
     {
       "title": "Scenario name",
-      "description": "Brief description of the crisis",
+      "description": "2-3 sentence description of the crisis and its context",
       "likelihood": "High/Medium/Low",
-      "impact": "Critical/Major/Moderate/Minor"
+      "impact": "Critical/Major/Moderate/Minor",
+      "triggerIndicators": ["Early warning sign 1", "Early warning sign 2", "Early warning sign 3"],
+      "immediateSteps": ["First action within 1 hour", "Second action", "Third action", "Fourth action"],
+      "escalationCriteria": "When does this escalate from incident to full crisis — specific measurable threshold",
+      "affectedStakeholders": ["Stakeholder group 1", "Stakeholder group 2"],
+      "recoveryTimeline": "Realistic recovery estimate (e.g., '2-4 weeks for operational recovery, 3-6 months for reputation')"
     }
   ]
 }`;
 
   const scenariosCompletion = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
-    max_tokens: 1500,
+    max_tokens: 4000,
     temperature: 0.7,
     messages: [{ role: 'user', content: scenariosPrompt }]
   });
@@ -822,24 +827,66 @@ Return ONLY a valid JSON object in this format:
   const universalScenarios = [
     {
       title: 'Cyber Attack / Ransomware',
-      description: 'Sophisticated cyber attack compromising systems or data',
+      description: 'Sophisticated cyber attack compromising critical systems, customer data, or operational infrastructure. May involve ransomware demands, data exfiltration, or prolonged system outages.',
       likelihood: 'High',
       impact: 'Critical',
-      isUniversal: true
+      isUniversal: true,
+      triggerIndicators: [
+        'Unusual network traffic or login attempts detected',
+        'Employees reporting locked accounts or encrypted files',
+        'Security vendor alerts on known threat signatures'
+      ],
+      immediateSteps: [
+        'Isolate affected systems from network immediately',
+        'Activate incident response team and notify CISO',
+        'Preserve forensic evidence — do not wipe or restart affected systems',
+        'Notify legal counsel and assess regulatory disclosure obligations'
+      ],
+      escalationCriteria: 'Escalate to full crisis if customer data is confirmed compromised, systems are down >4 hours, or ransom demand is received',
+      affectedStakeholders: ['Customers', 'Employees', 'Regulators', 'Board of Directors'],
+      recoveryTimeline: '1-2 weeks for system restoration, 1-3 months for full security audit and hardening, 6-12 months for trust recovery'
     },
     {
       title: 'Executive Misconduct',
-      description: 'Senior leadership accused of illegal or unethical behavior',
+      description: 'Senior leadership accused of illegal or unethical behavior including fraud, harassment, discrimination, or conflict of interest. May surface through media reports, whistleblower complaints, or legal filings.',
       likelihood: 'Medium',
       impact: 'Major',
-      isUniversal: true
+      isUniversal: true,
+      triggerIndicators: [
+        'Media inquiry about executive behavior or business practices',
+        'Internal whistleblower complaint or HR escalation',
+        'Regulatory subpoena or investigation notice'
+      ],
+      immediateSteps: [
+        'Engage outside legal counsel immediately — do not investigate internally',
+        'Place affected executive on administrative leave pending investigation',
+        'Prepare holding statement acknowledging awareness and commitment to investigation',
+        'Brief board of directors and audit committee'
+      ],
+      escalationCriteria: 'Escalate to full crisis if allegations become public, involve criminal conduct, or if multiple executives are implicated',
+      affectedStakeholders: ['Board of Directors', 'Employees', 'Investors', 'Customers'],
+      recoveryTimeline: '2-4 weeks for initial investigation, 3-6 months for organizational remediation, 12+ months for reputation recovery'
     },
     {
       title: 'Workplace Violence Incident',
-      description: 'Active threat or violent incident at company facilities',
+      description: 'Active threat or violent incident at company facilities including physical assault, active shooter situation, or credible threats against employees or visitors.',
       likelihood: 'Low',
       impact: 'Critical',
-      isUniversal: true
+      isUniversal: true,
+      triggerIndicators: [
+        'Threatening communications received by employees or facilities',
+        'Reports of weapons or suspicious behavior on premises',
+        'Escalating interpersonal conflicts flagged by HR or managers'
+      ],
+      immediateSteps: [
+        'Call 911 / emergency services immediately',
+        'Activate building lockdown and evacuation protocols',
+        'Account for all employees and visitors — establish assembly points',
+        'Secure perimeter and cooperate fully with law enforcement'
+      ],
+      escalationCriteria: 'Immediate full crisis activation — any confirmed act of violence or credible imminent threat',
+      affectedStakeholders: ['Employees', 'Families', 'Local Community', 'Regulators'],
+      recoveryTimeline: 'Immediate: 24-48 hours for safety restoration. 1-4 weeks for trauma support. 3-6 months for return to normal operations.'
     }
   ];
 
@@ -884,14 +931,18 @@ Return ONLY a valid JSON object:
     ];
   }
 
-  // Generate communication plans
-  const commPlansPrompt = `For ${industry} crisis management, create communication plans for the top 5 stakeholder groups.
+  // Generate communication plans — one per stakeholder, matched by exact name
+  const stakeholderNames = stakeholders.map((s: any) => s.name)
+  const commPlansPrompt = `For ${industry} crisis management, create a communication plan for EACH of these stakeholder groups:
+${stakeholderNames.map((n: string, i: number) => `${i + 1}. ${n}`).join('\n')}
+
+You MUST create exactly ${stakeholderNames.length} communication plans. The "stakeholder" field must match the names above exactly.
 
 Return ONLY valid JSON:
 {
   "communicationPlans": [
     {
-      "stakeholder": "Stakeholder name",
+      "stakeholder": "Exact stakeholder name from list above",
       "primaryChannel": "Main communication method",
       "secondaryChannel": "Backup method",
       "keyMessages": ["message1", "message2", "message3"],
@@ -903,7 +954,7 @@ Return ONLY valid JSON:
 
   const commPlansCompletion = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
-    max_tokens: 1200,
+    max_tokens: 2400,
     temperature: 0.7,
     messages: [{ role: 'user', content: commPlansPrompt }]
   });

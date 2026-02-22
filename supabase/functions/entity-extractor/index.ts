@@ -1,5 +1,4 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import Anthropic from 'https://esm.sh/@anthropic-ai/sdk@0.27.3'
+import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { corsHeaders } from '../_shared/cors.ts'
 
 /**
@@ -7,8 +6,8 @@ import { corsHeaders } from '../_shared/cors.ts'
  *
  * Stage 2 of Schema Generation Pipeline
  *
- * Uses Claude to extract structured entities from scraped website text.
- * Fast, reliable, and gives us full control over extraction quality.
+ * Uses Gemini 2.5 Flash (primary) / Claude (fallback) to extract
+ * structured entities from scraped website text.
  *
  * Extracts:
  * - Products & Services
@@ -16,6 +15,9 @@ import { corsHeaders } from '../_shared/cors.ts'
  * - Locations & Offices
  * - Subsidiaries & Business units
  */
+
+const GOOGLE_API_KEY = Deno.env.get('GOOGLE_API_KEY') || Deno.env.get('GEMINI_API_KEY')
+const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY') || Deno.env.get('CLAUDE_API_KEY')
 
 interface ExtractorRequest {
   organization_id: string
@@ -27,69 +29,121 @@ interface ExtractorRequest {
   }>
 }
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, {
-      status: 204,
-      headers: corsHeaders
-    })
+// === AI Helpers ===
+
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+  maxRetries = 3,
+  baseDelay = 2000
+): Promise<Response> {
+  const retryableStatuses = [429, 500, 502, 503, 529]
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const response = await fetch(url, options)
+    if (response.ok || !retryableStatuses.includes(response.status)) {
+      return response
+    }
+    if (attempt < maxRetries) {
+      const jitter = Math.random() * 0.5 + 1
+      const delay = Math.round(baseDelay * Math.pow(2, attempt) * jitter)
+      console.log(`⚠️ API returned ${response.status}, retrying in ${delay}ms...`)
+      await new Promise(resolve => setTimeout(resolve, delay))
+    } else {
+      return response
+    }
+  }
+  throw new Error('Unexpected: retry loop exited without returning')
+}
+
+function parseJSON(text: string): any {
+  let clean = text.trim()
+  try { return JSON.parse(clean) } catch (_) { /* continue */ }
+
+  if (clean.includes('```json')) {
+    const match = clean.match(/```json\s*([\s\S]*?)```/)
+    if (match) clean = match[1].trim()
+  } else if (clean.includes('```')) {
+    const match = clean.match(/```\s*([\s\S]*?)```/)
+    if (match) clean = match[1].trim()
+  }
+  try { return JSON.parse(clean) } catch (_) { /* continue */ }
+
+  const firstBrace = clean.indexOf('{')
+  const lastBrace = clean.lastIndexOf('}')
+  if (firstBrace >= 0 && lastBrace > firstBrace) {
+    try { return JSON.parse(clean.substring(firstBrace, lastBrace + 1)) } catch (_) { /* continue */ }
   }
 
-  try {
-    const {
-      organization_id,
-      organization_name,
-      scraped_pages
-    }: ExtractorRequest = await req.json()
+  throw new Error('Failed to parse JSON from AI response')
+}
 
-    if (!organization_id || !organization_name || !scraped_pages) {
-      throw new Error('organization_id, organization_name, and scraped_pages required')
-    }
+async function callGemini(prompt: string): Promise<any> {
+  if (!GOOGLE_API_KEY) throw new Error('No Google API key configured')
 
-    console.log('🔍 Entity Extractor Starting:', {
-      organization_name,
-      pages_count: scraped_pages.length
-    })
-
-    const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY')
-    if (!anthropicApiKey) {
-      throw new Error('ANTHROPIC_API_KEY not configured')
-    }
-
-    const anthropic = new Anthropic({ apiKey: anthropicApiKey })
-
-    // Combine all page content
-    const combinedContent = scraped_pages
-      .map(page => {
-        const pageContent = `# ${page.title || page.url}\n\n${page.markdown}`
-        console.log(`   - Page: ${page.url} → ${page.markdown?.length || 0} chars`)
-        return pageContent
+  const response = await fetchWithRetry(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GOOGLE_API_KEY}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.2, maxOutputTokens: 8000 }
       })
-      .join('\n\n---\n\n')
-
-    console.log(`📄 Processing ${combinedContent.length} characters of text from ${scraped_pages.length} pages`)
-
-    if (combinedContent.length < 500) {
-      console.warn(`⚠️  WARNING: Very little content (${combinedContent.length} chars) - extraction will likely fail`)
-      console.log(`First 500 chars of content:`, combinedContent.substring(0, 500))
     }
+  )
 
-    // Check if content exceeds safe limit (~400K chars ≈ 100K tokens, well below 200K limit)
-    const MAX_CHARS_PER_CHUNK = 400000
-    const needsChunking = combinedContent.length > MAX_CHARS_PER_CHUNK
+  if (!response.ok) {
+    throw new Error(`Gemini error: ${response.status}`)
+  }
 
-    if (needsChunking) {
-      console.log(`⚠️  Content too large (${combinedContent.length} chars), chunking into ${Math.ceil(combinedContent.length / MAX_CHARS_PER_CHUNK)} parts`)
+  const result = await response.json()
+  const content = result.candidates?.[0]?.content?.parts?.[0]?.text || ''
+  return parseJSON(content)
+}
+
+async function callClaude(prompt: string): Promise<any> {
+  if (!ANTHROPIC_API_KEY) throw new Error('No Anthropic API key configured')
+
+  const response = await fetchWithRetry(
+    'https://api.anthropic.com/v1/messages',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 8000,
+        temperature: 0.2,
+        messages: [{ role: 'user', content: prompt }]
+      })
     }
+  )
 
-    // Helper function to extract entities from content
-    const extractEntitiesFromContent = async (content: string) => {
-      const message = await anthropic.messages.create({
-        model: 'claude-3-5-haiku-20241022', // Fast and cheap
-        max_tokens: 4096,
-        messages: [{
-          role: 'user',
-          content: `You are analyzing website content for ${organization_name}. Extract structured information about the organization.
+  if (!response.ok) {
+    throw new Error(`Claude error: ${response.status}`)
+  }
+
+  const result = await response.json()
+  const content = result.content?.[0]?.text || ''
+  return parseJSON(content)
+}
+
+async function callAI(prompt: string): Promise<any> {
+  try {
+    return await callGemini(prompt)
+  } catch (err: any) {
+    console.warn(`Gemini failed: ${err.message}, trying Claude...`)
+    return await callClaude(prompt)
+  }
+}
+
+// === Extraction prompt ===
+
+function buildExtractionPrompt(organizationName: string, content: string): string {
+  return `You are analyzing website content for ${organizationName}. Extract structured information about the organization.
 
 <website_content>
 ${content}
@@ -160,39 +214,68 @@ Guidelines:
 - For team members, prioritize leadership and executives
 - Include as much detail as available for each entity
 - Return valid JSON only, no additional text`
-        }]
+}
+
+// === Main handler ===
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 204,
+      headers: corsHeaders
+    })
+  }
+
+  try {
+    const {
+      organization_id,
+      organization_name,
+      scraped_pages
+    }: ExtractorRequest = await req.json()
+
+    if (!organization_id || !organization_name || !scraped_pages) {
+      throw new Error('organization_id, organization_name, and scraped_pages required')
+    }
+
+    console.log('🔍 Entity Extractor Starting:', {
+      organization_name,
+      pages_count: scraped_pages.length
+    })
+
+    // Combine all page content
+    const combinedContent = scraped_pages
+      .map(page => {
+        const pageContent = `# ${page.title || page.url}\n\n${page.markdown}`
+        console.log(`   - Page: ${page.url} → ${page.markdown?.length || 0} chars`)
+        return pageContent
       })
+      .join('\n\n---\n\n')
 
-      const responseText = message.content[0].type === 'text' ? message.content[0].text : '{}'
+    console.log(`📄 Processing ${combinedContent.length} characters of text from ${scraped_pages.length} pages`)
 
-      // Extract JSON from response
-      let jsonText = responseText
-      const jsonMatch = responseText.match(/\{[\s\S]*\}/)
-      if (jsonMatch) {
-        jsonText = jsonMatch[0]
-      }
+    if (combinedContent.length < 500) {
+      console.warn(`⚠️  WARNING: Very little content (${combinedContent.length} chars) - extraction will likely fail`)
+      console.log(`First 500 chars of content:`, combinedContent.substring(0, 500))
+    }
 
-      // Parse and return entities
-      try {
-        return JSON.parse(jsonText)
-      } catch (parseError) {
-        console.error('Failed to parse Claude response:', parseError)
-        throw new Error('Failed to parse entity extraction results')
-      }
+    // Gemini has a large context window, so chunk threshold is generous
+    const MAX_CHARS_PER_CHUNK = 400000
+    const needsChunking = combinedContent.length > MAX_CHARS_PER_CHUNK
+
+    if (needsChunking) {
+      console.log(`⚠️  Content too large (${combinedContent.length} chars), chunking into ${Math.ceil(combinedContent.length / MAX_CHARS_PER_CHUNK)} parts`)
     }
 
     // Process content (chunked if necessary)
     let allEntities
 
     if (needsChunking) {
-      // Split pages into chunks based on character count
       const chunks: string[] = []
       let currentChunk = ''
 
       for (const page of scraped_pages) {
         const pageContent = `# ${page.title || page.url}\n\n${page.markdown}\n\n---\n\n`
 
-        // If adding this page would exceed chunk size, start new chunk
         if (currentChunk.length + pageContent.length > MAX_CHARS_PER_CHUNK && currentChunk.length > 0) {
           chunks.push(currentChunk)
           currentChunk = pageContent
@@ -201,22 +284,19 @@ Guidelines:
         }
       }
 
-      // Add final chunk
       if (currentChunk.length > 0) {
         chunks.push(currentChunk)
       }
 
       console.log(`📦 Processing ${chunks.length} chunks:`, chunks.map(c => `${c.length} chars`))
 
-      // Extract entities from each chunk
       const chunkResults = await Promise.all(
         chunks.map((chunk, idx) => {
           console.log(`   Processing chunk ${idx + 1}/${chunks.length}...`)
-          return extractEntitiesFromContent(chunk)
+          return callAI(buildExtractionPrompt(organization_name, chunk))
         })
       )
 
-      // Merge results from all chunks
       allEntities = {
         products: [],
         services: [],
@@ -235,11 +315,9 @@ Guidelines:
 
       console.log(`✅ Merged results from ${chunks.length} chunks`)
     } else {
-      // Process all content at once (small enough)
-      allEntities = await extractEntitiesFromContent(combinedContent)
+      allEntities = await callAI(buildExtractionPrompt(organization_name, combinedContent))
     }
 
-    // Count totals
     const totalEntities =
       (allEntities.products?.length || 0) +
       (allEntities.services?.length || 0) +
