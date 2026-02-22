@@ -18,6 +18,21 @@ interface DraftedComm {
   stakeholder: string
 }
 
+const CRISIS_TEAM_ROLES = [
+  'Crisis Response Leader',
+  'Communications Director',
+  'Legal Counsel',
+  'Outside PR/Crisis Counsel',
+  'Operations Manager',
+  'HR / People Lead',
+  'IT / Security Lead',
+  'Finance Lead',
+  'Regulatory / Compliance Lead',
+  'Board Liaison',
+  'Customer Relations Lead',
+  'Facilities / Safety Manager',
+] as const
+
 export default function CrisisPlanViewer({ onClose, plan: providedPlan, embedded = false }: CrisisPlanViewerProps) {
   const { organization } = useAppStore()
   const [plan, setPlan] = useState<any>(providedPlan)
@@ -562,12 +577,32 @@ export default function CrisisPlanViewer({ onClose, plan: providedPlan, embedded
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="text-xs text-[var(--grey-500)] mb-1 block">Role</label>
-                        <input
-                          type="text"
-                          value={member.role}
-                          onChange={(e) => updateTeamMember(idx, 'role', e.target.value)}
+                        <select
+                          value={CRISIS_TEAM_ROLES.includes(member.role as any) ? member.role : '__custom__'}
+                          onChange={(e) => {
+                            if (e.target.value === '__custom__') {
+                              updateTeamMember(idx, 'role', '')
+                            } else {
+                              updateTeamMember(idx, 'role', e.target.value)
+                            }
+                          }}
                           className="w-full bg-zinc-900 border border-zinc-600 rounded-lg px-3 py-2 text-white"
-                        />
+                        >
+                          {CRISIS_TEAM_ROLES.map(role => (
+                            <option key={role} value={role}>{role}</option>
+                          ))}
+                          <option value="__custom__">Custom role...</option>
+                        </select>
+                        {!CRISIS_TEAM_ROLES.includes(member.role as any) && (
+                          <input
+                            type="text"
+                            value={member.role}
+                            onChange={(e) => updateTeamMember(idx, 'role', e.target.value)}
+                            className="w-full bg-zinc-900 border border-zinc-600 rounded-lg px-3 py-2 text-white mt-2"
+                            placeholder="Enter custom role"
+                            autoFocus
+                          />
+                        )}
                       </div>
                       <div>
                         <label className="text-xs text-[var(--grey-500)] mb-1 block">Title</label>
