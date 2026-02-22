@@ -112,7 +112,7 @@ export default function CrisisAIAssistant({ crisis, onUpdate }: CrisisAIAssistan
   ]
 
   return (
-    <div className="bg-[var(--charcoal)] border border-zinc-800 rounded-xl flex flex-col h-[600px]">
+    <div className="bg-[var(--charcoal)] border border-zinc-800 rounded-xl flex flex-col h-full">
       {/* Header */}
       <div className="px-4 py-3 border-b border-zinc-800 flex-shrink-0">
         <div className="flex items-center space-x-3">

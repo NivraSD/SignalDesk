@@ -669,19 +669,18 @@ export default function CrisisModule({ onOpenInStudio }: CrisisModuleProps) {
         <div className="flex-1 overflow-auto">
           {/* DASHBOARD - Always same layout */}
           {activeView === 'dashboard' && (
-            <div className="h-full grid grid-cols-3 gap-6 p-6">
-              <div className="space-y-6">
+            <div className="h-full p-6 space-y-6 overflow-auto">
+              {/* Row 1: Advisor + Action Items — matched height */}
+              <div className="grid grid-cols-2 gap-6 items-stretch">
                 <CrisisAIAssistant crisis={activeCrisis} onUpdate={loadActiveCrisis} />
-              </div>
-              <div className="space-y-6">
-                <div className="bg-[var(--grey-900)] border border-[var(--grey-800)] rounded-xl p-6">
+                <div className="bg-[var(--grey-900)] border border-[var(--grey-800)] rounded-xl p-6 flex flex-col">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>Action Items</h3>
                     <span className="text-sm text-[var(--grey-400)]">
                       {(activeCrisis?.tasks || []).filter((t: any) => t.status === 'completed').length}/{(activeCrisis?.tasks || []).length} complete
                     </span>
                   </div>
-                  <div className="space-y-1 max-h-80 overflow-y-auto">
+                  <div className="space-y-1 flex-1 overflow-y-auto min-h-0">
                     {(activeCrisis?.tasks || [])
                       .slice()
                       .sort((a: any, b: any) => {
@@ -690,7 +689,6 @@ export default function CrisisModule({ onOpenInStudio }: CrisisModuleProps) {
                         const p: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 }
                         return (p[a.priority] ?? 3) - (p[b.priority] ?? 3)
                       })
-                      .slice(0, 8)
                       .map((task: any) => (
                         <div key={task.id} className={`flex items-start gap-3 p-3 rounded-lg border ${
                           task.status === 'completed'
@@ -727,15 +725,7 @@ export default function CrisisModule({ onOpenInStudio }: CrisisModuleProps) {
                       <div className="text-center py-4 text-[var(--grey-500)] text-sm">No tasks yet</div>
                     )}
                   </div>
-                  {(activeCrisis?.tasks?.length || 0) > 8 && (
-                    <button
-                      onClick={() => setActiveView('team')}
-                      className="w-full mt-3 text-center text-sm text-[var(--burnt-orange)] hover:underline"
-                    >
-                      View all {activeCrisis?.tasks?.length} tasks
-                    </button>
-                  )}
-                  <div className="flex gap-3 mt-4 pt-4 border-t border-[var(--grey-800)]">
+                  <div className="flex gap-3 mt-4 pt-4 border-t border-[var(--grey-800)] shrink-0">
                     <div className="flex-1 text-center">
                       <div className="text-lg font-bold text-white">{Object.keys(activeCrisis?.team_status || {}).length}</div>
                       <div className="text-xs text-[var(--grey-400)]">Team</div>
@@ -750,6 +740,10 @@ export default function CrisisModule({ onOpenInStudio }: CrisisModuleProps) {
                     </div>
                   </div>
                 </div>
+              </div>
+
+              {/* Row 2: Recent Activity + Social Signals + Stakeholder Sentiment */}
+              <div className="grid grid-cols-3 gap-6">
                 <div className={`bg-[var(--grey-900)] border ${potentialCrisisAlerts.length > 0 ? 'border-red-500/50' : 'border-[var(--grey-800)]'} rounded-xl p-6`}>
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
@@ -773,7 +767,6 @@ export default function CrisisModule({ onOpenInStudio }: CrisisModuleProps) {
                     </button>
                   </div>
                   <div className="space-y-3">
-                    {/* Show detected alerts first if any */}
                     {potentialCrisisAlerts.length > 0 ? (
                       <>
                         {potentialCrisisAlerts.slice(0, 3).map((alert, idx) => {
@@ -850,8 +843,6 @@ export default function CrisisModule({ onOpenInStudio }: CrisisModuleProps) {
                     )}
                   </div>
                 </div>
-              </div>
-              <div className="space-y-6">
                 <div className="bg-[var(--grey-900)] border border-[var(--grey-800)] rounded-xl p-6">
                   <h3 className="text-lg font-bold text-white mb-4" style={{ fontFamily: 'var(--font-display)' }}>Social Signals</h3>
                   {(activeCrisis?.social_signals?.length || 0) > 0 ? (
