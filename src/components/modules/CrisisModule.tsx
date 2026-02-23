@@ -9,7 +9,6 @@ import {
   FileText,
   ChevronRight,
   CheckCircle2,
-  Circle,
   AlertCircle,
   MessageSquare,
   Zap,
@@ -74,7 +73,7 @@ interface CrisisEvent {
 }
 
 interface CrisisModuleProps {
-  onOpenInStudio?: (content: { id: string; title: string; content: string; content_type?: string; folder?: string; metadata?: any }) => void
+  onOpenInStudio?: (content: { id: string; title: string; content: string }) => void
 }
 
 interface PreDraftedComm {
@@ -254,7 +253,6 @@ export default function CrisisModule({ onOpenInStudio }: CrisisModuleProps) {
 
     const scenarioType = classifyScenarioType(alert)
     const articles = alert.trigger_data?.articles || []
-    const { teamStatus: initialTeam, tasks: initialTasks } = generateInitialTasks(crisisPlan, undefined)
 
     setLoading(true)
     try {
@@ -265,8 +263,6 @@ export default function CrisisModule({ onOpenInStudio }: CrisisModuleProps) {
           .update({
             status: 'active',
             crisis_type: scenarioType.type,
-            team_status: initialTeam,
-            tasks: initialTasks,
             timeline: [{
               time: new Date().toISOString(),
               event_type: 'activation',
@@ -311,8 +307,8 @@ export default function CrisisModule({ onOpenInStudio }: CrisisModuleProps) {
         decisions: [],
         communications: [],
         ai_interactions: [],
-        team_status: initialTeam,
-        tasks: initialTasks,
+        team_status: {},
+        tasks: [],
         social_signals: [],
         media_coverage: articles.map((a: any) => ({ title: a.title, url: a.url, source: 'detected' })),
         stakeholder_sentiment: {},
@@ -439,87 +435,24 @@ export default function CrisisModule({ onOpenInStudio }: CrisisModuleProps) {
     return `${days}d ${hours}h`
   }
 
-  const generateInitialTasks = (plan: CrisisPlan | null, scenario?: CrisisScenario) => {
-    const teamStatus: Record<string, any> = {}
-    const tasks: any[] = []
-    let taskIdx = 0
-    const now = Date.now()
-
-    if (plan?.crisisTeam) {
-      plan.crisisTeam.forEach((member: any, idx: number) => {
-        teamStatus[`member-${idx}`] = {
-          name: member.name || '',
-          role: member.role || '',
-          title: member.title || '',
-          status: 'pending',
-          notified: false
-        }
-      })
-    }
-
-    if (scenario) {
-      const timeline = getScenarioTimeline(scenario)
-      timeline.forEach((item, idx) => {
-        tasks.push({
-          id: now + taskIdx++,
-          title: `${item.phase}: ${item.action}`,
-          assignee: plan?.crisisTeam?.[0]?.role || 'Crisis Response Leader',
-          priority: idx < 2 ? 'critical' : idx < 4 ? 'high' : 'medium',
-          status: 'pending',
-          createdAt: new Date().toISOString(),
-          source: 'protocol'
-        })
-      })
-    }
-
-    if (plan?.crisisTeam) {
-      plan.crisisTeam.forEach((member: any) => {
-        const responsibilities = member.responsibilities || []
-        const roleLower = (member.role || '').toLowerCase()
-        const isLeader = roleLower.includes('leader') || roleLower.includes('director') || roleLower.includes('head')
-        responsibilities.forEach((resp: string) => {
-          tasks.push({
-            id: now + taskIdx++,
-            title: resp,
-            assignee: member.role || member.name || 'Unassigned',
-            priority: isLeader ? 'critical' : 'high',
-            status: 'pending',
-            createdAt: new Date().toISOString(),
-            source: 'responsibility'
-          })
-        })
-      })
-    }
-
-    return { teamStatus, tasks }
-  }
-
-  const toggleDashboardTask = async (taskId: number) => {
-    if (!activeCrisis) return
-    const currentTasks = activeCrisis.tasks || []
-    const updatedTasks = currentTasks.map((t: any) =>
-      t.id === taskId ? {
-        ...t,
-        status: t.status === 'completed' ? 'pending' : 'completed',
-        completedAt: t.status === 'completed' ? null : new Date().toISOString()
-      } : t
-    )
-
-    const { error } = await supabase
-      .from('crisis_events')
-      .update({ tasks: updatedTasks })
-      .eq('id', activeCrisis.id)
-
-    if (!error) {
-      setActiveCrisis({ ...activeCrisis, tasks: updatedTasks })
-    }
-  }
-
   const activateScenario = async (scenarioType: string, scenarioTitle: string) => {
     if (!organization) return
     try {
       const matchedScenario = crisisPlan?.scenarios?.find(s => s.title === scenarioTitle)
-      const { teamStatus: initialTeam, tasks: initialTasks } = generateInitialTasks(crisisPlan, matchedScenario)
+
+      // Convert scenario timeline into actionable tasks
+      const scenarioTimeline = getScenarioTimeline(matchedScenario || { title: scenarioTitle, description: '' })
+      const tasksFromScenario = scenarioTimeline.map((item, idx) => ({
+        id: Date.now() + idx,
+        title: item.action,
+        detail: item.detail,
+        phase: item.phase,
+        assignee: '',
+        priority: idx === 0 ? 'critical' : idx < 3 ? 'high' : 'medium',
+        status: 'pending',
+        createdAt: new Date().toISOString()
+      }))
+
       const newCrisis = {
         organization_id: organization.id,
         crisis_type: scenarioType,
@@ -532,8 +465,8 @@ export default function CrisisModule({ onOpenInStudio }: CrisisModuleProps) {
         decisions: [],
         communications: [],
         ai_interactions: [],
-        team_status: initialTeam,
-        tasks: initialTasks,
+        team_status: {},
+        tasks: tasksFromScenario,
         social_signals: [],
         media_coverage: [],
         stakeholder_sentiment: {},
@@ -669,81 +602,32 @@ export default function CrisisModule({ onOpenInStudio }: CrisisModuleProps) {
         <div className="flex-1 overflow-auto">
           {/* DASHBOARD - Always same layout */}
           {activeView === 'dashboard' && (
-            <div className="h-full p-6 space-y-6 overflow-auto">
-              {/* Row 1: Advisor + Action Items — matched height */}
-              <div className="grid grid-cols-2 gap-6 items-stretch">
+            <div className="h-full grid grid-cols-3 gap-6 p-6">
+              <div className="space-y-6">
                 <CrisisAIAssistant crisis={activeCrisis} onUpdate={loadActiveCrisis} />
-                <div className="bg-[var(--grey-900)] border border-[var(--grey-800)] rounded-xl p-6 flex flex-col">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>Action Items</h3>
-                    <span className="text-sm text-[var(--grey-400)]">
-                      {(activeCrisis?.tasks || []).filter((t: any) => t.status === 'completed').length}/{(activeCrisis?.tasks || []).length} complete
-                    </span>
-                  </div>
-                  <div className="space-y-1 flex-1 overflow-y-auto min-h-0">
-                    {(activeCrisis?.tasks || [])
-                      .slice()
-                      .sort((a: any, b: any) => {
-                        if (a.status === 'completed' && b.status !== 'completed') return 1
-                        if (a.status !== 'completed' && b.status === 'completed') return -1
-                        const p: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 }
-                        return (p[a.priority] ?? 3) - (p[b.priority] ?? 3)
-                      })
-                      .map((task: any) => (
-                        <div key={task.id} className={`flex items-start gap-3 p-3 rounded-lg border ${
-                          task.status === 'completed'
-                            ? 'border-emerald-500/30 bg-emerald-500/5'
-                            : 'border-[var(--grey-800)] hover:bg-[var(--grey-800)]/50'
-                        }`}>
-                          <button onClick={() => toggleDashboardTask(task.id)} className="mt-0.5 shrink-0">
-                            {task.status === 'completed' ? (
-                              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                            ) : (
-                              <Circle className="w-4 h-4 text-[var(--grey-500)]" />
-                            )}
-                          </button>
-                          <div className="flex-1 min-w-0">
-                            <p className={`text-sm leading-tight ${task.status === 'completed' ? 'text-[var(--grey-500)] line-through' : 'text-white'}`}>
-                              {task.title}
-                            </p>
-                            <div className="flex items-center gap-2 mt-0.5">
-                              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                                task.priority === 'critical' ? 'bg-red-500' :
-                                task.priority === 'high' ? 'bg-[var(--burnt-orange)]' :
-                                task.priority === 'medium' ? 'bg-amber-500' : 'bg-emerald-500'
-                              }`} />
-                              <span className="text-xs text-[var(--grey-500)] truncate">{task.assignee}</span>
-                              {task.status === 'completed' && task.completedAt && (
-                                <span className="text-xs text-emerald-400/70 ml-auto shrink-0">{new Date(task.completedAt).toLocaleTimeString()}</span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    }
-                    {(activeCrisis?.tasks?.length || 0) === 0 && (
-                      <div className="text-center py-4 text-[var(--grey-500)] text-sm">No tasks yet</div>
-                    )}
-                  </div>
-                  <div className="flex gap-3 mt-4 pt-4 border-t border-[var(--grey-800)] shrink-0">
-                    <div className="flex-1 text-center">
-                      <div className="text-lg font-bold text-white">{Object.keys(activeCrisis?.team_status || {}).length}</div>
-                      <div className="text-xs text-[var(--grey-400)]">Team</div>
+              </div>
+              <div className="space-y-6">
+                <div className="bg-[var(--grey-900)] border border-[var(--grey-800)] rounded-xl p-6">
+                  <h3 className="text-lg font-bold text-white mb-4" style={{ fontFamily: 'var(--font-display)' }}>Quick Stats</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-[var(--grey-800)]/50 p-4 rounded-lg">
+                      <div className="text-2xl font-bold text-white">{Object.keys(activeCrisis?.team_status || {}).length}</div>
+                      <div className="text-sm text-[var(--grey-400)]">Team Active</div>
                     </div>
-                    <div className="flex-1 text-center">
-                      <div className="text-lg font-bold text-white">{activeCrisis?.communications?.length || 0}</div>
-                      <div className="text-xs text-[var(--grey-400)]">Comms</div>
+                    <div className="bg-[var(--grey-800)]/50 p-4 rounded-lg">
+                      <div className="text-2xl font-bold text-white">{activeCrisis?.tasks?.filter((t: any) => t.status === 'completed').length || 0}/{activeCrisis?.tasks?.length || 0}</div>
+                      <div className="text-sm text-[var(--grey-400)]">Tasks Done</div>
                     </div>
-                    <div className="flex-1 text-center">
-                      <div className="text-lg font-bold text-white">{activeCrisis?.decisions?.length || 0}</div>
-                      <div className="text-xs text-[var(--grey-400)]">Decisions</div>
+                    <div className="bg-[var(--grey-800)]/50 p-4 rounded-lg">
+                      <div className="text-2xl font-bold text-white">{activeCrisis?.communications?.length || 0}</div>
+                      <div className="text-sm text-[var(--grey-400)]">Comms Sent</div>
+                    </div>
+                    <div className="bg-[var(--grey-800)]/50 p-4 rounded-lg">
+                      <div className="text-2xl font-bold text-white">{activeCrisis?.decisions?.length || 0}</div>
+                      <div className="text-sm text-[var(--grey-400)]">Decisions</div>
                     </div>
                   </div>
                 </div>
-              </div>
-
-              {/* Row 2: Recent Activity + Social Signals + Stakeholder Sentiment */}
-              <div className="grid grid-cols-3 gap-6">
                 <div className={`bg-[var(--grey-900)] border ${potentialCrisisAlerts.length > 0 ? 'border-red-500/50' : 'border-[var(--grey-800)]'} rounded-xl p-6`}>
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
@@ -767,6 +651,7 @@ export default function CrisisModule({ onOpenInStudio }: CrisisModuleProps) {
                     </button>
                   </div>
                   <div className="space-y-3">
+                    {/* Show detected alerts first if any */}
                     {potentialCrisisAlerts.length > 0 ? (
                       <>
                         {potentialCrisisAlerts.slice(0, 3).map((alert, idx) => {
@@ -843,6 +728,8 @@ export default function CrisisModule({ onOpenInStudio }: CrisisModuleProps) {
                     )}
                   </div>
                 </div>
+              </div>
+              <div className="space-y-6">
                 <div className="bg-[var(--grey-900)] border border-[var(--grey-800)] rounded-xl p-6">
                   <h3 className="text-lg font-bold text-white mb-4" style={{ fontFamily: 'var(--font-display)' }}>Social Signals</h3>
                   {(activeCrisis?.social_signals?.length || 0) > 0 ? (
@@ -891,40 +778,16 @@ export default function CrisisModule({ onOpenInStudio }: CrisisModuleProps) {
                   {/* Timeline */}
                   <div className="relative pl-6 mb-8">
                     <div className="absolute left-2 top-0 bottom-0 w-0.5 bg-[var(--grey-700)]" />
-                    {getScenarioTimeline(activeScenario).map((item, idx) => {
-                      const matchingTask = (activeCrisis?.tasks || []).find((t: any) => t.source === 'protocol' && t.title === `${item.phase}: ${item.action}`)
-                      const isCompleted = matchingTask?.status === 'completed'
-                      return (
-                        <div key={idx} className="relative mb-4">
-                          <div className={`absolute -left-4 top-3 w-3 h-3 rounded-full border-2 border-[var(--grey-900)] ${
-                            isCompleted ? 'bg-emerald-500' : 'bg-[var(--burnt-orange)]'
-                          }`} />
-                          <div className={`rounded-lg p-4 ${
-                            isCompleted ? 'bg-emerald-500/10 border border-emerald-500/30' : 'bg-[var(--grey-800)]/50'
-                          }`}>
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <p className="text-xs text-[var(--burnt-orange)] uppercase mb-1">{item.phase}</p>
-                                <p className={`font-medium text-sm mb-1 ${isCompleted ? 'text-[var(--grey-500)] line-through' : 'text-white'}`}>{item.action}</p>
-                                <p className="text-xs text-[var(--grey-400)]">{item.detail}</p>
-                              </div>
-                              {matchingTask && (
-                                <button onClick={() => toggleDashboardTask(matchingTask.id)} className="ml-3 mt-1 shrink-0">
-                                  {isCompleted ? (
-                                    <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                                  ) : (
-                                    <Circle className="w-5 h-5 text-[var(--grey-500)] hover:text-[var(--grey-300)]" />
-                                  )}
-                                </button>
-                              )}
-                            </div>
-                            {isCompleted && matchingTask?.completedAt && (
-                              <p className="text-xs text-emerald-400/70 mt-2">Completed {new Date(matchingTask.completedAt).toLocaleString()}</p>
-                            )}
-                          </div>
+                    {getScenarioTimeline(activeScenario).map((item, idx) => (
+                      <div key={idx} className="relative mb-4">
+                        <div className="absolute -left-4 top-3 w-3 h-3 bg-[var(--burnt-orange)] rounded-full border-2 border-[var(--grey-900)]" />
+                        <div className="bg-[var(--grey-800)]/50 rounded-lg p-4">
+                          <p className="text-xs text-[var(--burnt-orange)] uppercase mb-1">{item.phase}</p>
+                          <p className="text-white font-medium text-sm mb-1">{item.action}</p>
+                          <p className="text-xs text-[var(--grey-400)]">{item.detail}</p>
                         </div>
-                      )
-                    })}
+                      </div>
+                    ))}
                   </div>
 
                   {/* Pre-drafted Comms */}
@@ -960,7 +823,7 @@ export default function CrisisModule({ onOpenInStudio }: CrisisModuleProps) {
                               </div>
                               {onOpenInStudio && (
                                 <button
-                                  onClick={() => onOpenInStudio({ id: comm.id, title: comm.title, content: comm.content, content_type: 'crisis-communication', folder: comm.folder, metadata: comm.metadata })}
+                                  onClick={() => onOpenInStudio({ id: comm.id, title: comm.title, content: comm.content })}
                                   className="ml-auto p-1.5 text-[var(--grey-500)] hover:text-[var(--burnt-orange)] opacity-0 group-hover:opacity-100"
                                 >
                                   <FileText className="w-4 h-4" />

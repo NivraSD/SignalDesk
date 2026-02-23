@@ -259,9 +259,15 @@ export default function CrisisTeamManager({ crisis, onUpdate }: CrisisTeamManage
                       )}
                     </button>
                     <div className="flex-1">
+                      {task.phase && (
+                        <div className="text-xs text-[var(--burnt-orange)] uppercase mb-1">{task.phase}</div>
+                      )}
                       <div className={`font-medium ${task.status === 'completed' ? 'text-[var(--grey-500)] line-through' : 'text-white'}`}>
                         {task.title}
                       </div>
+                      {task.detail && (
+                        <div className="text-sm text-[var(--grey-400)] mt-1">{task.detail}</div>
+                      )}
                       {task.assignee && (
                         <div className="text-sm text-[var(--grey-400)] mt-1">Assigned to: {task.assignee}</div>
                       )}
