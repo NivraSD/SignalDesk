@@ -295,6 +295,7 @@ serve(async (req) => {
                 timeWindow: time_window,
                 articles: topResults, // Pass actual articles to analyze
                 organization_name,
+                organization_id: organizationUuid, // Required for mcp-crisis to save to crisis_events
                 profile
               }
             })
@@ -306,33 +307,12 @@ serve(async (req) => {
               // Extract crisis signals from response
               const signalsDetected = data.signalsDetected || 0;
               const riskLevel = data.riskLevel || 0;
-              const warningSignals = data.warningSignals || [];
 
-              // Only create crisis events if risk level is high enough
-              if (riskLevel >= 6) {
-                await supabase.from('crisis_events').insert({
-                  organization_id: organizationUuid,
-                  title: `Crisis Alert: ${organization_name}`,
-                  description: `Crisis signals detected: ${warningSignals.join(', ')}`,
-                  severity: riskLevel >= 8 ? 'critical' : 'high',
-                  crisis_type: 'intelligence_alert',
-                  status: 'monitoring',
-                  started_at: new Date().toISOString(),
-                  trigger_source: 'real-time-alert-router',
-                  trigger_data: {
-                    articles: topResults.slice(0, 3).map(r => ({ title: r.title, url: r.url })),
-                    signals_detected: signalsDetected,
-                    risk_level: riskLevel,
-                    warning_signals: warningSignals
-                  },
-                  metadata: {
-                    time_window,
-                    detected_by: 'real-time-alert-router'
-                  }
-                });
-
-                console.log(`   ✅ Crisis detector: High risk detected (level ${riskLevel})`);
-                return { type: 'crises', data: { crises: [data], crises_count: 1 } };
+              // mcp-crisis handles saving to crisis_events table (if riskLevel >= 5)
+              // We just report the results back
+              if (riskLevel >= 5) {
+                console.log(`   ✅ Crisis detector: Risk level ${riskLevel}/10 - ${data.crisis_action === 'created' ? 'new crisis event created' : data.crisis_action === 'updated' ? 'existing crisis updated' : 'signals detected'}`);
+                return { type: 'crises', data: { crises: [data], crises_count: 1, crisis_event_id: data.crisis_event_id } };
               }
 
               console.log(`   ℹ️  Crisis detector: Low risk (level ${riskLevel})`);
