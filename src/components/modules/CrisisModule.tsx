@@ -453,6 +453,20 @@ export default function CrisisModule({ onOpenInStudio }: CrisisModuleProps) {
         createdAt: new Date().toISOString()
       }))
 
+      // Initialize team status from crisis plan's team
+      const initialTeamStatus: Record<string, any> = {}
+      if (crisisPlan?.crisisTeam) {
+        crisisPlan.crisisTeam.forEach((member: any, idx: number) => {
+          const memberId = member.id || `member-${idx}`
+          initialTeamStatus[memberId] = {
+            name: member.name || member.role,
+            role: member.role,
+            status: 'pending',
+            notified: false
+          }
+        })
+      }
+
       const newCrisis = {
         organization_id: organization.id,
         crisis_type: scenarioType,
@@ -465,7 +479,7 @@ export default function CrisisModule({ onOpenInStudio }: CrisisModuleProps) {
         decisions: [],
         communications: [],
         ai_interactions: [],
-        team_status: {},
+        team_status: initialTeamStatus,
         tasks: tasksFromScenario,
         social_signals: [],
         media_coverage: [],
