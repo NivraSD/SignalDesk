@@ -440,32 +440,68 @@ export default function CrisisModule({ onOpenInStudio }: CrisisModuleProps) {
     try {
       const matchedScenario = crisisPlan?.scenarios?.find(s => s.title === scenarioTitle)
 
-      // Convert scenario timeline into actionable tasks
+      // Initialize team status from crisis plan's team
+      const initialTeamStatus: Record<string, any> = {}
+      const teamMembers: Array<{ id: string; name: string; role: string }> = []
+      if (crisisPlan?.crisisTeam) {
+        crisisPlan.crisisTeam.forEach((member: any, idx: number) => {
+          const memberId = member.id || `member-${idx}`
+          const memberName = member.name || member.role
+          initialTeamStatus[memberId] = {
+            name: memberName,
+            role: member.role,
+            status: 'pending',
+            notified: false
+          }
+          teamMembers.push({ id: memberId, name: memberName, role: member.role || '' })
+        })
+      }
+
+      // Helper to find best team member for a task based on keywords
+      const findAssignee = (action: string, detail: string): string => {
+        const text = `${action} ${detail}`.toLowerCase()
+
+        // Role keyword mappings
+        const roleKeywords: Record<string, string[]> = {
+          'ceo': ['ceo', 'executive', 'leadership', 'board', 'c-suite'],
+          'cfo': ['cfo', 'financial', 'finance', 'investor', 'earnings'],
+          'coo': ['coo', 'operations', 'operational'],
+          'ciso': ['ciso', 'security', 'cyber', 'breach', 'data protection', 'incident'],
+          'cto': ['cto', 'technical', 'technology', 'engineering', 'systems'],
+          'legal': ['legal', 'counsel', 'regulatory', 'compliance', 'litigation', 'lawsuit'],
+          'pr': ['pr', 'public relations', 'media', 'press', 'statement', 'communications', 'spokesperson'],
+          'communications': ['communications', 'comms', 'messaging', 'stakeholder'],
+          'hr': ['hr', 'human resources', 'employee', 'workforce', 'staff'],
+          'marketing': ['marketing', 'brand', 'reputation'],
+        }
+
+        for (const member of teamMembers) {
+          const memberRole = member.role.toLowerCase()
+          for (const [role, keywords] of Object.entries(roleKeywords)) {
+            if (memberRole.includes(role)) {
+              if (keywords.some(kw => text.includes(kw))) {
+                return member.name
+              }
+            }
+          }
+        }
+
+        // Default: assign first task to first member (usually crisis lead)
+        return teamMembers.length > 0 ? teamMembers[0].name : ''
+      }
+
+      // Convert scenario timeline into actionable tasks with auto-assignment
       const scenarioTimeline = getScenarioTimeline(matchedScenario || { title: scenarioTitle, description: '' })
       const tasksFromScenario = scenarioTimeline.map((item, idx) => ({
         id: Date.now() + idx,
         title: item.action,
         detail: item.detail,
         phase: item.phase,
-        assignee: '',
+        assignee: findAssignee(item.action, item.detail),
         priority: idx === 0 ? 'critical' : idx < 3 ? 'high' : 'medium',
         status: 'pending',
         createdAt: new Date().toISOString()
       }))
-
-      // Initialize team status from crisis plan's team
-      const initialTeamStatus: Record<string, any> = {}
-      if (crisisPlan?.crisisTeam) {
-        crisisPlan.crisisTeam.forEach((member: any, idx: number) => {
-          const memberId = member.id || `member-${idx}`
-          initialTeamStatus[memberId] = {
-            name: member.name || member.role,
-            role: member.role,
-            status: 'pending',
-            notified: false
-          }
-        })
-      }
 
       const newCrisis = {
         organization_id: organization.id,
