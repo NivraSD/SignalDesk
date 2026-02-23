@@ -10,6 +10,7 @@ import {
   ChevronRight,
   CheckCircle2,
   AlertCircle,
+  Circle,
   MessageSquare,
   Zap,
   Loader2,
@@ -435,6 +436,41 @@ export default function CrisisModule({ onOpenInStudio }: CrisisModuleProps) {
     return `${days}d ${hours}h`
   }
 
+  // Toggle task completion from dashboard
+  const toggleDashboardTask = async (taskId: number) => {
+    if (!activeCrisis) return
+    const currentTasks = activeCrisis.tasks || []
+    const updatedTasks = currentTasks.map((t: any) =>
+      t.id === taskId ? {
+        ...t,
+        status: t.status === 'completed' ? 'pending' : 'completed',
+        completedAt: t.status === 'completed' ? null : new Date().toISOString()
+      } : t
+    )
+
+    // Also add to timeline
+    const task = currentTasks.find((t: any) => t.id === taskId)
+    const newStatus = task?.status === 'completed' ? 'pending' : 'completed'
+    const updatedTimeline = [
+      ...(activeCrisis.timeline || []),
+      {
+        time: new Date().toISOString(),
+        event_type: 'task_update',
+        content: `Task "${task?.title}" marked as ${newStatus}`,
+        actor: 'user'
+      }
+    ]
+
+    const { error } = await supabase
+      .from('crisis_events')
+      .update({ tasks: updatedTasks, timeline: updatedTimeline })
+      .eq('id', activeCrisis.id)
+
+    if (!error) {
+      setActiveCrisis({ ...activeCrisis, tasks: updatedTasks, timeline: updatedTimeline })
+    }
+  }
+
   const activateScenario = async (scenarioType: string, scenarioTitle: string) => {
     if (!organization) return
     try {
@@ -650,34 +686,83 @@ export default function CrisisModule({ onOpenInStudio }: CrisisModuleProps) {
 
         {/* Content */}
         <div className="flex-1 overflow-auto">
-          {/* DASHBOARD - Always same layout */}
+          {/* DASHBOARD - 2-row layout with Action Items */}
           {activeView === 'dashboard' && (
-            <div className="h-full grid grid-cols-3 gap-6 p-6">
-              <div className="space-y-6">
+            <div className="h-full p-6 space-y-6 overflow-auto">
+              {/* Row 1: Advisor + Action Items — matched height */}
+              <div className="grid grid-cols-2 gap-6 items-stretch">
                 <CrisisAIAssistant crisis={activeCrisis} onUpdate={loadActiveCrisis} />
-              </div>
-              <div className="space-y-6">
-                <div className="bg-[var(--grey-900)] border border-[var(--grey-800)] rounded-xl p-6">
-                  <h3 className="text-lg font-bold text-white mb-4" style={{ fontFamily: 'var(--font-display)' }}>Quick Stats</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-[var(--grey-800)]/50 p-4 rounded-lg">
-                      <div className="text-2xl font-bold text-white">{Object.keys(activeCrisis?.team_status || {}).length}</div>
-                      <div className="text-sm text-[var(--grey-400)]">Team Active</div>
+                <div className="bg-[var(--grey-900)] border border-[var(--grey-800)] rounded-xl p-6 flex flex-col">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>Action Items</h3>
+                    <span className="text-sm text-[var(--grey-400)]">
+                      {(activeCrisis?.tasks || []).filter((t: any) => t.status === 'completed').length}/{(activeCrisis?.tasks || []).length} complete
+                    </span>
+                  </div>
+                  <div className="space-y-1 flex-1 overflow-y-auto min-h-0">
+                    {(activeCrisis?.tasks || [])
+                      .slice()
+                      .sort((a: any, b: any) => {
+                        if (a.status === 'completed' && b.status !== 'completed') return 1
+                        if (a.status !== 'completed' && b.status === 'completed') return -1
+                        const p: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 }
+                        return (p[a.priority] ?? 3) - (p[b.priority] ?? 3)
+                      })
+                      .map((task: any) => (
+                        <div key={task.id} className={`flex items-start gap-3 p-3 rounded-lg border ${
+                          task.status === 'completed'
+                            ? 'border-emerald-500/30 bg-emerald-500/5'
+                            : 'border-[var(--grey-800)] hover:bg-[var(--grey-800)]/50'
+                        }`}>
+                          <button onClick={() => toggleDashboardTask(task.id)} className="mt-0.5 shrink-0">
+                            {task.status === 'completed' ? (
+                              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                            ) : (
+                              <Circle className="w-4 h-4 text-[var(--grey-500)]" />
+                            )}
+                          </button>
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-sm leading-tight ${task.status === 'completed' ? 'text-[var(--grey-500)] line-through' : 'text-white'}`}>
+                              {task.title}
+                            </p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                task.priority === 'critical' ? 'bg-red-500' :
+                                task.priority === 'high' ? 'bg-[var(--burnt-orange)]' :
+                                task.priority === 'medium' ? 'bg-amber-500' : 'bg-emerald-500'
+                              }`} />
+                              <span className="text-xs text-[var(--grey-500)] truncate">{task.assignee}</span>
+                              {task.status === 'completed' && task.completedAt && (
+                                <span className="text-xs text-emerald-400/70 ml-auto shrink-0">{new Date(task.completedAt).toLocaleTimeString()}</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    }
+                    {(activeCrisis?.tasks?.length || 0) === 0 && (
+                      <div className="text-center py-4 text-[var(--grey-500)] text-sm">No tasks yet</div>
+                    )}
+                  </div>
+                  <div className="flex gap-3 mt-4 pt-4 border-t border-[var(--grey-800)] shrink-0">
+                    <div className="flex-1 text-center">
+                      <div className="text-lg font-bold text-white">{Object.keys(activeCrisis?.team_status || {}).length}</div>
+                      <div className="text-xs text-[var(--grey-400)]">Team</div>
                     </div>
-                    <div className="bg-[var(--grey-800)]/50 p-4 rounded-lg">
-                      <div className="text-2xl font-bold text-white">{activeCrisis?.tasks?.filter((t: any) => t.status === 'completed').length || 0}/{activeCrisis?.tasks?.length || 0}</div>
-                      <div className="text-sm text-[var(--grey-400)]">Tasks Done</div>
+                    <div className="flex-1 text-center">
+                      <div className="text-lg font-bold text-white">{activeCrisis?.communications?.length || 0}</div>
+                      <div className="text-xs text-[var(--grey-400)]">Comms</div>
                     </div>
-                    <div className="bg-[var(--grey-800)]/50 p-4 rounded-lg">
-                      <div className="text-2xl font-bold text-white">{activeCrisis?.communications?.length || 0}</div>
-                      <div className="text-sm text-[var(--grey-400)]">Comms Sent</div>
-                    </div>
-                    <div className="bg-[var(--grey-800)]/50 p-4 rounded-lg">
-                      <div className="text-2xl font-bold text-white">{activeCrisis?.decisions?.length || 0}</div>
-                      <div className="text-sm text-[var(--grey-400)]">Decisions</div>
+                    <div className="flex-1 text-center">
+                      <div className="text-lg font-bold text-white">{activeCrisis?.decisions?.length || 0}</div>
+                      <div className="text-xs text-[var(--grey-400)]">Decisions</div>
                     </div>
                   </div>
                 </div>
+              </div>
+
+              {/* Row 2: Recent Activity + Social Signals + Stakeholder Sentiment */}
+              <div className="grid grid-cols-3 gap-6">
                 <div className={`bg-[var(--grey-900)] border ${potentialCrisisAlerts.length > 0 ? 'border-red-500/50' : 'border-[var(--grey-800)]'} rounded-xl p-6`}>
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
