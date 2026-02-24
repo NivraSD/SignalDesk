@@ -212,8 +212,8 @@ async function processNarrativeUpdates(
         } else {
           console.log(`✅ Updated narrative: "${update.title}" (${update.status}, ${update.trajectory})`);
         }
-      } else if (update.is_new) {
-        // Create new narrative
+      } else {
+        // Create new narrative (no existing match found, so it's new regardless of is_new flag)
         const textForEmbedding = `${update.title}\n\n${update.summary || ''}\n\nEntities: ${JSON.stringify(update.entities || [])}`;
         const embedding = await generateEmbedding(textForEmbedding);
 
