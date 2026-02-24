@@ -79,7 +79,7 @@ CREATE POLICY "Users can view own org narratives"
   ON tracked_narratives FOR SELECT
   USING (
     organization_id IN (
-      SELECT organization_id FROM user_organizations
+      SELECT organization_id FROM org_users
       WHERE user_id = auth.uid()
     )
   );
