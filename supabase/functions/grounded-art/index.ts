@@ -82,11 +82,10 @@ async function generateArt(
     ? `\n\nTITLES ALREADY USED — do not repeat these or anything similar:\n${recentTitles.map(t => `- "${t}"`).join('\n')}`
     : ''
 
-  const prompt = `Create an abstract, non-representational artwork. This is for a contemplative lock screen — it should be visually arresting but calm enough to glance at daily.
+  const prompt = `Create an abstract, non-representational artwork. This is for a contemplative phone lock screen — it should be visually arresting but calm enough to glance at daily.
 
 STRICT RULES:
 - NO people, faces, hands, bodies, or silhouettes
-- NO text, letters, numbers, or symbols
 - NO recognizable objects (no trees, buildings, animals, etc.)
 - Pure abstraction only — shapes, colors, light, texture, movement
 
@@ -96,9 +95,11 @@ STYLE DIRECTION FOR THIS PIECE:
 - Energy: ${seed.energy}
 - Emotional quality: ${seed.mood}
 
-The image should feel like it belongs in a museum of contemplative art. Portrait orientation (9:16 aspect ratio) optimized for a phone lock screen.
+The image should feel like it belongs in a museum of contemplative art. The image MUST be exactly 1179 x 2556 pixels (iPhone lock screen resolution, portrait).
 
-Also provide a short poetic title (3-8 words) that evokes the emotional quality without being literal or describing what's in the image. The title should feel like a line from a poem. Format it exactly as:
+Also provide a short poetic title (3-8 words) that evokes the emotional quality without being literal or describing what's in the image. The title should feel like a line from a poem. Do NOT render the title as text in the image — the image must be pure artwork with no text whatsoever.
+
+Format the title exactly as:
 TITLE: <your title here>${avoidSection}`
 
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${GOOGLE_API_KEY}`
@@ -145,7 +146,8 @@ TITLE: <your title here>${avoidSection}`
   }
 
   if (!imageBase64) {
-    throw new Error('No image data in Gemini response')
+    // Gemini sometimes returns text-only — retry up to 2 times
+    throw new Error('RETRY: No image data in Gemini response')
   }
 
   // Extract title from text
@@ -156,6 +158,26 @@ TITLE: <your title here>${avoidSection}`
   }
 
   return { imageBase64, mimeType, title }
+}
+
+async function generateArtWithRetry(
+  seed: ReturnType<typeof buildPromptSeed>,
+  recentTitles: string[],
+  maxRetries = 3
+): Promise<{ imageBase64: string; mimeType: string; title: string }> {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`Art generation attempt ${attempt}/${maxRetries}`)
+      return await generateArt(seed, recentTitles)
+    } catch (e: any) {
+      if (e.message?.startsWith('RETRY:') && attempt < maxRetries) {
+        console.log(`No image returned, retrying (${attempt}/${maxRetries})...`)
+        continue
+      }
+      throw new Error(e.message?.replace('RETRY: ', '') || 'Art generation failed')
+    }
+  }
+  throw new Error('Art generation failed after retries')
 }
 
 // ── Storage Upload ──────────────────────────────────────────────────────────
@@ -272,7 +294,7 @@ Deno.serve(async (req: Request) => {
       console.log('Art seed:', JSON.stringify(seed))
 
       // Generate image + title via Gemini
-      const { imageBase64, mimeType, title } = await generateArt(seed, recentTitles)
+      const { imageBase64, mimeType, title } = await generateArtWithRetry(seed, recentTitles)
       console.log('Generated title:', title)
 
       // Upload to Supabase Storage

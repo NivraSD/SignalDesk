@@ -121,7 +121,7 @@ export default function SettingsPage() {
   }
 
   const shortcutUrl = apiKey
-    ? `${SUPABASE_URL}/functions/v1/grounded-art?key=${apiKey}&action=generate&format=image`
+    ? `${SUPABASE_URL}/functions/v1/grounded-art?key=${apiKey}&action=generate`
     : ''
 
   return (
@@ -198,14 +198,14 @@ export default function SettingsPage() {
               <div className="bg-stone-50 rounded-lg p-3 space-y-2 text-xs text-stone-600">
                 <p className="font-medium text-stone-700">iOS Shortcut Setup:</p>
                 <ol className="list-decimal list-inside space-y-1.5">
-                  <li>Open <strong>Shortcuts</strong> app</li>
-                  <li>Tap <strong>+</strong> to create new shortcut</li>
-                  <li>Add action: <strong>Get Contents of URL</strong></li>
-                  <li>Tap the URL and paste the Shortcut URL (copied above)</li>
-                  <li>Add action: <strong>Get Contents of URL</strong> (again, with the result from step 4 as input — this downloads the image)</li>
-                  <li>Add action: <strong>Set Wallpaper</strong></li>
-                  <li>Choose <strong>Lock Screen</strong></li>
-                  <li>Name it "Fresh Art"</li>
+                  <li>Open <strong>Shortcuts</strong> app, tap <strong>+</strong></li>
+                  <li>Add <strong>Get Contents of URL</strong> — paste Shortcut URL</li>
+                  <li>Add <strong>Get Dictionary Value</strong> — key: <strong>title</strong></li>
+                  <li>Add <strong>Set Variable</strong> — name it <strong>ArtTitle</strong></li>
+                  <li>Long-press step 2 output, add <strong>Get Dictionary Value</strong> — key: <strong>image_url</strong></li>
+                  <li>Add <strong>Get Contents of URL</strong> (downloads the image)</li>
+                  <li>Add <strong>Overlay Text</strong> — tap text field, select <strong>ArtTitle</strong> variable. Set font small, white, ~50% opacity, position lower-left</li>
+                  <li>Add <strong>Set Wallpaper</strong> — choose Lock Screen</li>
                 </ol>
                 <p className="font-medium text-stone-700 pt-2">Auto-schedule:</p>
                 <ol className="list-decimal list-inside space-y-1.5">
