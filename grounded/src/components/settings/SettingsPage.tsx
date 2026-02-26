@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 import { useGroundedStore } from '@/stores/groundedStore'
+import { Copy, Check, Smartphone } from 'lucide-react'
 
 interface UserRule {
   id?: string
@@ -10,6 +11,8 @@ interface UserRule {
   category: string
   is_active: boolean
 }
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 
 export default function SettingsPage() {
   const navigate = useNavigate()
@@ -19,6 +22,13 @@ export default function SettingsPage() {
   const [newRule, setNewRule] = useState('')
   const [loadingRules, setLoadingRules] = useState(true)
   const [saving, setSaving] = useState(false)
+
+  // API key state
+  const [apiKey, setApiKey] = useState<string | null>(null)
+  const [loadingKey, setLoadingKey] = useState(true)
+  const [generatingKey, setGeneratingKey] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const [showSetup, setShowSetup] = useState(false)
 
   // Load rules
   useEffect(() => {
@@ -34,6 +44,48 @@ export default function SettingsPage() {
     }
     load()
   }, [userId])
+
+  // Load API key
+  useEffect(() => {
+    if (!userId) return
+    const load = async () => {
+      const { data } = await supabase
+        .from('grounded_api_keys')
+        .select('api_key')
+        .eq('user_id', userId)
+        .eq('is_active', true)
+        .limit(1)
+        .single()
+      if (data) setApiKey(data.api_key)
+      setLoadingKey(false)
+    }
+    load()
+  }, [userId])
+
+  const generateApiKey = async () => {
+    if (!userId) return
+    setGeneratingKey(true)
+    // Deactivate existing keys
+    await supabase
+      .from('grounded_api_keys')
+      .update({ is_active: false })
+      .eq('user_id', userId)
+
+    const { data, error } = await supabase
+      .from('grounded_api_keys')
+      .insert({ user_id: userId, label: 'iOS Shortcut' })
+      .select('api_key')
+      .single()
+
+    if (!error && data) setApiKey(data.api_key)
+    setGeneratingKey(false)
+  }
+
+  const copyToClipboard = async (text: string) => {
+    await navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   const addRule = async () => {
     if (!newRule.trim() || !userId) return
@@ -68,6 +120,10 @@ export default function SettingsPage() {
     navigate('/login')
   }
 
+  const shortcutUrl = apiKey
+    ? `${SUPABASE_URL}/functions/v1/grounded-art?key=${apiKey}&action=generate&format=url`
+    : ''
+
   return (
     <div className="space-y-4">
       <button onClick={() => navigate('/')} className="text-stone-500 text-sm">
@@ -86,6 +142,96 @@ export default function SettingsPage() {
         </div>
         <span className="text-stone-400">&rarr;</span>
       </button>
+
+      {/* Wallpaper Shortcut */}
+      <div className="bg-white rounded-xl p-4 shadow-sm space-y-3">
+        <div className="flex items-center gap-2">
+          <Smartphone size={16} className="text-stone-600" />
+          <h3 className="text-sm font-medium text-stone-700">Auto Wallpaper</h3>
+        </div>
+        <p className="text-xs text-stone-400">
+          Set up an iOS Shortcut that generates fresh art and sets it as your lock screen throughout the day.
+        </p>
+
+        {loadingKey ? (
+          <p className="text-xs text-stone-400">Loading...</p>
+        ) : !apiKey ? (
+          <button
+            onClick={generateApiKey}
+            disabled={generatingKey}
+            className="w-full py-2 bg-stone-700 text-white rounded-lg text-sm disabled:opacity-50"
+          >
+            {generatingKey ? 'Generating...' : 'Generate API Key'}
+          </button>
+        ) : (
+          <div className="space-y-3">
+            {/* API Key display */}
+            <div className="flex items-center gap-2">
+              <code className="flex-1 text-[11px] bg-stone-50 p-2 rounded-lg text-stone-600 truncate">
+                {apiKey}
+              </code>
+              <button
+                onClick={() => copyToClipboard(apiKey)}
+                className="p-2 bg-stone-100 rounded-lg flex-shrink-0"
+              >
+                {copied ? <Check size={14} className="text-green-600" /> : <Copy size={14} className="text-stone-500" />}
+              </button>
+            </div>
+
+            {/* Quick copy URL */}
+            <button
+              onClick={() => copyToClipboard(shortcutUrl)}
+              className="w-full py-2 bg-stone-700 text-white rounded-lg text-sm"
+            >
+              Copy Shortcut URL
+            </button>
+
+            {/* Setup instructions toggle */}
+            <button
+              onClick={() => setShowSetup(!showSetup)}
+              className="text-xs text-stone-500 underline"
+            >
+              {showSetup ? 'Hide setup instructions' : 'How to set up the iOS Shortcut'}
+            </button>
+
+            {showSetup && (
+              <div className="bg-stone-50 rounded-lg p-3 space-y-2 text-xs text-stone-600">
+                <p className="font-medium text-stone-700">iOS Shortcut Setup:</p>
+                <ol className="list-decimal list-inside space-y-1.5">
+                  <li>Open <strong>Shortcuts</strong> app</li>
+                  <li>Tap <strong>+</strong> to create new shortcut</li>
+                  <li>Add action: <strong>Get Contents of URL</strong></li>
+                  <li>Tap the URL and paste the Shortcut URL (copied above)</li>
+                  <li>Add action: <strong>Get Contents of URL</strong> (again, with the result from step 4 as input — this downloads the image)</li>
+                  <li>Add action: <strong>Set Wallpaper</strong></li>
+                  <li>Choose <strong>Lock Screen</strong></li>
+                  <li>Name it "Fresh Art"</li>
+                </ol>
+                <p className="font-medium text-stone-700 pt-2">Auto-schedule:</p>
+                <ol className="list-decimal list-inside space-y-1.5">
+                  <li>Go to <strong>Automation</strong> tab</li>
+                  <li>Tap <strong>+</strong> &rarr; <strong>Time of Day</strong></li>
+                  <li>Set times (e.g., 8 AM, 1 PM, 7 PM)</li>
+                  <li>Select your "Fresh Art" shortcut</li>
+                  <li>Turn off "Ask Before Running"</li>
+                </ol>
+                <p className="text-stone-400 pt-1">
+                  Each run generates a unique piece and sets it as your lock screen. Takes ~15 seconds.
+                </p>
+              </div>
+            )}
+
+            {/* Regenerate key */}
+            <button
+              onClick={generateApiKey}
+              disabled={generatingKey}
+              className="text-xs text-stone-400 underline"
+            >
+              Regenerate key
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* AI Rules & Guidance */}
       <div className="bg-white rounded-xl p-4 shadow-sm space-y-3">

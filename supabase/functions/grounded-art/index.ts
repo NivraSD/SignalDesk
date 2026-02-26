@@ -195,6 +195,37 @@ async function uploadToStorage(
   return urlData.publicUrl
 }
 
+// ── Auth Helper ─────────────────────────────────────────────────────────────
+
+async function resolveUserId(req: Request): Promise<string | null> {
+  // Option 1: API key via x-api-key header or ?key= query param
+  const url = new URL(req.url)
+  const apiKey = req.headers.get('x-api-key') || url.searchParams.get('key')
+  if (apiKey) {
+    const svc = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+    const { data } = await svc
+      .from('grounded_api_keys')
+      .select('user_id')
+      .eq('api_key', apiKey)
+      .eq('is_active', true)
+      .single()
+    return data?.user_id ?? null
+  }
+
+  // Option 2: Supabase Bearer token
+  const authHeader = req.headers.get('Authorization')
+  if (!authHeader) return null
+
+  const token = authHeader.replace('Bearer ', '')
+  const anonClient = createClient(
+    SUPABASE_URL,
+    Deno.env.get('SUPABASE_ANON_KEY') || SUPABASE_SERVICE_KEY
+  )
+  const { data: { user }, error } = await anonClient.auth.getUser(token)
+  if (error || !user) return null
+  return user.id
+}
+
 // ── Main Handler ────────────────────────────────────────────────────────────
 
 Deno.serve(async (req: Request) => {
@@ -202,24 +233,27 @@ Deno.serve(async (req: Request) => {
   if (corsResponse) return corsResponse
 
   try {
-    // Auth
-    const authHeader = req.headers.get('Authorization')
-    if (!authHeader) return errorResponse('Missing authorization header', 401)
+    const userId = await resolveUserId(req)
+    if (!userId) return errorResponse('Unauthorized', 401)
 
-    const token = authHeader.replace('Bearer ', '')
-    const anonClient = createClient(
-      SUPABASE_URL,
-      Deno.env.get('SUPABASE_ANON_KEY') || SUPABASE_SERVICE_KEY
-    )
-    const {
-      data: { user },
-      error: authError,
-    } = await anonClient.auth.getUser(token)
-    if (authError || !user) return errorResponse('Unauthorized', 401)
-
-    const userId = user.id
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
-    const { action, ...payload } = await req.json()
+
+    // For GET requests (Shortcuts), default to generate
+    let action = 'generate'
+    let payload: Record<string, unknown> = {}
+
+    if (req.method === 'POST') {
+      const body = await req.json()
+      action = body.action || 'generate'
+      const { action: _, ...rest } = body
+      payload = rest
+    }
+
+    // Check for ?action= override (for Shortcuts)
+    const url = new URL(req.url)
+    if (url.searchParams.get('action')) {
+      action = url.searchParams.get('action')!
+    }
 
     // ── GENERATE ──────────────────────────────────────────────────────────
     if (action === 'generate') {
@@ -262,12 +296,40 @@ Deno.serve(async (req: Request) => {
         throw new Error(`Failed to save art piece: ${insertError.message}`)
       }
 
+      // For Shortcuts: return just the image URL as plain text
+      if (url.searchParams.get('format') === 'url') {
+        return new Response(record.image_url, {
+          headers: { ...corsHeaders, 'Content-Type': 'text/plain' },
+        })
+      }
+
       return jsonResponse({
         id: record.id,
         title: record.title,
         image_url: record.image_url,
         created_at: record.created_at,
       })
+    }
+
+    // ── LATEST (for Shortcuts wallpaper fetch) ──────────────────────────
+    if (action === 'latest') {
+      const { data: latest } = await supabase
+        .from('grounded_art_pieces')
+        .select('id, title, image_url, created_at')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single()
+
+      if (!latest) return errorResponse('No art pieces found', 404)
+
+      if (url.searchParams.get('format') === 'url') {
+        return new Response(latest.image_url, {
+          headers: { ...corsHeaders, 'Content-Type': 'text/plain' },
+        })
+      }
+
+      return jsonResponse(latest)
     }
 
     // ── HISTORY ───────────────────────────────────────────────────────────
