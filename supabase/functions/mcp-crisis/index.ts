@@ -887,6 +887,28 @@ Return ONLY a valid JSON object in this format:
       escalationCriteria: 'Immediate full crisis activation — any confirmed act of violence or credible imminent threat',
       affectedStakeholders: ['Employees', 'Families', 'Local Community', 'Regulators'],
       recoveryTimeline: 'Immediate: 24-48 hours for safety restoration. 1-4 weeks for trauma support. 3-6 months for return to normal operations.'
+    },
+    {
+      title: 'Natural Disaster / Act of God',
+      description: 'Major natural event — earthquake, hurricane, flood, wildfire, severe weather, or pandemic — that disrupts operations, threatens employee safety, damages facilities, or severs supply chains.',
+      likelihood: 'Medium',
+      impact: 'Critical',
+      isUniversal: true,
+      triggerIndicators: [
+        'Government weather or seismic alerts for operating regions',
+        'Reports of infrastructure damage near facilities or key suppliers',
+        'Employee reports of inability to travel or access worksite',
+        'Supply chain partner notifications of force majeure'
+      ],
+      immediateSteps: [
+        'Activate employee safety check-in protocol — account for all personnel',
+        'Assess facility damage and determine if operations can continue',
+        'Engage business continuity plan — activate remote work or backup sites',
+        'Contact insurance carriers and begin documenting damage for claims'
+      ],
+      escalationCriteria: 'Escalate to full crisis if any facility is inaccessible for >24 hours, employee safety is unconfirmed, or revenue-critical operations are disrupted',
+      affectedStakeholders: ['Employees', 'Customers', 'Suppliers', 'Insurers', 'Local Community'],
+      recoveryTimeline: '1-7 days for employee safety and remote operations. 2-8 weeks for facility restoration. 1-6 months for full supply chain recovery depending on severity.'
     }
   ];
 

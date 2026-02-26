@@ -687,7 +687,7 @@ async function testGeminiMetaAnalysis(
     const prompt = buildMetaAnalysisPrompt(organizationName, industry, website, queries)
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key=${GOOGLE_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GOOGLE_API_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -945,9 +945,9 @@ async function testGeminiVisibility(
   for (const q of queries.slice(0, 10)) {
     try {
       // Call Direct Gemini API (no OAuth needed!)
-      // Use gemini-2.0-flash-001 (Gemini 2.0 Flash model)
+      // Use gemini-2.5-flash (Gemini 2.0 Flash model)
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key=${GOOGLE_API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GOOGLE_API_KEY}`,
         {
           method: 'POST',
           headers: {

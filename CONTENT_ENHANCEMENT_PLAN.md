@@ -8,7 +8,7 @@ This plan outlines the implementation of comprehensive content creation capabili
 
 ## 1. Content Creation Capabilities
 
-### A. Visual Content (Google Vertex AI) : API: AIzaSyBwiqy6i_fB_-u82B0tmJiBLGkg_Zu3lvc
+### A. Visual Content (Google Vertex AI)
 
 #### Image Generation (Imagen 3)
 ```typescript

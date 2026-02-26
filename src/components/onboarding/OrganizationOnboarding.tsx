@@ -3,9 +3,22 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Building2, Globe, Sparkles, Check, X, Plus, Trash2,
   ChevronRight, ChevronLeft, ChevronDown, Upload, Loader, AlertCircle,
-  FileCode, Code
+  FileCode, Code, Mic2, Target, TrendingUp, MessageSquare
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
+import {
+  PR_MOTIVATION_OPTIONS,
+  PR_STANDING_OPTIONS,
+  PR_STRENGTH_OPTIONS,
+  PR_CHALLENGE_OPTIONS,
+  BRAND_ADJECTIVE_OPTIONS,
+  BRAND_AVOID_OPTIONS,
+  STRATEGIC_GOAL_SUGGESTIONS,
+  type PRAssessment,
+  type BrandVoice,
+  type StrategicGoal,
+  DEFAULT_BRAND_VOICE
+} from '@/types/company-profile'
 
 interface DiscoveredItems {
   competitors: string[]
@@ -64,9 +77,25 @@ export default function OrganizationOnboarding({
   const [strategicPriorities, setStrategicPriorities] = useState<string[]>([])
   const [newPriority, setNewPriority] = useState('')
 
-  // Strategic Goals (structured for company_profile)
-  const [strategicGoals, setStrategicGoals] = useState<Array<{goal: string, timeframe: string, priority: 'high' | 'medium' | 'low'}>>([])
-  const [newGoal, setNewGoal] = useState({ goal: '', timeframe: '', priority: 'medium' as 'high' | 'medium' | 'low' })
+  // Strategic Goals (structured for company_profile) - NOW REQUIRED
+  const [strategicGoals, setStrategicGoals] = useState<StrategicGoal[]>([])
+  const [newGoal, setNewGoal] = useState<StrategicGoal>({ goal: '', timeframe: '', priority: 'medium' })
+
+  // NEW: PR Assessment state
+  const [prAssessment, setPRAssessment] = useState<Partial<PRAssessment>>({
+    investment_motivation: [],
+    competitive_standing: undefined,
+    competitive_perception: '',
+    internal_strengths: [],
+    internal_challenges: [],
+    success_definition: ''
+  })
+
+  // NEW: Brand Voice state (simplified for onboarding)
+  const [brandVoice, setBrandVoice] = useState<BrandVoice>(DEFAULT_BRAND_VOICE)
+
+  // NEW: Discovery run control - runs after brand voice step
+  const [discoveryRunAfterBrandVoice, setDiscoveryRunAfterBrandVoice] = useState(false)
 
   // Step 5: GEO Targets
   const [serviceLines, setServiceLines] = useState<string[]>([])
@@ -114,7 +143,7 @@ export default function OrganizationOnboarding({
   const [enhancementLoading, setEnhancementLoading] = useState(false)
   const [schemaSaved, setSchemaSaved] = useState(false) // Track if schema has been saved
 
-  const totalSteps = 6  // Removed GEO discovery step - focus on schema only
+  const totalSteps = 8  // Enhanced: Basic Info → Strategic Goals → PR Assessment → Brand Voice → Competitors → Stakeholders → GEO/Vault → Synthesis
   const MAX_TOTAL_TARGETS = 20  // Hard limit: 15 from discovery + up to 5 custom
 
   // Helper function to calculate total targets
@@ -129,17 +158,24 @@ export default function OrganizationOnboarding({
     return getTotalTargets() < MAX_TOTAL_TARGETS
   }
 
+  // Step 1: Basic Info - Just save and move to Strategic Goals
   const handleBasicInfoSubmit = async () => {
     if (!orgName || !website || !aboutPage) {
       setError('Organization name, website, and about/capabilities page are required')
       return
     }
+    // Move to step 2 (Strategic Goals) - discovery runs after Brand Voice step
+    setStep(2)
+  }
 
+  // Run MCP Discovery AFTER Brand Voice step (Step 4 → Step 5)
+  // This gives Claude context about goals and assessment for better discovery
+  const handleDiscoveryAfterBrandVoice = async () => {
     setLoading(true)
     setError(null)
 
     try {
-      console.log('🔍 Running MCP discovery...')
+      console.log('🔍 Running MCP discovery with goals and assessment context...')
 
       const response = await fetch('/api/organizations/discover', {
         method: 'POST',
@@ -148,7 +184,13 @@ export default function OrganizationOnboarding({
           organization_name: orgName,
           industry_hint: industry,
           website,
-          about_page: aboutPage
+          about_page: aboutPage,
+          // NEW: Pass goals and assessment for context-aware discovery
+          strategic_goals: strategicGoals,
+          pr_assessment: {
+            ...prAssessment,
+            assessed_at: new Date().toISOString()
+          }
         })
       })
 
@@ -169,14 +211,12 @@ export default function OrganizationOnboarding({
       }
 
       // Pre-select ONLY competitors (users should review stakeholders for relevance)
-      setSelectedCompetitors(new Set(data.discovered.competitors.map(c =>
+      setSelectedCompetitors(new Set(data.discovered.competitors.map((c: any) =>
         typeof c === 'string' ? c : c.name
       )))
       setSelectedTopics(new Set(data.discovered.topics))
 
       // DO NOT auto-select stakeholders - they need strategic review
-      // Regulators especially can create noise if not properly scoped
-      // Users will manually select which stakeholders are strategically relevant
       setSelectedStakeholders(new Set())
 
       // Pre-populate GEO service lines from MCP discovery
@@ -185,8 +225,9 @@ export default function OrganizationOnboarding({
         console.log('✅ Pre-populated GEO service lines from MCP:', data.full_profile.service_lines)
       }
 
-      console.log('✅ Discovery complete')
-      setStep(2)
+      console.log('✅ Discovery complete with goals/assessment context')
+      setDiscoveryRunAfterBrandVoice(true)
+      setStep(5) // Move to Competitors step
     } catch (err: any) {
       console.error('Discovery error:', err)
       setError(err.message || 'Failed to run discovery')
@@ -230,8 +271,8 @@ export default function OrganizationOnboarding({
         throw new Error('No organization data returned from API')
       }
 
-      // 1.5. Populate company profile from MCP Discovery data (CRITICAL for MemoryVault)
-      console.log('📋 Populating company profile from MCP Discovery...')
+      // 1.5. Populate company profile from MCP Discovery data + NEW onboarding fields
+      console.log('📋 Populating company profile from MCP Discovery and onboarding data...')
       const companyProfile = {
         // Core company data from MCP Discovery
         industry: discovered?.industry || industry,
@@ -257,8 +298,17 @@ export default function OrganizationOnboarding({
           strategic_priorities: strategicPriorities || fullProfile?.strategic_context?.strategic_priorities || []
         },
 
-        // Strategic goals (user-defined during onboarding)
-        strategic_goals: strategicGoals || [],
+        // Strategic goals (REQUIRED - captured in step 2)
+        strategic_goals: strategicGoals,
+
+        // NEW: PR Assessment (captured in step 3)
+        pr_assessment: {
+          ...prAssessment,
+          assessed_at: new Date().toISOString()
+        } as PRAssessment,
+
+        // NEW: Brand Voice (captured in step 4)
+        brand_voice: brandVoice,
 
         // Competitors and stakeholders (reference to intelligence_targets)
         competitors: Array.from(selectedCompetitors),
@@ -348,12 +398,12 @@ export default function OrganizationOnboarding({
 
         // Generate default context if not found from MCP
         if (!context.monitoring_context || !context.industry_context) {
-          const industry = discovered?.industry || industry || fullProfile?.industry || 'industry'
+          const orgIndustry = discovered?.industry || industry || fullProfile?.industry || 'industry'
 
           if (type === 'competitor') {
             return {
-              monitoring_context: `Monitor ${name} for product launches, strategic partnerships, market expansions, leadership changes, and competitive positioning in ${industry}`,
-              industry_context: `Direct competitor in ${industry} sector`,
+              monitoring_context: `Monitor ${name} for product launches, strategic partnerships, market expansions, leadership changes, and competitive positioning in ${orgIndustry}`,
+              industry_context: `Direct competitor in ${orgIndustry} sector`,
               relevance_filter: {
                 keywords: [name, 'announcement', 'launch', 'partnership'],
                 topics: ['product', 'strategy', 'market', 'leadership']
@@ -361,8 +411,8 @@ export default function OrganizationOnboarding({
             }
           } else {
             return {
-              monitoring_context: `Track ${name} activities that may impact ${industry} sector operations, regulations, or market conditions`,
-              industry_context: `Key stakeholder in ${industry} ecosystem`,
+              monitoring_context: `Track ${name} activities that may impact ${orgIndustry} sector operations, regulations, or market conditions`,
+              industry_context: `Key stakeholder in ${orgIndustry} ecosystem`,
               relevance_filter: {
                 keywords: [name],
                 topics: ['regulation', 'policy', 'industry']
@@ -590,17 +640,55 @@ export default function OrganizationOnboarding({
 
       console.log('✅ Organization created successfully!', organization)
 
-      // Store the organization for GEO discovery and schema generation
+      // Store the organization for schema generation
       setCreatedOrganization(organization)
       console.log('📝 Stored organization in state:', organization.id)
+
+      // 6. Synthesize Operating Playbook (NEW)
+      console.log('🎯 Synthesizing operating playbook...')
+      try {
+        const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
+        const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+        const synthesisResponse = await fetch(`${SUPABASE_URL}/functions/v1/synthesize-operating-playbook`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            organization_id: organization.id,
+            organization_name: organization.name,
+            strategic_goals: strategicGoals,
+            pr_assessment: {
+              ...prAssessment,
+              assessed_at: new Date().toISOString()
+            },
+            brand_voice: brandVoice,
+            industry: discovered?.industry || industry,
+            competitors: Array.from(selectedCompetitors),
+            mcp_discovery: fullProfile
+          })
+        })
+
+        if (synthesisResponse.ok) {
+          const synthesisData = await synthesisResponse.json()
+          console.log('✅ Operating playbook synthesized:', synthesisData.operating_playbook?.executive_summary?.substring(0, 100))
+        } else {
+          console.warn('⚠️ Playbook synthesis failed (non-critical):', await synthesisResponse.text())
+        }
+      } catch (synthErr) {
+        console.warn('⚠️ Playbook synthesis error (non-critical):', synthErr)
+        // Don't fail onboarding if synthesis fails
+      }
 
       // Turn off loading
       setLoading(false)
 
-      // Move to Step 6: Schema Generation
+      // Move to Step 8: Synthesis + Schema Generation
       setTimeout(() => {
-        setStep(6)
-        console.log('➡️ Moved to step 6 (Schema Generation)')
+        setStep(8)
+        console.log('➡️ Moved to step 8 (Schema Generation)')
       }, 0)
     } catch (err: any) {
       console.error('Create organization error:', err)
@@ -1353,11 +1441,10 @@ export default function OrganizationOnboarding({
                     <Sparkles className="w-5 h-5 text-[var(--burnt-orange)] flex-shrink-0 mt-0.5" />
                     <div>
                       <p className="text-sm text-[var(--burnt-orange)] font-medium">
-                        AI-Powered Discovery
+                        Strategic Onboarding
                       </p>
                       <p className="text-xs text-[var(--burnt-orange)]/70 mt-1">
-                        We'll analyze your organization and discover competitors
-                        and key stakeholders automatically
+                        Next, we'll capture your goals and context, then use AI to discover relevant competitors and stakeholders
                       </p>
                     </div>
                   </div>
@@ -1365,8 +1452,472 @@ export default function OrganizationOnboarding({
               </motion.div>
             )}
 
-            {/* Step 2: Discovery Results - Competitors */}
-            {step === 2 && discovered && (
+            {/* Step 2: Strategic Goals (REQUIRED) */}
+            {step === 2 && (
+              <motion.div
+                key="step2-goals"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="space-y-6"
+              >
+                <div>
+                  <div className="flex items-center gap-3 mb-2">
+                    <Target className="w-6 h-6 text-[var(--burnt-orange)]" />
+                    <h3 className="text-xl font-semibold text-white">Strategic Goals</h3>
+                    <span className="px-2 py-0.5 bg-red-500/20 text-red-400 text-xs rounded-full">Required</span>
+                  </div>
+                  <p className="text-sm text-[var(--grey-400)] mb-2">
+                    What are your top priorities for the next 6-12 months? These goals will anchor all AI-generated opportunities and content.
+                  </p>
+                  <p className="text-xs text-[var(--burnt-orange)] mb-4">
+                    Add at least 1 goal to continue. Maximum 5 goals.
+                  </p>
+
+                  {/* Goal Suggestions */}
+                  <div className="mb-4">
+                    <p className="text-xs text-[var(--grey-500)] mb-2">Quick add suggestions:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {STRATEGIC_GOAL_SUGGESTIONS.filter(s => !strategicGoals.some(g => g.goal === s)).slice(0, 4).map((suggestion) => (
+                        <button
+                          key={suggestion}
+                          onClick={() => {
+                            if (strategicGoals.length < 5) {
+                              setStrategicGoals([...strategicGoals, { goal: suggestion, timeframe: '', priority: 'medium' }])
+                            }
+                          }}
+                          className="px-3 py-1 text-xs bg-[var(--grey-800)] border border-[var(--grey-700)] rounded-full text-[var(--grey-400)] hover:border-[var(--burnt-orange)] hover:text-[var(--burnt-orange)] transition-colors"
+                        >
+                          + {suggestion}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Existing goals */}
+                  {strategicGoals.length > 0 && (
+                    <div className="space-y-3 mb-4">
+                      {strategicGoals.map((goal, index) => (
+                        <div key={index} className="p-4 bg-[var(--grey-800)] border border-[var(--grey-700)] rounded-lg">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                                  goal.priority === 'high' ? 'bg-red-500/20 text-red-400' :
+                                  goal.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                                  'bg-green-500/20 text-green-400'
+                                }`}>
+                                  {goal.priority.toUpperCase()}
+                                </span>
+                                {goal.timeframe && (
+                                  <span className="text-xs text-[var(--grey-500)]">{goal.timeframe}</span>
+                                )}
+                              </div>
+                              <p className="text-white">{goal.goal}</p>
+                            </div>
+                            <button
+                              onClick={() => setStrategicGoals(strategicGoals.filter((_, i) => i !== index))}
+                              className="p-1 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Add new goal form */}
+                  {strategicGoals.length < 5 && (
+                    <div className="p-4 bg-[var(--grey-800)]/50 border border-dashed border-[var(--grey-700)] rounded-lg space-y-3">
+                      <input
+                        type="text"
+                        value={newGoal.goal}
+                        onChange={(e) => setNewGoal({ ...newGoal, goal: e.target.value })}
+                        placeholder="Describe your goal (e.g., Expand into European markets)"
+                        className="w-full px-4 py-3 bg-[var(--grey-800)] border border-[var(--grey-700)] rounded-lg text-white placeholder-[var(--grey-500)] focus:outline-none focus:border-[var(--burnt-orange)]"
+                      />
+                      <div className="grid grid-cols-2 gap-3">
+                        <select
+                          value={newGoal.timeframe}
+                          onChange={(e) => setNewGoal({ ...newGoal, timeframe: e.target.value })}
+                          className="px-4 py-2 bg-[var(--grey-800)] border border-[var(--grey-700)] rounded-lg text-white focus:outline-none focus:border-[var(--burnt-orange)]"
+                        >
+                          <option value="">Select timeframe...</option>
+                          <option value="1 month">1 month</option>
+                          <option value="3 months">3 months</option>
+                          <option value="6 months">6 months</option>
+                          <option value="9 months">9 months</option>
+                          <option value="12 months">12 months</option>
+                          <option value="18 months">18 months</option>
+                          <option value="Ongoing">Ongoing</option>
+                        </select>
+                        <select
+                          value={newGoal.priority}
+                          onChange={(e) => setNewGoal({ ...newGoal, priority: e.target.value as 'high' | 'medium' | 'low' })}
+                          className="px-4 py-2 bg-[var(--grey-800)] border border-[var(--grey-700)] rounded-lg text-white focus:outline-none focus:border-[var(--burnt-orange)]"
+                        >
+                          <option value="high">High Priority</option>
+                          <option value="medium">Medium Priority</option>
+                          <option value="low">Low Priority</option>
+                        </select>
+                      </div>
+                      <button
+                        onClick={() => {
+                          if (newGoal.goal.trim()) {
+                            setStrategicGoals([...strategicGoals, { ...newGoal, goal: newGoal.goal.trim() }])
+                            setNewGoal({ goal: '', timeframe: '', priority: 'medium' })
+                          }
+                        }}
+                        disabled={!newGoal.goal.trim()}
+                        className="w-full px-4 py-2 bg-[var(--burnt-orange)] hover:bg-[var(--burnt-orange-light)] disabled:bg-[var(--grey-700)] disabled:text-[var(--grey-500)] text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add Goal
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Progress indicator */}
+                <div className="bg-[var(--grey-800)]/50 border border-[var(--grey-700)] rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-[var(--grey-400)]">{strategicGoals.length}/5 goals added</span>
+                    {strategicGoals.length >= 1 && (
+                      <span className="text-sm text-green-400 flex items-center gap-1">
+                        <Check className="w-4 h-4" /> Ready to continue
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Step 3: PR Assessment (NEW) */}
+            {step === 3 && (
+              <motion.div
+                key="step3-assessment"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="space-y-6"
+              >
+                <div>
+                  <div className="flex items-center gap-3 mb-2">
+                    <TrendingUp className="w-6 h-6 text-[var(--burnt-orange)]" />
+                    <h3 className="text-xl font-semibold text-white">PR Self-Assessment</h3>
+                  </div>
+                  <p className="text-sm text-[var(--grey-400)] mb-4">
+                    Help us understand where you stand today. This context makes AI recommendations more relevant.
+                  </p>
+
+                  {/* Question 1: Why PR now? */}
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-[var(--grey-300)] mb-2">
+                      Why are you investing in PR now? <span className="text-[var(--grey-500)]">(select all that apply)</span>
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {PR_MOTIVATION_OPTIONS.map((option) => (
+                        <button
+                          key={option.id}
+                          onClick={() => {
+                            const current = prAssessment.investment_motivation || []
+                            if (current.includes(option.id)) {
+                              setPRAssessment({ ...prAssessment, investment_motivation: current.filter(id => id !== option.id) })
+                            } else {
+                              setPRAssessment({ ...prAssessment, investment_motivation: [...current, option.id] })
+                            }
+                          }}
+                          className={`px-4 py-3 rounded-lg border transition-all text-left ${
+                            prAssessment.investment_motivation?.includes(option.id)
+                              ? 'bg-[var(--burnt-orange)]/20 border-[var(--burnt-orange)] text-[var(--burnt-orange)]'
+                              : 'bg-[var(--grey-800)] border-[var(--grey-700)] text-[var(--grey-300)] hover:border-[var(--grey-600)]'
+                          }`}
+                        >
+                          <span className="text-sm font-medium block">{option.label}</span>
+                          <span className="text-xs text-[var(--grey-500)]">{option.description}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Question 2: Competitive Standing */}
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-[var(--grey-300)] mb-2">
+                      How do you see yourself vs competitors in terms of PR/visibility?
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {PR_STANDING_OPTIONS.map((option) => (
+                        <button
+                          key={option.id}
+                          onClick={() => setPRAssessment({ ...prAssessment, competitive_standing: option.id as PRAssessment['competitive_standing'] })}
+                          className={`px-4 py-2 rounded-lg border transition-all ${
+                            prAssessment.competitive_standing === option.id
+                              ? 'bg-[var(--burnt-orange)]/20 border-[var(--burnt-orange)] text-[var(--burnt-orange)]'
+                              : 'bg-[var(--grey-800)] border-[var(--grey-700)] text-[var(--grey-300)] hover:border-[var(--grey-600)]'
+                          }`}
+                        >
+                          <span className="text-sm">{option.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                    <textarea
+                      value={prAssessment.competitive_perception || ''}
+                      onChange={(e) => setPRAssessment({ ...prAssessment, competitive_perception: e.target.value })}
+                      placeholder="Optional: Elaborate on your competitive position..."
+                      className="w-full mt-2 px-4 py-2 bg-[var(--grey-800)] border border-[var(--grey-700)] rounded-lg text-white placeholder-[var(--grey-500)] focus:outline-none focus:border-[var(--burnt-orange)] text-sm"
+                      rows={2}
+                    />
+                  </div>
+
+                  {/* Question 3: Strengths */}
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-[var(--grey-300)] mb-2">
+                      What has worked well for you internally? <span className="text-[var(--grey-500)]">(select all that apply)</span>
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {PR_STRENGTH_OPTIONS.map((option) => (
+                        <button
+                          key={option.id}
+                          onClick={() => {
+                            const current = prAssessment.internal_strengths || []
+                            if (current.includes(option.id)) {
+                              setPRAssessment({ ...prAssessment, internal_strengths: current.filter(id => id !== option.id) })
+                            } else {
+                              setPRAssessment({ ...prAssessment, internal_strengths: [...current, option.id] })
+                            }
+                          }}
+                          className={`px-4 py-3 rounded-lg border transition-all text-left ${
+                            prAssessment.internal_strengths?.includes(option.id)
+                              ? 'bg-green-500/20 border-green-500 text-green-400'
+                              : 'bg-[var(--grey-800)] border-[var(--grey-700)] text-[var(--grey-300)] hover:border-[var(--grey-600)]'
+                          }`}
+                        >
+                          <span className="text-sm font-medium block">{option.label}</span>
+                          <span className="text-xs text-[var(--grey-500)]">{option.description}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Question 4: Challenges */}
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-[var(--grey-300)] mb-2">
+                      What have you struggled with? <span className="text-[var(--grey-500)]">(select all that apply)</span>
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {PR_CHALLENGE_OPTIONS.map((option) => (
+                        <button
+                          key={option.id}
+                          onClick={() => {
+                            const current = prAssessment.internal_challenges || []
+                            if (current.includes(option.id)) {
+                              setPRAssessment({ ...prAssessment, internal_challenges: current.filter(id => id !== option.id) })
+                            } else {
+                              setPRAssessment({ ...prAssessment, internal_challenges: [...current, option.id] })
+                            }
+                          }}
+                          className={`px-4 py-3 rounded-lg border transition-all text-left ${
+                            prAssessment.internal_challenges?.includes(option.id)
+                              ? 'bg-red-500/20 border-red-500 text-red-400'
+                              : 'bg-[var(--grey-800)] border-[var(--grey-700)] text-[var(--grey-300)] hover:border-[var(--grey-600)]'
+                          }`}
+                        >
+                          <span className="text-sm font-medium block">{option.label}</span>
+                          <span className="text-xs text-[var(--grey-500)]">{option.description}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Question 5: Success Definition (Optional) */}
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--grey-300)] mb-2">
+                      What does PR success look like in 6 months? <span className="text-[var(--grey-500)]">(optional)</span>
+                    </label>
+                    <textarea
+                      value={prAssessment.success_definition || ''}
+                      onChange={(e) => setPRAssessment({ ...prAssessment, success_definition: e.target.value })}
+                      placeholder="e.g., Regular coverage in industry publications, established thought leadership position, etc."
+                      className="w-full px-4 py-3 bg-[var(--grey-800)] border border-[var(--grey-700)] rounded-lg text-white placeholder-[var(--grey-500)] focus:outline-none focus:border-[var(--burnt-orange)]"
+                      rows={3}
+                    />
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Step 4: Brand Voice (REQUIRED) */}
+            {step === 4 && (
+              <motion.div
+                key="step4-voice"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="space-y-6"
+              >
+                <div>
+                  <div className="flex items-center gap-3 mb-2">
+                    <Mic2 className="w-6 h-6 text-[var(--burnt-orange)]" />
+                    <h3 className="text-xl font-semibold text-white">Brand Voice</h3>
+                    <span className="px-2 py-0.5 bg-red-500/20 text-red-400 text-xs rounded-full">Required</span>
+                  </div>
+                  <p className="text-sm text-[var(--grey-400)] mb-4">
+                    Define how your brand communicates. This ensures all AI-generated content sounds authentically you.
+                  </p>
+
+                  {/* Voice Spectrum Sliders */}
+                  <div className="space-y-6 mb-6">
+                    {/* Formality */}
+                    <div>
+                      <div className="flex justify-between mb-2">
+                        <span className="text-sm text-[var(--grey-400)]">Casual</span>
+                        <span className="text-sm font-medium text-white">Formality</span>
+                        <span className="text-sm text-[var(--grey-400)]">Formal</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={brandVoice.formality}
+                        onChange={(e) => setBrandVoice({ ...brandVoice, formality: parseInt(e.target.value) })}
+                        className="w-full h-2 bg-[var(--grey-700)] rounded-lg appearance-none cursor-pointer accent-[var(--burnt-orange)]"
+                      />
+                    </div>
+
+                    {/* Technicality */}
+                    <div>
+                      <div className="flex justify-between mb-2">
+                        <span className="text-sm text-[var(--grey-400)]">Accessible</span>
+                        <span className="text-sm font-medium text-white">Technicality</span>
+                        <span className="text-sm text-[var(--grey-400)]">Technical</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={brandVoice.technicality}
+                        onChange={(e) => setBrandVoice({ ...brandVoice, technicality: parseInt(e.target.value) })}
+                        className="w-full h-2 bg-[var(--grey-700)] rounded-lg appearance-none cursor-pointer accent-[var(--burnt-orange)]"
+                      />
+                    </div>
+
+                    {/* Boldness */}
+                    <div>
+                      <div className="flex justify-between mb-2">
+                        <span className="text-sm text-[var(--grey-400)]">Conservative</span>
+                        <span className="text-sm font-medium text-white">Boldness</span>
+                        <span className="text-sm text-[var(--grey-400)]">Bold</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={brandVoice.boldness}
+                        onChange={(e) => setBrandVoice({ ...brandVoice, boldness: parseInt(e.target.value) })}
+                        className="w-full h-2 bg-[var(--grey-700)] rounded-lg appearance-none cursor-pointer accent-[var(--burnt-orange)]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Voice Adjectives */}
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-[var(--grey-300)] mb-2">
+                      Voice Adjectives <span className="text-[var(--burnt-orange)]">(pick 3-5)</span>
+                    </label>
+                    <p className="text-xs text-[var(--grey-500)] mb-3">How would you describe your brand's personality?</p>
+                    <div className="flex flex-wrap gap-2">
+                      {BRAND_ADJECTIVE_OPTIONS.map((adj) => (
+                        <button
+                          key={adj}
+                          onClick={() => {
+                            const current = brandVoice.adjectives || []
+                            if (current.includes(adj)) {
+                              setBrandVoice({ ...brandVoice, adjectives: current.filter(a => a !== adj) })
+                            } else if (current.length < 5) {
+                              setBrandVoice({ ...brandVoice, adjectives: [...current, adj] })
+                            }
+                          }}
+                          disabled={!brandVoice.adjectives?.includes(adj) && (brandVoice.adjectives?.length || 0) >= 5}
+                          className={`px-3 py-1.5 rounded-full border transition-all text-sm ${
+                            brandVoice.adjectives?.includes(adj)
+                              ? 'bg-[var(--burnt-orange)]/20 border-[var(--burnt-orange)] text-[var(--burnt-orange)]'
+                              : 'bg-[var(--grey-800)] border-[var(--grey-700)] text-[var(--grey-400)] hover:border-[var(--grey-600)] disabled:opacity-50 disabled:cursor-not-allowed'
+                          }`}
+                        >
+                          {adj}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-xs text-[var(--grey-500)] mt-2">
+                      {brandVoice.adjectives?.length || 0}/5 selected
+                      {(brandVoice.adjectives?.length || 0) < 3 && ' (minimum 3 required)'}
+                    </p>
+                  </div>
+
+                  {/* Things to Avoid */}
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--grey-300)] mb-2">
+                      Things to Avoid <span className="text-[var(--grey-500)]">(optional)</span>
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {BRAND_AVOID_OPTIONS.map((item) => (
+                        <button
+                          key={item}
+                          onClick={() => {
+                            const current = brandVoice.avoid || []
+                            if (current.includes(item)) {
+                              setBrandVoice({ ...brandVoice, avoid: current.filter(a => a !== item) })
+                            } else {
+                              setBrandVoice({ ...brandVoice, avoid: [...current, item] })
+                            }
+                          }}
+                          className={`px-3 py-1.5 rounded-full border transition-all text-sm ${
+                            brandVoice.avoid?.includes(item)
+                              ? 'bg-red-500/20 border-red-500 text-red-400'
+                              : 'bg-[var(--grey-800)] border-[var(--grey-700)] text-[var(--grey-400)] hover:border-[var(--grey-600)]'
+                          }`}
+                        >
+                          {item}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* AI Discovery Notice */}
+                <div className="bg-[var(--burnt-orange)]/10 border border-[var(--burnt-orange)]/30 rounded-lg p-4">
+                  <div className="flex gap-3">
+                    <Sparkles className="w-5 h-5 text-[var(--burnt-orange)] flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm text-[var(--burnt-orange)] font-medium">
+                        Ready for AI Discovery
+                      </p>
+                      <p className="text-xs text-[var(--burnt-orange)]/70 mt-1">
+                        Next, we'll use your goals and context to discover relevant competitors and stakeholders
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Progress indicator */}
+                <div className="bg-[var(--grey-800)]/50 border border-[var(--grey-700)] rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-[var(--grey-400)]">Brand voice configuration</span>
+                    {(brandVoice.adjectives?.length || 0) >= 3 ? (
+                      <span className="text-sm text-green-400 flex items-center gap-1">
+                        <Check className="w-4 h-4" /> Ready to continue
+                      </span>
+                    ) : (
+                      <span className="text-sm text-amber-400">Select at least 3 adjectives</span>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Step 5: Discovery Results - Competitors */}
+            {step === 5 && discovered && (
               <motion.div
                 key="step2"
                 initial={{ opacity: 0, x: 20 }}
@@ -1464,8 +2015,8 @@ export default function OrganizationOnboarding({
               </motion.div>
             )}
 
-            {/* Step 3: Stakeholders (Topics removed - not effective) */}
-            {step === 3 && discovered && (
+            {/* Step 6: Stakeholders */}
+            {step === 6 && discovered && (
               <motion.div
                 key="step4"
                 initial={{ opacity: 0, x: 20 }}
@@ -1760,8 +2311,8 @@ export default function OrganizationOnboarding({
               </motion.div>
             )}
 
-            {/* Step 4: GEO Targets (Optional) */}
-            {step === 4 && (
+            {/* Step 7: GEO Targets & Memory Vault (Optional) */}
+            {step === 7 && (
               <motion.div
                 key="step5"
                 initial={{ opacity: 0, x: 20 }}
@@ -1995,45 +2546,17 @@ export default function OrganizationOnboarding({
                   </div>
                 </div>
 
-                {/* Summary */}
-                <div className="bg-[var(--grey-800)]/50 border border-[var(--grey-700)] rounded-lg p-4">
-                  <div className="text-sm text-[var(--grey-400)]">
-                    <p className="font-medium text-[var(--grey-300)] mb-2">GEO Targets Summary:</p>
-                    <ul className="space-y-1">
-                      <li>• {serviceLines.length} service lines configured</li>
-                      <li>• {geographicFocus.length} geographic regions</li>
-                      <li>• {industryVerticals.length} industry verticals</li>
-                      <li>• {priorityQueries.length} priority queries</li>
-                      {(serviceLines.length > 0 || geographicFocus.length > 0) && (
-                        <li className="text-[var(--burnt-orange)] mt-2">
-                          ✓ Will generate ~{Math.min(30, (serviceLines.length * geographicFocus.length * 2) + priorityQueries.length)} intelligent test queries
-                        </li>
-                      )}
-                    </ul>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {/* Step 5: Memory Vault (Optional) */}
-            {step === 5 && (
-              <motion.div
-                key="step6"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                className="space-y-6"
-              >
-                <div>
-                  <h3 className="text-lg font-semibold text-white mb-2">
+                {/* Memory Vault Assets (Optional) */}
+                <div className="pt-6 border-t border-[var(--grey-700)]">
+                  <h4 className="text-lg font-semibold text-white mb-2">
                     Memory Vault Assets (Optional)
-                  </h3>
+                  </h4>
                   <p className="text-sm text-[var(--grey-400)] mb-4">
                     Upload brand guidelines, templates, or past campaigns to help NIV understand your brand voice
                   </p>
 
-                  <div className="border-2 border-dashed border-[var(--grey-700)] rounded-lg p-8 text-center hover:border-[var(--grey-600)] transition-colors">
-                    <Upload className="w-12 h-12 text-[var(--grey-500)] mx-auto mb-4" />
+                  <div className="border-2 border-dashed border-[var(--grey-700)] rounded-lg p-6 text-center hover:border-[var(--grey-600)] transition-colors">
+                    <Upload className="w-10 h-10 text-[var(--grey-500)] mx-auto mb-3" />
                     <p className="text-sm text-[var(--grey-400)] mb-2">
                       Drag and drop files here, or click to browse
                     </p>
@@ -2050,39 +2573,33 @@ export default function OrganizationOnboarding({
                         }
                       }}
                       className="hidden"
-                      id="file-upload"
+                      id="file-upload-geo"
                     />
                     <label
-                      htmlFor="file-upload"
-                      className="inline-block mt-4 px-4 py-2 bg-[var(--grey-800)] hover:bg-[var(--grey-700)] text-[var(--grey-300)] rounded-lg cursor-pointer transition-colors"
+                      htmlFor="file-upload-geo"
+                      className="inline-block mt-3 px-4 py-2 bg-[var(--grey-800)] hover:bg-[var(--grey-700)] text-[var(--grey-300)] rounded-lg cursor-pointer transition-colors text-sm"
                     >
                       Choose Files
                     </label>
                   </div>
 
                   {uploadedFiles.length > 0 && (
-                    <div className="mt-4 space-y-2">
+                    <div className="mt-3 space-y-2">
                       {uploadedFiles.map((file, index) => (
                         <div
                           key={index}
-                          className="flex items-center justify-between px-4 py-3 bg-[var(--grey-800)] border border-[var(--grey-700)] rounded-lg"
+                          className="flex items-center justify-between px-3 py-2 bg-[var(--grey-800)] border border-[var(--grey-700)] rounded-lg"
                         >
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-[var(--burnt-orange)]/20 rounded-lg flex items-center justify-center">
-                              <Upload className="w-5 h-5 text-[var(--burnt-orange)]" />
-                            </div>
+                            <Upload className="w-4 h-4 text-[var(--burnt-orange)]" />
                             <div>
-                              <p className="text-sm text-white font-medium">{file.name}</p>
-                              <p className="text-xs text-[var(--grey-500)]">
-                                {(file.size / 1024).toFixed(1)} KB
-                              </p>
+                              <p className="text-sm text-white">{file.name}</p>
+                              <p className="text-xs text-[var(--grey-500)]">{(file.size / 1024).toFixed(1)} KB</p>
                             </div>
                           </div>
                           <button
-                            onClick={() => {
-                              setUploadedFiles(uploadedFiles.filter((_, i) => i !== index))
-                            }}
-                            className="p-2 hover:bg-[var(--grey-700)] rounded-lg transition-colors"
+                            onClick={() => setUploadedFiles(uploadedFiles.filter((_, i) => i !== index))}
+                            className="p-1 hover:bg-[var(--grey-700)] rounded"
                           >
                             <X className="w-4 h-4 text-[var(--grey-400)]" />
                           </button>
@@ -2092,24 +2609,30 @@ export default function OrganizationOnboarding({
                   )}
                 </div>
 
-                <div className="bg-[var(--burnt-orange)]/10 border border-[var(--burnt-orange)]/30 rounded-lg p-4">
-                  <div className="flex gap-3">
-                    <Sparkles className="w-5 h-5 text-[var(--burnt-orange)] flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-sm text-[var(--burnt-orange)] font-medium">
-                        Skip this step if you prefer
-                      </p>
-                      <p className="text-xs text-[var(--burnt-orange)]/70 mt-1">
-                        You can always upload assets later from the Memory Vault module
-                      </p>
-                    </div>
+                {/* Summary */}
+                <div className="bg-[var(--grey-800)]/50 border border-[var(--grey-700)] rounded-lg p-4">
+                  <div className="text-sm text-[var(--grey-400)]">
+                    <p className="font-medium text-[var(--grey-300)] mb-2">Step 7 Summary:</p>
+                    <ul className="space-y-1">
+                      <li>• {serviceLines.length} service lines configured</li>
+                      <li>• {geographicFocus.length} geographic regions</li>
+                      <li>• {industryVerticals.length} industry verticals</li>
+                      <li>• {priorityQueries.length} priority queries</li>
+                      <li>• {uploadedFiles.length} files to upload</li>
+                      {(serviceLines.length > 0 || geographicFocus.length > 0) && (
+                        <li className="text-[var(--burnt-orange)] mt-2">
+                          ✓ Will generate ~{Math.min(30, (serviceLines.length * geographicFocus.length * 2) + priorityQueries.length)} intelligent test queries
+                        </li>
+                      )}
+                    </ul>
                   </div>
                 </div>
               </motion.div>
             )}
 
-            {/* Step 6: Schema Generation Progress (Enhanced Pipeline) */}
-            {step === 6 && (
+
+            {/* Step 8: Synthesis + Schema Generation */}
+            {step === 8 && (
               <motion.div
                 key="step7"
                 initial={{ opacity: 0, x: 20 }}
@@ -2586,10 +3109,12 @@ export default function OrganizationOnboarding({
                               try {
                                 console.log('💾 Saving schema before completing onboarding...')
                                 await saveSchemaToMemoryVault(generatedSchemaData)
+                                setSchemaSaved(true) // Mark as saved to prevent duplicate saves
+                                console.log('✅ Schema saved successfully')
                               } catch (error) {
                                 console.error('Failed to save schema:', error)
-                                alert('Failed to save schema. Please try again or contact support.')
-                                return
+                                // Don't block completion - schema save is optional
+                                console.warn('⚠️ Continuing without schema save')
                               }
                             } else if (schemaSaved) {
                               console.log('✅ Schema already saved, skipping duplicate save')
@@ -2656,12 +3181,19 @@ export default function OrganizationOnboarding({
           )}
         </div>
 
-        {/* Footer - Hide on steps 6 and 7 (GEO Discovery & Schema Generation) */}
-        {step !== 6 && step !== 7 && (
+        {/* Footer - Hide on Step 8 (Schema Generation has its own buttons) */}
+        {step !== 8 && (
           <div className="px-8 py-4 border-t border-[var(--grey-700)] bg-[var(--grey-800)]/50 flex items-center justify-between flex-shrink-0">
             <button
               onClick={() => {
-                if (step > 1) setStep(step - 1)
+                if (step > 1) {
+                  // Special case: going back from step 5 skips discovery steps
+                  if (step === 5) {
+                    setStep(4)
+                  } else {
+                    setStep(step - 1)
+                  }
+                }
               }}
               disabled={step === 1 || loading}
               className="px-4 py-2 text-[var(--grey-400)] hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
@@ -2671,29 +3203,55 @@ export default function OrganizationOnboarding({
             </button>
 
             <div className="flex items-center gap-3">
-              {step <= 5 ? (
+              {step <= 7 ? (
               <button
                 onClick={() => {
                   if (step === 1) {
+                    // Step 1 → Step 2 (no discovery yet)
                     handleBasicInfoSubmit()
+                  } else if (step === 2) {
+                    // Step 2 → Step 3 (requires at least 1 goal)
+                    if (strategicGoals.length >= 1) {
+                      setStep(3)
+                    }
+                  } else if (step === 3) {
+                    // Step 3 → Step 4
+                    setStep(4)
+                  } else if (step === 4) {
+                    // Step 4 → Run Discovery → Step 5
+                    if ((brandVoice.adjectives?.length || 0) >= 3) {
+                      handleDiscoveryAfterBrandVoice()
+                    }
                   } else if (step === 5) {
-                    // Step 5 -> Create org and move to step 6
+                    // Step 5 → Step 6
+                    setStep(6)
+                  } else if (step === 6) {
+                    // Step 6 → Step 7
+                    setStep(7)
+                  } else if (step === 7) {
+                    // Step 7 → Create org and move to Step 8
                     handleCreateOrganization()
-                  } else {
-                    setStep(step + 1)
                   }
                 }}
-                disabled={loading || (step === 1 && (!orgName || !website || !aboutPage))}
+                disabled={
+                  loading ||
+                  (step === 1 && (!orgName || !website || !aboutPage)) ||
+                  (step === 2 && strategicGoals.length < 1) ||
+                  (step === 4 && (brandVoice.adjectives?.length || 0) < 3)
+                }
                 className="px-6 py-2 bg-[var(--burnt-orange)] hover:bg-[var(--burnt-orange-light)] disabled:bg-[var(--grey-700)] disabled:text-[var(--grey-500)] text-white rounded-lg transition-colors flex items-center gap-2"
               >
                 {loading ? (
                   <>
                     <Loader className="w-4 h-4 animate-spin" />
-                    {step === 1 ? 'Discovering...' : step === 5 ? 'Creating...' : 'Loading...'}
+                    {step === 4 ? 'Running Discovery...' : step === 7 ? 'Creating Organization...' : 'Loading...'}
                   </>
                 ) : (
                   <>
-                    {step === 1 ? 'Run Discovery' : 'Next'}
+                    {step === 1 ? 'Continue' :
+                     step === 4 ? 'Run Discovery & Continue' :
+                     step === 7 ? 'Create Organization' :
+                     'Next'}
                     <ChevronRight className="w-4 h-4" />
                   </>
                 )}

@@ -7,6 +7,43 @@ const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
 /**
+ * Get related content types for more flexible Memory Vault matching
+ * Maps requested types to similar/related types that may exist in the vault
+ */
+function getRelatedContentTypes(contentType: string): string[] {
+  const typeGroups: Record<string, string[]> = {
+    // Research/Analysis types
+    'white_paper': ['white_paper', 'white-paper', 'whitepaper', 'researchreport', 'research-report', 'research_report', 'strategy', 'strategy-document', 'analysis'],
+    'research': ['research', 'researchreport', 'research-report', 'research_report', 'white_paper', 'white-paper', 'strategy', 'analysis'],
+    'strategy-document': ['strategy-document', 'strategy', 'researchreport', 'white_paper', 'analysis'],
+    // Thought leadership types
+    'thought_leadership': ['thought_leadership', 'thoughtleadership', 'thought-leadership', 'blog_post', 'blog', 'article'],
+    'thoughtleadership': ['thoughtleadership', 'thought_leadership', 'thought-leadership', 'blog_post', 'blog', 'article'],
+    // Media types
+    'media_pitch': ['media_pitch', 'media-pitch', 'mediapitch', 'pitch', 'press_release', 'press-release'],
+    'media-pitch': ['media-pitch', 'media_pitch', 'mediapitch', 'pitch', 'press_release', 'press-release'],
+    // Social types
+    'social_post': ['social_post', 'social-post', 'socialpost', 'social'],
+    'social-post': ['social-post', 'social_post', 'socialpost', 'social'],
+    // Email types
+    'email': ['email', 'emailcampaign', 'email-campaign', 'email_campaign'],
+    'emailcampaign': ['emailcampaign', 'email-campaign', 'email_campaign', 'email'],
+    // Presentation types
+    'presentation': ['presentation', 'pitch-deck', 'pitchdeck', 'deck', 'slides'],
+  };
+
+  if (typeGroups[contentType]) {
+    return typeGroups[contentType];
+  }
+
+  // Default: return original type plus underscore/hyphen variations
+  const variations = [contentType];
+  if (contentType.includes('_')) variations.push(contentType.replace(/_/g, '-'));
+  if (contentType.includes('-')) variations.push(contentType.replace(/-/g, '_'));
+  return variations;
+}
+
+/**
  * Generate embedding for text using the generate-embeddings function
  */
 async function generateEmbedding(text: string): Promise<number[] | null> {
@@ -385,7 +422,9 @@ async function getRecentContent(organizationId: string, contentType?: string, li
     }
 
     if (contentType && contentType !== 'all') {
-      query = query.eq('content_type', contentType);
+      // Use related content types for flexible matching
+      const relatedTypes = getRelatedContentTypes(contentType);
+      query = query.in('content_type', relatedTypes);
     }
 
     const { data, error } = await query
@@ -654,7 +693,10 @@ async function searchContent(organizationId: string, query: string, contentType?
         }
 
         if (contentType && contentType !== 'all' && contentType !== 'opportunity') {
-          contentQuery = contentQuery.eq('content_type', contentType);
+          // Use related content types for flexible matching
+          const relatedTypes = getRelatedContentTypes(contentType);
+          console.log(`🔍 Searching with related types: ${relatedTypes.join(', ')}`);
+          contentQuery = contentQuery.in('content_type', relatedTypes);
         }
 
         // Search in title and content

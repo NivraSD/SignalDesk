@@ -64,10 +64,10 @@ async function callGemini(prompt: string, maxTokens: number = 4000): Promise<{ c
     return callAnthropic([{ role: 'user', content: prompt }], maxTokens);
   }
 
-  console.log('🚀 Using Gemini Flash 2.0 for faster discovery...');
+  console.log('🚀 Using Gemini Flash 2.5 for faster discovery...');
 
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key=${GOOGLE_API_KEY}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GOOGLE_API_KEY}`,
     {
       method: 'POST',
       headers: {
@@ -96,6 +96,11 @@ async function callGemini(prompt: string, maxTokens: number = 4000): Promise<{ c
 
   const data = await response.json();
   const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  const finishReason = data.candidates?.[0]?.finishReason || '';
+
+  if (finishReason === 'MAX_TOKENS') {
+    console.warn(`⚠️ Gemini output truncated (MAX_TOKENS) — response: ${responseText.length} chars. Consider increasing maxOutputTokens.`);
+  }
 
   // Return in Claude-compatible format for easy drop-in replacement
   return {
@@ -1398,7 +1403,7 @@ REMEMBER:
 `;
 
   // Use Gemini Flash for fast profile generation
-  const message = await callGemini(analysisPrompt, 8000);
+  const message = await callGemini(analysisPrompt, 16000);
 
   const geminiResponse = message.content[0];
   if (geminiResponse.type !== 'text') {
@@ -1408,13 +1413,88 @@ REMEMBER:
   console.log('Gemini response:', geminiResponse.text.substring(0, 500));
   console.log(`Full response length: ${geminiResponse.text.length} characters`);
 
-  const jsonMatch = geminiResponse.text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) {
-    console.error('Full Gemini response:', geminiResponse.text);
-    throw new Error('No valid JSON in Gemini response');
-  }
+  // Robust JSON extraction with repair for common AI output issues
+  const extractJSON = (text: string): any => {
+    // 1. Strip markdown fences
+    let cleaned = text.replace(/```(?:json)?\s*/gi, '').replace(/```\s*/g, '');
 
-  const enhancedData = JSON.parse(jsonMatch[0]);
+    // 2. Find outermost balanced braces
+    const start = cleaned.indexOf('{');
+    if (start === -1) throw new Error('No JSON object found in response');
+
+    let depth = 0;
+    let end = -1;
+    for (let i = start; i < cleaned.length; i++) {
+      if (cleaned[i] === '{') depth++;
+      else if (cleaned[i] === '}') { depth--; if (depth === 0) { end = i; break; } }
+    }
+
+    let jsonStr = end !== -1
+      ? cleaned.substring(start, end + 1)
+      : cleaned.substring(start); // truncated — will try to repair
+
+    // 3. Try direct parse
+    try { return JSON.parse(jsonStr); } catch (_) { /* continue */ }
+
+    // 4. Fix trailing commas before } or ]
+    let repaired = jsonStr.replace(/,\s*([}\]])/g, '$1');
+    try { return JSON.parse(repaired); } catch (_) { /* continue */ }
+
+    // 5. If truncated (no balanced braces), close open structures
+    if (end === -1 || depth > 0) {
+      console.warn('⚠️ JSON appears truncated, attempting repair...');
+      // Close any unterminated string (the most common truncation issue)
+      // Count unescaped quotes to see if we're inside a string
+      let inString = false;
+      for (let i = 0; i < repaired.length; i++) {
+        if (repaired[i] === '\\') { i++; continue; } // skip escaped chars
+        if (repaired[i] === '"') inString = !inString;
+      }
+      if (inString) {
+        // We're inside an unterminated string — close it
+        repaired += '"';
+      }
+      // Remove any trailing partial key/value pair after the last complete value
+      repaired = repaired.replace(/,\s*"[^"]*"\s*:\s*"[^"]*$/, ''); // partial string value
+      repaired = repaired.replace(/,\s*"[^"]*"\s*:\s*$/, '');        // key with no value
+      repaired = repaired.replace(/,\s*"[^"]*$/, '');                 // partial key
+      repaired = repaired.replace(/,\s*$/, '');                       // trailing comma
+      // Close remaining open brackets/braces
+      let openBraces = 0, openBrackets = 0;
+      for (let i = 0; i < repaired.length; i++) {
+        if (repaired[i] === '\\') { i++; continue; }
+        if (repaired[i] === '"') { inString = !inString; continue; }
+        if (inString) continue;
+        if (repaired[i] === '{') openBraces++;
+        else if (repaired[i] === '}') openBraces--;
+        else if (repaired[i] === '[') openBrackets++;
+        else if (repaired[i] === ']') openBrackets--;
+      }
+      repaired += ']'.repeat(Math.max(0, openBrackets)) + '}'.repeat(Math.max(0, openBraces));
+      // Clean trailing commas again after repair
+      repaired = repaired.replace(/,\s*([}\]])/g, '$1');
+      try { return JSON.parse(repaired); } catch (_) { /* continue */ }
+    }
+
+    // 6. Last resort: aggressive cleanup
+    repaired = repaired
+      .replace(/[\x00-\x1F\x7F]/g, ' ')  // control chars
+      .replace(/,\s*,/g, ',')              // double commas
+      .replace(/,\s*([}\]])/g, '$1');      // trailing commas
+    try { return JSON.parse(repaired); } catch (e) {
+      console.error('JSON repair failed. First 500 chars:', jsonStr.substring(0, 500));
+      console.error('Last 500 chars:', jsonStr.substring(jsonStr.length - 500));
+      throw new Error(`Profile JSON parse failed after repair: ${(e as Error).message}`);
+    }
+  };
+
+  let enhancedData: any;
+  try {
+    enhancedData = extractJSON(geminiResponse.text);
+  } catch (parseErr) {
+    console.error('Full Gemini response:', geminiResponse.text);
+    throw parseErr;
+  }
 
   console.log(`Parsed profile: ${enhancedData.competition?.direct_competitors?.length || 0} competitors, ${enhancedData.stakeholders?.regulators?.length || 0} regulators, ${enhancedData.stakeholders?.key_analysts?.length || 0} analysts, ${enhancedData.stakeholders?.activists?.length || 0} activists`);
   

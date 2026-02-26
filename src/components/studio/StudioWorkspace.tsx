@@ -149,7 +149,7 @@ const StudioWorkspace = forwardRef<StudioWorkspaceRef, StudioWorkspaceProps>(({
 
   // Get content type display name
   const getContentTypeLabel = (type: string) => {
-    return type.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+    return (type || 'content').split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
   }
 
   // Check if content is visual (image, video, presentation)

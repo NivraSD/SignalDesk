@@ -29,7 +29,7 @@ interface Scenario {
 interface CrisisCommunicationsProps {
   crisis: any | null
   onUpdate: () => void
-  onOpenInStudio?: (content: { id: string; title: string; content: string }) => void
+  onOpenInStudio?: (content: { id: string; title: string; content: string; content_type?: string; folder?: string; metadata?: any }) => void
 }
 
 export default function CrisisCommunications({ crisis, onUpdate, onOpenInStudio }: CrisisCommunicationsProps) {
@@ -121,7 +121,6 @@ export default function CrisisCommunications({ crisis, onUpdate, onOpenInStudio 
       c.folder?.includes(folderName) ||
       c.metadata?.scenario === scenarioTitle
     )
-    console.log('📂 getCommsForScenario:', { scenarioTitle, folderName, totalComms: preDraftedComms.length, matches: matches.length })
     return matches
   }
 
@@ -364,7 +363,10 @@ export default function CrisisCommunications({ crisis, onUpdate, onOpenInStudio 
                     onClick={() => onOpenInStudio({
                       id: selectedComm.id,
                       title: selectedComm.title,
-                      content: selectedComm.content
+                      content: selectedComm.content,
+                      content_type: 'crisis-communication',
+                      folder: selectedComm.folder,
+                      metadata: selectedComm.metadata
                     })}
                     className="px-3 py-1.5 bg-[var(--burnt-orange)] text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:brightness-110"
                   >

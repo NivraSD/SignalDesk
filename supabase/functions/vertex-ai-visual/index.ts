@@ -3,7 +3,7 @@ import { corsHeaders } from '../_shared/cors.ts'
 import { create } from 'https://deno.land/x/djwt@v2.8/mod.ts'
 
 // Google Cloud Configuration
-const GOOGLE_CLOUD_PROJECT_ID = 'sigdesk-1753801804417'
+const GOOGLE_CLOUD_PROJECT_ID = 'nivria'
 const GOOGLE_CLOUD_REGION = 'us-central1'
 
 // Authentication options (in order of preference)
@@ -287,28 +287,25 @@ function buildImagePrompt(request: ImageGenerationRequest): string {
   return generatedPrompt || 'professional abstract business concept, modern design, clean composition'
 }
 
-// NEW: Gemini 2.5 Flash Image Generation (primary method)
+// Gemini Flash Image Generation via Google AI Studio (FREE - not Vertex AI)
 async function generateWithGemini25Flash(request: ImageGenerationRequest) {
   const basePrompt = buildImagePrompt(request)
 
-  console.log('🎨 Generating image with Gemini 2.5 Flash Image:', basePrompt.substring(0, 100))
+  console.log('🎨 Generating image with Gemini Flash via Google AI Studio:', basePrompt.substring(0, 100))
 
   try {
-    const accessToken = await getAccessToken()
-
-    if (!accessToken) {
-      console.log('⚠️ No access token for Gemini 2.5 Flash Image, falling back to Imagen')
+    if (!GOOGLE_API_KEY) {
+      console.log('⚠️ No GOOGLE_API_KEY for Gemini 2.5 Flash Image, falling back to Imagen')
       return null // Signal to try fallback
     }
 
-    // Gemini 2.5 Flash Image endpoint - "nano banana" model
-    const endpoint = `https://${GOOGLE_CLOUD_REGION}-aiplatform.googleapis.com/v1/projects/${GOOGLE_CLOUD_PROJECT_ID}/locations/${GOOGLE_CLOUD_REGION}/publishers/google/models/gemini-2.5-flash-image:generateContent`
+    // Google AI Studio endpoint (FREE) - NOT Vertex AI
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${GOOGLE_API_KEY}`
 
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
         contents: [{
@@ -327,7 +324,7 @@ async function generateWithGemini25Flash(request: ImageGenerationRequest) {
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('Gemini 2.5 Flash Image error:', response.status, errorText)
+      console.error('Gemini 2.5 Flash Image API error:', response.status, errorText)
       return null // Signal to try fallback
     }
 
@@ -912,33 +909,20 @@ serve(async (req) => {
 /*
  * SETUP INSTRUCTIONS FOR GOOGLE CLOUD VERTEX AI
  *
- * Project ID: sigdesk-1753801804417
+ * Project ID: nivria
  *
- * Option 1: Using API Key (Simpler)
- * ----------------------------------
- * 1. Go to: https://console.cloud.google.com/apis/credentials?project=sigdesk-1753801804417
+ * Option 1: Using API Key (Simpler - RECOMMENDED)
+ * ------------------------------------------------
+ * 1. Go to: https://console.cloud.google.com/apis/credentials?project=nivria
  * 2. Create an API Key with restrictions for:
- *    - Generative Language API
  *    - Vertex AI API
+ *    - Google Calendar API
+ *    - Google Sheets API
+ *    - Google Drive API
  * 3. Set in Supabase: npx supabase secrets set GOOGLE_API_KEY="your-api-key"
  *
- * Option 2: Using Service Account (More Secure)
- * ----------------------------------------------
- * 1. Create service account:
- *    gcloud iam service-accounts create signaldesk-vertex-ai \
- *      --display-name="SignalDesk Vertex AI"
- *
- * 2. Grant permissions:
- *    gcloud projects add-iam-policy-binding sigdesk-1753801804417 \
- *      --member="serviceAccount:signaldesk-vertex-ai@sigdesk-1753801804417.iam.gserviceaccount.com" \
- *      --role="roles/aiplatform.user"
- *
- * 3. Create and download key:
- *    gcloud iam service-accounts keys create key.json \
- *      --iam-account=signaldesk-vertex-ai@sigdesk-1753801804417.iam.gserviceaccount.com
- *
- * 4. Set in Supabase:
- *    npx supabase secrets set GOOGLE_APPLICATION_CREDENTIALS="$(cat key.json)"
+ * NOTE: Service account key creation is disabled by org policy.
+ * Use API key authentication instead.
  *
  * Current Status:
  * - Using Gemini for visual descriptions (works with API key)

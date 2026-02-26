@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { IntelligenceService } from '@/lib/services/intelligenceService'
 
-export type ModuleType = 'intelligence' | 'opportunities' | 'plan' | 'execute' | 'memoryvault'
+export type ModuleType = 'intelligence' | 'opportunities' | 'plan' | 'execute' | 'memoryvault' | 'founder'
 
 interface User {
   id: string

@@ -100,11 +100,11 @@ INSTEAD OF FABRICATING EXPERIENCE:
 This is a HARD RULE. Violating it damages credibility and trust. Content that invents organizational experience or statistics is WORSE than generic content.`;
 
 // Helper function to call Anthropic API directly
-async function callAnthropic(messages: any[], maxTokens: number = 1500, systemPrompt?: string) {
+async function callAnthropic(messages: any[], maxTokens: number = 1500, systemPrompt?: string, temperature: number = 0.3) {
   const body: any = {
     model: 'claude-haiku-4-5-20251001',
     max_tokens: maxTokens,
-    temperature: 0.3, // Lower temperature to reduce hallucination
+    temperature, // Default 0.3 for factual content, higher for creative
     messages
   };
 
@@ -1154,6 +1154,11 @@ async function generateThoughtLeadership(args: any) {
   // Key markets/focus areas
   const keyMarkets = args.key_markets || args.keyMarkets || [];
 
+  // Executive/author context for voice
+  const authorName = args.authorName || args.executive || '';
+  const authorTitle = args.authorTitle || args.executiveTitle || '';
+  const authorBio = args.authorBio || '';
+
   // Extract research data/statistics if provided
   const researchData = args.research || args.researchData || '';
   const statistics = args.statistics || [];
@@ -1171,67 +1176,123 @@ ${researchData ? `Research Findings:\n${researchData}\n` : ''}
 ${statistics.length > 0 ? `Statistics:\n${statistics.map(s => `- ${s.stat} (Source: ${s.source})`).join('\n')}` : ''}
 ` : '';
 
+  // Randomly select a writing approach for variety
+  const writingApproaches = [
+    {
+      name: 'contrarian',
+      instruction: `Take a CONTRARIAN position. Identify what most people in ${industryContext} believe, then argue why that conventional wisdom is wrong or incomplete. Be specific about what belief you are challenging and why. Do not hedge - take a real stand.`,
+      structure: 'Open with the conventional belief you are challenging, then systematically dismantle it with specific reasoning. Build your alternative view with concrete examples.'
+    },
+    {
+      name: 'narrative',
+      instruction: `Write as a NARRATIVE - tell a story that illuminates your point. This could be a hypothetical scenario that feels real, a "day in the life" in 2027, or walking through how a situation typically unfolds. Make readers feel it, not just understand it.`,
+      structure: 'Open in the middle of the action or scenario. Let the insight emerge from the story rather than stating it upfront. End with the revelation or realization.'
+    },
+    {
+      name: 'manifesto',
+      instruction: `Write as a MANIFESTO - a passionate declaration of beliefs and a call to action. This should feel urgent and convicted. Use "we" language to create shared identity. Be bold about what must change.`,
+      structure: 'Open with a bold declaration of belief. Build intensity through the piece. Each point should feel more urgent than the last. End with a clear call to action.'
+    },
+    {
+      name: 'diagnosis',
+      instruction: `Write as a DIAGNOSIS - you are the expert identifying what is actually wrong and why previous solutions have not worked. Be specific about the root cause others are missing. Show you understand the problem better than anyone.`,
+      structure: 'Open by acknowledging the visible symptoms everyone sees. Then reveal the underlying cause they are missing. Build the case methodically. End with what the real solution requires.'
+    },
+    {
+      name: 'prediction',
+      instruction: `Write as a PREDICTION piece - make specific, bold claims about what will happen. Not vague "the future will be different" but concrete predictions you are willing to stake your reputation on. Explain the reasoning behind each prediction.`,
+      structure: 'Open with your most provocative prediction. Back each prediction with specific reasoning. Acknowledge what could prove you wrong. End with what readers should do given these predictions.'
+    },
+    {
+      name: 'question',
+      instruction: `Structure around a PROVOCATIVE QUESTION that the reader has not thought to ask. The question itself should reframe how people think about the topic. Spend the piece exploring why this question matters and what answering it reveals.`,
+      structure: 'Open with the question that reframes everything. Explore why this question has not been asked. Build understanding of what the question reveals. End with implications of the answer.'
+    }
+  ];
+
+  // Select approach based on hash of topic for consistency, or random for variety
+  const approachIndex = topic ? (topic.length % writingApproaches.length) : Math.floor(Math.random() * writingApproaches.length);
+  const selectedApproach = writingApproaches[approachIndex];
+
   // Build company context section to ground the content
   const companyContextSection = `
 
-COMPANY CONTEXT (${companyName}):
-${companyDescription ? `**WHAT THIS COMPANY DOES:** ${companyDescription}` : '**WHAT THIS COMPANY DOES:** Not specified - write from general industry perspective'}
+COMPANY/AUTHOR CONTEXT:
+${companyName !== 'the organization' ? `**Organization:** ${companyName}` : ''}
+${companyDescription ? `**What they do:** ${companyDescription}` : ''}
+${authorName ? `**Author:** ${authorName}${authorTitle ? `, ${authorTitle}` : ''}` : ''}
+${authorBio ? `**Author background:** ${authorBio}` : ''}
 ${industryContext ? `**Industry:** ${industryContext}` : ''}
 ${businessModel ? `**Business Model:** ${businessModel}` : ''}
 ${companyServices.length > 0 ? `**Services/Offerings:** ${Array.isArray(companyServices) ? companyServices.join(', ') : companyServices}` : ''}
-${companyCapabilities.length > 0 ? `**Differentiators/Capabilities:** ${Array.isArray(companyCapabilities) ? companyCapabilities.join(', ') : companyCapabilities}` : ''}
+${companyCapabilities.length > 0 ? `**Differentiators:** ${Array.isArray(companyCapabilities) ? companyCapabilities.join(', ') : companyCapabilities}` : ''}
 ${keyMarkets.length > 0 ? `**Key Markets:** ${Array.isArray(keyMarkets) ? keyMarkets.join(', ') : keyMarkets}` : ''}
-${companyMethodologies.length > 0 ? `**Known Methodologies:** ${Array.isArray(companyMethodologies) ? companyMethodologies.join(', ') : companyMethodologies}` : ''}
-${researchSection}
-**CRITICAL ANTI-HALLUCINATION RULES:**
-- READ the "WHAT THIS COMPANY DOES" section above carefully - this defines the company's ACTUAL expertise
-- ONLY claim expertise in areas listed in their Services/Offerings and Capabilities
-- DO NOT invent proprietary frameworks, methodologies, or trademarked terms
-- DO NOT create fictional "™" or "®" branded approaches
-- If the company description says they are a MARKETING AGENCY - do NOT claim they built AI/technology
-- If the company description says they are a TECHNOLOGY company - do NOT claim marketing expertise they don't have
-- If no company-specific details are provided, write generically about the industry without claiming company-specific innovations
-- **STATISTICS RULE**: DO NOT cite specific statistics, percentages, or numerical data unless explicitly provided in the RESEARCH DATA section above
-- If you want to reference a trend or pattern, use qualitative language ("many executives", "increasingly", "growing concern") instead of inventing numbers
-- NEVER write things like "17% of CEOs" or "according to recent studies" without actual citations from the research data provided above`;
+${researchSection}`;
 
-  const prompt = `⚠️ CRITICAL: NO FABRICATED STATISTICS ⚠️
-Before writing, remember: DO NOT invent any percentages, statistics, or numerical data.
-Use qualitative language instead: "many", "increasingly", "significant", "growing number of"
+  const prompt = `You are writing thought leadership that should NOT feel like AI wrote it.
 
-TODAY'S DATE: ${currentDate} (${currentYear})
+**THE PROBLEM WITH MOST THOUGHT LEADERSHIP:**
+Most thought leadership is forgettable because it follows the same formula: generic hook → safe observations → hedged predictions → vague takeaways. It reads like a committee wrote it. It takes no real position. It could have been written by anyone about anything.
 
-Write a ${tone} thought leadership article:
-  Topic: ${topic}
-  Industry: ${industryContext}
-  Unique Perspective: ${perspective || 'forward-thinking'}
-  Key Points: ${keyPoints.join('\n- ')}
-  Word Count: ~${wordCount}${companyContextSection}${constraintsSection}
+**WHAT MAKES GREAT THOUGHT LEADERSHIP:**
+- A SPECIFIC point of view that not everyone will agree with
+- The author's genuine expertise and perspective showing through
+- Concrete, specific examples rather than abstract generalities
+- Language that sounds like a real person, not a brand
+- Intellectual honesty - acknowledging complexity and tradeoffs
+- Something the reader will remember and potentially quote
 
-  Requirements:
-  - Start with a compelling hook
-  - Include current trends from ${currentYear} (use CURRENT information, not outdated 2023/2024 references)
-  - Provide unique insights and predictions
-  - Challenge conventional thinking
-  - End with actionable takeaways
-  - Use authoritative voice and expert positioning
-  - If constraints are provided above, follow them strictly
-  - DO NOT reference years before ${currentYear} unless providing historical context
-  - FOLLOW THE ANTI-HALLUCINATION RULES STRICTLY - do not invent company capabilities or methodologies
+**YOUR WRITING APPROACH FOR THIS PIECE: ${selectedApproach.name.toUpperCase()}**
+${selectedApproach.instruction}
 
-  ⚠️ FINAL CHECK: Before submitting, verify you have NOT invented any:
-  - Specific percentages (e.g., "23% increase")
-  - Time-based statistics (e.g., "within 7 days")
-  - Study citations without provided sources
-  - Internal data claims (e.g., "our analysis of 500 partnerships")`;
+**STRUCTURE GUIDANCE:**
+${selectedApproach.structure}
 
+**TOPIC:** ${topic}
+${perspective ? `**ANGLE/PERSPECTIVE:** ${perspective}` : ''}
+
+**KEY POINTS TO INCORPORATE (weave these in naturally, don't just list them):**
+${keyPoints.length > 0 ? keyPoints.map(p => `- ${p}`).join('\n') : 'Develop your own key points based on the topic and approach'}
+${companyContextSection}${constraintsSection}
+
+**VOICE & STYLE:**
+- Write like a specific person with opinions, not a faceless brand
+- Use "I" statements when expressing opinions or beliefs
+- Vary sentence length - mix punchy short sentences with longer complex ones
+- Include moments of intellectual vulnerability - acknowledge what you don't know or what's hard
+- Use specific language, not corporate abstractions
+- If something is controversial, lean into it rather than hedging
+- ${tone === 'provocative' ? 'Be deliberately provocative - challenge sacred cows' : tone === 'analytical' ? 'Ground claims in rigorous analysis' : tone === 'visionary' ? 'Paint a vivid picture of what could be' : 'Write with earned authority - show, don\'t tell'}
+
+**ANTI-FORMULA REQUIREMENTS:**
+- Do NOT start with "In today's rapidly evolving..." or similar clichés
+- Do NOT use phrases like "it's no secret that" or "the reality is"
+- Do NOT structure as intro → 3 points → conclusion → takeaways
+- Do NOT end with a generic call to action or "the time is now"
+- Do NOT use the word "landscape" to describe markets/industries
+- Do NOT use "unlock", "leverage", "synergy", or "ecosystem" unless absolutely necessary
+- Do NOT hedge every claim - if you believe something, say it directly
+
+**FACTUAL INTEGRITY:**
+- Do NOT invent statistics, percentages, or numerical data
+- Use qualitative language ("many", "increasingly", "significant") instead of fake numbers
+- Do NOT fabricate case studies, client stories, or research findings
+- If citing research, only cite what's provided in the RESEARCH DATA section above
+- Frame opinions as opinions, not as research findings
+
+**LENGTH:** ~${wordCount} words
+
+Write the thought leadership piece now. Remember: make it feel like a real person with genuine expertise wrote this, not an AI following a template.`;
+
+  // Use higher temperature (0.75) for more creative, varied thought leadership
   const content = await callAnthropic(
     [{ role: 'user', content: prompt }],
     Math.round(wordCount * 1.5),
-    ANTI_HALLUCINATION_SYSTEM
+    ANTI_HALLUCINATION_SYSTEM,
+    0.75 // Higher temperature for creative variety
   );
 
-  return { content };
+  return { content, approach: selectedApproach.name };
 }
 
 // Generate case study

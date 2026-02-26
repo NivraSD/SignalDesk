@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { randomUUID } from 'crypto'
+import officeparser from 'officeparser'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://zskaxjtyuaqazydouifp.supabase.co'
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -12,6 +13,34 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
 // Max file size: 50MB
 const MAX_FILE_SIZE = 50 * 1024 * 1024
+
+// File types that can be parsed for text extraction
+const PARSEABLE_EXTENSIONS = ['.pptx', '.ppt', '.docx', '.doc', '.xlsx', '.xls', '.pdf', '.odt', '.odp', '.ods']
+
+async function extractTextContent(file: File): Promise<string> {
+  const fileName = file.name.toLowerCase()
+  const isParseable = PARSEABLE_EXTENSIONS.some(ext => fileName.endsWith(ext))
+
+  if (!isParseable) {
+    return ''
+  }
+
+  try {
+    const arrayBuffer = await file.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
+
+    // officeparser.parseOfficeAsync returns extracted text
+    const extractedText = await officeparser.parseOfficeAsync(buffer, {
+      outputErrorToConsole: false
+    })
+
+    console.log(`📄 Extracted ${extractedText.length} characters from ${file.name}`)
+    return extractedText || ''
+  } catch (error) {
+    console.error(`⚠️ Could not extract text from ${file.name}:`, error)
+    return ''
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -64,15 +93,24 @@ export async function POST(request: NextRequest) {
 
     console.log(`📂 File uploaded to: ${publicUrl}`)
 
-    // 3. Determine content type based on file
+    // 3. Extract text content from Office files (PowerPoint, Word, Excel, PDF)
+    console.log(`🔍 Attempting to extract text from: ${file.name}`)
+    const extractedContent = await extractTextContent(file)
+
+    // 4. Determine content type based on file/folder
     let contentType = 'document'
-    if (folder.toLowerCase() === 'proposals') contentType = 'proposal'
+    const fileNameLower = file.name.toLowerCase()
+    if (fileNameLower.endsWith('.pptx') || fileNameLower.endsWith('.ppt')) contentType = 'presentation'
+    else if (fileNameLower.endsWith('.docx') || fileNameLower.endsWith('.doc')) contentType = 'document'
+    else if (fileNameLower.endsWith('.xlsx') || fileNameLower.endsWith('.xls')) contentType = 'spreadsheet'
+    else if (fileNameLower.endsWith('.pdf')) contentType = 'pdf'
+    else if (folder.toLowerCase() === 'proposals') contentType = 'proposal'
     else if (folder.toLowerCase() === 'press releases') contentType = 'press-release'
     else if (folder.toLowerCase() === 'campaigns') contentType = 'campaign'
     else if (folder.toLowerCase() === 'strategies') contentType = 'strategy'
     else if (folder.toLowerCase() === 'media plans') contentType = 'media-plan'
 
-    // 4. Create database record in content_library
+    // 5. Create database record in content_library
     const { data: contentItem, error: dbError } = await supabase
       .from('content_library')
       .insert({
@@ -80,17 +118,19 @@ export async function POST(request: NextRequest) {
         organization_id: organizationId,
         title: title || file.name,
         content_type: contentType,
-        content: '', // Empty initially, can be extracted later
+        content: extractedContent, // Now includes extracted text!
         folder: folder,
         file_url: publicUrl,
         metadata: {
           fileName: file.name,
           fileSize: file.size,
           mimeType: file.type,
-          uploadedAt: new Date().toISOString()
+          uploadedAt: new Date().toISOString(),
+          textExtracted: extractedContent.length > 0,
+          extractedLength: extractedContent.length
         },
         status: 'completed',
-        intelligence_status: 'pending',
+        intelligence_status: extractedContent.length > 0 ? 'ready' : 'pending',
         created_at: new Date().toISOString()
       })
       .select()

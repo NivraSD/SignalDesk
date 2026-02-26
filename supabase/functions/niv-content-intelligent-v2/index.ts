@@ -275,6 +275,44 @@ Respond in JSON format:
   return 'general';
 }
 /**
+ * Get related content types for more flexible Memory Vault matching
+ * Maps requested types to similar/related types that may exist in the vault
+ */
+function getRelatedContentTypes(contentType: string): string[] {
+  const typeGroups: Record<string, string[]> = {
+    // Research/Analysis types
+    'white_paper': ['white_paper', 'white-paper', 'whitepaper', 'researchreport', 'research-report', 'research_report', 'strategy', 'strategy-document', 'analysis'],
+    'research': ['research', 'researchreport', 'research-report', 'research_report', 'white_paper', 'white-paper', 'strategy', 'analysis'],
+    'strategy-document': ['strategy-document', 'strategy', 'researchreport', 'white_paper', 'analysis'],
+    // Thought leadership types
+    'thought_leadership': ['thought_leadership', 'thoughtleadership', 'thought-leadership', 'blog_post', 'blog', 'article'],
+    'thoughtleadership': ['thoughtleadership', 'thought_leadership', 'thought-leadership', 'blog_post', 'blog', 'article'],
+    // Media types
+    'media_pitch': ['media_pitch', 'media-pitch', 'mediapitch', 'pitch', 'press_release', 'press-release'],
+    'media-pitch': ['media-pitch', 'media_pitch', 'mediapitch', 'pitch', 'press_release', 'press-release'],
+    // Social types
+    'social_post': ['social_post', 'social-post', 'socialpost', 'social'],
+    'social-post': ['social-post', 'social_post', 'socialpost', 'social'],
+    // Email types
+    'email': ['email', 'emailcampaign', 'email-campaign', 'email_campaign'],
+    'emailcampaign': ['emailcampaign', 'email-campaign', 'email_campaign', 'email'],
+    // Presentation types
+    'presentation': ['presentation', 'pitch-deck', 'pitchdeck', 'deck', 'slides'],
+  };
+
+  // Return related types if we have a mapping, otherwise return the original type plus common variations
+  if (typeGroups[contentType]) {
+    return typeGroups[contentType];
+  }
+
+  // Default: return original type plus underscore/hyphen variations
+  const variations = [contentType];
+  if (contentType.includes('_')) variations.push(contentType.replace(/_/g, '-'));
+  if (contentType.includes('-')) variations.push(contentType.replace(/-/g, '_'));
+  return variations;
+}
+
+/**
  * Get or create playbook for a given content type and topic
  */ async function getOrCreatePlaybook(params) {
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
@@ -308,17 +346,29 @@ Respond in JSON format:
       content: formatPlaybookForClaude(cached.playbook, params.contentType, params.topic, companyProfile)
     };
   }
-  // Check if we have enough data to generate playbook
+
+  // Get related content types for flexible matching
+  const relatedTypes = getRelatedContentTypes(params.contentType);
+  console.log(`🔍 Searching for playbook content with types: ${relatedTypes.join(', ')}`);
+
+  // Check if we have enough data to generate playbook - use IN for related types
   const { count } = await supabase.from('content_library').select('id', {
     count: 'exact',
     head: true
-  }).eq('organization_id', params.organizationId).eq('content_type', params.contentType).ilike('folder', `%${params.topic}%`);
+  }).eq('organization_id', params.organizationId).in('content_type', relatedTypes);
+
   if (count && count >= 3) {
-    console.log(`📝 Have ${count} items, triggering playbook generation`);
+    console.log(`📝 Have ${count} items with related types, triggering playbook generation`);
     // Trigger async generation (don't wait)
     triggerPlaybookRegeneration(params.organizationId, params.contentType, params.topic);
   } else {
-    console.log(`⚠️ Only ${count || 0} items, not enough to generate playbook (need 3+)`);
+    // Try broader search without content_type filter
+    const { count: broadCount } = await supabase.from('content_library').select('id', {
+      count: 'exact',
+      head: true
+    }).eq('organization_id', params.organizationId).not('content_type', 'eq', 'phase_strategy');
+
+    console.log(`⚠️ Only ${count || 0} items with related types, but org has ${broadCount || 0} total items`);
   }
   // Fallback to ad-hoc summary if we have results
   if (params.fallbackResults && params.fallbackResults.length > 0) {
@@ -2458,8 +2508,26 @@ ${campaignContext.timeline || 'Not specified'}
           }
           // Normalize content type before saving
           const normalizedContentType = normalizeContentTypeForMCP(contentPiece.type);
-          const contentTitle = `${phase} - ${normalizedContentType} - ${contentPiece.stakeholder || contentPiece.journalists?.[0] || 'general'}`;
+          // Extract real title from generated content for publishable types
+          let contentTitle = `${phase} - ${normalizedContentType} - ${contentPiece.stakeholder || contentPiece.journalists?.[0] || 'general'}`;
+          if (normalizedContentType === 'thought-leadership' || normalizedContentType === 'press-release') {
+            const text = contentPiece.content;
+            // Try markdown heading first (# Title or ## Title)
+            const headingMatch = text.match(/^#+\s+(.+)$/m);
+            // Try bold title (**Title**)
+            const boldMatch = text.match(/^\*\*(.+?)\*\*\s*$/m);
+            // For press releases, try the headline after FOR IMMEDIATE RELEASE
+            const prHeadlineMatch = text.match(/(?:FOR IMMEDIATE RELEASE[^\n]*\n+)([^\n]+)/i);
+            const extracted = headingMatch?.[1]?.trim() || boldMatch?.[1]?.trim() || prHeadlineMatch?.[1]?.trim();
+            if (extracted && extracted.length > 10 && extracted.length < 200) {
+              contentTitle = extracted.replace(/^#+\s*/, '').replace(/\*\*/g, '').trim();
+            }
+          }
           const pieceId = crypto.randomUUID();
+          // Generate slug for publishable types
+          const contentSlug = (normalizedContentType === 'thought-leadership' || normalizedContentType === 'press-release')
+            ? contentTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').substring(0, 80)
+            : null;
           // Save content immediately without waiting for embedding
           const { error: contentError } = await supabase.from('content_library').insert({
             id: pieceId,
@@ -2467,6 +2535,7 @@ ${campaignContext.timeline || 'Not specified'}
             content_type: normalizedContentType,
             title: contentTitle,
             content: contentPiece.content,
+            content_slug: contentSlug,
             folder: phaseFolder,
             metadata: {
               campaign_folder: campaignFolder,
@@ -2966,13 +3035,20 @@ ${campaignContext.timeline || 'Not specified'}
         console.log('   Query:', toolUse.input.query);
         console.log('   Type:', toolUse.input.content_type);
         try {
+          // Get related content types for flexible matching
+          const relatedTypes = toolUse.input.content_type
+            ? getRelatedContentTypes(toolUse.input.content_type)
+            : null;
+          console.log('🔍 Searching with related types:', relatedTypes || 'all types');
+
+          // First try: search with specific content type
           console.log('🔍 Calling niv-memory-vault function with:', {
             action: 'search',
             query: toolUse.input.query,
             organizationId: organizationId,
             contentType: toolUse.input.content_type
           });
-          const searchResponse = await supabase.functions.invoke('niv-memory-vault', {
+          let searchResponse = await supabase.functions.invoke('niv-memory-vault', {
             body: {
               action: 'search',
               query: toolUse.input.query,
@@ -2990,7 +3066,26 @@ ${campaignContext.timeline || 'Not specified'}
             console.error('❌ Memory Vault search error:', JSON.stringify(searchResponse.error, null, 2));
             throw searchResponse.error;
           }
-          const results = searchResponse.data?.data || [];
+          let results = searchResponse.data?.data || [];
+
+          // Fallback: if no results with specific type, try without content_type filter
+          if (results.length === 0 && toolUse.input.content_type) {
+            console.log('⚠️ No results with specific type, trying broader search without type filter');
+            const fallbackResponse = await supabase.functions.invoke('niv-memory-vault', {
+              body: {
+                action: 'search',
+                query: toolUse.input.query,
+                organizationId: organizationId,
+                contentType: null, // No type filter
+                limit: Math.min(toolUse.input.limit || 5, 10)
+              }
+            });
+            if (!fallbackResponse.error) {
+              results = fallbackResponse.data?.data || [];
+              console.log(`📦 Fallback search found ${results.length} results`);
+            }
+          }
+
           console.log(`✅ Found ${results.length} results from Memory Vault`);
           // Get or create playbook for this content type + topic
           const topic = inferTopic(toolUse.input.query);
@@ -7343,8 +7438,9 @@ Write ONLY the brief, nothing else. Make it compelling and strategic.`;
 }
 // Helper: Normalize content type names to match MCP routing
 function normalizeContentTypeForMCP(rawType) {
-  const normalized = rawType.toLowerCase().trim().replace(/\s+/g, '-') // Replace spaces with hyphens
-  .replace(/[^a-z0-9-]/g, '') // Remove non-alphanumeric except hyphens
+  const normalized = rawType.toLowerCase().trim()
+    .replace(/[\s_]+/g, '-') // Replace spaces AND underscores with hyphens
+    .replace(/[^a-z0-9-]/g, '') // Remove non-alphanumeric except hyphens
   ;
   // Map common variations to standard types
   const typeMap = {
@@ -7353,13 +7449,15 @@ function normalizeContentTypeForMCP(rawType) {
     'whitepaper': 'white-paper',
     'social-media-post': 'social-post',
     'social-post': 'social-post',
-    'socialpost': 'social-post', // social_post with underscore becomes socialpost after normalization
+    'socialpost': 'social-post',
     'blog-post': 'blog-post',
     'blogpost': 'blog-post',
     'media-pitch': 'media-pitch',
     'mediapitch': 'media-pitch',
     'press-release': 'press-release',
+    'pressrelease': 'press-release',
     'thought-leadership': 'thought-leadership',
+    'thoughtleadership': 'thought-leadership',
     'executive-statement': 'executive-statement',
     'executive-brief': 'executive-brief',
     'qa-document': 'qa-document',
@@ -7369,7 +7467,6 @@ function normalizeContentTypeForMCP(rawType) {
     'roi-calculator': 'thought-leadership',
     'calculator': 'thought-leadership',
     'crisis-communication': 'crisis-communication',
-    'crisis_communication': 'crisis-communication',
     'crisis-response': 'crisis-communication',
     'holding-statement': 'crisis-communication'
   };
@@ -7678,34 +7775,101 @@ ${keyMessages.length > 0 ? keyMessages.map((msg)=>`- ${msg}`).join('\n') : ''}
 - Timely relevance to ${currentDate}
 
 Write the complete press release with ALL required elements in proper format.`,
-    'thought-leadership': `Write an authoritative thought leadership article:
+    'thought-leadership': (() => {
+      // Select a writing approach for variety - rotates based on content hash
+      const writingApproaches = [
+        {
+          name: 'CONTRARIAN',
+          instruction: `Take a CONTRARIAN position. Identify what most people in the industry believe, then argue why that conventional wisdom is wrong or incomplete. Be specific about what belief you are challenging and why. Do not hedge - take a real stand.`,
+          structure: 'Open with the conventional belief you are challenging, then systematically dismantle it. Build your alternative view with concrete reasoning.'
+        },
+        {
+          name: 'NARRATIVE',
+          instruction: `Write as a NARRATIVE - tell a story that illuminates your point. This could be a hypothetical scenario that feels real, or walking through how a situation typically unfolds. Make readers feel it, not just understand it.`,
+          structure: 'Open in the middle of the action. Let the insight emerge from the story rather than stating it upfront. End with the revelation.'
+        },
+        {
+          name: 'MANIFESTO',
+          instruction: `Write as a MANIFESTO - a passionate declaration of beliefs and call to action. This should feel urgent and convicted. Be bold about what must change and why.`,
+          structure: 'Open with a bold declaration. Build intensity through the piece. End with a clear call to action.'
+        },
+        {
+          name: 'DIAGNOSIS',
+          instruction: `Write as a DIAGNOSIS - you are the expert identifying what is actually wrong and why previous solutions have not worked. Be specific about the root cause others are missing.`,
+          structure: 'Open by acknowledging the visible symptoms. Then reveal the underlying cause they are missing. End with what the real solution requires.'
+        },
+        {
+          name: 'PREDICTION',
+          instruction: `Write as a PREDICTION piece - make specific, bold claims about what will happen. Not vague generalities but concrete predictions with reasoning. Acknowledge what could prove you wrong.`,
+          structure: 'Open with your most provocative prediction. Back each prediction with reasoning. End with what readers should do given these predictions.'
+        },
+        {
+          name: 'QUESTION',
+          instruction: `Structure around a PROVOCATIVE QUESTION that reframes how people think about the topic. The question itself should be the insight. Spend the piece exploring why this question matters.`,
+          structure: 'Open with the question that reframes everything. Explore why this question has not been asked. End with what the answer reveals.'
+        }
+      ];
+      // Hash the strategic brief to consistently select approach
+      const hashCode = (strategicBrief || '').split('').reduce((a, b) => ((a << 5) - a + b.charCodeAt(0)) | 0, 0);
+      const approach = writingApproaches[Math.abs(hashCode) % writingApproaches.length];
+
+      return `You are writing thought leadership that should NOT feel like AI wrote it.
+
+**THE PROBLEM WITH MOST THOUGHT LEADERSHIP:**
+Most thought leadership is forgettable because it follows the same formula: generic hook → safe observations → hedged predictions → vague takeaways. It reads like a committee wrote it. It takes no real position.
+
+**WHAT MAKES GREAT THOUGHT LEADERSHIP:**
+- A SPECIFIC point of view that not everyone will agree with
+- The author's genuine expertise showing through
+- Concrete examples rather than abstract generalities
+- Language that sounds like a real person, not a brand
+- Intellectual honesty - acknowledging complexity
+- Something the reader will remember and quote
+
+**YOUR WRITING APPROACH: ${approach.name}**
+${approach.instruction}
+
+**STRUCTURE:**
+${approach.structure}
 
 **TODAY'S DATE:** ${currentDate}
 
-**STRATEGIC BRIEF:**
+**STRATEGIC CONTEXT:**
 ${strategicBrief}
 
-**CAMPAIGN CONTEXT:**
-${narrative ? `Core Narrative: ${narrative}` : ''}
-${positioning ? `Positioning: ${positioning}` : ''}
+${narrative ? `**CORE NARRATIVE:** ${narrative}` : ''}
+${positioning ? `**POSITIONING:** ${positioning}` : ''}
 
-**KEY INSIGHTS:**
+**KEY INSIGHTS TO WEAVE IN (don't list them, integrate naturally):**
 ${keyMessages.length > 0 ? keyMessages.map((msg)=>`- ${msg}`).join('\n') : ''}
 
-${researchInsights.length > 0 ? `**RESEARCH/TRENDS:**\n${researchInsights.slice(0, 5).map((insight)=>`- ${insight}`).join('\n')}` : ''}
+${researchInsights.length > 0 ? `**RESEARCH/DATA YOU CAN REFERENCE:**\n${researchInsights.slice(0, 5).map((insight)=>`- ${insight}`).join('\n')}` : ''}
 
-**REQUIREMENTS:**
-- Length: 1200-1800 words
-- Compelling hook
-- Unique perspective
-- Challenge conventional thinking
-- Include data and trends
-- Provide actionable insights
-- Authoritative voice
-- Align with strategic brief
-- Reference current market context (${currentDate})
+**VOICE & STYLE:**
+- Write like a specific person with opinions, not a faceless brand
+- Use "I" when expressing opinions or beliefs
+- Vary sentence length - mix punchy short with longer complex ones
+- Include moments of vulnerability - acknowledge what's hard or uncertain
+- If something is controversial, lean into it rather than hedging
 
-Write ONLY the thought leadership content.`
+**ANTI-FORMULA RULES:**
+- Do NOT start with "In today's rapidly evolving..." or similar clichés
+- Do NOT use "it's no secret that", "the reality is", or "make no mistake"
+- Do NOT structure as intro → 3 points → conclusion → takeaways
+- Do NOT end with "the time is now" or generic CTA
+- Do NOT use "landscape", "unlock", "leverage", or "synergy"
+- Do NOT hedge every claim - say what you believe directly
+
+**FACTUAL INTEGRITY:**
+- Do NOT invent statistics or percentages
+- Use qualitative language ("many", "increasingly") instead of fake numbers
+- Do NOT fabricate case studies or client stories
+- Frame opinions as opinions, not as research
+
+**LENGTH:** 1200-1800 words
+
+Write the piece now. Make it feel like a real expert wrote this.`;
+    })()
   };
   const prompt = contentPrompts[normalizedType] || contentPrompts['blog-post'];
   // Content-type-specific timeouts (in milliseconds)
@@ -7719,6 +7883,19 @@ Write ONLY the thought leadership content.`
     'press-release': 90000 // 90s - structured format
   };
   const timeoutMs = timeoutDurations[normalizedType] || 90000;
+
+  // Content-type-specific temperatures for creative variety
+  const temperatureSettings: Record<string, number> = {
+    'thought-leadership': 0.85, // Higher for creative variety
+    'blog-post': 0.75,
+    'case-study': 0.6,
+    'white-paper': 0.5, // Lower for factual accuracy
+    'media-pitch': 0.7,
+    'social-post': 0.8,
+    'press-release': 0.4 // Lowest - strict format
+  };
+  const temperature = temperatureSettings[normalizedType] || 0.7;
+
   let timeoutId;
   try {
     // Call Claude directly with content-type-specific timeout
@@ -7735,7 +7912,7 @@ Write ONLY the thought leadership content.`
       body: JSON.stringify({
         model: 'claude-sonnet-4-5-20250929',
         max_tokens: 16000,
-        temperature: 0.7,
+        temperature, // Use content-type-specific temperature
         messages: [
           {
             role: 'user',

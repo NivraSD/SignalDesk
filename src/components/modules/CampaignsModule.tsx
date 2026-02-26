@@ -25,7 +25,10 @@ import {
   X,
   CalendarPlus,
   Check,
-  TrendingUp
+  TrendingUp,
+  Rocket,
+  AlertCircle,
+  CircleDot
 } from 'lucide-react'
 import { useAppStore } from '@/stores/useAppStore'
 import { CampaignBuilderWizard } from '@/components/campaign-builder/CampaignBuilderWizard'
@@ -54,7 +57,7 @@ interface Campaign {
   createdAt?: string
 }
 
-type SidebarView = 'planner' | 'builder' | 'active'
+type SidebarView = 'planner' | 'builder' | 'active' | 'launch'
 
 interface PlanData {
   blueprint: any
@@ -120,6 +123,32 @@ interface CalendarItem {
 
 type CalendarView = 'month' | 'week' | 'list'
 
+// Launch Roadmap types
+interface LaunchPhase {
+  id: string
+  name: string
+  description: string
+  status: 'not_started' | 'in_progress' | 'completed'
+  order: number
+}
+
+interface LaunchMilestone {
+  id: string
+  title: string
+  phase_id: string
+  status: 'todo' | 'in_progress' | 'done' | 'blocked'
+  due_date?: string
+  completed_at?: string
+}
+
+const DEFAULT_LAUNCH_PHASES: LaunchPhase[] = [
+  { id: 'pre-launch', name: 'Pre-Launch', description: 'Building & testing core product', status: 'in_progress', order: 1 },
+  { id: 'beta', name: 'Beta', description: 'Private testing with early users', status: 'not_started', order: 2 },
+  { id: 'soft-launch', name: 'Soft Launch', description: 'Limited public availability', status: 'not_started', order: 3 },
+  { id: 'launch', name: 'Launch', description: 'Full public launch', status: 'not_started', order: 4 },
+  { id: 'post-launch', name: 'Post-Launch', description: 'Iteration & growth', status: 'not_started', order: 5 },
+]
+
 export default function CampaignsModule() {
   const { organization } = useAppStore()
   const [activeView, setActiveView] = useState<SidebarView>('planner')
@@ -152,6 +181,80 @@ export default function CampaignsModule() {
   const [savingProgress, setSavingProgress] = useState(false)
   const [resultValue, setResultValue] = useState('')
   const [resultNotes, setResultNotes] = useState('')
+
+  // Launch Roadmap state
+  const [launchPhases, setLaunchPhases] = useState<LaunchPhase[]>(DEFAULT_LAUNCH_PHASES)
+  const [launchMilestones, setLaunchMilestones] = useState<LaunchMilestone[]>([])
+  const [founderTasks, setFounderTasks] = useState<any[]>([])
+  const [selectedPhase, setSelectedPhase] = useState<string>('pre-launch')
+
+  // Load founder tasks when in launch view
+  useEffect(() => {
+    if (activeView === 'launch' && organization?.id) {
+      loadFounderTasks()
+    }
+  }, [activeView, organization?.id])
+
+  const loadFounderTasks = async () => {
+    if (!organization?.id) return
+
+    try {
+      const { data, error } = await supabase
+        .from('founder_tasks')
+        .select('*')
+        .eq('org_id', organization.id)
+        .order('priority', { ascending: true })
+
+      if (error) throw error
+      setFounderTasks(data || [])
+
+      // Update phase progress based on tasks
+      updatePhaseProgress(data || [])
+    } catch (error) {
+      console.error('Failed to load founder tasks:', error)
+    }
+  }
+
+  const updatePhaseProgress = (tasks: any[]) => {
+    // Map task categories to phases (using DB-compatible categories)
+    const phaseMapping: Record<string, string> = {
+      'launch': 'pre-launch',
+      'product': 'beta',
+      'marketing': 'soft-launch',
+      'fundraising': 'post-launch',
+      'operations': 'pre-launch',
+      'personal': 'launch'
+    }
+
+    setLaunchPhases(prev => prev.map(phase => {
+      const phaseTasks = tasks.filter(t => phaseMapping[t.category] === phase.id)
+      const completedTasks = phaseTasks.filter(t => t.status === 'done')
+
+      let status: LaunchPhase['status'] = 'not_started'
+      if (phaseTasks.length > 0) {
+        if (completedTasks.length === phaseTasks.length) {
+          status = 'completed'
+        } else if (completedTasks.length > 0 || phaseTasks.some(t => t.status === 'in_progress')) {
+          status = 'in_progress'
+        }
+      }
+
+      return { ...phase, status }
+    }))
+  }
+
+  const getTasksForPhase = (phaseId: string) => {
+    // Using DB-compatible categories: launch, product, marketing, fundraising, operations, personal
+    const phaseMapping: Record<string, string[]> = {
+      'pre-launch': ['launch', 'operations'],
+      'beta': ['product'],
+      'soft-launch': ['marketing'],
+      'launch': ['personal'],
+      'post-launch': ['fundraising']
+    }
+    const categories = phaseMapping[phaseId] || []
+    return founderTasks.filter(t => categories.includes(t.category))
+  }
 
   // Load campaigns from localStorage on mount and when organization changes
   useEffect(() => {
@@ -1129,7 +1232,21 @@ ${blueprint.part3_stakeholderOrchestration?.stakeholderOrchestrationPlans?.map((
     return { total, completed, scheduled, withResults }
   }, [calendarItems])
 
+  // Calculate launch progress
+  const launchProgress = useMemo(() => {
+    const completedPhases = launchPhases.filter(p => p.status === 'completed').length
+    const totalTasks = founderTasks.length
+    const doneTasks = founderTasks.filter(t => t.status === 'done').length
+    return {
+      phases: completedPhases,
+      totalPhases: launchPhases.length,
+      tasks: doneTasks,
+      totalTasks
+    }
+  }, [launchPhases, founderTasks])
+
   const sidebarItems = [
+    { id: 'launch' as SidebarView, label: 'Launch Roadmap', icon: Rocket, badge: `${launchProgress.phases}/${launchProgress.totalPhases}` },
     { id: 'planner' as SidebarView, label: 'Calendar', icon: Calendar, badge: calendarStats.scheduled },
     { id: 'builder' as SidebarView, label: 'Campaign Builder', icon: Wrench },
     { id: 'active' as SidebarView, label: 'Active Campaigns', icon: MessageSquare, badge: activeCampaigns.length }
@@ -1183,6 +1300,226 @@ ${blueprint.part3_stakeholderOrchestration?.stakeholderOrchestrationPlans?.map((
 
       {/* Main Content */}
       <div className={`flex-1 overflow-y-auto ${activeView === 'builder' || activeView === 'active' ? 'bg-[var(--charcoal)]' : ''}`}>
+
+        {/* LAUNCH ROADMAP VIEW */}
+        {activeView === 'launch' && (
+          <div className="p-8">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <div
+                  className="text-[0.65rem] uppercase tracking-[0.15em] text-[var(--burnt-orange)] flex items-center gap-2 mb-2"
+                  style={{ fontFamily: 'var(--font-display)' }}
+                >
+                  <Rocket className="w-3 h-3" />
+                  Founder Mode
+                </div>
+                <h1
+                  className="text-[1.5rem] font-normal"
+                  style={{ color: 'var(--charcoal)', fontFamily: 'var(--font-serif)' }}
+                >
+                  Launch Roadmap
+                </h1>
+                <p className="text-[var(--grey-500)] text-sm mt-1">
+                  {launchProgress.tasks} of {launchProgress.totalTasks} tasks completed
+                </p>
+              </div>
+            </div>
+
+            {/* Phase Timeline */}
+            <div className="mb-8">
+              <div className="flex items-center gap-2 relative">
+                {/* Progress line */}
+                <div className="absolute top-4 left-0 right-0 h-1 bg-[var(--grey-200)] rounded-full" />
+                <div
+                  className="absolute top-4 left-0 h-1 bg-[var(--burnt-orange)] rounded-full transition-all"
+                  style={{
+                    width: `${(launchPhases.filter(p => p.status === 'completed').length / launchPhases.length) * 100}%`
+                  }}
+                />
+
+                {/* Phase nodes */}
+                {launchPhases.map((phase, index) => (
+                  <button
+                    key={phase.id}
+                    onClick={() => setSelectedPhase(phase.id)}
+                    className={`flex-1 flex flex-col items-center relative z-10 transition-all ${
+                      selectedPhase === phase.id ? 'scale-105' : ''
+                    }`}
+                  >
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all ${
+                        phase.status === 'completed'
+                          ? 'bg-[var(--burnt-orange)] border-[var(--burnt-orange)] text-white'
+                          : phase.status === 'in_progress'
+                          ? 'bg-white border-[var(--burnt-orange)] text-[var(--burnt-orange)]'
+                          : 'bg-white border-[var(--grey-300)] text-[var(--grey-400)]'
+                      } ${selectedPhase === phase.id ? 'ring-2 ring-[var(--burnt-orange)] ring-offset-2' : ''}`}
+                    >
+                      {phase.status === 'completed' ? (
+                        <Check className="w-4 h-4" />
+                      ) : phase.status === 'in_progress' ? (
+                        <CircleDot className="w-4 h-4" />
+                      ) : (
+                        <span className="text-xs font-medium">{index + 1}</span>
+                      )}
+                    </div>
+                    <span
+                      className={`mt-2 text-xs font-medium ${
+                        selectedPhase === phase.id
+                          ? 'text-[var(--charcoal)]'
+                          : 'text-[var(--grey-500)]'
+                      }`}
+                      style={{ fontFamily: 'var(--font-display)' }}
+                    >
+                      {phase.name}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Selected Phase Details */}
+            {launchPhases.find(p => p.id === selectedPhase) && (
+              <div className="bg-white rounded-xl border border-[var(--grey-200)] overflow-hidden">
+                <div className="px-6 py-4 border-b border-[var(--grey-200)]">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2
+                        className="text-lg font-semibold"
+                        style={{ color: 'var(--charcoal)', fontFamily: 'var(--font-display)' }}
+                      >
+                        {launchPhases.find(p => p.id === selectedPhase)?.name}
+                      </h2>
+                      <p className="text-sm text-[var(--grey-500)]">
+                        {launchPhases.find(p => p.id === selectedPhase)?.description}
+                      </p>
+                    </div>
+                    <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      launchPhases.find(p => p.id === selectedPhase)?.status === 'completed'
+                        ? 'bg-green-100 text-green-700'
+                        : launchPhases.find(p => p.id === selectedPhase)?.status === 'in_progress'
+                        ? 'bg-[var(--burnt-orange-muted)] text-[var(--burnt-orange)]'
+                        : 'bg-[var(--grey-100)] text-[var(--grey-500)]'
+                    }`}>
+                      {launchPhases.find(p => p.id === selectedPhase)?.status === 'completed'
+                        ? 'Completed'
+                        : launchPhases.find(p => p.id === selectedPhase)?.status === 'in_progress'
+                        ? 'In Progress'
+                        : 'Not Started'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tasks for this phase */}
+                <div className="p-6">
+                  <h3
+                    className="text-sm font-medium mb-4 text-[var(--grey-600)]"
+                    style={{ fontFamily: 'var(--font-display)' }}
+                  >
+                    Tasks in this phase
+                  </h3>
+
+                  {getTasksForPhase(selectedPhase).length === 0 ? (
+                    <div className="text-center py-8 text-[var(--grey-400)]">
+                      <AlertCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">No tasks assigned to this phase yet</p>
+                      <p className="text-xs mt-1">Add tasks from the Founder tab</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {getTasksForPhase(selectedPhase).map(task => (
+                        <div
+                          key={task.id}
+                          className="flex items-center gap-3 p-3 rounded-lg border border-[var(--grey-200)] hover:border-[var(--grey-300)] transition-colors"
+                        >
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                            task.status === 'done'
+                              ? 'bg-green-500 border-green-500 text-white'
+                              : task.status === 'in_progress'
+                              ? 'border-[var(--burnt-orange)] text-[var(--burnt-orange)]'
+                              : task.status === 'blocked'
+                              ? 'border-red-400 text-red-400'
+                              : 'border-[var(--grey-300)]'
+                          }`}>
+                            {task.status === 'done' && <Check className="w-3 h-3" />}
+                            {task.status === 'in_progress' && <CircleDot className="w-3 h-3" />}
+                            {task.status === 'blocked' && <AlertCircle className="w-3 h-3" />}
+                          </div>
+                          <div className="flex-1">
+                            <p className={`text-sm ${
+                              task.status === 'done' ? 'text-[var(--grey-400)] line-through' : 'text-[var(--charcoal)]'
+                            }`}>
+                              {task.title}
+                            </p>
+                            {task.description && (
+                              <p className="text-xs text-[var(--grey-400)] mt-0.5">{task.description}</p>
+                            )}
+                          </div>
+                          <span className={`px-2 py-0.5 rounded text-xs ${
+                            task.priority === 'critical' ? 'bg-red-100 text-red-700' :
+                            task.priority === 'high' ? 'bg-orange-100 text-orange-700' :
+                            task.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                            'bg-gray-100 text-gray-600'
+                          }`}>
+                            {task.priority}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Phase Progress Bar */}
+                  {getTasksForPhase(selectedPhase).length > 0 && (
+                    <div className="mt-6 pt-4 border-t border-[var(--grey-200)]">
+                      <div className="flex items-center justify-between text-xs text-[var(--grey-500)] mb-2">
+                        <span>Phase Progress</span>
+                        <span>
+                          {getTasksForPhase(selectedPhase).filter(t => t.status === 'done').length} / {getTasksForPhase(selectedPhase).length} tasks
+                        </span>
+                      </div>
+                      <div className="h-2 bg-[var(--grey-100)] rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-[var(--burnt-orange)] rounded-full transition-all"
+                          style={{
+                            width: `${(getTasksForPhase(selectedPhase).filter(t => t.status === 'done').length / getTasksForPhase(selectedPhase).length) * 100}%`
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Quick Stats */}
+            <div className="grid grid-cols-4 gap-4 mt-6">
+              <div className="bg-white rounded-xl border border-[var(--grey-200)] p-4">
+                <div className="text-2xl font-bold" style={{ color: 'var(--charcoal)' }}>
+                  {founderTasks.filter(t => t.status === 'done').length}
+                </div>
+                <div className="text-xs" style={{ color: 'var(--grey-500)' }}>Completed</div>
+              </div>
+              <div className="bg-white rounded-xl border border-[var(--grey-200)] p-4">
+                <div className="text-2xl font-bold" style={{ color: 'var(--burnt-orange)' }}>
+                  {founderTasks.filter(t => t.status === 'in_progress').length}
+                </div>
+                <div className="text-xs" style={{ color: 'var(--grey-500)' }}>In Progress</div>
+              </div>
+              <div className="bg-white rounded-xl border border-[var(--grey-200)] p-4">
+                <div className="text-2xl font-bold" style={{ color: '#8b5cf6' }}>
+                  {founderTasks.filter(t => t.status === 'todo').length}
+                </div>
+                <div className="text-xs" style={{ color: 'var(--grey-500)' }}>To Do</div>
+              </div>
+              <div className="bg-white rounded-xl border border-[var(--grey-200)] p-4">
+                <div className="text-2xl font-bold" style={{ color: '#ef4444' }}>
+                  {founderTasks.filter(t => t.status === 'blocked').length}
+                </div>
+                <div className="text-xs" style={{ color: 'var(--grey-500)' }}>Blocked</div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* CALENDAR VIEW */}
         {activeView === 'planner' && (

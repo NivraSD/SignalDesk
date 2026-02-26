@@ -4,6 +4,28 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { INDUSTRY_COMPETITORS_DETAILED } from '../mcp-discovery/industry-competitors.ts'
 
+export interface RecentStory {
+  title: string
+  source: string
+  url: string
+  sentiment: string
+  coverage_type: string
+  published_at: string
+  is_crisis: boolean
+}
+
+export interface StoryContext {
+  totalStories: number
+  positiveCount: number
+  negativeCount: number
+  neutralCount: number
+  crisisCount: number
+  avgSentiment: number
+  recentStories: RecentStory[]
+  topSources: string[]
+  lastUpdated: string
+}
+
 export interface OrganizationContext {
   organizationId: string
   organizationName: string
@@ -15,6 +37,8 @@ export interface OrganizationContext {
   keyWords: string[]
   trustedSources: string[]
   lastUpdated?: string
+  // NEW: Recent coverage about the organization
+  storyContext?: StoryContext
 }
 
 // Cache organization contexts for session persistence
@@ -22,6 +46,10 @@ const contextCache = new Map<string, OrganizationContext>()
 
 // Cache for master-source-registry results (avoid repeated calls)
 const sourceRegistryCache = new Map<string, string[]>()
+
+// Cache for story context (5 minute TTL)
+const storyContextCache = new Map<string, { context: StoryContext; timestamp: number }>()
+const STORY_CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
 
 /**
  * Fetch trusted sources from master-source-registry
@@ -105,6 +133,95 @@ async function fetchTrustedSourcesFromRegistry(industry?: string): Promise<strin
 }
 
 /**
+ * Fetch recent story context for an organization
+ * Uses org_story_links table to get recent coverage about the org
+ */
+async function fetchStoryContext(organizationId: string): Promise<StoryContext | null> {
+  // Check cache first
+  const cached = storyContextCache.get(organizationId)
+  if (cached && Date.now() - cached.timestamp < STORY_CACHE_TTL_MS) {
+    console.log(`📋 Using cached story context for ${organizationId}`)
+    return cached.context
+  }
+
+  try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+
+    if (!supabaseUrl || !supabaseKey) {
+      console.log('⚠️ No Supabase credentials, skipping story context')
+      return null
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey)
+
+    // Get story stats using the helper function
+    const { data: stats, error: statsError } = await supabase
+      .rpc('get_org_story_stats', {
+        org_id: organizationId,
+        days_back: 7
+      })
+
+    // Get recent stories
+    const { data: recentStories, error: storiesError } = await supabase
+      .rpc('get_org_recent_stories', {
+        org_id: organizationId,
+        days_back: 7,
+        limit_count: 10
+      })
+
+    if (statsError || storiesError) {
+      console.log(`⚠️ Error fetching story context: ${statsError?.message || storiesError?.message}`)
+      return null
+    }
+
+    const statsRow = stats?.[0] || {
+      total_stories: 0,
+      positive_count: 0,
+      negative_count: 0,
+      neutral_count: 0,
+      mixed_count: 0,
+      crisis_count: 0,
+      avg_sentiment: 0,
+      top_sources: []
+    }
+
+    const storyContext: StoryContext = {
+      totalStories: Number(statsRow.total_stories) || 0,
+      positiveCount: Number(statsRow.positive_count) || 0,
+      negativeCount: Number(statsRow.negative_count) || 0,
+      neutralCount: Number(statsRow.neutral_count) + Number(statsRow.mixed_count) || 0,
+      crisisCount: Number(statsRow.crisis_count) || 0,
+      avgSentiment: Number(statsRow.avg_sentiment) || 0,
+      recentStories: (recentStories || []).map((s: any) => ({
+        title: s.article_title,
+        source: s.article_source,
+        url: s.article_url,
+        sentiment: s.sentiment_toward_org,
+        coverage_type: s.coverage_type,
+        published_at: s.published_at,
+        is_crisis: s.is_crisis_related
+      })),
+      topSources: (statsRow.top_sources || []).map((s: any) => s.source || s),
+      lastUpdated: new Date().toISOString()
+    }
+
+    // Cache the result
+    storyContextCache.set(organizationId, {
+      context: storyContext,
+      timestamp: Date.now()
+    })
+
+    console.log(`✅ Loaded story context: ${storyContext.totalStories} stories, avg sentiment ${storyContext.avgSentiment.toFixed(2)}`)
+    return storyContext
+
+  } catch (error) {
+    console.error('❌ Error fetching story context:', error)
+    return null
+  }
+}
+
+/**
  * Fallback sources if master-source-registry is unavailable
  * Uses tier-1 business and tech sources as baseline
  */
@@ -151,6 +268,10 @@ export async function getOrganizationContext(
 
   if (discoveryData) {
     console.log(`✅ Found existing Discovery profile for ${organizationId}`)
+
+    // Fetch story context (recent coverage about this org)
+    const storyContext = await fetchStoryContext(organizationId)
+
     const context: OrganizationContext = {
       organizationId,
       organizationName: discoveryData.organization_name || organizationId,
@@ -161,7 +282,8 @@ export async function getOrganizationContext(
       emergingCompetitors: discoveryData.emerging_competitors || [],
       keyWords: discoveryData.keywords || [],
       trustedSources: await extractTrustedSources(discoveryData),
-      lastUpdated: discoveryData.created_at
+      lastUpdated: discoveryData.created_at,
+      storyContext: storyContext || undefined
     }
 
     contextCache.set(cacheKey, context)
@@ -219,6 +341,9 @@ async function createMinimalContext(organizationId: string): Promise<Organizatio
   // Select appropriate news sources from master-source-registry
   const sources = await selectNewsSources(finalIndustry, subIndustry)
 
+  // Fetch story context (recent coverage about this org)
+  const storyContext = await fetchStoryContext(organizationId)
+
   return {
     organizationId,
     organizationName,
@@ -228,7 +353,8 @@ async function createMinimalContext(organizationId: string): Promise<Organizatio
     indirectCompetitors: competitors.indirect,
     emergingCompetitors: competitors.emerging,
     keyWords: keywords,
-    trustedSources: sources
+    trustedSources: sources,
+    storyContext: storyContext || undefined
   }
 }
 
@@ -450,4 +576,68 @@ export function enhanceQueryWithContext(
  */
 export function getSearchDomains(context: OrganizationContext): string[] {
   return context.trustedSources.slice(0, 10) // Limit to top 10 domains
+}
+
+/**
+ * Format story context for AI consumption in prompts
+ * Returns a human-readable summary of recent coverage
+ */
+export function formatStoryContextForPrompt(context: OrganizationContext): string {
+  if (!context.storyContext || context.storyContext.totalStories === 0) {
+    return `No recent news coverage tracked for ${context.organizationName}.`
+  }
+
+  const sc = context.storyContext
+  const parts: string[] = []
+
+  // Overview
+  parts.push(`RECENT NEWS COVERAGE ABOUT ${context.organizationName.toUpperCase()}:`)
+  parts.push(`In the last 7 days, there have been ${sc.totalStories} stories mentioning ${context.organizationName}.`)
+
+  // Sentiment breakdown
+  const sentimentParts: string[] = []
+  if (sc.positiveCount > 0) sentimentParts.push(`${sc.positiveCount} positive`)
+  if (sc.negativeCount > 0) sentimentParts.push(`${sc.negativeCount} negative`)
+  if (sc.neutralCount > 0) sentimentParts.push(`${sc.neutralCount} neutral`)
+  if (sentimentParts.length > 0) {
+    parts.push(`Coverage sentiment: ${sentimentParts.join(', ')} (avg score: ${sc.avgSentiment.toFixed(2)}).`)
+  }
+
+  // Crisis alert
+  if (sc.crisisCount > 0) {
+    parts.push(`⚠️ ${sc.crisisCount} potentially crisis-related stories detected.`)
+  }
+
+  // Top sources
+  if (sc.topSources.length > 0) {
+    parts.push(`Top sources: ${sc.topSources.slice(0, 5).join(', ')}.`)
+  }
+
+  // Recent headlines
+  if (sc.recentStories.length > 0) {
+    parts.push('\nRecent headlines:')
+    sc.recentStories.slice(0, 5).forEach((story, i) => {
+      const sentimentEmoji = story.sentiment === 'positive' ? '📈' :
+                            story.sentiment === 'negative' ? '📉' :
+                            story.is_crisis ? '🚨' : '📰'
+      parts.push(`${i + 1}. ${sentimentEmoji} "${story.title}" (${story.source})`)
+    })
+  }
+
+  return parts.join('\n')
+}
+
+/**
+ * Check if organization has any active crisis coverage
+ */
+export function hasActiveCrisis(context: OrganizationContext): boolean {
+  return (context.storyContext?.crisisCount || 0) > 0
+}
+
+/**
+ * Get crisis stories from context
+ */
+export function getCrisisStories(context: OrganizationContext): RecentStory[] {
+  if (!context.storyContext?.recentStories) return []
+  return context.storyContext.recentStories.filter(s => s.is_crisis)
 }

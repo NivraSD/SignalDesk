@@ -1,4 +1,5 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
@@ -87,6 +88,18 @@ const mcpTools = [
         industry_hint: { type: 'string', description: 'Industry sector' }
       },
       required: ['organization']
+    }
+  },
+  {
+    name: 'org_story_context',
+    description: 'Get recent news coverage and stories about the organization itself. Returns sentiment analysis, crisis alerts, and recent headlines.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        organization_id: { type: 'string', description: 'Organization UUID' },
+        days_back: { type: 'number', description: 'Number of days to look back (default 7)' }
+      },
+      required: ['organization_id']
     }
   },
   {
@@ -279,6 +292,11 @@ Gather research data according to the plan. Use MCP tools to collect data for al
 
 // Call MCP tool via Edge Function
 async function callMCPTool(toolName: string, input: any) {
+  // Handle org_story_context directly via Supabase RPC
+  if (toolName === 'org_story_context') {
+    return await fetchOrgStoryContext(input.organization_id, input.days_back || 7);
+  }
+
   const toolMap: Record<string, string> = {
     'mcp_discovery': 'mcp-discovery',
     'niv_fireplexity': 'niv-fireplexity',
@@ -320,4 +338,126 @@ async function callMCPTool(toolName: string, input: any) {
     console.error(`Error calling ${functionName}:`, error);
     return { error: `Error calling ${functionName}: ${error.message}` };
   }
+}
+
+/**
+ * Fetch organization story context directly from database
+ * Returns recent coverage, sentiment analysis, and crisis alerts
+ */
+async function fetchOrgStoryContext(organizationId: string, daysBack: number = 7) {
+  try {
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY!);
+
+    // Get story stats
+    const { data: stats, error: statsError } = await supabase
+      .rpc('get_org_story_stats', {
+        org_id: organizationId,
+        days_back: daysBack
+      });
+
+    // Get recent stories
+    const { data: recentStories, error: storiesError } = await supabase
+      .rpc('get_org_recent_stories', {
+        org_id: organizationId,
+        days_back: daysBack,
+        limit_count: 15
+      });
+
+    if (statsError || storiesError) {
+      console.log(`Error fetching story context: ${statsError?.message || storiesError?.message}`);
+      return {
+        error: 'Failed to fetch story context',
+        stats: null,
+        stories: []
+      };
+    }
+
+    const statsRow = stats?.[0] || {
+      total_stories: 0,
+      positive_count: 0,
+      negative_count: 0,
+      neutral_count: 0,
+      crisis_count: 0,
+      opportunity_count: 0,
+      avg_sentiment: 0,
+      top_sources: []
+    };
+
+    return {
+      success: true,
+      organization_id: organizationId,
+      period_days: daysBack,
+      stats: {
+        total_stories: Number(statsRow.total_stories) || 0,
+        positive_count: Number(statsRow.positive_count) || 0,
+        negative_count: Number(statsRow.negative_count) || 0,
+        neutral_count: Number(statsRow.neutral_count) || 0,
+        crisis_count: Number(statsRow.crisis_count) || 0,
+        opportunity_count: Number(statsRow.opportunity_count) || 0,
+        avg_sentiment: Number(statsRow.avg_sentiment) || 0,
+        sentiment_label: getSentimentLabel(Number(statsRow.avg_sentiment) || 0),
+        top_sources: statsRow.top_sources || []
+      },
+      recent_stories: (recentStories || []).map((s: any) => ({
+        title: s.article_title,
+        source: s.article_source,
+        url: s.article_url,
+        published_at: s.published_at,
+        coverage_type: s.coverage_type,
+        sentiment: s.sentiment_toward_org,
+        sentiment_score: s.sentiment_score,
+        is_crisis: s.is_crisis_related,
+        crisis_severity: s.crisis_severity,
+        is_opportunity: s.is_opportunity,
+        executives_mentioned: s.executives_mentioned || []
+      })),
+      summary: formatStorySummary(statsRow, recentStories || [])
+    };
+  } catch (error: any) {
+    console.error('Error in fetchOrgStoryContext:', error);
+    return {
+      error: error.message || 'Unknown error',
+      stats: null,
+      stories: []
+    };
+  }
+}
+
+function getSentimentLabel(score: number): string {
+  if (score > 0.3) return 'positive';
+  if (score < -0.3) return 'negative';
+  return 'neutral';
+}
+
+function formatStorySummary(stats: any, stories: any[]): string {
+  const total = Number(stats.total_stories) || 0;
+  if (total === 0) {
+    return 'No recent news coverage found for this organization.';
+  }
+
+  const parts: string[] = [];
+  parts.push(`${total} stories in the last 7 days.`);
+
+  const positive = Number(stats.positive_count) || 0;
+  const negative = Number(stats.negative_count) || 0;
+  const crisis = Number(stats.crisis_count) || 0;
+
+  if (positive > negative) {
+    parts.push(`Coverage is mostly positive (${positive} positive vs ${negative} negative).`);
+  } else if (negative > positive) {
+    parts.push(`Coverage is mostly negative (${negative} negative vs ${positive} positive).`);
+  } else {
+    parts.push('Coverage is balanced between positive and negative.');
+  }
+
+  if (crisis > 0) {
+    parts.push(`⚠️ ${crisis} stories flagged as potentially crisis-related.`);
+  }
+
+  const topStories = stories.slice(0, 3);
+  if (topStories.length > 0) {
+    parts.push('Top headlines: ' + topStories.map(s => `"${s.article_title}" (${s.article_source})`).join('; '));
+  }
+
+  return parts.join(' ');
 }

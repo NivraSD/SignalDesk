@@ -10,13 +10,109 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 // Try both API key names like NIV does
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY') || Deno.env.get('CLAUDE_API_KEY');
+// Google API for faster generation
+const GOOGLE_API_KEY = Deno.env.get('GOOGLE_API_KEY') || Deno.env.get('GEMINI_API_KEY');
+// Vertex AI service account (same as visual generation)
+const GOOGLE_SERVICE_ACCOUNT = Deno.env.get('GOOGLE_SERVICE_ACCOUNT');
+const GOOGLE_PROJECT_ID = 'nivria';
+const GOOGLE_CLOUD_REGION = 'us-central1';
 
 console.log('🔑 Environment check:', {
   has_url: !!SUPABASE_URL,
   has_service_key: !!SUPABASE_SERVICE_KEY,
   has_anthropic: !!ANTHROPIC_API_KEY,
+  has_google: !!GOOGLE_API_KEY,
+  has_service_account: !!GOOGLE_SERVICE_ACCOUNT,
   key_length: SUPABASE_SERVICE_KEY?.length || 0
 });
+
+// Generate access token from service account (copied from vertex-ai-visual)
+async function getAccessTokenFromServiceAccount(serviceAccount: any): Promise<string | null> {
+  try {
+    console.log('Generating JWT for service account:', serviceAccount.client_email)
+    const now = Math.floor(Date.now() / 1000)
+    const expiry = now + 3600
+
+    const payload = {
+      iss: serviceAccount.client_email,
+      scope: 'https://www.googleapis.com/auth/cloud-platform',
+      aud: 'https://oauth2.googleapis.com/token',
+      exp: expiry,
+      iat: now
+    }
+
+    const privateKey = serviceAccount.private_key
+      .replace(/\\n/g, '\n')
+      .replace(/^-----BEGIN PRIVATE KEY-----\n/, '')
+      .replace(/\n-----END PRIVATE KEY-----\n?$/, '')
+      .replace(/\n/g, '')
+
+    const binaryKey = Uint8Array.from(atob(privateKey), c => c.charCodeAt(0))
+
+    const key = await crypto.subtle.importKey(
+      'pkcs8',
+      binaryKey,
+      { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+      false,
+      ['sign']
+    )
+
+    const header = btoa(JSON.stringify({ alg: 'RS256', typ: 'JWT' }))
+      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
+
+    const body = btoa(JSON.stringify(payload))
+      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
+
+    const message = `${header}.${body}`
+
+    const signature = await crypto.subtle.sign(
+      'RSASSA-PKCS1-v1_5',
+      key,
+      new TextEncoder().encode(message)
+    )
+
+    const signatureBase64 = btoa(String.fromCharCode(...new Uint8Array(signature)))
+      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
+
+    const jwt = `${message}.${signatureBase64}`
+
+    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+        assertion: jwt
+      })
+    })
+
+    if (tokenResponse.ok) {
+      const tokenData = await tokenResponse.json()
+      console.log('✅ Got access token from service account')
+      return tokenData.access_token
+    } else {
+      const error = await tokenResponse.text()
+      console.error('Failed to get access token:', tokenResponse.status, error)
+      return null
+    }
+  } catch (error) {
+    console.error('Error generating access token:', error)
+    return null
+  }
+}
+
+async function getVertexAccessToken(): Promise<string | null> {
+  if (GOOGLE_SERVICE_ACCOUNT) {
+    try {
+      const serviceAccount = JSON.parse(GOOGLE_SERVICE_ACCOUNT)
+      if (serviceAccount.type === 'service_account') {
+        return await getAccessTokenFromServiceAccount(serviceAccount)
+      }
+    } catch (error) {
+      console.error('Invalid GOOGLE_SERVICE_ACCOUNT JSON:', error)
+    }
+  }
+  return null
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -610,7 +706,7 @@ async function detectOpportunitiesV2(
 
   const prompt = buildOpportunityDetectionPromptV2({
     organizationName,
-    events: allEvents.slice(0, 15), // Reduced from 25 to prevent timeout - focus on highest priority events
+    events: allEvents.slice(0, 15), // Focus on highest priority events
     topics: extractedData.topics.slice(0, 8), // Limit topics
     quotes: extractedData.quotes.slice(0, 8), // Limit quotes
     entities: extractedData.entities.slice(0, 12), // Limit entities
@@ -618,41 +714,52 @@ async function detectOpportunitiesV2(
     organizationProfile: extractedData.organizationProfile
   })
 
-  console.log('Calling Claude Sonnet 4 for V2 opportunity generation...')
+  console.log('Calling Gemini 2.5 Flash via Vertex AI for V2 opportunity generation...')
   console.log('Prompt length:', prompt.length, 'characters')
+  console.log('Has GOOGLE_SERVICE_ACCOUNT:', !!GOOGLE_SERVICE_ACCOUNT)
 
   try {
-    const response = await fetchWithRetry('https://api.anthropic.com/v1/messages', {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 120000)
+
+    // Use Google AI Studio API (NOT Vertex AI - Vertex costs $$$)
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GOOGLE_API_KEY}`
+
+    console.log('Using Google AI Studio endpoint (free Flash)')
+
+    const response = await fetchWithRetry(geminiUrl, {
       method: 'POST',
+      signal: controller.signal,
       headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 16000,
-        temperature: 0.7,
-        system: OPPORTUNITY_SYSTEM_PROMPT_V2,
-        messages: [{
+        contents: [{
           role: 'user',
-          content: prompt
-        }]
+          parts: [{
+            text: OPPORTUNITY_SYSTEM_PROMPT_V2 + '\n\n' + prompt
+          }]
+        }],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 32000
+        }
       })
     })
 
+    clearTimeout(timeoutId)
+
     if (!response.ok) {
-      console.error('Claude API error:', response.status, response.statusText)
+      console.error('Gemini Flash error:', response.status, response.statusText)
       const errorText = await response.text()
       console.error('Error details:', errorText)
-      throw new Error(`Claude API error: ${response.status}`)
+      throw new Error(`Gemini error: ${response.status} - ${errorText.substring(0, 200)}`)
     }
 
     const data = await response.json()
-    const content = data.content?.[0]?.text || ''
+    const content = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
 
-    console.log('✅ Claude V2 response received, length:', content.length)
+    console.log('✅ Vertex AI Gemini response received, length:', content.length)
 
     // Parse V2 opportunities
     let opportunities: OpportunityV2[] = []
@@ -776,9 +883,14 @@ async function detectOpportunitiesV2(
     return validOpportunities
 
   } catch (error: any) {
-    console.error('❌ Error in V2 opportunity detection:', error)
+    if (error.name === 'AbortError') {
+      console.error('❌ Vertex AI Gemini request timed out after 120 seconds')
+    } else {
+      console.error('❌ Error in V2 opportunity detection:', error)
+    }
     console.error('Error details:', {
       message: error.message,
+      name: error.name,
       stack: error.stack
     })
     return []

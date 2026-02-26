@@ -85,8 +85,9 @@ import ConnectionsModule from '@/components/modules/ConnectionsModule'
 import PredictionsModule from '@/components/modules/PredictionsModule'
 import CascadesModule from '@/components/modules/CascadesModule'
 import SocialIntelligenceModule from '@/components/modules/SocialIntelligenceModule'
+import FounderModule from '@/components/modules/FounderModule'
 
-type ModuleView = 'hub' | 'opportunities' | 'studio' | 'campaigns' | 'crisis' | 'vault' | 'geointel' | 'connections' | 'predictions' | 'cascades' | 'social'
+type ModuleView = 'hub' | 'opportunities' | 'studio' | 'campaigns' | 'crisis' | 'vault' | 'geointel' | 'connections' | 'predictions' | 'cascades' | 'social' | 'founder'
 
 export default function Dashboard() {
   const router = useRouter()
@@ -452,6 +453,7 @@ export default function Dashboard() {
   // Top nav links matching design mockup
   const navLinks: { id: ModuleView; label: string }[] = [
     { id: 'hub', label: 'Hub' },
+    { id: 'founder', label: 'Founder' },
     { id: 'opportunities', label: 'Opportunities' },
     { id: 'studio', label: 'Studio' },
     { id: 'campaigns', label: 'Campaigns' },
@@ -645,8 +647,8 @@ export default function Dashboard() {
 
       {/* Dashboard Body */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar - White (hidden when Studio, Campaigns, Crisis, Vault, or Opportunities is active) */}
-        {activeModule !== 'studio' && activeModule !== 'campaigns' && activeModule !== 'crisis' && activeModule !== 'vault' && activeModule !== 'opportunities' && (
+        {/* Sidebar - White (hidden when Studio, Campaigns, Crisis, Vault, Opportunities, or Founder is active) */}
+        {activeModule !== 'studio' && activeModule !== 'campaigns' && activeModule !== 'crisis' && activeModule !== 'vault' && activeModule !== 'opportunities' && activeModule !== 'founder' && (
         <aside className="w-[260px] bg-white border-r border-[var(--grey-200)] flex flex-col shrink-0">
           {/* Sidebar Header */}
           <div className="px-5 py-5 border-b border-[var(--grey-200)]">
@@ -733,6 +735,13 @@ export default function Dashboard() {
             <div className="flex-1 overflow-y-auto p-8">
               <OpportunitiesModule />
             </div>
+          )}
+
+          {activeModule === 'founder' && (
+            <FounderModule
+              onOpenStudio={() => setActiveModule('studio')}
+              onOpenVault={() => setActiveModule('vault')}
+            />
           )}
 
           {activeModule === 'studio' && (

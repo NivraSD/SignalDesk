@@ -2325,6 +2325,12 @@ async function getMcpDiscovery(organizationInput: string = '7a2835cb-11ee-4512-a
         leadership: companyProfile.leadership || [],
         // Brand voice and style guidelines
         brand_voice: companyProfile.brand_voice || null,
+        // Strategic goals (required during onboarding)
+        strategic_goals: companyProfile.strategic_goals || [],
+        // PR Assessment (from onboarding)
+        pr_assessment: companyProfile.pr_assessment || null,
+        // Operating Playbook (AI-synthesized from onboarding data)
+        operating_playbook: companyProfile.operating_playbook || null,
         // Recent work the user has been working on
         recent_work: companyProfile.recent_work || null,
         // Recent conversations for continuity
@@ -2960,7 +2966,64 @@ function buildClaudeMessage(
       message += `• Initial Keywords (expand beyond these): ${data.keywords.slice(0, 8).join(', ')}\n`
     }
 
-    message += `\nIMPORTANT: This is just baseline data. You should actively research CURRENT developments about ${data.organizationName}, discover new competitors, identify recent announcements, and provide up-to-date strategic insights beyond this basic profile.\n\n`
+    // NEW: Include Operating Playbook directives if available
+    if (data.operating_playbook) {
+      const playbook = data.operating_playbook
+      message += `\n**OPERATING PLAYBOOK (follow these directives):**\n`
+      message += `${playbook.executive_summary}\n\n`
+      message += `POSITIONING: ${playbook.positioning_strategy}\n`
+      if (playbook.content_priorities?.length > 0) {
+        message += `CONTENT PRIORITIES: ${playbook.content_priorities.join(', ')}\n`
+      }
+      message += `COMPETITIVE APPROACH: ${playbook.competitive_approach}\n`
+      message += `OPPORTUNITY FILTER: ${playbook.opportunity_filter}\n`
+      if (playbook.messaging_guardrails?.length > 0) {
+        message += `\nGUARDRAILS (do not violate):\n`
+        playbook.messaging_guardrails.forEach((g: string) => {
+          message += `• ${g}\n`
+        })
+      }
+      if (playbook.capability_gaps?.length > 0) {
+        message += `GAPS TO ADDRESS: ${playbook.capability_gaps.join(', ')}\n`
+      }
+      if (playbook.quick_wins?.length > 0) {
+        message += `QUICK WINS TO PURSUE: ${playbook.quick_wins.join(', ')}\n`
+      }
+      if (playbook.out_of_scope?.length > 0) {
+        message += `OUT OF SCOPE: ${playbook.out_of_scope.join(', ')}\n`
+      }
+      message += '\n'
+    }
+
+    // Include Brand Voice if available
+    if (data.brand_voice) {
+      const voice = data.brand_voice
+      const formality = voice.formality < 33 ? 'casual' : voice.formality < 66 ? 'balanced' : 'formal'
+      const technicality = voice.technicality < 33 ? 'accessible' : voice.technicality < 66 ? 'moderate' : 'technical'
+      const boldness = voice.boldness < 33 ? 'conservative' : voice.boldness < 66 ? 'balanced' : 'bold'
+
+      message += `**BRAND VOICE:**\n`
+      message += `Tone: ${formality}, ${technicality}, ${boldness}\n`
+      if (voice.adjectives?.length > 0) {
+        message += `Voice attributes: ${voice.adjectives.join(', ')}\n`
+      }
+      if (voice.avoid?.length > 0) {
+        message += `Avoid: ${voice.avoid.join(', ')}\n`
+      }
+      message += '\n'
+    }
+
+    // Include Strategic Goals if available
+    if (data.strategic_goals?.length > 0) {
+      message += `**STRATEGIC GOALS:**\n`
+      data.strategic_goals.forEach((goal: any, idx: number) => {
+        const priority = goal.priority === 'high' ? '🔴' : goal.priority === 'medium' ? '🟡' : '🟢'
+        message += `${idx + 1}. ${priority} ${goal.goal}${goal.timeframe ? ` (${goal.timeframe})` : ''}\n`
+      })
+      message += '\n'
+    }
+
+    message += `IMPORTANT: Use the Operating Playbook directives to guide your recommendations. All content and opportunities should align with their strategic goals and respect their guardrails.\n\n`
   }
 
   // Add truncated conversation context to prevent token overflow
@@ -3589,6 +3652,29 @@ function cleanClaudeResponse(text: string): string {
 function checkQueryComplexity(message: string, understanding: any, conceptState?: ConceptState): boolean {
   const lower = message.toLowerCase()
 
+  // SKIP orchestration if Claude determined no fresh data is needed
+  // This prevents useless searches for "not applicable" or "generate thought leadership"
+  if (understanding?.understanding?.requires_fresh_data === false &&
+      understanding?.approach?.strategy === 'contextual_response') {
+    console.log('📋 Skipping complexity check - Claude determined no research needed (contextual_response + requires_fresh_data=false)')
+    return false
+  }
+
+  // SKIP orchestration for content execution requests
+  // These should route to content generation, not research
+  const contentExecutionPatterns = [
+    /generate\s+(a\s+)?(thought leadership|article|blog|content|piece|post)/i,
+    /write\s+(a\s+)?(thought leadership|article|blog|content|piece|post)/i,
+    /create\s+(a\s+)?(thought leadership|article|blog|content|piece|post)/i,
+    /turn\s+(this|it)\s+into/i,
+    /generate\s+it\s+as/i,
+    /make\s+(this|it)\s+(into|a)/i
+  ]
+  if (contentExecutionPatterns.some(p => p.test(message))) {
+    console.log('📋 Skipping complexity check - content execution request detected')
+    return false
+  }
+
   // Check if we should generate proposals based on minimum information
   if (conceptState && shouldGenerateProposals(conceptState, message)) {
     console.log('🎯 Minimum information threshold met - triggering comprehensive research for proposals')
@@ -4130,7 +4216,11 @@ function detectCommandIntent(message: string): { isCommand: boolean; commandType
   // Detect routing/execution commands - SIMPLIFIED and more flexible
   const routingCommands = [
     /(create|make|generate|build).*(presentation|deck|slides?)/i,  // "create a presentation", "make deck", "generate slides"
-    /(create|make|generate|build).*(press release|blog|article|post|email)/i,  // Content creation
+    /(create|make|generate|build|write).*(press release|blog|article|post|email|thought leadership|content piece|white paper|op-?ed)/i,  // Content creation
+    /generate\s+(a\s+)?(thought leadership|content piece|article)/i,  // "generate thought leadership"
+    /generate\s+it\s+as\s+a?\s*(content|thought|article|piece|blog|post)/i,  // "generate it as a content piece"
+    /write\s+(a\s+)?(thought leadership|content piece|article)/i,  // "write a thought leadership piece"
+    /turn\s+(this|it)\s+into\s+(a\s+)?(thought leadership|content|article|blog|piece|post|press release)/i,  // "turn this into a thought leadership piece"
     /send.*(to|in) (gamma|campaign builder)/i,  // "send to gamma"
     /open.*(in|with) (gamma|campaign builder)/i,  // "open in gamma"
     /use (gamma|campaign builder)/i,  // "use gamma"
@@ -4735,7 +4825,9 @@ What would you like to explore or work on today?`
         useGamma = true
       } else if (messageLower.includes('press release')) {
         requestedContentType = 'press-release'
-      } else if (messageLower.includes('blog')) {
+      } else if (messageLower.includes('thought leadership') || messageLower.includes('op-ed') || messageLower.includes('oped') || messageLower.includes('white paper') || messageLower.includes('long-form')) {
+        requestedContentType = 'blog-post'  // thought leadership maps to blog-post/article format
+      } else if (messageLower.includes('blog') || messageLower.includes('article') || messageLower.includes('content piece')) {
         requestedContentType = 'blog-post'
       } else if (messageLower.includes('social')) {
         requestedContentType = 'social-post'
@@ -5515,6 +5607,25 @@ Respond with JSON only:
         searchQuery = '' // Empty search to prevent searching for "strategic framework"
       }
 
+      // Skip search for contextual_response with no fresh data needed
+      // Prevents searching for "not applicable" or "generate thought leadership"
+      if (queryStrategy.approach === 'contextual_response' &&
+          claudeUnderstanding?.understanding?.requires_fresh_data === false) {
+        console.log('📋 Contextual response with no fresh data needed - skipping search')
+        searchQuery = ''
+      }
+
+      // Skip search for nonsensical queries that are commands, not search terms
+      if (searchQuery && (
+          searchQuery.toLowerCase().includes('not applicable') ||
+          searchQuery.toLowerCase().startsWith('generate ') ||
+          searchQuery.toLowerCase().startsWith('write ') ||
+          searchQuery.toLowerCase().startsWith('create ') ||
+          searchQuery === '')) {
+        console.log('📋 Search query is a command, not a search term - skipping search')
+        searchQuery = ''
+      }
+
       if (queryStrategy.approach === 'intelligence_pipeline' && queryStrategy.confidence >= 0.7 && searchQuery) {
       console.log('🎯 Executing Intelligence Pipeline strategy...')
       console.log(`🔍 Using search query: "${searchQuery}"`)
@@ -5742,7 +5853,7 @@ Remember to maintain natural conversation flow while bringing this perspective t
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 2000,
+        max_tokens: shouldGenerateFramework || queryType === 'articles' ? 4096 : 2000,
         system: moduleEnhancedPrompt,
         messages: [
           {

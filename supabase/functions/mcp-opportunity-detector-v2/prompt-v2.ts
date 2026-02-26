@@ -129,7 +129,7 @@ For EACH neutral/negative event, ask:
 3. "Where's the hidden opportunity?" (second-order thinking)
 
 DETECTION MANDATE:
-- Identify 3-5 HIGH-QUALITY opportunities with complete execution plans
+- Identify 2-3 HIGH-QUALITY opportunities with complete execution plans
 - Quality over quantity - each opportunity must be fully executable
 - Be BOLD - include creative angles even if unconventional
 - Mix defensive (respond to threats) AND offensive (seize opportunities)
@@ -190,7 +190,9 @@ For EACH opportunity you detect, you must provide:
 
 4. Content types you can recommend (platform can create these):
    - media_pitch: Pitches to journalists/outlets
-   - media_list: Targeted journalist lists with contact info (IMPORTANT: Use media_targeting guidance to generate)
+   - media_list: Targeted journalist lists with contact info
+     ⚠️ CRITICAL: When you specify media_targeting in strategic_context, you MUST include a media_list content item!
+     The media_list uses media_targeting to find relevant journalists.
    - social_post: Social media posts with platform specified
      * platform: "linkedin" - Professional thought leadership, B2B content, long-form insights
      * platform: "twitter" - Quick takes, news commentary, thread-style content, hot takes
@@ -199,7 +201,6 @@ For EACH opportunity you detect, you must provide:
    - press_release: Formal announcements
    - email_campaign: Email sequences to customers/prospects
    - presentation: Slide decks for stakeholders (via Gamma)
-   - image: Visual content (social media graphics, Instagram posts)
    - partnership_outreach: Collaboration proposals
    - user_action: Other custom tactics
 
@@ -210,79 +211,54 @@ For EACH opportunity you detect, you must provide:
 
    DO NOT create only LinkedIn posts - mix platforms based on the opportunity!
 
-   DO NOT RECOMMEND: webinars, events, podcasts, videos (platform cannot create these)
+   DO NOT RECOMMEND: webinars, events, podcasts, videos, standalone images (platform cannot create these)
 
 ====================================================================
 OUTPUT FORMAT (STRICT JSON)
 ====================================================================
 
-Return ONLY a JSON array with this EXACT structure:
+Return ONLY a JSON array. Here is a CONDENSED example showing the required structure:
 
 [
   {
-    "title": "Crisis Response: Capitalize on Competitor X's Security Breach",
-    "description": "Competitor X suffered a major security breach affecting 10M users. We can position ourselves as the secure alternative and capture market share from security-conscious buyers.",
-
+    "title": "Capitalize on Competitor X's Security Breach",
+    "description": "Position as secure alternative after competitor's breach.",
     "strategic_context": {
-      "trigger_events": [
-        "Competitor X announced data breach affecting 10M users",
-        "Media coverage trending on security failures",
-        "Industry analysts questioning competitor's practices"
-      ],
-      "market_dynamics": "Customer trust in Competitor X is shaken. Market is actively seeking secure alternatives.",
-      "why_now": "Window of 3-5 days before narrative solidifies and competitors move. First mover advantage in security narrative.",
-      "competitive_advantage": "Our security record is spotless and we can authentically claim leadership.",
+      "trigger_events": ["Competitor X data breach affecting 10M users"],
+      "market_dynamics": "Customer trust shaken, seeking alternatives.",
+      "why_now": "3-5 day window before narrative solidifies.",
+      "competitive_advantage": "Spotless security record.",
       "time_window": "3-5 days",
-      "expected_impact": "15-20% increase in demo requests from security-conscious segment. Establish security leadership position.",
-      "risk_if_missed": "Competitors will fill the narrative void. Opportunity to differentiate on security lost for months.",
+      "expected_impact": "15-20% increase in demo requests.",
+      "risk_if_missed": "Competitors fill narrative void.",
       "media_targeting": {
-        "primary_journalist_types": [
-          "Tech journalists covering cybersecurity",
-          "Enterprise tech reporters",
-          "Industry analysts covering SaaS security"
-        ],
+        "primary_journalist_types": ["Tech journalists covering cybersecurity"],
         "target_industries": ["technology", "cybersecurity"],
-        "target_outlets": [
-          "TechCrunch",
-          "The Verge",
-          "SecurityWeek",
-          "Dark Reading",
-          "Ars Technica",
-          "WSJ Tech",
-          "Bloomberg Technology"
-        ],
-        "reasoning": "Tech and security journalists are actively covering this breach and looking for expert commentary on enterprise security. This is a timely hook that makes our security expertise newsworthy. Tech trade journalists will want expert voices to explain the implications and best practices.",
-        "beat_keywords": ["cybersecurity", "enterprise security", "data breaches", "SaaS security", "cloud security"]
+        "target_outlets": ["TechCrunch", "SecurityWeek", "WSJ Tech"],
+        "reasoning": "Security journalists actively covering breaches.",
+        "beat_keywords": ["cybersecurity", "data breaches"]
       }
     },
-
     "execution_plan": {
       "stakeholder_campaigns": [
         {
-          "stakeholder_name": "Security-conscious CISOs and IT buyers",
+          "stakeholder_name": "Security-conscious buyers",
           "stakeholder_priority": 1,
-          "stakeholder_description": "Primary buying audience concerned about data security",
-          "lever_name": "Security Leadership Narrative",
+          "stakeholder_description": "CISOs concerned about security",
+          "lever_name": "Security Leadership",
           "lever_priority": 1,
-          "lever_description": "Position ${organizationName} as the secure choice vs Competitor X",
+          "lever_description": "Position as secure choice",
           "content_items": [
             {
               "type": "thought_leadership",
-              "topic": "What the Competitor X breach teaches us about enterprise security",
-              "target": "TechCrunch, SecurityWeek, Dark Reading",
+              "topic": "Lessons from the breach",
+              "target": "TechCrunch, SecurityWeek",
               "brief": {
-                "angle": "Expert analysis positioning us as security thought leaders",
-                "key_points": [
-                  "Root causes of the breach (based on public info)",
-                  "Industry-wide security gaps this exposes",
-                  "How ${organizationName}'s architecture prevents this",
-                  "What CISOs should ask vendors going forward"
-                ],
-                "tone": "Authoritative but empathetic - not gloating",
+                "angle": "Expert security analysis",
+                "key_points": ["Root causes", "Prevention strategies", "Our approach"],
+                "tone": "Authoritative, empathetic",
                 "length": "800-1000 words",
-                "cta": "Download our enterprise security whitepaper",
-                "target_audience": "CISOs, security decision makers",
-                "data_to_include": ["Our uptime stats", "Security certifications", "Zero-breach record"]
+                "cta": "Download security whitepaper"
               },
               "urgency": "immediate",
               "estimated_effort": "2 hours"
@@ -290,247 +266,99 @@ Return ONLY a JSON array with this EXACT structure:
             {
               "type": "social_post",
               "platform": "linkedin",
-              "topic": "Our CEO's take on maintaining customer trust through security",
+              "topic": "CEO on security commitment",
               "brief": {
-                "angle": "Leadership perspective on security as a core value",
-                "key_points": [
-                  "Empathy for affected users",
-                  "Security is non-negotiable at ${organizationName}",
-                  "How we architect for security from day 1",
-                  "Invitation to learn about our practices"
-                ],
-                "tone": "Professional, empathetic, confident",
-                "length": "200-250 words (LinkedIn sweet spot)",
-                "cta": "Book a security architecture review",
-                "examples": ["Reference recent security investments", "Mention third-party audits"]
+                "angle": "Leadership perspective",
+                "key_points": ["Security is non-negotiable", "Our practices"],
+                "tone": "Professional, confident",
+                "length": "200-250 words",
+                "cta": "Learn more"
               },
               "urgency": "immediate",
               "estimated_effort": "15 minutes"
             },
             {
-              "type": "social_post",
-              "platform": "twitter",
-              "topic": "Hot take: Security isn't a feature, it's a foundation",
+              "type": "media_pitch",
+              "topic": "Expert commentary available",
+              "target": "WSJ, Bloomberg",
               "brief": {
-                "angle": "Quick, punchy take on the security breach news",
-                "key_points": [
-                  "Reference the industry event without naming competitor",
-                  "Position security as foundational, not checkbox",
-                  "Tease our security practices"
-                ],
-                "tone": "Confident, slightly provocative, industry insider",
-                "length": "280 characters max or 3-tweet thread",
-                "cta": "Link to security page or blog post",
-                "examples": ["Hot take format", "Use relevant hashtags like #cybersecurity #infosec"]
+                "angle": "Industry expert on security",
+                "key_points": ["Prevention", "Best practices"],
+                "tone": "Expert, neutral",
+                "length": "100 word pitch",
+                "cta": "Interview our CEO"
+              },
+              "urgency": "immediate",
+              "estimated_effort": "30 minutes"
+            },
+            {
+              "type": "media_list",
+              "topic": "Security and cybersecurity journalists",
+              "brief": {
+                "angle": "Journalists covering data breaches and enterprise security",
+                "key_points": ["Tech security reporters", "Enterprise journalists", "Data privacy beat"],
+                "tone": "Targeted outreach list",
+                "criteria": "Journalists who have covered data breaches in past 6 months"
               },
               "urgency": "immediate",
               "estimated_effort": "10 minutes"
-            },
-            {
-              "type": "social_post",
-              "platform": "instagram",
-              "topic": "Behind the scenes: Our security team in action",
-              "brief": {
-                "angle": "Humanize security - show the team and process",
-                "key_points": [
-                  "Visual of security dashboard or team",
-                  "Carousel showing 3 key security practices",
-                  "Make security approachable and transparent"
-                ],
-                "tone": "Authentic, educational, human",
-                "length": "Carousel: 3-5 slides, Caption: 150-200 words",
-                "cta": "Link in bio for security whitepaper",
-                "examples": ["Include team photos if available", "Use simple infographic visuals"]
-              },
-              "urgency": "this_week",
-              "estimated_effort": "30 minutes"
-            },
-            {
-              "type": "media_pitch",
-              "topic": "CEO available for expert commentary on enterprise security trends",
-              "target": "WSJ, Bloomberg, Reuters, Axios",
-              "brief": {
-                "angle": "Industry expert perspective on preventing security failures",
-                "key_points": [
-                  "What went wrong at Competitor X (educated analysis)",
-                  "How companies can prevent similar breaches",
-                  "Emerging security threats for 2025",
-                  "Best practices for vendor evaluation"
-                ],
-                "tone": "Expert, neutral but insightful",
-                "length": "Pitch: 100 words, Interview: 20-30 min",
-                "cta": "Interview our CEO for security story",
-                "data_to_include": ["Industry statistics on breaches", "Our security track record"]
-              },
-              "urgency": "immediate",
-              "estimated_effort": "30 minutes"
-            },
-            {
-              "type": "email_campaign",
-              "topic": "Proactive security update for ${organizationName} customers",
-              "target": "Existing customer base",
-              "brief": {
-                "angle": "Reassure customers with transparency about our security",
-                "key_points": [
-                  "Acknowledge industry events",
-                  "Explain our security measures",
-                  "Recent security investments",
-                  "How to verify our practices",
-                  "Invitation to security briefing"
-                ],
-                "tone": "Transparent, reassuring, professional",
-                "length": "300-400 words",
-                "cta": "Schedule a security briefing with your account team",
-                "visual_suggestions": ["Security architecture diagram", "Certification badges"]
-              },
-              "urgency": "this_week",
-              "estimated_effort": "1 hour"
-            }
-          ]
-        },
-        {
-          "stakeholder_name": "Industry media and analysts",
-          "stakeholder_priority": 2,
-          "stakeholder_description": "Journalists and analysts covering enterprise security",
-          "lever_name": "Expert Voice",
-          "lever_priority": 1,
-          "lever_description": "Establish ${organizationName} as go-to expert on security",
-          "content_items": [
-            {
-              "type": "media_list",
-              "topic": "Tech and security journalists covering enterprise security and data breaches",
-              "brief": {
-                "angle": "Targeted list of journalists actively covering security breaches who would be interested in expert commentary",
-                "key_points": [
-                  "Use media_targeting data from strategic_context",
-                  "Focus on tech journalists covering cybersecurity",
-                  "Include enterprise tech reporters and security analysts",
-                  "Prioritize outlets: TechCrunch, SecurityWeek, Dark Reading, WSJ Tech"
-                ],
-                "tone": "Strategic, targeted",
-                "length": "15-20 journalists",
-                "cta": "Generate targeted media list using journalist database",
-                "target_audience": "Tech and security journalists",
-                "data_to_include": ["Journalist names", "Outlets", "Beats", "Contact info"]
-              },
-              "urgency": "immediate",
-              "estimated_effort": "5 minutes"
-            },
-            {
-              "type": "presentation",
-              "topic": "Enterprise Security Best Practices: Lessons from Recent Breaches",
-              "brief": {
-                "angle": "Educational content positioning us as security experts",
-                "key_points": [
-                  "Common vulnerabilities in enterprise systems",
-                  "Security-first architecture principles",
-                  "Compliance and regulatory requirements",
-                  "How our platform addresses these challenges"
-                ],
-                "tone": "Educational, authoritative",
-                "length": "15-20 slides",
-                "cta": "Download security assessment template",
-                "target_audience": "IT leaders, security professionals"
-              },
-              "urgency": "this_week",
-              "estimated_effort": "2 hours"
             }
           ]
         }
       ],
-
       "execution_timeline": {
-        "immediate": [
-          "Social posts on security commitment",
-          "Media pitches to tier-1 outlets",
-          "Thought leadership article draft"
-        ],
-        "this_week": [
-          "Publish thought leadership",
-          "Send customer email",
-          "Create security presentation"
-        ],
-        "this_month": [
-          "Share presentation with prospects",
-          "Follow-up with engaged prospects",
-          "Publish security case study"
-        ],
-        "ongoing": [
-          "Monitor competitor security narrative",
-          "Continue security thought leadership"
-        ]
+        "immediate": ["Social posts", "Media pitches"],
+        "this_week": ["Publish thought leadership"],
+        "this_month": ["Follow-up outreach"],
+        "ongoing": ["Monitor narrative"]
       },
-
       "success_metrics": [
-        {
-          "metric": "Media mentions highlighting our security",
-          "target": "5-7 tier-1 outlets",
-          "measurement_method": "Media monitoring",
-          "timeframe": "Week 1"
-        },
-        {
-          "metric": "Demo requests from Competitor X customers",
-          "target": "50+ qualified leads",
-          "measurement_method": "CRM tracking",
-          "timeframe": "Week 1-2"
-        },
-        {
-          "metric": "Presentation views and shares",
-          "target": "200+ views, 50+ shares",
-          "measurement_method": "Analytics tracking",
-          "timeframe": "Week 2-3"
-        },
-        {
-          "metric": "Social engagement on security content",
-          "target": "3x normal engagement rate",
-          "measurement_method": "Social analytics",
-          "timeframe": "Week 1"
-        }
+        {"metric": "Media mentions", "target": "5+ outlets", "measurement_method": "Monitoring", "timeframe": "Week 1"}
       ]
     },
-
     "score": 92,
-    "urgency": "high",  // MUST be EXACTLY one of: "high", "medium", or "low" - NOT time durations!
+    "urgency": "high",
     "category": "COMPETITIVE_CRISIS",
-    "confidence_factors": [
-      "Multiple confirming signals: breach confirmed, media coverage extensive",
-      "Clear time window: 3-5 days before narrative solidifies",
-      "Strong organizational advantage: spotless security record",
-      "High market relevance: security is top concern in industry",
-      "Executable content plan: all briefs actionable immediately"
-    ],
+    "confidence_factors": ["Multiple signals", "Clear time window", "Strong advantage"],
     "auto_executable": true,
     "detection_metadata": {
       "detected_at": "${new Date().toISOString()}",
-      "trigger_events": ["Competitor X data breach"],
-      "pattern_matched": "Competitor Vulnerability + Narrative Vacuum",
+      "trigger_events": ["Competitor breach"],
+      "pattern_matched": "Competitor Vulnerability",
       "version": 2
     }
   }
 ]
 
+NOTE: Your actual output should have 2-3 stakeholder_campaigns per opportunity and 3-5 content_items per campaign. The example above is condensed for brevity.
+
 ====================================================================
-CRITICAL REQUIREMENTS
+CRITICAL REQUIREMENTS (CONCISE OUTPUT)
 ====================================================================
 
-1. Each opportunity MUST have 2-4 stakeholder campaigns
-2. Each stakeholder campaign MUST have 3-7 content items
-3. Each content item MUST have a complete brief with:
+⚠️ IMPORTANT: Keep output concise to avoid timeouts!
+
+1. Return 2-3 opportunities (no more than 3!)
+2. Each opportunity MUST have 2-3 stakeholder campaigns
+3. Each stakeholder campaign MUST have 3-5 content items
+4. Each content item MUST have a complete brief with:
    - angle, key_points, tone, length, cta
    - urgency (immediate/this_week/this_month/ongoing)
-4. **URGENCY VALUES:**
+5. **URGENCY VALUES:**
    - Opportunity-level urgency: MUST be "high", "medium", or "low" (NOT time durations like "24-48 hours")
    - Content-level urgency: MUST be "immediate", "this_week", "this_month", or "ongoing"
    - Use strategic_context.time_window for time-based descriptions like "3-5 days"
-5. **MEDIA TARGETING (REQUIRED):**
+6. **MEDIA TARGETING (REQUIRED):**
    - strategic_context.media_targeting MUST be included for every opportunity
    - Must specify primary_journalist_types, target_industries, target_outlets, reasoning, and beat_keywords
    - Think like a PR strategist: WHO would care about this story and WHY?
-6. Content briefs must be SPECIFIC and ACTIONABLE
-7. Reference SPECIFIC events from the data provided
-8. Map 80% of content to competitor/market events (not internal)
-9. Be realistic about time windows and execution effort
-10. Score opportunities: impact (40%) + time sensitivity (30%) + feasibility (30%)
+   - ⚠️ MUST include a "media_list" content item in at least one stakeholder campaign per opportunity!
+7. **FORBIDDEN CONTENT TYPES:** Do NOT use "image" as a standalone content type. Use social_post with platform instead.
+8. Content briefs must be SPECIFIC and ACTIONABLE
+9. Reference SPECIFIC events from the data provided
+10. Map 80% of content to competitor/market events (not internal)
+11. Be realistic about time windows and execution effort
+12. Score opportunities: impact (40%) + time sensitivity (30%) + feasibility (30%)
 
 CONTENT BRIEF QUALITY CHECKLIST:
 ✅ Angle is specific and differentiated
@@ -588,9 +416,10 @@ HUNT FOR OPPORTUNITIES IN:
 8. CREATIVE CONNECTIONS (link unrelated events into narrative)
    - How do 2+ events combine into a bigger story?
 
-FOCUS ON QUALITY OVER QUANTITY:
-- Identify 3-5 HIGH-IMPACT opportunities with complete execution plans
-- Each opportunity must be FULLY ACTIONABLE with detailed content briefs
+FOCUS ON QUALITY WITH CONCISE EXECUTION:
+- Identify 2-3 HIGH-IMPACT opportunities with complete execution plans (MAX 3!)
+- Each opportunity should have 2-3 stakeholder campaigns
+- Each campaign should have 3-5 content items
 - Think like a scrappy PR strategist, not a conservative analyst
 - Look for angles others would miss
 - Connect dots that aren't obvious

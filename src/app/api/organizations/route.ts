@@ -9,7 +9,17 @@ import { createServiceClient } from '@/lib/supabase/server'
  */
 export async function GET(req: NextRequest) {
   try {
-    const supabase = await createClient()
+    let supabase
+    try {
+      supabase = await createClient()
+    } catch (clientError: any) {
+      console.error('Failed to create Supabase client:', clientError)
+      return NextResponse.json(
+        { error: 'Failed to initialize database connection', details: clientError.message },
+        { status: 500 }
+      )
+    }
+
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
@@ -23,7 +33,16 @@ export async function GET(req: NextRequest) {
     const id = searchParams.get('id')
 
     // Use service client for queries (still need it for some operations)
-    const serviceClient = createServiceClient()
+    let serviceClient
+    try {
+      serviceClient = createServiceClient()
+    } catch (serviceError: any) {
+      console.error('Failed to create service client:', serviceError)
+      return NextResponse.json(
+        { error: 'Failed to initialize service connection', details: serviceError.message },
+        { status: 500 }
+      )
+    }
 
     // If ID provided, get single organization (check user has access)
     if (id) {
@@ -226,6 +245,34 @@ export async function POST(req: NextRequest) {
     }
 
     console.log(`✅ Created organization: ${org.name} (${org.id}) for user ${user.email}`)
+
+    // Trigger self-target creation for org story aggregation (non-blocking)
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+      if (supabaseUrl && supabaseServiceKey) {
+        // Fire-and-forget: don't await, let it run in background
+        fetch(`${supabaseUrl}/functions/v1/create-org-self-target`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseServiceKey}`
+          },
+          body: JSON.stringify({
+            organization_id: org.id,
+            run_initial_search: true
+          })
+        }).then(res => {
+          console.log(`   Self-target creation triggered: ${res.status}`)
+        }).catch(err => {
+          console.warn(`   Self-target creation failed (non-critical): ${err.message}`)
+        })
+      }
+    } catch (selfTargetError: any) {
+      // Non-critical: log but don't fail the org creation
+      console.warn(`   Self-target creation skipped: ${selfTargetError.message}`)
+    }
 
     // Return org with description from profile
     const flatOrg = {

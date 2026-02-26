@@ -119,6 +119,9 @@ serve(async (req) => {
     const organizationId = body.organization_id;  // Optional: filter to specific org
     const maxMatches = body.max_matches || MAX_MATCHES_PER_RUN;
     const maxMatchesPerOrg = body.max_per_org || 10;  // Ensure fair distribution across orgs
+    const minSimilarity = body.min_similarity || MIN_SIMILARITY_FOR_EXTRACTION;  // Allow override
+
+    console.log(`   Min similarity threshold: ${minSimilarity}`);
 
     let matches: Match[] = [];
 
@@ -137,7 +140,7 @@ serve(async (req) => {
         `)
         .eq('organization_id', organizationId)
         .or('facts_extracted.is.null,facts_extracted.eq.false')
-        .gte('similarity_score', MIN_SIMILARITY_FOR_EXTRACTION)
+        .gte('similarity_score', minSimilarity)
         .order('similarity_score', { ascending: false })
         .limit(maxMatches);
 
@@ -150,7 +153,7 @@ serve(async (req) => {
         .from('target_article_matches')
         .select('organization_id')
         .or('facts_extracted.is.null,facts_extracted.eq.false')
-        .gte('similarity_score', MIN_SIMILARITY_FOR_EXTRACTION);
+        .gte('similarity_score', minSimilarity);
 
       if (orgError) throw new Error(`Failed to get orgs: ${orgError.message}`);
 
@@ -173,7 +176,7 @@ serve(async (req) => {
           `)
           .eq('organization_id', orgId)
           .or('facts_extracted.is.null,facts_extracted.eq.false')
-          .gte('similarity_score', MIN_SIMILARITY_FOR_EXTRACTION)
+          .gte('similarity_score', minSimilarity)
           .order('similarity_score', { ascending: false })
           .limit(maxMatchesPerOrg);
 
@@ -907,11 +910,12 @@ async function updateAccumulatedContext(
 
   ctx.last_analyzed_at = new Date().toISOString();
 
-  // Save updated context
+  // Save updated context and sync fact_count
   await supabase
     .from('intelligence_targets')
     .update({
       accumulated_context: ctx,
+      fact_count: ctx.total_facts,  // Keep fact_count in sync with accumulated_context
       updated_at: new Date().toISOString()
     })
     .eq('id', targetId);
