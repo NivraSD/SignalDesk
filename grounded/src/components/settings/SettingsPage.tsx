@@ -121,7 +121,7 @@ export default function SettingsPage() {
   }
 
   const shortcutUrl = apiKey
-    ? `${SUPABASE_URL}/functions/v1/grounded-art?key=${apiKey}&action=generate&format=url`
+    ? `${SUPABASE_URL}/functions/v1/grounded-art?key=${apiKey}&action=generate&format=image`
     : ''
 
   return (

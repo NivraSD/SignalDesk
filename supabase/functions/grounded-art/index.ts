@@ -296,10 +296,16 @@ Deno.serve(async (req: Request) => {
         throw new Error(`Failed to save art piece: ${insertError.message}`)
       }
 
-      // For Shortcuts: return just the image URL as plain text
-      if (url.searchParams.get('format') === 'url') {
-        return new Response(record.image_url, {
-          headers: { ...corsHeaders, 'Content-Type': 'text/plain' },
+      // For Shortcuts: return the actual image bytes directly
+      if (url.searchParams.get('format') === 'image') {
+        const imgResponse = await fetch(record.image_url)
+        const imgBytes = await imgResponse.arrayBuffer()
+        return new Response(imgBytes, {
+          headers: {
+            ...corsHeaders,
+            'Content-Type': imgResponse.headers.get('Content-Type') || 'image/png',
+            'Content-Disposition': `inline; filename="grounded-art.png"`,
+          },
         })
       }
 
