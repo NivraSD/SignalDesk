@@ -75,6 +75,18 @@ export default function SettingsPage() {
       </button>
       <h2 className="text-xl font-light text-stone-700 text-center">Settings</h2>
 
+      {/* Activity Bank */}
+      <button
+        onClick={() => navigate('/activities')}
+        className="w-full bg-white rounded-xl p-4 shadow-sm flex items-center justify-between"
+      >
+        <div>
+          <h3 className="text-sm font-medium text-stone-700 text-left">Activity Bank</h3>
+          <p className="text-xs text-stone-400">Manage activities for each life area</p>
+        </div>
+        <span className="text-stone-400">&rarr;</span>
+      </button>
+
       {/* AI Rules & Guidance */}
       <div className="bg-white rounded-xl p-4 shadow-sm space-y-3">
         <h3 className="text-sm font-medium text-stone-700">AI Rules &amp; Guidance</h3>
