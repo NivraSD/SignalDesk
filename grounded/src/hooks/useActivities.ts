@@ -1,66 +1,74 @@
-import { useState, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useGroundedStore } from '@/stores/groundedStore'
-import { DEFAULT_ACTIVITIES, type AreaId } from '@/lib/constants'
+import { DEFAULT_ACTIVITY_BANK } from '@/lib/constants'
 import type { Activity } from '@/types'
 
 export function useActivities() {
-  const [loading, setLoading] = useState(false)
+  const [activities, setActivities] = useState<Activity[]>([])
+  const [loading, setLoading] = useState(true)
   const { userId, activityBank, setActivityBank } = useGroundedStore()
 
   const loadActivities = useCallback(async () => {
     if (!userId) return
     setLoading(true)
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('grounded_activities')
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: true })
 
-    if (data && data.length > 0) {
-      setActivityBank(data as Activity[])
+    if (!error && data) {
+      setActivities(data)
+      // Build activity bank grouped by area
+      const bank: Record<string, string[]> = { ...DEFAULT_ACTIVITY_BANK }
+      data.forEach((a: Activity) => {
+        if (!bank[a.area_id]) bank[a.area_id] = []
+        if (!bank[a.area_id].includes(a.name)) {
+          bank[a.area_id].push(a.name)
+        }
+      })
+      setActivityBank(bank)
+    } else if (Object.keys(activityBank).length === 0) {
+      setActivityBank(DEFAULT_ACTIVITY_BANK)
     }
     setLoading(false)
-  }, [userId, setActivityBank])
+  }, [userId, setActivityBank, activityBank])
 
-  async function seedDefaults() {
-    if (!userId) return
-    const rows = Object.entries(DEFAULT_ACTIVITIES).flatMap(([area, names]) =>
-      names.map((name) => ({ user_id: userId, area_id: area, name, is_default: true }))
-    )
-    const { data } = await supabase.from('grounded_activities').insert(rows).select()
-    if (data) setActivityBank(data as Activity[])
-  }
+  useEffect(() => {
+    loadActivities()
+  }, [loadActivities])
 
-  async function addActivity(areaId: AreaId, name: string) {
+  const addActivity = async (areaId: string, name: string) => {
     if (!userId) return
     const { data, error } = await supabase
       .from('grounded_activities')
       .insert({ user_id: userId, area_id: areaId, name, is_default: false })
       .select()
       .single()
-    if (error) throw error
-    setActivityBank([...activityBank, data as Activity])
-  }
 
-  async function removeActivity(id: string) {
-    const { error } = await supabase.from('grounded_activities').delete().eq('id', id)
-    if (error) throw error
-    setActivityBank(activityBank.filter((a) => a.id !== id))
-  }
-
-  function getActivitiesByArea(areaId: AreaId): Activity[] {
-    return activityBank.filter((a) => a.area_id === areaId)
-  }
-
-  function getActivityNamesByArea(): Record<AreaId, string[]> {
-    const result = {} as Record<AreaId, string[]>
-    for (const area of Object.keys(DEFAULT_ACTIVITIES) as AreaId[]) {
-      result[area] = activityBank.filter((a) => a.area_id === area).map((a) => a.name)
-      if (result[area].length === 0) result[area] = DEFAULT_ACTIVITIES[area]
+    if (!error && data) {
+      setActivities((prev) => [...prev, data])
+      setActivityBank({
+        ...activityBank,
+        [areaId]: [...(activityBank[areaId] || []), name],
+      })
     }
-    return result
   }
 
-  return { activityBank, loading, loadActivities, seedDefaults, addActivity, removeActivity, getActivitiesByArea, getActivityNamesByArea }
+  const removeActivity = async (id: string) => {
+    const activity = activities.find((a) => a.id === id)
+    const { error } = await supabase.from('grounded_activities').delete().eq('id', id)
+    if (!error && activity) {
+      setActivities((prev) => prev.filter((a) => a.id !== id))
+      setActivityBank({
+        ...activityBank,
+        [activity.area_id]: (activityBank[activity.area_id] || []).filter(
+          (n) => n !== activity.name
+        ),
+      })
+    }
+  }
+
+  return { activities, activityBank, loading, addActivity, removeActivity, loadActivities }
 }

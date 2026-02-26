@@ -1,149 +1,178 @@
-import { useEffect, useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LogOut, Plus, Trash2, X } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
+import { supabase } from '@/lib/supabase'
 import { useGroundedStore } from '@/stores/groundedStore'
-import type { UserRule } from '@/types'
+
+interface UserRule {
+  id?: string
+  rule_text: string
+  category: string
+  is_active: boolean
+}
 
 export default function SettingsPage() {
   const navigate = useNavigate()
-  const { signOut, user } = useAuth()
-  const userId = useGroundedStore((s) => s.userId)
+  const { user, signOut } = useAuth()
+  const { userId } = useGroundedStore()
   const [rules, setRules] = useState<UserRule[]>([])
-  const [showAdd, setShowAdd] = useState(false)
   const [newRule, setNewRule] = useState('')
-  const [displayName, setDisplayName] = useState('')
+  const [loadingRules, setLoadingRules] = useState(true)
   const [saving, setSaving] = useState(false)
 
+  // Load rules
   useEffect(() => {
     if (!userId) return
-    supabase.from('grounded_user_rules').select('*').eq('user_id', userId).eq('is_active', true).then(({ data }) => {
-      setRules((data ?? []) as UserRule[])
-    })
-    supabase.from('grounded_user_settings').select('*').eq('user_id', userId).maybeSingle().then(({ data }) => {
-      if (data) setDisplayName(data.display_name ?? '')
-    })
+    const load = async () => {
+      const { data } = await supabase
+        .from('grounded_user_rules')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: true })
+      if (data) setRules(data)
+      setLoadingRules(false)
+    }
+    load()
   }, [userId])
 
-  async function addRule() {
-    if (!userId || !newRule.trim()) return
-    const { data } = await supabase
+  const addRule = async () => {
+    if (!newRule.trim() || !userId) return
+    setSaving(true)
+    const { data, error } = await supabase
       .from('grounded_user_rules')
       .insert({ user_id: userId, rule_text: newRule.trim(), category: 'general', is_active: true })
       .select()
       .single()
-    if (data) setRules((prev) => [...prev, data as UserRule])
-    setNewRule('')
-    setShowAdd(false)
-  }
-
-  async function removeRule(id: string) {
-    await supabase.from('grounded_user_rules').update({ is_active: false }).eq('id', id)
-    setRules((prev) => prev.filter((r) => r.id !== id))
-  }
-
-  async function saveName() {
-    if (!userId) return
-    setSaving(true)
-    await supabase.from('grounded_user_settings').upsert({
-      user_id: userId,
-      display_name: displayName.trim() || null,
-    }, { onConflict: 'user_id' })
+    if (!error && data) {
+      setRules((prev) => [...prev, data])
+      setNewRule('')
+    }
     setSaving(false)
   }
 
-  async function handleSignOut() {
+  const removeRule = async (id: string) => {
+    await supabase.from('grounded_user_rules').delete().eq('id', id)
+    setRules((prev) => prev.filter((r) => r.id !== id))
+  }
+
+  const toggleRule = async (id: string) => {
+    const rule = rules.find((r) => r.id === id)
+    if (!rule) return
+    const newActive = !rule.is_active
+    await supabase.from('grounded_user_rules').update({ is_active: newActive }).eq('id', id)
+    setRules((prev) => prev.map((r) => (r.id === id ? { ...r, is_active: newActive } : r)))
+  }
+
+  const handleSignOut = async () => {
     await signOut()
-    navigate('/login', { replace: true })
+    navigate('/login')
   }
 
   return (
-    <div className="max-w-lg mx-auto px-4 pt-8 pb-6 space-y-6">
-      <h1 className="text-2xl font-light text-stone-800">Settings</h1>
+    <div className="space-y-4">
+      <button onClick={() => navigate('/')} className="text-stone-500 text-sm">
+        &larr; Back
+      </button>
+      <h2 className="text-xl font-light text-stone-700 text-center">Settings</h2>
 
-      {/* Display name */}
-      <div className="bg-white rounded-2xl p-4 border border-stone-200 space-y-3">
-        <h2 className="text-sm font-medium text-stone-700">Display Name</h2>
-        <div className="flex gap-2">
-          <input
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            placeholder="Your name"
-            className="flex-1 px-3 py-2 rounded-lg bg-stone-50 text-sm focus:outline-none"
-          />
-          <button onClick={saveName} disabled={saving} className="px-4 py-2 rounded-lg bg-stone-800 text-white text-sm disabled:opacity-50">
-            Save
-          </button>
-        </div>
-      </div>
+      {/* AI Rules & Guidance */}
+      <div className="bg-white rounded-xl p-4 shadow-sm space-y-3">
+        <h3 className="text-sm font-medium text-stone-700">AI Rules &amp; Guidance</h3>
+        <p className="text-xs text-stone-400">
+          Tell your AI companion what to prioritize, avoid, or keep in mind. These shape every interaction.
+        </p>
 
-      {/* AI Rules */}
-      <div className="bg-white rounded-2xl p-4 border border-stone-200 space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-medium text-stone-700">AI Guidance Rules</h2>
-          <button onClick={() => setShowAdd(!showAdd)} className="text-stone-400">
-            {showAdd ? <X size={16} /> : <Plus size={16} />}
-          </button>
-        </div>
-        <p className="text-xs text-stone-400">Tell your AI companion how to talk to you.</p>
-
-        {showAdd && (
-          <div className="flex gap-2">
-            <input
-              value={newRule}
-              onChange={(e) => setNewRule(e.target.value)}
-              placeholder='e.g., "Prioritize morning routines"'
-              className="flex-1 px-3 py-2 rounded-lg bg-stone-50 text-sm focus:outline-none"
-              autoFocus
-              onKeyDown={(e) => e.key === 'Enter' && addRule()}
-            />
-            <button onClick={addRule} className="px-3 py-2 rounded-lg bg-stone-800 text-white text-sm">Add</button>
-          </div>
-        )}
-
-        {rules.length > 0 && (
+        {loadingRules ? (
+          <p className="text-xs text-stone-400">Loading...</p>
+        ) : (
           <div className="space-y-2">
-            {rules.map((r) => (
-              <div key={r.id} className="flex items-center gap-2 text-sm text-stone-600 bg-stone-50 rounded-lg px-3 py-2">
-                <span className="flex-1">{r.rule_text}</span>
-                <button onClick={() => removeRule(r.id)} className="text-stone-300 hover:text-red-400 shrink-0">
-                  <Trash2 size={14} />
+            {rules.map((rule) => (
+              <div
+                key={rule.id}
+                className={`flex items-start gap-2 p-2 rounded-lg ${
+                  rule.is_active ? 'bg-stone-50' : 'bg-stone-50 opacity-50'
+                }`}
+              >
+                <button
+                  onClick={() => rule.id && toggleRule(rule.id)}
+                  className={`w-4 h-4 rounded border-2 flex-shrink-0 mt-0.5 flex items-center justify-center ${
+                    rule.is_active ? 'bg-stone-700 border-stone-700' : 'border-stone-300'
+                  }`}
+                >
+                  {rule.is_active && <span className="text-white text-[10px]">{'\u2713'}</span>}
+                </button>
+                <span className="text-xs text-stone-600 flex-1">{rule.rule_text}</span>
+                <button
+                  onClick={() => rule.id && removeRule(rule.id)}
+                  className="text-stone-400 text-xs flex-shrink-0"
+                >
+                  x
                 </button>
               </div>
             ))}
+
+            {rules.length === 0 && (
+              <p className="text-xs text-stone-400 italic">
+                No rules yet. Examples: &quot;Prioritize morning routines&quot;, &quot;I value stoic philosophy&quot;, &quot;Don&apos;t push exercise on bad days&quot;
+              </p>
+            )}
           </div>
         )}
-      </div>
 
-      {/* Quick links */}
-      <div className="space-y-2">
-        {[
-          { label: 'Activity Bank', path: '/activities' },
-          { label: 'Vision Board', path: '/vision' },
-          { label: 'Calendar', path: '/calendar' },
-          { label: 'Reminders', path: '/reminders' },
-        ].map(({ label, path }) => (
+        {/* Add new rule */}
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={newRule}
+            onChange={(e) => setNewRule(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && addRule()}
+            placeholder="Add a rule or preference..."
+            className="flex-1 p-2 border border-stone-200 rounded-lg text-sm"
+          />
           <button
-            key={path}
-            onClick={() => navigate(path)}
-            className="w-full bg-white rounded-xl p-4 border border-stone-200 text-left text-sm font-medium text-stone-700"
+            onClick={addRule}
+            disabled={!newRule.trim() || saving}
+            className="px-3 py-2 bg-stone-700 text-white rounded-lg text-sm disabled:opacity-50"
           >
-            {label}
+            Add
           </button>
-        ))}
+        </div>
       </div>
 
-      {/* Account info */}
-      <div className="text-xs text-stone-400 text-center">{user?.email}</div>
+      {/* Account */}
+      <div className="bg-white rounded-xl p-4 shadow-sm space-y-3">
+        <h3 className="text-sm font-medium text-stone-700">Account</h3>
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-stone-600">{user?.email}</span>
+        </div>
+        <button
+          onClick={handleSignOut}
+          className="w-full py-2 border border-stone-200 rounded-lg text-sm text-stone-600"
+        >
+          Sign Out
+        </button>
+      </div>
 
-      {/* Sign out */}
-      <button
-        onClick={handleSignOut}
-        className="w-full py-3 rounded-xl border border-red-200 text-red-500 font-medium flex items-center justify-center gap-2"
-      >
-        <LogOut size={16} /> Sign Out
-      </button>
+      {/* Google Calendar */}
+      <div className="bg-white rounded-xl p-4 shadow-sm space-y-3">
+        <h3 className="text-sm font-medium text-stone-700">Google Calendar</h3>
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 bg-green-500 rounded-full" />
+          <span className="text-sm text-stone-600">Connected</span>
+        </div>
+        <p className="text-xs text-stone-400">
+          Calendar events sync automatically via service account.
+        </p>
+      </div>
+
+      {/* About */}
+      <div className="bg-white rounded-xl p-4 shadow-sm">
+        <h3 className="text-sm font-medium text-stone-700 mb-2">About</h3>
+        <p className="text-xs text-stone-500">
+          Grounded is a personal wellness and recovery tracker with an AI companion
+          that learns your patterns, preferences, and goals over time.
+        </p>
+      </div>
     </div>
   )
 }

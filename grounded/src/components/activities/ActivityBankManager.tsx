@@ -1,75 +1,76 @@
-import { useEffect, useState } from 'react'
-import { Plus, Trash2, X } from 'lucide-react'
-import { LIFE_AREAS, type AreaId } from '@/lib/constants'
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { AREAS } from '@/lib/constants'
 import { useActivities } from '@/hooks/useActivities'
 
 export default function ActivityBankManager() {
-  const { activityBank, loading, loadActivities, seedDefaults, addActivity, removeActivity, getActivitiesByArea } = useActivities()
-  const [addingArea, setAddingArea] = useState<AreaId | null>(null)
-  const [newName, setNewName] = useState('')
+  const navigate = useNavigate()
+  const { activities, activityBank, addActivity, removeActivity } = useActivities()
+  const [selectedArea, setSelectedArea] = useState(AREAS[0].id)
+  const [newActivity, setNewActivity] = useState('')
 
-  useEffect(() => { loadActivities() }, [loadActivities])
-
-  async function handleAdd() {
-    if (!addingArea || !newName.trim()) return
-    await addActivity(addingArea, newName.trim())
-    setNewName('')
-    setAddingArea(null)
+  const handleAdd = async () => {
+    if (!newActivity.trim()) return
+    await addActivity(selectedArea, newActivity.trim())
+    setNewActivity('')
   }
 
   return (
-    <div className="max-w-lg mx-auto px-4 pt-8 pb-6">
-      <h1 className="text-2xl font-light text-stone-800 mb-6">Activity Bank</h1>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <button onClick={() => navigate('/')} className="text-stone-500 text-sm">
+          &larr; Back
+        </button>
+        <h2 className="text-lg font-light text-stone-700">Activity Bank</h2>
+        <div className="w-12" />
+      </div>
 
-      {activityBank.length === 0 && !loading && (
-        <div className="text-center py-8">
-          <p className="text-stone-400 text-sm mb-4">No activities yet. Start with defaults?</p>
-          <button onClick={seedDefaults} className="px-6 py-2.5 rounded-xl bg-stone-800 text-white text-sm font-medium">
-            Load Default Activities
+      <div className="flex gap-2 overflow-x-auto pb-2">
+        {AREAS.map((area) => (
+          <button
+            key={area.id}
+            onClick={() => setSelectedArea(area.id)}
+            className={`px-3 py-1 rounded-full text-xs whitespace-nowrap ${
+              selectedArea === area.id
+                ? 'bg-stone-700 text-white'
+                : 'bg-stone-100 text-stone-600'
+            }`}
+          >
+            {area.icon} {area.name}
           </button>
-        </div>
-      )}
+        ))}
+      </div>
 
-      <div className="space-y-6">
-        {LIFE_AREAS.map((area) => {
-          const activities = getActivitiesByArea(area.id)
-          if (activityBank.length === 0 && !loading) return null
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={newActivity}
+          onChange={(e) => setNewActivity(e.target.value)}
+          placeholder="Add activity..."
+          className="flex-1 p-2 border border-stone-200 rounded-lg text-sm"
+          onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+        />
+        <button onClick={handleAdd} className="px-4 py-2 bg-stone-700 text-white rounded-lg text-sm">
+          Add
+        </button>
+      </div>
+
+      <div className="space-y-2 max-h-96 overflow-y-auto">
+        {(activityBank[selectedArea] || []).map((activityName, idx) => {
+          const dbActivity = activities.find(
+            (a) => a.area_id === selectedArea && a.name === activityName
+          )
           return (
-            <div key={area.id}>
-              <div className="flex items-center justify-between mb-2">
-                <h2 className={`text-sm font-medium ${area.color}`}>{area.name}</h2>
-                <button onClick={() => setAddingArea(addingArea === area.id ? null : area.id)} className="text-stone-400">
-                  {addingArea === area.id ? <X size={16} /> : <Plus size={16} />}
+            <div key={idx} className="flex items-center justify-between p-2 bg-stone-50 rounded-lg">
+              <span className="text-sm text-stone-700">{activityName}</span>
+              {dbActivity && (
+                <button
+                  onClick={() => dbActivity.id && removeActivity(dbActivity.id)}
+                  className="text-stone-400 text-xs"
+                >
+                  Remove
                 </button>
-              </div>
-
-              {addingArea === area.id && (
-                <div className="flex gap-2 mb-2">
-                  <input
-                    value={newName}
-                    onChange={(e) => setNewName(e.target.value)}
-                    placeholder="Activity name"
-                    className="flex-1 px-3 py-2 rounded-lg bg-white border border-stone-200 text-sm focus:outline-none"
-                    autoFocus
-                    onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
-                  />
-                  <button onClick={handleAdd} className="px-3 py-2 rounded-lg bg-stone-800 text-white text-sm">Add</button>
-                </div>
               )}
-
-              <div className="flex flex-wrap gap-2">
-                {activities.map((a) => (
-                  <div key={a.id} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs ${area.bgColor} ${area.color}`}>
-                    <span>{a.name}</span>
-                    <button onClick={() => removeActivity(a.id)} className="opacity-50 hover:opacity-100">
-                      <Trash2 size={12} />
-                    </button>
-                  </div>
-                ))}
-                {activities.length === 0 && (
-                  <span className="text-xs text-stone-300">No activities</span>
-                )}
-              </div>
             </div>
           )
         })}

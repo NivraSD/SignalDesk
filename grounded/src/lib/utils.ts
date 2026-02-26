@@ -1,55 +1,92 @@
-import { format, startOfDay, isToday, isYesterday, differenceInDays } from 'date-fns'
-import { DAILY_QUOTES } from './constants'
+import { DAILY_QUOTES, DAYS_OF_WEEK } from './constants'
+import type { Area, CheckIn, Reminder } from '@/types'
 
-export function getGreeting(): string {
+export const getToday = () => new Date().toISOString().split('T')[0]
+
+export const getYesterday = () => {
+  const d = new Date()
+  d.setDate(d.getDate() - 1)
+  return d.toISOString().split('T')[0]
+}
+
+export const getGreeting = () => {
   const hour = new Date().getHours()
-  if (hour < 5) return 'Good evening'
   if (hour < 12) return 'Good morning'
   if (hour < 17) return 'Good afternoon'
   return 'Good evening'
 }
 
-export function getDailyQuote(): string {
+export const getDailyQuote = () => {
+  const today = new Date()
   const dayOfYear = Math.floor(
-    (Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000
+    (today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24)
   )
   return DAILY_QUOTES[dayOfYear % DAILY_QUOTES.length]
 }
 
-export function todayDate(): string {
-  return format(new Date(), 'yyyy-MM-dd')
+export const getWeekDates = (weekOffset = 0) => {
+  const today = new Date()
+  const startOfWeek = new Date(today)
+  startOfWeek.setDate(today.getDate() - today.getDay() + weekOffset * 7)
+  const dates: string[] = []
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(startOfWeek)
+    d.setDate(startOfWeek.getDate() + i)
+    dates.push(d.toISOString().split('T')[0])
+  }
+  return dates
 }
 
-export function formatDate(date: string | Date): string {
-  const d = typeof date === 'string' ? new Date(date) : date
-  if (isToday(d)) return 'Today'
-  if (isYesterday(d)) return 'Yesterday'
-  const days = differenceInDays(startOfDay(new Date()), startOfDay(d))
-  if (days < 7) return format(d, 'EEEE')
-  return format(d, 'MMM d')
+export const getFrequencyLabel = (reminder: Reminder) => {
+  if (reminder.frequency === 'daily') return 'Daily'
+  if (reminder.frequency === 'weekdays') return 'Weekdays'
+  if (reminder.frequency === 'weekends') return 'Weekends'
+  if (reminder.frequency === 'weekly') return `Weekly (${DAYS_OF_WEEK[reminder.days?.[0]] || 'Sun'})`
+  if (reminder.frequency === 'custom' && reminder.days?.length) {
+    return reminder.days.map((d) => DAYS_OF_WEEK[d]).join(', ')
+  }
+  return 'Custom'
 }
 
-export function formatTime(time: string): string {
-  const [h, m] = time.split(':').map(Number)
+// Simple fallback feedback (used when AI reflection is unavailable)
+export const generateFeedback = (checkIn: CheckIn | null, area: Area) => {
+  const areaData = checkIn?.areas?.[area.id]
+  if (!areaData) return null
+
+  const { score, didSomething, activities, whatDidYouDo } = areaData
+  const activityList = activities?.length ? activities : whatDidYouDo ? [whatDidYouDo] : []
+
+  if (didSomething && activityList.length > 0) {
+    return { type: 'praise' as const, message: `You did ${activityList.length} thing${activityList.length > 1 ? 's' : ''} for ${area.name.toLowerCase()} today: ${activityList.join(', ')}.` }
+  }
+
+  if (didSomething) {
+    return { type: 'praise' as const, message: `You engaged with ${area.name.toLowerCase()} today.` }
+  }
+
+  if (score && score <= 2) {
+    return { type: 'support' as const, message: `It's okay to have hard days with ${area.name.toLowerCase()}.` }
+  }
+
+  if (!didSomething && areaData.reasonNotDone) {
+    return { type: 'acknowledge' as const, message: `You noted: "${areaData.reasonNotDone}"` }
+  }
+
+  return null
+}
+
+export const formatDate = (dateStr: string) => {
+  return new Date(dateStr).toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  })
+}
+
+export const formatTime = (timeStr: string) => {
+  const [hours, minutes] = timeStr.split(':')
+  const h = parseInt(hours)
   const ampm = h >= 12 ? 'PM' : 'AM'
-  const hour12 = h % 12 || 12
-  return `${hour12}:${String(m).padStart(2, '0')} ${ampm}`
-}
-
-export function scoreColor(score: number): string {
-  if (score >= 4) return 'text-green-600'
-  if (score >= 3) return 'text-amber-500'
-  return 'text-red-500'
-}
-
-export function scoreBg(score: number): string {
-  if (score >= 4) return 'bg-green-100'
-  if (score >= 3) return 'bg-amber-100'
-  return 'bg-red-100'
-}
-
-export function averageScores(areas: Record<string, { score?: number }>): number {
-  const scores = Object.values(areas).map((a) => a.score ?? 0).filter((s) => s > 0)
-  if (scores.length === 0) return 0
-  return Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10
+  const h12 = h % 12 || 12
+  return `${h12}:${minutes} ${ampm}`
 }

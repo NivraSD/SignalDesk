@@ -1,45 +1,44 @@
 import { useState, useEffect } from 'react'
-import type { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { useGroundedStore } from '@/stores/groundedStore'
+import type { User } from '@supabase/supabase-js'
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null)
-  const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
-  const setUserId = useGroundedStore((s) => s.setUserId)
+  const { setUser: setStoreUser } = useGroundedStore()
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
-      setSession(s)
-      setUser(s?.user ?? null)
-      setUserId(s?.user?.id ?? null)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const u = session?.user ?? null
+      setUser(u)
+      setStoreUser(u?.id ?? null, u?.email ?? null)
       setLoading(false)
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
-      setSession(s)
-      setUser(s?.user ?? null)
-      setUserId(s?.user?.id ?? null)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      const u = session?.user ?? null
+      setUser(u)
+      setStoreUser(u?.id ?? null, u?.email ?? null)
     })
 
     return () => subscription.unsubscribe()
-  }, [setUserId])
+  }, [setStoreUser])
 
-  async function signIn(email: string, password: string) {
+  const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) throw error
+    return { error }
   }
 
-  async function signUp(email: string, password: string) {
+  const signUp = async (email: string, password: string) => {
     const { error } = await supabase.auth.signUp({ email, password })
-    if (error) throw error
+    return { error }
   }
 
-  async function signOut() {
+  const signOut = async () => {
     await supabase.auth.signOut()
-    setUserId(null)
+    setStoreUser(null, null)
   }
 
-  return { user, session, loading, signIn, signUp, signOut }
+  return { user, loading, signIn, signUp, signOut }
 }

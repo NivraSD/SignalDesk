@@ -1,51 +1,69 @@
-import { useState, useCallback } from 'react'
-import { supabase, SUPABASE_URL } from '@/lib/supabase'
+import { useState, useEffect, useCallback } from 'react'
+import { supabase } from '@/lib/supabase'
 import { useGroundedStore } from '@/stores/groundedStore'
-import type { VisionItem } from '@/types'
+import type { VisionBoardItem } from '@/types'
 
 export function useVisionBoard() {
-  const [items, setItems] = useState<VisionItem[]>([])
-  const [loading, setLoading] = useState(false)
-  const userId = useGroundedStore((s) => s.userId)
+  const [items, setItems] = useState<VisionBoardItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const { userId } = useGroundedStore()
 
   const loadItems = useCallback(async () => {
     if (!userId) return
     setLoading(true)
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('grounded_vision_board')
       .select('*')
       .eq('user_id', userId)
       .order('position_order', { ascending: true })
-    setItems((data ?? []) as VisionItem[])
+
+    if (!error && data) setItems(data)
     setLoading(false)
   }, [userId])
 
-  async function uploadImage(file: File) {
-    if (!userId) return null
-    const path = `${userId}/${Date.now()}-${file.name}`
+  useEffect(() => {
+    loadItems()
+  }, [loadItems])
+
+  const addImage = async (file: File) => {
+    if (!userId) return
+    const fileName = `${userId}/${Date.now()}-${file.name}`
     const { error: uploadError } = await supabase.storage
       .from('grounded-images')
-      .upload(path, file)
-    if (uploadError) throw uploadError
+      .upload(fileName, file)
 
-    const imageUrl = `${SUPABASE_URL}/storage/v1/object/public/grounded-images/${path}`
-    const nextOrder = items.length
+    if (uploadError) return { error: uploadError }
+
+    const { data: urlData } = supabase.storage.from('grounded-images').getPublicUrl(fileName)
+    const imageUrl = urlData.publicUrl
 
     const { data, error } = await supabase
       .from('grounded_vision_board')
-      .insert({ user_id: userId, image_url: imageUrl, position_order: nextOrder })
+      .insert({
+        user_id: userId,
+        image_url: imageUrl,
+        position_order: items.length,
+      })
       .select()
       .single()
-    if (error) throw error
-    setItems((prev) => [...prev, data as VisionItem])
-    return data as VisionItem
+
+    if (!error && data) setItems((prev) => [...prev, data])
+    return { data, error }
   }
 
-  async function removeImage(id: string) {
+  const removeImage = async (id: string) => {
+    const item = items.find((i) => i.id === id)
+    if (item) {
+      // Extract path from URL for storage deletion
+      const url = new URL(item.image_url)
+      const storagePath = url.pathname.split('/object/public/grounded-images/')[1]
+      if (storagePath) {
+        await supabase.storage.from('grounded-images').remove([storagePath])
+      }
+    }
     const { error } = await supabase.from('grounded_vision_board').delete().eq('id', id)
-    if (error) throw error
-    setItems((prev) => prev.filter((i) => i.id !== id))
+    if (!error) setItems((prev) => prev.filter((i) => i.id !== id))
   }
 
-  return { items, loading, loadItems, uploadImage, removeImage }
+  return { items, loading, addImage, removeImage, loadItems }
 }

@@ -1,88 +1,233 @@
-import { useEffect, useState } from 'react'
-import { Plus, X, Bell, BellOff, Trash2 } from 'lucide-react'
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { FREQUENCY_OPTIONS, DAYS_OF_WEEK } from '@/lib/constants'
+import { getFrequencyLabel } from '@/lib/utils'
+import { buildCalendarUrl } from '@/lib/google-calendar'
 import { useReminders } from '@/hooks/useReminders'
-import { formatTime } from '@/lib/utils'
+import type { Reminder } from '@/types'
 
 export default function RemindersPage() {
-  const { reminders, loading, loadReminders, createReminder, toggleReminder, deleteReminder } = useReminders()
-  const [showAdd, setShowAdd] = useState(false)
-  const [title, setTitle] = useState('')
-  const [time, setTime] = useState('09:00')
-  const [frequency, setFrequency] = useState<'daily' | 'weekdays' | 'weekends'>('daily')
+  const navigate = useNavigate()
+  const { reminders, addReminder, updateReminder, deleteReminder } = useReminders()
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [newReminder, setNewReminder] = useState<Omit<Reminder, 'id' | 'user_id' | 'created_at' | 'updated_at'>>({
+    title: '',
+    time: '09:00',
+    frequency: 'daily',
+    days: [],
+    enabled: true,
+  })
 
-  useEffect(() => { loadReminders() }, [loadReminders])
-
-  async function handleCreate() {
-    if (!title.trim()) return
-    await createReminder({ title: title.trim(), time, frequency })
-    setTitle('')
-    setShowAdd(false)
+  const handleAdd = async () => {
+    if (!newReminder.title.trim()) return
+    await addReminder(newReminder)
+    setNewReminder({ title: '', time: '09:00', frequency: 'daily', days: [], enabled: true })
+    setShowAddForm(false)
   }
 
-  return (
-    <div className="max-w-lg mx-auto px-4 pt-8 pb-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-light text-stone-800">Reminders</h1>
-        <button onClick={() => setShowAdd(!showAdd)} className="p-2 rounded-full bg-stone-800 text-white">
-          {showAdd ? <X size={18} /> : <Plus size={18} />}
-        </button>
+  const toggleDay = (days: number[], dayIndex: number) => {
+    return days.includes(dayIndex) ? days.filter((d) => d !== dayIndex) : [...days, dayIndex].sort()
+  }
+
+  const ReminderForm = ({
+    reminder,
+    onChange,
+    isNew,
+  }: {
+    reminder: typeof newReminder
+    onChange: (r: typeof newReminder) => void
+    isNew: boolean
+  }) => (
+    <div className="space-y-4 p-4 bg-white rounded-xl shadow-sm">
+      <input
+        type="text"
+        value={reminder.title}
+        onChange={(e) => onChange({ ...reminder, title: e.target.value })}
+        placeholder="Reminder title..."
+        className="w-full p-3 border border-stone-200 rounded-lg text-sm"
+      />
+      <div className="flex items-center gap-3">
+        <label className="text-sm text-stone-600">Time:</label>
+        <input
+          type="time"
+          value={reminder.time}
+          onChange={(e) => onChange({ ...reminder, time: e.target.value })}
+          className="p-2 border border-stone-200 rounded-lg text-sm"
+        />
+      </div>
+      <div className="space-y-2">
+        <label className="text-sm text-stone-600">Frequency:</label>
+        <div className="flex flex-wrap gap-2">
+          {FREQUENCY_OPTIONS.map((opt) => (
+            <button
+              key={opt.id}
+              onClick={() =>
+                onChange({
+                  ...reminder,
+                  frequency: opt.id as Reminder['frequency'],
+                  days: opt.id === 'weekly' ? [0] : [],
+                })
+              }
+              className={`px-3 py-1.5 rounded-full text-xs ${
+                reminder.frequency === opt.id
+                  ? 'bg-stone-700 text-white'
+                  : 'bg-stone-100 text-stone-600'
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {showAdd && (
-        <div className="bg-white rounded-2xl p-4 border border-stone-200 mb-4 space-y-3">
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Reminder title"
-            className="w-full px-3 py-2 rounded-lg bg-stone-50 text-sm focus:outline-none"
-            autoFocus
-          />
-          <input
-            type="time"
-            value={time}
-            onChange={(e) => setTime(e.target.value)}
-            className="w-full px-3 py-2 rounded-lg bg-stone-50 text-sm focus:outline-none"
-          />
-          <div className="flex gap-2">
-            {(['daily', 'weekdays', 'weekends'] as const).map((f) => (
+      {(reminder.frequency === 'weekly' || reminder.frequency === 'custom') && (
+        <div className="space-y-2">
+          <label className="text-sm text-stone-600">
+            {reminder.frequency === 'weekly' ? 'Which day?' : 'Which days?'}
+          </label>
+          <div className="flex gap-1">
+            {DAYS_OF_WEEK.map((day, idx) => (
               <button
-                key={f}
-                onClick={() => setFrequency(f)}
-                className={`flex-1 py-2 rounded-lg text-xs font-medium capitalize ${
-                  frequency === f ? 'bg-stone-800 text-white' : 'bg-stone-50 text-stone-500'
+                key={day}
+                onClick={() => {
+                  if (reminder.frequency === 'weekly') {
+                    onChange({ ...reminder, days: [idx] })
+                  } else {
+                    onChange({ ...reminder, days: toggleDay(reminder.days, idx) })
+                  }
+                }}
+                className={`w-10 h-10 rounded-full text-xs ${
+                  (reminder.days || []).includes(idx)
+                    ? 'bg-stone-700 text-white'
+                    : 'bg-stone-100 text-stone-600'
                 }`}
               >
-                {f}
+                {day}
               </button>
             ))}
           </div>
-          <button onClick={handleCreate} className="w-full py-2.5 rounded-xl bg-stone-800 text-white text-sm font-medium">
-            Create Reminder
-          </button>
         </div>
       )}
 
-      {loading ? (
-        <div className="text-center text-stone-400 text-sm py-10">Loading...</div>
-      ) : reminders.length === 0 ? (
-        <div className="text-center text-stone-400 text-sm py-10">No reminders. Create one to stay on track.</div>
-      ) : (
-        <div className="space-y-2">
-          {reminders.map((r) => (
-            <div key={r.id} className="bg-white rounded-xl p-4 border border-stone-200 flex items-center gap-3">
-              <button onClick={() => toggleReminder(r.id, !r.enabled)}>
-                {r.enabled ? <Bell size={18} className="text-stone-700" /> : <BellOff size={18} className="text-stone-300" />}
-              </button>
-              <div className="flex-1 min-w-0">
-                <p className={`text-sm font-medium ${r.enabled ? 'text-stone-700' : 'text-stone-400'}`}>{r.title}</p>
-                <p className="text-xs text-stone-400">{formatTime(r.time)} &middot; {r.frequency}</p>
+      <div className="flex gap-2">
+        {isNew ? (
+          <>
+            <button
+              onClick={() => setShowAddForm(false)}
+              className="flex-1 py-2 border border-stone-200 rounded-lg text-sm text-stone-600"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleAdd}
+              className="flex-1 py-2 bg-stone-700 text-white rounded-lg text-sm"
+            >
+              Add Reminder
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              onClick={() => editingId && deleteReminder(editingId)}
+              className="py-2 px-4 text-red-600 text-sm"
+            >
+              Delete
+            </button>
+            <button
+              onClick={() => {
+                const url = buildCalendarUrl(reminder as Reminder)
+                window.open(url, '_blank')
+              }}
+              className="flex-1 py-2 border border-stone-200 rounded-lg text-sm text-stone-600"
+            >
+              + Calendar
+            </button>
+            <button
+              onClick={() => setEditingId(null)}
+              className="flex-1 py-2 bg-stone-700 text-white rounded-lg text-sm"
+            >
+              Done
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  )
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <button onClick={() => navigate('/')} className="text-stone-500 text-sm">
+          &larr; Back
+        </button>
+        <h2 className="text-lg font-light text-stone-700">Reminders</h2>
+        <div className="w-12" />
+      </div>
+
+      <p className="text-sm text-stone-500 text-center">
+        Set reminders to stay grounded. Add them to your calendar for notifications.
+      </p>
+
+      <div className="space-y-2">
+        {reminders.map((reminder) =>
+          editingId === reminder.id ? (
+            <ReminderForm
+              key={reminder.id}
+              reminder={reminder}
+              onChange={(updated) => reminder.id && updateReminder(reminder.id, updated)}
+              isNew={false}
+            />
+          ) : (
+            <div key={reminder.id} className="p-4 bg-white rounded-xl shadow-sm">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() =>
+                        reminder.id && updateReminder(reminder.id, { enabled: !reminder.enabled })
+                      }
+                      className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                        reminder.enabled
+                          ? 'bg-stone-700 border-stone-700'
+                          : 'border-stone-300'
+                      }`}
+                    >
+                      {reminder.enabled && <span className="text-white text-xs">{'\u2713'}</span>}
+                    </button>
+                    <span
+                      className={`font-medium text-stone-700 ${!reminder.enabled && 'opacity-50'}`}
+                    >
+                      {reminder.title}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-1 ml-7">
+                    <span className="text-xs text-stone-500">{reminder.time}</span>
+                    <span className="text-xs text-stone-400">&bull;</span>
+                    <span className="text-xs text-stone-500">{getFrequencyLabel(reminder)}</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setEditingId(reminder.id || null)}
+                  className="text-stone-400 text-sm px-2"
+                >
+                  Edit
+                </button>
               </div>
-              <button onClick={() => deleteReminder(r.id)} className="text-stone-300 hover:text-red-400">
-                <Trash2 size={14} />
-              </button>
             </div>
-          ))}
-        </div>
+          )
+        )}
+      </div>
+
+      {showAddForm ? (
+        <ReminderForm reminder={newReminder} onChange={setNewReminder} isNew={true} />
+      ) : (
+        <button
+          onClick={() => setShowAddForm(true)}
+          className="w-full py-3 border-2 border-dashed border-stone-300 rounded-xl text-stone-500 text-sm"
+        >
+          + Add Reminder
+        </button>
       )}
     </div>
   )

@@ -1,26 +1,40 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { CheckIn, Activity } from '@/types'
+import type { CheckIn } from '@/types'
 
 interface GroundedState {
+  // Auth
   userId: string | null
+  userEmail: string | null
+  setUser: (id: string | null, email: string | null) => void
+
+  // Check-in state
   todayCheckIn: CheckIn | null
-  activityBank: Activity[]
-  setUserId: (id: string | null) => void
-  setTodayCheckIn: (c: CheckIn | null) => void
-  setActivityBank: (a: Activity[]) => void
+  setTodayCheckIn: (data: CheckIn | null) => void
+
+  // Activity bank (local cache for quick access)
+  activityBank: Record<string, string[]>
+  setActivityBank: (bank: Record<string, string[]>) => void
 }
 
 export const useGroundedStore = create<GroundedState>()(
   persist(
     (set) => ({
       userId: null,
+      userEmail: null,
+      setUser: (id, email) => set({ userId: id, userEmail: email }),
+
       todayCheckIn: null,
-      activityBank: [],
-      setUserId: (userId) => set({ userId }),
-      setTodayCheckIn: (todayCheckIn) => set({ todayCheckIn }),
-      setActivityBank: (activityBank) => set({ activityBank }),
+      setTodayCheckIn: (data) => set({ todayCheckIn: data }),
+
+      activityBank: {},
+      setActivityBank: (bank) => set({ activityBank: bank }),
     }),
-    { name: 'grounded-store' }
+    {
+      name: 'grounded-store',
+      partialize: (state) => ({
+        activityBank: state.activityBank,
+      }),
+    }
   )
 )

@@ -1,62 +1,85 @@
 import { useState, useCallback } from 'react'
-import { callEdgeFunction } from '@/lib/supabase'
-import { useAuth } from './useAuth'
+import { supabase } from '@/lib/supabase'
 import type { CalendarEvent } from '@/types'
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
+
+// Calendar ID to use - user's email (the calendar they shared with the service account)
+const CALENDAR_ID = 'jl@nivria.ai'
 
 export function useCalendar() {
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [loading, setLoading] = useState(false)
-  const { session } = useAuth()
+  const [error, setError] = useState<string | null>(null)
 
-  const loadEvents = useCallback(async (date?: string) => {
-    if (!session?.access_token) return
+  const callCalendarAPI = async (payload: Record<string, unknown>) => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) throw new Error('Not authenticated')
+
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/grounded-calendar`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ calendarId: CALENDAR_ID, ...payload }),
+    })
+
+    return await response.json()
+  }
+
+  // Fetch today's events
+  const fetchTodayEvents = useCallback(async () => {
     setLoading(true)
-    const d = date ?? new Date().toISOString().slice(0, 10)
+    setError(null)
     try {
-      const data = await callEdgeFunction('grounded-calendar', {
+      const now = new Date()
+      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
+      const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59).toISOString()
+
+      const result = await callCalendarAPI({
         action: 'get-events',
-        timeMin: `${d}T00:00:00Z`,
-        timeMax: `${d}T23:59:59Z`,
-      }, session.access_token)
-      setEvents(data.items ?? [])
-    } catch (e) {
-      console.error('Calendar load error:', e)
+        timeMin: startOfDay,
+        timeMax: endOfDay,
+      })
+
+      if (result.error) {
+        setError(result.error)
+      } else {
+        setEvents(result.items || [])
+      }
+    } catch (err: any) {
+      setError(err.message)
     }
     setLoading(false)
-  }, [session?.access_token])
+  }, []) // eslint-disable-line
 
-  async function createEvent(event: { summary: string; start: string; end: string; description?: string }) {
-    if (!session?.access_token) return null
-    try {
-      const data = await callEdgeFunction('grounded-calendar', {
-        action: 'create-event',
-        event: {
-          summary: event.summary,
-          start: { dateTime: event.start, timeZone: 'America/New_York' },
-          end: { dateTime: event.end, timeZone: 'America/New_York' },
-          description: event.description,
-        },
-      }, session.access_token)
-      setEvents((prev) => [...prev, data])
-      return data as CalendarEvent
-    } catch (e) {
-      console.error('Create event error:', e)
-      return null
-    }
+  // Create a calendar event
+  const createEvent = async (eventData: {
+    summary: string
+    description?: string
+    startTime: string
+    endTime: string
+  }) => {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
+    const result = await callCalendarAPI({
+      action: 'create-event',
+      event: {
+        summary: eventData.summary,
+        description: eventData.description,
+        start: { dateTime: eventData.startTime, timeZone: tz },
+        end: { dateTime: eventData.endTime, timeZone: tz },
+      },
+    })
+    return result
   }
 
-  async function deleteEvent(eventId: string) {
-    if (!session?.access_token) return
-    try {
-      await callEdgeFunction('grounded-calendar', {
-        action: 'delete-event',
-        eventId,
-      }, session.access_token)
-      setEvents((prev) => prev.filter((e) => e.id !== eventId))
-    } catch (e) {
-      console.error('Delete event error:', e)
-    }
+  return {
+    events,
+    loading,
+    error,
+    isCalendarConnected: true, // Always "connected" with service account
+    fetchTodayEvents,
+    createEvent,
   }
-
-  return { events, loading, loadEvents, createEvent, deleteEvent }
 }

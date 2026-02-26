@@ -1,44 +1,48 @@
-import type { ReactNode } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
-import { Home, BookOpen, MessageCircle, Palette, Clock } from 'lucide-react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { Settings, Bell } from 'lucide-react'
+import BottomNav from './BottomNav'
 
-const NAV_ITEMS = [
-  { path: '/', icon: Home, label: 'Home' },
-  { path: '/journal', icon: BookOpen, label: 'Journal' },
-  { path: '/chat', icon: MessageCircle, label: 'Chat' },
-  { path: '/art', icon: Palette, label: 'Art' },
-  { path: '/history', icon: Clock, label: 'History' },
-]
+interface AppShellProps {
+  children: React.ReactNode
+}
 
-export default function AppShell({ children }: { children: ReactNode }) {
-  const navigate = useNavigate()
+export default function AppShell({ children }: AppShellProps) {
   const location = useLocation()
+  const navigate = useNavigate()
 
   return (
-    <div className="min-h-screen bg-stone-100 flex flex-col">
-      <main className="flex-1 pb-20 overflow-y-auto">
-        {children}
-      </main>
-
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-stone-200 pb-safe z-50">
-        <div className="flex justify-around items-center h-14 max-w-lg mx-auto">
-          {NAV_ITEMS.map(({ path, icon: Icon, label }) => {
-            const active = path === '/' ? location.pathname === '/' : location.pathname.startsWith(path)
-            return (
-              <button
-                key={path}
-                onClick={() => navigate(path)}
-                className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg transition-colors ${
-                  active ? 'text-stone-900' : 'text-stone-400'
-                }`}
-              >
-                <Icon size={20} strokeWidth={active ? 2.5 : 1.5} />
-                <span className="text-[10px] font-medium">{label}</span>
-              </button>
-            )
-          })}
+    <div className="min-h-screen bg-stone-100">
+      {/* Header */}
+      <header className="bg-white/80 backdrop-blur-sm border-b border-stone-200 px-4 py-3 sticky top-0 z-40">
+        <div className="flex items-center justify-between max-w-lg mx-auto">
+          <h1
+            className="text-lg font-light text-stone-700 tracking-wide cursor-pointer"
+            onClick={() => navigate('/')}
+          >
+            Grounded
+          </h1>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate('/reminders')}
+              className="text-stone-400 hover:text-stone-600"
+            >
+              <Bell size={18} />
+            </button>
+            <button
+              onClick={() => navigate('/settings')}
+              className="text-stone-400 hover:text-stone-600"
+            >
+              <Settings size={18} />
+            </button>
+          </div>
         </div>
-      </nav>
+      </header>
+
+      {/* Content */}
+      <main className="max-w-lg mx-auto p-4 pb-24">{children}</main>
+
+      {/* Bottom Nav */}
+      <BottomNav active={location.pathname} onNavigate={navigate} />
     </div>
   )
 }

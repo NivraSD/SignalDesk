@@ -1,61 +1,64 @@
 import { useState } from 'react'
-import { callEdgeFunction } from '@/lib/supabase'
-import { useAuth } from './useAuth'
-import type { CheckIn, SuggestedActivity } from '@/types'
-import type { AreaId } from '@/lib/constants'
+import { supabase } from '@/lib/supabase'
+import type { CheckIn } from '@/types'
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 
 export function useGroundedAI() {
   const [loading, setLoading] = useState(false)
-  const { session } = useAuth()
 
-  async function getReflection(checkIn: CheckIn): Promise<string | null> {
-    if (!session?.access_token) return null
+  const callAI = async (action: string, payload: Record<string, unknown>) => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return { error: 'Not authenticated' }
+
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/grounded-chat`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ action, ...payload }),
+    })
+
+    return await response.json()
+  }
+
+  const getReflection = async (checkIn: CheckIn): Promise<string | null> => {
     setLoading(true)
     try {
-      const data = await callEdgeFunction('grounded-chat', {
-        action: 'reflection',
-        checkIn: { checkin_date: checkIn.checkin_date, areas: checkIn.areas, journal: checkIn.journal },
-      }, session.access_token)
-      return data.reflection ?? null
-    } catch (e) {
-      console.error('Reflection error:', e)
+      const result = await callAI('reflection', { checkIn })
+      return result.reflection || null
+    } catch (err) {
+      console.error('AI reflection error:', err)
       return null
     } finally {
       setLoading(false)
     }
   }
 
-  async function getSuggestions(
+  const getSuggestions = async (
     checkIn: CheckIn,
-    activityBank: Record<AreaId, string[]>
-  ): Promise<Record<AreaId, SuggestedActivity> | null> {
-    if (!session?.access_token) return null
+    activityBank: Record<string, string[]>
+  ): Promise<Record<string, { activity: string; timeOfDay: string; reason: string }> | null> => {
     setLoading(true)
     try {
-      const data = await callEdgeFunction('grounded-chat', {
-        action: 'suggest-plan',
-        checkIn: { checkin_date: checkIn.checkin_date, areas: checkIn.areas, journal: checkIn.journal },
-        activityBank,
-      }, session.access_token)
-      return data.suggestions ?? null
-    } catch (e) {
-      console.error('Suggest-plan error:', e)
+      const result = await callAI('suggest-plan', { checkIn, activityBank })
+      return result.suggestions || null
+    } catch (err) {
+      console.error('AI suggestions error:', err)
       return null
     } finally {
       setLoading(false)
     }
   }
 
-  async function updateProfile(): Promise<string | null> {
-    if (!session?.access_token) return null
+  const updateProfile = async () => {
     try {
-      const data = await callEdgeFunction('grounded-chat', { action: 'update-profile' }, session.access_token)
-      return data.profile ?? null
-    } catch (e) {
-      console.error('Profile update error:', e)
-      return null
+      await callAI('update-profile', {})
+    } catch (err) {
+      console.error('Profile update error:', err)
     }
   }
 
-  return { loading, getReflection, getSuggestions, updateProfile }
+  return { loading, getReflection, getSuggestions, updateProfile, callAI }
 }

@@ -1,69 +1,93 @@
-import { useLocation, useNavigate } from 'react-router-dom'
-import { Home, MessageCircle } from 'lucide-react'
-import { LIFE_AREAS } from '@/lib/constants'
-import type { CheckIn } from '@/types'
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { AREAS } from '@/lib/constants'
+import { useCheckins } from '@/hooks/useCheckins'
+import { useGroundedAI } from '@/hooks/useGroundedAI'
 
 export default function FeedbackView() {
   const navigate = useNavigate()
-  const location = useLocation()
-  const { reflection, checkIn } = (location.state ?? {}) as { reflection?: string; checkIn?: CheckIn }
+  const { todayCheckIn } = useCheckins()
+  const { loading, getReflection } = useGroundedAI()
+  const [reflection, setReflection] = useState<string | null>(null)
+  const [loaded, setLoaded] = useState(false)
 
-  if (!checkIn) {
+  useEffect(() => {
+    if (todayCheckIn && !loaded) {
+      setLoaded(true)
+      getReflection(todayCheckIn).then(setReflection)
+    }
+  }, [todayCheckIn, loaded]) // eslint-disable-line
+
+  if (!todayCheckIn) {
     return (
-      <div className="max-w-lg mx-auto px-4 pt-20 text-center">
-        <p className="text-stone-400 text-sm">No check-in data. Complete a check-in first.</p>
-        <button onClick={() => navigate('/')} className="mt-4 text-stone-600 underline text-sm">Go Home</button>
+      <div className="text-center py-12">
+        <p className="text-stone-500">Complete today&apos;s check-in first.</p>
+        <button onClick={() => navigate('/')} className="mt-4 text-stone-600 underline text-sm">
+          Go back
+        </button>
       </div>
     )
   }
 
   return (
-    <div className="max-w-lg mx-auto px-4 pt-8 pb-6 space-y-6">
-      <h1 className="text-2xl font-light text-stone-800">Your Reflection</h1>
+    <div className="space-y-4">
+      <button onClick={() => navigate('/')} className="text-stone-500 text-sm">
+        &larr; Back
+      </button>
+      <h2 className="text-xl font-light text-stone-700 text-center">Today&apos;s Reflection</h2>
 
-      {/* Score summary */}
-      <div className="flex gap-2 overflow-x-auto pb-1">
-        {LIFE_AREAS.map((area) => {
-          const score = checkIn.areas[area.id]?.score ?? 0
+      {/* Area summary cards */}
+      <div className="grid grid-cols-3 gap-2">
+        {AREAS.map((area) => {
+          const areaData = todayCheckIn.areas?.[area.id]
+          if (!areaData?.score) return null
           return (
-            <div key={area.id} className={`${area.bgColor} rounded-lg px-3 py-2 text-center shrink-0`}>
-              <div className={`text-lg font-semibold ${area.color}`}>{score}</div>
-              <div className="text-[10px] text-stone-500">{area.name}</div>
+            <div key={area.id} className="bg-white rounded-xl p-3 shadow-sm text-center">
+              <span style={{ color: area.color }} className="text-lg block">
+                {area.icon}
+              </span>
+              <span className="text-xs text-stone-500 block mt-0.5">{area.name}</span>
+              <span className="text-sm font-medium text-stone-700">{areaData.score}/5</span>
             </div>
           )
         })}
       </div>
 
       {/* AI Reflection */}
-      {reflection ? (
-        <div className="bg-white rounded-2xl p-5 border border-stone-200">
-          <div className="prose prose-sm prose-stone max-w-none">
-            {reflection.split('\n').map((p, i) => (
-              <p key={i} className="text-stone-700 text-sm leading-relaxed mb-3 last:mb-0">{p}</p>
-            ))}
+      <div className="bg-white rounded-2xl p-5 shadow-sm">
+        {loading ? (
+          <div className="text-center py-6">
+            <p className="text-stone-400 text-sm animate-pulse">Writing your reflection...</p>
           </div>
-        </div>
-      ) : (
-        <div className="bg-white rounded-2xl p-5 border border-stone-200 text-center text-stone-400 text-sm">
-          Reflection couldn't be generated. Try chatting with your AI companion instead.
+        ) : reflection ? (
+          <div className="space-y-3">
+            <p className="text-xs text-stone-400 uppercase tracking-wide">Your reflection</p>
+            <div className="text-sm text-stone-700 leading-relaxed whitespace-pre-wrap">
+              {reflection}
+            </div>
+          </div>
+        ) : (
+          <div className="text-center py-4">
+            <p className="text-stone-500 text-sm">Reflection unavailable right now.</p>
+            <button
+              onClick={() => {
+                setLoaded(false)
+              }}
+              className="mt-2 text-xs text-stone-600 underline"
+            >
+              Try again
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Journal excerpt */}
+      {todayCheckIn.journal && (
+        <div className="p-4 bg-stone-50 rounded-xl">
+          <p className="text-xs text-stone-400 mb-1">You wrote:</p>
+          <p className="text-sm text-stone-600">{todayCheckIn.journal}</p>
         </div>
       )}
-
-      {/* Actions */}
-      <div className="flex gap-3">
-        <button
-          onClick={() => navigate('/')}
-          className="flex-1 py-3 rounded-xl bg-stone-800 text-white font-medium flex items-center justify-center gap-2"
-        >
-          <Home size={16} /> Home
-        </button>
-        <button
-          onClick={() => navigate('/chat')}
-          className="flex-1 py-3 rounded-xl bg-white border border-stone-200 text-stone-700 font-medium flex items-center justify-center gap-2"
-        >
-          <MessageCircle size={16} /> Chat
-        </button>
-      </div>
     </div>
   )
 }
