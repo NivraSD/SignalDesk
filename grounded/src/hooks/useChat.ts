@@ -32,13 +32,12 @@ export function useChat() {
   }
 
   const loadHistory = useCallback(async () => {
-    if (historyLoaded) return
     const result = await callChat('get-history')
     if (result.messages) {
       setMessages(result.messages)
     }
     setHistoryLoaded(true)
-  }, [historyLoaded])
+  }, []) // eslint-disable-line
 
   const sendMessage = async (text: string) => {
     if (!text.trim()) return
