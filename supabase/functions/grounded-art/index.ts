@@ -97,9 +97,16 @@ STYLE DIRECTION FOR THIS PIECE:
 
 The image should feel like it belongs in a museum of contemplative art. The image MUST be exactly 1179 x 2556 pixels (iPhone lock screen resolution, portrait).
 
-Also provide a short poetic title (3-8 words) that evokes the emotional quality without being literal or describing what's in the image. The title should feel like a line from a poem. Do NOT render the title as text in the image — the image must be pure artwork with no text whatsoever.
+TITLE TEXT IN THE IMAGE:
+Come up with a short poetic title (3-5 words max). Render it directly into the image as text with these EXACT specifications:
+- Position: left-aligned, 40px from the left edge, vertically at 65% down from the top of the image (so 35% up from the bottom)
+- Font: clean sans-serif (like Helvetica or Arial), light weight
+- Size: EXTREMELY tiny — no more than 0.8% of image height, like fine print on a gallery wall
+- Color: pure white (#FFFFFF) at 50% opacity
+- The text must be perfectly horizontal, not rotated or curved
+- Crisp, clean rendering — like a digital watermark
 
-Format the title exactly as:
+Also output the title as text. Format it exactly as:
 TITLE: <your title here>${avoidSection}`
 
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${GOOGLE_API_KEY}`
@@ -158,6 +165,17 @@ TITLE: <your title here>${avoidSection}`
   }
 
   return { imageBase64, mimeType, title }
+}
+
+// ── Title overlay: skip for now, add title in Gemini prompt directly ────────
+
+async function overlayTitle(
+  imageBase64: string,
+  mimeType: string,
+  _title: string
+): Promise<{ imageBase64: string; mimeType: string }> {
+  // Title is baked into the image by Gemini during generation
+  return { imageBase64, mimeType }
 }
 
 async function generateArtWithRetry(
@@ -294,8 +312,15 @@ Deno.serve(async (req: Request) => {
       console.log('Art seed:', JSON.stringify(seed))
 
       // Generate image + title via Gemini
-      const { imageBase64, mimeType, title } = await generateArtWithRetry(seed, recentTitles)
-      console.log('Generated title:', title)
+      const artResult = await generateArtWithRetry(seed, recentTitles)
+      console.log('Generated title:', artResult.title)
+
+      // Overlay title text onto the image (second Gemini pass)
+      console.log('Overlaying title text...')
+      const { imageBase64, mimeType } = await overlayTitle(
+        artResult.imageBase64, artResult.mimeType, artResult.title
+      )
+      const title = artResult.title
 
       // Upload to Supabase Storage
       const imageUrl = await uploadToStorage(supabase, userId, imageBase64, mimeType)
