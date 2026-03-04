@@ -18,8 +18,12 @@ import OnOpenScreen from '@/components/open/OnOpenScreen'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { loading, user } = useAuth()
+  console.log('[ProtectedRoute]', window.location.pathname, { loading, hasUser: !!user })
   if (loading) return <div className="min-h-screen bg-stone-950" />
-  if (!user) return <Navigate to="/login" replace />
+  if (!user) {
+    console.log('[ProtectedRoute] NO USER — redirecting to /login')
+    return <Navigate to="/login" replace />
+  }
   return <>{children}</>
 }
 
