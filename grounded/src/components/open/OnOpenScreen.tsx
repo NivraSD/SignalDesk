@@ -26,24 +26,12 @@ function OnOpenScreenInner() {
   })
 
   useEffect(() => {
-    fetchLatest().then((result) => {
-      if (result) {
-        localStorage.setItem('grounded_last_orchestration', JSON.stringify(result))
-      }
-    })
+    fetchLatest()
   }, [fetchLatest])
 
-  // Use fresh orchestration, or cached from last session, or null
-  const display = orchestration || (() => {
-    try {
-      const cached = localStorage.getItem('grounded_last_orchestration')
-      return cached ? JSON.parse(cached) : null
-    } catch { return null }
-  })()
-
   const handleTap = useCallback(() => {
-    navigate(display?.routing_target || '/')
-  }, [navigate, display])
+    navigate(orchestration?.routing_target || '/')
+  }, [navigate, orchestration])
 
   // Loading state
   if (loading) {
@@ -58,7 +46,7 @@ function OnOpenScreenInner() {
   }
 
   // Fallback: gradient + daily quote (only if no cached orchestration either)
-  if (!display) {
+  if (!orchestration) {
     return (
       <div
         className="fixed inset-0 cursor-pointer select-none"
@@ -88,9 +76,9 @@ function OnOpenScreenInner() {
       onClick={handleTap}
       style={{ touchAction: 'manipulation' }}
     >
-      {display.image_url && (
+      {orchestration.image_url && (
         <img
-          src={display.image_url}
+          src={orchestration.image_url}
           alt=""
           className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
             imageLoaded ? 'opacity-100' : 'opacity-0'
@@ -111,15 +99,15 @@ function OnOpenScreenInner() {
           className="text-3xl font-light text-white leading-snug mb-4 tracking-wide"
           style={{ textShadow: '0 2px 12px rgba(0,0,0,0.6)' }}
         >
-          {display.title}
+          {orchestration.title}
         </h1>
 
-        {display.routing_suggestion && (
+        {orchestration.routing_suggestion && (
           <p
             className="text-sm text-white/50 font-light max-w-xs"
             style={{ textShadow: '0 1px 4px rgba(0,0,0,0.4)' }}
           >
-            {display.routing_suggestion}
+            {orchestration.routing_suggestion}
           </p>
         )}
       </div>
