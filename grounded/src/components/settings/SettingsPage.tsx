@@ -11,6 +11,51 @@ interface UserRule {
   is_active: boolean
 }
 
+function ShortcutField({ label, value, copyable, secret }: {
+  label: string
+  value: string
+  copyable?: boolean
+  secret?: boolean
+}) {
+  const [copied, setCopied] = useState(false)
+  const [revealed, setRevealed] = useState(false)
+
+  const displayValue = secret && !revealed ? value.slice(0, 8) + '...' : value
+
+  const copy = () => {
+    navigator.clipboard.writeText(value)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1500)
+  }
+
+  return (
+    <div className="space-y-0.5">
+      <span className="text-[10px] font-medium text-stone-500 uppercase tracking-wide">{label}</span>
+      <div className="flex items-center gap-1.5">
+        <code className="text-[11px] text-stone-700 bg-white px-2 py-1 rounded border border-stone-200 flex-1 break-all select-all">
+          {displayValue}
+        </code>
+        {secret && (
+          <button
+            onClick={() => setRevealed(!revealed)}
+            className="text-[10px] text-stone-400 px-1.5 py-1 border border-stone-200 rounded bg-white flex-shrink-0"
+          >
+            {revealed ? 'Hide' : 'Show'}
+          </button>
+        )}
+        {copyable && (
+          <button
+            onClick={copy}
+            className="text-[10px] text-stone-400 px-1.5 py-1 border border-stone-200 rounded bg-white flex-shrink-0"
+          >
+            {copied ? 'Copied' : 'Copy'}
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function SettingsPage() {
   const navigate = useNavigate()
   const { user, signOut } = useAuth()
@@ -163,6 +208,64 @@ export default function SettingsPage() {
         <p className="text-xs text-stone-400">
           Calendar events sync automatically via service account.
         </p>
+      </div>
+
+      {/* iOS Shortcuts Setup */}
+      <div className="bg-white rounded-xl p-4 shadow-sm space-y-4">
+        <h3 className="text-sm font-medium text-stone-700">iOS Shortcuts</h3>
+        <p className="text-xs text-stone-400">
+          Set up two automations: one to pre-generate context-aware art every 2 hours, and one to show it when you open your phone.
+        </p>
+
+        {/* Shortcut 1: Pre-generate */}
+        <div className="bg-stone-50 rounded-lg p-3 space-y-2">
+          <h4 className="text-xs font-medium text-stone-600">1. Pre-Generate (every 2 hours)</h4>
+          <p className="text-[11px] text-stone-400">Shortcuts app &rarr; Automation &rarr; Time of Day &rarr; repeat every 2 hours (6am–10pm)</p>
+          <div className="space-y-1.5">
+            <ShortcutField
+              label="Action"
+              value="Get Contents of URL"
+            />
+            <ShortcutField
+              label="URL"
+              value={`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/grounded-orchestrate`}
+              copyable
+            />
+            <ShortcutField
+              label="Method"
+              value="POST"
+            />
+            <ShortcutField
+              label="Header: Content-Type"
+              value="application/json"
+            />
+            <ShortcutField
+              label="Header: x-api-key"
+              value="36ea35d234cb83fcde687839fafe4f037c22f8822eea8b1faeb23d3cc6705358"
+              copyable
+              secret
+            />
+            <ShortcutField
+              label="Request Body (JSON)"
+              value='{"action":"pre-generate"}'
+              copyable
+            />
+          </div>
+        </div>
+
+        {/* Shortcut 2: On-open */}
+        <div className="bg-stone-50 rounded-lg p-3 space-y-2">
+          <h4 className="text-xs font-medium text-stone-600">2. On Open (shows art screen)</h4>
+          <p className="text-[11px] text-stone-400">Shortcuts app &rarr; Automation &rarr; choose a trigger (e.g. Open App, NFC tag, or manual) &rarr; Open URLs</p>
+          <ShortcutField
+            label="URL to open"
+            value={`${window.location.origin}/open`}
+            copyable
+          />
+          <p className="text-[11px] text-stone-400 mt-1">
+            Tip: You can also add this as a Home Screen shortcut — in Safari, tap Share &rarr; Add to Home Screen.
+          </p>
+        </div>
       </div>
 
       {/* About */}
