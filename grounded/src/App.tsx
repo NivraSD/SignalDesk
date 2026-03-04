@@ -35,9 +35,9 @@ export default function App() {
         <Route
           path="/open"
           element={
-            <div style={{ background: '#000', color: '#fff', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}>
-              /open route works
-            </div>
+            <ProtectedRoute>
+              <OnOpenScreen />
+            </ProtectedRoute>
           }
         />
 
