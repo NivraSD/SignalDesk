@@ -1,6 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
-import { useGroundedStore } from '@/stores/groundedStore'
 import AppShell from '@/components/shell/AppShell'
 import LoginPage from '@/components/auth/LoginPage'
 import HomePage from '@/components/home/HomePage'

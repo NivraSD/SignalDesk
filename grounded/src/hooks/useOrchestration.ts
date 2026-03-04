@@ -10,7 +10,6 @@ export function useOrchestration() {
 
   const callOrchestrate = async (action: string, payload: Record<string, unknown> = {}) => {
     const { data: { session } } = await supabase.auth.getSession()
-    console.log('[orchestrate]', action, 'session user:', session?.user?.id || 'NONE')
     if (!session) return { error: 'Not authenticated' }
 
     const response = await fetch(`${SUPABASE_URL}/functions/v1/grounded-orchestrate`, {
@@ -23,7 +22,6 @@ export function useOrchestration() {
     })
 
     const result = await response.json()
-    console.log('[orchestrate]', action, 'response:', JSON.stringify(result).slice(0, 200))
     return result
   }
 
