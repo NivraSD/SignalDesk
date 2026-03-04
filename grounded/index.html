@@ -8,6 +8,18 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>Grounded</title>
+    <script>
+      // NUCLEAR: Kill old Workbox service worker before anything else loads
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(regs) {
+          var hadSW = regs.length > 0;
+          Promise.all(regs.map(function(r) { return r.unregister(); }))
+            .then(function() { return caches.keys(); })
+            .then(function(names) { return Promise.all(names.map(function(n) { return caches.delete(n); })); })
+            .then(function() { if (hadSW) window.location.reload(); });
+        });
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
