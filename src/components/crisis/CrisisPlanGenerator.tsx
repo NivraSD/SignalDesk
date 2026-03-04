@@ -43,21 +43,6 @@ interface PlanForm {
   emergencyContacts: EmergencyContact[]
 }
 
-const CRISIS_TEAM_ROLES = [
-  'Crisis Response Leader',
-  'Communications Director',
-  'Legal Counsel',
-  'Outside PR/Crisis Counsel',
-  'Operations Manager',
-  'HR / People Lead',
-  'IT / Security Lead',
-  'Finance Lead',
-  'Regulatory / Compliance Lead',
-  'Board Liaison',
-  'Customer Relations Lead',
-  'Facilities / Safety Manager',
-] as const
-
 interface CrisisPlanGeneratorProps {
   onClose: () => void
   onPlanGenerated: (plan: any) => void
@@ -121,30 +106,6 @@ export default function CrisisPlanGenerator({ onClose, onPlanGenerated }: Crisis
         ]
       },
       {
-        role: 'Legal Counsel',
-        title: 'General Counsel or Chief Legal Officer',
-        name: '',
-        contact: '',
-        responsibilities: [
-          'Legal risk assessment and regulatory compliance',
-          'Review all external communications for legal exposure',
-          'Coordinate with outside counsel and insurance carriers',
-          'Manage litigation holds and evidence preservation'
-        ]
-      },
-      {
-        role: 'Outside PR/Crisis Counsel',
-        title: 'External crisis communications firm or senior advisor',
-        name: '',
-        contact: '',
-        responsibilities: [
-          'Independent strategic communications guidance',
-          'Media training and spokesperson preparation',
-          'Stakeholder perception monitoring and analysis',
-          'Crisis narrative development and message testing'
-        ]
-      },
-      {
         role: 'Operations Manager',
         title: 'Chief Operating Officer or senior operations executive',
         name: '',
@@ -153,30 +114,6 @@ export default function CrisisPlanGenerator({ onClose, onPlanGenerated }: Crisis
           'Operational impact assessment and mitigation',
           'Business continuity plan activation',
           'Internal coordination and resource management'
-        ]
-      },
-      {
-        role: 'HR / People Lead',
-        title: 'Chief People Officer or VP of Human Resources',
-        name: '',
-        contact: '',
-        responsibilities: [
-          'Employee communications and wellbeing support',
-          'Internal policy enforcement and workplace safety',
-          'Coordinate employee assistance programs',
-          'Manage workforce-related crisis impacts'
-        ]
-      },
-      {
-        role: 'IT / Security Lead',
-        title: 'Chief Information Security Officer or VP of IT',
-        name: '',
-        contact: '',
-        responsibilities: [
-          'Technology infrastructure protection and recovery',
-          'Cybersecurity incident response coordination',
-          'Data breach assessment and containment',
-          'Digital forensics and evidence preservation'
         ]
       }
     ],
@@ -492,34 +429,13 @@ export default function CrisisPlanGenerator({ onClose, onPlanGenerated }: Crisis
                   </div>
 
                   <div className="space-y-3">
-                    <div className="relative">
-                      <select
-                        value={CRISIS_TEAM_ROLES.includes(member.role as any) ? member.role : '__custom__'}
-                        onChange={(e) => {
-                          if (e.target.value === '__custom__') {
-                            updateTeamMember(idx, 'role', '')
-                          } else {
-                            updateTeamMember(idx, 'role', e.target.value)
-                          }
-                        }}
-                        className="w-full bg-zinc-800 text-white px-3 py-2 rounded text-sm focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)] appearance-none"
-                      >
-                        {CRISIS_TEAM_ROLES.map(role => (
-                          <option key={role} value={role}>{role}</option>
-                        ))}
-                        <option value="__custom__">Custom role...</option>
-                      </select>
-                      {!CRISIS_TEAM_ROLES.includes(member.role as any) && (
-                        <input
-                          type="text"
-                          value={member.role}
-                          onChange={(e) => updateTeamMember(idx, 'role', e.target.value)}
-                          className="w-full bg-zinc-800 text-white px-3 py-2 rounded text-sm focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)] mt-2"
-                          placeholder="Enter custom role"
-                          autoFocus
-                        />
-                      )}
-                    </div>
+                    <input
+                      type="text"
+                      value={member.role}
+                      onChange={(e) => updateTeamMember(idx, 'role', e.target.value)}
+                      className="w-full bg-zinc-800 text-white px-3 py-2 rounded text-sm focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)]"
+                      placeholder="Role"
+                    />
                     <input
                       type="text"
                       value={member.name}

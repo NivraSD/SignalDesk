@@ -36,8 +36,6 @@ const StudioWorkspace = forwardRef<StudioWorkspaceRef, StudioWorkspaceProps>(({
   const [copied, setCopied] = useState(false)
   const [saving, setSaving] = useState(false)
   const [editableContent, setEditableContent] = useState('')
-  const [editableTitle, setEditableTitle] = useState('')
-  const [isDirty, setIsDirty] = useState(false) // Track if content has been edited
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   // Expose focus method to parent
@@ -50,7 +48,7 @@ const StudioWorkspace = forwardRef<StudioWorkspaceRef, StudioWorkspaceProps>(({
     }
   }))
 
-  // Update editable content and title when content prop changes
+  // Update editable content when content prop changes
   useEffect(() => {
     if (content) {
       if (typeof content.content === 'string') {
@@ -60,8 +58,6 @@ const StudioWorkspace = forwardRef<StudioWorkspaceRef, StudioWorkspaceProps>(({
       } else if (typeof content.content === 'object') {
         setEditableContent(JSON.stringify(content.content, null, 2))
       }
-      setEditableTitle(content.title || '')
-      setIsDirty(false) // Reset dirty state when new content loads
     }
   }, [content])
 
@@ -84,15 +80,6 @@ const StudioWorkspace = forwardRef<StudioWorkspaceRef, StudioWorkspaceProps>(({
       const sourceContentId = content.metadata?.sourceContentId
       const isUpdate = !!sourceContentId
 
-      // Resolve title: use edited title, or fall back to content title, or extract from body
-      const resolvedTitle = editableTitle.trim() || content.title || (() => {
-        const text = editableContent
-        const heading = text.match(/^#\s+(.+)$/m)
-        if (heading) return heading[1].trim()
-        const first = text.split('\n').find((l: string) => l.trim().length > 0)
-        return first ? first.trim().slice(0, 120) : `${content.type} - ${new Date().toLocaleDateString()}`
-      })()
-
       if (isUpdate) {
         // Update existing content in Memory Vault
         console.log('📝 Updating existing content:', sourceContentId)
@@ -102,7 +89,7 @@ const StudioWorkspace = forwardRef<StudioWorkspaceRef, StudioWorkspaceProps>(({
           body: JSON.stringify({
             id: sourceContentId,
             content: editableContent,
-            title: resolvedTitle,
+            title: content.title,
             folder: sourceFolder || content.metadata?.folder
           })
         })
@@ -110,7 +97,6 @@ const StudioWorkspace = forwardRef<StudioWorkspaceRef, StudioWorkspaceProps>(({
         const result = await response.json()
         if (result.success) {
           console.log('✅ Content updated in Memory Vault')
-          setIsDirty(false) // Reset dirty state after successful save
           onContentSave({ ...content, saved: true })
         } else {
           throw new Error(result.error || 'Update failed')
@@ -123,7 +109,7 @@ const StudioWorkspace = forwardRef<StudioWorkspaceRef, StudioWorkspaceProps>(({
           body: JSON.stringify({
             content: {
               type: content.type,
-              title: resolvedTitle,
+              title: content.title || `${content.type} - ${new Date().toLocaleDateString()}`,
               content: editableContent,
               organization_id: organization?.id,
               timestamp: new Date().toISOString(),
@@ -135,7 +121,6 @@ const StudioWorkspace = forwardRef<StudioWorkspaceRef, StudioWorkspaceProps>(({
 
         const result = await response.json()
         if (result.success) {
-          setIsDirty(false) // Reset dirty state after successful save
           onContentSave({ ...content, saved: true })
         }
       }
@@ -205,14 +190,10 @@ const StudioWorkspace = forwardRef<StudioWorkspaceRef, StudioWorkspaceProps>(({
                 </span>
                 <input
                   type="text"
-                  value={editableTitle}
-                  onChange={(e) => {
-                    setEditableTitle(e.target.value)
-                    setIsDirty(true) // Mark as dirty when title is edited
-                  }}
+                  defaultValue={content.title || 'Untitled'}
                   className="bg-transparent border-none text-white text-sm font-medium focus:outline-none min-w-0 flex-1 truncate"
                   style={{ fontFamily: 'var(--font-display)' }}
-                  placeholder="Enter title..."
+                  placeholder="Untitled"
                 />
               </>
             )}
@@ -235,16 +216,16 @@ const StudioWorkspace = forwardRef<StudioWorkspaceRef, StudioWorkspaceProps>(({
               </button>
               <button
                 onClick={handleSave}
-                disabled={saving || (content.saved && !isDirty)}
+                disabled={saving || content.saved}
                 className="px-3 py-1.5 text-xs font-medium rounded-md transition-colors flex items-center gap-1.5 disabled:opacity-50"
                 style={{
-                  background: (content.saved && !isDirty) ? 'var(--grey-800)' : 'var(--burnt-orange)',
+                  background: content.saved ? 'var(--grey-800)' : 'var(--burnt-orange)',
                   color: 'var(--white)',
                   fontFamily: 'var(--font-display)'
                 }}
               >
                 <Save className="w-3.5 h-3.5" />
-                {saving ? 'Saving...' : (content.saved && !isDirty) ? 'Saved' : isDirty ? 'Save Changes' : 'Save'}
+                {saving ? 'Saving...' : content.saved ? 'Saved' : 'Save'}
               </button>
             </div>
           )}
@@ -382,10 +363,7 @@ const StudioWorkspace = forwardRef<StudioWorkspaceRef, StudioWorkspaceProps>(({
                 <textarea
                   ref={textareaRef}
                   value={editableContent}
-                  onChange={(e) => {
-                    setEditableContent(e.target.value)
-                    setIsDirty(true) // Mark as dirty when user edits
-                  }}
+                  onChange={(e) => setEditableContent(e.target.value)}
                   className="w-full min-h-[400px] bg-transparent border-none resize-none focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)] focus:ring-offset-2 focus:ring-offset-[var(--charcoal)] rounded-lg"
                   style={{
                     color: 'var(--grey-200)',
@@ -404,16 +382,16 @@ const StudioWorkspace = forwardRef<StudioWorkspaceRef, StudioWorkspaceProps>(({
               >
                 <button
                   onClick={handleSave}
-                  disabled={saving || (content.saved && !isDirty)}
+                  disabled={saving || content.saved}
                   className="px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center gap-1.5 disabled:opacity-50"
                   style={{
-                    background: (content.saved && !isDirty) ? 'var(--grey-700)' : 'var(--burnt-orange)',
+                    background: 'var(--burnt-orange)',
                     color: 'var(--white)',
                     fontFamily: 'var(--font-display)'
                   }}
                 >
                   <Save className="w-4 h-4" />
-                  {isDirty ? 'Save Changes' : 'Save to Vault'}
+                  Save to Vault
                 </button>
                 <button
                   onClick={() => textareaRef.current?.focus()}

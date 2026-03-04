@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import {
   Sun,
   TrendingUp,
-  TrendingDown,
   AlertTriangle,
   BarChart3,
   Activity,
@@ -27,9 +26,7 @@ import {
   Play,
   Target,
   Zap,
-  HelpCircle,
-  BookOpen,
-  Minus
+  HelpCircle
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { Logo } from '@/components/ui/Logo'
@@ -54,23 +51,6 @@ interface SidebarPrediction {
   intelligence_targets?: {
     name: string
     target_type: string
-  }
-}
-
-// Tracked narrative type for Developing Stories sidebar
-interface TrackedNarrative {
-  id: string
-  title: string
-  summary: string | null
-  status: 'emerging' | 'developing' | 'stable' | 'declining' | 'resolved'
-  trajectory: 'growing' | 'stable' | 'declining'
-  first_detected_at: string
-  last_updated_at: string
-  mention_count: number
-  related_entities: {
-    competitors?: string[]
-    stakeholders?: string[]
-    topics?: string[]
   }
 }
 
@@ -120,9 +100,6 @@ export default function Dashboard() {
   // Predictions for Hub sidebar (from signal_outcomes / Cascades)
   const [sidebarPredictions, setSidebarPredictions] = useState<SidebarPrediction[]>([])
   const [loadingSidebarData, setLoadingSidebarData] = useState(false)
-
-  // Tracked Narratives for Developing Stories sidebar
-  const [trackedNarratives, setTrackedNarratives] = useState<TrackedNarrative[]>([])
 
   // Crisis monitoring state
   const [activeCrisisCount, setActiveCrisisCount] = useState(0)
@@ -277,23 +254,7 @@ export default function Dashboard() {
 
     setLoadingSidebarData(true)
     try {
-      // Load tracked narratives (Developing Stories)
-      const { data: narrativesData, error: narrativesError } = await supabase
-        .from('tracked_narratives')
-        .select('*')
-        .eq('organization_id', organization.id)
-        .neq('status', 'resolved')
-        .order('last_updated_at', { ascending: false })
-        .limit(8)
-
-      if (narrativesError) {
-        console.error('Failed to load tracked narratives:', narrativesError)
-        setTrackedNarratives([])
-      } else {
-        setTrackedNarratives(narrativesData || [])
-      }
-
-      // Also load predictions from unified signals table (for Cascades)
+      // Load predictions from unified signals table (replaces legacy signal_outcomes)
       const { data, error } = await supabase
         .from('signals')
         .select(`
@@ -325,7 +286,6 @@ export default function Dashboard() {
     } catch (error) {
       console.error('Failed to load sidebar data:', error)
       setSidebarPredictions([])
-      setTrackedNarratives([])
     } finally {
       setLoadingSidebarData(false)
     }
@@ -716,7 +676,6 @@ export default function Dashboard() {
               executiveSynthesis={executiveSynthesis}
               opportunities={opportunities}
               sidebarPredictions={sidebarPredictions}
-              trackedNarratives={trackedNarratives}
               loadingSidebarData={loadingSidebarData}
               isRunningPipeline={isRunningPipeline}
               pipelineStage={pipelineStage}
@@ -905,7 +864,6 @@ function HubView({
   executiveSynthesis,
   opportunities,
   sidebarPredictions,
-  trackedNarratives,
   loadingSidebarData,
   isRunningPipeline,
   pipelineStage,
@@ -921,7 +879,6 @@ function HubView({
   executiveSynthesis: any
   opportunities: any[]
   sidebarPredictions: SidebarPrediction[]
-  trackedNarratives: TrackedNarrative[]
   loadingSidebarData: boolean
   isRunningPipeline: boolean
   pipelineStage: string
@@ -1358,67 +1315,62 @@ ${opp.strategic_context?.trigger_events?.map((e: string) => `- ${e}`).join('\n')
 
       {/* Intel Sidebar - Right */}
       <aside className="w-[320px] bg-[var(--grey-900)] border-l border-[var(--grey-800)] p-5 overflow-y-auto shrink-0">
-        {/* Developing Stories Header */}
+        {/* Header */}
         <div
           className="text-[0.65rem] uppercase tracking-[0.1em] text-[var(--grey-500)] mb-3 flex items-center justify-between"
           style={{ fontFamily: 'var(--font-display)' }}
         >
           <span className="flex items-center gap-2">
-            <BookOpen className="w-3.5 h-3.5 text-[var(--burnt-orange)]" />
-            Developing Stories
-            {trackedNarratives.length > 0 && (
+            <Zap className="w-3.5 h-3.5 text-[var(--burnt-orange)]" />
+            Intelligence Cascades
+            {sidebarPredictions.length > 0 && (
               <span className="px-1.5 py-0.5 text-[0.6rem] bg-[var(--burnt-orange)]/20 text-[var(--burnt-orange)] rounded">
-                {trackedNarratives.length}
+                {sidebarPredictions.length}
               </span>
             )}
           </span>
+          <button
+            onClick={() => onNavigate('cascades')}
+            className="text-[var(--burnt-orange)] hover:underline text-[0.65rem]"
+          >
+            View All
+          </button>
         </div>
 
-        {/* Tracked Narratives List */}
-        {trackedNarratives.length > 0 ? (
-          <div className="space-y-2 mb-6">
-            {trackedNarratives.map((narrative, idx) => {
-              const daysSinceDetected = Math.floor((Date.now() - new Date(narrative.first_detected_at).getTime()) / (1000 * 60 * 60 * 24))
-              const isNew = daysSinceDetected <= 1
-              const TrajectoryIcon = narrative.trajectory === 'growing' ? TrendingUp :
-                                     narrative.trajectory === 'declining' ? TrendingDown : Minus
-              const trajectoryColor = narrative.trajectory === 'growing' ? 'text-green-400' :
-                                      narrative.trajectory === 'declining' ? 'text-red-400' : 'text-[var(--grey-400)]'
-              const statusColor = narrative.status === 'emerging' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' :
-                                  narrative.status === 'developing' ? 'bg-[var(--burnt-orange)]/20 text-[var(--burnt-orange)] border-[var(--burnt-orange)]/30' :
-                                  narrative.status === 'declining' ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' :
-                                  'bg-[var(--grey-700)] text-[var(--grey-400)] border-[var(--grey-600)]'
+        {/* Predictions List */}
+        {sidebarPredictions.length > 0 ? (
+          <div className="space-y-2">
+            {sidebarPredictions.map((prediction, idx) => {
+              const confidencePct = Math.round(prediction.predicted_confidence * 100)
+              const isHighConfidence = confidencePct >= 70
+              const isImminent = prediction.predicted_timeframe_days <= 30
               return (
                 <div
-                  key={narrative.id || idx}
-                  className="p-3 bg-[var(--grey-800)] rounded-lg hover:bg-[var(--grey-700)] transition-colors"
+                  key={prediction.id || idx}
+                  className="p-3 bg-[var(--grey-800)] rounded-lg cursor-pointer hover:bg-[var(--grey-700)] transition-colors"
+                  onClick={() => onNavigate('cascades')}
                 >
                   <div className="flex items-start gap-2 mb-1.5">
-                    {/* Status badge */}
-                    <span className={`px-1.5 py-0.5 text-[0.6rem] rounded border shrink-0 capitalize ${statusColor}`}>
-                      {isNew ? 'new' : narrative.status}
+                    {/* Timeframe badge */}
+                    <span className={`px-1.5 py-0.5 text-[0.6rem] rounded flex items-center gap-1 shrink-0 ${
+                      isImminent
+                        ? 'bg-[var(--burnt-orange-muted)] text-[var(--burnt-orange)] border border-[var(--burnt-orange)]/30'
+                        : 'bg-[var(--grey-700)] text-[var(--grey-400)]'
+                    }`}>
+                      <Clock className="w-2.5 h-2.5" />
+                      {prediction.predicted_timeframe_days}d
                     </span>
-                    {/* Trajectory */}
-                    <span className={`flex items-center gap-0.5 text-[0.6rem] font-medium ${trajectoryColor}`}>
-                      <TrajectoryIcon className="w-2.5 h-2.5" />
-                      {narrative.trajectory}
-                    </span>
-                    {/* Time tracked */}
-                    <span className="text-[0.55rem] text-[var(--grey-500)] ml-auto">
-                      {daysSinceDetected}d
+                    {/* Confidence */}
+                    <span className={`text-[0.6rem] font-medium ${isHighConfidence ? 'text-green-400' : 'text-[var(--grey-400)]'}`}>
+                      {confidencePct}%
                     </span>
                   </div>
                   <p className="text-[0.8rem] text-white leading-snug line-clamp-2 mb-1">
-                    {narrative.title}
+                    {prediction.predicted_outcome}
                   </p>
-                  {narrative.summary && (
-                    <p className="text-[0.65rem] text-[var(--grey-500)] line-clamp-2 mb-1">
-                      {narrative.summary}
-                    </p>
-                  )}
-                  {narrative.related_entities?.competitors && narrative.related_entities.competitors.length > 0 && (
-                    <span className="text-[0.6rem] text-[var(--grey-500)]">
-                      {narrative.related_entities.competitors.slice(0, 2).join(', ')}
+                  {prediction.intelligence_targets?.name && (
+                    <span className="text-[0.65rem] text-[var(--grey-500)]">
+                      {prediction.intelligence_targets.name}
                     </span>
                   )}
                 </div>
@@ -1430,61 +1382,12 @@ ${opp.strategic_context?.trigger_events?.map((e: string) => `- ${e}`).join('\n')
             {loadingSidebarData ? (
               <div className="flex items-center justify-center gap-2">
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Loading stories...
+                Loading predictions...
               </div>
             ) : (
-              'No developing stories yet. Run the intelligence pipeline to track narratives over time.'
+              'No predictions yet. Run the intelligence pipeline to generate forward-looking cascades.'
             )}
           </div>
-        )}
-
-        {/* Intelligence Cascades Section */}
-        {sidebarPredictions.length > 0 && (
-          <>
-            <div
-              className="text-[0.65rem] uppercase tracking-[0.1em] text-[var(--grey-500)] mb-3 mt-6 flex items-center justify-between"
-              style={{ fontFamily: 'var(--font-display)' }}
-            >
-              <span className="flex items-center gap-2">
-                <Zap className="w-3.5 h-3.5 text-[var(--burnt-orange)]" />
-                Predictions
-                <span className="px-1.5 py-0.5 text-[0.6rem] bg-[var(--grey-700)] text-[var(--grey-400)] rounded">
-                  {sidebarPredictions.length}
-                </span>
-              </span>
-              <button
-                onClick={() => onNavigate('cascades')}
-                className="text-[var(--burnt-orange)] hover:underline text-[0.65rem]"
-              >
-                View All
-              </button>
-            </div>
-            <div className="space-y-2">
-              {sidebarPredictions.slice(0, 3).map((prediction, idx) => {
-                const confidencePct = Math.round(prediction.predicted_confidence * 100)
-                const isHighConfidence = confidencePct >= 70
-                return (
-                  <div
-                    key={prediction.id || idx}
-                    className="p-2.5 bg-[var(--grey-800)] rounded-lg cursor-pointer hover:bg-[var(--grey-700)] transition-colors"
-                    onClick={() => onNavigate('cascades')}
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className={`text-[0.6rem] font-medium ${isHighConfidence ? 'text-green-400' : 'text-[var(--grey-400)]'}`}>
-                        {confidencePct}%
-                      </span>
-                      <span className="text-[0.55rem] text-[var(--grey-500)]">
-                        {prediction.predicted_timeframe_days}d window
-                      </span>
-                    </div>
-                    <p className="text-[0.75rem] text-white leading-snug line-clamp-2">
-                      {prediction.predicted_outcome}
-                    </p>
-                  </div>
-                )
-              })}
-            </div>
-          </>
         )}
       </aside>
     </>

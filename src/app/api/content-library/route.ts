@@ -50,7 +50,7 @@ export async function DELETE(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json()
-    const { id, folder, title } = body
+    const { id, folder } = body
 
     if (!id) {
       return NextResponse.json({
@@ -59,23 +59,11 @@ export async function PATCH(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Build update object with only provided fields
-    const updateData: Record<string, any> = {}
-    if (folder !== undefined) updateData.folder = folder
-    if (title !== undefined) updateData.title = title
-
-    if (Object.keys(updateData).length === 0) {
-      return NextResponse.json({
-        success: false,
-        error: 'No fields to update'
-      }, { status: 400 })
-    }
-
-    console.log('Updating content:', id, updateData)
+    console.log('Updating content folder:', id, folder)
 
     const { error: updateError } = await supabase
       .from('content_library')
-      .update(updateData)
+      .update({ folder })
       .eq('id', id)
 
     if (updateError) {

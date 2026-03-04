@@ -17,7 +17,6 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 // Don't throw error immediately - check when actually needed
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY') || Deno.env.get('CLAUDE_API_KEY');
-const GOOGLE_API_KEY = Deno.env.get('GOOGLE_API_KEY');
 
 // Initialize Supabase client
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
@@ -54,56 +53,6 @@ async function callAnthropic(messages: any[], maxTokens: number = 4000, model: s
 
   const data = await response.json();
   return data;
-}
-
-// Helper function to call Gemini Flash API (faster than Claude for discovery)
-async function callGemini(prompt: string, maxTokens: number = 4000): Promise<{ content: [{ type: string, text: string }] }> {
-  if (!GOOGLE_API_KEY) {
-    console.error('❌ No GOOGLE_API_KEY found - falling back to Claude');
-    // Fallback to Claude if no Google API key
-    return callAnthropic([{ role: 'user', content: prompt }], maxTokens);
-  }
-
-  console.log('🚀 Using Gemini Flash 2.0 for faster discovery...');
-
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key=${GOOGLE_API_KEY}`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        contents: [{
-          role: 'user',
-          parts: [{ text: prompt }]
-        }],
-        generationConfig: {
-          temperature: 0.3, // Lower temp for more consistent structured output
-          maxOutputTokens: maxTokens
-        }
-      })
-    }
-  );
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('❌ Gemini API error:', errorText);
-    console.log('⚠️ Falling back to Claude...');
-    // Fallback to Claude on error
-    return callAnthropic([{ role: 'user', content: prompt }], maxTokens);
-  }
-
-  const data = await response.json();
-  const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-
-  // Return in Claude-compatible format for easy drop-in replacement
-  return {
-    content: [{
-      type: 'text',
-      text: responseText
-    }]
-  };
 }
 
 /**
@@ -627,8 +576,11 @@ RESPOND WITH ONLY THE INDUSTRY NAME:`;
 
     console.log('🔍 Industry detection prompt:', detectionPrompt.substring(0, 300));
 
-    // Use Gemini Flash for fast industry detection
-    const detection = await callGemini(detectionPrompt, 50);
+    // Use Claude Haiku for industry detection (follows instructions better, faster, cheaper)
+    const detection = await callAnthropic([{
+      role: 'user',
+      content: detectionPrompt
+    }], 10, 'claude-3-5-haiku-20241022');
 
     industry = detection.content[0].type === 'text' ? detection.content[0].text.trim() : 'technology';
     console.log(`✅ Detected industry: ${industry}`);
@@ -841,17 +793,19 @@ Return a monitoring configuration in this JSON format:
 }`;
 
   try {
-    // Use Gemini Flash for fast gap analysis
-    const response = await callGemini(gapPrompt, 2000);
+    const response = await callAnthropic([{
+      role: 'user',
+      content: gapPrompt
+    }], 2000, 'claude-sonnet-4-20250514');
 
-    const geminiResponse = response.content[0];
-    if (geminiResponse.type !== 'text') {
-      throw new Error('Invalid Gemini response for gap-filling');
+    const claudeResponse = response.content[0];
+    if (claudeResponse.type !== 'text') {
+      throw new Error('Invalid Claude response for gap-filling');
     }
 
-    const jsonMatch = geminiResponse.text.match(/\{[\s\S]*\}/);
+    const jsonMatch = claudeResponse.text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      console.error('No JSON in Gemini gap-filling response');
+      console.error('No JSON in Claude gap-filling response');
       // Fallback: generate basic queries from missing entities
       return generateFallbackGapStrategy(organization_name, gap_context, sourcesData);
     }
@@ -1397,21 +1351,23 @@ REMEMBER:
 - Generic categories are USELESS for intelligence monitoring - we need trackable entities
 `;
 
-  // Use Gemini Flash for fast profile generation
-  const message = await callGemini(analysisPrompt, 8000);
+  const message = await callAnthropic([{
+    role: 'user',
+    content: analysisPrompt
+  }], 8000, 'claude-sonnet-4-20250514'); // Increased from 4000 - need space for full profile with 10-15 competitors + stakeholders
 
-  const geminiResponse = message.content[0];
-  if (geminiResponse.type !== 'text') {
-    throw new Error('Invalid Gemini response');
+  const claudeResponse = message.content[0];
+  if (claudeResponse.type !== 'text') {
+    throw new Error('Invalid Claude response');
   }
 
-  console.log('Gemini response:', geminiResponse.text.substring(0, 500));
-  console.log(`Full response length: ${geminiResponse.text.length} characters`);
+  console.log('Claude response:', claudeResponse.text.substring(0, 500));
+  console.log(`Full response length: ${claudeResponse.text.length} characters`);
 
-  const jsonMatch = geminiResponse.text.match(/\{[\s\S]*\}/);
+  const jsonMatch = claudeResponse.text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {
-    console.error('Full Gemini response:', geminiResponse.text);
-    throw new Error('No valid JSON in Gemini response');
+    console.error('Full Claude response:', claudeResponse.text);
+    throw new Error('No valid JSON in Claude response');
   }
 
   const enhancedData = JSON.parse(jsonMatch[0]);
