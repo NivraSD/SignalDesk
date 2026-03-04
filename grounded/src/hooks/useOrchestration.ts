@@ -5,7 +5,7 @@ import type { OrchestrationResult } from '@/types'
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 
 export function useOrchestration() {
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [orchestration, setOrchestration] = useState<OrchestrationResult | null>(null)
 
   const callOrchestrate = async (action: string, payload: Record<string, unknown> = {}) => {
