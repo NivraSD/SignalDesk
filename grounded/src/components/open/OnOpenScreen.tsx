@@ -1,9 +1,22 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, Component, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useOrchestration } from '@/hooks/useOrchestration'
 import { DAILY_QUOTES } from '@/lib/constants'
 
-export default function OnOpenScreen() {
+class OpenErrorBoundary extends Component<{ children: ReactNode }, { error: string | null }> {
+  state = { error: null as string | null }
+  static getDerivedStateFromError(e: Error) { return { error: e.message } }
+  render() {
+    if (this.state.error) return (
+      <div className="fixed inset-0 bg-stone-950 text-white p-8 flex flex-col justify-center">
+        <p className="text-red-400 text-sm font-mono">{this.state.error}</p>
+      </div>
+    )
+    return this.props.children
+  }
+}
+
+function OnOpenScreenInner() {
   const navigate = useNavigate()
   const { loading, orchestration, fetchLatest } = useOrchestration()
   const [imageLoaded, setImageLoaded] = useState(false)
@@ -106,5 +119,13 @@ export default function OnOpenScreen() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function OnOpenScreen() {
+  return (
+    <OpenErrorBoundary>
+      <OnOpenScreenInner />
+    </OpenErrorBoundary>
   )
 }
