@@ -26,15 +26,26 @@ function OnOpenScreenInner() {
   })
 
   useEffect(() => {
-    fetchLatest()
+    fetchLatest().then((result) => {
+      if (result) {
+        localStorage.setItem('grounded_last_orchestration', JSON.stringify(result))
+      }
+    })
   }, [fetchLatest])
 
-  const handleTap = useCallback(() => {
-    const target = orchestration?.routing_target || '/'
-    navigate(target)
-  }, [navigate, orchestration])
+  // Use fresh orchestration, or cached from last session, or null
+  const display = orchestration || (() => {
+    try {
+      const cached = localStorage.getItem('grounded_last_orchestration')
+      return cached ? JSON.parse(cached) : null
+    } catch { return null }
+  })()
 
-  // Loading state: dark screen with breathing animation
+  const handleTap = useCallback(() => {
+    navigate(display?.routing_target || '/')
+  }, [navigate, display])
+
+  // Loading state
   if (loading) {
     return (
       <div
@@ -46,8 +57,8 @@ function OnOpenScreenInner() {
     )
   }
 
-  // Fallback: gradient + daily quote
-  if (!orchestration) {
+  // Fallback: gradient + daily quote (only if no cached orchestration either)
+  if (!display) {
     return (
       <div
         className="fixed inset-0 cursor-pointer select-none"
@@ -77,10 +88,9 @@ function OnOpenScreenInner() {
       onClick={handleTap}
       style={{ touchAction: 'manipulation' }}
     >
-      {/* Art image background */}
-      {orchestration.image_url && (
+      {display.image_url && (
         <img
-          src={orchestration.image_url}
+          src={display.image_url}
           alt=""
           className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
             imageLoaded ? 'opacity-100' : 'opacity-0'
@@ -90,31 +100,26 @@ function OnOpenScreenInner() {
         />
       )}
 
-      {/* Dark fallback while image loads */}
       {!imageLoaded && (
         <div className="absolute inset-0 bg-stone-950" />
       )}
 
-      {/* Gradient overlay: transparent at top → dark at bottom */}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/80" />
 
-      {/* Content positioned at ~65% down */}
       <div className="relative z-10 h-full flex flex-col justify-end pb-20 px-8">
-        {/* Title */}
         <h1
           className="text-3xl font-light text-white leading-snug mb-4 tracking-wide"
           style={{ textShadow: '0 2px 12px rgba(0,0,0,0.6)' }}
         >
-          {orchestration.title}
+          {display.title}
         </h1>
 
-        {/* Routing suggestion (subtle hint) */}
-        {orchestration.routing_suggestion && (
+        {display.routing_suggestion && (
           <p
             className="text-sm text-white/50 font-light max-w-xs"
             style={{ textShadow: '0 1px 4px rgba(0,0,0,0.4)' }}
           >
-            {orchestration.routing_suggestion}
+            {display.routing_suggestion}
           </p>
         )}
       </div>
