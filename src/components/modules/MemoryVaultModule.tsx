@@ -8,7 +8,7 @@ import {
   Filter, X, ChevronRight, ChevronDown, Download, Trash2, Eye,
   BarChart3, Zap, CheckCircle, AlertCircle, Loader, Edit,
   FolderPlus, MoreVertical, Move, Copy, FolderOpen, File, ExternalLink, Target,
-  ArrowLeft
+  ArrowLeft, Globe, ImagePlus, RefreshCw
 } from 'lucide-react'
 import { useAppStore } from '@/stores/useAppStore'
 import { createClient } from '@supabase/supabase-js'
@@ -55,6 +55,16 @@ interface ContentItem {
     has_full_content?: boolean
     [key: string]: any  // Allow other metadata fields
   }
+  // Publishing
+  published_at?: string | null
+  unpublished_at?: string | null
+  content_slug?: string | null
+  vertical?: string | null
+  canonical_url?: string | null
+  author_name?: string | null
+  author_title?: string | null
+  meta_description?: string | null
+  cover_image_url?: string | null
   // Execution tracking
   executed?: boolean
   executed_at?: string
@@ -153,8 +163,10 @@ interface FolderNode {
 
 // Smart folder templates
 const FOLDER_TEMPLATES = [
+  { name: 'Founder', icon: '🚀', color: 'text-amber-400' },
   { name: 'Opportunities', icon: '🎯', color: 'text-blue-400' },
   { name: 'Campaigns', icon: '📢', color: 'text-purple-400' },
+  { name: 'Public Affairs', icon: '🏛️', color: 'text-slate-400' },
   { name: 'Crisis', icon: '🚨', color: 'text-red-400' },
   { name: 'Media Plans', icon: '📰', color: 'text-cyan-400' },
   { name: 'Strategies', icon: '💡', color: 'text-green-400' },
@@ -193,6 +205,23 @@ export default function MemoryVaultModule({ onOpenInStudio }: MemoryVaultModuleP
   const [exportMode, setExportMode] = useState<'basic' | 'attach'>('basic')
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('')
   const [mergingTemplate, setMergingTemplate] = useState(false)
+
+  // Title editing state
+  const [editingTitle, setEditingTitle] = useState(false)
+  const [editTitleValue, setEditTitleValue] = useState('')
+  const [savingTitle, setSavingTitle] = useState(false)
+
+  // Publish dialog state
+  const [showPublishDialog, setShowPublishDialog] = useState(false)
+  const [itemToPublish, setItemToPublish] = useState<ContentItem | null>(null)
+  const [publishVertical, setPublishVertical] = useState('energy')
+  const [publishAuthorName, setPublishAuthorName] = useState('')
+  const [publishAuthorTitle, setPublishAuthorTitle] = useState('')
+  const [publishMetaDesc, setPublishMetaDesc] = useState('')
+  const [publishing, setPublishing] = useState(false)
+  const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null)
+  const [generatingCoverImage, setGeneratingCoverImage] = useState(false)
+  const [coverImageError, setCoverImageError] = useState<string | null>(null)
 
   // Brand Assets State
   const [brandAssets, setBrandAssets] = useState<BrandAsset[]>([])
@@ -895,6 +924,143 @@ export default function MemoryVaultModule({ onOpenInStudio }: MemoryVaultModuleP
         type: item.content_type
       })
       router.push(`/studio?${params.toString()}`)
+    }
+  }
+
+  // Publish content to media network
+  const handleSaveTitle = async (item: ContentItem, newTitle: string) => {
+    if (!newTitle.trim() || newTitle.trim() === item.title) {
+      setEditingTitle(false)
+      return
+    }
+    setSavingTitle(true)
+    try {
+      const res = await fetch('/api/content-library', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: item.id, title: newTitle.trim() })
+      })
+      if (res.ok) {
+        // Update local state
+        setContentItems(prev => prev.map(ci =>
+          ci.id === item.id ? { ...ci, title: newTitle.trim() } : ci
+        ))
+        if (selectedContent?.id === item.id) {
+          setSelectedContent({ ...selectedContent, title: newTitle.trim() })
+        }
+      }
+    } catch (err) {
+      console.error('Failed to save title:', err)
+    } finally {
+      setSavingTitle(false)
+      setEditingTitle(false)
+    }
+  }
+
+  const handleGenerateCoverImage = async (regenerate = false) => {
+    if (!itemToPublish) return
+    setGeneratingCoverImage(true)
+    setCoverImageError(null)
+    try {
+      const res = await fetch('/api/content-library/generate-cover-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contentId: itemToPublish.id, regenerate }),
+      })
+      const data = await res.json()
+      if (!data.success) throw new Error(data.error)
+      setCoverImagePreview(data.coverImageUrl)
+      // Update local state
+      setContentItems(prev => prev.map(i =>
+        i.id === itemToPublish.id ? { ...i, cover_image_url: data.coverImageUrl } : i
+      ))
+    } catch (error) {
+      console.error('Cover image generation error:', error)
+      setCoverImageError(error instanceof Error ? error.message : 'Failed to generate cover image')
+    } finally {
+      setGeneratingCoverImage(false)
+    }
+  }
+
+  const handlePublishContent = async () => {
+    if (!itemToPublish) return
+    setPublishing(true)
+    try {
+      const res = await fetch('/api/content-library/publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contentId: itemToPublish.id,
+          vertical: publishVertical,
+          authorName: publishAuthorName || undefined,
+          authorTitle: publishAuthorTitle || undefined,
+          metaDescription: publishMetaDesc || undefined,
+        }),
+      })
+      const data = await res.json()
+      if (!data.success) throw new Error(data.error)
+
+      // Update local state so the button switches to "View Published"
+      const updated = contentItems.map(i =>
+        i.id === itemToPublish.id
+          ? {
+              ...i,
+              published_at: new Date().toISOString(),
+              unpublished_at: null,
+              content_slug: data.slug,
+              vertical: data.vertical,
+              canonical_url: data.publishedUrl,
+              author_name: publishAuthorName || null,
+              author_title: publishAuthorTitle || null,
+            }
+          : i
+      )
+      setContentItems(updated)
+      setFolderTree(buildFolderTree(updated))
+      if (selectedContent?.id === itemToPublish.id) {
+        setSelectedContent(updated.find(i => i.id === itemToPublish.id) || null)
+      }
+
+      setShowPublishDialog(false)
+      setItemToPublish(null)
+      setPublishAuthorName('')
+      setPublishAuthorTitle('')
+      setPublishMetaDesc('')
+      setCoverImagePreview(null)
+      setCoverImageError(null)
+      window.open(data.publishedUrl, '_blank')
+    } catch (error) {
+      console.error('Publish error:', error)
+      alert(`Failed to publish: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
+      setPublishing(false)
+    }
+  }
+
+  const handleUnpublishContent = async (item: ContentItem) => {
+    if (!confirm('Unpublish this article? It will be removed from the media network.')) return
+    try {
+      const res = await fetch('/api/content-library/publish', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contentId: item.id }),
+      })
+      const data = await res.json()
+      if (!data.success) throw new Error(data.error)
+
+      const updated = contentItems.map(i =>
+        i.id === item.id
+          ? { ...i, unpublished_at: new Date().toISOString() }
+          : i
+      )
+      setContentItems(updated)
+      setFolderTree(buildFolderTree(updated))
+      if (selectedContent?.id === item.id) {
+        setSelectedContent(updated.find(i => i.id === item.id) || null)
+      }
+    } catch (error) {
+      console.error('Unpublish error:', error)
+      alert(`Failed to unpublish: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 
@@ -1703,6 +1869,23 @@ export default function MemoryVaultModule({ onOpenInStudio }: MemoryVaultModuleP
             getResultFieldForType={getResultFieldForType}
             selectedFolder={selectedFolder}
             contentItems={contentItems}
+            editingTitle={editingTitle}
+            editTitleValue={editTitleValue}
+            setEditTitleValue={setEditTitleValue}
+            setEditingTitle={setEditingTitle}
+            savingTitle={savingTitle}
+            onSaveTitle={handleSaveTitle}
+            onPublishContent={(item) => {
+              setItemToPublish(item)
+              setPublishVertical('commodities')
+              setPublishAuthorName('')
+              setPublishAuthorTitle('')
+              setPublishMetaDesc('')
+              setCoverImagePreview(item.cover_image_url || null)
+              setCoverImageError(null)
+              setShowPublishDialog(true)
+            }}
+            onUnpublishContent={handleUnpublishContent}
           />
         )}
 
@@ -2266,6 +2449,192 @@ export default function MemoryVaultModule({ onOpenInStudio }: MemoryVaultModuleP
         </div>
       )}
 
+      {/* Publish Dialog */}
+      {showPublishDialog && itemToPublish && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-[var(--charcoal)] rounded-xl p-6 w-[480px] max-h-[80vh] overflow-y-auto border border-zinc-800">
+            <h3 className="text-lg font-bold mb-2 text-white" style={{ fontFamily: 'var(--font-display)' }}>
+              Publish to Media Network
+            </h3>
+            <p className="text-sm text-[var(--grey-400)] mb-4">
+              Publishing: {itemToPublish.title}
+            </p>
+
+            <div className="space-y-4">
+              {/* Vertical selector */}
+              <div>
+                <label className="block text-xs font-medium text-[var(--grey-400)] mb-1 uppercase tracking-wider">
+                  Vertical
+                </label>
+                <select
+                  value={publishVertical}
+                  onChange={e => setPublishVertical(e.target.value)}
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-[var(--burnt-orange)]"
+                >
+                  <option value="commodities">Commodities</option>
+                  <option value="tech">Tech</option>
+                  <option value="consulting">Consulting</option>
+                  <option value="finance">Finance</option>
+                </select>
+              </div>
+
+              {/* Slug preview */}
+              <div>
+                <label className="block text-xs font-medium text-[var(--grey-400)] mb-1 uppercase tracking-wider">
+                  URL Preview
+                </label>
+                <div className="px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-[var(--grey-500)] text-sm font-mono truncate">
+                  /{publishVertical}/{itemToPublish.title.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').slice(0, 60)}
+                </div>
+              </div>
+
+              {/* Author name */}
+              <div>
+                <label className="block text-xs font-medium text-[var(--grey-400)] mb-1 uppercase tracking-wider">
+                  Author Name <span className="text-[var(--grey-600)]">(optional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={publishAuthorName}
+                  onChange={e => setPublishAuthorName(e.target.value)}
+                  placeholder="e.g. Jane Smith"
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-[var(--burnt-orange)]"
+                />
+              </div>
+
+              {/* Author title */}
+              <div>
+                <label className="block text-xs font-medium text-[var(--grey-400)] mb-1 uppercase tracking-wider">
+                  Author Title <span className="text-[var(--grey-600)]">(optional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={publishAuthorTitle}
+                  onChange={e => setPublishAuthorTitle(e.target.value)}
+                  placeholder="e.g. Head of Strategy"
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-[var(--burnt-orange)]"
+                />
+              </div>
+
+              {/* Meta description */}
+              <div>
+                <label className="block text-xs font-medium text-[var(--grey-400)] mb-1 uppercase tracking-wider">
+                  Meta Description <span className="text-[var(--grey-600)]">(optional, for SEO)</span>
+                </label>
+                <textarea
+                  value={publishMetaDesc}
+                  onChange={e => setPublishMetaDesc(e.target.value)}
+                  placeholder="Brief description for search engines..."
+                  rows={2}
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-[var(--burnt-orange)] resize-none"
+                />
+              </div>
+
+              {/* Cover Image — only for thought-leadership */}
+              {itemToPublish.content_type === 'thought-leadership' && (
+                <div>
+                  <label className="block text-xs font-medium text-[var(--grey-400)] mb-2 uppercase tracking-wider">
+                    Cover Image
+                  </label>
+
+                  {coverImagePreview ? (
+                    <div className="space-y-2">
+                      <div className="relative rounded-lg overflow-hidden border border-zinc-700" style={{ aspectRatio: '16/9' }}>
+                        <img
+                          src={coverImagePreview}
+                          alt="Cover preview"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <button
+                        onClick={() => handleGenerateCoverImage(true)}
+                        disabled={generatingCoverImage}
+                        className="w-full px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-lg text-xs text-[var(--grey-300)] transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
+                      >
+                        {generatingCoverImage ? (
+                          <>
+                            <Loader className="w-3 h-3 animate-spin" />
+                            Regenerating...
+                          </>
+                        ) : (
+                          <>
+                            <RefreshCw className="w-3 h-3" />
+                            Regenerate Cover Image
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <button
+                        onClick={() => handleGenerateCoverImage(false)}
+                        disabled={generatingCoverImage}
+                        className="w-full px-3 py-3 bg-zinc-800 hover:bg-zinc-700 border border-dashed border-zinc-600 rounded-lg text-sm text-[var(--grey-300)] transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        {generatingCoverImage ? (
+                          <>
+                            <Loader className="w-4 h-4 animate-spin" />
+                            Generating cover image...
+                          </>
+                        ) : (
+                          <>
+                            <ImagePlus className="w-4 h-4" />
+                            Generate AI Cover Image
+                          </>
+                        )}
+                      </button>
+                      <p className="text-[10px] text-[var(--grey-600)] text-center">
+                        Uses Gemini Flash to create an editorial cover image
+                      </p>
+                    </div>
+                  )}
+
+                  {coverImageError && (
+                    <p className="text-xs text-red-400 mt-1">{coverImageError}</p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-2 mt-6">
+              <button
+                onClick={handlePublishContent}
+                disabled={publishing}
+                className="flex-1 px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                style={{
+                  background: 'var(--burnt-orange)',
+                  color: 'var(--white)',
+                  fontFamily: 'var(--font-display)'
+                }}
+              >
+                {publishing ? (
+                  <>
+                    <Loader className="w-4 h-4 animate-spin" />
+                    Publishing...
+                  </>
+                ) : (
+                  <>
+                    <Globe className="w-4 h-4" />
+                    Publish
+                  </>
+                )}
+              </button>
+              <button
+                onClick={() => {
+                  setShowPublishDialog(false)
+                  setItemToPublish(null)
+                  setCoverImagePreview(null)
+                  setCoverImageError(null)
+                }}
+                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors text-[var(--grey-300)]"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }
@@ -2293,7 +2662,15 @@ function ContentLibraryTab({
   executingAction,
   getResultFieldForType,
   selectedFolder,
-  contentItems
+  contentItems,
+  editingTitle,
+  editTitleValue,
+  setEditTitleValue,
+  setEditingTitle,
+  savingTitle,
+  onSaveTitle,
+  onPublishContent,
+  onUnpublishContent
 }: {
   folderTree: FolderNode[]
   selectedContent: ContentItem | null
@@ -2317,6 +2694,14 @@ function ContentLibraryTab({
   getResultFieldForType: (contentType: string) => { label: string; placeholder: string; resultType: string }
   selectedFolder: string | null
   contentItems: ContentItem[]
+  editingTitle: boolean
+  editTitleValue: string
+  setEditTitleValue: (v: string) => void
+  setEditingTitle: (v: boolean) => void
+  savingTitle: boolean
+  onSaveTitle: (item: ContentItem, newTitle: string) => void
+  onPublishContent: (item: ContentItem) => void
+  onUnpublishContent: (item: ContentItem) => void
 }) {
   // Local state for result form
   const [resultValue, setResultValue] = useState('')
@@ -2460,12 +2845,40 @@ function ContentLibraryTab({
                         <FileText className="w-5 h-5" style={{ color: 'var(--burnt-orange)' }} />
                       </div>
                       <div>
-                        <h2
-                          className="text-xl font-semibold"
-                          style={{ color: 'var(--white)', fontFamily: 'var(--font-display)' }}
-                        >
-                          {selectedContent.title}
-                        </h2>
+                        {editingTitle ? (
+                          <div className="flex items-center gap-2">
+                            <input
+                              autoFocus
+                              value={editTitleValue}
+                              onChange={e => setEditTitleValue(e.target.value)}
+                              onKeyDown={e => {
+                                if (e.key === 'Enter') onSaveTitle(selectedContent, editTitleValue)
+                                if (e.key === 'Escape') setEditingTitle(false)
+                              }}
+                              onBlur={() => onSaveTitle(selectedContent, editTitleValue)}
+                              className="text-xl font-semibold bg-transparent border-b-2 outline-none w-full"
+                              style={{ color: 'var(--white)', fontFamily: 'var(--font-display)', borderColor: 'var(--burnt-orange)' }}
+                              disabled={savingTitle}
+                            />
+                            {savingTitle && <Loader className="w-4 h-4 animate-spin" style={{ color: 'var(--burnt-orange)' }} />}
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <h2
+                              className="text-xl font-semibold"
+                              style={{ color: 'var(--white)', fontFamily: 'var(--font-display)' }}
+                            >
+                              {selectedContent.title}
+                            </h2>
+                            <button
+                              onClick={() => { setEditTitleValue(selectedContent.title); setEditingTitle(true) }}
+                              className="p-1 rounded hover:bg-white/10 transition-colors"
+                              title="Edit title"
+                            >
+                              <Edit className="w-4 h-4" style={{ color: 'var(--grey-400)' }} />
+                            </button>
+                          </div>
+                        )}
                         <div className="flex items-center gap-3 mt-1">
                           <span
                             className="px-2 py-0.5 rounded text-xs font-medium capitalize"
@@ -2542,6 +2955,56 @@ function ContentLibraryTab({
                       <Download className="w-4 h-4" />
                       <span className="text-sm font-medium">Download PPTX</span>
                     </a>
+                  )}
+                  {/* Publish Button - for thought-leadership and press-release content */}
+                  {(selectedContent.content_type === 'thought-leadership' || selectedContent.content_type === 'press-release') && (
+                    selectedContent.published_at && !selectedContent.unpublished_at ? (
+                      <>
+                        <a
+                          href={selectedContent.canonical_url || `/media/${selectedContent.vertical}/${selectedContent.content_slug}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors"
+                          style={{
+                            background: 'var(--burnt-orange)',
+                            color: 'var(--white)',
+                            fontFamily: 'var(--font-display)'
+                          }}
+                          title="View Published Article"
+                        >
+                          <Globe className="w-4 h-4" />
+                          <span className="text-sm font-medium">View</span>
+                        </a>
+                        <button
+                          onClick={() => onUnpublishContent(selectedContent)}
+                          className="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors border"
+                          style={{
+                            background: 'transparent',
+                            borderColor: 'var(--grey-700)',
+                            color: 'var(--grey-400)',
+                            fontFamily: 'var(--font-display)'
+                          }}
+                          title="Unpublish from Media Network"
+                        >
+                          <X className="w-4 h-4" />
+                          <span className="text-sm font-medium">Unpublish</span>
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => onPublishContent(selectedContent)}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors"
+                        style={{
+                          background: 'var(--burnt-orange)',
+                          color: 'var(--white)',
+                          fontFamily: 'var(--font-display)'
+                        }}
+                        title="Publish to Media Network"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                        <span className="text-sm font-medium">Publish</span>
+                      </button>
+                    )
                   )}
                   {/* Edit button - only show for non-gamma content */}
                   {!((selectedContent.content_type === 'presentation' || selectedContent.content_type === 'presentation_outline') && selectedContent.metadata?.gamma_url) && (

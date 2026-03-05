@@ -258,7 +258,12 @@ const SimpleIntelligence = () => {
             executiveSummaryLength: executiveSynthesis.synthesis?.executive_summary?.length,
             fullSynthesis: executiveSynthesis
           })}
-          <IntelligenceSynthesisDisplay synthesis={executiveSynthesis} organizationId={organization?.id} />
+          <IntelligenceSynthesisDisplay
+            synthesis={executiveSynthesis}
+            organizationId={organization?.id}
+            organizationName={organization?.name}
+            organizationIndustry={organization?.industry}
+          />
         </div>
       )}
 

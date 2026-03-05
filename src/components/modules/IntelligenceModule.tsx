@@ -1122,7 +1122,12 @@ export default function IntelligenceModule() {
                   </div>
                 </div>
               ) : (
-                <IntelligenceSynthesisDisplay synthesis={executiveSynthesis} organizationId={organization?.id} />
+                <IntelligenceSynthesisDisplay
+                  synthesis={executiveSynthesis}
+                  organizationId={organization?.id}
+                  organizationName={organization?.name}
+                  organizationIndustry={organization?.industry}
+                />
               )}
             </div>
           </div>
@@ -1709,7 +1714,13 @@ export default function IntelligenceModule() {
               )}
                 </>
               ) : (
-                <IntelligenceSynthesisDisplay synthesis={geoResults} loading={false} organizationId={organization?.id} />
+                <IntelligenceSynthesisDisplay
+                  synthesis={geoResults}
+                  loading={false}
+                  organizationId={organization?.id}
+                  organizationName={organization?.name}
+                  organizationIndustry={organization?.industry}
+                />
               )}
 
               {/* Loading State */}

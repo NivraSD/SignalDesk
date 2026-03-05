@@ -9,15 +9,21 @@ import {
   MessageSquare,
   Lightbulb,
   Sparkles,
-  Loader2
+  Loader2,
+  Shield
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
+import { PublicAffairsService } from '@/lib/services/publicAffairsService';
 
 interface IntelligenceSynthesisDisplayProps {
   synthesis: any;
   loading?: boolean;
   organizationId?: string;
+  organizationName?: string;
+  organizationIndustry?: string;
   onOpportunityGenerated?: (opportunity: any) => void;
+  onPublicAffairsGenerated?: (report: any) => void;
+  onNavigateToPublicAffairs?: () => void;
 }
 
 // TEXTURE & MATERIAL SYSTEM
@@ -383,12 +389,60 @@ const IntelligenceSynthesisDisplay: React.FC<IntelligenceSynthesisDisplayProps> 
   synthesis,
   loading,
   organizationId,
-  onOpportunityGenerated
+  organizationName,
+  organizationIndustry,
+  onOpportunityGenerated,
+  onPublicAffairsGenerated,
+  onNavigateToPublicAffairs
 }) => {
   const [expandedDevelopment, setExpandedDevelopment] = useState<number | null>(0);
   const [generatingOpportunity, setGeneratingOpportunity] = useState<number | null>(null);
+  const [generatingPublicAffairs, setGeneratingPublicAffairs] = useState<number | null>(null);
+  const [publicAffairsSuccess, setPublicAffairsSuccess] = useState<number | null>(null);
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [generationSuccess, setGenerationSuccess] = useState<number | null>(null);
+
+  // Generate public affairs report from article/development
+  const handleGeneratePublicAffairs = async (dev: any, index: number) => {
+    if (!organizationId) {
+      setGenerationError('Organization ID required');
+      return;
+    }
+
+    setGeneratingPublicAffairs(index);
+    setGenerationError(null);
+
+    try {
+      const article = {
+        title: dev.event || dev.headline || dev.title,
+        content: dev.impact || dev.details || dev.description,
+        source: dev.source,
+        url: dev.url,
+        published_at: dev.published_at || new Date().toISOString()
+      };
+
+      // Create the report record
+      const report = await PublicAffairsService.createFromArticle(organizationId, article);
+
+      // Start research pipeline (runs async)
+      PublicAffairsService.startResearch(
+        report.id,
+        organizationId,
+        organizationName || 'Organization',
+        organizationIndustry || 'General'
+      ).catch(err => console.error('Public affairs research error:', err));
+
+      setPublicAffairsSuccess(index);
+      onPublicAffairsGenerated?.(report);
+      setTimeout(() => setPublicAffairsSuccess(null), 3000);
+    } catch (err: any) {
+      console.error('Error generating public affairs report:', err);
+      setGenerationError(err.message || 'Failed to generate public affairs report');
+      setTimeout(() => setGenerationError(null), 5000);
+    } finally {
+      setGeneratingPublicAffairs(null);
+    }
+  };
 
   // Generate opportunity from article/development
   const handleGenerateOpportunity = async (dev: any, index: number) => {
@@ -776,9 +830,9 @@ const IntelligenceSynthesisDisplay: React.FC<IntelligenceSynthesisDisplayProps> 
                     </div>
                   )}
 
-                  {/* Generate Opportunity Button */}
+                  {/* Generate Buttons */}
                   {organizationId && (
-                    <div className="mt-3 pt-3 border-t border-gray-700/50">
+                    <div className="mt-3 pt-3 border-t border-gray-700/50 flex flex-wrap gap-2">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -810,6 +864,40 @@ const IntelligenceSynthesisDisplay: React.FC<IntelligenceSynthesisDisplayProps> 
                           <>
                             <Sparkles className="w-3.5 h-3.5" />
                             Generate Opportunity
+                          </>
+                        )}
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleGeneratePublicAffairs(dev, i);
+                        }}
+                        disabled={generatingPublicAffairs === i}
+                        className={`
+                          flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium
+                          transition-all duration-200
+                          ${publicAffairsSuccess === i
+                            ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                            : generatingPublicAffairs === i
+                              ? 'bg-gray-700/50 text-gray-400 cursor-wait'
+                              : 'bg-slate-500/20 text-slate-300 border border-slate-500/30 hover:bg-slate-500/30 hover:border-slate-500/50'
+                          }
+                        `}
+                      >
+                        {generatingPublicAffairs === i ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            Generating...
+                          </>
+                        ) : publicAffairsSuccess === i ? (
+                          <>
+                            <Shield className="w-3.5 h-3.5" />
+                            Report Created!
+                          </>
+                        ) : (
+                          <>
+                            <Shield className="w-3.5 h-3.5" />
+                            Public Affairs
                           </>
                         )}
                       </button>
