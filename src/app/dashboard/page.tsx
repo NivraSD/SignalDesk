@@ -841,9 +841,15 @@ export default function Dashboard() {
               <IntelligenceBriefDisplay
                 synthesis={executiveSynthesis}
                 organizationId={organization?.id}
+                organizationName={organization?.name}
+                organizationIndustry={organization?.industry}
                 onNavigateToOpportunities={() => {
                   setShowReportPopout(false)
                   setActiveModule('opportunities')
+                }}
+                onNavigateToPublicAffairs={() => {
+                  setShowReportPopout(false)
+                  setActiveModule('publicaffairs')
                 }}
               />
             </div>
