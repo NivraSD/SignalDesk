@@ -4,13 +4,12 @@ import React, { useState, useEffect } from 'react'
 import {
   Shield, Clock, ChevronRight, Loader2, Sparkles, FileText,
   MonitorPlay, ArrowLeft, AlertTriangle, Users, Target,
-  TrendingUp, Eye, Map, BarChart3, Download, Trash2
+  TrendingUp, Eye, Map, BarChart3, Download, Trash2, Copy, Check
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { supabase } from '@/lib/supabase/client'
 import { useAppStore } from '@/stores/useAppStore'
 import { PublicAffairsService, type PublicAffairsReport } from '@/lib/services/publicAffairsService'
-import { SaveExportBar } from '@/components/public-affairs/SaveExportBar'
 
 const URGENCY_COLORS = {
   flash: 'bg-red-500/20 text-red-400 border-red-500/30',
@@ -53,7 +52,10 @@ export default function PublicAffairsModule() {
             table: 'public_affairs_reports',
             filter: `organization_id=eq.${organization.id}`
           },
-          () => fetchReports()
+          (payload) => {
+            console.log('Public Affairs realtime update:', payload.eventType)
+            fetchReports()
+          }
         )
         .subscribe()
 
@@ -61,7 +63,7 @@ export default function PublicAffairsModule() {
     }
   }, [organization?.id])
 
-  // Refresh selected report when reports update
+  // Auto-refresh selected report when reports list updates
   useEffect(() => {
     if (selectedReport) {
       const updated = reports.find(r => r.id === selectedReport.id)
@@ -72,12 +74,12 @@ export default function PublicAffairsModule() {
   const fetchReports = async () => {
     if (!organization?.id) return
     try {
-      setLoading(true)
       const data = await PublicAffairsService.getReports(organization.id)
       setReports(data)
+      // Only set loading false on first load
+      setLoading(false)
     } catch (err) {
       console.error('Error fetching public affairs reports:', err)
-    } finally {
       setLoading(false)
     }
   }
@@ -96,6 +98,7 @@ export default function PublicAffairsModule() {
       )
       await fetchReports()
     } catch (err: any) {
+      console.error('Blueprint generation error:', err)
       setError(err.message || 'Failed to generate blueprint')
     } finally {
       setGeneratingBlueprint(false)
@@ -108,26 +111,26 @@ export default function PublicAffairsModule() {
     setError(null)
 
     try {
-      await PublicAffairsService.generatePresentation(
+      const result = await PublicAffairsService.generatePresentation(
         selectedReport.id,
         organization.id
       )
+      console.log('Presentation result:', result)
       await fetchReports()
     } catch (err: any) {
+      console.error('Presentation generation error:', err)
       setError(err.message || 'Failed to generate presentation')
     } finally {
       setGeneratingPresentation(false)
     }
   }
 
-  const handleDownloadFullReport = () => {
-    if (!selectedReport) return
-    const md = PublicAffairsService.compileFullReport(selectedReport)
-    const blob = new Blob([md], { type: 'text/markdown' })
+  const handleDownload = (content: string, filename: string) => {
+    const blob = new Blob([content], { type: 'text/markdown' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `${selectedReport.title.replace(/[^a-zA-Z0-9\s-]/g, '').trim()}.md`
+    a.download = filename
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -154,7 +157,7 @@ export default function PublicAffairsModule() {
           onBack={() => setSelectedReport(null)}
           onGenerateBlueprint={handleGenerateBlueprint}
           onGeneratePresentation={handleGeneratePresentation}
-          onDownloadFull={handleDownloadFullReport}
+          onDownload={handleDownload}
           generatingBlueprint={generatingBlueprint}
           generatingPresentation={generatingPresentation}
           error={error}
@@ -280,7 +283,7 @@ function ReportDetailView({
   onBack,
   onGenerateBlueprint,
   onGeneratePresentation,
-  onDownloadFull,
+  onDownload,
   generatingBlueprint,
   generatingPresentation,
   error
@@ -290,15 +293,24 @@ function ReportDetailView({
   onBack: () => void
   onGenerateBlueprint: () => void
   onGeneratePresentation: () => void
-  onDownloadFull: () => void
+  onDownload: (content: string, filename: string) => void
   generatingBlueprint: boolean
   generatingPresentation: boolean
   error: string | null
 }) {
-  const vaultFolder = report.vault_folder || `Public Affairs/${report.title}`
+  const [copied, setCopied] = useState(false)
   const hasResearch = !!report.research_data
   const hasBlueprint = !!report.blueprint_data
   const hasPresentation = !!report.presentation_url
+  const isProcessing = report.status.includes('in_progress')
+
+  const safeFilename = report.title.replace(/[^a-zA-Z0-9\s-]/g, '').trim()
+
+  const handleCopyToClipboard = (content: string) => {
+    navigator.clipboard.writeText(content)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -317,16 +329,6 @@ function ReportDetailView({
             {new Date(report.created_at).toLocaleDateString()} | {report.urgency} | {report.trigger_event.source || 'Intelligence Pipeline'}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={onDownloadFull}
-            disabled={!hasResearch}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-[var(--grey-800)] text-[var(--grey-300)] hover:bg-[var(--grey-700)] border border-[var(--grey-700)] transition-all disabled:opacity-40"
-          >
-            <Download className="w-4 h-4" />
-            Full Report
-          </button>
-        </div>
       </div>
 
       {error && (
@@ -335,60 +337,87 @@ function ReportDetailView({
         </div>
       )}
 
-      {/* Action Buttons */}
-      {hasResearch && (
-        <div className="flex items-center gap-3 mb-8">
-          {!hasBlueprint && (
-            <button
-              onClick={onGenerateBlueprint}
-              disabled={generatingBlueprint}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition-all disabled:opacity-50"
-            >
-              {generatingBlueprint ? (
-                <><Loader2 className="w-4 h-4 animate-spin" /> Generating Blueprint...</>
-              ) : (
-                <><Sparkles className="w-4 h-4" /> Generate Blueprint</>
-              )}
-            </button>
-          )}
-          {hasBlueprint && !hasPresentation && (
-            <button
-              onClick={onGeneratePresentation}
-              disabled={generatingPresentation}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-purple-600 text-white hover:bg-purple-700 transition-all disabled:opacity-50"
-            >
-              {generatingPresentation ? (
-                <><Loader2 className="w-4 h-4 animate-spin" /> Generating Presentation...</>
-              ) : (
-                <><MonitorPlay className="w-4 h-4" /> Generate Presentation</>
-              )}
-            </button>
-          )}
-          {!hasBlueprint && (
-            <button
-              onClick={onGeneratePresentation}
-              disabled={generatingPresentation || !hasResearch}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-[var(--grey-800)] text-[var(--grey-300)] hover:bg-[var(--grey-700)] border border-[var(--grey-700)] transition-all disabled:opacity-40"
-            >
-              {generatingPresentation ? (
-                <><Loader2 className="w-4 h-4 animate-spin" /> Generating...</>
-              ) : (
-                <><MonitorPlay className="w-4 h-4" /> Generate Presentation</>
-              )}
-            </button>
-          )}
-          {hasPresentation && (
-            <a
-              href={report.presentation_url!}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-700 transition-all"
-            >
-              <MonitorPlay className="w-4 h-4" /> View Presentation
-            </a>
-          )}
+      {/* Processing indicator */}
+      {isProcessing && (
+        <div className="mb-6 p-4 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center gap-3">
+          <Loader2 className="w-5 h-5 animate-spin text-amber-400" />
+          <span className="text-amber-400 text-sm font-medium">
+            {STATUS_LABELS[report.status]?.label || 'Processing...'}
+          </span>
         </div>
       )}
+
+      {/* Action Buttons Bar */}
+      <div className="flex flex-wrap items-center gap-3 mb-8">
+        {/* Generate Blueprint */}
+        {hasResearch && !hasBlueprint && (
+          <button
+            onClick={onGenerateBlueprint}
+            disabled={generatingBlueprint}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition-all disabled:opacity-50"
+          >
+            {generatingBlueprint ? (
+              <><Loader2 className="w-4 h-4 animate-spin" /> Generating Blueprint...</>
+            ) : (
+              <><Sparkles className="w-4 h-4" /> Generate Blueprint</>
+            )}
+          </button>
+        )}
+
+        {/* Generate Presentation */}
+        {hasResearch && (
+          <button
+            onClick={onGeneratePresentation}
+            disabled={generatingPresentation}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all disabled:opacity-50 ${
+              hasBlueprint
+                ? 'bg-purple-600 text-white hover:bg-purple-700'
+                : 'bg-[var(--grey-800)] text-[var(--grey-300)] hover:bg-[var(--grey-700)] border border-[var(--grey-700)]'
+            }`}
+          >
+            {generatingPresentation ? (
+              <><Loader2 className="w-4 h-4 animate-spin" /> Generating Presentation...</>
+            ) : (
+              <><MonitorPlay className="w-4 h-4" /> Generate Presentation</>
+            )}
+          </button>
+        )}
+
+        {/* View Presentation */}
+        {hasPresentation && (
+          <a
+            href={report.presentation_url!}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-700 transition-all"
+          >
+            <MonitorPlay className="w-4 h-4" /> View Presentation
+          </a>
+        )}
+
+        {/* Spacer */}
+        <div className="flex-1" />
+
+        {/* Export buttons */}
+        {hasResearch && (
+          <>
+            <button
+              onClick={() => handleCopyToClipboard(PublicAffairsService.compileFullReport(report))}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-[var(--grey-800)] text-[var(--grey-300)] hover:bg-[var(--grey-700)] border border-[var(--grey-700)] transition-all"
+            >
+              {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+              {copied ? 'Copied' : 'Copy'}
+            </button>
+            <button
+              onClick={() => onDownload(PublicAffairsService.compileFullReport(report), `${safeFilename}.md`)}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-[var(--grey-800)] text-[var(--grey-300)] hover:bg-[var(--grey-700)] border border-[var(--grey-700)] transition-all"
+            >
+              <Download className="w-4 h-4" />
+              Download .md
+            </button>
+          </>
+        )}
+      </div>
 
       {/* Trigger Event */}
       <Section title="Trigger Event" icon={AlertTriangle}>
@@ -403,7 +432,7 @@ function ReportDetailView({
       </Section>
 
       {/* Research Sections */}
-      {!hasResearch && (
+      {!hasResearch && !isProcessing && (
         <div className="text-center py-12 text-[var(--grey-500)]">
           <Loader2 className="w-6 h-6 animate-spin mx-auto mb-3" />
           <p>Research is being generated...</p>
@@ -411,55 +440,19 @@ function ReportDetailView({
       )}
 
       {report.research_data?.situation_assessment && (
-        <Section
-          title="Situation Assessment"
-          icon={Eye}
-          exportBar={
-            <SaveExportBar
-              title="Situation Assessment"
-              content={report.research_data.situation_assessment}
-              organizationId={organizationId}
-              reportId={report.id}
-              folder={`${vaultFolder}`}
-            />
-          }
-        >
+        <Section title="Situation Assessment" icon={Eye}>
           <ResearchContent data={report.research_data.situation_assessment} />
         </Section>
       )}
 
       {report.research_data?.stakeholder_map && (
-        <Section
-          title="Stakeholder Map"
-          icon={Users}
-          exportBar={
-            <SaveExportBar
-              title="Stakeholder Map"
-              content={report.research_data.stakeholder_map}
-              organizationId={organizationId}
-              reportId={report.id}
-              folder={`${vaultFolder}`}
-            />
-          }
-        >
+        <Section title="Stakeholder Map" icon={Users}>
           <StakeholderContent data={report.research_data.stakeholder_map} />
         </Section>
       )}
 
       {report.research_data?.impact_analysis && (
-        <Section
-          title="Impact Analysis"
-          icon={Target}
-          exportBar={
-            <SaveExportBar
-              title="Impact Analysis"
-              content={report.research_data.impact_analysis}
-              organizationId={organizationId}
-              reportId={report.id}
-              folder={`${vaultFolder}`}
-            />
-          }
-        >
+        <Section title="Impact Analysis" icon={Target}>
           <ResearchContent data={report.research_data.impact_analysis} />
         </Section>
       )}
@@ -472,19 +465,7 @@ function ReportDetailView({
 
       {/* Blueprint Sections */}
       {report.blueprint_data?.executive_summary && (
-        <Section
-          title="Executive Summary"
-          icon={FileText}
-          exportBar={
-            <SaveExportBar
-              title="Executive Summary"
-              content={report.blueprint_data.executive_summary}
-              organizationId={organizationId}
-              reportId={report.id}
-              folder={`${vaultFolder}`}
-            />
-          }
-        >
+        <Section title="Executive Summary" icon={FileText}>
           <p className="text-[var(--grey-200)] leading-relaxed whitespace-pre-wrap" style={{ fontFamily: 'var(--font-serif)' }}>
             {report.blueprint_data.executive_summary}
           </p>
@@ -492,55 +473,19 @@ function ReportDetailView({
       )}
 
       {report.blueprint_data?.scenario_tree && (
-        <Section
-          title="Scenario Tree"
-          icon={TrendingUp}
-          exportBar={
-            <SaveExportBar
-              title="Scenario Tree"
-              content={report.blueprint_data.scenario_tree}
-              organizationId={organizationId}
-              reportId={report.id}
-              folder={`${vaultFolder}`}
-            />
-          }
-        >
+        <Section title="Scenario Tree" icon={TrendingUp}>
           <ScenarioContent data={report.blueprint_data.scenario_tree} />
         </Section>
       )}
 
       {report.blueprint_data?.recommendations && (
-        <Section
-          title="Recommendations"
-          icon={Target}
-          exportBar={
-            <SaveExportBar
-              title="Recommendations"
-              content={report.blueprint_data.recommendations}
-              organizationId={organizationId}
-              reportId={report.id}
-              folder={`${vaultFolder}`}
-            />
-          }
-        >
+        <Section title="Recommendations" icon={Target}>
           <RecommendationsContent data={report.blueprint_data.recommendations} />
         </Section>
       )}
 
       {report.blueprint_data?.monitoring_framework && (
-        <Section
-          title="Monitoring Framework"
-          icon={Map}
-          exportBar={
-            <SaveExportBar
-              title="Monitoring Framework"
-              content={report.blueprint_data.monitoring_framework}
-              organizationId={organizationId}
-              reportId={report.id}
-              folder={`${vaultFolder}`}
-            />
-          }
-        >
+        <Section title="Monitoring Framework" icon={Map}>
           <ResearchContent data={report.blueprint_data.monitoring_framework} />
         </Section>
       )}
@@ -549,22 +494,18 @@ function ReportDetailView({
 }
 
 // Reusable Section wrapper
-function Section({ title, icon: Icon, children, exportBar }: {
+function Section({ title, icon: Icon, children }: {
   title: string
   icon: any
   children: React.ReactNode
-  exportBar?: React.ReactNode
 }) {
   return (
     <div className="mb-6 bg-[var(--grey-900)] border border-[var(--grey-800)] rounded-lg overflow-hidden">
-      <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--grey-800)]">
-        <div className="flex items-center gap-2">
-          <Icon className="w-4 h-4 text-slate-400" />
-          <h3 className="text-sm font-semibold text-white uppercase tracking-wider" style={{ fontFamily: 'var(--font-display)' }}>
-            {title}
-          </h3>
-        </div>
-        {exportBar}
+      <div className="flex items-center gap-2 px-5 py-3 border-b border-[var(--grey-800)]">
+        <Icon className="w-4 h-4 text-slate-400" />
+        <h3 className="text-sm font-semibold text-white uppercase tracking-wider" style={{ fontFamily: 'var(--font-display)' }}>
+          {title}
+        </h3>
       </div>
       <div className="p-5">
         {children}
@@ -573,7 +514,7 @@ function Section({ title, icon: Icon, children, exportBar }: {
   )
 }
 
-// Generic research content renderer
+// Generic research content renderer — FIX: subheadings now white
 function ResearchContent({ data }: { data: any }) {
   if (typeof data === 'string') {
     return <p className="text-[var(--grey-200)] text-sm leading-relaxed whitespace-pre-wrap">{data}</p>
@@ -587,7 +528,7 @@ function ResearchContent({ data }: { data: any }) {
         if (typeof value === 'string') {
           return (
             <div key={key}>
-              <h4 className="text-xs uppercase tracking-wider text-[var(--grey-500)] mb-1.5" style={{ fontFamily: 'var(--font-display)' }}>{label}</h4>
+              <h4 className="text-xs uppercase tracking-wider text-white/70 mb-1.5 font-semibold" style={{ fontFamily: 'var(--font-display)' }}>{label}</h4>
               <p className="text-[var(--grey-200)] text-sm leading-relaxed whitespace-pre-wrap">{value}</p>
             </div>
           )
@@ -596,7 +537,7 @@ function ResearchContent({ data }: { data: any }) {
         if (Array.isArray(value)) {
           return (
             <div key={key}>
-              <h4 className="text-xs uppercase tracking-wider text-[var(--grey-500)] mb-1.5" style={{ fontFamily: 'var(--font-display)' }}>{label}</h4>
+              <h4 className="text-xs uppercase tracking-wider text-white/70 mb-1.5 font-semibold" style={{ fontFamily: 'var(--font-display)' }}>{label}</h4>
               <ul className="space-y-1">
                 {value.map((item, i) => (
                   <li key={i} className="text-[var(--grey-200)] text-sm">
@@ -604,7 +545,7 @@ function ResearchContent({ data }: { data: any }) {
                       <div className="bg-[var(--grey-800)] rounded p-3">
                         {Object.entries(item).map(([k, v]) => (
                           <div key={k}>
-                            <span className="text-[var(--grey-400)] text-xs">{k.replace(/_/g, ' ')}:</span>{' '}
+                            <span className="text-white/60 text-xs font-medium">{k.replace(/_/g, ' ')}:</span>{' '}
                             <span className="text-[var(--grey-200)] text-sm">{String(v)}</span>
                           </div>
                         ))}
@@ -620,7 +561,7 @@ function ResearchContent({ data }: { data: any }) {
         if (typeof value === 'object' && value !== null) {
           return (
             <div key={key}>
-              <h4 className="text-xs uppercase tracking-wider text-[var(--grey-500)] mb-1.5" style={{ fontFamily: 'var(--font-display)' }}>{label}</h4>
+              <h4 className="text-xs uppercase tracking-wider text-white/70 mb-1.5 font-semibold" style={{ fontFamily: 'var(--font-display)' }}>{label}</h4>
               <ResearchContent data={value} />
             </div>
           )
@@ -656,22 +597,22 @@ function StakeholderContent({ data }: { data: any }) {
                 </span>
               )}
             </div>
-            {s.position && <p className="text-[var(--grey-300)] text-sm mb-1"><span className="text-[var(--grey-500)]">Position:</span> {s.position}</p>}
-            {s.incentive && <p className="text-[var(--grey-300)] text-sm mb-1"><span className="text-[var(--grey-500)]">Incentive:</span> {s.incentive}</p>}
-            {s.constraints && <p className="text-[var(--grey-300)] text-sm mb-1"><span className="text-[var(--grey-500)]">Constraints:</span> {s.constraints}</p>}
-            {s.likely_next_move && <p className="text-[var(--grey-300)] text-sm"><span className="text-[var(--grey-500)]">Likely Next Move:</span> {s.likely_next_move}</p>}
+            {s.position && <p className="text-[var(--grey-300)] text-sm mb-1"><span className="text-white/60 text-xs font-medium">Position:</span> {s.position}</p>}
+            {s.incentive && <p className="text-[var(--grey-300)] text-sm mb-1"><span className="text-white/60 text-xs font-medium">Incentive:</span> {s.incentive}</p>}
+            {s.constraints && <p className="text-[var(--grey-300)] text-sm mb-1"><span className="text-white/60 text-xs font-medium">Constraints:</span> {s.constraints}</p>}
+            {s.likely_next_move && <p className="text-[var(--grey-300)] text-sm"><span className="text-white/60 text-xs font-medium">Likely Next Move:</span> {s.likely_next_move}</p>}
           </div>
         ))}
       </div>
       {data.alignment_opportunities && (
         <div>
-          <h4 className="text-xs uppercase tracking-wider text-[var(--grey-500)] mb-1.5">Alignment Opportunities</h4>
+          <h4 className="text-xs uppercase tracking-wider text-white/70 mb-1.5 font-semibold">Alignment Opportunities</h4>
           <p className="text-[var(--grey-200)] text-sm">{typeof data.alignment_opportunities === 'string' ? data.alignment_opportunities : JSON.stringify(data.alignment_opportunities)}</p>
         </div>
       )}
       {data.risks && (
         <div>
-          <h4 className="text-xs uppercase tracking-wider text-[var(--grey-500)] mb-1.5">Risks</h4>
+          <h4 className="text-xs uppercase tracking-wider text-white/70 mb-1.5 font-semibold">Risks</h4>
           <p className="text-[var(--grey-200)] text-sm">{typeof data.risks === 'string' ? data.risks : JSON.stringify(data.risks)}</p>
         </div>
       )}
@@ -715,14 +656,14 @@ function ScenarioContent({ data }: { data: any }) {
               )}
             </div>
             {s.narrative && <p className="text-[var(--grey-200)] text-sm mb-2">{s.narrative}</p>}
-            {s.key_driver && <p className="text-[var(--grey-300)] text-sm"><span className="text-[var(--grey-500)]">Key Driver:</span> {s.key_driver}</p>}
+            {s.key_driver && <p className="text-[var(--grey-300)] text-sm"><span className="text-white/60 text-xs font-medium">Key Driver:</span> {s.key_driver}</p>}
             {s.indicators && (
               <p className="text-[var(--grey-300)] text-sm">
-                <span className="text-[var(--grey-500)]">Indicators:</span>{' '}
+                <span className="text-white/60 text-xs font-medium">Indicators:</span>{' '}
                 {Array.isArray(s.indicators) ? s.indicators.join(', ') : s.indicators}
               </p>
             )}
-            {s.client_impact && <p className="text-[var(--grey-300)] text-sm"><span className="text-[var(--grey-500)]">Impact:</span> {s.client_impact}</p>}
+            {s.client_impact && <p className="text-[var(--grey-300)] text-sm"><span className="text-white/60 text-xs font-medium">Impact:</span> {s.client_impact}</p>}
           </div>
         )
       })}

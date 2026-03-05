@@ -441,7 +441,8 @@ export class PublicAffairsService {
     reportId: string,
     extraMetadata?: Record<string, any>
   ): Promise<void> {
-    const contentStr = typeof content === 'string' ? content : JSON.stringify(content, null, 2)
+    // Convert structured data to readable markdown instead of raw JSON
+    const contentStr = typeof content === 'string' ? content : PublicAffairsService.dataToMarkdown(title, content)
 
     try {
       const response = await fetch('/api/content-library/save', {
@@ -470,6 +471,55 @@ export class PublicAffairsService {
     } catch (err) {
       console.error('Error saving to vault:', err)
     }
+  }
+
+  /**
+   * Convert structured data to readable markdown
+   */
+  private static dataToMarkdown(title: string, data: any): string {
+    if (typeof data === 'string') return `# ${title}\n\n${data}`
+
+    let md = `# ${title}\n\n`
+
+    const renderValue = (key: string, value: any, depth: number = 2): string => {
+      const heading = '#'.repeat(Math.min(depth, 4))
+      const label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+      let result = ''
+
+      if (typeof value === 'string') {
+        result += `${heading} ${label}\n\n${value}\n\n`
+      } else if (Array.isArray(value)) {
+        result += `${heading} ${label}\n\n`
+        value.forEach((item) => {
+          if (typeof item === 'string') {
+            result += `- ${item}\n`
+          } else if (typeof item === 'object' && item !== null) {
+            // Render object items as sub-entries
+            const itemName = item.name || item.entity || item.indicator || ''
+            if (itemName) result += `**${itemName}**\n`
+            Object.entries(item).forEach(([k, v]) => {
+              if (k === 'name' || k === 'entity' || k === 'indicator') return
+              result += `- **${k.replace(/_/g, ' ')}:** ${v}\n`
+            })
+            result += '\n'
+          }
+        })
+        result += '\n'
+      } else if (typeof value === 'object' && value !== null) {
+        result += `${heading} ${label}\n\n`
+        Object.entries(value).forEach(([k, v]) => {
+          result += renderValue(k, v, depth + 1)
+        })
+      }
+
+      return result
+    }
+
+    Object.entries(data).forEach(([key, value]) => {
+      md += renderValue(key, value)
+    })
+
+    return md
   }
 
   /**
