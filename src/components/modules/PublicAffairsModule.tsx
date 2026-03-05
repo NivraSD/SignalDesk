@@ -59,7 +59,15 @@ export default function PublicAffairsModule() {
         )
         .subscribe()
 
-      return () => { supabase.removeChannel(channel) }
+      // Poll every 4s as fallback while any report is processing
+      const pollInterval = setInterval(() => {
+        fetchReports()
+      }, 4000)
+
+      return () => {
+        supabase.removeChannel(channel)
+        clearInterval(pollInterval)
+      }
     }
   }, [organization?.id])
 
@@ -528,7 +536,7 @@ function ResearchContent({ data }: { data: any }) {
         if (typeof value === 'string') {
           return (
             <div key={key}>
-              <h4 className="text-xs uppercase tracking-wider text-white/70 mb-1.5 font-semibold" style={{ fontFamily: 'var(--font-display)' }}>{label}</h4>
+              <h4 className="text-sm uppercase tracking-wider text-slate-300 mb-1.5 font-semibold" style={{ fontFamily: 'var(--font-display)' }}>{label}</h4>
               <p className="text-[var(--grey-200)] text-sm leading-relaxed whitespace-pre-wrap">{value}</p>
             </div>
           )
@@ -537,7 +545,7 @@ function ResearchContent({ data }: { data: any }) {
         if (Array.isArray(value)) {
           return (
             <div key={key}>
-              <h4 className="text-xs uppercase tracking-wider text-white/70 mb-1.5 font-semibold" style={{ fontFamily: 'var(--font-display)' }}>{label}</h4>
+              <h4 className="text-sm uppercase tracking-wider text-slate-300 mb-1.5 font-semibold" style={{ fontFamily: 'var(--font-display)' }}>{label}</h4>
               <ul className="space-y-1">
                 {value.map((item, i) => (
                   <li key={i} className="text-[var(--grey-200)] text-sm">
@@ -545,7 +553,7 @@ function ResearchContent({ data }: { data: any }) {
                       <div className="bg-[var(--grey-800)] rounded p-3">
                         {Object.entries(item).map(([k, v]) => (
                           <div key={k}>
-                            <span className="text-white/60 text-xs font-medium">{k.replace(/_/g, ' ')}:</span>{' '}
+                            <span className="text-slate-300 text-xs font-semibold">{k.replace(/_/g, ' ')}:</span>{' '}
                             <span className="text-[var(--grey-200)] text-sm">{String(v)}</span>
                           </div>
                         ))}
@@ -561,7 +569,7 @@ function ResearchContent({ data }: { data: any }) {
         if (typeof value === 'object' && value !== null) {
           return (
             <div key={key}>
-              <h4 className="text-xs uppercase tracking-wider text-white/70 mb-1.5 font-semibold" style={{ fontFamily: 'var(--font-display)' }}>{label}</h4>
+              <h4 className="text-sm uppercase tracking-wider text-slate-300 mb-1.5 font-semibold" style={{ fontFamily: 'var(--font-display)' }}>{label}</h4>
               <ResearchContent data={value} />
             </div>
           )
@@ -597,22 +605,22 @@ function StakeholderContent({ data }: { data: any }) {
                 </span>
               )}
             </div>
-            {s.position && <p className="text-[var(--grey-300)] text-sm mb-1"><span className="text-white/60 text-xs font-medium">Position:</span> {s.position}</p>}
-            {s.incentive && <p className="text-[var(--grey-300)] text-sm mb-1"><span className="text-white/60 text-xs font-medium">Incentive:</span> {s.incentive}</p>}
-            {s.constraints && <p className="text-[var(--grey-300)] text-sm mb-1"><span className="text-white/60 text-xs font-medium">Constraints:</span> {s.constraints}</p>}
-            {s.likely_next_move && <p className="text-[var(--grey-300)] text-sm"><span className="text-white/60 text-xs font-medium">Likely Next Move:</span> {s.likely_next_move}</p>}
+            {s.position && <p className="text-[var(--grey-300)] text-sm mb-1"><span className="text-slate-300 text-xs font-semibold">Position:</span> {s.position}</p>}
+            {s.incentive && <p className="text-[var(--grey-300)] text-sm mb-1"><span className="text-slate-300 text-xs font-semibold">Incentive:</span> {s.incentive}</p>}
+            {s.constraints && <p className="text-[var(--grey-300)] text-sm mb-1"><span className="text-slate-300 text-xs font-semibold">Constraints:</span> {s.constraints}</p>}
+            {s.likely_next_move && <p className="text-[var(--grey-300)] text-sm"><span className="text-slate-300 text-xs font-semibold">Likely Next Move:</span> {s.likely_next_move}</p>}
           </div>
         ))}
       </div>
       {data.alignment_opportunities && (
         <div>
-          <h4 className="text-xs uppercase tracking-wider text-white/70 mb-1.5 font-semibold">Alignment Opportunities</h4>
+          <h4 className="text-sm uppercase tracking-wider text-slate-300 mb-1.5 font-semibold">Alignment Opportunities</h4>
           <p className="text-[var(--grey-200)] text-sm">{typeof data.alignment_opportunities === 'string' ? data.alignment_opportunities : JSON.stringify(data.alignment_opportunities)}</p>
         </div>
       )}
       {data.risks && (
         <div>
-          <h4 className="text-xs uppercase tracking-wider text-white/70 mb-1.5 font-semibold">Risks</h4>
+          <h4 className="text-sm uppercase tracking-wider text-slate-300 mb-1.5 font-semibold">Risks</h4>
           <p className="text-[var(--grey-200)] text-sm">{typeof data.risks === 'string' ? data.risks : JSON.stringify(data.risks)}</p>
         </div>
       )}
@@ -656,14 +664,14 @@ function ScenarioContent({ data }: { data: any }) {
               )}
             </div>
             {s.narrative && <p className="text-[var(--grey-200)] text-sm mb-2">{s.narrative}</p>}
-            {s.key_driver && <p className="text-[var(--grey-300)] text-sm"><span className="text-white/60 text-xs font-medium">Key Driver:</span> {s.key_driver}</p>}
+            {s.key_driver && <p className="text-[var(--grey-300)] text-sm"><span className="text-slate-300 text-xs font-semibold">Key Driver:</span> {s.key_driver}</p>}
             {s.indicators && (
               <p className="text-[var(--grey-300)] text-sm">
-                <span className="text-white/60 text-xs font-medium">Indicators:</span>{' '}
+                <span className="text-slate-300 text-xs font-semibold">Indicators:</span>{' '}
                 {Array.isArray(s.indicators) ? s.indicators.join(', ') : s.indicators}
               </p>
             )}
-            {s.client_impact && <p className="text-[var(--grey-300)] text-sm"><span className="text-white/60 text-xs font-medium">Impact:</span> {s.client_impact}</p>}
+            {s.client_impact && <p className="text-[var(--grey-300)] text-sm"><span className="text-slate-300 text-xs font-semibold">Impact:</span> {s.client_impact}</p>}
           </div>
         )
       })}
