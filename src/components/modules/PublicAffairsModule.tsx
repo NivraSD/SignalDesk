@@ -545,7 +545,7 @@ function ResearchContent({ data }: { data: any }) {
         if (typeof value === 'string') {
           return (
             <div key={key}>
-              <h4 className="text-sm uppercase tracking-wider text-[var(--grey-200)] mb-2 font-semibold" style={{ fontFamily: 'var(--font-display)' }}>{label}</h4>
+              <h4 className="text-sm uppercase tracking-wider mb-2 font-semibold" style={{ fontFamily: 'var(--font-display)', color: '#e0e0e0' }}>{label}</h4>
               <p className="text-[var(--grey-200)] text-sm leading-relaxed whitespace-pre-wrap">{value}</p>
             </div>
           )
@@ -554,7 +554,7 @@ function ResearchContent({ data }: { data: any }) {
         if (Array.isArray(value)) {
           return (
             <div key={key}>
-              <h4 className="text-sm uppercase tracking-wider text-[var(--grey-200)] mb-2 font-semibold" style={{ fontFamily: 'var(--font-display)' }}>{label}</h4>
+              <h4 className="text-sm uppercase tracking-wider mb-2 font-semibold" style={{ fontFamily: 'var(--font-display)', color: '#e0e0e0' }}>{label}</h4>
               <ul className="space-y-1">
                 {value.map((item, i) => (
                   <li key={i} className="text-[var(--grey-200)] text-sm">
@@ -562,7 +562,7 @@ function ResearchContent({ data }: { data: any }) {
                       <div className="bg-[var(--grey-800)] rounded p-3">
                         {Object.entries(item).map(([k, v]) => (
                           <div key={k}>
-                            <span className="text-[var(--grey-300)] text-xs font-semibold">{k.replace(/_/g, ' ')}:</span>{' '}
+                            <span className="text-xs font-semibold" style={{ color: '#bdbdbd' }}>{k.replace(/_/g, ' ')}:</span>{' '}
                             <span className="text-[var(--grey-200)] text-sm">{String(v)}</span>
                           </div>
                         ))}
@@ -578,7 +578,7 @@ function ResearchContent({ data }: { data: any }) {
         if (typeof value === 'object' && value !== null) {
           return (
             <div key={key}>
-              <h4 className="text-sm uppercase tracking-wider text-[var(--grey-200)] mb-2 font-semibold" style={{ fontFamily: 'var(--font-display)' }}>{label}</h4>
+              <h4 className="text-sm uppercase tracking-wider mb-2 font-semibold" style={{ fontFamily: 'var(--font-display)', color: '#e0e0e0' }}>{label}</h4>
               <ResearchContent data={value} />
             </div>
           )
@@ -614,10 +614,10 @@ function StakeholderContent({ data }: { data: any }) {
                 </span>
               )}
             </div>
-            {s.position && <p className="text-[var(--grey-300)] text-sm mb-1"><span className="text-[var(--grey-300)] text-xs font-semibold">Position:</span> {s.position}</p>}
-            {s.incentive && <p className="text-[var(--grey-300)] text-sm mb-1"><span className="text-[var(--grey-300)] text-xs font-semibold">Incentive:</span> {s.incentive}</p>}
-            {s.constraints && <p className="text-[var(--grey-300)] text-sm mb-1"><span className="text-[var(--grey-300)] text-xs font-semibold">Constraints:</span> {s.constraints}</p>}
-            {s.likely_next_move && <p className="text-[var(--grey-300)] text-sm"><span className="text-[var(--grey-300)] text-xs font-semibold">Likely Next Move:</span> {s.likely_next_move}</p>}
+            {s.position && <p className="text-[var(--grey-300)] text-sm mb-1"><span className="text-xs font-semibold" style={{ color: '#bdbdbd' }}>Position:</span> {s.position}</p>}
+            {s.incentive && <p className="text-[var(--grey-300)] text-sm mb-1"><span className="text-xs font-semibold" style={{ color: '#bdbdbd' }}>Incentive:</span> {s.incentive}</p>}
+            {s.constraints && <p className="text-[var(--grey-300)] text-sm mb-1"><span className="text-xs font-semibold" style={{ color: '#bdbdbd' }}>Constraints:</span> {s.constraints}</p>}
+            {s.likely_next_move && <p className="text-[var(--grey-300)] text-sm"><span className="text-xs font-semibold" style={{ color: '#bdbdbd' }}>Likely Next Move:</span> {s.likely_next_move}</p>}
           </div>
         ))}
       </div>
@@ -673,14 +673,14 @@ function ScenarioContent({ data }: { data: any }) {
               )}
             </div>
             {s.narrative && <p className="text-[var(--grey-200)] text-sm mb-2">{s.narrative}</p>}
-            {s.key_driver && <p className="text-[var(--grey-300)] text-sm"><span className="text-[var(--grey-300)] text-xs font-semibold">Key Driver:</span> {s.key_driver}</p>}
+            {s.key_driver && <p className="text-[var(--grey-300)] text-sm"><span className="text-xs font-semibold" style={{ color: '#bdbdbd' }}>Key Driver:</span> {s.key_driver}</p>}
             {s.indicators && (
               <p className="text-[var(--grey-300)] text-sm">
-                <span className="text-[var(--grey-300)] text-xs font-semibold">Indicators:</span>{' '}
+                <span className="text-xs font-semibold" style={{ color: '#bdbdbd' }}>Indicators:</span>{' '}
                 {Array.isArray(s.indicators) ? s.indicators.join(', ') : s.indicators}
               </p>
             )}
-            {s.client_impact && <p className="text-[var(--grey-300)] text-sm"><span className="text-[var(--grey-300)] text-xs font-semibold">Impact:</span> {s.client_impact}</p>}
+            {s.client_impact && <p className="text-[var(--grey-300)] text-sm"><span className="text-xs font-semibold" style={{ color: '#bdbdbd' }}>Impact:</span> {s.client_impact}</p>}
           </div>
         )
       })}
