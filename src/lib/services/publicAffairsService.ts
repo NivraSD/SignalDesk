@@ -345,45 +345,88 @@ export class PublicAffairsService {
 
       if (!report) throw new Error('Report not found')
 
-      const { data: result, error } = await supabase.functions.invoke('signaldeck-presentation', {
+      // Compile the report into text content for Gamma
+      const compiledContent = PublicAffairsService.compileFullReport(report)
+
+      const { data: result, error } = await supabase.functions.invoke('gamma-presentation', {
         body: {
-          type: 'public_affairs',
-          title: report.title,
-          report_data: {
-            trigger_event: report.trigger_event,
-            research_data: report.research_data,
-            blueprint_data: report.blueprint_data
-          },
-          organization_id: organizationId
+          title: `Public Affairs Brief: ${report.title}`,
+          topic: report.title,
+          content: compiledContent,
+          organization_id: organizationId,
+          capture: true,
+          options: {
+            numCards: 12,
+            imageSource: 'ai',
+            tone: 'professional',
+            audience: 'executive leadership'
+          }
         }
       })
 
+      console.log('Gamma presentation response:', result)
+
       if (error) throw error
+
+      // Gamma returns a generationId and requires polling
+      const generationId = result?.generationId
+      if (!generationId) {
+        throw new Error('No generation ID returned from Gamma')
+      }
+
+      // Poll for completion (up to 90 seconds)
+      let presentationUrl: string | null = null
+      const maxAttempts = 18 // 18 * 5s = 90s
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        await new Promise(resolve => setTimeout(resolve, 5000))
+
+        const { data: statusResult, error: statusError } = await supabase.functions.invoke('gamma-presentation', {
+          body: { generationId }
+        })
+
+        console.log(`Gamma poll attempt ${attempt + 1}:`, statusResult?.status)
+
+        if (statusError) {
+          console.error('Gamma status poll error:', statusError)
+          continue
+        }
+
+        if (statusResult?.status === 'completed') {
+          presentationUrl = statusResult?.gammaUrl || statusResult?.url || statusResult?.exportUrls?.view
+          break
+        }
+
+        if (statusResult?.status === 'error') {
+          throw new Error(statusResult?.error || 'Gamma generation failed')
+        }
+      }
+
+      if (!presentationUrl) {
+        throw new Error('Presentation generation timed out')
+      }
 
       await supabase
         .from('public_affairs_reports')
         .update({
           status: 'complete',
-          presentation_url: result?.url || result?.presentation_url,
-          presentation_metadata: result?.metadata || {}
+          presentation_url: presentationUrl,
+          presentation_metadata: { generationId }
         })
         .eq('id', reportId)
 
       // Save presentation link to vault
-      if (result?.url || result?.presentation_url) {
-        const vaultFolder = report.vault_folder || `Public Affairs/${report.title}`
-        await PublicAffairsService.saveToVault(
-          organizationId,
-          `${vaultFolder}/Presentation`,
-          'Intelligence Brief Presentation',
-          `Presentation URL: ${result?.url || result?.presentation_url}`,
-          reportId,
-          { gamma_url: result?.url || result?.presentation_url, ...result?.metadata }
-        )
-      }
+      const vaultFolder = report.vault_folder || `Public Affairs/${report.title}`
+      await PublicAffairsService.saveToVault(
+        organizationId,
+        `${vaultFolder}/Presentation`,
+        'Intelligence Brief Presentation',
+        `Presentation URL: ${presentationUrl}`,
+        reportId,
+        { gamma_url: presentationUrl, generationId }
+      )
 
       onProgress?.('completed')
-      return { success: true, url: result?.url || result?.presentation_url }
+      return { success: true, url: presentationUrl }
     } catch (err) {
       onProgress?.('failed')
       throw err
