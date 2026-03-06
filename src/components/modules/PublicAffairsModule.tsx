@@ -143,6 +143,15 @@ export default function PublicAffairsModule() {
     URL.revokeObjectURL(url)
   }
 
+  const handleExportBrief = (report: PublicAffairsReport) => {
+    const html = PublicAffairsService.compileHtmlBrief(report)
+    const blob = new Blob([html], { type: 'text/html' })
+    const url = URL.createObjectURL(blob)
+    const w = window.open(url, '_blank')
+    // Clean up after a delay
+    setTimeout(() => URL.revokeObjectURL(url), 5000)
+  }
+
   const handleDeleteReport = async (reportId: string) => {
     try {
       await PublicAffairsService.deleteReport(reportId)
@@ -163,6 +172,7 @@ export default function PublicAffairsModule() {
           onGenerateBlueprint={handleGenerateBlueprint}
           onGeneratePresentation={handleGeneratePresentation}
           onDownload={handleDownload}
+          onExportBrief={handleExportBrief}
           generatingBlueprint={generatingBlueprint}
           generatingPresentation={generatingPresentation}
           error={error}
@@ -281,6 +291,7 @@ function ReportDetailView({
   onGenerateBlueprint,
   onGeneratePresentation,
   onDownload,
+  onExportBrief,
   generatingBlueprint,
   generatingPresentation,
   error
@@ -291,6 +302,7 @@ function ReportDetailView({
   onGenerateBlueprint: () => void
   onGeneratePresentation: () => void
   onDownload: (content: string, filename: string) => void
+  onExportBrief: (report: PublicAffairsReport) => void
   generatingBlueprint: boolean
   generatingPresentation: boolean
   error: string | null
@@ -396,6 +408,14 @@ function ReportDetailView({
         <div className="flex items-center gap-3 mb-6">
           <div className="flex-1" />
           <button
+            onClick={() => onExportBrief(report)}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all"
+            style={{ backgroundColor: 'rgba(59,130,246,0.15)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.3)' }}
+          >
+            <BookOpen className="w-4 h-4" />
+            Export Brief
+          </button>
+          <button
             onClick={() => handleCopyToClipboard(PublicAffairsService.compileFullReport(report))}
             className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-[var(--grey-800)] text-[var(--grey-300)] hover:bg-[var(--grey-700)] border border-[var(--grey-700)] transition-all"
           >
@@ -407,7 +427,7 @@ function ReportDetailView({
             className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-[var(--grey-800)] text-[var(--grey-300)] hover:bg-[var(--grey-700)] border border-[var(--grey-700)] transition-all"
           >
             <Download className="w-4 h-4" />
-            Download .md
+            .md
           </button>
           {hasPresentation && (
             <a

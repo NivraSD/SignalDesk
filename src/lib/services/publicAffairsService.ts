@@ -183,60 +183,26 @@ export class PublicAffairsService {
       onProgress?.('synthesis', 'completed')
       onProgress?.('saving', 'running')
 
-      // Save each section to Memory Vault
+      // Save one consolidated report to Memory Vault
       const vaultFolder = report.vault_folder || `Public Affairs/${triggerEvent.title}`
 
-      const savePromises = []
+      // Build a temporary report object to compile the full markdown
+      const tempReport: any = {
+        title: triggerEvent.title,
+        created_at: new Date().toISOString(),
+        urgency: report.urgency || 'standard',
+        trigger_event: triggerEvent,
+        research_data: researchData,
+      }
+      const fullMarkdown = PublicAffairsService.compileFullReport(tempReport)
 
-      // New format sections
-      if (researchData.executive_summary) {
-        savePromises.push(
-          PublicAffairsService.saveToVault(organizationId, `${vaultFolder}/Executive Summary`, 'Executive Summary', researchData.executive_summary, reportId)
-        )
-      }
-      if (researchData.situation_assessment) {
-        savePromises.push(
-          PublicAffairsService.saveToVault(organizationId, `${vaultFolder}/Situation Assessment`, 'Situation Assessment', researchData.situation_assessment, reportId)
-        )
-      }
-      if (researchData.geopolitical_context) {
-        savePromises.push(
-          PublicAffairsService.saveToVault(organizationId, `${vaultFolder}/Geopolitical Context`, 'Geopolitical Context', researchData.geopolitical_context, reportId)
-        )
-      }
-      if (researchData.stakeholder_analysis) {
-        savePromises.push(
-          PublicAffairsService.saveToVault(organizationId, `${vaultFolder}/Stakeholder Analysis`, 'Stakeholder Analysis', researchData.stakeholder_analysis, reportId)
-        )
-      }
-      if (researchData.scenario_analysis) {
-        savePromises.push(
-          PublicAffairsService.saveToVault(organizationId, `${vaultFolder}/Scenario Analysis`, 'Scenario Analysis', researchData.scenario_analysis, reportId)
-        )
-      }
-      if (researchData.impact_assessment) {
-        savePromises.push(
-          PublicAffairsService.saveToVault(organizationId, `${vaultFolder}/Impact Assessment`, 'Impact Assessment', researchData.impact_assessment, reportId)
-        )
-      }
-      if (researchData.sources_and_confidence) {
-        savePromises.push(
-          PublicAffairsService.saveToVault(organizationId, `${vaultFolder}/Sources & Confidence`, 'Sources & Confidence', researchData.sources_and_confidence, reportId)
-        )
-      }
-      // Legacy format fallbacks
-      if (researchData.stakeholder_map) {
-        savePromises.push(
-          PublicAffairsService.saveToVault(organizationId, `${vaultFolder}/Stakeholder Map`, 'Stakeholder Map', researchData.stakeholder_map, reportId)
-        )
-      }
-      if (researchData.impact_analysis) {
-        savePromises.push(
-          PublicAffairsService.saveToVault(organizationId, `${vaultFolder}/Impact Analysis`, 'Impact Analysis', researchData.impact_analysis, reportId)
-        )
-      }
-
-      await Promise.allSettled(savePromises)
+      await PublicAffairsService.saveToVault(
+        organizationId,
+        vaultFolder,
+        `Geopolitical Intelligence: ${triggerEvent.title}`,
+        fullMarkdown,
+        reportId
+      )
       onProgress?.('saving', 'completed')
 
       return { success: true, research_data: researchData }
@@ -812,5 +778,217 @@ export class PublicAffairsService {
     }
 
     return md
+  }
+
+  /**
+   * Compile report to a formatted HTML intelligence brief (printable / saveable as PDF)
+   */
+  static compileHtmlBrief(report: PublicAffairsReport): string {
+    const rd = report.research_data
+    const useNew = isNewFormat(rd)
+    const date = new Date(report.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+
+    const esc = (s: string) => s?.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') || ''
+    const prose = (text: string) => text ? text.split('\n\n').map(p => `<p>${esc(p.trim())}</p>`).join('\n') : ''
+    const badge = (text: string, color: string) => `<span style="display:inline-block;padding:2px 10px;border-radius:4px;font-size:11px;font-weight:600;background:${color};color:#fff;letter-spacing:0.5px;">${esc(text)}</span>`
+
+    let html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${esc(report.title)} — Intelligence Brief</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; color: #1a1a2e; background: #fff; line-height: 1.7; }
+  .page { max-width: 800px; margin: 0 auto; padding: 60px 48px; }
+  @media print { .page { padding: 40px 32px; } .no-print { display: none !important; } }
+  .header { border-bottom: 3px solid #1a1a2e; padding-bottom: 24px; margin-bottom: 40px; }
+  .header h1 { font-family: 'Playfair Display', Georgia, serif; font-size: 28px; font-weight: 700; line-height: 1.3; margin-bottom: 8px; }
+  .header .meta { font-size: 13px; color: #666; }
+  .header .classification { display: inline-block; margin-top: 8px; padding: 4px 12px; border: 2px solid #1a1a2e; font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; }
+  .section { margin-bottom: 36px; }
+  .section h2 { font-family: 'Playfair Display', Georgia, serif; font-size: 20px; font-weight: 700; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid #e0e0e0; color: #1a1a2e; }
+  .section h3 { font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: #444; margin: 20px 0 8px; }
+  .section p { font-size: 14.5px; color: #2a2a3e; margin-bottom: 12px; }
+  .scenario-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 16px 0; }
+  @media (max-width: 700px) { .scenario-grid { grid-template-columns: 1fr; } }
+  .scenario-card { border: 1px solid #ddd; border-radius: 8px; padding: 16px; }
+  .scenario-card.green { border-left: 4px solid #22c55e; }
+  .scenario-card.amber { border-left: 4px solid #f59e0b; }
+  .scenario-card.red { border-left: 4px solid #ef4444; }
+  .scenario-card h4 { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .scenario-card .likelihood { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+  .scenario-card .likelihood.green { color: #16a34a; }
+  .scenario-card .likelihood.amber { color: #d97706; }
+  .scenario-card .likelihood.red { color: #dc2626; }
+  .scenario-card p { font-size: 13px; color: #555; margin-bottom: 8px; }
+  .stakeholder-card { background: #f8f8fa; border-radius: 6px; padding: 14px; margin-bottom: 10px; }
+  .stakeholder-card strong { font-size: 14px; }
+  .stakeholder-card .detail { font-size: 13px; color: #555; margin-top: 4px; }
+  .risk-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+  .risk-badge { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; color: #fff; }
+  .confidence-badge { display: inline-block; padding: 4px 14px; border-radius: 4px; font-size: 13px; font-weight: 600; }
+  .footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid #e0e0e0; font-size: 12px; color: #999; text-align: center; }
+  .dev { font-size: 13px; color: #555; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="header">
+  <h1>${esc(report.title)}</h1>
+  <div class="meta">${date} &nbsp;|&nbsp; ${esc(report.trigger_event.source || 'Intelligence Pipeline')} &nbsp;|&nbsp; ${esc(report.urgency.toUpperCase())}</div>
+  <div class="classification">GEOPOLITICAL INTELLIGENCE BRIEF</div>
+</div>
+`
+
+    // Executive Summary
+    const execSummary = rd?.executive_summary || report.blueprint_data?.executive_summary
+    if (execSummary) {
+      html += `<div class="section"><h2>Executive Summary</h2>${prose(execSummary)}</div>\n`
+    }
+
+    // Situation Assessment
+    if (rd?.situation_assessment && useNew) {
+      const sa = rd.situation_assessment
+      html += `<div class="section"><h2>Situation Assessment</h2>\n`
+      if (sa.current_situation) html += `<h3>Current Situation</h3>${prose(sa.current_situation)}`
+      if (sa.historical_context) html += `<h3>Historical Context</h3>${prose(sa.historical_context)}`
+      if (sa.key_developments?.length) {
+        html += `<h3>Key Developments</h3>`
+        sa.key_developments.forEach((d: any) => {
+          html += `<div class="dev"><strong>${esc(d.date)}</strong> — ${esc(d.event)}: <em>${esc(d.significance)}</em></div>`
+        })
+      }
+      if (sa.key_actors?.length) {
+        html += `<h3>Key Actors</h3>`
+        sa.key_actors.forEach((a: any) => {
+          html += `<div class="dev"><strong>${esc(a.name)}</strong> (${esc(a.role)}) — ${esc(a.position)} ${badge(a.influence_level, a.influence_level === 'high' ? '#dc2626' : a.influence_level === 'medium' ? '#d97706' : '#6b7280')}</div>`
+        })
+      }
+      html += `</div>\n`
+    }
+
+    // Geopolitical Context
+    if (rd?.geopolitical_context) {
+      const gc = rd.geopolitical_context
+      html += `<div class="section"><h2>Geopolitical Context</h2>\n`
+      if (gc.regional_dynamics) html += `<h3>Regional Dynamics</h3>${prose(gc.regional_dynamics)}`
+      if (gc.international_implications) html += `<h3>International Implications</h3>${prose(gc.international_implications)}`
+      if (gc.power_balance_analysis) html += `<h3>Power Balance</h3>${prose(gc.power_balance_analysis)}`
+      html += `</div>\n`
+    }
+
+    // Stakeholder Analysis
+    if (rd?.stakeholder_analysis?.stakeholders?.length) {
+      html += `<div class="section"><h2>Stakeholder Analysis</h2>\n`
+      rd.stakeholder_analysis.stakeholders.forEach((s: any) => {
+        html += `<div class="stakeholder-card"><strong>${esc(s.name)}</strong> <span style="color:#888;font-size:12px;">${esc(s.type || '')}</span>`
+        if (s.position) html += `<div class="detail"><strong>Position:</strong> ${esc(s.position)}</div>`
+        if (s.motivations) html += `<div class="detail"><strong>Motivations:</strong> ${esc(s.motivations)}</div>`
+        if (s.likely_moves) html += `<div class="detail"><strong>Likely Moves:</strong> ${esc(s.likely_moves)}</div>`
+        html += `</div>`
+      })
+      if (rd.stakeholder_analysis.alignment_map) html += `<h3>Alignment Map</h3>${prose(rd.stakeholder_analysis.alignment_map)}`
+      if (rd.stakeholder_analysis.pressure_points) html += `<h3>Pressure Points</h3>${prose(rd.stakeholder_analysis.pressure_points)}`
+      html += `</div>\n`
+    }
+
+    // Scenario Analysis
+    if (rd?.scenario_analysis?.scenarios?.length) {
+      const scenarios = rd.scenario_analysis.scenarios
+      html += `<div class="section"><h2>Scenario Analysis</h2>\n<div class="scenario-grid">`
+      scenarios.forEach((s: any, i: number) => {
+        const cls = i === 0 ? 'green' : i === 1 ? 'amber' : 'red'
+        html += `<div class="scenario-card ${cls}">
+          <h4>${esc(s.name)}</h4>
+          <div class="likelihood ${cls}">${esc(s.likelihood)}</div>
+          <p>${esc(typeof s.narrative === 'string' ? s.narrative.substring(0, 400) : '')}</p>
+          ${s.key_drivers ? `<p style="font-size:12px;color:#777;"><strong>Drivers:</strong> ${esc(s.key_drivers.substring(0, 200))}</p>` : ''}
+        </div>`
+      })
+      html += `</div>\n`
+      // Full narratives
+      scenarios.forEach((s: any) => {
+        if (s.narrative && s.narrative.length > 400) {
+          html += `<h3>${esc(s.name)} — Full Narrative</h3>${prose(s.narrative)}`
+          if (s.timeline) html += `<p><strong>Timeline:</strong> ${esc(s.timeline)}</p>`
+          if (s.client_impact) html += `<p><strong>Client Impact:</strong> ${esc(s.client_impact)}</p>`
+        }
+      })
+      if (rd.scenario_analysis.key_variables) html += `<h3>Key Variables</h3>${prose(rd.scenario_analysis.key_variables)}`
+      if (rd.scenario_analysis.wildcards) html += `<h3>Wildcards</h3>${prose(rd.scenario_analysis.wildcards)}`
+      html += `</div>\n`
+    }
+
+    // Impact Assessment
+    if (rd?.impact_assessment) {
+      const ia = rd.impact_assessment
+      html += `<div class="section"><h2>Impact Assessment</h2>\n`
+      if (ia.direct_impacts) html += `<h3>Direct Impacts</h3>${prose(ia.direct_impacts)}`
+      if (ia.second_order_effects) html += `<h3>Second-Order Effects</h3>${prose(ia.second_order_effects)}`
+      if (ia.timeline_of_effects) html += `<h3>Timeline of Effects</h3>${prose(ia.timeline_of_effects)}`
+      if (ia.risk_matrix?.length) {
+        html += `<h3>Risk Matrix</h3>`
+        ia.risk_matrix.forEach((r: any) => {
+          const bg = r.severity === 'critical' ? '#dc2626' : r.severity === 'high' ? '#d97706' : r.severity === 'medium' ? '#eab308' : '#6b7280'
+          html += `<div class="risk-row"><span class="risk-badge" style="background:${bg}">${esc(r.severity)}</span><span style="flex:1;">${esc(r.risk)}</span><span style="color:#888;font-size:12px;">L: ${esc(r.likelihood)}</span></div>`
+        })
+      }
+      html += `</div>\n`
+    }
+
+    // Sources & Confidence
+    const sc = rd?.sources_and_confidence || rd?.sources_confidence
+    if (sc) {
+      html += `<div class="section"><h2>Sources &amp; Confidence</h2>\n`
+      if (sc.confidence_level) {
+        const bg = sc.confidence_level === 'high' ? '#16a34a' : sc.confidence_level === 'medium' ? '#d97706' : '#dc2626'
+        html += `<p><span class="confidence-badge" style="background:${bg};color:#fff;">${esc(sc.confidence_level.toUpperCase())}</span></p>`
+      }
+      if (sc.confidence_justification) html += prose(sc.confidence_justification)
+      if (sc.intelligence_gaps?.length) {
+        html += `<h3>Intelligence Gaps</h3><ul>${sc.intelligence_gaps.map((g: string) => `<li style="font-size:13px;color:#555;">${esc(g)}</li>`).join('')}</ul>`
+      }
+      if (sc.collection_priorities?.length) {
+        html += `<h3>Collection Priorities</h3><ul>${sc.collection_priorities.map((p: string) => `<li style="font-size:13px;color:#555;">${esc(p)}</li>`).join('')}</ul>`
+      }
+      html += `</div>\n`
+    }
+
+    // Blueprint recommendations if present
+    if (report.blueprint_data?.recommendations) {
+      const rec = report.blueprint_data.recommendations
+      html += `<div class="section"><h2>Strategic Recommendations</h2>\n`
+      const tfs = [
+        { key: 'immediate', label: 'Immediate (This Week)' },
+        { key: 'short_term', label: 'Short-Term (30 Days)' },
+        { key: 'medium_term', label: 'Medium-Term (90 Days)' },
+      ]
+      tfs.forEach(({ key, label }) => {
+        const items = rec[key]
+        if (!items) return
+        html += `<h3>${label}</h3>`
+        if (Array.isArray(items)) {
+          html += `<ul>${items.map((r: string) => `<li style="font-size:14px;margin-bottom:6px;">${esc(r)}</li>`).join('')}</ul>`
+        } else {
+          html += prose(items)
+        }
+      })
+      html += `</div>\n`
+    }
+
+    html += `<div class="footer">
+  Generated by SignalDesk Geopolitical Intelligence Engine &nbsp;|&nbsp; ${date}<br>
+  <span style="font-size:11px;">This document is confidential and intended for authorized recipients only.</span>
+</div>
+
+</div>
+</body>
+</html>`
+
+    return html
   }
 }
