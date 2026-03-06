@@ -301,7 +301,7 @@ function ReportDetailView({
   const hasBlueprint = !!report.blueprint_data
   const hasPresentation = !!report.presentation_url
   const isProcessing = report.status.includes('in_progress')
-  const isIntelligenceComplete = report.status === 'intelligence_complete' || report.status === 'research_complete' || report.status === 'blueprint_complete' || report.status === 'strategy_complete' || report.status === 'complete'
+  const isIntelligenceComplete = report.status === 'research_complete' || report.status === 'blueprint_complete' || report.status === 'complete'
   const useNew = isNewFormat(report.research_data)
   const safeFilename = report.title.replace(/[^a-zA-Z0-9\s-]/g, '').trim()
 

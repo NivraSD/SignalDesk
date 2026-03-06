@@ -175,7 +175,7 @@ export class PublicAffairsService {
       await supabase
         .from('public_affairs_reports')
         .update({
-          status: 'intelligence_complete',
+          status: 'research_complete',
           research_data: researchData
         })
         .eq('id', reportId)
@@ -333,7 +333,7 @@ export class PublicAffairsService {
     } catch (err) {
       await supabase
         .from('public_affairs_reports')
-        .update({ status: 'intelligence_complete' }) // revert to intelligence_complete so they can retry
+        .update({ status: 'research_complete' }) // revert so they can retry
         .eq('id', reportId)
       onProgress?.('blueprint', 'failed')
       throw err
