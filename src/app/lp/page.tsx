@@ -87,7 +87,7 @@ function LPPageInner() {
               </button>
               <div className="flex items-center gap-2">
                 <Zap className="w-5 h-5 text-[var(--burnt-orange)]" />
-                <h1 className="text-lg font-semibold text-[var(--charcoal)]">LP Simulation Engine</h1>
+                <h1 className="font-semibold" style={{ fontSize: '1.125rem', color: 'var(--charcoal)' }}>LP Simulation Engine</h1>
               </div>
             </div>
 

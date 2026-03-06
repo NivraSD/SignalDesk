@@ -586,7 +586,7 @@ export default function BatchEntityBuilder() {
   return (
     <div className="max-w-4xl mx-auto px-6 py-8">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Batch Entity Builder</h1>
+        <h1 className="font-bold mb-2" style={{ fontSize: '1.375rem', color: '#111827' }}>Batch Entity Builder</h1>
         <p className="text-gray-600">
           Build LP entity profiles in bulk. Browse categories or search for any type of entity.
         </p>

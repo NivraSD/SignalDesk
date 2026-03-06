@@ -231,7 +231,7 @@ export default function PublicAffairsModule() {
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>
+            <h1 className="font-bold text-white" style={{ fontFamily: 'var(--font-display)', fontSize: '1.375rem' }}>
               Geopolitical Intelligence
             </h1>
             <p className="text-[var(--grey-400)] text-sm mt-1">
@@ -537,7 +537,7 @@ function ReportDetailView({
 
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white mb-2" style={{ fontFamily: 'var(--font-display)' }}>
+        <h1 className="font-bold text-white mb-2" style={{ fontFamily: 'var(--font-display)', fontSize: '1.375rem', lineHeight: '1.3' }}>
           {report.title}
         </h1>
         <p className="text-[var(--grey-400)] text-sm">

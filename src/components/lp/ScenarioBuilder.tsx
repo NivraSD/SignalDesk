@@ -442,7 +442,7 @@ export default function ScenarioBuilder({ onRunSimulation }: ScenarioBuilderProp
       <div className="flex items-center gap-3">
         <Sparkles className="w-6 h-6 text-[var(--burnt-orange)]" />
         <div>
-          <h2 className="text-lg font-semibold text-[var(--charcoal)]">LP Scenario Builder</h2>
+          <h2 className="font-semibold" style={{ fontSize: '1.125rem', color: 'var(--charcoal)' }}>LP Scenario Builder</h2>
           <p className="text-sm text-gray-500">
             Build structured scenarios for Liminal Propagation simulation
           </p>

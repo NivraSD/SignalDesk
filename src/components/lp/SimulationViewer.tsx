@@ -350,7 +350,7 @@ export default function SimulationViewer({ simulationId, onBack }: SimulationVie
         <div className="flex-1">
           <div className="flex items-center gap-2">
             <FileText className="w-5 h-5 text-[var(--burnt-orange)]" />
-            <h2 className="text-lg font-semibold text-[var(--charcoal)]">Simulation Report</h2>
+            <h2 className="font-semibold" style={{ fontSize: '1.125rem', color: 'var(--charcoal)' }}>Simulation Report</h2>
             <span className={`px-2 py-0.5 text-[10px] rounded font-medium ${
               simulation.status === 'stabilized' ? 'bg-green-100 text-green-700' :
               simulation.status === 'max_rounds_reached' ? 'bg-amber-100 text-amber-700' :
