@@ -5,7 +5,7 @@ import {
   Shield, Clock, ChevronRight, Loader2, Sparkles, FileText,
   MonitorPlay, ArrowLeft, AlertTriangle, Users, Target,
   TrendingUp, Eye, Map, BarChart3, Download, Trash2, Copy, Check,
-  Radar, Play, Lightbulb, Globe, BookOpen
+  Radar, Play, Lightbulb, Globe, BookOpen, Plus, X, Search, Send
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { supabase } from '@/lib/supabase/client'
@@ -45,6 +45,11 @@ export default function PublicAffairsModule() {
   const [generatingBlueprint, setGeneratingBlueprint] = useState(false)
   const [generatingPresentation, setGeneratingPresentation] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showNewResearch, setShowNewResearch] = useState(false)
+  const [newTopic, setNewTopic] = useState('')
+  const [focusAreas, setFocusAreas] = useState<string[]>([])
+  const [focusInput, setFocusInput] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     if (organization?.id) {
@@ -162,6 +167,46 @@ export default function PublicAffairsModule() {
     }
   }
 
+  const handleSubmitTopic = async () => {
+    if (!organization?.id || !newTopic.trim()) return
+    setSubmitting(true)
+    setError(null)
+    try {
+      const report = await PublicAffairsService.createFromTopic(
+        organization.id,
+        newTopic.trim(),
+        focusAreas.length > 0 ? focusAreas : undefined
+      )
+      // Fire off research in background
+      PublicAffairsService.startResearch(
+        report.id,
+        organization.id,
+        organization.name,
+        organization.industry || 'General'
+      ).catch(err => console.error('Research pipeline error:', err))
+
+      // Reset form and navigate to report
+      setNewTopic('')
+      setFocusAreas([])
+      setFocusInput('')
+      setShowNewResearch(false)
+      await fetchReports()
+      setSelectedReport(report)
+    } catch (err: any) {
+      setError(err.message || 'Failed to create research')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const addFocusArea = () => {
+    const trimmed = focusInput.trim()
+    if (trimmed && !focusAreas.includes(trimmed)) {
+      setFocusAreas([...focusAreas, trimmed])
+      setFocusInput('')
+    }
+  }
+
   if (selectedReport) {
     return (
       <div className="flex-1 overflow-y-auto p-8">
@@ -193,22 +238,134 @@ export default function PublicAffairsModule() {
               Deep intelligence memos generated from developing situations
             </p>
           </div>
-          <div className="text-sm text-[var(--grey-500)]">
-            {reports.length} report{reports.length !== 1 ? 's' : ''}
-          </div>
+          <button
+            onClick={() => setShowNewResearch(!showNewResearch)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all"
+            style={{
+              backgroundColor: showNewResearch ? 'rgba(239,68,68,0.15)' : 'rgba(59,130,246,0.15)',
+              color: showNewResearch ? '#f87171' : '#60a5fa',
+              border: `1px solid ${showNewResearch ? 'rgba(239,68,68,0.3)' : 'rgba(59,130,246,0.3)'}`,
+            }}
+          >
+            {showNewResearch ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+            {showNewResearch ? 'Cancel' : 'New Research'}
+          </button>
         </div>
+
+        {/* New Research Form */}
+        {showNewResearch && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8 p-6 rounded-lg border"
+            style={{ backgroundColor: 'rgba(255,255,255,0.02)', borderColor: 'rgba(59,130,246,0.2)' }}
+          >
+            <h3 className="text-sm font-semibold uppercase tracking-wider mb-4" style={{ color: '#e4e4e7', fontFamily: 'var(--font-display)' }}>
+              Commission Intelligence Research
+            </h3>
+
+            {/* Topic input */}
+            <div className="mb-4">
+              <label className="block text-xs font-medium mb-2" style={{ color: '#a1a1aa' }}>
+                Topic or Situation
+              </label>
+              <div className="flex gap-3">
+                <input
+                  type="text"
+                  value={newTopic}
+                  onChange={(e) => setNewTopic(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && newTopic.trim() && handleSubmitTopic()}
+                  placeholder="e.g. US-China semiconductor export controls, EU AI Act enforcement, OPEC+ production cuts..."
+                  className="flex-1 px-4 py-3 rounded-lg text-sm bg-[var(--grey-900)] text-white border border-[var(--grey-700)] focus:border-blue-500/50 focus:outline-none placeholder:text-[var(--grey-600)]"
+                />
+              </div>
+            </div>
+
+            {/* Focus areas */}
+            <div className="mb-4">
+              <label className="block text-xs font-medium mb-2" style={{ color: '#a1a1aa' }}>
+                Key Areas to Cover <span style={{ color: '#52525b' }}>(optional)</span>
+              </label>
+              <div className="flex gap-2 mb-2">
+                <input
+                  type="text"
+                  value={focusInput}
+                  onChange={(e) => setFocusInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') { e.preventDefault(); addFocusArea() }
+                  }}
+                  placeholder="e.g. Supply chain impact, Regulatory timeline, Competitive positioning..."
+                  className="flex-1 px-3 py-2 rounded-lg text-sm bg-[var(--grey-900)] text-white border border-[var(--grey-700)] focus:border-blue-500/50 focus:outline-none placeholder:text-[var(--grey-600)]"
+                />
+                <button
+                  onClick={addFocusArea}
+                  disabled={!focusInput.trim()}
+                  className="px-3 py-2 rounded-lg text-sm bg-[var(--grey-800)] text-[var(--grey-300)] hover:bg-[var(--grey-700)] border border-[var(--grey-700)] transition-all disabled:opacity-30"
+                >
+                  Add
+                </button>
+              </div>
+              {focusAreas.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {focusAreas.map((area, i) => (
+                    <span
+                      key={i}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs"
+                      style={{ backgroundColor: 'rgba(59,130,246,0.1)', color: '#93c5fd', border: '1px solid rgba(59,130,246,0.2)' }}
+                    >
+                      {area}
+                      <button
+                        onClick={() => setFocusAreas(focusAreas.filter((_, j) => j !== i))}
+                        className="hover:text-white transition-colors"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {error && (
+              <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+                {error}
+              </div>
+            )}
+
+            {/* Submit */}
+            <button
+              onClick={handleSubmitTopic}
+              disabled={!newTopic.trim() || submitting}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all disabled:opacity-40"
+              style={{ backgroundColor: '#2563eb', color: '#fff' }}
+            >
+              {submitting ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /> Commissioning Research...</>
+              ) : (
+                <><Search className="w-4 h-4" /> Research This Topic</>
+              )}
+            </button>
+          </motion.div>
+        )}
 
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-6 h-6 animate-spin text-[var(--grey-500)]" />
           </div>
-        ) : reports.length === 0 ? (
+        ) : reports.length === 0 && !showNewResearch ? (
           <div className="text-center py-20">
             <Globe className="w-12 h-12 mx-auto mb-4 text-[var(--grey-600)]" />
             <p className="text-[var(--grey-400)] mb-2">No intelligence reports yet</p>
-            <p className="text-[var(--grey-500)] text-sm">
-              Generate reports from news developments in your Intelligence Brief
+            <p className="text-[var(--grey-500)] text-sm mb-6">
+              Commission research on any geopolitical topic or situation
             </p>
+            <button
+              onClick={() => setShowNewResearch(true)}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium"
+              style={{ backgroundColor: '#2563eb', color: '#fff' }}
+            >
+              <Plus className="w-4 h-4" /> New Research
+            </button>
           </div>
         ) : (
           <div className="space-y-3">

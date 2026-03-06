@@ -81,6 +81,29 @@ export class PublicAffairsService {
   }
 
   /**
+   * Create a new report from a user-entered topic
+   */
+  static async createFromTopic(
+    organizationId: string,
+    topic: string,
+    focusAreas?: string[],
+    urgency: 'flash' | 'standard' | 'deep_dive' = 'standard'
+  ): Promise<PublicAffairsReport> {
+    const focusText = focusAreas?.length
+      ? `\n\nKey areas to cover:\n${focusAreas.map(a => `- ${a}`).join('\n')}`
+      : ''
+
+    const article = {
+      title: topic,
+      content: `Research request: ${topic}${focusText}`,
+      source: 'User Research Request',
+      published_at: new Date().toISOString(),
+    }
+
+    return this.createFromArticle(organizationId, article)
+  }
+
+  /**
    * Start the research pipeline for a report
    */
   static async startResearch(
