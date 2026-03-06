@@ -33,7 +33,7 @@ export default function IntelligenceBriefDisplay({ synthesis, organizationId, or
   // Track generated opportunity IDs by development index
   const [generatedOpportunities, setGeneratedOpportunities] = useState<Record<number, string>>({})
   const [generatingPublicAffairs, setGeneratingPublicAffairs] = useState<number | null>(null)
-  const [publicAffairsSuccess, setPublicAffairsSuccess] = useState<number | null>(null)
+  const [generatedPAReports, setGeneratedPAReports] = useState<Record<number, string>>({})
 
   // Generate opportunity from article/development
   const handleGenerateOpportunity = async (dev: any, index: number) => {
@@ -111,9 +111,8 @@ export default function IntelligenceBriefDisplay({ synthesis, organizationId, or
         organizationIndustry || 'General'
       ).catch(err => console.error('Public affairs research error:', err))
 
-      setPublicAffairsSuccess(index)
+      setGeneratedPAReports(prev => ({ ...prev, [index]: report.id }))
       onPublicAffairsGenerated?.(report)
-      setTimeout(() => setPublicAffairsSuccess(null), 3000)
     } catch (err: any) {
       console.error('Error generating public affairs report:', err)
       setGenerationError(err.message || 'Failed to generate public affairs report')
@@ -161,8 +160,9 @@ export default function IntelligenceBriefDisplay({ synthesis, organizationId, or
                 onGenerateOpportunity={() => handleGenerateOpportunity(dev, i)}
                 onViewOpportunity={onNavigateToOpportunities}
                 isGeneratingPublicAffairs={generatingPublicAffairs === i}
-                publicAffairsSuccess={publicAffairsSuccess === i}
+                generatedPAReportId={generatedPAReports[i]}
                 onGeneratePublicAffairs={() => handleGeneratePublicAffairs(dev, i)}
+                onViewPublicAffairs={onNavigateToPublicAffairs}
               />
             ))}
           </div>
@@ -389,8 +389,9 @@ function DevelopmentCard({
   onGenerateOpportunity,
   onViewOpportunity,
   isGeneratingPublicAffairs,
-  publicAffairsSuccess,
-  onGeneratePublicAffairs
+  generatedPAReportId,
+  onGeneratePublicAffairs,
+  onViewPublicAffairs
 }: {
   development: any
   index: number
@@ -400,8 +401,9 @@ function DevelopmentCard({
   onGenerateOpportunity?: () => void
   onViewOpportunity?: () => void
   isGeneratingPublicAffairs?: boolean
-  publicAffairsSuccess?: boolean
+  generatedPAReportId?: string
   onGeneratePublicAffairs?: () => void
+  onViewPublicAffairs?: () => void
 }) {
   // Support both old (impact) and new (pr_implication) field names
   const implication = development.pr_implication || development.impact || development.details
@@ -504,40 +506,48 @@ function DevelopmentCard({
             </>
           )}
           {onGeneratePublicAffairs && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                onGeneratePublicAffairs()
-              }}
-              disabled={isGeneratingPublicAffairs}
-              className={`
-                flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium
-                transition-all duration-200
-                ${publicAffairsSuccess
-                  ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                  : isGeneratingPublicAffairs
-                    ? 'bg-[var(--grey-700)] text-[var(--grey-400)] cursor-wait'
-                    : 'bg-slate-500/20 text-slate-300 border border-slate-500/30 hover:bg-slate-500/30 hover:border-slate-500/50'
-                }
-              `}
-            >
-              {isGeneratingPublicAffairs ? (
-                <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  Generating...
-                </>
-              ) : publicAffairsSuccess ? (
-                <>
-                  <Shield className="w-3.5 h-3.5" />
-                  Report Created!
-                </>
+            <>
+              {generatedPAReportId ? (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onViewPublicAffairs?.()
+                  }}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30"
+                >
+                  <ChevronRight className="w-3.5 h-3.5" />
+                  View Report
+                </button>
               ) : (
-                <>
-                  <Shield className="w-3.5 h-3.5" />
-                  Public Affairs
-                </>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onGeneratePublicAffairs()
+                  }}
+                  disabled={isGeneratingPublicAffairs}
+                  className={`
+                    flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium
+                    transition-all duration-200
+                    ${isGeneratingPublicAffairs
+                      ? 'bg-[var(--grey-700)] text-[var(--grey-400)] cursor-wait'
+                      : 'bg-slate-500/20 text-slate-300 border border-slate-500/30 hover:bg-slate-500/30 hover:border-slate-500/50'
+                    }
+                  `}
+                >
+                  {isGeneratingPublicAffairs ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Shield className="w-3.5 h-3.5" />
+                      Public Affairs
+                    </>
+                  )}
+                </button>
               )}
-            </button>
+            </>
           )}
         </div>
       )}

@@ -11,6 +11,7 @@ import { motion } from 'framer-motion'
 import { supabase } from '@/lib/supabase/client'
 import { useAppStore } from '@/stores/useAppStore'
 import { PublicAffairsService, type PublicAffairsReport } from '@/lib/services/publicAffairsService'
+import { IntelligenceService } from '@/lib/services/intelligenceService'
 
 const URGENCY_COLORS = {
   flash: 'bg-red-500/20 text-red-400 border-red-500/30',
@@ -50,10 +51,13 @@ export default function PublicAffairsModule() {
   const [focusAreas, setFocusAreas] = useState<string[]>([])
   const [focusInput, setFocusInput] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [synthesis, setSynthesis] = useState<any>(null)
+  const [generatingSynthesisReport, setGeneratingSynthesisReport] = useState<number | null>(null)
 
   useEffect(() => {
     if (organization?.id) {
       fetchReports()
+      IntelligenceService.getLatestSynthesis(organization.id).then(s => setSynthesis(s)).catch(() => {})
 
       const channel = supabase
         .channel('public-affairs-realtime')
@@ -196,6 +200,31 @@ export default function PublicAffairsModule() {
       setError(err.message || 'Failed to create research')
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const handleGenerateFromSynthesis = async (dev: any, index: number) => {
+    if (!organization?.id) return
+    setGeneratingSynthesisReport(index)
+    setError(null)
+    try {
+      const article = {
+        title: dev.event || dev.headline || dev.title,
+        content: dev.impact || dev.pr_implication || dev.details || dev.description,
+        source: dev.source,
+        url: dev.url,
+        published_at: dev.published_at || new Date().toISOString()
+      }
+      const report = await PublicAffairsService.createFromArticle(organization.id, article)
+      PublicAffairsService.startResearch(
+        report.id, organization.id, organization.name, organization.industry || 'General'
+      ).catch(err => console.error('Research pipeline error:', err))
+      await fetchReports()
+      setSelectedReport(report)
+    } catch (err: any) {
+      setError(err.message || 'Failed to generate report')
+    } finally {
+      setGeneratingSynthesisReport(null)
     }
   }
 
@@ -347,6 +376,66 @@ export default function PublicAffairsModule() {
             </button>
           </motion.div>
         )}
+
+        {/* Latest Intelligence Synthesis */}
+        {synthesis && !showNewResearch && (() => {
+          const synthData = synthesis?.synthesis_data?.synthesis || synthesis?.synthesis || synthesis
+          const developments = synthData?.key_developments || []
+          if (developments.length === 0) return null
+          return (
+            <div className="mb-8">
+              <div className="flex items-center gap-2 mb-3">
+                <Sparkles className="w-4 h-4" style={{ color: '#60a5fa' }} />
+                <h3 className="text-sm font-semibold uppercase tracking-wider" style={{ color: '#a1a1aa', fontFamily: 'var(--font-display)' }}>
+                  From Latest Intelligence
+                </h3>
+              </div>
+              {synthData?.executive_summary && (
+                <p className="text-sm mb-4 leading-relaxed" style={{ color: '#a1a1aa' }}>
+                  {typeof synthData.executive_summary === 'string'
+                    ? synthData.executive_summary.substring(0, 300) + (synthData.executive_summary.length > 300 ? '...' : '')
+                    : ''}
+                </p>
+              )}
+              <div className="grid gap-2">
+                {developments.slice(0, 5).map((dev: any, i: number) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between gap-3 p-3 rounded-lg border transition-all hover:border-[var(--grey-600)]"
+                    style={{ backgroundColor: 'rgba(255,255,255,0.02)', borderColor: 'var(--grey-800)' }}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-white font-medium truncate">
+                        {dev.event || dev.headline || dev.title}
+                      </p>
+                      {(dev.pr_implication || dev.impact) && (
+                        <p className="text-xs mt-0.5 truncate" style={{ color: '#71717a' }}>
+                          {dev.pr_implication || dev.impact}
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => handleGenerateFromSynthesis(dev, i)}
+                      disabled={generatingSynthesisReport === i}
+                      className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all"
+                      style={{
+                        backgroundColor: generatingSynthesisReport === i ? 'rgba(255,255,255,0.05)' : 'rgba(59,130,246,0.12)',
+                        color: generatingSynthesisReport === i ? '#71717a' : '#93c5fd',
+                        border: `1px solid ${generatingSynthesisReport === i ? 'rgba(255,255,255,0.08)' : 'rgba(59,130,246,0.25)'}`,
+                      }}
+                    >
+                      {generatingSynthesisReport === i ? (
+                        <><Loader2 className="w-3 h-3 animate-spin" /> Generating...</>
+                      ) : (
+                        <><Shield className="w-3 h-3" /> Analyze</>
+                      )}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })()}
 
         {loading ? (
           <div className="flex items-center justify-center py-20">
