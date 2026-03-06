@@ -5,13 +5,14 @@ import {
   Shield, Clock, ChevronRight, Loader2, Sparkles, FileText,
   MonitorPlay, ArrowLeft, AlertTriangle, Users, Target,
   TrendingUp, Eye, Map, BarChart3, Download, Trash2, Copy, Check,
-  Radar, Play, Lightbulb, Globe, BookOpen, Plus, X, Search, Send
+  Radar, Play, Lightbulb, Globe, BookOpen, Plus, X, Search, Send, Brain
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { supabase } from '@/lib/supabase/client'
 import { useAppStore } from '@/stores/useAppStore'
 import { PublicAffairsService, type PublicAffairsReport } from '@/lib/services/publicAffairsService'
 import { IntelligenceService } from '@/lib/services/intelligenceService'
+import IntelligenceAnalystChat from './IntelligenceAnalystChat'
 
 const URGENCY_COLORS = {
   flash: 'bg-red-500/20 text-red-400 border-red-500/30',
@@ -53,6 +54,7 @@ export default function PublicAffairsModule() {
   const [submitting, setSubmitting] = useState(false)
   const [synthesis, setSynthesis] = useState<any>(null)
   const [generatingSynthesisReport, setGeneratingSynthesisReport] = useState<number | null>(null)
+  const [showChat, setShowChat] = useState(true)
 
   useEffect(() => {
     if (organization?.id) {
@@ -255,31 +257,52 @@ export default function PublicAffairsModule() {
     )
   }
 
+  const handleChatReportCreated = async (report: any) => {
+    await fetchReports()
+    setSelectedReport(report)
+  }
+
   return (
-    <div className="flex-1 overflow-y-auto p-8">
-      <div className="max-w-5xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="font-bold text-white" style={{ fontFamily: 'var(--font-display)', fontSize: '1.375rem' }}>
-              Geopolitical Intelligence
-            </h1>
-            <p className="text-[var(--grey-400)] text-sm mt-1">
-              Deep intelligence memos generated from developing situations
-            </p>
+    <div className="flex-1 flex overflow-hidden">
+      {/* Main content area */}
+      <div className={`flex-1 overflow-y-auto p-8 ${showChat ? 'pr-0' : ''}`}>
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h1 className="font-bold text-white" style={{ fontFamily: 'var(--font-display)', fontSize: '1.375rem' }}>
+                Geopolitical Intelligence
+              </h1>
+              <p className="text-[var(--grey-400)] text-sm mt-1">
+                Deep intelligence memos generated from developing situations
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowChat(!showChat)}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all"
+                style={{
+                  backgroundColor: showChat ? 'rgba(59,130,246,0.15)' : 'rgba(255,255,255,0.05)',
+                  color: showChat ? '#60a5fa' : '#71717a',
+                  border: `1px solid ${showChat ? 'rgba(59,130,246,0.3)' : 'rgba(255,255,255,0.08)'}`,
+                }}
+              >
+                <Brain className="w-4 h-4" />
+                {showChat ? 'Hide Analyst' : 'Analyst'}
+              </button>
+              <button
+                onClick={() => setShowNewResearch(!showNewResearch)}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all"
+                style={{
+                  backgroundColor: showNewResearch ? 'rgba(239,68,68,0.15)' : 'rgba(59,130,246,0.15)',
+                  color: showNewResearch ? '#f87171' : '#60a5fa',
+                  border: `1px solid ${showNewResearch ? 'rgba(239,68,68,0.3)' : 'rgba(59,130,246,0.3)'}`,
+                }}
+              >
+                {showNewResearch ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                {showNewResearch ? 'Cancel' : 'New Research'}
+              </button>
+            </div>
           </div>
-          <button
-            onClick={() => setShowNewResearch(!showNewResearch)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all"
-            style={{
-              backgroundColor: showNewResearch ? 'rgba(239,68,68,0.15)' : 'rgba(59,130,246,0.15)',
-              color: showNewResearch ? '#f87171' : '#60a5fa',
-              border: `1px solid ${showNewResearch ? 'rgba(239,68,68,0.3)' : 'rgba(59,130,246,0.3)'}`,
-            }}
-          >
-            {showNewResearch ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-            {showNewResearch ? 'Cancel' : 'New Research'}
-          </button>
-        </div>
 
         {/* New Research Form */}
         {showNewResearch && (
@@ -468,7 +491,18 @@ export default function PublicAffairsModule() {
             ))}
           </div>
         )}
+        </div>
       </div>
+
+      {/* Chat Panel */}
+      {showChat && (
+        <div
+          className="w-[380px] shrink-0 border-l flex flex-col"
+          style={{ borderColor: 'var(--grey-800)', backgroundColor: 'rgba(0,0,0,0.2)' }}
+        >
+          <IntelligenceAnalystChat onReportCreated={handleChatReportCreated} />
+        </div>
+      )}
     </div>
   )
 }
