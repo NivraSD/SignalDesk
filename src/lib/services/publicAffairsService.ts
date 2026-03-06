@@ -15,7 +15,15 @@ export interface PublicAffairsReport {
   report_format: 'brief' | 'full_report' | 'deck' | 'brief_and_deck'
   status: string
   research_data?: {
+    // New format (geopolitical intelligence)
+    executive_summary?: string
     situation_assessment?: any
+    geopolitical_context?: any
+    stakeholder_analysis?: any
+    scenario_analysis?: any
+    impact_assessment?: any
+    sources_and_confidence?: any
+    // Legacy format fields
     stakeholder_map?: any
     impact_analysis?: any
     sources_confidence?: any
@@ -31,6 +39,11 @@ export interface PublicAffairsReport {
   vault_folder?: string
   created_at: string
   updated_at: string
+}
+
+/** Detect whether research_data uses the new geopolitical format */
+function isNewFormat(data: any): boolean {
+  return !!data?.situation_assessment?.current_situation || !!data?.scenario_analysis || !!data?.geopolitical_context
 }
 
 export class PublicAffairsService {
@@ -104,49 +117,45 @@ export class PublicAffairsService {
 
       onProgress?.('intelligence-gathering', 'running')
 
-      // Run research queries in parallel via fireplexity
+      // Run 7 research queries in parallel via fireplexity (same wall-clock time as 3)
       const triggerEvent = report.trigger_event
-      const situationQuery = `${triggerEvent.title} latest developments analysis impact 2026`
-      const stakeholderQuery = `${triggerEvent.title} key stakeholders actors positions interests`
-      const impactQuery = `${triggerEvent.title} ${industry} sector impact implications risk assessment`
+      const title = triggerEvent.title
 
-      const [situationResult, stakeholderResult, impactResult] = await Promise.allSettled([
-        supabase.functions.invoke('niv-fireplexity', {
-          body: {
-            query: situationQuery,
-            search_type: 'comprehensive',
-            focus: 'geopolitical_intelligence',
-            max_results: 15
-          }
-        }),
-        supabase.functions.invoke('niv-fireplexity', {
-          body: {
-            query: stakeholderQuery,
-            search_type: 'comprehensive',
-            focus: 'stakeholder_analysis',
-            max_results: 10
-          }
-        }),
-        supabase.functions.invoke('niv-fireplexity', {
-          body: {
-            query: impactQuery,
-            search_type: 'comprehensive',
-            focus: 'impact_assessment',
-            max_results: 10
-          }
-        })
-      ])
+      const queries = [
+        { key: 'situation', query: `${title} latest developments timeline 2025 2026`, focus: 'geopolitical_intelligence', max_results: 15 },
+        { key: 'stakeholders', query: `${title} key stakeholders actors positions interests power dynamics`, focus: 'stakeholder_analysis', max_results: 12 },
+        { key: 'impact', query: `${title} ${industry} sector economic impact implications`, focus: 'impact_assessment', max_results: 10 },
+        { key: 'geopolitical', query: `${title} geopolitical context regional power dynamics alliances`, focus: 'geopolitical_intelligence', max_results: 12 },
+        { key: 'historical', query: `${title} historical precedents similar situations past outcomes`, focus: 'geopolitical_intelligence', max_results: 10 },
+        { key: 'legal', query: `${title} legal regulatory framework policy implications`, focus: 'impact_assessment', max_results: 10 },
+        { key: 'media', query: `${title} media coverage narrative analysis public opinion`, focus: 'stakeholder_analysis', max_results: 10 },
+      ]
+
+      const queryResults = await Promise.allSettled(
+        queries.map(q =>
+          supabase.functions.invoke('niv-fireplexity', {
+            body: {
+              query: q.query,
+              search_type: 'comprehensive',
+              focus: q.focus,
+              max_results: q.max_results
+            }
+          })
+        )
+      )
 
       onProgress?.('intelligence-gathering', 'completed')
       onProgress?.('synthesis', 'running')
 
-      // Extract results
-      const situationData = situationResult.status === 'fulfilled' ? situationResult.value.data : null
-      const stakeholderData = stakeholderResult.status === 'fulfilled' ? stakeholderResult.value.data : null
-      const impactData = impactResult.status === 'fulfilled' ? impactResult.value.data : null
+      // Extract results keyed by name
+      const rawResearch: Record<string, any> = {}
+      queries.forEach((q, i) => {
+        const result = queryResults[i]
+        rawResearch[q.key] = result.status === 'fulfilled' ? result.value.data : null
+      })
 
-      // Synthesize into structured intelligence report via Claude
-      const { data: synthesisResult, error: synthesisError } = await supabase.functions.invoke('generate-public-affairs-research', {
+      // Synthesize into deep geopolitical intelligence memo via Claude
+      const { data: synthesisResult, error: synthesisError } = await supabase.functions.invoke('generate-geopolitical-intelligence', {
         body: {
           report_id: reportId,
           organization_id: organizationId,
@@ -154,11 +163,7 @@ export class PublicAffairsService {
           organization_profile: orgData?.company_profile || {},
           industry,
           trigger_event: triggerEvent,
-          raw_research: {
-            situation: situationData,
-            stakeholders: stakeholderData,
-            impact: impactData
-          }
+          raw_research: rawResearch
         }
       })
 
@@ -170,7 +175,7 @@ export class PublicAffairsService {
       await supabase
         .from('public_affairs_reports')
         .update({
-          status: 'research_complete',
+          status: 'intelligence_complete',
           research_data: researchData
         })
         .eq('id', reportId)
@@ -183,37 +188,51 @@ export class PublicAffairsService {
 
       const savePromises = []
 
-      if (researchData.situation_assessment) {
+      // New format sections
+      if (researchData.executive_summary) {
         savePromises.push(
-          PublicAffairsService.saveToVault(
-            organizationId,
-            `${vaultFolder}/Situation Assessment`,
-            'Situation Assessment',
-            researchData.situation_assessment,
-            reportId
-          )
+          PublicAffairsService.saveToVault(organizationId, `${vaultFolder}/Executive Summary`, 'Executive Summary', researchData.executive_summary, reportId)
         )
       }
+      if (researchData.situation_assessment) {
+        savePromises.push(
+          PublicAffairsService.saveToVault(organizationId, `${vaultFolder}/Situation Assessment`, 'Situation Assessment', researchData.situation_assessment, reportId)
+        )
+      }
+      if (researchData.geopolitical_context) {
+        savePromises.push(
+          PublicAffairsService.saveToVault(organizationId, `${vaultFolder}/Geopolitical Context`, 'Geopolitical Context', researchData.geopolitical_context, reportId)
+        )
+      }
+      if (researchData.stakeholder_analysis) {
+        savePromises.push(
+          PublicAffairsService.saveToVault(organizationId, `${vaultFolder}/Stakeholder Analysis`, 'Stakeholder Analysis', researchData.stakeholder_analysis, reportId)
+        )
+      }
+      if (researchData.scenario_analysis) {
+        savePromises.push(
+          PublicAffairsService.saveToVault(organizationId, `${vaultFolder}/Scenario Analysis`, 'Scenario Analysis', researchData.scenario_analysis, reportId)
+        )
+      }
+      if (researchData.impact_assessment) {
+        savePromises.push(
+          PublicAffairsService.saveToVault(organizationId, `${vaultFolder}/Impact Assessment`, 'Impact Assessment', researchData.impact_assessment, reportId)
+        )
+      }
+      if (researchData.sources_and_confidence) {
+        savePromises.push(
+          PublicAffairsService.saveToVault(organizationId, `${vaultFolder}/Sources & Confidence`, 'Sources & Confidence', researchData.sources_and_confidence, reportId)
+        )
+      }
+      // Legacy format fallbacks
       if (researchData.stakeholder_map) {
         savePromises.push(
-          PublicAffairsService.saveToVault(
-            organizationId,
-            `${vaultFolder}/Stakeholder Map`,
-            'Stakeholder Map',
-            researchData.stakeholder_map,
-            reportId
-          )
+          PublicAffairsService.saveToVault(organizationId, `${vaultFolder}/Stakeholder Map`, 'Stakeholder Map', researchData.stakeholder_map, reportId)
         )
       }
       if (researchData.impact_analysis) {
         savePromises.push(
-          PublicAffairsService.saveToVault(
-            organizationId,
-            `${vaultFolder}/Impact Analysis`,
-            'Impact Analysis',
-            researchData.impact_analysis,
-            reportId
-          )
+          PublicAffairsService.saveToVault(organizationId, `${vaultFolder}/Impact Analysis`, 'Impact Analysis', researchData.impact_analysis, reportId)
         )
       }
 
@@ -314,7 +333,7 @@ export class PublicAffairsService {
     } catch (err) {
       await supabase
         .from('public_affairs_reports')
-        .update({ status: 'research_complete' }) // revert to research_complete so they can retry
+        .update({ status: 'intelligence_complete' }) // revert to intelligence_complete so they can retry
         .eq('id', reportId)
       onProgress?.('blueprint', 'failed')
       throw err
@@ -583,27 +602,47 @@ export class PublicAffairsService {
     md += `**Source:** ${report.trigger_event.source || 'Intelligence Pipeline'}\n\n`
     md += `---\n\n`
 
-    if (report.blueprint_data?.executive_summary) {
-      md += `## Executive Summary\n\n${report.blueprint_data.executive_summary}\n\n---\n\n`
+    const rd = report.research_data
+    const useNew = isNewFormat(rd)
+
+    // Executive Summary — from research_data (new) or blueprint_data (legacy)
+    const execSummary = rd?.executive_summary || report.blueprint_data?.executive_summary
+    if (execSummary) {
+      md += `## Executive Summary\n\n${execSummary}\n\n---\n\n`
     }
 
-    if (report.research_data?.situation_assessment) {
-      const sa = report.research_data.situation_assessment
+    // Situation Assessment
+    if (rd?.situation_assessment) {
+      const sa = rd.situation_assessment
       md += `## Situation Assessment\n\n`
       if (typeof sa === 'string') {
         md += `${sa}\n\n`
+      } else if (useNew) {
+        if (sa.current_situation) md += `### Current Situation\n${sa.current_situation}\n\n`
+        if (sa.historical_context) md += `### Historical Context\n${sa.historical_context}\n\n`
+        if (sa.key_developments && Array.isArray(sa.key_developments)) {
+          md += `### Key Developments\n`
+          sa.key_developments.forEach((d: any) => {
+            md += `- **${d.date}** — ${d.event}: ${d.significance}\n`
+          })
+          md += `\n`
+        }
+        if (sa.key_actors && Array.isArray(sa.key_actors)) {
+          md += `### Key Actors\n`
+          sa.key_actors.forEach((a: any) => {
+            md += `- **${a.name}** (${a.role}): ${a.position} [Influence: ${a.influence_level}]\n`
+          })
+          md += `\n`
+        }
       } else {
+        // Legacy format
         if (sa.what_happened) md += `### What Happened\n${sa.what_happened}\n\n`
         if (sa.context) md += `### Context\n${sa.context}\n\n`
         if (sa.key_actors) {
           md += `### Key Actors\n`
           if (Array.isArray(sa.key_actors)) {
-            sa.key_actors.forEach((a: any) => {
-              md += `- **${a.name || a}**: ${a.position || a.role || ''}\n`
-            })
-          } else {
-            md += `${sa.key_actors}\n`
-          }
+            sa.key_actors.forEach((a: any) => { md += `- **${a.name || a}**: ${a.position || a.role || ''}\n` })
+          } else { md += `${sa.key_actors}\n` }
           md += `\n`
         }
         if (sa.current_state) md += `### Current State of Play\n${sa.current_state}\n\n`
@@ -611,14 +650,43 @@ export class PublicAffairsService {
       md += `---\n\n`
     }
 
-    if (report.research_data?.stakeholder_map) {
-      const sm = report.research_data.stakeholder_map
+    // Geopolitical Context (new format only)
+    if (rd?.geopolitical_context) {
+      const gc = rd.geopolitical_context
+      md += `## Geopolitical Context\n\n`
+      if (typeof gc === 'string') { md += `${gc}\n\n` }
+      else {
+        if (gc.regional_dynamics) md += `### Regional Dynamics\n${gc.regional_dynamics}\n\n`
+        if (gc.international_implications) md += `### International Implications\n${gc.international_implications}\n\n`
+        if (gc.power_balance_analysis) md += `### Power Balance Analysis\n${gc.power_balance_analysis}\n\n`
+      }
+      md += `---\n\n`
+    }
+
+    // Stakeholder Analysis (new) or Stakeholder Map (legacy)
+    if (rd?.stakeholder_analysis) {
+      const sa = rd.stakeholder_analysis
+      md += `## Stakeholder Analysis\n\n`
+      if (sa.stakeholders && Array.isArray(sa.stakeholders)) {
+        sa.stakeholders.forEach((s: any) => {
+          md += `### ${s.name} (${s.type})\n`
+          if (s.position) md += `- **Position:** ${s.position}\n`
+          if (s.motivations) md += `- **Motivations:** ${s.motivations}\n`
+          if (s.constraints) md += `- **Constraints:** ${s.constraints}\n`
+          if (s.likely_moves) md += `- **Likely Moves:** ${s.likely_moves}\n`
+          if (s.relationship_to_client) md += `- **Relationship:** ${s.relationship_to_client}\n`
+          md += `\n`
+        })
+      }
+      if (sa.alignment_map) md += `### Alignment Map\n${sa.alignment_map}\n\n`
+      if (sa.pressure_points) md += `### Pressure Points\n${sa.pressure_points}\n\n`
+      md += `---\n\n`
+    } else if (rd?.stakeholder_map) {
+      const sm = rd.stakeholder_map
       md += `## Stakeholder Map\n\n`
-      if (typeof sm === 'string') {
-        md += `${sm}\n\n`
-      } else if (Array.isArray(sm.stakeholders || sm)) {
-        const stakeholders = sm.stakeholders || sm
-        stakeholders.forEach((s: any) => {
+      if (typeof sm === 'string') { md += `${sm}\n\n` }
+      else if (Array.isArray(sm.stakeholders || sm)) {
+        (sm.stakeholders || sm).forEach((s: any) => {
           md += `### ${s.name || s.entity}\n`
           if (s.position) md += `- **Position:** ${s.position}\n`
           if (s.incentive) md += `- **Incentive:** ${s.incentive}\n`
@@ -630,12 +698,46 @@ export class PublicAffairsService {
       md += `---\n\n`
     }
 
-    if (report.research_data?.impact_analysis) {
-      const ia = report.research_data.impact_analysis
+    // Scenario Analysis (new format — baked into research)
+    if (rd?.scenario_analysis) {
+      const sc = rd.scenario_analysis
+      md += `## Scenario Analysis\n\n`
+      if (sc.scenarios && Array.isArray(sc.scenarios)) {
+        sc.scenarios.forEach((s: any) => {
+          md += `### ${s.name} (${s.likelihood})\n`
+          if (s.narrative) md += `${s.narrative}\n\n`
+          if (s.key_drivers) md += `**Key Drivers:** ${s.key_drivers}\n`
+          if (s.leading_indicators) md += `**Leading Indicators:** ${Array.isArray(s.leading_indicators) ? s.leading_indicators.join(', ') : s.leading_indicators}\n`
+          if (s.timeline) md += `**Timeline:** ${s.timeline}\n`
+          if (s.client_impact) md += `**Client Impact:** ${s.client_impact}\n`
+          md += `\n`
+        })
+      }
+      if (sc.key_variables) md += `### Key Variables\n${sc.key_variables}\n\n`
+      if (sc.wildcards) md += `### Wildcards\n${sc.wildcards}\n\n`
+      md += `---\n\n`
+    }
+
+    // Impact Assessment (new) or Impact Analysis (legacy)
+    if (rd?.impact_assessment) {
+      const ia = rd.impact_assessment
+      md += `## Impact Assessment\n\n`
+      if (ia.direct_impacts) md += `### Direct Impacts\n${ia.direct_impacts}\n\n`
+      if (ia.second_order_effects) md += `### Second-Order Effects\n${ia.second_order_effects}\n\n`
+      if (ia.timeline_of_effects) md += `### Timeline of Effects\n${ia.timeline_of_effects}\n\n`
+      if (ia.risk_matrix && Array.isArray(ia.risk_matrix)) {
+        md += `### Risk Matrix\n`
+        ia.risk_matrix.forEach((r: any) => {
+          md += `- **${r.risk}** — Severity: ${r.severity}, Likelihood: ${r.likelihood} | Mitigation: ${r.mitigation}\n`
+        })
+        md += `\n`
+      }
+      md += `---\n\n`
+    } else if (rd?.impact_analysis) {
+      const ia = rd.impact_analysis
       md += `## Impact Analysis\n\n`
-      if (typeof ia === 'string') {
-        md += `${ia}\n\n`
-      } else {
+      if (typeof ia === 'string') { md += `${ia}\n\n` }
+      else {
         if (ia.direct_impacts) md += `### Direct Impacts\n${typeof ia.direct_impacts === 'string' ? ia.direct_impacts : JSON.stringify(ia.direct_impacts, null, 2)}\n\n`
         if (ia.indirect_effects) md += `### Indirect Effects\n${typeof ia.indirect_effects === 'string' ? ia.indirect_effects : JSON.stringify(ia.indirect_effects, null, 2)}\n\n`
         if (ia.severity_assessment) md += `### Severity Assessment\n${typeof ia.severity_assessment === 'string' ? ia.severity_assessment : JSON.stringify(ia.severity_assessment, null, 2)}\n\n`
@@ -644,12 +746,12 @@ export class PublicAffairsService {
       md += `---\n\n`
     }
 
+    // Blueprint sections (Strategize action — legacy or post-intelligence)
     if (report.blueprint_data?.scenario_tree) {
       const st = report.blueprint_data.scenario_tree
-      md += `## Scenario Tree\n\n`
-      if (typeof st === 'string') {
-        md += `${st}\n\n`
-      } else {
+      md += `## Strategic Scenarios\n\n`
+      if (typeof st === 'string') { md += `${st}\n\n` }
+      else {
         const scenarios = st.scenarios || [st.base_case, st.upside, st.downside, st.black_swan].filter(Boolean)
         scenarios.forEach((s: any) => {
           md += `### ${s.name || s.label || 'Scenario'} (${s.probability || 'N/A'})\n`
@@ -665,10 +767,9 @@ export class PublicAffairsService {
 
     if (report.blueprint_data?.recommendations) {
       const rec = report.blueprint_data.recommendations
-      md += `## Recommendations\n\n`
-      if (typeof rec === 'string') {
-        md += `${rec}\n\n`
-      } else {
+      md += `## Strategic Recommendations\n\n`
+      if (typeof rec === 'string') { md += `${rec}\n\n` }
+      else {
         if (rec.immediate) md += `### Immediate (This Week)\n${Array.isArray(rec.immediate) ? rec.immediate.map((r: string) => `- ${r}`).join('\n') : rec.immediate}\n\n`
         if (rec.short_term) md += `### Short-Term (30 Days)\n${Array.isArray(rec.short_term) ? rec.short_term.map((r: string) => `- ${r}`).join('\n') : rec.short_term}\n\n`
         if (rec.medium_term) md += `### Medium-Term (90 Days)\n${Array.isArray(rec.medium_term) ? rec.medium_term.map((r: string) => `- ${r}`).join('\n') : rec.medium_term}\n\n`
@@ -679,30 +780,33 @@ export class PublicAffairsService {
     if (report.blueprint_data?.monitoring_framework) {
       const mf = report.blueprint_data.monitoring_framework
       md += `## Monitoring Framework\n\n`
-      if (typeof mf === 'string') {
-        md += `${mf}\n\n`
-      } else if (Array.isArray(mf.indicators || mf)) {
-        const indicators = mf.indicators || mf
-        indicators.forEach((ind: any) => {
+      if (typeof mf === 'string') { md += `${mf}\n\n` }
+      else if (Array.isArray(mf.indicators || mf)) {
+        (mf.indicators || mf).forEach((ind: any) => {
           md += `- **${ind.indicator || ind.name}**: ${ind.threshold || ''} ${ind.action ? `-> ${ind.action}` : ''}\n`
         })
       }
     }
 
-    if (report.research_data?.sources_confidence) {
+    // Sources & Confidence (new or legacy)
+    const sc = rd?.sources_and_confidence || rd?.sources_confidence
+    if (sc) {
       md += `\n---\n\n## Sources & Confidence\n\n`
-      const sc = report.research_data.sources_confidence
-      if (typeof sc === 'string') {
-        md += `${sc}\n`
-      } else {
-        if (sc.confidence_level) md += `**Overall Confidence:** ${sc.confidence_level}\n\n`
+      if (typeof sc === 'string') { md += `${sc}\n` }
+      else {
+        if (sc.confidence_level) md += `**Overall Confidence:** ${sc.confidence_level}\n`
+        if (sc.confidence_justification) md += `${sc.confidence_justification}\n\n`
         if (sc.key_sources && Array.isArray(sc.key_sources)) {
           md += `**Key Sources:**\n`
-          sc.key_sources.forEach((s: any) => md += `- ${typeof s === 'string' ? s : s.name || s.source}\n`)
+          sc.key_sources.forEach((s: any) => md += `- ${typeof s === 'string' ? s : `${s.source || s.name} (${s.reliability})`}\n`)
         }
         if (sc.intelligence_gaps && Array.isArray(sc.intelligence_gaps)) {
           md += `\n**Intelligence Gaps:**\n`
           sc.intelligence_gaps.forEach((g: string) => md += `- ${g}\n`)
+        }
+        if (sc.collection_priorities && Array.isArray(sc.collection_priorities)) {
+          md += `\n**Collection Priorities:**\n`
+          sc.collection_priorities.forEach((p: string) => md += `- ${p}\n`)
         }
       }
     }

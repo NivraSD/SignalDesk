@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useAppStore } from '@/stores/useAppStore'
 import { useAuth } from '@/components/auth/AuthProvider'
 import {
@@ -24,11 +24,21 @@ type LPView = 'list' | 'scenario' | 'runner' | 'viewer' | 'entities' | 'batch-en
 
 export default function LPPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { user, loading: authLoading } = useAuth()
   const organization = useAppStore(s => s.organization)
   const [activeView, setActiveView] = useState<LPView>('list')
   const [selectedScenarioId, setSelectedScenarioId] = useState<string | null>(null)
   const [selectedSimulationId, setSelectedSimulationId] = useState<string | null>(null)
+
+  // Handle ?from=pa&view=scenario URL params
+  useEffect(() => {
+    const fromPA = searchParams.get('from') === 'pa'
+    const view = searchParams.get('view') as LPView | null
+    if (fromPA && view === 'scenario') {
+      setActiveView('scenario')
+    }
+  }, [searchParams])
 
   if (authLoading) {
     return (

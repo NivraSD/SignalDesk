@@ -202,6 +202,41 @@ export default function ScenarioBuilder({ onRunSimulation }: ScenarioBuilderProp
   const [existingScenarios, setExistingScenarios] = useState<ExistingScenario[]>([])
   const [loadingScenarios, setLoadingScenarios] = useState(false)
 
+  // Check for pre-populated seed from Public Affairs simulation
+  useEffect(() => {
+    try {
+      const seedStr = sessionStorage.getItem('pa_simulation_seed')
+      if (seedStr) {
+        sessionStorage.removeItem('pa_simulation_seed')
+        const seed = JSON.parse(seedStr)
+        // Pre-populate the initial description with the scenario action
+        if (seed.action?.what) {
+          setInitialDescription(seed.action.what + (seed.action.rationale?.[0] ? ` — ${seed.action.rationale[0]}` : ''))
+        }
+        if (seed.type) {
+          setDetectedType(seed.type as ScenarioType)
+        }
+        // Pre-populate stakeholder seed if available
+        if (seed.stakeholder_seed) {
+          setScenario(prev => ({
+            ...prev,
+            type: (seed.type || 'policy_change') as ScenarioType,
+            action: { what: seed.action?.what || '' },
+            stakeholder_seed: seed.stakeholder_seed,
+          }))
+          setSuggestions({
+            stakeholders: Object.entries(seed.stakeholder_seed).map(([category, entities]) => ({
+              category: category as StakeholderCategory,
+              entities: entities as string[]
+            }))
+          })
+        }
+      }
+    } catch (err) {
+      console.error('Error loading PA simulation seed:', err)
+    }
+  }, [])
+
   // Load existing scenarios
   useEffect(() => {
     if (!organization?.id) {
