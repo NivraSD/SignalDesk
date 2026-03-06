@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAppStore } from '@/stores/useAppStore'
 import { useAuth } from '@/components/auth/AuthProvider'
@@ -23,6 +23,18 @@ import BatchEntityBuilder from '@/components/lp/BatchEntityBuilder'
 type LPView = 'list' | 'scenario' | 'runner' | 'viewer' | 'entities' | 'batch-entities'
 
 export default function LPPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#fafafa] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-[var(--burnt-orange)]" />
+      </div>
+    }>
+      <LPPageInner />
+    </Suspense>
+  )
+}
+
+function LPPageInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user, loading: authLoading } = useAuth()
