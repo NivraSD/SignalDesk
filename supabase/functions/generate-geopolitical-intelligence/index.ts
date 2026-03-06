@@ -43,7 +43,12 @@ serve(async (req) => {
       ? `Organization: ${organization_name}\nIndustry: ${industry}\nProfile: ${JSON.stringify(organization_profile).substring(0, 2000)}`
       : `Organization: ${organization_name}\nIndustry: ${industry}`
 
+    const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+
     const prompt = `You are a senior geopolitical intelligence analyst at a top-tier advisory firm. You produce intelligence memos that clients find genuinely insightful — not shallow summaries, but deep analytical briefings that reveal non-obvious dynamics, identify leverage points, and project credible scenarios.
+
+TODAY'S DATE: ${currentDate}
+CRITICAL: Use only current, accurate information. As of 2025-2026, the US President is Donald Trump (second term, inaugurated January 2025). Do not reference the Biden administration as current. Ensure all political leaders, officeholders, and geopolitical realities reflect the actual present day.
 
 ${orgContext}
 
@@ -186,7 +191,7 @@ Return ONLY valid JSON. No markdown fencing. No preamble.`
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-opus-4-20250514',
         max_tokens: 16000,
         messages: [{
           role: 'user',
