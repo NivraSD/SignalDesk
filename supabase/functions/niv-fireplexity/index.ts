@@ -183,83 +183,27 @@ async function performIntelligentSearch(
   }
   const maxAge = searchStrategy.tbs ? maxAgeMap[searchStrategy.tbs] : 1209600000 // Default to 2 weeks (matches new qdr:w2 default)
 
-  // Try up to 3 query variations to ensure we get good coverage
+  // Run query variations in parallel for speed
   const queriesToTry = searchMode === 'comprehensive' ? 3 : 2
+  const searchQueries = Array.from(
+    { length: Math.min(queriesToTry, searchStrategy.queries.length) },
+    (_, i) => ({ index: i, query: formatSearchQuery(searchStrategy, i) })
+  )
 
-  for (let i = 0; i < Math.min(queriesToTry, searchStrategy.queries.length); i++) {
-    const searchQuery = formatSearchQuery(searchStrategy, i)
-    console.log(`🔍 Search ${i + 1}/${queriesToTry}: "${searchQuery.substring(0, 80)}..."`)
+  const searchPromises = searchQueries.map(async ({ index, query: searchQuery }) => {
+    console.log(`🔍 Search ${index + 1}/${queriesToTry}: "${searchQuery.substring(0, 80)}..."`)
 
     try {
-      // Intelligently select Firecrawl categories based on query content
-      const categories = []
-      const queryLower = searchQuery.toLowerCase()
-
-      // Add 'research' category for academic/statistical queries
-      if (queryLower.match(/statistic|study|research|data|report|survey|analysis|finding|trend|percent|rate/i)) {
-        categories.push('research')
-      }
-
-      // Add 'pdf' category for whitepapers, reports, documentation
-      if (queryLower.match(/whitepaper|report|document|guide|manual|specification|overview/i)) {
-        categories.push('pdf')
-      }
-
-      // Add 'github' category for technical/API queries
-      if (queryLower.match(/api|sdk|code|implementation|library|package|integration|github|developer/i)) {
-        categories.push('github')
-      }
-
       const searchBody: any = {
         query: searchQuery,
-        sources: ['web', 'news'], // Add sources for multi-source search
+        sources: ['web', 'news'],
         limit: searchLimit,
-        ...(searchStrategy.tbs && { tbs: searchStrategy.tbs }), // Add time-based search if specified
+        ...(searchStrategy.tbs && { tbs: searchStrategy.tbs }),
         scrapeOptions: {
           formats: ['markdown'],
-          onlyMainContent: true, // Filter out navigation and ads
-          maxAge: maxAge, // Dynamic maxAge based on time filter
-          // Extract structured intelligence instead of full markdown
-          extract: {
-            schema: {
-              title: {
-                type: 'string',
-                description: 'Article title'
-              },
-              key_points: {
-                type: 'array',
-                items: { type: 'string' },
-                description: 'Main points and takeaways from the article (3-5 bullets)'
-              },
-              quotes: {
-                type: 'array',
-                items: { type: 'string' },
-                description: 'Important quotes from executives, experts, or key sources'
-              },
-              metrics: {
-                type: 'array',
-                items: { type: 'string' },
-                description: 'Key statistics, numbers, percentages, or data points mentioned'
-              },
-              companies_mentioned: {
-                type: 'array',
-                items: { type: 'string' },
-                description: 'Companies or organizations mentioned'
-              },
-              date_published: {
-                type: 'string',
-                description: 'Publication date if available'
-              }
-            },
-            systemPrompt: 'Extract key intelligence from this article. Focus on factual information, data points, quotes, and strategic insights. Ignore navigation, ads, and boilerplate content.'
-          }
+          onlyMainContent: true,
+          maxAge: maxAge
         }
-      }
-
-      // Add categories if any were detected
-      if (categories.length > 0) {
-        searchBody.categories = categories
-        console.log(`📚 Using categories: ${categories.join(', ')}`)
       }
 
       const searchResponse = await fetch(`${FIRECRAWL_BASE_URL}/search`, {
@@ -273,47 +217,29 @@ async function performIntelligentSearch(
 
       if (!searchResponse.ok) {
         const errorText = await searchResponse.text()
-        console.error(`Firecrawl search ${i + 1} failed:`, searchResponse.status, errorText)
-        continue // Try next query variation
+        console.error(`Firecrawl search ${index + 1} failed:`, searchResponse.status, errorText)
+        return []
       }
 
       const searchData = await searchResponse.json()
-      // Parse multi-source response structure
-      const webResults = searchData.data?.web || []
-      const newsResults = searchData.data?.news || []
-
-      // Log first result to see what Firecrawl is returning
-      if (webResults.length > 0) {
-        const sample = webResults[0]
-        console.log(`📋 Sample result structure: url=${!!sample.url}, markdown=${sample.markdown?.length || 0} chars, content=${sample.content?.length || 0} chars`)
-        if (sample.markdown) {
-          console.log(`📄 Markdown preview: ${sample.markdown.substring(0, 200)}...`)
-        }
-      }
-
-      // Tag results with their source type
-      const taggedWebResults = webResults.map(r => ({ ...r, sourceType: 'web' }))
-      const taggedNewsResults = newsResults.map(r => ({ ...r, sourceType: 'news' }))
-
-      const results = [...taggedWebResults, ...taggedNewsResults]
-      console.log(`📊 Query ${i + 1} returned ${webResults.length} web + ${newsResults.length} news = ${results.length} total results`)
-
-      // Add unique results (avoid duplicates)
-      results.forEach(result => {
-        if (!allResults.some(r => r.url === result.url)) {
-          allResults.push(result)
-        }
-      })
+      const webResults = (searchData.data?.web || []).map(r => ({ ...r, sourceType: 'web' }))
+      const newsResults = (searchData.data?.news || []).map(r => ({ ...r, sourceType: 'news' }))
+      const results = [...webResults, ...newsResults]
+      console.log(`📊 Query ${index + 1} returned ${webResults.length} web + ${newsResults.length} news = ${results.length} total results`)
+      return results
     } catch (error) {
-      console.error(`Search ${i + 1} error:`, error)
-      continue // Try next query
+      console.error(`Search ${index + 1} error:`, error)
+      return []
     }
+  })
 
-    // Stop if we have enough good results
-    if (allResults.length >= searchLimit * 2) {
-      break
+  const searchResults = await Promise.all(searchPromises)
+  // Merge and deduplicate
+  searchResults.flat().forEach(result => {
+    if (!allResults.some(r => r.url === result.url)) {
+      allResults.push(result)
     }
-  }
+  })
 
   console.log(`📊 Total unique results collected: ${allResults.length}`)
 

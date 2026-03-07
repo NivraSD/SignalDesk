@@ -140,18 +140,14 @@ export class PublicAffairsService {
 
       onProgress?.('intelligence-gathering', 'running')
 
-      // Run 7 research queries in parallel via fireplexity (same wall-clock time as 3)
+      // Run 3 focused research queries in parallel (fast mode to avoid timeouts)
       const triggerEvent = report.trigger_event
       const title = triggerEvent.title
 
       const queries = [
-        { key: 'situation', query: `${title} latest developments timeline 2025 2026`, focus: 'geopolitical_intelligence', max_results: 15 },
-        { key: 'stakeholders', query: `${title} key stakeholders actors positions interests power dynamics`, focus: 'stakeholder_analysis', max_results: 12 },
-        { key: 'impact', query: `${title} ${industry} sector economic impact implications`, focus: 'impact_assessment', max_results: 10 },
-        { key: 'geopolitical', query: `${title} geopolitical context regional power dynamics alliances`, focus: 'geopolitical_intelligence', max_results: 12 },
-        { key: 'historical', query: `${title} historical precedents similar situations past outcomes`, focus: 'geopolitical_intelligence', max_results: 10 },
-        { key: 'legal', query: `${title} legal regulatory framework policy implications`, focus: 'impact_assessment', max_results: 10 },
-        { key: 'media', query: `${title} media coverage narrative analysis public opinion`, focus: 'stakeholder_analysis', max_results: 10 },
+        { key: 'situation', query: `${title} latest developments timeline 2025 2026` },
+        { key: 'stakeholders', query: `${title} key stakeholders actors power dynamics ${industry} economic impact` },
+        { key: 'geopolitical', query: `${title} geopolitical context legal regulatory precedents media narrative` },
       ]
 
       const queryResults = await Promise.allSettled(
@@ -159,9 +155,9 @@ export class PublicAffairsService {
           supabase.functions.invoke('niv-fireplexity', {
             body: {
               query: q.query,
-              search_type: 'comprehensive',
-              focus: q.focus,
-              max_results: q.max_results
+              searchMode: 'comprehensive',
+              organizationId,
+              useCache: false
             }
           })
         )
@@ -170,12 +166,17 @@ export class PublicAffairsService {
       onProgress?.('intelligence-gathering', 'completed')
       onProgress?.('synthesis', 'running')
 
-      // Extract results keyed by name
-      const rawResearch: Record<string, any> = {}
-      queries.forEach((q, i) => {
-        const result = queryResults[i]
-        rawResearch[q.key] = result.status === 'fulfilled' ? result.value.data : null
-      })
+      // Extract results keyed by name — map 3 queries into the 7 research streams
+      const getResult = (i: number) => queryResults[i]?.status === 'fulfilled' ? queryResults[i].value.data : null
+      const rawResearch: Record<string, any> = {
+        situation: getResult(0),
+        stakeholders: getResult(1),
+        impact: getResult(1),       // reuse stakeholders+impact query
+        geopolitical: getResult(2),
+        historical: getResult(2),   // reuse geopolitical+legal query
+        legal: getResult(2),
+        media: getResult(2),
+      }
 
       // Synthesize into deep geopolitical intelligence memo via Claude
       const { data: synthesisResult, error: synthesisError } = await supabase.functions.invoke('generate-geopolitical-intelligence', {

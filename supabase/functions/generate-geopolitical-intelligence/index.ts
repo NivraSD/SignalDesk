@@ -21,8 +21,8 @@ serve(async (req) => {
       raw_research
     } = await req.json()
 
-    const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
-    if (!ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY not configured')
+    const GOOGLE_API_KEY = Deno.env.get('GOOGLE_API_KEY')
+    if (!GOOGLE_API_KEY) throw new Error('GOOGLE_API_KEY not configured')
 
     // Extract and truncate each research stream to 3500 chars
     const truncate = (data: any, limit = 3500): string => {
@@ -48,7 +48,20 @@ serve(async (req) => {
     const prompt = `You are a senior geopolitical intelligence analyst at a top-tier advisory firm. You produce intelligence memos that clients find genuinely insightful — not shallow summaries, but deep analytical briefings that reveal non-obvious dynamics, identify leverage points, and project credible scenarios.
 
 TODAY'S DATE: ${currentDate}
-CRITICAL: Use only current, accurate information. As of 2025-2026, the US President is Donald Trump (second term, inaugurated January 2025). Do not reference the Biden administration as current. Ensure all political leaders, officeholders, and geopolitical realities reflect the actual present day.
+
+MANDATORY FACTUAL GROUNDING — FOLLOW EXACTLY:
+- US President: Donald Trump (second term, inaugurated January 20, 2025). The Biden administration ended January 2025. NEVER refer to Biden as current president.
+- US Vice President: JD Vance
+- US Secretary of State: Marco Rubio
+- US Treasury Secretary: Scott Bessent
+- US Defense Secretary: Pete Hegseth
+- UK Prime Minister: Keir Starmer (Labour, since July 2024)
+- French President: Emmanuel Macron
+- German Chancellor: Friedrich Merz (CDU, since February 2025)
+- Japanese Prime Minister: Shigeru Ishiba
+- Chinese President: Xi Jinping
+- Federal Reserve Chair: Jerome Powell
+- If you are unsure about a current officeholder or fact, say so rather than guessing. Never fabricate names, dates, or positions.
 
 ${orgContext}
 
@@ -183,42 +196,41 @@ CRITICAL INSTRUCTIONS:
 
 Return ONLY valid JSON. No markdown fencing. No preamble.`
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-opus-4-20250514',
-        max_tokens: 16000,
-        messages: [{
-          role: 'user',
-          content: prompt
-        }]
-      })
-    })
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GOOGLE_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 65536,
+            responseMimeType: 'application/json'
+          }
+        })
+      }
+    )
 
     if (!response.ok) {
       const errText = await response.text()
-      throw new Error(`Anthropic API error: ${response.status} ${errText}`)
+      throw new Error(`Gemini API error: ${response.status} ${errText}`)
     }
 
     const result = await response.json()
-    const content = result.content?.[0]?.text || ''
+    const content = result.candidates?.[0]?.content?.parts?.[0]?.text || ''
 
     // Parse JSON from response
     let researchData
+    let cleaned = content.trim()
+    // Strip markdown code fences if present
+    cleaned = cleaned.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/, '').trim()
+
     try {
-      researchData = JSON.parse(content)
-    } catch {
-      const jsonMatch = content.match(/\{[\s\S]*\}/)
-      if (jsonMatch) {
-        researchData = JSON.parse(jsonMatch[0])
-      } else {
-        throw new Error('Failed to parse geopolitical intelligence output as JSON')
-      }
+      researchData = JSON.parse(cleaned)
+    } catch (parseErr) {
+      console.error('JSON parse failed, content length:', cleaned.length, 'first 500 chars:', cleaned.substring(0, 500))
+      throw new Error(`Failed to parse JSON: ${parseErr.message}`)
     }
 
     return new Response(

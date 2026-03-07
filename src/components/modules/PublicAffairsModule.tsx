@@ -789,17 +789,17 @@ function ReportDetailView({
                     <SubHeading>Key Actors</SubHeading>
                     <div className="grid gap-2">
                       {report.research_data.situation_assessment.key_actors.map((a: any, i: number) => (
-                        <div key={i} className="flex items-center gap-3 p-3 rounded-lg" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
-                          <div className="flex-1">
+                        <div key={i} className="p-3 rounded-lg" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
+                          <div className="flex items-center gap-2 mb-1">
                             <span className="text-sm font-medium" style={{ color: '#e4e4e7' }}>{a.name}</span>
-                            <span className="text-xs ml-2" style={{ color: '#71717a' }}>{a.role}</span>
+                            <span className="text-xs" style={{ color: '#71717a' }}>{a.role}</span>
+                            <span className={`text-xs px-2 py-0.5 rounded ml-auto ${
+                              a.influence_level === 'high' ? 'bg-red-500/20 text-red-400' :
+                              a.influence_level === 'medium' ? 'bg-amber-500/20 text-amber-400' :
+                              'bg-slate-500/20 text-slate-400'
+                            }`}>{a.influence_level}</span>
                           </div>
-                          <span className="text-sm" style={{ color: '#a1a1aa' }}>{a.position}</span>
-                          <span className={`text-xs px-2 py-0.5 rounded ${
-                            a.influence_level === 'high' ? 'bg-red-500/20 text-red-400' :
-                            a.influence_level === 'medium' ? 'bg-amber-500/20 text-amber-400' :
-                            'bg-slate-500/20 text-slate-400'
-                          }`}>{a.influence_level}</span>
+                          <p className="text-xs" style={{ color: '#a1a1aa', lineHeight: '1.5' }}>{a.position}</p>
                         </div>
                       ))}
                     </div>
@@ -976,21 +976,25 @@ function ReportDetailView({
                   <div>
                     <SubHeading>Risk Matrix</SubHeading>
                     <div className="space-y-2">
-                      {report.research_data.impact_assessment.risk_matrix.map((r: any, i: number) => (
-                        <div key={i} className="flex items-center gap-3 p-3 rounded-lg" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
-                          <span className={`text-xs px-2 py-0.5 rounded font-semibold ${
-                            r.severity === 'critical' ? 'bg-red-500/20 text-red-400' :
-                            r.severity === 'high' ? 'bg-amber-500/20 text-amber-400' :
-                            r.severity === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
-                            'bg-slate-500/20 text-slate-400'
-                          }`}>{r.severity}</span>
-                          <div className="flex-1">
-                            <span className="text-sm" style={{ color: '#e4e4e7' }}>{r.risk}</span>
+                      {report.research_data.impact_assessment.risk_matrix.map((r: any, i: number) => {
+                        const severityStyle = r.severity === 'critical'
+                          ? { badge: 'bg-red-500/20 text-red-400', border: '#ef4444' }
+                          : r.severity === 'high'
+                          ? { badge: 'bg-orange-500/20 text-orange-400', border: '#f97316' }
+                          : r.severity === 'medium'
+                          ? { badge: 'bg-yellow-500/20 text-yellow-400', border: '#eab308' }
+                          : { badge: 'bg-slate-500/20 text-slate-400', border: '#64748b' }
+                        return (
+                        <div key={i} className="p-3 rounded-lg" style={{ backgroundColor: 'rgba(255,255,255,0.03)', borderLeft: `3px solid ${severityStyle.border}` }}>
+                          <div className="flex items-center gap-3 mb-1">
+                            <span className={`text-xs px-2 py-0.5 rounded font-semibold ${severityStyle.badge}`}>{r.severity}</span>
+                            <span className="text-xs ml-auto" style={{ color: '#71717a' }}>Likelihood: {r.likelihood}</span>
                           </div>
-                          <span className="text-xs" style={{ color: '#71717a' }}>L: {r.likelihood}</span>
-                          <span className="text-xs max-w-[200px] truncate" style={{ color: '#a1a1aa' }}>{r.mitigation}</span>
+                          <p className="text-sm mb-1" style={{ color: '#e4e4e7' }}>{r.risk}</p>
+                          <p className="text-xs" style={{ color: '#a1a1aa' }}>{r.mitigation}</p>
                         </div>
-                      ))}
+                        )
+                      })}
                     </div>
                   </div>
                 )}
@@ -1241,10 +1245,19 @@ function ReportDetailView({
 // =================== SHARED COMPONENTS ===================
 
 function ProseBlock({ text }: { text: string }) {
+  // Convert **bold** markdown to <strong> and split paragraphs
+  const paragraphs = text.split(/\n\n+/)
   return (
-    <p className="whitespace-pre-wrap" style={{ color: '#d4d4d8', fontSize: '0.9375rem', lineHeight: '1.8' }}>
-      {text}
-    </p>
+    <div className="space-y-3" style={{ color: '#d4d4d8', fontSize: '0.9375rem', lineHeight: '1.8' }}>
+      {paragraphs.map((p, i) => (
+        <p key={i} dangerouslySetInnerHTML={{
+          __html: p.trim()
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/\*\*(.+?)\*\*/g, '<strong style="color:#f4f4f5">$1</strong>')
+            .replace(/\n/g, '<br />')
+        }} />
+      ))}
+    </div>
   )
 }
 
