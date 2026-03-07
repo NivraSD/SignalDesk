@@ -178,11 +178,10 @@ export class PublicAffairsService {
         media: getResult(2),
       }
 
-      // Synthesize into deep geopolitical intelligence memo via Claude
-      const { data: synthesisResult, error: synthesisError } = await supabase.functions.invoke('generate-geopolitical-intelligence', {
+      // Stage 1: Situation Assessment + Stakeholder Analysis
+      onProgress?.('synthesis-stage1', 'running')
+      const { data: stage1Result, error: stage1Error } = await supabase.functions.invoke('pa-intel-stage1', {
         body: {
-          report_id: reportId,
-          organization_id: organizationId,
           organization_name: organizationName,
           organization_profile: orgData?.company_profile || {},
           industry,
@@ -190,8 +189,37 @@ export class PublicAffairsService {
           raw_research: rawResearch
         }
       })
+      if (stage1Error) throw stage1Error
+      if (!stage1Result?.success) throw new Error(stage1Result?.error || 'Stage 1 failed')
+      onProgress?.('synthesis-stage1', 'completed')
 
-      if (synthesisError) throw synthesisError
+      // Stage 2: Scenarios + Impact (builds on Stage 1)
+      onProgress?.('synthesis-stage2', 'running')
+      const { data: stage2Result, error: stage2Error } = await supabase.functions.invoke('pa-intel-stage2', {
+        body: {
+          organization_name: organizationName,
+          industry,
+          trigger_event: triggerEvent,
+          raw_research: rawResearch,
+          stage1: stage1Result.stage1
+        }
+      })
+      if (stage2Error) throw stage2Error
+      if (!stage2Result?.success) throw new Error(stage2Result?.error || 'Stage 2 failed')
+      onProgress?.('synthesis-stage2', 'completed')
+
+      // Merge stages into unified research data
+      const synthesisResult = {
+        research_data: {
+          executive_summary: stage1Result.stage1.executive_summary,
+          situation_assessment: stage1Result.stage1.situation_assessment,
+          stakeholder_analysis: stage1Result.stage1.stakeholder_analysis,
+          geopolitical_context: stage2Result.stage2.geopolitical_context,
+          scenario_analysis: stage2Result.stage2.scenario_analysis,
+          impact_assessment: stage2Result.stage2.impact_assessment,
+          sources_and_confidence: stage2Result.stage2.sources_and_confidence
+        }
+      }
 
       // Update report with research data
       const researchData = synthesisResult?.research_data || {}
