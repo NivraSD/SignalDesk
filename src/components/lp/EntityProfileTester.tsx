@@ -306,8 +306,9 @@ export default function EntityProfileTester() {
   // Show/hide entity database section
   const [showDatabase, setShowDatabase] = useState(false)
 
-  // Global profiles (for entity database - these are built without org context)
+  // Global profiles (all orgs — for checking if a profile exists anywhere)
   const [globalProfiles, setGlobalProfiles] = useState<Set<string>>(new Set())
+  const [globalProfileData, setGlobalProfileData] = useState<ExistingProfile[]>([])
   const [loadingGlobalProfiles, setLoadingGlobalProfiles] = useState(false)
 
   // Profile viewer modal
@@ -355,19 +356,20 @@ export default function EntityProfileTester() {
     loadOrgEntities()
   }, [organization?.id])
 
-  // Load all existing profiles (for entity database) - check if profile exists regardless of org
+  // Load all existing profiles globally — check if a profile exists regardless of org
   useEffect(() => {
     const loadAllProfiles = async () => {
       setLoadingGlobalProfiles(true)
       try {
-        // Get all non-expired profiles - we just care if a profile exists for this entity
         const { data } = await supabase
           .from('lp_entity_profiles')
-          .select('entity_name')
+          .select('entity_name, entity_type, data_tier, data_sources, confidence_score, model_used, version, expires_at, built_at, profile')
           .gt('expires_at', new Date().toISOString())
+          .order('built_at', { ascending: false })
 
         if (data) {
           setGlobalProfiles(new Set(data.map(p => p.entity_name.toLowerCase())))
+          setGlobalProfileData(data)
         }
       } catch (err) {
         console.error('Failed to load profiles:', err)
@@ -380,9 +382,28 @@ export default function EntityProfileTester() {
   }, [])
 
   const getExistingProfile = (name: string, type: string): ExistingProfile | undefined => {
-    return existingProfiles.find(
+    // Check org-specific profiles first, then fall back to global profiles
+    const orgProfile = existingProfiles.find(
       p => p.entity_name.toLowerCase() === name.toLowerCase() && p.entity_type === type
     )
+    if (orgProfile) return orgProfile
+
+    // Check global profiles (built by any org) — name match is sufficient
+    return globalProfileData.find(
+      p => p.entity_name.toLowerCase() === name.toLowerCase()
+    )
+  }
+
+  const refreshGlobalProfiles = async () => {
+    const { data } = await supabase
+      .from('lp_entity_profiles')
+      .select('entity_name, entity_type, data_tier, data_sources, confidence_score, model_used, version, expires_at, built_at, profile')
+      .gt('expires_at', new Date().toISOString())
+      .order('built_at', { ascending: false })
+    if (data) {
+      setGlobalProfiles(new Set(data.map(p => p.entity_name.toLowerCase())))
+      setGlobalProfileData(data)
+    }
   }
 
   const isProfileFresh = (profile: ExistingProfile): boolean => {
@@ -472,13 +493,14 @@ export default function EntityProfileTester() {
 
     setActiveBuilds(new Set())
 
-    // Refresh profiles list
+    // Refresh profiles list (org + global)
     const { data: refreshed } = await supabase
       .from('lp_entity_profiles')
       .select('entity_name, entity_type, data_tier, data_sources, confidence_score, model_used, version, expires_at, built_at, profile')
       .eq('organization_id', organization.id)
       .order('built_at', { ascending: false })
     if (refreshed) setExistingProfiles(refreshed)
+    await refreshGlobalProfiles()
 
     setBuildingAll(false)
     setBuildingId(null)
@@ -644,14 +666,7 @@ export default function EntityProfileTester() {
     }
 
     // Refresh profiles to show newly built ones
-    const { data: refreshed } = await supabase
-      .from('lp_entity_profiles')
-      .select('entity_name')
-      .gt('expires_at', new Date().toISOString())
-
-    if (refreshed) {
-      setGlobalProfiles(new Set(refreshed.map(p => p.entity_name.toLowerCase())))
-    }
+    await refreshGlobalProfiles()
 
     setIsBuildingDatabase(false)
   }
@@ -697,7 +712,7 @@ export default function EntityProfileTester() {
         setResult({ success: false, error: error.message })
       } else {
         setResult(data as ProfileResult)
-        // Refresh existing profiles list after successful build
+        // Refresh existing profiles list after successful build (org + global)
         if (data?.success) {
           const { data: refreshed } = await supabase
             .from('lp_entity_profiles')
@@ -705,6 +720,7 @@ export default function EntityProfileTester() {
             .eq('organization_id', organization.id)
             .order('built_at', { ascending: false })
           if (refreshed) setExistingProfiles(refreshed)
+          await refreshGlobalProfiles()
         }
       }
     } catch (err: any) {
