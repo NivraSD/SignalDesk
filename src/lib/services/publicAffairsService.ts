@@ -147,10 +147,10 @@ export class PublicAffairsService {
 
       const queries = [
         { key: 'situation', query: `${title} latest news developments what is happening now 2026` },
-        { key: 'stakeholders', query: `${title} key players leaders governments factions who is involved positions alliances` },
-        { key: 'geopolitical', query: `${title} geopolitical implications regional power dynamics international response` },
-        { key: 'impact', query: `${title} economic impact market consequences sanctions trade disruption global effects` },
-        { key: 'historical', query: `${title} historical context background how did this start timeline of events` },
+        { key: 'stakeholders', query: `${title} key players leaders companies governments who is involved positions reactions` },
+        { key: 'context', query: `${title} broader implications competitive landscape industry dynamics regulatory response international reaction` },
+        { key: 'impact', query: `${title} economic impact market consequences business effects industry disruption` },
+        { key: 'historical', query: `${title} historical context background precedents how did this start timeline of events` },
       ]
 
       const queryResults = await Promise.allSettled(
@@ -199,11 +199,11 @@ export class PublicAffairsService {
       const rawResearch: Record<string, any> = {
         situation: { summary: extractResearch(0) },
         stakeholders: { summary: extractResearch(1) },
-        geopolitical: { summary: extractResearch(2) },
+        geopolitical: { summary: extractResearch(2) },  // context/competitive/regulatory research — fed to stage2
         impact: { summary: extractResearch(3) },
         historical: { summary: extractResearch(4) },
-        legal: { summary: extractResearch(2, 3000) },
-        media: { summary: extractResearch(0, 3000) },
+        legal: { summary: extractResearch(2, 3000) },   // reuses context query for regulatory angle
+        media: { summary: extractResearch(0, 3000) },   // reuses situation query for media narrative
       }
 
       // Stage 1: Situation Assessment + Stakeholder Analysis
@@ -221,6 +221,10 @@ export class PublicAffairsService {
       if (!stage1Result?.success) throw new Error(stage1Result?.error || 'Stage 1 failed')
       onProgress?.('synthesis-stage1', 'completed')
 
+      // Extract event_type from Stage 1 classification
+      const eventType = stage1Result.stage1.event_type || 'geopolitical'
+      console.log(`[PA] Event classified as: ${eventType}`)
+
       // Stage 2: Scenarios + Impact (builds on Stage 1)
       onProgress?.('synthesis-stage2', 'running')
       const { data: stage2Result, error: stage2Error } = await supabase.functions.invoke('pa-intel-stage2', {
@@ -229,7 +233,8 @@ export class PublicAffairsService {
           industry,
           trigger_event: triggerEvent,
           raw_research: rawResearch,
-          stage1: stage1Result.stage1
+          stage1: stage1Result.stage1,
+          event_type: eventType
         }
       })
       if (stage2Error) throw stage2Error
@@ -237,11 +242,14 @@ export class PublicAffairsService {
       onProgress?.('synthesis-stage2', 'completed')
 
       // Merge stages into unified research data
+      // Stage 2 returns either geopolitical_context or contextual_analysis depending on event_type
+      const contextSection = stage2Result.stage2.contextual_analysis || stage2Result.stage2.geopolitical_context
       const synthesisResult = {
         research_data: {
+          event_type: eventType,
           situation_assessment: stage1Result.stage1.situation_assessment,
           stakeholder_analysis: stage1Result.stage1.stakeholder_analysis,
-          geopolitical_context: stage2Result.stage2.geopolitical_context,
+          contextual_analysis: contextSection,
           scenario_analysis: stage2Result.stage2.scenario_analysis,
           impact_assessment: stage2Result.stage2.impact_assessment,
           sources_and_confidence: stage2Result.stage2.sources_and_confidence
@@ -695,15 +703,26 @@ export class PublicAffairsService {
       md += `---\n\n`
     }
 
-    // Geopolitical Context (new format only)
-    if (rd?.geopolitical_context) {
-      const gc = rd.geopolitical_context
-      md += `## Geopolitical Context\n\n`
-      if (typeof gc === 'string') { md += `${gc}\n\n` }
+    // Contextual Analysis (adaptive) or legacy Geopolitical Context
+    const ctxData = rd?.contextual_analysis || rd?.geopolitical_context
+    if (ctxData) {
+      const et = rd?.event_type || 'geopolitical'
+      const sectionTitles: Record<string, { title: string, sub1: string, sub2: string, sub3: string }> = {
+        geopolitical: { title: 'Geopolitical Context', sub1: 'Regional Dynamics', sub2: 'International Implications', sub3: 'Power Balance Analysis' },
+        corporate: { title: 'Industry & Competitive Analysis', sub1: 'Competitive Landscape', sub2: 'Governance & Talent Implications', sub3: 'Regulatory Exposure' },
+        regulatory: { title: 'Regulatory & Policy Analysis', sub1: 'Regulatory Landscape', sub2: 'Industry Response', sub3: 'Political Dynamics' },
+        economic: { title: 'Market & Economic Analysis', sub1: 'Market Dynamics', sub2: 'Supply Chain & Trade Implications', sub3: 'Policy Responses' },
+      }
+      const l = sectionTitles[et] || sectionTitles.geopolitical
+      if (typeof ctxData === 'string') { md += `## ${l.title}\n\n${ctxData}\n\n` }
       else {
-        if (gc.regional_dynamics) md += `### Regional Dynamics\n${gc.regional_dynamics}\n\n`
-        if (gc.international_implications) md += `### International Implications\n${gc.international_implications}\n\n`
-        if (gc.power_balance_analysis) md += `### Power Balance Analysis\n${gc.power_balance_analysis}\n\n`
+        md += `## ${l.title}\n\n`
+        const f1 = ctxData.primary_analysis || ctxData.regional_dynamics
+        const f2 = ctxData.secondary_analysis || ctxData.international_implications
+        const f3 = ctxData.power_dynamics || ctxData.power_balance_analysis
+        if (f1) md += `### ${l.sub1}\n${f1}\n\n`
+        if (f2) md += `### ${l.sub2}\n${f2}\n\n`
+        if (f3) md += `### ${l.sub3}\n${f3}\n\n`
       }
       md += `---\n\n`
     }
@@ -950,13 +969,24 @@ export class PublicAffairsService {
       html += `</div>\n`
     }
 
-    // Geopolitical Context
-    if (rd?.geopolitical_context) {
-      const gc = rd.geopolitical_context
-      html += `<div class="section"><h2>Geopolitical Context</h2>\n`
-      if (gc.regional_dynamics) html += `<h3>Regional Dynamics</h3>${prose(gc.regional_dynamics)}`
-      if (gc.international_implications) html += `<h3>International Implications</h3>${prose(gc.international_implications)}`
-      if (gc.power_balance_analysis) html += `<h3>Power Balance</h3>${prose(gc.power_balance_analysis)}`
+    // Contextual Analysis (adaptive) or legacy Geopolitical Context
+    const ctxHtml = rd?.contextual_analysis || rd?.geopolitical_context
+    if (ctxHtml) {
+      const et = rd?.event_type || 'geopolitical'
+      const htmlLabels: Record<string, { title: string, sub1: string, sub2: string, sub3: string }> = {
+        geopolitical: { title: 'Geopolitical Context', sub1: 'Regional Dynamics', sub2: 'International Implications', sub3: 'Power Balance' },
+        corporate: { title: 'Industry &amp; Competitive Analysis', sub1: 'Competitive Landscape', sub2: 'Governance &amp; Talent Implications', sub3: 'Regulatory Exposure' },
+        regulatory: { title: 'Regulatory &amp; Policy Analysis', sub1: 'Regulatory Landscape', sub2: 'Industry Response', sub3: 'Political Dynamics' },
+        economic: { title: 'Market &amp; Economic Analysis', sub1: 'Market Dynamics', sub2: 'Supply Chain &amp; Trade Implications', sub3: 'Policy Responses' },
+      }
+      const lh = htmlLabels[et] || htmlLabels.geopolitical
+      const hf1 = ctxHtml.primary_analysis || ctxHtml.regional_dynamics
+      const hf2 = ctxHtml.secondary_analysis || ctxHtml.international_implications
+      const hf3 = ctxHtml.power_dynamics || ctxHtml.power_balance_analysis
+      html += `<div class="section"><h2>${lh.title}</h2>\n`
+      if (hf1) html += `<h3>${lh.sub1}</h3>${prose(hf1)}`
+      if (hf2) html += `<h3>${lh.sub2}</h3>${prose(hf2)}`
+      if (hf3) html += `<h3>${lh.sub3}</h3>${prose(hf3)}`
       html += `</div>\n`
     }
 

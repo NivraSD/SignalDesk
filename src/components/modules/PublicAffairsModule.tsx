@@ -36,7 +36,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
 
 /** Detect new geopolitical intelligence format */
 function isNewFormat(data: any): boolean {
-  return !!data?.situation_assessment?.current_situation || !!data?.scenario_analysis || !!data?.geopolitical_context
+  return !!data?.situation_assessment?.current_situation || !!data?.scenario_analysis || !!data?.geopolitical_context || !!data?.contextual_analysis
 }
 
 export default function PublicAffairsModule() {
@@ -413,13 +413,6 @@ export default function PublicAffairsModule() {
                   From Latest Intelligence
                 </h3>
               </div>
-              {synthData?.executive_summary && (
-                <p className="text-sm mb-4 leading-relaxed" style={{ color: '#a1a1aa' }}>
-                  {typeof synthData.executive_summary === 'string'
-                    ? synthData.executive_summary.substring(0, 300) + (synthData.executive_summary.length > 300 ? '...' : '')
-                    : ''}
-                </p>
-              )}
               <div className="grid gap-2">
                 {developments.slice(0, 5).map((dev: any, i: number) => (
                   <div
@@ -809,31 +802,32 @@ function ReportDetailView({
             </MemoSection>
           )}
 
-          {/* Geopolitical Context */}
-          {report.research_data?.geopolitical_context && (
-            <MemoSection title="Geopolitical Context" icon={Globe}>
-              <div className="space-y-5">
-                {report.research_data.geopolitical_context.regional_dynamics && (
-                  <div>
-                    <SubHeading>Regional Dynamics</SubHeading>
-                    <ProseBlock text={report.research_data.geopolitical_context.regional_dynamics} />
-                  </div>
-                )}
-                {report.research_data.geopolitical_context.international_implications && (
-                  <div>
-                    <SubHeading>International Implications</SubHeading>
-                    <ProseBlock text={report.research_data.geopolitical_context.international_implications} />
-                  </div>
-                )}
-                {report.research_data.geopolitical_context.power_balance_analysis && (
-                  <div>
-                    <SubHeading>Power Balance Analysis</SubHeading>
-                    <ProseBlock text={report.research_data.geopolitical_context.power_balance_analysis} />
-                  </div>
-                )}
-              </div>
-            </MemoSection>
-          )}
+          {/* Contextual Analysis — adaptive section titles based on event type */}
+          {(() => {
+            const ctx = report.research_data?.contextual_analysis || report.research_data?.geopolitical_context
+            if (!ctx) return null
+            const et = report.research_data?.event_type || 'geopolitical'
+            const labels: Record<string, { title: string, sub1: string, sub2: string, sub3: string }> = {
+              geopolitical: { title: 'Geopolitical Context', sub1: 'Regional Dynamics', sub2: 'International Implications', sub3: 'Power Balance Analysis' },
+              corporate: { title: 'Industry & Competitive Analysis', sub1: 'Competitive Landscape', sub2: 'Governance & Talent Implications', sub3: 'Regulatory Exposure' },
+              regulatory: { title: 'Regulatory & Policy Analysis', sub1: 'Regulatory Landscape', sub2: 'Industry Response', sub3: 'Political Dynamics' },
+              economic: { title: 'Market & Economic Analysis', sub1: 'Market Dynamics', sub2: 'Supply Chain & Trade Implications', sub3: 'Policy Responses' },
+            }
+            const l = labels[et] || labels.geopolitical
+            // Support both old field names (regional_dynamics etc) and new (primary_analysis etc)
+            const f1 = ctx.primary_analysis || ctx.regional_dynamics
+            const f2 = ctx.secondary_analysis || ctx.international_implications
+            const f3 = ctx.power_dynamics || ctx.power_balance_analysis
+            return (
+              <MemoSection title={l.title} icon={Globe}>
+                <div className="space-y-5">
+                  {f1 && <div><SubHeading>{l.sub1}</SubHeading><ProseBlock text={f1} /></div>}
+                  {f2 && <div><SubHeading>{l.sub2}</SubHeading><ProseBlock text={f2} /></div>}
+                  {f3 && <div><SubHeading>{l.sub3}</SubHeading><ProseBlock text={f3} /></div>}
+                </div>
+              </MemoSection>
+            )
+          })()}
 
           {/* Stakeholder Analysis */}
           {report.research_data?.stakeholder_analysis && (

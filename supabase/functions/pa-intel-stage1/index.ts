@@ -88,9 +88,16 @@ ${impactResearch}
 4. MEDIA NARRATIVE & PUBLIC OPINION:
 ${mediaResearch}
 
-Based STRICTLY on the research above, generate Stage 1 of a geopolitical intelligence memo. Every claim must trace back to the research data. Do not invent facts.
+Based STRICTLY on the research above, generate Stage 1 of an intelligence memo. Every claim must trace back to the research data. Do not invent facts.
+
+IMPORTANT: First, classify this event into one of these types based on its nature:
+- "geopolitical" — wars, conflicts, sanctions, diplomatic crises, territorial disputes, military actions
+- "corporate" — executive changes, M&A, partnerships, corporate governance, industry competition, product launches
+- "regulatory" — new laws, regulations, court rulings, government policy changes, compliance requirements
+- "economic" — market shifts, trade disruptions, currency crises, supply chain issues, commodity price shocks
 
 {
+  "event_type": "geopolitical|corporate|regulatory|economic — pick the single best fit based on the triggering event",
   "situation_assessment": {
     "current_situation": "2-3 paragraphs on what is happening RIGHT NOW according to the research. Specific dates, actors, actions.",
     "historical_context": "2-3 paragraphs on how we got here, drawing from the research data.",

@@ -16,10 +16,12 @@ serve(async (req) => {
       industry,
       trigger_event,
       raw_research,
-      stage1  // Output from pa-intel-stage1
+      stage1,  // Output from pa-intel-stage1
+      event_type  // Classification from stage1: geopolitical, corporate, regulatory, economic
     } = await req.json()
 
     if (!stage1) throw new Error('stage1 data is required — pa-intel-stage1 must complete first')
+    const classifiedType = event_type || 'geopolitical' // default fallback
 
     const GEMINI_API_KEY = Deno.env.get('GOOGLE_API_KEY')
     if (!GEMINI_API_KEY) throw new Error('GOOGLE_API_KEY not configured')
@@ -54,8 +56,65 @@ Current Situation: ${curSitText}
 ${histText ? `Historical Context: ${histText}\n` : ''}Key Actors: ${actors}
 Stakeholders: ${stakeholders}`
 
-    const prompt = `You are a senior geopolitical intelligence analyst producing Stage 2 of an intelligence memo. Stage 1 (situation assessment, stakeholders) has already been completed and is provided as context.
+    // Build adaptive contextual analysis section based on event type
+    const contextualTemplates: Record<string, { section_name: string, fields: string, research_labels: string[] }> = {
+      geopolitical: {
+        section_name: 'geopolitical_context',
+        fields: `"primary_analysis": "2-3 paragraphs on broader regional power landscape, alliances, tensions — grounded in research.",
+    "secondary_analysis": "2-3 paragraphs on global spillover effects, which powers are involved, trade/diplomatic implications.",
+    "power_dynamics": "How this shifts the balance of power. Who gains, who loses."`,
+        research_labels: [
+          '1. GEOPOLITICAL CONTEXT & REGIONAL DYNAMICS',
+          '2. HISTORICAL PRECEDENTS',
+          '3. LEGAL & REGULATORY FRAMEWORK',
+          '4. ECONOMIC & SECTOR IMPACT'
+        ]
+      },
+      corporate: {
+        section_name: 'contextual_analysis',
+        fields: `"primary_analysis": "2-3 paragraphs on the competitive landscape — how this reshapes the industry, who benefits, who is threatened, market positioning shifts.",
+    "secondary_analysis": "2-3 paragraphs on governance, talent, and reputational implications — leadership dynamics, talent flight risk, investor/board reactions, public perception.",
+    "power_dynamics": "2-3 paragraphs on regulatory and policy exposure — what government or regulatory attention this draws, compliance implications, lobbying dynamics."`,
+        research_labels: [
+          '1. COMPETITIVE LANDSCAPE & INDUSTRY DYNAMICS',
+          '2. HISTORICAL PRECEDENTS & CONTEXT',
+          '3. REGULATORY & POLICY EXPOSURE',
+          '4. MARKET & ECONOMIC IMPACT'
+        ]
+      },
+      regulatory: {
+        section_name: 'contextual_analysis',
+        fields: `"primary_analysis": "2-3 paragraphs on the regulatory landscape — scope of the regulation, enforcement mechanisms, jurisdictional reach, precedents it sets.",
+    "secondary_analysis": "2-3 paragraphs on industry response patterns — compliance costs, strategic pivots, lobbying efforts, first-mover advantages.",
+    "power_dynamics": "2-3 paragraphs on political dynamics — which constituencies push for/against, partisan alignment, international regulatory coordination."`,
+        research_labels: [
+          '1. REGULATORY LANDSCAPE & LEGAL FRAMEWORK',
+          '2. HISTORICAL PRECEDENTS & COMPARABLE REGULATIONS',
+          '3. INDUSTRY & COMPLIANCE IMPACT',
+          '4. POLITICAL & ECONOMIC DYNAMICS'
+        ]
+      },
+      economic: {
+        section_name: 'contextual_analysis',
+        fields: `"primary_analysis": "2-3 paragraphs on market dynamics — price movements, supply/demand shifts, capital flows, investor sentiment.",
+    "secondary_analysis": "2-3 paragraphs on supply chain and trade implications — disruptions, substitution effects, geographic shifts, trade policy responses.",
+    "power_dynamics": "2-3 paragraphs on policy responses — central bank actions, fiscal measures, trade agreements, sanctions or tariff implications."`,
+        research_labels: [
+          '1. MARKET DYNAMICS & FINANCIAL IMPACT',
+          '2. HISTORICAL PRECEDENTS & ECONOMIC CYCLES',
+          '3. TRADE & SUPPLY CHAIN IMPLICATIONS',
+          '4. POLICY RESPONSES & REGULATORY ACTIONS'
+        ]
+      }
+    }
 
+    const template = contextualTemplates[classifiedType] || contextualTemplates.geopolitical
+    const sectionName = template.section_name
+    const labels = template.research_labels
+
+    const prompt = `You are a senior intelligence analyst producing Stage 2 of an intelligence memo. Stage 1 (situation assessment, stakeholders) has already been completed and is provided as context.
+
+EVENT TYPE: ${classifiedType.toUpperCase()}
 TODAY'S DATE: ${currentDate}
 
 MANDATORY FACTUAL GROUNDING:
@@ -78,25 +137,23 @@ TRIGGERING EVENT: ${trigger_event.title}
 
 ADDITIONAL RESEARCH DATA:
 
-1. GEOPOLITICAL CONTEXT & REGIONAL DYNAMICS:
+${labels[0]}:
 ${geopoliticalResearch}
 
-2. HISTORICAL PRECEDENTS:
+${labels[1]}:
 ${historicalResearch}
 
-3. LEGAL & REGULATORY FRAMEWORK:
+${labels[2]}:
 ${legalResearch}
 
-4. ECONOMIC & SECTOR IMPACT:
+${labels[3]}:
 ${impactResearch}
 
 Based on Stage 1 findings and the research above, generate Stage 2 as a JSON object with this structure:
 
 {
-  "geopolitical_context": {
-    "regional_dynamics": "2-3 paragraphs on broader regional power landscape, alliances, tensions — grounded in research.",
-    "international_implications": "2-3 paragraphs on global spillover effects, which powers are involved, trade/diplomatic implications.",
-    "power_balance_analysis": "How this shifts the balance of power. Who gains, who loses."
+  "${sectionName}": {
+    ${template.fields}
   },
 
   "scenario_analysis": {
