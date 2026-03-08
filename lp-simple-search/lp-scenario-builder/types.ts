@@ -95,6 +95,33 @@ export interface LPScenario {
     [aspect: string]: string[]      // aspect -> stakeholder IDs who care about it
   }
 
+  // Research context from PA intelligence (injected into simulation prompts)
+  research_context?: {
+    executive_summary?: string
+    situation?: {
+      current?: string
+      key_developments?: string[]
+      key_actors?: string[]
+    }
+    stakeholder_positions?: Array<{
+      name: string
+      type?: string
+      position?: string
+      interest?: string
+      influence?: string
+    }>
+    pressure_points?: string
+    impact?: {
+      direct?: string
+      second_order?: string
+    }
+    existing_scenarios?: Array<{
+      name?: string
+      probability?: string
+      description?: string
+    }>
+  }
+
   // Dialogue state (for incremental building)
   _dialogue_state?: {
     phase: 'initial' | 'probing' | 'stakeholders' | 'complete'
@@ -118,6 +145,9 @@ export interface ScenarioBuilderRequest {
   // Options
   skip_stakeholder_suggestions?: boolean
   scenario_type_hint?: ScenarioType
+
+  // Research context from PA intelligence reports
+  research_context?: LPScenario['research_context']
 }
 
 // Response from scenario builder

@@ -274,7 +274,8 @@ export default function ScenarioBuilder({ onRunSimulation }: ScenarioBuilderProp
             body: {
               organization_id: organization.id,
               initial_description: description,
-              ...(seed.type ? { scenario_type_hint: seed.type } : {})
+              ...(seed.type ? { scenario_type_hint: seed.type } : {}),
+              ...(seed.research_context ? { research_context: seed.research_context } : {})
             }
           }).then(({ data, error: invokeError }) => {
             if (invokeError || !data?.success) {

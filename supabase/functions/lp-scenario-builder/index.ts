@@ -341,6 +341,7 @@ serve(async (req) => {
         known_vulnerabilities: [],
         stakeholder_seed: {},
         aspect_mapping: {},
+        ...(body.research_context ? { research_context: body.research_context } : {}),
         _dialogue_state: {
           phase: 'probing',
           questions_asked: [],

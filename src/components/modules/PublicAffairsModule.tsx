@@ -676,13 +676,53 @@ function ReportDetailView({
       grouped[category].push(s.name)
     })
 
+    // Build condensed research context for grounded simulation
+    const rd = report.research_data
+    const researchContext: Record<string, any> = {}
+    if (rd?.executive_summary) {
+      researchContext.executive_summary = rd.executive_summary.substring(0, 1000)
+    }
+    if (rd?.situation_assessment) {
+      researchContext.situation = {
+        current: rd.situation_assessment.current_situation?.substring(0, 500),
+        key_developments: rd.situation_assessment.key_developments?.slice(0, 5)?.map((d: any) =>
+          typeof d === 'string' ? d : `${d.title || d.headline || ''}: ${d.summary || d.description || d.content || ''}`
+        ),
+        key_actors: rd.situation_assessment.key_actors?.slice(0, 8)?.map((a: any) =>
+          typeof a === 'string' ? a : `${a.name || ''} (${a.role || a.type || ''}): ${a.position || a.stance || a.description || ''}`
+        )
+      }
+    }
+    if (rd?.stakeholder_analysis) {
+      researchContext.stakeholder_positions = rd.stakeholder_analysis.stakeholders?.slice(0, 10)?.map((s: any) => ({
+        name: s.name, type: s.type, position: s.position || s.stance,
+        interest: s.interest || s.motivation, influence: s.influence
+      }))
+      if (rd.stakeholder_analysis.pressure_points) {
+        researchContext.pressure_points = rd.stakeholder_analysis.pressure_points.substring(0, 500)
+      }
+    }
+    if (rd?.impact_assessment) {
+      researchContext.impact = {
+        direct: rd.impact_assessment.direct_impacts?.substring(0, 500),
+        second_order: rd.impact_assessment.second_order_effects?.substring(0, 500)
+      }
+    }
+    if (rd?.scenario_analysis?.scenarios) {
+      researchContext.existing_scenarios = rd.scenario_analysis.scenarios.slice(0, 3).map((s: any) => ({
+        name: s.name || s.title, probability: s.probability || s.likelihood,
+        description: (s.description || s.summary || '').substring(0, 200)
+      }))
+    }
+
     const scenarioSeed = {
       type: 'policy_change',
       action: {
         what: report.trigger_event.title,
-        rationale: [report.research_data?.executive_summary?.substring(0, 200) || '']
+        rationale: [rd?.executive_summary?.substring(0, 200) || '']
       },
-      stakeholder_seed: grouped
+      stakeholder_seed: grouped,
+      research_context: researchContext
     }
     sessionStorage.setItem('pa_simulation_seed', JSON.stringify(scenarioSeed))
     window.location.href = '/lp?view=scenario&from=pa'

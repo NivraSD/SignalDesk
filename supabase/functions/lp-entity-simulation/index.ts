@@ -193,8 +193,28 @@ Vulnerabilities: ${JSON.stringify(entityProfile.vulnerabilities || {}, null, 2)}
 Current Context: ${JSON.stringify(entityProfile.current_context || {}, null, 2)}
 
 ## Scenario
-${JSON.stringify(scenario, null, 2)}
+${JSON.stringify(scenario.scenario_data?.action || scenario.action || scenario, null, 2)}
+`
 
+  // Inject research intelligence if available
+  const researchCtx = scenario.scenario_data?.research_context || scenario.research_context
+  if (researchCtx) {
+    prompt += `
+## Intelligence Context (from research)
+This scenario is grounded in real intelligence. Use this to inform your response — reference actual developments, actors, and dynamics.
+
+${researchCtx.executive_summary ? `### Executive Summary\n${researchCtx.executive_summary}\n` : ''}
+${researchCtx.situation?.current ? `### Current Situation\n${researchCtx.situation.current}\n` : ''}
+${researchCtx.situation?.key_developments?.length ? `### Key Developments\n${researchCtx.situation.key_developments.map((d: string) => `- ${d}`).join('\n')}\n` : ''}
+${researchCtx.situation?.key_actors?.length ? `### Key Actors\n${researchCtx.situation.key_actors.map((a: string) => `- ${a}`).join('\n')}\n` : ''}
+${researchCtx.stakeholder_positions?.length ? `### Known Stakeholder Positions\n${researchCtx.stakeholder_positions.map((s: any) => `- **${s.name}** (${s.type || 'unknown'}): ${s.position || 'position unknown'}${s.interest ? ` | Interest: ${s.interest}` : ''}`).join('\n')}\n` : ''}
+${researchCtx.pressure_points ? `### Pressure Points\n${researchCtx.pressure_points}\n` : ''}
+${researchCtx.impact?.direct ? `### Projected Impact\nDirect: ${researchCtx.impact.direct}\n${researchCtx.impact.second_order ? `Second-order: ${researchCtx.impact.second_order}` : ''}\n` : ''}
+${researchCtx.existing_scenarios?.length ? `### Analyst Scenarios\n${researchCtx.existing_scenarios.map((s: any) => `- **${s.name}** (${s.probability || 'unknown probability'}): ${s.description}`).join('\n')}\n` : ''}
+`
+  }
+
+  prompt += `
 ## Simulation Context
 Round: ${roundNumber}
 `
@@ -234,6 +254,7 @@ Consider:
 3. Who in the discourse are you aligned with? Opposed to?
 4. What narrative serves YOUR interests?
 5. Should you respond at all, or stay silent?
+6. If intelligence context was provided above, ground your response in those REAL developments and actor positions — don't invent facts that contradict the research.
 
 ## Response Decision Options
 - **respond**: Active, substantive response
