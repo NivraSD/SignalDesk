@@ -252,39 +252,54 @@ export default function ScenarioBuilder({ onRunSimulation }: ScenarioBuilderProp
   const [loadingScenarios, setLoadingScenarios] = useState(false)
 
   // Check for pre-populated seed from Public Affairs simulation
+  // Auto-submit to backend to start dialogue flow
   useEffect(() => {
     try {
       const seedStr = sessionStorage.getItem('pa_simulation_seed')
-      if (seedStr) {
+      if (seedStr && organization?.id) {
         sessionStorage.removeItem('pa_simulation_seed')
         const seed = JSON.parse(seedStr)
-        // Pre-populate the initial description with the scenario action
-        if (seed.action?.what) {
-          setInitialDescription(seed.action.what + (seed.action.rationale?.[0] ? ` — ${seed.action.rationale[0]}` : ''))
-        }
-        if (seed.type) {
-          setDetectedType(seed.type as ScenarioType)
-        }
-        // Pre-populate stakeholder seed if available
-        if (seed.stakeholder_seed) {
-          setScenario(prev => ({
-            ...prev,
-            type: (seed.type || 'policy_change') as ScenarioType,
-            action: { what: seed.action?.what || '' },
-            stakeholder_seed: seed.stakeholder_seed,
-          }))
-          setSuggestions({
-            stakeholders: Object.entries(seed.stakeholder_seed).map(([category, entities]) => ({
-              category: category as StakeholderCategory,
-              entities: entities as string[]
-            }))
+        const description = seed.action?.what
+          ? seed.action.what + (seed.action.rationale?.[0] ? ` — ${seed.action.rationale[0]}` : '')
+          : ''
+
+        if (description) {
+          // Set initial state for immediate visual feedback
+          if (seed.type) setDetectedType(seed.type as ScenarioType)
+          setInitialDescription(description)
+
+          // Auto-submit to backend to start the scenario building dialogue
+          setLoading(true)
+          supabase.functions.invoke('lp-scenario-builder', {
+            body: {
+              organization_id: organization.id,
+              initial_description: description,
+              ...(seed.type ? { scenario_type_hint: seed.type } : {})
+            }
+          }).then(({ data, error: invokeError }) => {
+            if (invokeError || !data?.success) {
+              setError(invokeError?.message || data?.error || 'Failed to start scenario from research')
+              return
+            }
+            const response = data as ScenarioBuilderResponse
+            setScenario(response.scenario)
+            setPhase(response.phase)
+            setNextQuestion(response.next_question || null)
+            setDetectedType(response.detected_type || null)
+            setConfidence(response.confidence || 0)
+            setSuggestions(response.suggestions || null)
+            setInitialDescription('')
+          }).catch((err: any) => {
+            setError(err.message || 'Failed to start scenario')
+          }).finally(() => {
+            setLoading(false)
           })
         }
       }
     } catch (err) {
       console.error('Error loading PA simulation seed:', err)
     }
-  }, [])
+  }, [organization?.id])
 
   // Load existing scenarios
   useEffect(() => {
