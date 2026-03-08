@@ -356,19 +356,22 @@ export default function EntityProfileTester() {
     loadOrgEntities()
   }, [organization?.id])
 
-  // Load all existing profiles globally — check if a profile exists regardless of org or expiry
+  // Load all existing profiles globally — lightweight check (no profile JSONB)
   useEffect(() => {
     const loadAllProfiles = async () => {
       setLoadingGlobalProfiles(true)
       try {
-        const { data } = await supabase
+        // Only fetch metadata — NOT the huge profile JSONB column
+        const { data, error } = await supabase
           .from('lp_entity_profiles')
-          .select('entity_name, entity_type, data_tier, data_sources, confidence_score, model_used, version, expires_at, built_at, profile')
+          .select('entity_name, entity_type, data_tier, data_sources, confidence_score, model_used, version, expires_at, built_at')
           .order('built_at', { ascending: false })
+
+        console.log(`[LP] Global profiles loaded: ${data?.length || 0} entities${error ? ` (error: ${error.message})` : ''}`)
 
         if (data) {
           setGlobalProfiles(new Set(data.map(p => p.entity_name.toLowerCase())))
-          setGlobalProfileData(data)
+          setGlobalProfileData(data.map(p => ({ ...p, profile: null })) as any)
         }
       } catch (err) {
         console.error('Failed to load profiles:', err)
@@ -380,10 +383,10 @@ export default function EntityProfileTester() {
     loadAllProfiles()
   }, [])
 
-  const getExistingProfile = (name: string, type: string): ExistingProfile | undefined => {
-    // Check org-specific profiles first, then fall back to global profiles
+  const getExistingProfile = (name: string, _type: string): ExistingProfile | undefined => {
+    // Check org-specific profiles first (these have full profile data)
     const orgProfile = existingProfiles.find(
-      p => p.entity_name.toLowerCase() === name.toLowerCase() && p.entity_type === type
+      p => p.entity_name.toLowerCase() === name.toLowerCase()
     )
     if (orgProfile) return orgProfile
 
@@ -393,16 +396,26 @@ export default function EntityProfileTester() {
     )
   }
 
-  const refreshGlobalProfiles = async () => {
-    // Don't filter by expires_at — we want to know if a profile EXISTS at all
-    // (expired profiles still have useful data, just need a refresh)
+  // Load full profile on-demand for viewing
+  const loadFullProfile = async (entityName: string): Promise<ExistingProfile | null> => {
     const { data } = await supabase
       .from('lp_entity_profiles')
       .select('entity_name, entity_type, data_tier, data_sources, confidence_score, model_used, version, expires_at, built_at, profile')
+      .ilike('entity_name', entityName)
+      .order('built_at', { ascending: false })
+      .limit(1)
+      .single()
+    return data
+  }
+
+  const refreshGlobalProfiles = async () => {
+    const { data } = await supabase
+      .from('lp_entity_profiles')
+      .select('entity_name, entity_type, data_tier, data_sources, confidence_score, model_used, version, expires_at, built_at')
       .order('built_at', { ascending: false })
     if (data) {
       setGlobalProfiles(new Set(data.map(p => p.entity_name.toLowerCase())))
-      setGlobalProfileData(data)
+      setGlobalProfileData(data.map(p => ({ ...p, profile: null })) as any)
     }
   }
 
@@ -416,12 +429,22 @@ export default function EntityProfileTester() {
   }
 
   // View an already-built profile directly from DB — no edge function call
-  const viewProfile = (existing: ExistingProfile) => {
+  const viewProfile = async (existing: ExistingProfile) => {
     setEntityName(existing.entity_name)
     setEntityType(existing.entity_type)
+
+    // If profile data wasn't loaded (global lightweight query), fetch it now
+    let profileData = existing.profile
+    if (!profileData) {
+      setLoading(true)
+      const full = await loadFullProfile(existing.entity_name)
+      profileData = full?.profile || null
+      setLoading(false)
+    }
+
     setResult({
       success: true,
-      profile: existing.profile,
+      profile: profileData,
       metadata: {
         data_tier: existing.data_tier as 'rich' | 'medium' | 'cold_start',
         data_sources: existing.data_sources || [],

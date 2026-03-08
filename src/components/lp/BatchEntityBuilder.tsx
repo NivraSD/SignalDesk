@@ -297,11 +297,10 @@ export default function BatchEntityBuilder() {
     const loadAllProfiles = async () => {
       setLoadingProfiles(true)
       try {
-        // Get all non-expired profiles - we just care if a profile exists for this entity
+        // Get all profiles - we just care if a profile exists for this entity
         const { data } = await supabase
           .from('lp_entity_profiles')
           .select('entity_name')
-          .gt('expires_at', new Date().toISOString())
 
         if (data) {
           setGlobalProfiles(new Set(data.map(p => p.entity_name.toLowerCase())))
@@ -401,7 +400,6 @@ export default function BatchEntityBuilder() {
         .from('lp_entity_profiles')
         .select('*')
         .ilike('entity_name', entityName)
-        .gt('expires_at', new Date().toISOString())
         .order('built_at', { ascending: false })
         .limit(1)
         .single()
@@ -488,8 +486,7 @@ export default function BatchEntityBuilder() {
     const { data: refreshed } = await supabase
       .from('lp_entity_profiles')
       .select('entity_name')
-      .gt('expires_at', new Date().toISOString())
-
+      
     if (refreshed) {
       setGlobalProfiles(new Set(refreshed.map(p => p.entity_name.toLowerCase())))
     }
@@ -529,8 +526,7 @@ export default function BatchEntityBuilder() {
         const { data: refreshed } = await supabase
           .from('lp_entity_profiles')
           .select('entity_name')
-          .gt('expires_at', new Date().toISOString())
-
+          
         if (refreshed) {
           setGlobalProfiles(new Set(refreshed.map(p => p.entity_name.toLowerCase())))
         }
