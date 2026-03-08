@@ -140,14 +140,17 @@ export class PublicAffairsService {
 
       onProgress?.('intelligence-gathering', 'running')
 
-      // Run 3 focused research queries in parallel (fast mode to avoid timeouts)
+      // Run 5 focused research queries in parallel — each targets a distinct research stream
       const triggerEvent = report.trigger_event
       const title = triggerEvent.title
+      const content = triggerEvent.content || ''
 
       const queries = [
-        { key: 'situation', query: `${title} latest developments timeline 2025 2026` },
-        { key: 'stakeholders', query: `${title} key stakeholders actors power dynamics ${industry} economic impact` },
-        { key: 'geopolitical', query: `${title} geopolitical context legal regulatory precedents media narrative` },
+        { key: 'situation', query: `${title} latest news developments what is happening now 2026` },
+        { key: 'stakeholders', query: `${title} key players leaders governments factions who is involved positions alliances` },
+        { key: 'geopolitical', query: `${title} geopolitical implications regional power dynamics international response` },
+        { key: 'impact', query: `${title} economic impact market consequences sanctions trade disruption global effects` },
+        { key: 'historical', query: `${title} historical context background how did this start timeline of events` },
       ]
 
       const queryResults = await Promise.allSettled(
@@ -166,16 +169,16 @@ export class PublicAffairsService {
       onProgress?.('intelligence-gathering', 'completed')
       onProgress?.('synthesis', 'running')
 
-      // Extract results keyed by name — map 3 queries into the 7 research streams
+      // Map each query to its own research stream — no reuse
       const getResult = (i: number) => queryResults[i]?.status === 'fulfilled' ? queryResults[i].value.data : null
       const rawResearch: Record<string, any> = {
         situation: getResult(0),
         stakeholders: getResult(1),
-        impact: getResult(1),       // reuse stakeholders+impact query
         geopolitical: getResult(2),
-        historical: getResult(2),   // reuse geopolitical+legal query
-        legal: getResult(2),
-        media: getResult(2),
+        impact: getResult(3),
+        historical: getResult(4),
+        legal: getResult(2),     // geopolitical query covers legal/regulatory too
+        media: getResult(0),     // situation query covers media narrative too
       }
 
       // Stage 1: Situation Assessment + Stakeholder Analysis

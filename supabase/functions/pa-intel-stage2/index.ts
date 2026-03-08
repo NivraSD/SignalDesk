@@ -19,8 +19,10 @@ serve(async (req) => {
       stage1  // Output from pa-intel-stage1
     } = await req.json()
 
-    const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
-    if (!ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY not configured')
+    if (!stage1) throw new Error('stage1 data is required — pa-intel-stage1 must complete first')
+
+    const GEMINI_API_KEY = Deno.env.get('GOOGLE_API_KEY')
+    if (!GEMINI_API_KEY) throw new Error('GOOGLE_API_KEY not configured')
 
     const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
 
@@ -36,13 +38,23 @@ serve(async (req) => {
     const impactResearch = extractText(raw_research?.impact)
 
     // Compact Stage 1 summary to feed as context
-    const stage1Summary = `STAGE 1 FINDINGS (treat as established facts for this analysis):
-Executive Summary: ${stage1.executive_summary?.substring(0, 800) || 'N/A'}
-Current Situation: ${stage1.situation_assessment?.current_situation?.substring(0, 600) || 'N/A'}
-Key Actors: ${stage1.situation_assessment?.key_actors?.map((a: any) => `${a.name} (${a.role}) - ${a.status || 'active'}`).join('; ') || 'N/A'}
-Stakeholders: ${stage1.stakeholder_analysis?.stakeholders?.map((s: any) => `${s.name}: ${s.position?.substring(0, 100)}`).join('; ') || 'N/A'}`
+    const execSum = typeof stage1.executive_summary === 'string' ? stage1.executive_summary.substring(0, 800) : 'N/A'
+    const curSit = stage1.situation_assessment?.current_situation
+    const curSitText = typeof curSit === 'string' ? curSit.substring(0, 600) : 'N/A'
+    const actors = Array.isArray(stage1.situation_assessment?.key_actors)
+      ? stage1.situation_assessment.key_actors.map((a: any) => `${a.name} (${a.role}) - ${a.status || 'active'}`).join('; ')
+      : 'N/A'
+    const stakeholders = Array.isArray(stage1.stakeholder_analysis?.stakeholders)
+      ? stage1.stakeholder_analysis.stakeholders.map((s: any) => `${s.name}: ${typeof s.position === 'string' ? s.position.substring(0, 100) : ''}`).join('; ')
+      : 'N/A'
 
-    const systemPrompt = `You are a senior geopolitical intelligence analyst producing Stage 2 of an intelligence memo. Stage 1 (situation assessment, stakeholders) has already been completed and is provided as context.
+    const stage1Summary = `STAGE 1 FINDINGS (treat as established facts for this analysis):
+Executive Summary: ${execSum}
+Current Situation: ${curSitText}
+Key Actors: ${actors}
+Stakeholders: ${stakeholders}`
+
+    const prompt = `You are a senior geopolitical intelligence analyst producing Stage 2 of an intelligence memo. Stage 1 (situation assessment, stakeholders) has already been completed and is provided as context.
 
 TODAY'S DATE: ${currentDate}
 
@@ -60,9 +72,7 @@ CRITICAL RULES:
 5. Every prose section must be multi-paragraph. Connect insights back to ${organization_name}.
 6. Do NOT invent events, statistics, or developments not in the research.
 
-You are a JSON generator. Return ONLY valid JSON. No markdown fencing, no preamble.`
-
-    const userPrompt = `${stage1Summary}
+${stage1Summary}
 
 TRIGGERING EVENT: ${trigger_event.title}
 
@@ -80,7 +90,7 @@ ${legalResearch}
 4. ECONOMIC & SECTOR IMPACT:
 ${impactResearch}
 
-Based on Stage 1 findings and the research above, generate Stage 2:
+Based on Stage 1 findings and the research above, generate Stage 2 as a JSON object with this structure:
 
 {
   "geopolitical_context": {
@@ -143,47 +153,73 @@ Based on Stage 1 findings and the research above, generate Stage 2:
   }
 }
 
-Return ONLY valid JSON.`
+Return ONLY valid JSON. No markdown fencing, no preamble.`
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 6000,
-        temperature: 0.3,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: userPrompt }]
-      })
-    })
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.3,
+            maxOutputTokens: 12000,
+            responseMimeType: 'application/json'
+          }
+        })
+      }
+    )
 
     if (!response.ok) {
       const errText = await response.text()
-      throw new Error(`Anthropic API error: ${response.status} ${errText}`)
+      throw new Error(`Gemini API error: ${response.status} ${errText}`)
     }
 
     const result = await response.json()
-    const content = result.content?.[0]?.text || ''
+    const content = result.candidates?.[0]?.content?.parts?.[0]?.text || ''
+    const finishReason = result.candidates?.[0]?.finishReason || 'unknown'
+
+    if (!content) {
+      throw new Error(`Empty response from Gemini (finishReason: ${finishReason})`)
+    }
 
     let stage2Data
     let cleaned = content.trim().replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/, '').trim()
 
     try {
       stage2Data = JSON.parse(cleaned)
-    } catch {
+    } catch (parseErr) {
+      // Try extracting JSON object with string-aware brace matching
       const start = cleaned.indexOf('{')
       if (start === -1) throw new Error('No JSON found in Stage 2 response')
       let depth = 0, end = -1
+      let inString = false, escaped = false
       for (let i = start; i < cleaned.length; i++) {
-        if (cleaned[i] === '{') depth++
-        else if (cleaned[i] === '}') { depth--; if (depth === 0) { end = i + 1; break } }
+        const ch = cleaned[i]
+        if (escaped) { escaped = false; continue }
+        if (ch === '\\') { escaped = true; continue }
+        if (ch === '"') { inString = !inString; continue }
+        if (inString) continue
+        if (ch === '{') depth++
+        else if (ch === '}') { depth--; if (depth === 0) { end = i + 1; break } }
       }
-      if (end === -1) throw new Error('Incomplete JSON in Stage 2')
-      stage2Data = JSON.parse(cleaned.substring(start, end))
+      if (end === -1) {
+        // Truncated JSON — try to repair by closing open braces
+        let repair = cleaned.substring(start)
+        repair = repair.replace(/,\s*"[^"]*"?\s*:?\s*"?[^"]*$/, '')
+        const opens = (repair.match(/{/g) || []).length
+        const closes = (repair.match(/}/g) || []).length
+        for (let i = 0; i < opens - closes; i++) repair += '}'
+        try {
+          stage2Data = JSON.parse(repair)
+          console.log('Stage 2: repaired truncated JSON')
+        } catch {
+          throw new Error(`Incomplete JSON in Stage 2 (content length: ${content.length}, finishReason: ${finishReason})`)
+        }
+      } else {
+        stage2Data = JSON.parse(cleaned.substring(start, end))
+      }
     }
 
     console.log('Stage 2 complete:', Object.keys(stage2Data).join(', '))

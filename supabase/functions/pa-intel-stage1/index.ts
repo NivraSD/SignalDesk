@@ -19,8 +19,8 @@ serve(async (req) => {
       raw_research
     } = await req.json()
 
-    const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
-    if (!ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY not configured')
+    const GEMINI_API_KEY = Deno.env.get('GOOGLE_API_KEY')
+    if (!GEMINI_API_KEY) throw new Error('GOOGLE_API_KEY not configured')
 
     const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
 
@@ -40,7 +40,7 @@ serve(async (req) => {
       ? `Organization: ${organization_name}\nIndustry: ${industry}\nProfile: ${JSON.stringify(organization_profile).substring(0, 1500)}`
       : `Organization: ${organization_name}\nIndustry: ${industry}`
 
-    const systemPrompt = `You are a senior geopolitical intelligence analyst at a top-tier advisory firm. You produce intelligence memos grounded STRICTLY in the research data provided.
+    const prompt = `You are a senior geopolitical intelligence analyst at a top-tier advisory firm. You produce intelligence memos grounded STRICTLY in the research data provided.
 
 TODAY'S DATE: ${currentDate}
 
@@ -66,9 +66,7 @@ CRITICAL ANTI-HALLUCINATION RULES:
 6. If you are unsure about something, say "based on available intelligence" rather than fabricating details.
 7. Name specific actors, cite specific events FROM THE RESEARCH. Do not generalize.
 
-You are a JSON generator. Return ONLY valid JSON. No markdown fencing, no preamble, no explanation.`
-
-    const userPrompt = `${orgContext}
+${orgContext}
 
 TRIGGERING EVENT:
 Title: ${trigger_event.title}
@@ -109,45 +107,50 @@ Based STRICTLY on the research above, generate Stage 1 of a geopolitical intelli
   "stakeholder_analysis": {
     "stakeholders": [
       {
-        "name": "Stakeholder from research",
-        "type": "government/corporate/NGO/media/multilateral",
+        "name": "Stakeholder from research — governments, leaders, factions, international bodies, militaries. Do NOT include ${organization_name} itself as a stakeholder.",
+        "type": "government/military/multilateral/NGO/corporate",
         "position": "Current stance per research",
         "motivations": "What drives their behavior per research",
         "constraints": "What limits them",
         "likely_moves": "Probable next actions based on research evidence",
-        "relationship_to_client": "How they relate to ${organization_name}"
+        "relationship_to_client": "How this stakeholder's actions affect ${organization_name}"
       }
     ],
-    "alignment_map": "Who aligns with whom based on the research.",
-    "pressure_points": "Where leverage exists for ${organization_name}."
+    "alignment_map": "Who aligns with whom based on the research. Map alliances, rivalries, and blocs.",
+    "pressure_points": "Where leverage or vulnerability exists that ${organization_name} should monitor."
   }
 }
 
-Return ONLY valid JSON.`
+Return ONLY valid JSON. No markdown fencing, no preamble, no explanation.`
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 5000,
-        temperature: 0.3,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: userPrompt }]
-      })
-    })
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.3,
+            maxOutputTokens: 8000,
+            responseMimeType: 'application/json'
+          }
+        })
+      }
+    )
 
     if (!response.ok) {
       const errText = await response.text()
-      throw new Error(`Anthropic API error: ${response.status} ${errText}`)
+      throw new Error(`Gemini API error: ${response.status} ${errText}`)
     }
 
     const result = await response.json()
-    const content = result.content?.[0]?.text || ''
+    const content = result.candidates?.[0]?.content?.parts?.[0]?.text || ''
+    const finishReason = result.candidates?.[0]?.finishReason || 'unknown'
+
+    if (!content) {
+      throw new Error(`Empty response from Gemini (finishReason: ${finishReason})`)
+    }
 
     // Parse JSON
     let stage1Data
@@ -160,11 +163,17 @@ Return ONLY valid JSON.`
       const start = cleaned.indexOf('{')
       if (start === -1) throw new Error('No JSON found in Stage 1 response')
       let depth = 0, end = -1
+      let inString = false, escaped = false
       for (let i = start; i < cleaned.length; i++) {
-        if (cleaned[i] === '{') depth++
-        else if (cleaned[i] === '}') { depth--; if (depth === 0) { end = i + 1; break } }
+        const ch = cleaned[i]
+        if (escaped) { escaped = false; continue }
+        if (ch === '\\') { escaped = true; continue }
+        if (ch === '"') { inString = !inString; continue }
+        if (inString) continue
+        if (ch === '{') depth++
+        else if (ch === '}') { depth--; if (depth === 0) { end = i + 1; break } }
       }
-      if (end === -1) throw new Error('Incomplete JSON in Stage 1')
+      if (end === -1) throw new Error(`Incomplete JSON in Stage 1 (content length: ${content.length}, finishReason: ${finishReason})`)
       stage1Data = JSON.parse(cleaned.substring(start, end))
     }
 
