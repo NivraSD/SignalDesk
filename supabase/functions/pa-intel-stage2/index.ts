@@ -38,20 +38,20 @@ serve(async (req) => {
     const impactResearch = extractText(raw_research?.impact)
 
     // Compact Stage 1 summary to feed as context
-    const execSum = typeof stage1.executive_summary === 'string' ? stage1.executive_summary.substring(0, 800) : 'N/A'
     const curSit = stage1.situation_assessment?.current_situation
-    const curSitText = typeof curSit === 'string' ? curSit.substring(0, 600) : 'N/A'
+    const curSitText = typeof curSit === 'string' ? curSit.substring(0, 800) : 'N/A'
+    const histCtx = stage1.situation_assessment?.historical_context
+    const histText = typeof histCtx === 'string' ? histCtx.substring(0, 400) : ''
     const actors = Array.isArray(stage1.situation_assessment?.key_actors)
-      ? stage1.situation_assessment.key_actors.map((a: any) => `${a.name} (${a.role}) - ${a.status || 'active'}`).join('; ')
+      ? stage1.situation_assessment.key_actors.map((a: any) => `${a.name} (${a.role}) - ${a.position || ''} [${a.status || 'active'}]`).join('; ')
       : 'N/A'
     const stakeholders = Array.isArray(stage1.stakeholder_analysis?.stakeholders)
-      ? stage1.stakeholder_analysis.stakeholders.map((s: any) => `${s.name}: ${typeof s.position === 'string' ? s.position.substring(0, 100) : ''}`).join('; ')
+      ? stage1.stakeholder_analysis.stakeholders.map((s: any) => `${s.name} (${s.type || ''}): ${typeof s.position === 'string' ? s.position.substring(0, 100) : ''}`).join('; ')
       : 'N/A'
 
     const stage1Summary = `STAGE 1 FINDINGS (treat as established facts for this analysis):
-Executive Summary: ${execSum}
 Current Situation: ${curSitText}
-Key Actors: ${actors}
+${histText ? `Historical Context: ${histText}\n` : ''}Key Actors: ${actors}
 Stakeholders: ${stakeholders}`
 
     const prompt = `You are a senior geopolitical intelligence analyst producing Stage 2 of an intelligence memo. Stage 1 (situation assessment, stakeholders) has already been completed and is provided as context.

@@ -214,7 +214,6 @@ export class PublicAffairsService {
       // Merge stages into unified research data
       const synthesisResult = {
         research_data: {
-          executive_summary: stage1Result.stage1.executive_summary,
           situation_assessment: stage1Result.stage1.situation_assessment,
           stakeholder_analysis: stage1Result.stage1.stakeholder_analysis,
           geopolitical_context: stage2Result.stage2.geopolitical_context,

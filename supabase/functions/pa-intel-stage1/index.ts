@@ -19,8 +19,8 @@ serve(async (req) => {
       raw_research
     } = await req.json()
 
-    const GEMINI_API_KEY = Deno.env.get('GOOGLE_API_KEY')
-    if (!GEMINI_API_KEY) throw new Error('GOOGLE_API_KEY not configured')
+    const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
+    if (!ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY not configured')
 
     const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
 
@@ -91,8 +91,6 @@ ${mediaResearch}
 Based STRICTLY on the research above, generate Stage 1 of a geopolitical intelligence memo. Every claim must trace back to the research data. Do not invent facts.
 
 {
-  "executive_summary": "3-4 paragraphs. What happened (per the research), why it matters for ${organization_name}, what is at stake, and the single most important thing to watch. Ground every sentence in the research data.",
-
   "situation_assessment": {
     "current_situation": "2-3 paragraphs on what is happening RIGHT NOW according to the research. Specific dates, actors, actions.",
     "historical_context": "2-3 paragraphs on how we got here, drawing from the research data.",
@@ -123,33 +121,32 @@ Based STRICTLY on the research above, generate Stage 1 of a geopolitical intelli
 
 Return ONLY valid JSON. No markdown fencing, no preamble, no explanation.`
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.3,
-            maxOutputTokens: 8000,
-            responseMimeType: 'application/json'
-          }
-        })
-      }
-    )
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 8000,
+        temperature: 0.3,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    })
 
     if (!response.ok) {
       const errText = await response.text()
-      throw new Error(`Gemini API error: ${response.status} ${errText}`)
+      throw new Error(`Anthropic API error: ${response.status} ${errText}`)
     }
 
     const result = await response.json()
-    const content = result.candidates?.[0]?.content?.parts?.[0]?.text || ''
-    const finishReason = result.candidates?.[0]?.finishReason || 'unknown'
+    const content = result.content?.[0]?.text || ''
+    const stopReason = result.stop_reason || 'unknown'
 
     if (!content) {
-      throw new Error(`Empty response from Gemini (finishReason: ${finishReason})`)
+      throw new Error(`Empty response from Claude (stop_reason: ${stopReason})`)
     }
 
     // Parse JSON
@@ -173,7 +170,7 @@ Return ONLY valid JSON. No markdown fencing, no preamble, no explanation.`
         if (ch === '{') depth++
         else if (ch === '}') { depth--; if (depth === 0) { end = i + 1; break } }
       }
-      if (end === -1) throw new Error(`Incomplete JSON in Stage 1 (content length: ${content.length}, finishReason: ${finishReason})`)
+      if (end === -1) throw new Error(`Incomplete JSON in Stage 1 (content length: ${content.length}, stopReason: ${stopReason})`)
       stage1Data = JSON.parse(cleaned.substring(start, end))
     }
 
