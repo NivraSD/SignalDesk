@@ -400,54 +400,85 @@ export default function PublicAffairsModule() {
           </motion.div>
         )}
 
-        {/* Latest Intelligence Synthesis */}
+        {/* Key Developments from Latest Intelligence */}
         {synthesis && !showNewResearch && (() => {
           const synthData = synthesis?.synthesis_data?.synthesis || synthesis?.synthesis || synthesis
           const developments = synthData?.key_developments || []
           if (developments.length === 0) return null
           return (
             <div className="mb-8">
-              <div className="flex items-center gap-2 mb-3">
-                <Sparkles className="w-4 h-4" style={{ color: '#60a5fa' }} />
+              <div className="flex items-center gap-2 mb-4">
+                <TrendingUp className="w-4 h-4 text-[var(--burnt-orange)]" />
                 <h3 className="text-sm font-semibold uppercase tracking-wider" style={{ color: '#a1a1aa', fontFamily: 'var(--font-display)' }}>
-                  From Latest Intelligence
+                  Key Developments
                 </h3>
               </div>
-              <div className="grid gap-2">
-                {developments.slice(0, 5).map((dev: any, i: number) => (
-                  <div
-                    key={i}
-                    className="flex items-center justify-between gap-3 p-3 rounded-lg border transition-all hover:border-[var(--grey-600)]"
-                    style={{ backgroundColor: 'rgba(255,255,255,0.02)', borderColor: 'var(--grey-800)' }}
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-white font-medium truncate">
-                        {dev.event || dev.headline || dev.title}
-                      </p>
-                      {(dev.pr_implication || dev.impact) && (
-                        <p className="text-xs mt-0.5 truncate" style={{ color: '#71717a' }}>
-                          {dev.pr_implication || dev.impact}
-                        </p>
+              <div className="space-y-3">
+                {developments.slice(0, 6).map((dev: any, i: number) => {
+                  const implication = dev.pr_implication || dev.impact || dev.details
+                  return (
+                    <div key={i} className="bg-[var(--grey-800)] rounded-lg p-4">
+                      <div className="flex items-start gap-3 mb-2">
+                        {dev.category && (
+                          <span className="px-2 py-1 text-xs rounded bg-[var(--burnt-orange-muted)] text-[var(--burnt-orange)]">
+                            {dev.category.replace(/_/g, ' ')}
+                          </span>
+                        )}
+                        {dev.recency && (
+                          <span className={`px-2 py-1 text-xs rounded ${
+                            dev.recency === 'today'
+                              ? 'bg-green-900/30 text-green-400'
+                              : dev.recency === 'this_week'
+                              ? 'bg-blue-900/30 text-blue-400'
+                              : 'bg-[var(--grey-700)] text-[var(--grey-400)]'
+                          }`}>
+                            {dev.recency === 'today' ? 'Today' : dev.recency === 'this_week' ? 'This Week' : dev.recency}
+                          </span>
+                        )}
+                        {dev.entity && (
+                          <span className="px-2 py-1 text-xs rounded bg-[var(--grey-700)] text-[var(--grey-300)]">
+                            {dev.entity}
+                          </span>
+                        )}
+                      </div>
+                      <h4 className="text-white font-medium mb-2">{dev.event || dev.headline || dev.title}</h4>
+                      {implication && (
+                        <div className="mb-2">
+                          <span className="text-[var(--burnt-orange)] text-xs font-medium uppercase tracking-wide">PR Implication:</span>
+                          <p className="text-[var(--grey-300)] text-sm mt-1">{implication}</p>
+                        </div>
                       )}
+                      {dev.source && (
+                        <div className="mt-3 pt-2 border-t border-[var(--grey-700)] text-xs text-[var(--grey-500)]">
+                          Source:{' '}
+                          {dev.url && dev.url.startsWith('http') ? (
+                            <a href={dev.url} target="_blank" rel="noopener noreferrer" className="text-[var(--burnt-orange)] hover:underline">
+                              {dev.source}
+                            </a>
+                          ) : dev.source}
+                        </div>
+                      )}
+                      {/* PA Research Button */}
+                      <div className="mt-3 pt-3 border-t border-[var(--grey-700)]">
+                        <button
+                          onClick={() => handleGenerateFromSynthesis(dev, i)}
+                          disabled={generatingSynthesisReport === i}
+                          className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                            generatingSynthesisReport === i
+                              ? 'bg-[var(--grey-700)] text-[var(--grey-400)] cursor-wait'
+                              : 'bg-slate-500/20 text-slate-300 border border-slate-500/30 hover:bg-slate-500/30 hover:border-slate-500/50'
+                          }`}
+                        >
+                          {generatingSynthesisReport === i ? (
+                            <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Generating Report...</>
+                          ) : (
+                            <><Shield className="w-3.5 h-3.5" /> Research &amp; Analyze</>
+                          )}
+                        </button>
+                      </div>
                     </div>
-                    <button
-                      onClick={() => handleGenerateFromSynthesis(dev, i)}
-                      disabled={generatingSynthesisReport === i}
-                      className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all"
-                      style={{
-                        backgroundColor: generatingSynthesisReport === i ? 'rgba(255,255,255,0.05)' : 'rgba(59,130,246,0.12)',
-                        color: generatingSynthesisReport === i ? '#71717a' : '#93c5fd',
-                        border: `1px solid ${generatingSynthesisReport === i ? 'rgba(255,255,255,0.08)' : 'rgba(59,130,246,0.25)'}`,
-                      }}
-                    >
-                      {generatingSynthesisReport === i ? (
-                        <><Loader2 className="w-3 h-3 animate-spin" /> Generating...</>
-                      ) : (
-                        <><Shield className="w-3 h-3" /> Analyze</>
-                      )}
-                    </button>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           )
