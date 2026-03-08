@@ -356,7 +356,7 @@ export default function EntityProfileTester() {
     loadOrgEntities()
   }, [organization?.id])
 
-  // Load all existing profiles globally — check if a profile exists regardless of org
+  // Load all existing profiles globally — check if a profile exists regardless of org or expiry
   useEffect(() => {
     const loadAllProfiles = async () => {
       setLoadingGlobalProfiles(true)
@@ -364,7 +364,6 @@ export default function EntityProfileTester() {
         const { data } = await supabase
           .from('lp_entity_profiles')
           .select('entity_name, entity_type, data_tier, data_sources, confidence_score, model_used, version, expires_at, built_at, profile')
-          .gt('expires_at', new Date().toISOString())
           .order('built_at', { ascending: false })
 
         if (data) {
@@ -395,10 +394,11 @@ export default function EntityProfileTester() {
   }
 
   const refreshGlobalProfiles = async () => {
+    // Don't filter by expires_at — we want to know if a profile EXISTS at all
+    // (expired profiles still have useful data, just need a refresh)
     const { data } = await supabase
       .from('lp_entity_profiles')
       .select('entity_name, entity_type, data_tier, data_sources, confidence_score, model_used, version, expires_at, built_at, profile')
-      .gt('expires_at', new Date().toISOString())
       .order('built_at', { ascending: false })
     if (data) {
       setGlobalProfiles(new Set(data.map(p => p.entity_name.toLowerCase())))
@@ -406,8 +406,9 @@ export default function EntityProfileTester() {
     }
   }
 
-  const isProfileFresh = (profile: ExistingProfile): boolean => {
-    return new Date(profile.expires_at) > new Date()
+  const isProfileFresh = (_profile: ExistingProfile): boolean => {
+    // Profiles don't expire — if it exists, it's usable
+    return true
   }
 
   const totalFacts = (target: IntelligenceTarget): number => {
@@ -546,7 +547,6 @@ export default function EntityProfileTester() {
         .from('lp_entity_profiles')
         .select('*')
         .ilike('entity_name', entityName)
-        .gt('expires_at', new Date().toISOString())
         .order('built_at', { ascending: false })
         .limit(1)
         .single()
@@ -875,16 +875,10 @@ export default function EntityProfileTester() {
                       </div>
                       <div className="flex items-center gap-3 mt-0.5 text-[10px] text-gray-400">
                         <span>{facts} facts</span>
-                        {existing && fresh && (
+                        {existing && (
                           <span className="text-green-500 flex items-center gap-0.5">
                             <CheckCircle className="w-3 h-3" />
                             LP profile v{existing.version} ({existing.data_tier}) — {(existing.confidence_score * 100).toFixed(0)}% conf
-                          </span>
-                        )}
-                        {existing && !fresh && (
-                          <span className="text-yellow-500 flex items-center gap-0.5">
-                            <Clock className="w-3 h-3" />
-                            Profile expired
                           </span>
                         )}
                         {!existing && (
