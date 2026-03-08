@@ -708,7 +708,7 @@ export default function ScenarioBuilder({ onRunSimulation }: ScenarioBuilderProp
           </div>
 
           {/* Probing question */}
-          {nextQuestion && phase === 'probing' && (
+          {nextQuestion && phase === 'probing' && !loading && (
             <div className="bg-[var(--burnt-orange)]/5 rounded-xl border border-[var(--burnt-orange)]/20 p-4 space-y-3">
               <p className="text-sm text-[var(--charcoal)]">{nextQuestion}</p>
               <div className="flex gap-2">
@@ -727,16 +727,24 @@ export default function ScenarioBuilder({ onRunSimulation }: ScenarioBuilderProp
                 <span className="text-[10px] text-gray-400">⌘+Enter to submit</span>
                 <button
                   onClick={continueDialogue}
-                  disabled={loading || !userResponse.trim()}
+                  disabled={!userResponse.trim()}
                   className="px-3 py-1.5 bg-[var(--burnt-orange)] hover:bg-[var(--terracotta)] disabled:bg-gray-300 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5"
                 >
-                  {loading ? (
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                  ) : (
-                    <Send className="w-3 h-3" />
-                  )}
+                  <Send className="w-3 h-3" />
                   Continue
                 </button>
+              </div>
+            </div>
+          )}
+
+          {/* Loading state during probing */}
+          {loading && phase === 'probing' && (
+            <div className="bg-[var(--burnt-orange)]/5 rounded-xl border border-[var(--burnt-orange)]/20 p-4">
+              <div className="flex items-center gap-3">
+                <Loader2 className="w-5 h-5 animate-spin text-[var(--burnt-orange)]" />
+                <p className="text-sm text-[var(--charcoal)]">
+                  Finalizing scenario and identifying stakeholders...
+                </p>
               </div>
             </div>
           )}

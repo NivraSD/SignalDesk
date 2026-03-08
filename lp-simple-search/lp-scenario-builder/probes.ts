@@ -782,16 +782,29 @@ export const INTERNAL_ACTION_TYPES: ScenarioType[] = [
   'expansion'
 ]
 
+// The first probe of every type asks "what is it" — but the user already
+// described it in the initial_description. These IDs should be auto-skipped.
+const FIRST_WHAT_PROBES = new Set([
+  'what_product', 'what_deal', 'what_market', 'what_changing', 'what_happened',
+  'competitor_action', 'what_change', 'what_initiative', 'what_expanding',
+  'what_regulation', 'what_disruption', 'what_event', 'who_and_what', 'what'
+])
+
 // Get the next unanswered probe for a scenario
 export function getNextProbe(
   type: ScenarioType,
-  answeredProbes: string[]
+  answeredProbes: string[],
+  hasInitialDescription: boolean = true
 ): ScenarioProbe | null {
   const probeSet = PROBE_SETS[type]
   if (!probeSet) return null
 
   // Find first required probe not yet answered
   for (const probe of probeSet.probes) {
+    // Skip the first "what is it" probe if user already provided initial description
+    if (hasInitialDescription && FIRST_WHAT_PROBES.has(probe.id) && !answeredProbes.includes(probe.id)) {
+      continue
+    }
     if (probe.required && !answeredProbes.includes(probe.id)) {
       return probe
     }
@@ -799,6 +812,9 @@ export function getNextProbe(
 
   // Then optional probes
   for (const probe of probeSet.probes) {
+    if (hasInitialDescription && FIRST_WHAT_PROBES.has(probe.id) && !answeredProbes.includes(probe.id)) {
+      continue
+    }
     if (!probe.required && !answeredProbes.includes(probe.id)) {
       return probe
     }

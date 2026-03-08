@@ -402,7 +402,9 @@ export default function PublicAffairsModule() {
 
         {/* Key Developments from Latest Intelligence */}
         {synthesis && !showNewResearch && (() => {
-          const synthData = synthesis?.synthesis_data?.synthesis || synthesis?.synthesis || synthesis
+          // Match Hub's data extraction: try all possible nesting paths
+          const raw = synthesis?.synthesis_data || synthesis
+          const synthData = raw?.synthesis || raw
           const developments = synthData?.key_developments || []
           if (developments.length === 0) return null
           return (
@@ -414,7 +416,7 @@ export default function PublicAffairsModule() {
                 </h3>
               </div>
               <div className="space-y-3">
-                {developments.slice(0, 6).map((dev: any, i: number) => {
+                {developments.map((dev: any, i: number) => {
                   const implication = dev.pr_implication || dev.impact || dev.details
                   return (
                     <div key={i} className="bg-[var(--grey-800)] rounded-lg p-4">
@@ -484,6 +486,7 @@ export default function PublicAffairsModule() {
           )
         })()}
 
+        {/* Research Reports Section */}
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-6 h-6 animate-spin text-[var(--grey-500)]" />
@@ -504,15 +507,26 @@ export default function PublicAffairsModule() {
             </button>
           </div>
         ) : (
-          <div className="space-y-3">
-            {reports.map((report) => (
-              <ReportCard
-                key={report.id}
-                report={report}
-                onClick={() => setSelectedReport(report)}
-                onDelete={() => handleDeleteReport(report.id)}
-              />
-            ))}
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <FileText className="w-4 h-4 text-[var(--grey-400)]" />
+              <h3 className="text-sm font-semibold uppercase tracking-wider" style={{ color: '#a1a1aa', fontFamily: 'var(--font-display)' }}>
+                Research Reports
+              </h3>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--grey-800)] text-[var(--grey-400)]">
+                {reports.length}
+              </span>
+            </div>
+            <div className="space-y-3">
+              {reports.map((report) => (
+                <ReportCard
+                  key={report.id}
+                  report={report}
+                  onClick={() => setSelectedReport(report)}
+                  onDelete={() => handleDeleteReport(report.id)}
+                />
+              ))}
+            </div>
           </div>
         )}
         </div>

@@ -367,7 +367,7 @@ serve(async (req) => {
       }
 
       // Get first probe
-      const nextProbe = getNextProbe(scenario.type!, [])
+      const nextProbe = getNextProbe(scenario.type!, [], true)
 
       const response: ScenarioBuilderResponse = {
         success: true,
@@ -404,7 +404,7 @@ serve(async (req) => {
 
       // Find which probe we're answering (first unanswered = the one we just asked)
       const answeredProbes = scenario._dialogue_state?.questions_asked || []
-      const currentProbe = getNextProbe(scenarioType, answeredProbes)
+      const currentProbe = getNextProbe(scenarioType, answeredProbes, true)
 
       if (currentProbe) {
         // Apply response to scenario
@@ -417,7 +417,7 @@ serve(async (req) => {
       }
 
       // Get next probe
-      const nextProbe = getNextProbe(scenarioType, scenario._dialogue_state?.questions_asked || [])
+      const nextProbe = getNextProbe(scenarioType, scenario._dialogue_state?.questions_asked || [], true)
 
       // Check if we're done with probing
       if (!nextProbe) {
@@ -495,7 +495,7 @@ serve(async (req) => {
       const scenario = existing.scenario_data as Partial<LPScenario>
       const phase = scenario._dialogue_state?.phase || 'probing'
       const nextProbe = phase === 'probing'
-        ? getNextProbe(scenario.type!, scenario._dialogue_state?.questions_asked || [])
+        ? getNextProbe(scenario.type!, scenario._dialogue_state?.questions_asked || [], true)
         : null
 
       const response: ScenarioBuilderResponse = {

@@ -319,32 +319,55 @@ async function identifyEntities(
   }
 
   // Auto-detect from scenario stakeholders
-  const stakeholders = scenario.stakeholders || scenario.stakeholder_seed || []
+  // scenario_data contains the LPScenario with stakeholder_seed as an object:
+  // { competitors: ["Palantir", "Accenture"], media: ["WSJ"], ... }
+  const scenarioData = scenario.scenario_data || scenario
+  const stakeholderSeed = scenarioData.stakeholder_seed || {}
 
-  for (const stakeholder of stakeholders) {
+  // Flatten stakeholder_seed object into a list of entity names
+  const stakeholderNames: string[] = []
+  if (typeof stakeholderSeed === 'object' && !Array.isArray(stakeholderSeed)) {
+    for (const [_category, names] of Object.entries(stakeholderSeed)) {
+      if (Array.isArray(names)) {
+        stakeholderNames.push(...names)
+      }
+    }
+  } else if (Array.isArray(stakeholderSeed)) {
+    // Legacy format: array of objects or strings
+    for (const s of stakeholderSeed) {
+      stakeholderNames.push(typeof s === 'string' ? s : s.name || '')
+    }
+  }
+
+  console.log(`🔍 Looking up ${stakeholderNames.length} stakeholder names from scenario`)
+
+  for (const name of stakeholderNames) {
+    if (!name) continue
     // Try to find existing profile
     const { data: profile } = await supabase
       .from('lp_entity_profiles')
       .select('id, entity_name, entity_type')
-      .ilike('entity_name', `%${stakeholder.name || stakeholder}%`)
+      .ilike('entity_name', `%${name}%`)
       .limit(1)
       .single()
 
-    if (profile) {
+    if (profile && !entities.find(e => e.entity_id === profile.id)) {
       entities.push({
         entity_id: profile.id,
         entity_name: profile.entity_name,
         entity_type: profile.entity_type,
         profile_id: profile.id,
-        relevance_score: stakeholder.relevance || 0.8,
+        relevance_score: 0.8,
         included: true
       })
     }
   }
 
+  console.log(`👥 Matched ${entities.length} entities from stakeholder_seed`)
+
   // If still no entities, pull from industry-relevant profiles
   if (entities.length < 3) {
-    const industry = scenario.industry || 'technology'
+    console.log(`⚠️ Only ${entities.length} entities found, falling back to industry profiles`)
     const { data: industryProfiles } = await supabase
       .from('lp_entity_profiles')
       .select('id, entity_name, entity_type')
