@@ -169,16 +169,41 @@ export class PublicAffairsService {
       onProgress?.('intelligence-gathering', 'completed')
       onProgress?.('synthesis', 'running')
 
-      // Map each query to its own research stream — no reuse
-      const getResult = (i: number) => queryResults[i]?.status === 'fulfilled' ? queryResults[i].value.data : null
+      // Extract actual article content from fireplexity results, not just the summary
+      const extractResearch = (i: number, charLimit = 6000): string => {
+        const result = queryResults[i]?.status === 'fulfilled' ? queryResults[i].value.data : null
+        if (!result) return 'No data available.'
+
+        // Pull actual content from the top results, not just the summary
+        const articles = result.results || result.data || []
+        if (Array.isArray(articles) && articles.length > 0) {
+          const contentParts: string[] = []
+          let totalLen = 0
+          for (const article of articles) {
+            if (totalLen >= charLimit) break
+            const title = article.title || ''
+            const content = article.content || article.description || ''
+            const source = article.source?.name || article.source || ''
+            if (content.length < 30) continue // skip empty results
+            const entry = `[${source}] ${title}\n${content.substring(0, 2000)}`
+            contentParts.push(entry)
+            totalLen += entry.length
+          }
+          if (contentParts.length > 0) return contentParts.join('\n\n---\n\n')
+        }
+
+        // Fallback to summary if no article content
+        return result.summary || result.answer || JSON.stringify(result).substring(0, charLimit)
+      }
+
       const rawResearch: Record<string, any> = {
-        situation: getResult(0),
-        stakeholders: getResult(1),
-        geopolitical: getResult(2),
-        impact: getResult(3),
-        historical: getResult(4),
-        legal: getResult(2),     // geopolitical query covers legal/regulatory too
-        media: getResult(0),     // situation query covers media narrative too
+        situation: { summary: extractResearch(0) },
+        stakeholders: { summary: extractResearch(1) },
+        geopolitical: { summary: extractResearch(2) },
+        impact: { summary: extractResearch(3) },
+        historical: { summary: extractResearch(4) },
+        legal: { summary: extractResearch(2, 3000) },
+        media: { summary: extractResearch(0, 3000) },
       }
 
       // Stage 1: Situation Assessment + Stakeholder Analysis
