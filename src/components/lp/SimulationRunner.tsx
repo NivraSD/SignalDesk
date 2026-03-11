@@ -100,6 +100,7 @@ export default function SimulationRunner({
 
     const loadEntities = async () => {
       setLoadingEntities(true)
+      // Load targets for this org, and ALL profiles globally (not just this org)
       const [targetsRes, profilesRes] = await Promise.all([
         supabase
           .from('intelligence_targets')
@@ -110,32 +111,32 @@ export default function SimulationRunner({
         supabase
           .from('lp_entity_profiles')
           .select('id, entity_name, entity_type, target_id, confidence_score, data_tier, expires_at')
-          .eq('organization_id', organizationId)
       ])
 
       const targets: IntelTarget[] = targetsRes.data || []
       const profiles: LPProfile[] = profilesRes.data || []
 
-      // Build lookup: target_id -> profile
+      // Build lookup: target_id -> profile, and name -> profile (global)
       const profileByTargetId = new Map<string, LPProfile>()
       const profileByName = new Map<string, LPProfile>()
       for (const p of profiles) {
         if (p.target_id) profileByTargetId.set(p.target_id, p)
-        profileByName.set(p.entity_name.toLowerCase(), p)
+        // Keep the newest profile per name (profiles are ordered by built_at desc from DB)
+        if (!profileByName.has(p.entity_name.toLowerCase())) {
+          profileByName.set(p.entity_name.toLowerCase(), p)
+        }
       }
 
-      const now = new Date()
       const selectableEntities: SelectableEntity[] = targets.map(t => {
         const profile = profileByTargetId.get(t.id) || profileByName.get(t.name.toLowerCase()) || null
-        const expired = profile ? new Date(profile.expires_at) < now : false
         return {
           targetId: t.id,
           name: t.name,
           type: t.type || 'stakeholder',
           priority: t.priority || 'medium',
           profileId: profile?.id || null,
-          profileReady: !!profile && !expired,
-          profileExpired: expired,
+          profileReady: !!profile,
+          profileExpired: false,
           selected: true // all selected by default
         }
       })
@@ -253,6 +254,7 @@ export default function SimulationRunner({
     // Collect selected entity profile IDs (for those that have profiles)
     const selected = entities.filter(e => e.selected)
     const profileIds = selected.filter(e => e.profileId).map(e => e.profileId!)
+    console.log(`[LP] Launching simulation with ${selected.length} selected, ${profileIds.length} have profile IDs`, selected.map(e => `${e.name} (${e.profileId ? 'has profile' : 'NO profile'})`))
 
     // Fire-and-forget: the edge function takes 2-4 minutes but the gateway
     // times out at ~60s. The orchestrator writes progress to DB as it goes.
