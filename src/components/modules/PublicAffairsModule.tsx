@@ -980,7 +980,7 @@ function ReportDetailView({
                       </p>
                       {s.key_drivers && (
                         <p className="text-xs" style={{ color: '#71717a' }}>
-                          <span style={{ fontWeight: 600 }}>Drivers:</span> {typeof s.key_drivers === 'string' ? s.key_drivers.substring(0, 150) : ''}
+                          <span style={{ fontWeight: 600 }}>Drivers:</span> {Array.isArray(s.key_drivers) ? s.key_drivers.join(', ').substring(0, 150) : typeof s.key_drivers === 'string' ? s.key_drivers.substring(0, 150) : ''}
                         </p>
                       )}
                       {s.leading_indicators && Array.isArray(s.leading_indicators) && (

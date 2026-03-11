@@ -770,7 +770,7 @@ export class PublicAffairsService {
         sc.scenarios.forEach((s: any) => {
           md += `### ${s.name} (${s.likelihood})\n`
           if (s.narrative) md += `${s.narrative}\n\n`
-          if (s.key_drivers) md += `**Key Drivers:** ${s.key_drivers}\n`
+          if (s.key_drivers) md += `**Key Drivers:** ${Array.isArray(s.key_drivers) ? s.key_drivers.join(', ') : s.key_drivers}\n`
           if (s.leading_indicators) md += `**Leading Indicators:** ${Array.isArray(s.leading_indicators) ? s.leading_indicators.join(', ') : s.leading_indicators}\n`
           if (s.timeline) md += `**Timeline:** ${s.timeline}\n`
           if (s.client_impact) md += `**Client Impact:** ${s.client_impact}\n`
@@ -1015,7 +1015,7 @@ export class PublicAffairsService {
           <h4>${esc(s.name)}</h4>
           <div class="likelihood ${cls}">${esc(s.likelihood)}</div>
           <p>${esc(typeof s.narrative === 'string' ? s.narrative.substring(0, 400) : '')}</p>
-          ${s.key_drivers ? `<p style="font-size:12px;color:#777;"><strong>Drivers:</strong> ${esc(s.key_drivers.substring(0, 200))}</p>` : ''}
+          ${s.key_drivers ? `<p style="font-size:12px;color:#777;"><strong>Drivers:</strong> ${esc((Array.isArray(s.key_drivers) ? s.key_drivers.join(', ') : String(s.key_drivers)).substring(0, 200))}</p>` : ''}
         </div>`
       })
       html += `</div>\n`
