@@ -247,16 +247,19 @@ export default function ScenarioBuilder({ onRunSimulation }: ScenarioBuilderProp
   const [error, setError] = useState<string | null>(null)
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['action', 'stakeholders']))
 
+  // Research context from PA seed (passed on submit)
+  const [paResearchContext, setPaResearchContext] = useState<any>(null)
+
   // Existing scenarios
   const [existingScenarios, setExistingScenarios] = useState<ExistingScenario[]>([])
   const [loadingScenarios, setLoadingScenarios] = useState(false)
 
   // Check for pre-populated seed from Public Affairs simulation
-  // Auto-submit to backend to start dialogue flow
+  // Just populate the form — don't auto-submit, let user review and click start
   useEffect(() => {
     try {
       const seedStr = sessionStorage.getItem('pa_simulation_seed')
-      if (seedStr && organization?.id) {
+      if (seedStr) {
         sessionStorage.removeItem('pa_simulation_seed')
         const seed = JSON.parse(seedStr)
         const description = seed.action?.what
@@ -264,43 +267,20 @@ export default function ScenarioBuilder({ onRunSimulation }: ScenarioBuilderProp
           : ''
 
         if (description) {
-          // Set initial state for immediate visual feedback
-          if (seed.type) setDetectedType(seed.type as ScenarioType)
           setInitialDescription(description)
-
-          // Auto-submit to backend to start the scenario building dialogue
-          setLoading(true)
-          supabase.functions.invoke('lp-scenario-builder', {
-            body: {
-              organization_id: organization.id,
-              initial_description: description,
-              ...(seed.type ? { scenario_type_hint: seed.type } : {}),
-              ...(seed.research_context ? { research_context: seed.research_context } : {})
-            }
-          }).then(({ data, error: invokeError }) => {
-            if (invokeError || !data?.success) {
-              setError(invokeError?.message || data?.error || 'Failed to start scenario from research')
-              return
-            }
-            const response = data as ScenarioBuilderResponse
-            setScenario(response.scenario)
-            setPhase(response.phase)
-            setNextQuestion(response.next_question || null)
-            setDetectedType(response.detected_type || null)
-            setConfidence(response.confidence || 0)
-            setSuggestions(response.suggestions || null)
-            setInitialDescription('')
-          }).catch((err: any) => {
-            setError(err.message || 'Failed to start scenario')
-          }).finally(() => {
-            setLoading(false)
-          })
+          // PA research reports are external events ("If X happens"), not internal actions
+          setScenarioMode('external')
+          if (seed.type) setDetectedType(seed.type as ScenarioType)
+          // Store research context for when user submits
+          if (seed.research_context) {
+            setPaResearchContext(seed.research_context)
+          }
         }
       }
     } catch (err) {
       console.error('Error loading PA simulation seed:', err)
     }
-  }, [organization?.id])
+  }, [])
 
   // Load existing scenarios
   useEffect(() => {
@@ -353,7 +333,8 @@ export default function ScenarioBuilder({ onRunSimulation }: ScenarioBuilderProp
         body: {
           organization_id: organization.id,
           initial_description: initialDescription.trim(),
-          ...(selectedExternalType ? { scenario_type_hint: selectedExternalType } : {})
+          ...(selectedExternalType ? { scenario_type_hint: selectedExternalType } : {}),
+          ...(paResearchContext ? { research_context: paResearchContext } : {})
         }
       })
 

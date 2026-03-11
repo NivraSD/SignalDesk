@@ -716,7 +716,6 @@ function ReportDetailView({
     }
 
     const scenarioSeed = {
-      type: 'policy_change',
       action: {
         what: report.trigger_event.title,
         rationale: [rd?.executive_summary?.substring(0, 200) || '']
