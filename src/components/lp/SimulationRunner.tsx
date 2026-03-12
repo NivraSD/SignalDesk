@@ -94,59 +94,101 @@ export default function SimulationRunner({
     }
   }, [])
 
-  // Load entities when entering selection phase
+  // Load entities from scenario stakeholder_seed, cross-referenced with LP profiles
   useEffect(() => {
     if (state !== 'selecting') return
 
     const loadEntities = async () => {
       setLoadingEntities(true)
-      // Load targets for this org, and ALL profiles globally (not just this org)
-      const [targetsRes, profilesRes] = await Promise.all([
+
+      // Load scenario, all LP profiles, and intel targets in parallel
+      const [scenarioRes, profilesRes, targetsRes] = await Promise.all([
+        supabase
+          .from('lp_scenarios')
+          .select('scenario_data')
+          .eq('id', scenarioId)
+          .single(),
+        supabase
+          .from('lp_entity_profiles')
+          .select('id, entity_name, entity_type, target_id, confidence_score, data_tier, expires_at'),
         supabase
           .from('intelligence_targets')
           .select('id, name, type, priority, active')
           .eq('organization_id', organizationId)
           .eq('active', true)
-          .order('priority', { ascending: true }),
-        supabase
-          .from('lp_entity_profiles')
-          .select('id, entity_name, entity_type, target_id, confidence_score, data_tier, expires_at')
       ])
 
-      const targets: IntelTarget[] = targetsRes.data || []
       const profiles: LPProfile[] = profilesRes.data || []
+      const targets: IntelTarget[] = targetsRes.data || []
 
-      // Build lookup: target_id -> profile, and name -> profile (global)
-      const profileByTargetId = new Map<string, LPProfile>()
+      // Build profile lookup by name (case-insensitive)
       const profileByName = new Map<string, LPProfile>()
       for (const p of profiles) {
-        if (p.target_id) profileByTargetId.set(p.target_id, p)
-        // Keep the newest profile per name (profiles are ordered by built_at desc from DB)
         if (!profileByName.has(p.entity_name.toLowerCase())) {
           profileByName.set(p.entity_name.toLowerCase(), p)
         }
       }
 
-      const selectableEntities: SelectableEntity[] = targets.map(t => {
-        const profile = profileByTargetId.get(t.id) || profileByName.get(t.name.toLowerCase()) || null
-        return {
-          targetId: t.id,
-          name: t.name,
-          type: t.type || 'stakeholder',
-          priority: t.priority || 'medium',
-          profileId: profile?.id || null,
-          profileReady: !!profile,
-          profileExpired: false,
-          selected: true // all selected by default
-        }
-      })
+      // Build target lookup by name
+      const targetByName = new Map<string, IntelTarget>()
+      for (const t of targets) {
+        targetByName.set(t.name.toLowerCase(), t)
+      }
 
-      setEntities(selectableEntities)
+      // Extract stakeholder names from scenario
+      const scenarioData = scenarioRes.data?.scenario_data || {}
+      const stakeholderSeed = scenarioData.stakeholder_seed || {}
+      const stakeholderEntities: SelectableEntity[] = []
+      const seenNames = new Set<string>()
+
+      // Primary: entities from scenario stakeholder_seed (grouped by category)
+      if (typeof stakeholderSeed === 'object' && !Array.isArray(stakeholderSeed)) {
+        for (const [category, names] of Object.entries(stakeholderSeed)) {
+          if (Array.isArray(names)) {
+            for (const name of names) {
+              if (!name || seenNames.has(name.toLowerCase())) continue
+              seenNames.add(name.toLowerCase())
+              const profile = profileByName.get(name.toLowerCase()) || null
+              const target = targetByName.get(name.toLowerCase())
+              stakeholderEntities.push({
+                targetId: target?.id || name,
+                name,
+                type: category,
+                priority: target?.priority || 'medium',
+                profileId: profile?.id || null,
+                profileReady: !!profile,
+                profileExpired: false,
+                selected: true
+              })
+            }
+          }
+        }
+      }
+
+      // If no stakeholders from scenario, fall back to intel targets
+      if (stakeholderEntities.length === 0) {
+        for (const t of targets) {
+          const profile = profileByName.get(t.name.toLowerCase()) || null
+          stakeholderEntities.push({
+            targetId: t.id,
+            name: t.name,
+            type: t.type || 'stakeholder',
+            priority: t.priority || 'medium',
+            profileId: profile?.id || null,
+            profileReady: !!profile,
+            profileExpired: false,
+            selected: true
+          })
+        }
+      }
+
+      console.log(`[LP] Loaded ${stakeholderEntities.length} entities from scenario, ${stakeholderEntities.filter(e => e.profileReady).length} have profiles`)
+      setEntities(stakeholderEntities)
       setLoadingEntities(false)
     }
 
     loadEntities()
-  }, [state, organizationId])
+  }, [state, scenarioId, organizationId])
 
   // Group entities by type
   const groupedEntities = useMemo(() => {
