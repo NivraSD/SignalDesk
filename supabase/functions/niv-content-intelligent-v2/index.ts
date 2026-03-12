@@ -6038,6 +6038,13 @@ async function getClaudeUnderstanding(message, conversationHistory, orgProfile, 
 - Example: NOT "tech event production trends" → CORRECT: "tech event production trends ${currentYear}"
 - Example: NOT "AI healthcare market" → CORRECT: "AI healthcare market ${currentYear}"
 
+**CRITICAL - FACTUAL INTEGRITY:**
+- NEVER invent statistics, percentages, or specific data points (e.g., "70% of X fail", "3x faster ROI")
+- NEVER fabricate research findings, studies, or trends
+- Only cite specific numbers if they come from actual research data provided in the context
+- If no research data is available, write compelling content WITHOUT fake statistics
+- Vague directional claims are fine ("AI adoption is accelerating") but fabricated specifics are NOT ("70% of AI projects fail")
+
 **CRITICAL - SUPER BOWL TEMPORAL LOGIC:**
 - The Super Bowl is ALWAYS in February of the following calendar year
 - Next Super Bowl: February ${nextSuperBowlYear} (Super Bowl LX)
@@ -7307,6 +7314,8 @@ Craft a concise but strategically rich content brief (2-3 sentences) that a cont
 5. Be specific to ${stakeholder} needs
 6. Avoid generic tech clichés
 7. Use current/timely references where appropriate (today is ${currentDate})
+8. NEVER invent statistics or data points — only reference data from the research insights above
+9. NEVER claim specific events or trends happened unless supported by the provided context
 
 Write ONLY the brief, nothing else. Make it compelling and strategic.`;
   try {
@@ -7460,6 +7469,9 @@ ${targetAudiences.length > 0 ? `**TARGET AUDIENCE:**\n${targetAudiences[0]}` : '
 - Make it timely and relevant to ${currentDate}
 - Include subheadings for readability
 - End with a compelling call-to-action
+- NEVER invent statistics, percentages, or data points not found in the strategic brief or research insights
+- NEVER claim specific events happened unless the context supports it
+- Better to be compelling with real insights than impressive with fabricated data
 
 Write ONLY the blog post content. No meta-commentary.`,
     'social-post': `${parameters.platform ? `Create ONE ${parameters.platform.toUpperCase()} post` : `Create ${parameters.variations || 3} distinct, platform-specific social media posts`}:
@@ -7517,8 +7529,14 @@ ${parameters.platform ? `- Create ONE optimized ${parameters.platform.toUpperCas
 - Each must have unique angle, not just reworded`}
 - Align with strategic brief and key messages
 - Include compelling hooks
-- Reference current context (${currentDate})
 - Platform voice must match channel
+
+**CRITICAL — FACTUAL INTEGRITY:**
+- Do NOT invent statistics, percentages, or data points (e.g., "70% of X fail") unless they come from the strategic brief or research insights above
+- Do NOT reference events, trends, or developments that aren't grounded in the provided context
+- Do NOT claim things "happened in ${currentDate.substring(0, 4)}" unless the context specifically supports it
+- If making a claim, it must be supportable from the brief/research. Vague aspirational claims are fine ("AI is transforming...") but fake specifics are not ("70% of AI projects fail...")
+- Better to be compelling with real insights than impressive with fabricated data
 
 **OUTPUT FORMAT:**
 ${parameters.platform ? `
