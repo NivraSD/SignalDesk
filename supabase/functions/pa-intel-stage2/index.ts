@@ -244,9 +244,27 @@ Return ONLY valid JSON. No markdown fencing, no preamble.`
     let stage2Data
     let cleaned = content.trim().replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/, '').trim()
 
-    try {
-      stage2Data = JSON.parse(cleaned)
-    } catch (parseErr) {
+    // JSON repair helper: fix common Gemini issues (unquoted keys, trailing commas, smart quotes)
+    const repairJSON = (text: string): string => {
+      return text
+        // Fix unquoted property names: { key: → { "key":
+        .replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":')
+        // Fix trailing commas before } or ]
+        .replace(/,\s*([}\]])/g, '$1')
+        // Fix smart quotes
+        .replace(/[\u201C\u201D]/g, '"')
+        .replace(/[\u2018\u2019]/g, "'")
+    }
+
+    const tryParse = (text: string): any => {
+      try { return JSON.parse(text) } catch {}
+      try { return JSON.parse(repairJSON(text)) } catch {}
+      return null
+    }
+
+    stage2Data = tryParse(cleaned)
+
+    if (!stage2Data) {
       // Try extracting JSON object with string-aware brace matching
       const start = cleaned.indexOf('{')
       if (start === -1) throw new Error('No JSON found in Stage 2 response')
@@ -268,14 +286,17 @@ Return ONLY valid JSON. No markdown fencing, no preamble.`
         const opens = (repair.match(/{/g) || []).length
         const closes = (repair.match(/}/g) || []).length
         for (let i = 0; i < opens - closes; i++) repair += '}'
-        try {
-          stage2Data = JSON.parse(repair)
+        stage2Data = tryParse(repair)
+        if (stage2Data) {
           console.log('Stage 2: repaired truncated JSON')
-        } catch {
+        } else {
           throw new Error(`Incomplete JSON in Stage 2 (content length: ${content.length}, finishReason: ${finishReason})`)
         }
       } else {
-        stage2Data = JSON.parse(cleaned.substring(start, end))
+        stage2Data = tryParse(cleaned.substring(start, end))
+        if (!stage2Data) {
+          throw new Error(`Malformed JSON in Stage 2 after extraction (content length: ${content.length})`)
+        }
       }
     }
 
