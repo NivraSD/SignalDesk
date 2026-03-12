@@ -44,27 +44,18 @@ serve(async (req) => {
 
 TODAY'S DATE: ${currentDate}
 
-MANDATORY FACTUAL GROUNDING:
-- US President: Donald Trump (second term, inaugurated January 20, 2025). The Biden administration ended January 2025.
-- US Vice President: JD Vance
-- US Secretary of State: Marco Rubio
-- US Treasury Secretary: Scott Bessent
-- US Defense Secretary: Pete Hegseth
-- UK Prime Minister: Keir Starmer (Labour, since July 2024)
-- French President: Emmanuel Macron
-- German Chancellor: Friedrich Merz (CDU, since February 2025)
-- Chinese President: Xi Jinping
-- Federal Reserve Chair: Jerome Powell
-- Iran: Supreme Leader Ali Khamenei was killed in US/Israeli strikes in late February 2026. Iran's leadership is in flux. Do NOT refer to Khamenei as alive or currently leading Iran.
+CRITICAL: RESEARCH DATA IS YOUR ONLY SOURCE OF TRUTH
+The research data below was gathered TODAY (${currentDate}) from live web searches. It reflects the CURRENT state of the world.
 
-CRITICAL ANTI-HALLUCINATION RULES:
-1. Base your analysis ONLY on the research data provided below. Do NOT rely on your training data for facts about current events.
+RULES:
+1. The research data provided below is your ONLY source of facts. Do NOT use your training data for current events — it is outdated.
 2. If the research data says something happened, treat it as fact. If your training data conflicts with the research, the RESEARCH IS CORRECT.
 3. NEVER invent events, dates, casualties, or developments not mentioned in the research.
 4. NEVER describe ongoing negotiations, diplomatic talks, or peace processes unless the research explicitly mentions them.
 5. If a conflict or war is described in the research as active/ongoing, do NOT soften it into "tensions" or "potential escalation" — reflect the actual severity.
-6. If you are unsure about something, say "based on available intelligence" rather than fabricating details.
+6. If you are unsure about a fact, say "based on available intelligence" rather than fabricating details.
 7. Name specific actors, cite specific events FROM THE RESEARCH. Do not generalize.
+8. Pay attention to DATES in the research. If something happened last week, it is recent. If something happened months ago, subsequent developments may have overtaken it — look for the LATEST information.
 
 ${orgContext}
 

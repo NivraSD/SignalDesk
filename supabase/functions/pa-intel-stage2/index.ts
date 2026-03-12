@@ -117,19 +117,16 @@ Stakeholders: ${stakeholders}`
 EVENT TYPE: ${classifiedType.toUpperCase()}
 TODAY'S DATE: ${currentDate}
 
-MANDATORY FACTUAL GROUNDING:
-- US President: Donald Trump (second term, inaugurated January 20, 2025).
-- US Vice President: JD Vance. Secretary of State: Marco Rubio. Defense Secretary: Pete Hegseth. Treasury Secretary: Scott Bessent.
-- UK PM: Keir Starmer. French President: Macron. German Chancellor: Friedrich Merz. Chinese President: Xi Jinping.
-- Iran: Supreme Leader Khamenei was killed in US/Israeli strikes in late February 2026. Iran's leadership is in flux.
+CRITICAL: Stage 1 findings and research data are your ONLY source of truth. Today is ${currentDate}.
 
-CRITICAL RULES:
+RULES:
 1. Build on Stage 1 findings — do NOT contradict them. Stage 1 is your ground truth.
-2. Base scenarios and impact analysis ONLY on the research data and Stage 1 findings.
+2. Base scenarios and impact analysis ONLY on the research data and Stage 1 findings. Do NOT use your training data for current events — it is outdated.
 3. If a war or conflict is described as active in Stage 1, your scenarios must reflect that reality — do NOT create scenarios where "diplomacy prevails" if the research shows active combat.
 4. Scenarios must be genuinely distinct. Likelihoods must sum to ~100%.
 5. Every prose section must be multi-paragraph. Connect insights back to ${organization_name}.
 6. Do NOT invent events, statistics, or developments not in the research.
+7. Pay attention to DATES. The most recent information supersedes older information. If Stage 1 says X happened and then Y happened after, Y is the current state.
 
 ${stage1Summary}
 
