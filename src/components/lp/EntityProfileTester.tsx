@@ -340,7 +340,6 @@ export default function EntityProfileTester() {
           supabase
             .from('lp_entity_profiles')
             .select('entity_name, entity_type, data_tier, data_sources, confidence_score, model_used, version, expires_at, built_at, profile')
-            .eq('organization_id', organization.id)
             .order('built_at', { ascending: false })
         ])
 
@@ -517,14 +516,13 @@ export default function EntityProfileTester() {
 
     setActiveBuilds(new Set())
 
-    // Refresh profiles list (org + global)
+    // Refresh profiles list
+    await refreshGlobalProfiles()
     const { data: refreshed } = await supabase
       .from('lp_entity_profiles')
       .select('entity_name, entity_type, data_tier, data_sources, confidence_score, model_used, version, expires_at, built_at, profile')
-      .eq('organization_id', organization.id)
       .order('built_at', { ascending: false })
     if (refreshed) setExistingProfiles(refreshed)
-    await refreshGlobalProfiles()
 
     setBuildingAll(false)
     setBuildingId(null)
@@ -735,15 +733,14 @@ export default function EntityProfileTester() {
         setResult({ success: false, error: error.message })
       } else {
         setResult(data as ProfileResult)
-        // Refresh existing profiles list after successful build (org + global)
+        // Refresh profiles list after successful build
         if (data?.success) {
+          await refreshGlobalProfiles()
           const { data: refreshed } = await supabase
             .from('lp_entity_profiles')
             .select('entity_name, entity_type, data_tier, data_sources, confidence_score, model_used, version, expires_at, built_at, profile')
-            .eq('organization_id', organization.id)
             .order('built_at', { ascending: false })
           if (refreshed) setExistingProfiles(refreshed)
-          await refreshGlobalProfiles()
         }
       }
     } catch (err: any) {
