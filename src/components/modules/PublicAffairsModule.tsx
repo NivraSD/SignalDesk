@@ -1576,6 +1576,19 @@ function OnePagerSection({ data, title }: { data: any; title: string }) {
             {data.confidence_level} Confidence
           </span>
           <button
+            onClick={() => {
+              const html = PublicAffairsService.compileOnePagerHtml(data, title)
+              const blob = new Blob([html], { type: 'text/html' })
+              const url = URL.createObjectURL(blob)
+              window.open(url, '_blank')
+              setTimeout(() => URL.revokeObjectURL(url), 5000)
+            }}
+            className="text-xs flex items-center gap-1 px-2 py-1 rounded hover:bg-[var(--grey-800)] transition-colors"
+            style={{ color: '#22d3ee' }}
+          >
+            <BookOpen className="w-3 h-3" /> Export
+          </button>
+          <button
             onClick={handleCopy}
             className="text-xs flex items-center gap-1 px-2 py-1 rounded hover:bg-[var(--grey-800)] transition-colors"
             style={{ color: copied ? '#4ade80' : '#a1a1aa' }}

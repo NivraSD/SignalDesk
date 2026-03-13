@@ -1196,4 +1196,146 @@ export class PublicAffairsService {
 
     return html
   }
+
+  static compileOnePagerHtml(data: any, title: string): string {
+    const esc = (s: string) => s?.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') || ''
+    const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+
+    let html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${esc(title)} — Executive One-Pager</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; color: #1a1a2e; background: #fff; line-height: 1.6; }
+  .page { max-width: 800px; margin: 0 auto; padding: 48px; }
+  @media print { .page { padding: 32px; } .no-print { display: none !important; } @page { size: A4; margin: 20mm; } }
+  .header { border-bottom: 3px solid #1a1a2e; padding-bottom: 20px; margin-bottom: 32px; }
+  .header h1 { font-family: 'Playfair Display', Georgia, serif; font-size: 26px; font-weight: 700; line-height: 1.3; margin-bottom: 6px; }
+  .header .meta { font-size: 12px; color: #666; display: flex; align-items: center; gap: 8px; }
+  .header .classification { display: inline-block; margin-top: 8px; padding: 3px 10px; border: 2px solid #0891b2; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #0891b2; }
+  .headline { font-family: 'Playfair Display', Georgia, serif; font-size: 22px; font-weight: 700; color: #1a1a2e; margin-bottom: 20px; line-height: 1.35; }
+  .bluf { background: #f0fdfa; border-left: 4px solid #0891b2; padding: 16px 20px; margin-bottom: 24px; border-radius: 0 6px 6px 0; }
+  .bluf .label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #0891b2; margin-bottom: 6px; }
+  .bluf p { font-size: 14px; color: #1a1a2e; line-height: 1.65; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+  @media (max-width: 600px) { .two-col { grid-template-columns: 1fr; } }
+  .col-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #888; margin-bottom: 10px; }
+  .fact { display: flex; gap: 8px; margin-bottom: 8px; font-size: 13px; color: #2a2a3e; }
+  .fact-dot { width: 6px; height: 6px; border-radius: 50%; background: #0891b2; margin-top: 6px; flex-shrink: 0; }
+  .stakeholder { background: #f8f8fa; border-radius: 6px; padding: 10px 14px; margin-bottom: 8px; }
+  .stakeholder strong { font-size: 13px; color: #1a1a2e; }
+  .stakeholder .stance { font-size: 12px; color: #555; margin-top: 2px; }
+  .scenario-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
+  @media (max-width: 600px) { .scenario-grid { grid-template-columns: 1fr; } }
+  .scenario { border-radius: 8px; padding: 14px; }
+  .scenario.likely { background: #f0fdfa; border: 1px solid #99f6e4; }
+  .scenario.best { background: #f0fdf4; border: 1px solid #bbf7d0; }
+  .scenario.worst { background: #fef2f2; border: 1px solid #fecaca; }
+  .scenario .s-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+  .scenario.likely .s-label { color: #0891b2; }
+  .scenario.best .s-label { color: #16a34a; }
+  .scenario.worst .s-label { color: #dc2626; }
+  .scenario .prob { font-size: 20px; font-weight: 700; margin: 4px 0; }
+  .scenario.likely .prob { color: #0891b2; }
+  .scenario.best .prob { color: #16a34a; }
+  .scenario.worst .prob { color: #dc2626; }
+  .scenario p { font-size: 12px; color: #555; }
+  .action { display: flex; gap: 8px; margin-bottom: 6px; font-size: 13px; color: #2a2a3e; }
+  .action-num { font-weight: 700; color: #0891b2; min-width: 16px; }
+  .indicator { display: flex; gap: 8px; margin-bottom: 6px; font-size: 13px; color: #2a2a3e; }
+  .indicator-icon { color: #d97706; font-weight: 700; }
+  .confidence { display: inline-block; padding: 3px 12px; border-radius: 4px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; }
+  .confidence.high { background: #dcfce7; color: #16a34a; }
+  .confidence.medium { background: #fef3c7; color: #d97706; }
+  .confidence.low { background: #fee2e2; color: #dc2626; }
+  .footer { margin-top: 32px; padding-top: 12px; border-top: 1px solid #e0e0e0; font-size: 11px; color: #999; text-align: center; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="header">
+  <h1>${esc(title)}</h1>
+  <div class="meta">
+    <span>${date}</span>
+    <span>|</span>
+    <span class="confidence ${(data.confidence_level || 'medium').toLowerCase()}">${esc((data.confidence_level || 'Medium').toUpperCase())} CONFIDENCE</span>
+  </div>
+  <div class="classification">Executive One-Pager</div>
+</div>
+
+<div class="headline">${esc(data.headline || '')}</div>
+
+<div class="bluf">
+  <div class="label">Bottom Line Up Front</div>
+  <p>${esc(data.bottom_line || '')}</p>
+</div>
+`
+
+    // Key Facts + Stakeholders
+    html += `<div class="two-col">\n`
+    if (data.key_facts?.length) {
+      html += `<div><div class="col-label">Key Facts</div>\n`
+      data.key_facts.forEach((f: string) => {
+        html += `<div class="fact"><span class="fact-dot"></span><span>${esc(f)}</span></div>\n`
+      })
+      html += `</div>\n`
+    }
+    if (data.stakeholder_snapshot?.length) {
+      html += `<div><div class="col-label">Stakeholder Snapshot</div>\n`
+      data.stakeholder_snapshot.forEach((s: any) => {
+        html += `<div class="stakeholder"><strong>${esc(s.name)}</strong><div class="stance">${esc(s.position)}</div></div>\n`
+      })
+      html += `</div>\n`
+    }
+    html += `</div>\n`
+
+    // Scenarios
+    if (data.scenarios?.length) {
+      html += `<div class="col-label">Scenarios</div>\n<div class="scenario-grid">\n`
+      const classes = ['likely', 'best', 'worst']
+      data.scenarios.forEach((s: any, i: number) => {
+        const cls = classes[i] || 'likely'
+        html += `<div class="scenario ${cls}">
+  <div class="s-label">${esc(s.label)}</div>
+  <div class="prob">${esc(s.probability)}</div>
+  <p>${esc(s.description)}</p>
+</div>\n`
+      })
+      html += `</div>\n`
+    }
+
+    // Actions + Watch Indicators
+    html += `<div class="two-col">\n`
+    if (data.recommended_actions?.length) {
+      html += `<div><div class="col-label">Recommended Actions</div>\n`
+      data.recommended_actions.forEach((a: string, i: number) => {
+        html += `<div class="action"><span class="action-num">${i + 1}.</span><span>${esc(a)}</span></div>\n`
+      })
+      html += `</div>\n`
+    }
+    if (data.watch_indicators?.length) {
+      html += `<div><div class="col-label">Watch Indicators</div>\n`
+      data.watch_indicators.forEach((w: string) => {
+        html += `<div class="indicator"><span class="indicator-icon">◉</span><span>${esc(w)}</span></div>\n`
+      })
+      html += `</div>\n`
+    }
+    html += `</div>\n`
+
+    html += `<div class="footer">
+  Generated by SignalDesk Intelligence Engine &nbsp;|&nbsp; ${date}<br>
+  <span style="font-size:10px;">This document is confidential and intended for authorized recipients only.</span>
+</div>
+
+</div>
+</body>
+</html>`
+
+    return html
+  }
 }
