@@ -36,6 +36,7 @@ export interface PublicAffairsReport {
   }
   presentation_url?: string
   presentation_metadata?: any
+  one_pager_data?: any
   vault_folder?: string
   created_at: string
   updated_at: string
@@ -503,6 +504,101 @@ export class PublicAffairsService {
       onProgress?.('failed')
       throw err
     }
+  }
+
+  /**
+   * Generate a condensed 1-pager from a full research report
+   */
+  static async generateOnePager(
+    reportId: string,
+    organizationId: string,
+    organizationName: string
+  ): Promise<any> {
+    const { data: report } = await supabase
+      .from('public_affairs_reports')
+      .select('*')
+      .eq('id', reportId)
+      .single()
+
+    if (!report) throw new Error('Report not found')
+
+    const compiledContent = PublicAffairsService.compileFullReport(report)
+
+    const { data: result, error } = await supabase.functions.invoke('pa-one-pager', {
+      body: {
+        report_content: compiledContent,
+        title: report.title,
+        organization_name: organizationName,
+        urgency: report.urgency
+      }
+    })
+
+    if (error) throw error
+    if (!result?.success) throw new Error(result?.error || 'One-pager generation failed')
+
+    // Save one-pager data to the report
+    await supabase
+      .from('public_affairs_reports')
+      .update({
+        one_pager_data: result.one_pager,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', reportId)
+
+    // Save to vault
+    const vaultFolder = report.vault_folder || `Public Affairs/${report.title}`
+    const onePagerMarkdown = PublicAffairsService.onePagerToMarkdown(report.title, result.one_pager)
+    await PublicAffairsService.saveToVault(
+      organizationId,
+      `${vaultFolder}/One-Pager`,
+      'Executive One-Pager',
+      onePagerMarkdown,
+      reportId,
+      { type: 'one_pager' }
+    )
+
+    return result.one_pager
+  }
+
+  /**
+   * Convert one-pager JSON to formatted markdown
+   */
+  private static onePagerToMarkdown(title: string, data: any): string {
+    let md = `# ${title} — Executive One-Pager\n\n`
+    md += `## ${data.headline}\n\n`
+    md += `**BOTTOM LINE:** ${data.bottom_line}\n\n`
+    md += `**Confidence:** ${data.confidence_level} | **Sources:** ${data.sources_count}\n\n---\n\n`
+
+    if (data.key_facts?.length) {
+      md += `### Key Facts\n`
+      data.key_facts.forEach((f: string) => { md += `- ${f}\n` })
+      md += `\n`
+    }
+
+    if (data.stakeholder_snapshot?.length) {
+      md += `### Stakeholder Snapshot\n`
+      data.stakeholder_snapshot.forEach((s: any) => { md += `- **${s.name}:** ${s.position}\n` })
+      md += `\n`
+    }
+
+    if (data.scenarios?.length) {
+      md += `### Scenarios\n`
+      data.scenarios.forEach((s: any) => { md += `- **${s.label}** (${s.probability}): ${s.description}\n` })
+      md += `\n`
+    }
+
+    if (data.recommended_actions?.length) {
+      md += `### Recommended Actions\n`
+      data.recommended_actions.forEach((a: string) => { md += `- ${a}\n` })
+      md += `\n`
+    }
+
+    if (data.watch_indicators?.length) {
+      md += `### Watch Indicators\n`
+      data.watch_indicators.forEach((w: string) => { md += `- ${w}\n` })
+    }
+
+    return md
   }
 
   /**

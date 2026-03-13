@@ -317,7 +317,8 @@ serve(async (req) => {
 
     // CASE 1: New scenario - initial description provided
     if (body.initial_description && !body.scenario_id) {
-      console.log('📝 Starting new scenario from description...')
+      const hasResearchContext = !!body.research_context
+      console.log(`📝 Starting new scenario from description... ${hasResearchContext ? '(with PA research context)' : ''}`)
 
       // Detect scenario type
       const detection = await detectScenarioType(body.initial_description)
@@ -343,10 +344,92 @@ serve(async (req) => {
         aspect_mapping: {},
         ...(body.research_context ? { research_context: body.research_context } : {}),
         _dialogue_state: {
-          phase: 'probing',
+          phase: hasResearchContext ? 'complete' : 'probing',
           questions_asked: [],
           aspects_identified: detection.aspects,
           confidence: detection.confidence
+        }
+      }
+
+      // If we have research context from PA, auto-fill the scenario from research
+      if (hasResearchContext) {
+        console.log('📊 Auto-filling scenario from PA research context...')
+        const rc = body.research_context
+
+        // Extract vulnerabilities from research
+        const vulnerabilities: string[] = []
+        if (rc.impact?.direct) vulnerabilities.push(rc.impact.direct.substring(0, 300))
+        if (rc.impact?.second_order) vulnerabilities.push(rc.impact.second_order.substring(0, 300))
+        if (rc.pressure_points) vulnerabilities.push(rc.pressure_points.substring(0, 300))
+        scenario.known_vulnerabilities = vulnerabilities
+
+        // Enrich the action with research context
+        scenario.action = {
+          ...scenario.action,
+          what: body.initial_description,
+          rationale: rc.executive_summary ? [rc.executive_summary.substring(0, 500)] : [],
+          context: rc.situation?.current?.substring(0, 500),
+          key_developments: rc.situation?.key_developments?.slice(0, 5),
+          key_actors: rc.situation?.key_actors?.slice(0, 8)
+        }
+
+        // Extract timing from research
+        if (rc.existing_scenarios?.length) {
+          scenario.timing = {
+            ...scenario.timing,
+            scenarios: rc.existing_scenarios
+          }
+        }
+
+        // Pre-populate stakeholders from research
+        if (rc.stakeholder_positions?.length) {
+          const stakeholderGroups: Record<string, string[]> = {}
+          for (const s of rc.stakeholder_positions) {
+            const type = (s.type || 'ecosystem').toLowerCase()
+            const category = type === 'government' ? 'regulators'
+              : type === 'corporate' ? 'competitors'
+              : type === 'media' ? 'media'
+              : type === 'civil_society' || type === 'ngo' ? 'advocacy'
+              : type
+            if (!stakeholderGroups[category]) stakeholderGroups[category] = []
+            stakeholderGroups[category].push(s.name)
+          }
+          scenario.stakeholder_seed = stakeholderGroups
+        }
+
+        // Extract aspects from research context
+        const researchAspects = [
+          ...(detection.aspects || []),
+          ...(rc.stakeholder_positions?.map((s: any) => s.interest || s.motivation).filter(Boolean) || [])
+        ]
+        scenario._dialogue_state = {
+          ...scenario._dialogue_state,
+          phase: 'complete',
+          aspects_identified: researchAspects.slice(0, 15),
+          confidence: Math.max(detection.confidence, 0.8),
+          auto_filled_from_research: true
+        } as any
+
+        // Use AI to infer additional stakeholders and aspects from the full research
+        try {
+          const stakeholderResult = await inferStakeholders(scenario)
+          // Merge AI-inferred stakeholders with research-extracted ones
+          for (const [cat, entities] of Object.entries(stakeholderResult.stakeholders || {})) {
+            if (!scenario.stakeholder_seed![cat]) {
+              scenario.stakeholder_seed![cat] = entities as string[]
+            } else {
+              // Add only new entities
+              const existing = new Set(scenario.stakeholder_seed![cat])
+              for (const entity of (entities as string[])) {
+                if (!existing.has(entity)) {
+                  scenario.stakeholder_seed![cat].push(entity)
+                }
+              }
+            }
+          }
+          scenario.aspect_mapping = stakeholderResult.aspect_mapping
+        } catch (inferErr) {
+          console.warn('⚠️ Stakeholder inference failed, using research-extracted only:', inferErr.message)
         }
       }
 
@@ -358,16 +441,36 @@ serve(async (req) => {
           organization_id: body.organization_id,
           type: scenario.type,
           scenario_data: scenario,
-          status: 'building',
+          status: hasResearchContext ? 'ready' : 'building',
           created_at: scenario.created_at
         })
 
       if (saveError) {
         console.error('⚠️ Failed to save scenario:', saveError.message)
-        // Continue anyway - scenario is in response
       }
 
-      // Get first probe
+      if (hasResearchContext) {
+        // Research-backed scenario — skip probing, go straight to ready
+        const response: ScenarioBuilderResponse = {
+          success: true,
+          scenario,
+          phase: 'complete',
+          detected_type: detection.type,
+          confidence: Math.max(detection.confidence, 0.8),
+          ready_for_simulation: true,
+          suggestions: {
+            stakeholders: Object.entries(scenario.stakeholder_seed || {}).map(([cat, entities]) => ({
+              category: cat as StakeholderCategory,
+              entities: entities as string[]
+            })),
+            aspects: scenario._dialogue_state?.aspects_identified || []
+          }
+        }
+
+        return jsonResponse(response)
+      }
+
+      // No research context — normal probing flow
       const nextProbe = getNextProbe(scenario.type!, [], true)
 
       const response: ScenarioBuilderResponse = {

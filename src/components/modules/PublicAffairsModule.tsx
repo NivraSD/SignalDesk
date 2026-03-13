@@ -5,7 +5,8 @@ import {
   Shield, Clock, ChevronRight, Loader2, Sparkles, FileText,
   MonitorPlay, ArrowLeft, AlertTriangle, Users, Target,
   TrendingUp, Eye, Map, BarChart3, Download, Trash2, Copy, Check,
-  Radar, Play, Lightbulb, Globe, BookOpen, Plus, X, Search, Send, Brain
+  Radar, Play, Lightbulb, Globe, BookOpen, Plus, X, Search, Send, Brain,
+  FileDown, ArrowUp
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { supabase } from '@/lib/supabase/client'
@@ -46,6 +47,7 @@ export default function PublicAffairsModule() {
   const [loading, setLoading] = useState(true)
   const [generatingBlueprint, setGeneratingBlueprint] = useState(false)
   const [generatingPresentation, setGeneratingPresentation] = useState(false)
+  const [generatingOnePager, setGeneratingOnePager] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showNewResearch, setShowNewResearch] = useState(false)
   const [newTopic, setNewTopic] = useState('')
@@ -139,6 +141,20 @@ export default function PublicAffairsModule() {
       setError(err.message || 'Failed to generate presentation')
     } finally {
       setGeneratingPresentation(false)
+    }
+  }
+
+  const handleGenerateOnePager = async () => {
+    if (!selectedReport || !organization) return
+    setGeneratingOnePager(true)
+    setError(null)
+    try {
+      await PublicAffairsService.generateOnePager(selectedReport.id, organization.id, organization.name)
+      await fetchReports()
+    } catch (err: any) {
+      setError(err.message || 'Failed to generate one-pager')
+    } finally {
+      setGeneratingOnePager(false)
     }
   }
 
@@ -247,10 +263,12 @@ export default function PublicAffairsModule() {
           onBack={() => setSelectedReport(null)}
           onGenerateBlueprint={handleGenerateBlueprint}
           onGeneratePresentation={handleGeneratePresentation}
+          onGenerateOnePager={handleGenerateOnePager}
           onDownload={handleDownload}
           onExportBrief={handleExportBrief}
           generatingBlueprint={generatingBlueprint}
           generatingPresentation={generatingPresentation}
+          generatingOnePager={generatingOnePager}
           error={error}
         />
       </div>
@@ -608,10 +626,12 @@ function ReportDetailView({
   onBack,
   onGenerateBlueprint,
   onGeneratePresentation,
+  onGenerateOnePager,
   onDownload,
   onExportBrief,
   generatingBlueprint,
   generatingPresentation,
+  generatingOnePager,
   error
 }: {
   report: PublicAffairsReport
@@ -619,10 +639,12 @@ function ReportDetailView({
   onBack: () => void
   onGenerateBlueprint: () => void
   onGeneratePresentation: () => void
+  onGenerateOnePager: () => void
   onDownload: (content: string, filename: string) => void
   onExportBrief: (report: PublicAffairsReport) => void
   generatingBlueprint: boolean
   generatingPresentation: boolean
+  generatingOnePager: boolean
   error: string | null
 }) {
   const [copied, setCopied] = useState(false)
@@ -760,42 +782,104 @@ function ReportDetailView({
         </div>
       )}
 
-      {/* Export bar */}
+      {/* Action bar + Export */}
       {hasResearch && (
-        <div className="flex items-center gap-3 mb-6">
-          <div className="flex-1" />
-          <button
-            onClick={() => onExportBrief(report)}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all"
-            style={{ backgroundColor: 'rgba(59,130,246,0.15)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.3)' }}
-          >
-            <BookOpen className="w-4 h-4" />
-            Export Brief
-          </button>
-          <button
-            onClick={() => handleCopyToClipboard(PublicAffairsService.compileFullReport(report))}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-[var(--grey-800)] text-[var(--grey-300)] hover:bg-[var(--grey-700)] border border-[var(--grey-700)] transition-all"
-          >
-            {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
-            {copied ? 'Copied' : 'Copy'}
-          </button>
-          <button
-            onClick={() => onDownload(PublicAffairsService.compileFullReport(report), `${safeFilename}.md`)}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-[var(--grey-800)] text-[var(--grey-300)] hover:bg-[var(--grey-700)] border border-[var(--grey-700)] transition-all"
-          >
-            <Download className="w-4 h-4" />
-            .md
-          </button>
-          {hasPresentation && (
-            <a
-              href={report.presentation_url!}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-emerald-600 text-white hover:bg-emerald-700 transition-all"
-            >
-              <MonitorPlay className="w-4 h-4" /> View Deck
-            </a>
+        <div id="report-top" className="mb-6 space-y-3">
+          {/* Action buttons row */}
+          {isIntelligenceComplete && (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-semibold uppercase tracking-wider mr-1" style={{ color: '#71717a' }}>Actions</span>
+              <button
+                onClick={handleMonitor}
+                disabled={monitorSuccess}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-60"
+                style={{
+                  backgroundColor: monitorSuccess ? 'rgba(34,197,94,0.1)' : 'rgba(59,130,246,0.1)',
+                  color: monitorSuccess ? '#4ade80' : '#60a5fa',
+                  border: `1px solid ${monitorSuccess ? 'rgba(34,197,94,0.3)' : 'rgba(59,130,246,0.3)'}`
+                }}
+              >
+                {monitorSuccess ? <Check className="w-3.5 h-3.5" /> : <Radar className="w-3.5 h-3.5" />}
+                {monitorSuccess ? 'Tracking' : 'Monitor'}
+              </button>
+              <button
+                onClick={handleSimulate}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+                style={{ backgroundColor: 'rgba(168,85,247,0.1)', color: '#c084fc', border: '1px solid rgba(168,85,247,0.3)' }}
+              >
+                <Play className="w-3.5 h-3.5" /> Simulate
+              </button>
+              <button
+                onClick={onGenerateBlueprint}
+                disabled={generatingBlueprint || hasBlueprint}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-60"
+                style={{
+                  backgroundColor: hasBlueprint ? 'rgba(34,197,94,0.1)' : 'rgba(245,158,11,0.1)',
+                  color: hasBlueprint ? '#4ade80' : '#fbbf24',
+                  border: `1px solid ${hasBlueprint ? 'rgba(34,197,94,0.3)' : 'rgba(245,158,11,0.3)'}`
+                }}
+              >
+                {generatingBlueprint ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : hasBlueprint ? <Check className="w-3.5 h-3.5" /> : <Lightbulb className="w-3.5 h-3.5" />}
+                {hasBlueprint ? 'Strategy Ready' : generatingBlueprint ? 'Generating...' : 'Strategize'}
+              </button>
+              <button
+                onClick={onGenerateOnePager}
+                disabled={generatingOnePager || !!report.one_pager_data}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-60"
+                style={{
+                  backgroundColor: report.one_pager_data ? 'rgba(34,197,94,0.1)' : 'rgba(6,182,212,0.1)',
+                  color: report.one_pager_data ? '#4ade80' : '#22d3ee',
+                  border: `1px solid ${report.one_pager_data ? 'rgba(34,197,94,0.3)' : 'rgba(6,182,212,0.3)'}`
+                }}
+              >
+                {generatingOnePager ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : report.one_pager_data ? <Check className="w-3.5 h-3.5" /> : <FileDown className="w-3.5 h-3.5" />}
+                {report.one_pager_data ? '1-Pager Ready' : generatingOnePager ? 'Generating...' : '1-Pager'}
+              </button>
+              <button
+                onClick={onGeneratePresentation}
+                disabled={generatingPresentation}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-50"
+                style={{ backgroundColor: 'rgba(139,92,246,0.1)', color: '#a78bfa', border: '1px solid rgba(139,92,246,0.3)' }}
+              >
+                {generatingPresentation ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <MonitorPlay className="w-3.5 h-3.5" />}
+                {generatingPresentation ? 'Generating...' : 'Presentation'}
+              </button>
+            </div>
           )}
+          {/* Export row */}
+          <div className="flex items-center gap-2">
+            <div className="flex-1" />
+            <button
+              onClick={() => onExportBrief(report)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+              style={{ backgroundColor: 'rgba(59,130,246,0.15)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.3)' }}
+            >
+              <BookOpen className="w-3.5 h-3.5" /> Export Brief
+            </button>
+            <button
+              onClick={() => handleCopyToClipboard(PublicAffairsService.compileFullReport(report))}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-[var(--grey-800)] text-[var(--grey-300)] hover:bg-[var(--grey-700)] border border-[var(--grey-700)] transition-all"
+            >
+              {copied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
+              {copied ? 'Copied' : 'Copy'}
+            </button>
+            <button
+              onClick={() => onDownload(PublicAffairsService.compileFullReport(report), `${safeFilename}.md`)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-[var(--grey-800)] text-[var(--grey-300)] hover:bg-[var(--grey-700)] border border-[var(--grey-700)] transition-all"
+            >
+              <Download className="w-3.5 h-3.5" /> .md
+            </button>
+            {hasPresentation && (
+              <a
+                href={report.presentation_url!}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-emerald-600 text-white hover:bg-emerald-700 transition-all"
+              >
+                <MonitorPlay className="w-3.5 h-3.5" /> View Deck
+              </a>
+            )}
+          </div>
         </div>
       )}
 
@@ -1121,102 +1205,11 @@ function ReportDetailView({
             </MemoSection>
           )}
 
-          {/* ===================== ACTION MENU ===================== */}
-          {isIntelligenceComplete && hasResearch && (
-            <div className="mt-10 mb-8">
-              <h3 className="text-sm font-semibold uppercase tracking-wider mb-4" style={{ color: '#a1a1aa', fontFamily: 'var(--font-display)' }}>
-                Actions
-              </h3>
-              <div className="grid gap-4 md:grid-cols-3">
-                {/* Monitor */}
-                <button
-                  onClick={handleMonitor}
-                  disabled={monitorSuccess}
-                  className="p-5 rounded-lg border text-left transition-all hover:scale-[1.01]"
-                  style={{
-                    borderColor: monitorSuccess ? 'rgba(34,197,94,0.4)' : 'rgba(59,130,246,0.3)',
-                    backgroundColor: monitorSuccess ? 'rgba(34,197,94,0.05)' : 'rgba(59,130,246,0.05)',
-                  }}
-                >
-                  <div className="flex items-center gap-2 mb-2">
-                    {monitorSuccess ? <Check className="w-5 h-5 text-emerald-400" /> : <Radar className="w-5 h-5 text-blue-400" />}
-                    <span className="text-sm font-semibold" style={{ color: monitorSuccess ? '#4ade80' : '#60a5fa' }}>
-                      {monitorSuccess ? 'Tracking!' : 'Monitor'}
-                    </span>
-                  </div>
-                  <p className="text-xs" style={{ color: '#71717a' }}>
-                    {monitorSuccess ? 'Added to Developing Stories' : 'Track this situation in real-time. Creates a monitored narrative in your sidebar.'}
-                  </p>
-                </button>
+          {/* Actions are now in the top action bar */}
 
-                {/* Simulate */}
-                <button
-                  onClick={handleSimulate}
-                  className="p-5 rounded-lg border text-left transition-all hover:scale-[1.01]"
-                  style={{
-                    borderColor: 'rgba(168,85,247,0.3)',
-                    backgroundColor: 'rgba(168,85,247,0.05)',
-                  }}
-                >
-                  <div className="flex items-center gap-2 mb-2">
-                    <Play className="w-5 h-5 text-purple-400" />
-                    <span className="text-sm font-semibold" style={{ color: '#c084fc' }}>Simulate</span>
-                  </div>
-                  <p className="text-xs" style={{ color: '#71717a' }}>
-                    Run a stakeholder simulation with extracted actors. Pre-populates the LP Scenario Builder.
-                  </p>
-                </button>
-
-                {/* Strategize */}
-                <button
-                  onClick={onGenerateBlueprint}
-                  disabled={generatingBlueprint || hasBlueprint}
-                  className="p-5 rounded-lg border text-left transition-all hover:scale-[1.01] disabled:opacity-60"
-                  style={{
-                    borderColor: hasBlueprint ? 'rgba(34,197,94,0.3)' : 'rgba(245,158,11,0.3)',
-                    backgroundColor: hasBlueprint ? 'rgba(34,197,94,0.05)' : 'rgba(245,158,11,0.05)',
-                  }}
-                >
-                  <div className="flex items-center gap-2 mb-2">
-                    {generatingBlueprint ? (
-                      <Loader2 className="w-5 h-5 animate-spin text-amber-400" />
-                    ) : hasBlueprint ? (
-                      <Check className="w-5 h-5 text-emerald-400" />
-                    ) : (
-                      <Lightbulb className="w-5 h-5 text-amber-400" />
-                    )}
-                    <span className="text-sm font-semibold" style={{ color: hasBlueprint ? '#4ade80' : generatingBlueprint ? '#fbbf24' : '#fbbf24' }}>
-                      {hasBlueprint ? 'Strategy Ready' : generatingBlueprint ? 'Generating...' : 'Strategize'}
-                    </span>
-                  </div>
-                  <p className="text-xs" style={{ color: '#71717a' }}>
-                    {hasBlueprint ? 'Strategic recommendations generated — see below.' : 'Generate detailed strategic recommendations, decision matrix, and monitoring framework.'}
-                  </p>
-                </button>
-              </div>
-
-              {/* Generate Presentation button */}
-              <div className="mt-4 flex gap-3">
-                {hasResearch && (
-                  <button
-                    onClick={onGeneratePresentation}
-                    disabled={generatingPresentation}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all disabled:opacity-50"
-                    style={{
-                      backgroundColor: 'rgba(139,92,246,0.15)',
-                      color: '#a78bfa',
-                      border: '1px solid rgba(139,92,246,0.3)',
-                    }}
-                  >
-                    {generatingPresentation ? (
-                      <><Loader2 className="w-4 h-4 animate-spin" /> Generating Presentation...</>
-                    ) : (
-                      <><MonitorPlay className="w-4 h-4" /> Generate Presentation Deck</>
-                    )}
-                  </button>
-                )}
-              </div>
-            </div>
+          {/* One-Pager (shown after 1-Pager action) */}
+          {report.one_pager_data && (
+            <OnePagerSection data={report.one_pager_data} title={report.title} />
           )}
 
           {/* Blueprint sections (shown after Strategize action) */}
@@ -1267,35 +1260,12 @@ function ReportDetailView({
             </MemoSection>
           )}
 
-          {/* Legacy action buttons */}
-          <div className="flex flex-wrap items-center gap-3 my-8">
-            {hasResearch && !hasBlueprint && (
-              <button
-                onClick={onGenerateBlueprint}
-                disabled={generatingBlueprint}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition-all disabled:opacity-50"
-              >
-                {generatingBlueprint ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" /> Generating Blueprint...</>
-                ) : (
-                  <><Sparkles className="w-4 h-4" /> Generate Blueprint</>
-                )}
-              </button>
-            )}
-            {hasResearch && (
-              <button
-                onClick={onGeneratePresentation}
-                disabled={generatingPresentation}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-[var(--grey-800)] text-[var(--grey-300)] hover:bg-[var(--grey-700)] border border-[var(--grey-700)] transition-all disabled:opacity-50"
-              >
-                {generatingPresentation ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" /> Generating Presentation...</>
-                ) : (
-                  <><MonitorPlay className="w-4 h-4" /> Generate Presentation</>
-                )}
-              </button>
-            )}
-          </div>
+          {/* Actions are now in the top action bar */}
+
+          {/* One-Pager (legacy format) */}
+          {report.one_pager_data && (
+            <OnePagerSection data={report.one_pager_data} title={report.title} />
+          )}
 
           {report.blueprint_data?.scenario_tree && (
             <MemoSection title="Scenario Tree" icon={TrendingUp}>
@@ -1315,6 +1285,19 @@ function ReportDetailView({
             </MemoSection>
           )}
         </>
+      )}
+
+      {/* Back to top */}
+      {hasResearch && (
+        <div className="flex justify-center mt-10 mb-4">
+          <button
+            onClick={() => document.getElementById('report-top')?.scrollIntoView({ behavior: 'smooth' })}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium transition-all"
+            style={{ backgroundColor: 'rgba(255,255,255,0.05)', color: '#71717a', border: '1px solid rgba(255,255,255,0.08)' }}
+          >
+            <ArrowUp className="w-3.5 h-3.5" /> Back to top
+          </button>
+        </div>
       )}
     </div>
   )
@@ -1547,6 +1530,164 @@ function RecommendationsContent({ data }: { data: any }) {
           )}
         </div>
       )}
+    </div>
+  )
+}
+
+// One-Pager Section — condensed executive summary card
+function OnePagerSection({ data, title }: { data: any; title: string }) {
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = () => {
+    let text = `${data.headline}\n\n`
+    text += `BOTTOM LINE: ${data.bottom_line}\n\n`
+    if (data.key_facts?.length) {
+      text += `KEY FACTS:\n${data.key_facts.map((f: string) => `• ${f}`).join('\n')}\n\n`
+    }
+    if (data.stakeholder_snapshot?.length) {
+      text += `STAKEHOLDERS:\n${data.stakeholder_snapshot.map((s: any) => `• ${s.name}: ${s.position}`).join('\n')}\n\n`
+    }
+    if (data.scenarios?.length) {
+      text += `SCENARIOS:\n${data.scenarios.map((s: any) => `• ${s.label} (${s.probability}): ${s.description}`).join('\n')}\n\n`
+    }
+    if (data.recommended_actions?.length) {
+      text += `RECOMMENDED ACTIONS:\n${data.recommended_actions.map((a: string) => `• ${a}`).join('\n')}\n\n`
+    }
+    if (data.watch_indicators?.length) {
+      text += `WATCH INDICATORS:\n${data.watch_indicators.map((w: string) => `• ${w}`).join('\n')}\n`
+    }
+    navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <div className="mb-8 bg-[var(--grey-900)] border border-cyan-500/20 rounded-lg overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-6 py-3 border-b" style={{ borderColor: 'rgba(6,182,212,0.15)' }}>
+        <div className="flex items-center gap-2">
+          <FileDown className="w-4 h-4 text-cyan-400" />
+          <h3 className="text-sm font-semibold uppercase tracking-wider" style={{ color: '#f4f4f5', fontFamily: 'var(--font-display)' }}>
+            Executive One-Pager
+          </h3>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(6,182,212,0.15)', color: '#22d3ee' }}>
+            {data.confidence_level} Confidence
+          </span>
+          <button
+            onClick={handleCopy}
+            className="text-xs flex items-center gap-1 px-2 py-1 rounded hover:bg-[var(--grey-800)] transition-colors"
+            style={{ color: copied ? '#4ade80' : '#a1a1aa' }}
+          >
+            {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+            {copied ? 'Copied' : 'Copy'}
+          </button>
+        </div>
+      </div>
+
+      <div className="px-6 py-5 space-y-5">
+        {/* Headline */}
+        <h2 className="text-xl font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>
+          {data.headline}
+        </h2>
+
+        {/* Bottom Line */}
+        <div className="p-4 rounded-lg" style={{ backgroundColor: 'rgba(6,182,212,0.08)', borderLeft: '3px solid #22d3ee' }}>
+          <p className="text-xs uppercase tracking-wider mb-1 font-semibold" style={{ color: '#22d3ee' }}>Bottom Line</p>
+          <p className="text-sm leading-relaxed" style={{ color: '#e4e4e7' }}>{data.bottom_line}</p>
+        </div>
+
+        {/* Key Facts + Stakeholders — 2 column */}
+        <div className="grid grid-cols-2 gap-5">
+          {/* Key Facts */}
+          {data.key_facts?.length > 0 && (
+            <div>
+              <p className="text-xs uppercase tracking-wider mb-2 font-semibold" style={{ color: '#a1a1aa' }}>Key Facts</p>
+              <div className="space-y-2">
+                {data.key_facts.map((fact: string, i: number) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 mt-1.5 shrink-0" />
+                    <p className="text-sm" style={{ color: '#d4d4d8' }}>{fact}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Stakeholder Snapshot */}
+          {data.stakeholder_snapshot?.length > 0 && (
+            <div>
+              <p className="text-xs uppercase tracking-wider mb-2 font-semibold" style={{ color: '#a1a1aa' }}>Stakeholder Snapshot</p>
+              <div className="space-y-2">
+                {data.stakeholder_snapshot.map((s: any, i: number) => (
+                  <div key={i} className="p-2.5 rounded" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
+                    <p className="text-sm font-medium text-white">{s.name}</p>
+                    <p className="text-xs mt-0.5" style={{ color: '#a1a1aa' }}>{s.position}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Scenarios */}
+        {data.scenarios?.length > 0 && (
+          <div>
+            <p className="text-xs uppercase tracking-wider mb-2 font-semibold" style={{ color: '#a1a1aa' }}>Scenarios</p>
+            <div className="grid grid-cols-3 gap-3">
+              {data.scenarios.map((s: any, i: number) => {
+                const colors = [
+                  { bg: 'rgba(6,182,212,0.08)', border: 'rgba(6,182,212,0.3)', label: '#22d3ee' },
+                  { bg: 'rgba(34,197,94,0.08)', border: 'rgba(34,197,94,0.3)', label: '#4ade80' },
+                  { bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.3)', label: '#f87171' },
+                ]
+                const c = colors[i] || colors[0]
+                return (
+                  <div key={i} className="p-3 rounded-lg border" style={{ backgroundColor: c.bg, borderColor: c.border }}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-semibold" style={{ color: c.label }}>{s.label}</span>
+                      <span className="text-xs font-mono" style={{ color: '#71717a' }}>{s.probability}</span>
+                    </div>
+                    <p className="text-xs" style={{ color: '#d4d4d8' }}>{s.description}</p>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Actions + Watch Indicators — 2 column */}
+        <div className="grid grid-cols-2 gap-5">
+          {data.recommended_actions?.length > 0 && (
+            <div>
+              <p className="text-xs uppercase tracking-wider mb-2 font-semibold" style={{ color: '#a1a1aa' }}>Recommended Actions</p>
+              <div className="space-y-1.5">
+                {data.recommended_actions.map((action: string, i: number) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <span className="text-xs mt-0.5" style={{ color: '#22d3ee' }}>{i + 1}.</span>
+                    <p className="text-sm" style={{ color: '#d4d4d8' }}>{action}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {data.watch_indicators?.length > 0 && (
+            <div>
+              <p className="text-xs uppercase tracking-wider mb-2 font-semibold" style={{ color: '#a1a1aa' }}>Watch Indicators</p>
+              <div className="space-y-1.5">
+                {data.watch_indicators.map((indicator: string, i: number) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <Eye className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: '#fbbf24' }} />
+                    <p className="text-sm" style={{ color: '#d4d4d8' }}>{indicator}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
