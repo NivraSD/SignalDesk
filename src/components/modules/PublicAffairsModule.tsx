@@ -649,6 +649,7 @@ function ReportDetailView({
   generatingOnePager: boolean
   error: string | null
 }) {
+  const router = useRouter()
   const [copied, setCopied] = useState(false)
   const [monitorSuccess, setMonitorSuccess] = useState(false)
   const hasResearch = !!report.research_data
@@ -825,17 +826,24 @@ function ReportDetailView({
                 {hasBlueprint ? 'Strategy Ready' : generatingBlueprint ? 'Generating...' : 'Strategize'}
               </button>
               <button
-                onClick={onGenerateOnePager}
-                disabled={generatingOnePager || !!report.one_pager_data}
+                onClick={() => {
+                  if (report.one_pager_data) {
+                    document.getElementById('one-pager-section')?.scrollIntoView({ behavior: 'smooth' })
+                  } else {
+                    onGenerateOnePager()
+                  }
+                }}
+                disabled={generatingOnePager}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-60"
                 style={{
                   backgroundColor: report.one_pager_data ? 'rgba(34,197,94,0.1)' : 'rgba(6,182,212,0.1)',
                   color: report.one_pager_data ? '#4ade80' : '#22d3ee',
-                  border: `1px solid ${report.one_pager_data ? 'rgba(34,197,94,0.3)' : 'rgba(6,182,212,0.3)'}`
+                  border: `1px solid ${report.one_pager_data ? 'rgba(34,197,94,0.3)' : 'rgba(6,182,212,0.3)'}`,
+                  cursor: report.one_pager_data ? 'pointer' : undefined
                 }}
               >
                 {generatingOnePager ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : report.one_pager_data ? <Check className="w-3.5 h-3.5" /> : <FileDown className="w-3.5 h-3.5" />}
-                {report.one_pager_data ? '1-Pager Ready' : generatingOnePager ? 'Generating...' : '1-Pager'}
+                {report.one_pager_data ? '1-Pager Ready — View' : generatingOnePager ? 'Generating...' : '1-Pager'}
               </button>
               <button
                 onClick={onGeneratePresentation}
@@ -1211,7 +1219,9 @@ function ReportDetailView({
 
           {/* One-Pager (shown after 1-Pager action) */}
           {report.one_pager_data && (
-            <OnePagerSection data={report.one_pager_data} title={report.title} />
+            <div id="one-pager-section">
+              <OnePagerSection data={report.one_pager_data} title={report.title} />
+            </div>
           )}
 
           {/* Blueprint sections (shown after Strategize action) */}
