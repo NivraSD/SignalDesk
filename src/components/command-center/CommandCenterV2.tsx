@@ -5,7 +5,6 @@ import { Brain } from 'lucide-react'
 import NIVPanel from '../niv/NIVPanel'
 import LiveActivityFeed from './LiveActivityFeed'
 import SuggestedActions from './SuggestedActions'
-import WhatIfSimulator from '../shared/WhatIfSimulator'
 import { useAppStore } from '@/stores/useAppStore'
 
 interface CommandCenterV2Props {
@@ -42,12 +41,6 @@ export default function CommandCenterV2({ onNavigateToTab }: CommandCenterV2Prop
             <SuggestedActions
               organizationId={organization?.id || '1'}
               onNavigate={onNavigateToTab}
-            />
-          </div>
-          <div className="border-t border-gray-700 p-3">
-            <WhatIfSimulator
-              compact
-              organizationId={organization?.id}
             />
           </div>
         </div>

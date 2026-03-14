@@ -1,11 +1,10 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Target, Zap, Clock, TrendingUp, AlertCircle, Play, ChevronRight, Sparkles, FileText, Image, Users, Share2, Palette, Megaphone, ExternalLink, Download, Check, Loader2, Eye } from 'lucide-react'
+import { Target, Zap, Clock, TrendingUp, TrendingDown, Minus as MinusIcon, AlertCircle, Play, ChevronRight, ChevronDown, Sparkles, FileText, Image, Users, Share2, Palette, Megaphone, ExternalLink, Download, Check, Loader2, Eye, ArrowRight, CheckCircle } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase/client'
 import { useAppStore } from '@/stores/useAppStore'
-import WhatIfSimulator from '@/components/shared/WhatIfSimulator'
 
 // V2 OPPORTUNITY STRUCTURE
 interface ContentBrief {
@@ -78,6 +77,7 @@ interface Opportunity {
   executed?: boolean
   presentation_url?: string
   auto_executable?: boolean
+  scenario_analysis?: any
   data?: any
 }
 
@@ -94,6 +94,8 @@ export default function OpportunitiesModule() {
   }>({})
   const [generatedContent, setGeneratedContent] = useState<any[]>([])
   const [viewingContent, setViewingContent] = useState<any | null>(null)
+  const [scenarioAnalysis, setScenarioAnalysis] = useState<Record<string, any>>({})
+  const [expandedScenarioIdx, setExpandedScenarioIdx] = useState<number>(1)
 
   useEffect(() => {
     fetchOpportunities()
@@ -176,6 +178,16 @@ export default function OpportunitiesModule() {
       if (error) throw error
 
       setOpportunities(data || [])
+      // Load persisted scenario analyses
+      const scenarios: Record<string, any> = {}
+      for (const opp of (data || [])) {
+        if (opp.scenario_analysis) {
+          scenarios[opp.id] = opp.scenario_analysis
+        }
+      }
+      if (Object.keys(scenarios).length > 0) {
+        setScenarioAnalysis(prev => ({ ...prev, ...scenarios }))
+      }
       console.log('Loaded', data?.length, 'opportunities from database')
     } catch (error) {
       console.error('Error fetching opportunities:', error)
@@ -507,6 +519,22 @@ ${opp.execution_plan?.success_metrics?.map((m: any) => `- ${JSON.stringify(m)}`)
         }
       }
 
+      // Fire scenario analysis in parallel (non-blocking)
+      const scenarioPromise = supabase.functions.invoke('quick-scenario', {
+        body: {
+          prompt: `Analyze the strategic implications of executing this opportunity: ${opp.title}`,
+          context: `${opp.description}\nWhy now: ${opp.strategic_context?.why_now || ''}\nCompetitive advantage: ${opp.strategic_context?.competitive_advantage || ''}\nRisk if missed: ${opp.strategic_context?.risk_if_missed || ''}\nTrigger events: ${opp.strategic_context?.trigger_events?.join(', ') || ''}\nStakeholders: ${opp.execution_plan?.stakeholder_campaigns?.map(c => c.stakeholder_name).join(', ') || ''}`,
+          organization_id: opp.organization_id
+        }
+      }).then(({ data, error: err }) => {
+        if (!err && data?.success) {
+          console.log('⚡ Scenario analysis complete')
+          setScenarioAnalysis(prev => ({ ...prev, [opp.id]: data }))
+        } else {
+          console.warn('⚡ Scenario analysis failed:', err?.message || data?.error)
+        }
+      }).catch(e => console.warn('⚡ Scenario analysis error:', e))
+
       // Generate Gamma presentation
       setGenerationProgress({ current: 'Finalizing Presentation...', progress: 90 })
 
@@ -572,6 +600,9 @@ ${opp.execution_plan?.success_metrics?.map((m: any) => `- ${JSON.stringify(m)}`)
       console.log('📦 Final content fetch...')
       await fetchGeneratedContent(opp.id)
 
+      // Wait for scenario analysis to complete before saving
+      await scenarioPromise
+
       // Update database
       const { error: updateError } = await supabase
         .from('opportunities')
@@ -581,6 +612,18 @@ ${opp.execution_plan?.success_metrics?.map((m: any) => `- ${JSON.stringify(m)}`)
           presentation_url: presentationUrl
         })
         .eq('id', opp.id)
+
+      // Try to persist scenario analysis (column may not exist yet)
+      const scenarioData = scenarioAnalysis[opp.id]
+      if (scenarioData) {
+        await supabase
+          .from('opportunities')
+          .update({ scenario_analysis: scenarioData })
+          .eq('id', opp.id)
+          .then(({ error: saErr }) => {
+            if (saErr) console.warn('Could not persist scenario_analysis (run: ALTER TABLE opportunities ADD COLUMN scenario_analysis JSONB)')
+          })
+      }
 
       if (updateError) console.error('Error updating opportunity:', updateError)
 
@@ -1009,15 +1052,124 @@ ${opp.execution_plan?.success_metrics?.map((m: any) => `- ${JSON.stringify(m)}`)
                 </div>
               )}
 
-              {/* What-If Scenario Analysis */}
-              <div className="mb-4 p-4 bg-[var(--grey-800)] rounded-lg border border-[var(--grey-700)]">
-                <WhatIfSimulator
-                  compact
-                  initialPrompt={`What would happen if we ${opp.title.toLowerCase()}?`}
-                  context={`Opportunity: ${opp.title}\n${opp.description}\n${opp.strategic_context?.why_now ? `Why now: ${opp.strategic_context.why_now}` : ''}${opp.strategic_context?.competitive_advantage ? `\nAdvantage: ${opp.strategic_context.competitive_advantage}` : ''}`}
-                  organizationId={opp.organization_id}
-                />
-              </div>
+              {/* Scenario Analysis Results */}
+              {scenarioAnalysis[opp.id] && (
+                <div className="mb-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Zap className="w-4 h-4 text-[var(--burnt-orange)]" />
+                    <h3 className="text-lg font-semibold text-white" style={{ fontFamily: 'var(--font-display)' }}>Scenario Analysis</h3>
+                    <span className="text-[10px] text-[var(--grey-500)]">{scenarioAnalysis[opp.id].meta?.duration_seconds}s</span>
+                  </div>
+
+                  {/* Overall Assessment */}
+                  <div className="mb-3 p-3 bg-[var(--grey-800)] rounded-lg border border-[var(--grey-700)]">
+                    <p className="text-sm text-[var(--grey-300)]">{scenarioAnalysis[opp.id].overall_assessment}</p>
+                    <div className="flex items-center gap-1.5 mt-2">
+                      <Target className="w-3 h-3 text-[var(--burnt-orange)]" />
+                      <span className="text-xs text-[var(--grey-400)]"><span className="font-medium text-[var(--grey-300)]">Key variable:</span> {scenarioAnalysis[opp.id].key_variable}</span>
+                    </div>
+                  </div>
+
+                  {/* Scenarios */}
+                  <div className="space-y-2">
+                    {(scenarioAnalysis[opp.id].scenarios || []).map((scenario: any, idx: number) => {
+                      const accentColors = [
+                        { border: 'border-green-500/30', header: 'bg-green-500/10', text: 'text-green-400' },
+                        { border: 'border-blue-500/30', header: 'bg-blue-500/10', text: 'text-blue-400' },
+                        { border: 'border-red-500/30', header: 'bg-red-500/10', text: 'text-red-400' }
+                      ]
+                      const accent = accentColors[idx] || accentColors[0]
+                      const isOpen = expandedScenarioIdx === idx
+
+                      return (
+                        <div key={idx} className={`rounded-lg border ${accent.border} overflow-hidden`}>
+                          <button
+                            onClick={() => setExpandedScenarioIdx(isOpen ? -1 : idx)}
+                            className={`w-full px-4 py-3 flex items-center justify-between ${accent.header} transition-colors`}
+                          >
+                            <div className="flex items-center gap-3">
+                              {isOpen
+                                ? <ChevronDown className={`w-4 h-4 ${accent.text}`} />
+                                : <ChevronRight className={`w-4 h-4 ${accent.text}`} />
+                              }
+                              <span className={`text-sm font-semibold ${accent.text}`}>{scenario.name}</span>
+                              <span className="px-2 py-0.5 text-[10px] rounded-full font-medium bg-[var(--grey-700)] text-[var(--grey-300)]">
+                                {scenario.likelihood_pct}% likely
+                              </span>
+                            </div>
+                          </button>
+
+                          {isOpen && (
+                            <div className="p-4 bg-[var(--grey-800)]/50 space-y-4">
+                              <p className="text-sm text-[var(--grey-300)]">{scenario.summary}</p>
+
+                              {/* Entity Reactions */}
+                              {scenario.entity_reactions?.length > 0 && (
+                                <div>
+                                  <h4 className="text-[10px] font-semibold text-[var(--grey-500)] uppercase tracking-wide mb-2">Entity Reactions</h4>
+                                  <div className="space-y-1.5">
+                                    {scenario.entity_reactions.map((er: any, i: number) => {
+                                      const sentimentIcon = er.sentiment === 'positive' ? TrendingUp : er.sentiment === 'negative' ? TrendingDown : MinusIcon
+                                      const sentimentColor = er.sentiment === 'positive' ? 'text-green-400' : er.sentiment === 'negative' ? 'text-red-400' : 'text-[var(--grey-400)]'
+                                      const SIcon = sentimentIcon
+                                      return (
+                                        <div key={i} className="flex items-start gap-2 px-3 py-2 rounded-lg bg-[var(--grey-900)] border border-[var(--grey-700)]">
+                                          <SIcon className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${sentimentColor}`} />
+                                          <div className="flex-1 min-w-0">
+                                            <span className={`text-xs font-semibold ${sentimentColor}`}>{er.entity}</span>
+                                            <p className="text-xs text-[var(--grey-400)] mt-0.5">{er.reaction}</p>
+                                          </div>
+                                          <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium shrink-0 ${
+                                            er.impact === 'high' ? 'bg-red-500/20 text-red-400' :
+                                            er.impact === 'medium' ? 'bg-amber-500/20 text-amber-400' :
+                                            'bg-[var(--grey-700)] text-[var(--grey-400)]'
+                                          }`}>
+                                            {er.impact}
+                                          </span>
+                                        </div>
+                                      )
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Cascade Effects */}
+                              {scenario.cascade_effects?.length > 0 && (
+                                <div>
+                                  <h4 className="text-[10px] font-semibold text-[var(--grey-500)] uppercase tracking-wide mb-2">Cascade Effects</h4>
+                                  <div className="space-y-1">
+                                    {scenario.cascade_effects.map((effect: string, i: number) => (
+                                      <div key={i} className="flex items-start gap-2">
+                                        <ArrowRight className="w-3 h-3 mt-0.5 text-[var(--grey-500)] shrink-0" />
+                                        <span className="text-xs text-[var(--grey-300)]">{effect}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Recommended Actions */}
+                              {scenario.recommended_actions?.length > 0 && (
+                                <div>
+                                  <h4 className="text-[10px] font-semibold text-[var(--grey-500)] uppercase tracking-wide mb-2">Recommended Actions</h4>
+                                  <div className="space-y-1">
+                                    {scenario.recommended_actions.map((action: string, i: number) => (
+                                      <div key={i} className="flex items-start gap-2">
+                                        <CheckCircle className="w-3 h-3 mt-0.5 text-green-500 shrink-0" />
+                                        <span className="text-xs text-[var(--grey-300)] font-medium">{action}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* Execute Button */}
               {!opp.executed && opp.version === 2 && opp.execution_plan && (
