@@ -1106,7 +1106,7 @@ ${opp.execution_plan?.success_metrics?.map((m: any) => `- ${JSON.stringify(m)}`)
                               {/* Entity Reactions */}
                               {scenario.entity_reactions?.length > 0 && (
                                 <div>
-                                  <h4 className="text-[10px] font-semibold text-[var(--grey-500)] uppercase tracking-wide mb-2">Entity Reactions</h4>
+                                  <h4 className="text-[10px] font-semibold text-white uppercase tracking-wide mb-2">Entity Reactions</h4>
                                   <div className="space-y-1.5">
                                     {scenario.entity_reactions.map((er: any, i: number) => {
                                       const sentimentIcon = er.sentiment === 'positive' ? TrendingUp : er.sentiment === 'negative' ? TrendingDown : MinusIcon
@@ -1136,7 +1136,7 @@ ${opp.execution_plan?.success_metrics?.map((m: any) => `- ${JSON.stringify(m)}`)
                               {/* Cascade Effects */}
                               {scenario.cascade_effects?.length > 0 && (
                                 <div>
-                                  <h4 className="text-[10px] font-semibold text-[var(--grey-500)] uppercase tracking-wide mb-2">Cascade Effects</h4>
+                                  <h4 className="text-[10px] font-semibold text-white uppercase tracking-wide mb-2">Cascade Effects</h4>
                                   <div className="space-y-1">
                                     {scenario.cascade_effects.map((effect: string, i: number) => (
                                       <div key={i} className="flex items-start gap-2">
@@ -1151,7 +1151,7 @@ ${opp.execution_plan?.success_metrics?.map((m: any) => `- ${JSON.stringify(m)}`)
                               {/* Recommended Actions */}
                               {scenario.recommended_actions?.length > 0 && (
                                 <div>
-                                  <h4 className="text-[10px] font-semibold text-[var(--grey-500)] uppercase tracking-wide mb-2">Recommended Actions</h4>
+                                  <h4 className="text-[10px] font-semibold text-white uppercase tracking-wide mb-2">Recommended Actions</h4>
                                   <div className="space-y-1">
                                     {scenario.recommended_actions.map((action: string, i: number) => (
                                       <div key={i} className="flex items-start gap-2">
