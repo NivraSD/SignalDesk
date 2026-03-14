@@ -242,9 +242,32 @@ serve(async (req) => {
         ? `Organization: ${org.name}\nIndustry: ${org.industry || 'N/A'}`
         : '';
 
+      // Filter out matches with truly empty articles (no title, no description, no content)
+      const usableMatches = targetMatches.filter(m => {
+        const a = m.raw_articles;
+        const hasContent = a.full_content && a.full_content.trim().length > 50;
+        const hasTitle = a.title && a.title.trim().length > 10;
+        return hasContent || hasTitle;
+      });
+
+      if (usableMatches.length < targetMatches.length) {
+        console.log(`     Filtered: ${targetMatches.length} → ${usableMatches.length} usable matches (skipped empty articles)`);
+        // Mark empty ones as processed so they don't clog the queue
+        const emptyMatchIds = targetMatches
+          .filter(m => !usableMatches.includes(m))
+          .map(m => m.id);
+        if (emptyMatchIds.length > 0) {
+          await supabase
+            .from('target_article_matches')
+            .update({ facts_extracted: true, facts_extracted_at: new Date().toISOString() })
+            .in('id', emptyMatchIds);
+          matchesProcessed += emptyMatchIds.length;
+        }
+      }
+
       // Process in batches
-      for (let i = 0; i < targetMatches.length; i += MAX_ARTICLES_PER_BATCH) {
-        const batch = targetMatches.slice(i, i + MAX_ARTICLES_PER_BATCH);
+      for (let i = 0; i < usableMatches.length; i += MAX_ARTICLES_PER_BATCH) {
+        const batch = usableMatches.slice(i, i + MAX_ARTICLES_PER_BATCH);
         const articles = batch.map(m => m.raw_articles);
 
         try {
@@ -492,11 +515,14 @@ Priority: ${target.priority}
 Context: ${target.monitoring_context || 'N/A'}
 
 ARTICLES TO ANALYZE:
-${articles.map((a, i) => `
+${articles.map((a, i) => {
+  const hasContent = a.full_content && a.full_content.trim().length > 50;
+  return `
 [${i + 1}] "${a.title}" (${a.source_name}, ${a.published_at?.split('T')[0] || 'recent'})
-${a.description || ''}
-${a.full_content ? a.full_content.substring(0, 800) + '...' : ''}
-`).join('\n---\n')}
+${a.description ? `Description: ${a.description}` : ''}
+${hasContent ? `Content: ${a.full_content!.substring(0, 800)}...` : '[Title/description only - extract facts from headline if substantive]'}
+`;
+}).join('\n---\n')}
 
 TASK: Extract intelligence facts about ${target.name} from these articles.
 
@@ -517,6 +543,7 @@ RULES:
 - If ${target.name} is only mentioned in passing with no substantive information, skip that article
 - Be specific in summaries - include actual names, numbers, dates, locations when available
 - Relationships should only include clearly stated or strongly implied connections
+- IMPORTANT: For articles with only title/description (no full content), you CAN still extract facts if the headline contains substantive intelligence (e.g. "Mitsui to invest $500M in LNG" is a clear expansion fact). Use lower confidence_score (0.5-0.7) for headline-only facts.
 - Return an empty array if no articles contain relevant facts
 
 Return JSON array:

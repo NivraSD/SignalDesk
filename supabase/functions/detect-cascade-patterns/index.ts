@@ -145,14 +145,38 @@ serve(async (req) => {
 
     console.log(`   Checking ${signals.length} recent signals against patterns`);
 
+    // Debug: sample first signal and first pattern
+    const debugInfo: any = {
+      sample_signal: signals[0] ? {
+        type: signals[0].signal_type,
+        subtype: signals[0].signal_subtype,
+        target_type: signals[0].primary_target_type,
+        title_prefix: signals[0].title?.slice(0, 60)
+      } : null,
+      sample_pattern: patterns[0] ? {
+        name: patterns[0].pattern_name,
+        trigger_type: patterns[0].trigger_signal_type,
+        entity_types: patterns[0].trigger_entity_types,
+        keywords: patterns[0].trigger_keywords
+      } : null,
+      match_attempts: [] as string[]
+    };
+
     let cascadesDetected = 0;
     let alertsCreated = 0;
     const cascadeAlerts: CascadeAlert[] = [];
 
     // Check each signal against each pattern
+    let matchAttempts = 0;
     for (const signal of signals as Signal[]) {
       for (const pattern of patterns as CascadePattern[]) {
+        matchAttempts++;
         const isMatch = checkPatternTrigger(signal, pattern);
+
+        // Track first few match attempts for debug
+        if (matchAttempts <= 10) {
+          debugInfo.match_attempts.push(`${signal.signal_type}/${signal.signal_subtype} vs ${pattern.trigger_signal_type}: ${isMatch}`);
+        }
 
         if (isMatch) {
           console.log(`   🎯 Pattern match: "${pattern.pattern_name}" triggered by "${signal.title.slice(0, 40)}..."`);
@@ -197,6 +221,8 @@ serve(async (req) => {
       signals_checked: signals.length,
       cascades_detected: cascadesDetected,
       alerts_created: alertsCreated,
+      debug: debugInfo,
+      total_match_attempts: matchAttempts,
       cascade_progressions: progressions,
       duration_seconds: duration
     };
@@ -235,7 +261,10 @@ function checkPatternTrigger(signal: Signal, pattern: CascadePattern): boolean {
     triggerType.includes(signalType.toLowerCase()) ||
     signal.signal_type.toLowerCase() === triggerType;
 
-  if (!typeMatch) return false;
+  if (!typeMatch) {
+    // Only log for first few signals to avoid spam
+    return false;
+  }
 
   // 2. Check entity type match (if specified)
   if (pattern.trigger_entity_types && pattern.trigger_entity_types.length > 0) {
@@ -243,16 +272,23 @@ function checkPatternTrigger(signal: Signal, pattern: CascadePattern): boolean {
     const entityMatch = pattern.trigger_entity_types.some(
       et => targetType.includes(et.toLowerCase()) || et.toLowerCase().includes(targetType)
     );
-    if (!entityMatch && targetType) return false;  // Only fail if we have a target type
+    if (!entityMatch && targetType) {
+      console.log(`     [DEBUG] Entity mismatch: signal target_type="${targetType}" vs pattern expects=${JSON.stringify(pattern.trigger_entity_types)}`);
+      return false;
+    }
   }
 
   // 3. Check keyword match (if specified)
   if (pattern.trigger_keywords && pattern.trigger_keywords.length > 0) {
-    const searchText = `${signal.title} ${signal.description}`.toLowerCase();
+    const searchText = `${signal.title} ${signal.description || ''}`.toLowerCase();
     const keywordMatch = pattern.trigger_keywords.some(kw => searchText.includes(kw.toLowerCase()));
-    if (!keywordMatch) return false;
+    if (!keywordMatch) {
+      console.log(`     [DEBUG] Keyword mismatch: pattern="${pattern.pattern_name}" | keywords=${JSON.stringify(pattern.trigger_keywords)} | title="${signal.title.slice(0, 60)}"`);
+      return false;
+    }
   }
 
+  console.log(`   ✅ Pattern MATCHED: "${pattern.pattern_name}" ← signal "${signal.title.slice(0, 50)}"`);
   return true;
 }
 
@@ -387,14 +423,22 @@ async function checkCascadeProgressions(supabase: any, recentSignals: Signal[]):
         progressions++;
         console.log(`   📈 Cascade progression: Step "${expectedStep.action}" potentially fulfilled`);
 
-        // Update cascade pattern stats
-        await supabase
-          .from('cascade_patterns')
-          .update({
-            times_observed: supabase.sql`times_observed + 1`,
-            last_observed_at: new Date().toISOString()
-          })
-          .eq('id', alert.pattern_data.cascade_pattern_id);
+        // Update cascade pattern stats - fetch current count then increment
+        const patternId = alert.pattern_data.cascade_pattern_id;
+        if (patternId) {
+          const { data: patternRow } = await supabase
+            .from('cascade_patterns')
+            .select('times_observed')
+            .eq('id', patternId)
+            .single();
+          await supabase
+            .from('cascade_patterns')
+            .update({
+              times_observed: (patternRow?.times_observed || 0) + 1,
+              last_observed_at: new Date().toISOString()
+            })
+            .eq('id', patternId);
+        }
       }
     }
   }

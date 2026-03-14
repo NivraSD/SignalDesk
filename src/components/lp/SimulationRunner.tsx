@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import {
   Play,
@@ -15,8 +15,12 @@ import {
   ChevronDown,
   ChevronRight,
   Check,
-  Minus
+  Minus,
+  Search,
+  Plus,
+  X
 } from 'lucide-react'
+import { ENTITY_DATABASE, formatEntityName } from './entityDatabase'
 
 interface SimulationRunnerProps {
   scenarioId: string
@@ -86,6 +90,12 @@ export default function SimulationRunner({
   const [loadingEntities, setLoadingEntities] = useState(false)
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
 
+  // Entity Database browser state
+  const [showBrowser, setShowBrowser] = useState(false)
+  const [browserSearch, setBrowserSearch] = useState('')
+  const [expandedBrowserGroups, setExpandedBrowserGroups] = useState<Set<string>>(new Set())
+  const [globalProfiles, setGlobalProfiles] = useState<Set<string>>(new Set())
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -128,6 +138,9 @@ export default function SimulationRunner({
           profileByName.set(p.entity_name.toLowerCase(), p)
         }
       }
+
+      // Store global profiles set for the browser
+      setGlobalProfiles(new Set(profiles.map(p => p.entity_name.toLowerCase())))
 
       // Build target lookup by name
       const targetByName = new Map<string, IntelTarget>()
@@ -225,6 +238,53 @@ export default function SimulationRunner({
       return next
     })
   }
+
+  // Add entity from the Entity Database browser
+  const addEntityFromDatabase = useCallback((name: string, category: string) => {
+    // Check if already in list
+    if (entities.some(e => e.name.toLowerCase() === name.toLowerCase())) {
+      // If already there, just make sure it's selected
+      setEntities(prev => prev.map(e =>
+        e.name.toLowerCase() === name.toLowerCase() ? { ...e, selected: true } : e
+      ))
+      return
+    }
+
+    const hasProfile = globalProfiles.has(name.toLowerCase())
+    setEntities(prev => [...prev, {
+      targetId: name, // Use name as ID for non-target entities
+      name,
+      type: category,
+      priority: 'medium',
+      profileId: hasProfile ? 'global' : null, // Mark as having a global profile
+      profileReady: hasProfile,
+      profileExpired: false,
+      selected: true
+    }])
+  }, [entities, globalProfiles])
+
+  // Remove entity from list
+  const removeEntity = useCallback((targetId: string) => {
+    setEntities(prev => prev.filter(e => e.targetId !== targetId))
+  }, [])
+
+  // Filtered Entity Database entries based on search
+  const filteredDatabase = useMemo(() => {
+    if (!browserSearch.trim()) return ENTITY_DATABASE
+    const q = browserSearch.toLowerCase()
+    const filtered: typeof ENTITY_DATABASE = {}
+    for (const [groupKey, group] of Object.entries(ENTITY_DATABASE)) {
+      const filteredCategories: Record<string, string[]> = {}
+      for (const [catKey, entities] of Object.entries(group.categories)) {
+        const matches = entities.filter(e => e.toLowerCase().includes(q))
+        if (matches.length > 0) filteredCategories[catKey] = matches
+      }
+      if (Object.keys(filteredCategories).length > 0) {
+        filtered[groupKey] = { ...group, categories: filteredCategories }
+      }
+    }
+    return filtered
+  }, [browserSearch])
 
   // Poll for simulation progress
   useEffect(() => {
@@ -380,18 +440,122 @@ export default function SimulationRunner({
 
   // Selecting entities state
   if (state === 'selecting') {
+    const entityNameSet = new Set(entities.map(e => e.name.toLowerCase()))
+
     return (
       <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-        <div className="flex items-center gap-2">
-          <Users className="w-5 h-5 text-[var(--burnt-orange)]" />
-          <h3 className="text-sm font-semibold text-[var(--charcoal)]">Select Simulation Entities</h3>
-          <span className="px-1.5 py-0.5 text-[10px] rounded bg-gray-100 text-gray-600 font-medium">
-            {selectedCount} selected
-          </span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Users className="w-5 h-5 text-[var(--burnt-orange)]" />
+            <h3 className="text-sm font-semibold text-[var(--charcoal)]">Select Simulation Entities</h3>
+            <span className="px-1.5 py-0.5 text-[10px] rounded bg-gray-100 text-gray-600 font-medium">
+              {selectedCount} selected
+            </span>
+          </div>
+          <button
+            onClick={() => setShowBrowser(!showBrowser)}
+            className="px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors flex items-center gap-1.5 bg-[var(--burnt-orange)]/5 border-[var(--burnt-orange)]/20 text-[var(--burnt-orange)] hover:bg-[var(--burnt-orange)]/10"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            {showBrowser ? 'Hide Database' : 'Add from Database'}
+          </button>
         </div>
         <p className="text-xs text-gray-500">
-          Choose which entities to include in the simulation. Entities with existing LP profiles will simulate faster.
+          Choose which entities to include. Entities with existing profiles simulate faster.
         </p>
+
+        {/* Entity Database Browser */}
+        {showBrowser && (
+          <div className="border border-[var(--burnt-orange)]/20 rounded-lg overflow-hidden bg-[var(--burnt-orange)]/[0.02]">
+            <div className="px-3 py-2 bg-[var(--burnt-orange)]/5 border-b border-[var(--burnt-orange)]/10">
+              <div className="flex items-center gap-2">
+                <Search className="w-3.5 h-3.5 text-[var(--burnt-orange)]" />
+                <input
+                  type="text"
+                  value={browserSearch}
+                  onChange={(e) => setBrowserSearch(e.target.value)}
+                  placeholder="Search entities..."
+                  className="flex-1 bg-transparent text-sm text-[var(--charcoal)] placeholder:text-gray-400 outline-none"
+                />
+                {browserSearch && (
+                  <button onClick={() => setBrowserSearch('')} className="text-gray-400 hover:text-gray-600">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className="max-h-[300px] overflow-y-auto divide-y divide-gray-100">
+              {Object.entries(filteredDatabase).map(([groupKey, group]) => {
+                const isExpanded = expandedBrowserGroups.has(groupKey)
+                return (
+                  <div key={groupKey}>
+                    <button
+                      onClick={() => {
+                        const next = new Set(expandedBrowserGroups)
+                        if (next.has(groupKey)) next.delete(groupKey)
+                        else next.add(groupKey)
+                        setExpandedBrowserGroups(next)
+                      }}
+                      className="w-full px-3 py-2 flex items-center justify-between hover:bg-gray-50 transition-colors text-left"
+                    >
+                      <span className="text-xs font-semibold text-gray-700">{formatEntityName(groupKey)}</span>
+                      {isExpanded
+                        ? <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
+                        : <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
+                      }
+                    </button>
+                    {isExpanded && (
+                      <div className="px-3 pb-3 space-y-3">
+                        {Object.entries(group.categories).map(([catKey, catEntities]) => (
+                          <div key={catKey}>
+                            <div className="flex items-center justify-between mb-1.5">
+                              <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">
+                                {formatEntityName(catKey)}
+                              </span>
+                              <button
+                                onClick={() => catEntities.forEach(name => addEntityFromDatabase(name, catKey))}
+                                className="text-[10px] text-[var(--burnt-orange)] hover:underline flex items-center gap-0.5"
+                              >
+                                <Plus className="w-2.5 h-2.5" /> Add all
+                              </button>
+                            </div>
+                            <div className="flex flex-wrap gap-1">
+                              {catEntities.map(name => {
+                                const inList = entityNameSet.has(name.toLowerCase())
+                                const hasProfile = globalProfiles.has(name.toLowerCase())
+                                return (
+                                  <button
+                                    key={name}
+                                    onClick={() => addEntityFromDatabase(name, catKey)}
+                                    className={`px-2 py-0.5 text-[11px] rounded-full border transition-all ${
+                                      inList
+                                        ? 'bg-[var(--burnt-orange)] border-[var(--burnt-orange)] text-white'
+                                        : hasProfile
+                                        ? 'bg-green-50 border-green-200 text-green-700 hover:bg-green-100'
+                                        : 'bg-white border-gray-200 text-gray-600 hover:border-[var(--burnt-orange)]'
+                                    }`}
+                                  >
+                                    {inList && <Check className="w-2.5 h-2.5 inline mr-0.5" />}
+                                    {name}
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+              {Object.keys(filteredDatabase).length === 0 && (
+                <div className="px-3 py-4 text-center text-xs text-gray-400">
+                  No entities match "{browserSearch}"
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {loadingEntities ? (
           <div className="flex items-center justify-center py-8">
@@ -400,9 +564,9 @@ export default function SimulationRunner({
           </div>
         ) : entities.length === 0 ? (
           <div className="text-center py-6 space-y-2">
-            <p className="text-sm text-gray-500">No intelligence targets found for this organization.</p>
+            <p className="text-sm text-gray-500">No entities selected yet.</p>
             <p className="text-xs text-gray-400">
-              The orchestrator will auto-detect entities from the scenario stakeholders.
+              Use "Add from Database" above to browse and add entities, or run with auto-detection.
             </p>
             <button
               onClick={startSimulation}
@@ -447,7 +611,7 @@ export default function SimulationRunner({
                         {someSelected && !allSelected && <Minus className="w-3 h-3 text-white" />}
                       </button>
                       <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                        {TYPE_LABELS[type] || type}
+                        {TYPE_LABELS[type] || formatEntityName(type)}
                       </span>
                       <span className="text-[10px] text-gray-400">
                         {group.filter(e => e.selected).length}/{group.length}
@@ -458,43 +622,43 @@ export default function SimulationRunner({
                     {!collapsed && (
                       <div className="divide-y divide-gray-100">
                         {group.map(entity => (
-                          <label
+                          <div
                             key={entity.targetId}
-                            className="flex items-center gap-2.5 px-3 py-2 hover:bg-gray-50 cursor-pointer transition-colors"
+                            className="flex items-center gap-2.5 px-3 py-2 hover:bg-gray-50 transition-colors"
                           >
-                            <input
-                              type="checkbox"
-                              checked={entity.selected}
-                              onChange={() => toggleEntity(entity.targetId)}
-                              className="sr-only"
-                            />
-                            <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${
-                              entity.selected
-                                ? 'bg-[var(--burnt-orange)] border-[var(--burnt-orange)]'
-                                : 'border-gray-300'
-                            }`}>
-                              {entity.selected && <Check className="w-3 h-3 text-white" />}
-                            </div>
-                            <span className="text-sm text-[var(--charcoal)] flex-1">{entity.name}</span>
-                            <span className={`px-1.5 py-0.5 text-[10px] rounded font-medium ${PRIORITY_COLORS[entity.priority] || 'bg-gray-100 text-gray-600'}`}>
-                              {entity.priority}
-                            </span>
-                            {entity.profileReady && (
+                            <label className="flex items-center gap-2.5 flex-1 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={entity.selected}
+                                onChange={() => toggleEntity(entity.targetId)}
+                                className="sr-only"
+                              />
+                              <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${
+                                entity.selected
+                                  ? 'bg-[var(--burnt-orange)] border-[var(--burnt-orange)]'
+                                  : 'border-gray-300'
+                              }`}>
+                                {entity.selected && <Check className="w-3 h-3 text-white" />}
+                              </div>
+                              <span className="text-sm text-[var(--charcoal)] flex-1">{entity.name}</span>
+                            </label>
+                            {entity.profileReady ? (
                               <span className="px-1.5 py-0.5 text-[10px] rounded bg-green-100 text-green-700">
                                 profile ready
                               </span>
-                            )}
-                            {entity.profileExpired && (
-                              <span className="px-1.5 py-0.5 text-[10px] rounded bg-amber-100 text-amber-700">
-                                profile expired
-                              </span>
-                            )}
-                            {!entity.profileId && (
+                            ) : (
                               <span className="px-1.5 py-0.5 text-[10px] rounded bg-gray-100 text-gray-500">
-                                needs build
+                                no profile
                               </span>
                             )}
-                          </label>
+                            <button
+                              onClick={() => removeEntity(entity.targetId)}
+                              className="p-0.5 text-gray-300 hover:text-red-500 transition-colors"
+                              title="Remove from list"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         ))}
                       </div>
                     )}
@@ -508,6 +672,7 @@ export default function SimulationRunner({
                 onClick={() => {
                   setState('idle')
                   setEntities([])
+                  setShowBrowser(false)
                 }}
                 className="px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
               >

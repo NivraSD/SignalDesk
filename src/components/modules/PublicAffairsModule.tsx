@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   Shield, Clock, ChevronRight, Loader2, Sparkles, FileText,
   MonitorPlay, ArrowLeft, AlertTriangle, Users, Target,
@@ -8,6 +8,7 @@ import {
   Radar, Play, Lightbulb, Globe, BookOpen, Plus, X, Search, Send, Brain,
   FileDown, ArrowUp
 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { supabase } from '@/lib/supabase/client'
 import { useAppStore } from '@/stores/useAppStore'
@@ -41,6 +42,7 @@ function isNewFormat(data: any): boolean {
 }
 
 export default function PublicAffairsModule() {
+  const router = useRouter()
   const { organization } = useAppStore()
   const [reports, setReports] = useState<PublicAffairsReport[]>([])
   const [selectedReport, setSelectedReport] = useState<PublicAffairsReport | null>(null)
@@ -746,7 +748,7 @@ function ReportDetailView({
       research_context: researchContext
     }
     sessionStorage.setItem('pa_simulation_seed', JSON.stringify(scenarioSeed))
-    window.location.href = '/lp?view=scenario&from=pa'
+    router.push('/lp?view=scenario&from=pa')
   }
 
   return (

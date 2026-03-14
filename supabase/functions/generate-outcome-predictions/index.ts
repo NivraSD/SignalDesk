@@ -26,6 +26,55 @@ interface OrgContext {
   industry: string | null;
 }
 
+// Dual-write to 'predictions' table so frontend can see them
+async function writeToPredictionsTable(
+  supabase: any,
+  orgId: string,
+  targetId: string | null,
+  targetName: string | null,
+  targetType: string | null,
+  prediction: { predicted_outcome: string; predicted_timeframe_days: number; predicted_confidence: number; prediction_reasoning: string },
+  evidence: any
+) {
+  try {
+    // Map timeframe_days to category
+    const days = prediction.predicted_timeframe_days;
+    const timeHorizon = days <= 30 ? '1-month' : days <= 90 ? '3-months' : days <= 180 ? '6-months' : '12-months';
+
+    // Map confidence to impact
+    const conf = prediction.predicted_confidence;
+    const impactLevel = conf >= 0.8 ? 'critical' : conf >= 0.6 ? 'high' : conf >= 0.4 ? 'medium' : 'low';
+
+    // Determine category from prediction text
+    const text = prediction.predicted_outcome.toLowerCase();
+    let category = 'market';
+    if (text.includes('regulat') || text.includes('legal') || text.includes('compliance')) category = 'regulatory';
+    else if (text.includes('acqui') || text.includes('merger') || text.includes('partner')) category = 'partnership';
+    else if (text.includes('compet') || text.includes('rival') || text.includes('threat')) category = 'competitive';
+    else if (text.includes('launch') || text.includes('product') || text.includes('release')) category = 'product';
+    else if (text.includes('crisis') || text.includes('scandal') || text.includes('breach')) category = 'crisis';
+
+    await supabase.from('predictions').insert({
+      organization_id: orgId,
+      target_id: targetId,
+      target_name: targetName,
+      target_type: targetType,
+      title: prediction.predicted_outcome.substring(0, 500),
+      description: prediction.prediction_reasoning,
+      category,
+      confidence_score: Math.round(prediction.predicted_confidence * 100),
+      time_horizon: timeHorizon,
+      impact_level: impactLevel,
+      pattern_confidence: Math.round(prediction.predicted_confidence * 100),
+      status: 'active',
+      data: typeof evidence === 'string' ? JSON.parse(evidence) : evidence
+    });
+  } catch (err: any) {
+    // Non-fatal: signal_outcomes is the source of truth
+    console.error(`     [predictions dual-write] ${err.message}`);
+  }
+}
+
 // Cache for org lookups
 const orgCache = new Map<string, OrgContext>();
 
@@ -350,6 +399,13 @@ serve(async (req) => {
               if (!insertError) {
                 orgPredictionsCreated++;
                 console.log(`       ✅ Consolidated: ${prediction.predicted_outcome.slice(0, 50)}...`);
+                // Dual-write to predictions table for frontend display
+                await writeToPredictionsTable(
+                  supabase, anchorSignal.organization_id,
+                  anchorSignal.primary_target_id, anchorSignal.primary_target_name,
+                  targetType, prediction,
+                  { consolidated_from_signals: targetSignals.map(s => s.id), signal_count: targetSignals.length }
+                );
               } else {
                 allErrors.push(`${org.name} - ${targetKey}: ${insertError.message}`);
               }
@@ -461,6 +517,13 @@ serve(async (req) => {
 
           orgPredictionsCreated++;
           console.log(`       ✅ Created: ${prediction.predicted_outcome.slice(0, 50)}...`);
+          // Dual-write to predictions table for frontend
+          await writeToPredictionsTable(
+            supabase, signal.organization_id,
+            signal.primary_target_id, signal.primary_target_name,
+            null, prediction,
+            { original_signal_title: signal.title }
+          );
 
         } catch (err: any) {
           allErrors.push(`${org.name} - signal ${signal.id}: ${err.message}`);
@@ -755,6 +818,13 @@ async function processIndividualSignal(
     }
 
     console.log(`     ✅ Created prediction: ${prediction.predicted_outcome.slice(0, 60)}...`);
+    // Dual-write to predictions table for frontend
+    await writeToPredictionsTable(
+      supabase, signal.organization_id,
+      signal.primary_target_id, signal.primary_target_name,
+      targetType, prediction,
+      { original_signal_title: signal.title }
+    );
     return { created: true, skipped: false };
 
   } catch (err: any) {
