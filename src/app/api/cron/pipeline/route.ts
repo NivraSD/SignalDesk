@@ -48,7 +48,7 @@ async function callEdgeFunction(name: string, body: Record<string, any>): Promis
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(55000) // 55s timeout per call
     })
-    const data = await res.json().catch(() => ({ raw: await res.text().catch(() => 'no body') }))
+    const data = await res.json().catch(async () => ({ raw: await res.text().catch(() => 'no body') }))
     return { status: res.status, data }
   } catch (err: any) {
     return { status: 0, data: { error: err.message } }
