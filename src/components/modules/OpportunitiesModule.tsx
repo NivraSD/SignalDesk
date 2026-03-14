@@ -5,6 +5,7 @@ import { Target, Zap, Clock, TrendingUp, AlertCircle, Play, ChevronRight, Sparkl
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase/client'
 import { useAppStore } from '@/stores/useAppStore'
+import WhatIfSimulator from '@/components/shared/WhatIfSimulator'
 
 // V2 OPPORTUNITY STRUCTURE
 interface ContentBrief {
@@ -1007,6 +1008,16 @@ ${opp.execution_plan?.success_metrics?.map((m: any) => `- ${JSON.stringify(m)}`)
                   </a>
                 </div>
               )}
+
+              {/* What-If Scenario Analysis */}
+              <div className="mb-4 p-4 bg-[var(--grey-800)] rounded-lg border border-[var(--grey-700)]">
+                <WhatIfSimulator
+                  compact
+                  initialPrompt={`What would happen if we ${opp.title.toLowerCase()}?`}
+                  context={`Opportunity: ${opp.title}\n${opp.description}\n${opp.strategic_context?.why_now ? `Why now: ${opp.strategic_context.why_now}` : ''}${opp.strategic_context?.competitive_advantage ? `\nAdvantage: ${opp.strategic_context.competitive_advantage}` : ''}`}
+                  organizationId={opp.organization_id}
+                />
+              </div>
 
               {/* Execute Button */}
               {!opp.executed && opp.version === 2 && opp.execution_plan && (

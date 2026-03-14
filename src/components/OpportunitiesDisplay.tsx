@@ -4,6 +4,7 @@ import {
   AlertCircle, Megaphone, Users, Briefcase, Edit3, Share2, UserPlus,
   BarChart, Zap, Play, CheckCircle
 } from 'lucide-react'
+import WhatIfSimulator from './shared/WhatIfSimulator'
 
 interface Opportunity {
   id: string
@@ -370,6 +371,16 @@ export default function OpportunitiesDisplay({ opportunities, onExecute }: Oppor
                       <p className="text-xs text-gray-300">{data.expected_impact}</p>
                     </div>
                   )}
+                </div>
+
+                {/* What-If Scenario Analysis */}
+                <div className="bg-gray-800/30 rounded-lg p-3 border border-gray-700/50">
+                  <WhatIfSimulator
+                    compact
+                    initialPrompt={`What would happen if we ${opp.title.toLowerCase()}?`}
+                    context={`Opportunity: ${opp.title}\nDescription: ${opp.description}\n${data.trigger_event ? `Trigger: ${data.trigger_event}` : ''}${data.playbook?.target_audience ? `\nTarget audience: ${data.playbook.target_audience}` : ''}`}
+                    organizationId={opp.organization_id}
+                  />
                 </div>
 
                 {/* Execute Button */}
