@@ -181,6 +181,317 @@ function blueprintToMarkdown(campaignName: string, campaignType: string, bluepri
   return md
 }
 
+/** Convert blueprint to a printable HTML document */
+function blueprintToHtml(campaignName: string, campaignType: string, blueprint: any, positioning: any): string {
+  const esc = (s: string) => s?.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') || ''
+  const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+
+  let html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${esc(campaignName)} — Campaign Blueprint</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; color: #1a1a2e; background: #fff; line-height: 1.7; }
+  .page { max-width: 850px; margin: 0 auto; padding: 56px 48px; }
+  @media print { .page { padding: 36px 28px; } .no-print { display: none !important; } @page { margin: 18mm; } }
+  .header { border-bottom: 3px solid #1a1a2e; padding-bottom: 20px; margin-bottom: 36px; }
+  .header h1 { font-family: 'Playfair Display', Georgia, serif; font-size: 28px; font-weight: 700; line-height: 1.3; margin-bottom: 6px; }
+  .header .meta { font-size: 12px; color: #666; }
+  .header .badge { display: inline-block; margin-top: 8px; padding: 3px 10px; border: 2px solid #6d28d9; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #6d28d9; }
+  .section { margin-bottom: 32px; page-break-inside: avoid; }
+  .section h2 { font-family: 'Playfair Display', Georgia, serif; font-size: 20px; font-weight: 700; margin-bottom: 14px; padding-bottom: 6px; border-bottom: 1px solid #e0e0e0; color: #1a1a2e; }
+  .section h3 { font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: #444; margin: 18px 0 8px; }
+  .section h4 { font-size: 13px; font-weight: 600; color: #333; margin: 12px 0 6px; }
+  .section p, .section li { font-size: 14px; color: #2a2a3e; margin-bottom: 6px; }
+  .section ul { padding-left: 20px; }
+  .section ul li { margin-bottom: 4px; }
+  .card { background: #f8f8fa; border-radius: 6px; padding: 14px 16px; margin-bottom: 10px; }
+  .card strong { font-size: 14px; color: #1a1a2e; }
+  .card .detail { font-size: 13px; color: #555; margin-top: 3px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 12px 0; }
+  @media (max-width: 600px) { .grid-2 { grid-template-columns: 1fr; } }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin: 12px 0; }
+  @media (max-width: 700px) { .grid-3 { grid-template-columns: 1fr; } }
+  .stat-card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 14px; text-align: center; }
+  .stat-card .value { font-size: 24px; font-weight: 700; color: #6d28d9; }
+  .stat-card .label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+  .lever { border-left: 3px solid #6d28d9; padding: 12px 16px; margin-bottom: 12px; background: #faf8ff; border-radius: 0 6px 6px 0; }
+  .lever h4 { margin-top: 0; color: #6d28d9; }
+  .tactic { font-size: 13px; color: #444; padding: 4px 0; border-bottom: 1px solid #f0f0f0; }
+  .tactic:last-child { border-bottom: none; }
+  .priority-high { color: #dc2626; font-weight: 600; }
+  .priority-medium { color: #d97706; font-weight: 600; }
+  .priority-low { color: #16a34a; font-weight: 600; }
+  .footer { margin-top: 40px; padding-top: 12px; border-top: 1px solid #e0e0e0; font-size: 11px; color: #999; text-align: center; }
+  .quote { border-left: 3px solid #6d28d9; padding: 12px 20px; background: #faf8ff; margin: 12px 0; border-radius: 0 6px 6px 0; font-style: italic; font-size: 15px; color: #333; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="header">
+  <h1>${esc(campaignName)}</h1>
+  <div class="meta">${date} &nbsp;|&nbsp; ${esc(campaignType.replace(/_/g, ' '))} Campaign</div>
+  <div class="badge">${esc(blueprint.overview?.pattern || campaignType.replace(/_/g, ' '))} Blueprint</div>
+</div>
+`
+
+  // Overview
+  if (blueprint.overview) {
+    const ov = blueprint.overview
+    html += `<div class="section"><h2>Campaign Overview</h2>\n`
+    if (ov.duration) html += `<p><strong>Duration:</strong> ${esc(ov.duration)}</p>\n`
+    if (ov.description) html += `<p>${esc(ov.description)}</p>\n`
+    html += `</div>\n`
+  }
+
+  // Positioning
+  if (positioning) {
+    html += `<div class="section"><h2>Strategic Positioning</h2>\n`
+    if (positioning.name) html += `<h3>${esc(positioning.name)}</h3>\n`
+    if (positioning.description) html += `<p>${esc(positioning.description)}</p>\n`
+    if (positioning.narrative) html += `<div class="quote">${esc(positioning.narrative)}</div>\n`
+    html += `</div>\n`
+  }
+
+  // Core Message
+  if (blueprint.messageArchitecture) {
+    const ma = blueprint.messageArchitecture
+    html += `<div class="section"><h2>Message Architecture</h2>\n`
+    if (ma.coreMessage) html += `<div class="quote">${esc(ma.coreMessage)}</div>\n`
+    if (ma.keyMessages?.length > 0) {
+      html += `<h3>Key Messages</h3><ul>\n`
+      ma.keyMessages.forEach((msg: string) => { html += `<li>${esc(msg)}</li>\n` })
+      html += `</ul>\n`
+    }
+    if (ma.proofPoints?.length > 0) {
+      html += `<h3>Proof Points</h3><ul>\n`
+      ma.proofPoints.forEach((p: string) => { html += `<li>${esc(p)}</li>\n` })
+      html += `</ul>\n`
+    }
+    html += `</div>\n`
+  }
+
+  // Goal Framework
+  if (blueprint.part1_goalFramework) {
+    const gf = blueprint.part1_goalFramework
+    html += `<div class="section"><h2>Goal Framework</h2>\n`
+    if (gf.primaryObjective) html += `<p><strong>Primary Objective:</strong> ${esc(gf.primaryObjective)}</p>\n`
+    if (gf.behavioralGoals?.length > 0) {
+      html += `<h3>Behavioral Goals</h3>\n`
+      gf.behavioralGoals.forEach((bg: any) => {
+        html += `<div class="card"><strong>${esc(bg.stakeholder || bg.target || '')}</strong>`
+        html += `<div class="detail">${esc(bg.desiredBehavior || bg.behavior || '')}</div></div>\n`
+      })
+    }
+    html += `</div>\n`
+  }
+
+  // Stakeholder Mapping
+  const stakeholders = blueprint.part2_stakeholderMapping?.stakeholderProfiles ||
+    blueprint.part1_stakeholderIdentification?.stakeholderProfiles || []
+  if (stakeholders.length > 0) {
+    html += `<div class="section"><h2>Target Stakeholders</h2>\n`
+    stakeholders.forEach((s: any) => {
+      const pClass = s.priority === 'critical' || s.priority === 'high' ? 'priority-high'
+        : s.priority === 'medium' ? 'priority-medium' : 'priority-low'
+      html += `<div class="card"><strong>${esc(s.name)}</strong>`
+      if (s.priority) html += ` <span class="${pClass}" style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;">${esc(s.priority)}</span>`
+      if (s.role) html += `<div class="detail"><strong>Role:</strong> ${esc(s.role)}</div>`
+      if (s.goals?.length > 0) html += `<div class="detail"><strong>Goals:</strong> ${esc(s.goals.join('; '))}</div>`
+      if (s.psychologicalProfile) {
+        const pp = s.psychologicalProfile
+        if (pp.values?.length > 0) html += `<div class="detail"><strong>Values:</strong> ${esc(pp.values.join(', '))}</div>`
+        if (pp.fears?.length > 0) html += `<div class="detail"><strong>Fears:</strong> ${esc(pp.fears.join(', '))}</div>`
+        if (pp.aspirations?.length > 0) html += `<div class="detail"><strong>Aspirations:</strong> ${esc(pp.aspirations.join(', '))}</div>`
+      }
+      html += `</div>\n`
+    })
+    html += `</div>\n`
+  }
+
+  // Stakeholder Orchestration Plans
+  const orchPlans = blueprint.part3_stakeholderOrchestration?.stakeholderOrchestrationPlans || []
+  if (orchPlans.length > 0) {
+    // Stats bar
+    let totalContent = 0, totalMedia = 0, totalSocial = 0, totalTL = 0
+    orchPlans.forEach((plan: any) => {
+      (plan.influenceLevers || plan.levers || []).forEach((lever: any) => {
+        const c = lever.campaign || {}
+        totalMedia += c.mediaPitches?.length || 0
+        totalSocial += c.socialPosts?.length || 0
+        totalTL += c.thoughtLeadership?.length || 0
+        totalContent += (c.mediaPitches?.length || 0) + (c.socialPosts?.length || 0) +
+          (c.thoughtLeadership?.length || 0) + (c.additionalTactics?.length || 0)
+      })
+    })
+
+    html += `<div class="section"><h2>Stakeholder Orchestration</h2>\n`
+    html += `<div class="grid-3">
+      <div class="stat-card"><div class="value">${orchPlans.length}</div><div class="label">Stakeholders</div></div>
+      <div class="stat-card"><div class="value">${totalContent}</div><div class="label">Content Pieces</div></div>
+      <div class="stat-card"><div class="value">${totalMedia + totalSocial + totalTL}</div><div class="label">Tactics</div></div>
+    </div>\n`
+
+    orchPlans.forEach((plan: any) => {
+      html += `<h3>${esc(plan.stakeholderName || plan.stakeholder || 'Stakeholder')}</h3>\n`
+      if (plan.priority) html += `<p style="font-size:12px;color:#888;">Priority: ${esc(plan.priority)}</p>\n`
+
+      const levers = plan.influenceLevers || plan.levers || []
+      levers.forEach((lever: any) => {
+        html += `<div class="lever">\n`
+        if (lever.leverName || lever.name) html += `<h4>${esc(lever.leverName || lever.name)}</h4>\n`
+        if (lever.description) html += `<p style="font-size:13px;color:#555;">${esc(lever.description)}</p>\n`
+        const campaign = lever.campaign || {}
+
+        if (campaign.mediaPitches?.length > 0) {
+          html += `<p style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;margin-top:8px;">Media Pitches</p>\n`
+          campaign.mediaPitches.forEach((item: any) => {
+            html += `<div class="tactic"><strong>${esc(item.topic || item.headline || '')}</strong>`
+            if (item.angle) html += ` — ${esc(item.angle)}`
+            if (item.targetOutlet) html += ` <span style="color:#888;font-size:12px;">(${esc(item.targetOutlet)})</span>`
+            html += `</div>\n`
+          })
+        }
+        if (campaign.socialPosts?.length > 0) {
+          html += `<p style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;margin-top:8px;">Social Posts</p>\n`
+          campaign.socialPosts.forEach((item: any) => {
+            html += `<div class="tactic"><strong>${esc(item.topic || item.headline || '')}</strong>`
+            if (item.platform) html += ` <span style="color:#888;font-size:12px;">(${esc(item.platform)})</span>`
+            html += `</div>\n`
+          })
+        }
+        if (campaign.thoughtLeadership?.length > 0) {
+          html += `<p style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;margin-top:8px;">Thought Leadership</p>\n`
+          campaign.thoughtLeadership.forEach((item: any) => {
+            html += `<div class="tactic"><strong>${esc(item.topic || item.title || '')}</strong>`
+            if (item.format) html += ` <span style="color:#888;font-size:12px;">(${esc(item.format)})</span>`
+            html += `</div>\n`
+          })
+        }
+        if (campaign.additionalTactics?.length > 0) {
+          html += `<p style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;margin-top:8px;">Additional Tactics</p>\n`
+          campaign.additionalTactics.forEach((item: any) => {
+            html += `<div class="tactic"><strong>${esc(item.name || item.tactic || '')}</strong>`
+            if (item.description) html += ` — ${esc(item.description)}`
+            html += `</div>\n`
+          })
+        }
+        html += `</div>\n`
+      })
+    })
+    html += `</div>\n`
+  }
+
+  // Execution Requirements
+  if (blueprint.part5_executionRequirements) {
+    const exec = blueprint.part5_executionRequirements
+    html += `<div class="section"><h2>Execution Requirements</h2>\n`
+
+    if (exec.teamBandwidth) {
+      html += `<h3>Team Bandwidth</h3>\n`
+      if (exec.teamBandwidth.totalHoursPerWeek) html += `<p><strong>Total Hours/Week:</strong> ${exec.teamBandwidth.totalHoursPerWeek}</p>\n`
+      if (exec.teamBandwidth.recommendedTeamSize) html += `<p><strong>Recommended Team:</strong> ${esc(exec.teamBandwidth.recommendedTeamSize)}</p>\n`
+      if (exec.teamBandwidth.roles?.length > 0) {
+        exec.teamBandwidth.roles.forEach((role: any) => {
+          html += `<div class="card"><strong>${esc(role.role)}</strong> <span style="color:#6d28d9;font-size:12px;">${role.hoursPerWeek}h/week</span>`
+          if (role.responsibilities?.length > 0) {
+            html += `<div class="detail">${esc(role.responsibilities.join(' • '))}</div>`
+          }
+          html += `</div>\n`
+        })
+      }
+    }
+
+    if (exec.budgetRequirements) {
+      html += `<h3>Budget</h3>\n`
+      html += `<div class="grid-2">\n`
+      html += `<div class="stat-card"><div class="value">$${exec.budgetRequirements.totalMinimumMonthly?.toLocaleString() || '?'}</div><div class="label">Minimum / Month</div></div>\n`
+      html += `<div class="stat-card"><div class="value">$${exec.budgetRequirements.totalRecommendedMonthly?.toLocaleString() || '?'}</div><div class="label">Recommended / Month</div></div>\n`
+      html += `</div>\n`
+    }
+
+    if (exec.weeklyExecutionRhythm) {
+      html += `<h3>Weekly Rhythm</h3>\n`
+      const rhythm = exec.weeklyExecutionRhythm
+      if (rhythm.monday?.length) {
+        html += `<h4>Monday</h4><ul>${rhythm.monday.map((t: string) => `<li>${esc(t)}</li>`).join('')}</ul>\n`
+      }
+      if (rhythm.tuesdayThursday?.length) {
+        html += `<h4>Tuesday–Thursday</h4><ul>${rhythm.tuesdayThursday.map((t: string) => `<li>${esc(t)}</li>`).join('')}</ul>\n`
+      }
+      if (rhythm.friday?.length) {
+        html += `<h4>Friday</h4><ul>${rhythm.friday.map((t: string) => `<li>${esc(t)}</li>`).join('')}</ul>\n`
+      }
+    }
+
+    if (exec.systemLevelSuccessMetrics) {
+      html += `<h3>System-Level Success Metrics</h3>\n`
+      const metrics = exec.systemLevelSuccessMetrics
+      const metricKeys = ['convergenceScore', 'narrativeOwnership', 'indirectAttribution', 'stakeholderBehaviorChange']
+      metricKeys.forEach((key) => {
+        const m = metrics[key]
+        if (!m) return
+        html += `<div class="card"><strong>${esc(key.replace(/([A-Z])/g, ' $1').replace(/^./, (s: string) => s.toUpperCase()))}</strong>`
+        if (m.definition) html += `<div class="detail">${esc(m.definition)}</div>`
+        if (m.measurement?.length > 0) {
+          html += `<div class="detail" style="margin-top:4px;">${m.measurement.map((s: string) => esc(s)).join(' • ')}</div>`
+        }
+        html += `</div>\n`
+      })
+    }
+
+    if (exec.adaptationStrategy?.pivotTriggers?.length > 0) {
+      html += `<h3>Pivot Triggers</h3>\n`
+      exec.adaptationStrategy.pivotTriggers.forEach((pt: any) => {
+        html += `<div class="card"><strong>${esc(pt.trigger)}</strong>`
+        if (pt.diagnosis) html += `<div class="detail"><strong>Diagnosis:</strong> ${esc(pt.diagnosis)}</div>`
+        if (pt.adaptations?.length > 0) html += `<div class="detail"><strong>Adaptations:</strong> ${esc(pt.adaptations.join('; '))}</div>`
+        html += `</div>\n`
+      })
+    }
+
+    html += `</div>\n`
+  }
+
+  // Campaign Intelligence
+  if (blueprint.campaign_intelligence) {
+    const ci = blueprint.campaign_intelligence
+    html += `<div class="section"><h2>Campaign Intelligence</h2>\n`
+    if (ci.competitiveIntelligence?.dominant_players?.length > 0) {
+      html += `<h3>Competitive Landscape</h3>\n`
+      ci.competitiveIntelligence.dominant_players.forEach((p: any) => {
+        html += `<div class="card"><strong>${esc(typeof p === 'string' ? p : p.name || p.entity || '')}</strong>`
+        if (p.description) html += `<div class="detail">${esc(p.description)}</div>`
+        html += `</div>\n`
+      })
+    }
+    if (ci.sourceStrategy?.priority_sources?.length > 0) {
+      html += `<h3>Priority Sources</h3><ul>\n`
+      ci.sourceStrategy.priority_sources.forEach((s: any) => {
+        html += `<li>${esc(typeof s === 'string' ? s : s.name || s.source || '')}</li>\n`
+      })
+      html += `</ul>\n`
+    }
+    html += `</div>\n`
+  }
+
+  html += `<div class="footer">
+  Generated by SignalDesk Campaign Builder &nbsp;|&nbsp; ${date}<br>
+  <span style="font-size:10px;">This document is confidential and intended for authorized recipients only.</span>
+</div>
+
+</div>
+</body>
+</html>`
+
+  return html
+}
+
 type CampaignStage = 'intent' | 'research' | 'positioning' | 'approach' | 'blueprint' | 'execution'
 
 interface InformationGap {
@@ -1441,20 +1752,17 @@ export function CampaignBuilderWizard({ initialObjective, onViewInPlanner }: Cam
     }
   }
 
-  // Handle blueprint export
+  // Handle blueprint export — opens printable HTML in new tab
   const handleBlueprintExport = () => {
     if (!session?.blueprint) return
 
-    const blueprintText = JSON.stringify(session.blueprint, null, 2)
-    const blob = new Blob([blueprintText], { type: 'application/json' })
+    const campaignName = session.blueprint.overview?.campaignName || session.campaignGoal || 'Campaign Blueprint'
+    const campaignType = session.selectedApproach || 'VECTOR_CAMPAIGN'
+    const html = blueprintToHtml(campaignName, campaignType, session.blueprint, session.selectedPositioning)
+    const blob = new Blob([html], { type: 'text/html' })
     const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${session.blueprint.overview?.campaignName || 'campaign'}-blueprint.json`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
+    window.open(url, '_blank')
+    setTimeout(() => URL.revokeObjectURL(url), 5000)
   }
 
   // Handle execution start - send to Strategic Planning tab
