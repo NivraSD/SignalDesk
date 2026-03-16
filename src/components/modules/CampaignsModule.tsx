@@ -28,7 +28,7 @@ import {
   TrendingUp
 } from 'lucide-react'
 import { useAppStore } from '@/stores/useAppStore'
-import { CampaignBuilderWizard } from '@/components/campaign-builder/CampaignBuilderWizard'
+import { CampaignBuilderWizard, blueprintToHtml } from '@/components/campaign-builder/CampaignBuilderWizard'
 import { supabase } from '@/lib/supabase/client'
 import { upsertMemoryVaultContent, updateMemoryVaultContent } from '@/lib/memoryVaultAPI'
 import { BlueprintV3Presentation } from '@/components/campaign-builder/BlueprintV3Presentation'
@@ -812,6 +812,17 @@ ${blueprint.part3_stakeholderOrchestration?.stakeholderOrchestrationPlans?.map((
     await navigator.clipboard.writeText(content)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handleExportBlueprint = (campaign: any) => {
+    if (!campaign?.blueprint) return
+    const name = campaign.blueprint.overview?.campaignName || campaign.name || 'Campaign Blueprint'
+    const type = campaign.blueprint.metadata?.campaignType || 'VECTOR_CAMPAIGN'
+    const html = blueprintToHtml(name, type, campaign.blueprint, campaign.positioning)
+    const blob = new Blob([html], { type: 'text/html' })
+    const url = URL.createObjectURL(blob)
+    window.open(url, '_blank')
+    setTimeout(() => URL.revokeObjectURL(url), 5000)
   }
 
   const handleDownloadContent = (item: ContentItem) => {
@@ -1671,7 +1682,7 @@ ${blueprint.part3_stakeholderOrchestration?.stakeholderOrchestrationPlans?.map((
                         <PRBriefPresentation
                           brief={selectedCampaign.blueprint}
                           onRefine={() => {}}
-                          onExport={() => {}}
+                          onExport={() => handleExportBlueprint(selectedCampaign)}
                           onExecute={() => {}}
                           isRefining={false}
                         />
@@ -1680,7 +1691,7 @@ ${blueprint.part3_stakeholderOrchestration?.stakeholderOrchestrationPlans?.map((
                         <GeoVectorBlueprintPresentation
                           blueprint={selectedCampaign.blueprint as any}
                           onRefine={() => {}}
-                          onExport={() => {}}
+                          onExport={() => handleExportBlueprint(selectedCampaign)}
                           onExecute={() => {}}
                           isRefining={false}
                         />
@@ -1690,7 +1701,7 @@ ${blueprint.part3_stakeholderOrchestration?.stakeholderOrchestrationPlans?.map((
                           blueprint={selectedCampaign.blueprint}
                           blueprintType="VECTOR_CAMPAIGN"
                           onRefine={() => {}}
-                          onExport={() => {}}
+                          onExport={() => handleExportBlueprint(selectedCampaign)}
                           onExecute={() => {}}
                           isRefining={false}
                         />
