@@ -154,20 +154,36 @@ export default function PalantirDemoPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {[
               {
-                title: 'Public Affairs Intelligence',
-                desc: 'Real-time geopolitical monitoring with AI-generated research reports, scenario simulations, and one-pagers on active policy issues.',
+                title: 'Intelligence Brief',
+                desc: 'AI-generated synthesis of real-time signals across your monitoring landscape.',
               },
               {
-                title: 'Opportunity Engine',
-                desc: 'AI-discovered media and speaking opportunities with stakeholder analysis, scenario modeling, and execution tracking.',
+                title: 'Executed Opportunity',
+                desc: 'A fully discovered and executed media/speaking opportunity with stakeholder analysis and scenario modeling.',
               },
               {
-                title: 'Campaign Builder',
-                desc: 'Full VECTOR campaign blueprints with stakeholder psychological profiling, multi-channel content strategies, and execution plans.',
+                title: 'Built Campaign',
+                desc: 'Complete VECTOR campaign blueprint with stakeholder psychological profiling, content strategies, and execution plan.',
               },
               {
-                title: 'NIV Advisor',
-                desc: 'Conversational AI strategist with full organizational context — ask it anything about your communications landscape.',
+                title: 'Signals',
+                desc: 'Live signal monitoring with predictive cascades tracking emerging developments.',
+              },
+              {
+                title: 'Crisis Command',
+                desc: 'A pre-built crisis response plan ready for real-time activation.',
+              },
+              {
+                title: 'Research Report',
+                desc: 'Deep geopolitical intelligence memo with scenario analysis and strategic recommendations.',
+              },
+              {
+                title: 'Completed Simulation',
+                desc: 'A fully run stakeholder simulation modeling behavioral responses across decision scenarios.',
+              },
+              {
+                title: 'Organizational Schema',
+                desc: 'Auto-generated at onboarding — your org profile, messaging architecture, and stakeholder map in the Vault.',
               },
             ].map((item, i) => (
               <div key={i} style={{ display: 'flex', gap: 12 }}>
