@@ -75,21 +75,21 @@ export default function PalantirDemoPage() {
           {/* Palantir Logo */}
           <svg width="160" height="44" viewBox="0 0 320 88" fill="none">
             {/* Symbol: circle with gap at bottom, sitting on a downward chevron */}
-            <g transform="translate(14, 6)">
-              {/* Circle with gap at bottom */}
+            <g transform="translate(14, 4)">
+              {/* Circle with small gap at bottom center */}
               <path
-                d="M24 6 A18 18 0 1 1 10.5 38"
-                fill="none" stroke="#faf9f7" strokeWidth="5" strokeLinecap="round"
+                d="M19 40 A18 18 0 1 1 29 40"
+                fill="none" stroke="#faf9f7" strokeWidth="4.5" strokeLinecap="round"
               />
-              {/* Downward chevron below */}
+              {/* Downward chevron */}
               <path
-                d="M8 42 L24 54 L40 42"
-                fill="none" stroke="#faf9f7" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"
+                d="M6 46 L24 58 L42 46"
+                fill="none" stroke="#faf9f7" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round"
               />
-              {/* Second chevron line */}
+              {/* Second chevron */}
               <path
-                d="M8 50 L24 62 L40 50"
-                fill="none" stroke="#faf9f7" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"
+                d="M6 54 L24 66 L42 54"
+                fill="none" stroke="#faf9f7" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round"
               />
             </g>
             {/* Wordmark */}
