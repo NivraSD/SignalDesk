@@ -78,8 +78,16 @@ export default function CascadesModule() {
 
       if (error) throw error
 
-      setCascades(data || [])
-      calculateStats(data || [])
+      // Deduplicate by id
+      const seen = new Set<string>()
+      const unique = (data || []).filter((c: any) => {
+        if (seen.has(c.id)) return false
+        seen.add(c.id)
+        return true
+      })
+
+      setCascades(unique)
+      calculateStats(unique)
     } catch (error) {
       console.error('Failed to load cascades:', error)
       setCascades([])

@@ -59,6 +59,7 @@ export default function PublicAffairsModule() {
   const [synthesis, setSynthesis] = useState<any>(null)
   const [generatingSynthesisReport, setGeneratingSynthesisReport] = useState<number | null>(null)
   const [showChat, setShowChat] = useState(true)
+  const [paTab, setPaTab] = useState<'developments' | 'reports'>('developments')
 
   useEffect(() => {
     if (organization?.id) {
@@ -420,8 +421,47 @@ export default function PublicAffairsModule() {
           </motion.div>
         )}
 
+        {/* Tab Switcher */}
+        {!showNewResearch && (
+          <div className="flex items-center gap-1 mb-6 border-b" style={{ borderColor: 'var(--grey-800)' }}>
+            <button
+              onClick={() => setPaTab('developments')}
+              className="px-4 py-2.5 text-sm font-medium transition-colors relative"
+              style={{
+                color: paTab === 'developments' ? '#fff' : '#71717a',
+                borderBottom: paTab === 'developments' ? '2px solid var(--burnt-orange)' : '2px solid transparent',
+                marginBottom: '-1px',
+              }}
+            >
+              <span className="flex items-center gap-2">
+                <TrendingUp className="w-3.5 h-3.5" />
+                Key Developments
+              </span>
+            </button>
+            <button
+              onClick={() => setPaTab('reports')}
+              className="px-4 py-2.5 text-sm font-medium transition-colors relative"
+              style={{
+                color: paTab === 'reports' ? '#fff' : '#71717a',
+                borderBottom: paTab === 'reports' ? '2px solid var(--burnt-orange)' : '2px solid transparent',
+                marginBottom: '-1px',
+              }}
+            >
+              <span className="flex items-center gap-2">
+                <FileText className="w-3.5 h-3.5" />
+                Research Reports
+                {reports.length > 0 && (
+                  <span className="text-xs px-1.5 py-0.5 rounded-full bg-[var(--grey-800)] text-[var(--grey-400)]">
+                    {reports.length}
+                  </span>
+                )}
+              </span>
+            </button>
+          </div>
+        )}
+
         {/* Key Developments from Latest Intelligence */}
-        {synthesis && !showNewResearch && (() => {
+        {paTab === 'developments' && synthesis && !showNewResearch && (() => {
           // Match Hub's data extraction: try all possible nesting paths
           const raw = synthesis?.synthesis_data || synthesis
           const synthData = raw?.synthesis || raw
@@ -507,7 +547,7 @@ export default function PublicAffairsModule() {
         })()}
 
         {/* Research Reports Section */}
-        {loading ? (
+        {paTab !== 'reports' ? null : loading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-6 h-6 animate-spin text-[var(--grey-500)]" />
           </div>

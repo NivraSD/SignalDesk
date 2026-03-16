@@ -9,7 +9,6 @@ import {
   ChevronLeft,
   Users,
   Crosshair,
-  Layers,
   Loader2
 } from 'lucide-react'
 
@@ -18,9 +17,7 @@ import ScenarioBuilder from '@/components/lp/ScenarioBuilder'
 import SimulationRunner from '@/components/lp/SimulationRunner'
 import SimulationViewer from '@/components/lp/SimulationViewer'
 import EntityProfileTester from '@/components/lp/EntityProfileTester'
-import BatchEntityBuilder from '@/components/lp/BatchEntityBuilder'
-
-type LPView = 'list' | 'scenario' | 'runner' | 'viewer' | 'entities' | 'batch-entities'
+type LPView = 'list' | 'scenario' | 'runner' | 'viewer' | 'entities'
 
 export default function LPPage() {
   return (
@@ -69,7 +66,6 @@ function LPPageInner() {
     { id: 'list', label: 'Simulations', icon: <Zap className="w-4 h-4" /> },
     { id: 'scenario', label: 'Scenario Builder', icon: <Crosshair className="w-4 h-4" /> },
     { id: 'entities', label: 'Entity Profiles', icon: <Users className="w-4 h-4" /> },
-    { id: 'batch-entities', label: 'Batch Builder', icon: <Layers className="w-4 h-4" /> },
   ]
 
   return (
@@ -155,9 +151,6 @@ function LPPageInner() {
           <EntityProfileTester />
         )}
 
-        {activeView === 'batch-entities' && (
-          <BatchEntityBuilder />
-        )}
       </div>
     </div>
   )

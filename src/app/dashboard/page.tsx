@@ -30,7 +30,6 @@ import {
   HelpCircle,
   BookOpen,
   Minus,
-  Rocket,
   Shield
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
@@ -88,8 +87,13 @@ import PredictionsModule from '@/components/modules/PredictionsModule'
 import CascadesModule from '@/components/modules/CascadesModule'
 import SocialIntelligenceModule from '@/components/modules/SocialIntelligenceModule'
 import PublicAffairsModule from '@/components/modules/PublicAffairsModule'
+import SimulationList from '@/components/lp/SimulationList'
+import ScenarioBuilder from '@/components/lp/ScenarioBuilder'
+import SimulationRunner from '@/components/lp/SimulationRunner'
+import SimulationViewer from '@/components/lp/SimulationViewer'
+import EntityProfileTester from '@/components/lp/EntityProfileTester'
 
-type ModuleView = 'hub' | 'opportunities' | 'studio' | 'campaigns' | 'crisis' | 'vault' | 'geointel' | 'connections' | 'predictions' | 'cascades' | 'social' | 'publicaffairs'
+type ModuleView = 'hub' | 'opportunities' | 'studio' | 'campaigns' | 'crisis' | 'vault' | 'geointel' | 'connections' | 'predictions' | 'cascades' | 'social' | 'publicaffairs' | 'simulations'
 
 export default function Dashboard() {
   const router = useRouter()
@@ -99,6 +103,9 @@ export default function Dashboard() {
   // UI State
   const [activeModule, setActiveModule] = useState<ModuleView>('hub')
   const [showOrgMenu, setShowOrgMenu] = useState(false)
+  const [simView, setSimView] = useState<'list' | 'scenario' | 'runner' | 'viewer' | 'entities'>('list')
+  const [selectedScenarioId, setSelectedScenarioId] = useState<string | null>(null)
+  const [selectedSimulationId, setSelectedSimulationId] = useState<string | null>(null)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [showOrgSettings, setShowOrgSettings] = useState(false)
@@ -461,6 +468,7 @@ export default function Dashboard() {
     { id: 'campaigns', label: 'Campaigns' },
     { id: 'crisis', label: 'Crisis' },
     { id: 'publicaffairs', label: 'Public Affairs' },
+    { id: 'simulations', label: 'Simulations' },
     { id: 'vault', label: 'Vault' },
   ]
 
@@ -714,17 +722,7 @@ export default function Dashboard() {
               <SidebarItem icon={Globe} label="Geo Intel" onClick={() => setActiveModule('geointel')} tourId="sidebar-geointel" />
             </div>
 
-            {/* Simulation & Founder */}
-            <div>
-              <div
-                className="text-[0.65rem] uppercase tracking-[0.1em] text-[var(--grey-400)] mb-3 px-3"
-                style={{ fontFamily: 'var(--font-display)' }}
-              >
-                Strategy
-              </div>
-              <SidebarItem icon={Zap} label="LP Simulations" onClick={() => router.push('/lp')} />
-              <SidebarItem icon={Rocket} label="Founder Mode" onClick={() => router.push('/founder')} />
-            </div>
+            {/* Strategy */}
           </div>
         </aside>
         )}
@@ -805,6 +803,61 @@ export default function Dashboard() {
 
           {activeModule === 'publicaffairs' && (
             <PublicAffairsModule />
+          )}
+
+          {activeModule === 'simulations' && (
+            <div className="flex-1 overflow-y-auto bg-[#fafafa]">
+              {/* Sub-nav */}
+              <div className="border-b border-gray-200 bg-white px-8">
+                <div className="flex items-center gap-1 h-12">
+                  {([
+                    { id: 'list' as const, label: 'Simulations' },
+                    { id: 'scenario' as const, label: 'Scenario Builder' },
+                    { id: 'entities' as const, label: 'Entity Profiles' },
+                  ]).map(item => (
+                    <button
+                      key={item.id}
+                      onClick={() => setSimView(item.id)}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                        simView === item.id
+                          ? 'bg-[var(--burnt-orange)] text-white'
+                          : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="max-w-7xl mx-auto">
+                {simView === 'list' && (
+                  <SimulationList
+                    onSelect={(id) => { setSelectedSimulationId(id); setSimView('viewer') }}
+                    onNewSimulation={() => setSimView('scenario')}
+                  />
+                )}
+                {simView === 'scenario' && (
+                  <ScenarioBuilder
+                    onRunSimulation={(scenarioId) => { setSelectedScenarioId(scenarioId); setSimView('runner') }}
+                  />
+                )}
+                {simView === 'runner' && selectedScenarioId && organization?.id && (
+                  <SimulationRunner
+                    scenarioId={selectedScenarioId}
+                    organizationId={organization.id}
+                    onComplete={(simId) => { setSelectedSimulationId(simId); setSimView('viewer') }}
+                    onCancel={() => setSimView('list')}
+                  />
+                )}
+                {simView === 'viewer' && selectedSimulationId && (
+                  <SimulationViewer
+                    simulationId={selectedSimulationId}
+                    onBack={() => setSimView('list')}
+                  />
+                )}
+                {simView === 'entities' && <EntityProfileTester />}
+              </div>
+            </div>
           )}
 
           {activeModule === 'social' && (
