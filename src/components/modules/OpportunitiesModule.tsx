@@ -520,6 +520,7 @@ ${opp.execution_plan?.success_metrics?.map((m: any) => `- ${JSON.stringify(m)}`)
       }
 
       // Fire scenario analysis in parallel (non-blocking)
+      // Returns the data so we can persist it to DB after awaiting
       const scenarioPromise = supabase.functions.invoke('quick-scenario', {
         body: {
           prompt: `Analyze the strategic implications of executing this opportunity: ${opp.title}`,
@@ -530,10 +531,12 @@ ${opp.execution_plan?.success_metrics?.map((m: any) => `- ${JSON.stringify(m)}`)
         if (!err && data?.success) {
           console.log('⚡ Scenario analysis complete')
           setScenarioAnalysis(prev => ({ ...prev, [opp.id]: data }))
+          return data
         } else {
           console.warn('⚡ Scenario analysis failed:', err?.message || data?.error)
+          return null
         }
-      }).catch(e => console.warn('⚡ Scenario analysis error:', e))
+      }).catch(e => { console.warn('⚡ Scenario analysis error:', e); return null })
 
       // Generate Gamma presentation
       setGenerationProgress({ current: 'Finalizing Presentation...', progress: 90 })
@@ -601,29 +604,22 @@ ${opp.execution_plan?.success_metrics?.map((m: any) => `- ${JSON.stringify(m)}`)
       await fetchGeneratedContent(opp.id)
 
       // Wait for scenario analysis to complete before saving
-      await scenarioPromise
+      const resolvedScenarioData = await scenarioPromise
 
-      // Update database
+      // Update database — include scenario_analysis in the same update
+      const updatePayload: Record<string, any> = {
+        status: 'executed',
+        executed: true,
+        presentation_url: presentationUrl
+      }
+      if (resolvedScenarioData) {
+        updatePayload.scenario_analysis = resolvedScenarioData
+      }
+
       const { error: updateError } = await supabase
         .from('opportunities')
-        .update({
-          status: 'executed',
-          executed: true,
-          presentation_url: presentationUrl
-        })
+        .update(updatePayload)
         .eq('id', opp.id)
-
-      // Try to persist scenario analysis (column may not exist yet)
-      const scenarioData = scenarioAnalysis[opp.id]
-      if (scenarioData) {
-        await supabase
-          .from('opportunities')
-          .update({ scenario_analysis: scenarioData })
-          .eq('id', opp.id)
-          .then(({ error: saErr }) => {
-            if (saErr) console.warn('Could not persist scenario_analysis (run: ALTER TABLE opportunities ADD COLUMN scenario_analysis JSONB)')
-          })
-      }
 
       if (updateError) console.error('Error updating opportunity:', updateError)
 
