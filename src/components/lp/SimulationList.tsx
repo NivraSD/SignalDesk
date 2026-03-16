@@ -74,12 +74,13 @@ export default function SimulationList({ onSelect, onNewSimulation }: Simulation
         if (scenarioIds.length > 0) {
           const { data: scenarios } = await supabase
             .from('lp_scenarios')
-            .select('scenario_id, type, action, stakeholder_seed')
-            .in('scenario_id', scenarioIds)
+            .select('id, type, scenario_data')
+            .in('id', scenarioIds)
 
-          const scenarioMap = new Map((scenarios || []).map(s => [s.scenario_id, s]))
+          const scenarioMap = new Map((scenarios || []).map(s => [s.id, s]))
           for (const sim of data) {
-            (sim as any).scenario = scenarioMap.get(sim.scenario_id) || null
+            const sc = scenarioMap.get(sim.scenario_id)
+            ;(sim as any).scenario = sc ? { type: sc.type, action: sc.scenario_data?.action, stakeholder_seed: sc.scenario_data?.stakeholder_seed } : null
           }
         }
         setSimulations(data as SimulationSummary[])
@@ -159,7 +160,7 @@ export default function SimulationList({ onSelect, onNewSimulation }: Simulation
                   <div className="flex-1 min-w-0">
                     {/* Scenario title */}
                     <h3 className="text-sm font-semibold text-[var(--charcoal)] mb-1 truncate">
-                      {sim.scenario?.action?.what || 'Untitled Scenario'}
+                      {sim.scenario?.action?.what || sim.scenario?.action?.trigger_description || 'Untitled Scenario'}
                     </h3>
 
                     <div className="flex items-center gap-2 flex-wrap">

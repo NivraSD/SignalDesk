@@ -122,10 +122,17 @@ export default function SimulationViewer({ simulationId, onBack }: SimulationVie
         if (simRes.data.scenario_id) {
           const { data: scenarioData } = await supabase
             .from('lp_scenarios')
-            .select('scenario_id, type, action, timing, stakeholder_seed')
-            .eq('scenario_id', simRes.data.scenario_id)
+            .select('id, type, scenario_data')
+            .eq('id', simRes.data.scenario_id)
             .single()
-          if (scenarioData) setScenario(scenarioData)
+          if (scenarioData) {
+            setScenario({
+              type: scenarioData.type,
+              action: scenarioData.scenario_data?.action,
+              timing: scenarioData.scenario_data?.timing,
+              stakeholder_seed: scenarioData.scenario_data?.stakeholder_seed,
+            })
+          }
         }
       }
       if (roundsRes.data) setRounds(roundsRes.data)
@@ -373,6 +380,11 @@ export default function SimulationViewer({ simulationId, onBack }: SimulationVie
             </span>
           </div>
 
+          {/* System explainer */}
+          <p className="text-xs text-gray-400 mb-2 leading-relaxed">
+            Simulations model how real-world entities respond to scenarios, how influence moves between stakeholders, and identify fulcrum points for maximum impact. Each round captures entity decisions, coalition shifts, and emerging narratives.
+          </p>
+
           {/* Scenario title & description */}
           {scenario && (
             <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 mb-2">
@@ -388,11 +400,16 @@ export default function SimulationViewer({ simulationId, onBack }: SimulationVie
                 )}
               </div>
               <h3 className="font-semibold text-[var(--charcoal)] text-sm">
-                {scenario.action?.what || 'Untitled Scenario'}
+                {scenario.action?.what || scenario.action?.trigger_description || 'Untitled Scenario'}
               </h3>
               {scenario.action?.rationale?.length > 0 && (
                 <p className="text-xs text-gray-500 mt-1">
                   {scenario.action.rationale[0]}
+                </p>
+              )}
+              {scenario.action?.impact_hypothesis?.length > 0 && (
+                <p className="text-xs text-gray-500 mt-1">
+                  {scenario.action.impact_hypothesis[0]}
                 </p>
               )}
               {scenario.stakeholder_seed?.length > 0 && (
