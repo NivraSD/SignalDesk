@@ -48,9 +48,16 @@ export default function PalantirDemoPage() {
         padding: '0 24px',
         textAlign: 'center',
       }}>
-        {/* Logo */}
-        <div style={{ marginBottom: 48 }}>
-          <svg width="100" height="60" viewBox="0 0 120 72">
+        {/* Logos */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 24,
+          marginBottom: 48,
+        }}>
+          {/* NIV Logo */}
+          <svg width="90" height="54" viewBox="0 0 120 72">
             <path d="M15 0 H120 V72 H0 L15 0 Z" fill="#faf9f7" />
             <text
               x="60" y="48"
@@ -62,7 +69,36 @@ export default function PalantirDemoPage() {
             >NIV</text>
             <path d="M102 0 H120 V18 L102 0 Z" fill="#c75d3a" />
           </svg>
+
+          <span style={{ color: '#444', fontSize: 20, fontWeight: 300 }}>×</span>
+
+          {/* Palantir Logo */}
+          <svg width="140" height="32" viewBox="0 0 280 64" fill="none">
+            {/* Palantir hexagonal symbol */}
+            <g transform="translate(0, 8)">
+              <path d="M24 0 L44 12 L44 36 L24 48 L4 36 L4 12 Z" fill="none" stroke="#faf9f7" strokeWidth="2.5" />
+              <path d="M24 8 L38 16 L38 32 L24 40 L10 32 L10 16 Z" fill="none" stroke="#faf9f7" strokeWidth="1.5" opacity="0.5" />
+              <path d="M24 16 L32 20 L32 28 L24 32 L16 28 L16 20 Z" fill="#faf9f7" opacity="0.3" />
+            </g>
+            {/* PALANTIR wordmark */}
+            <text
+              x="58" y="38"
+              fontFamily="'Inter', 'Helvetica Neue', Arial, sans-serif"
+              fontSize="28"
+              fontWeight="300"
+              fill="#faf9f7"
+              letterSpacing="6"
+            >PALANTIR</text>
+          </svg>
         </div>
+
+        <p style={{
+          fontSize: 12,
+          textTransform: 'uppercase',
+          letterSpacing: '0.12em',
+          color: '#666',
+          marginBottom: 32,
+        }}>Prepared for the Palantir Fellowship</p>
 
         {/* Headline */}
         <h1 style={{
