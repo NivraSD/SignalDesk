@@ -73,22 +73,39 @@ export default function PalantirDemoPage() {
           <span style={{ color: '#444', fontSize: 20, fontWeight: 300 }}>×</span>
 
           {/* Palantir Logo */}
-          <svg width="140" height="32" viewBox="0 0 280 64" fill="none">
-            {/* Palantir hexagonal symbol */}
-            <g transform="translate(0, 8)">
-              <path d="M24 0 L44 12 L44 36 L24 48 L4 36 L4 12 Z" fill="none" stroke="#faf9f7" strokeWidth="2.5" />
-              <path d="M24 8 L38 16 L38 32 L24 40 L10 32 L10 16 Z" fill="none" stroke="#faf9f7" strokeWidth="1.5" opacity="0.5" />
-              <path d="M24 16 L32 20 L32 28 L24 32 L16 28 L16 20 Z" fill="#faf9f7" opacity="0.3" />
+          <svg width="150" height="40" viewBox="0 0 300 80" fill="none">
+            {/* Symbol: circle with gap at bottom, sitting on a downward chevron */}
+            <g transform="translate(8, 4)">
+              {/* Circle with gap at bottom */}
+              <path
+                d="M24 6 A18 18 0 1 1 10.5 38"
+                fill="none" stroke="#faf9f7" strokeWidth="5" strokeLinecap="round"
+              />
+              <path
+                d="M37.5 38 A18 18 0 0 1 24 44"
+                fill="none" stroke="#faf9f7" strokeWidth="5" strokeLinecap="round"
+                opacity="0"
+              />
+              {/* Downward chevron below */}
+              <path
+                d="M8 42 L24 54 L40 42"
+                fill="none" stroke="#faf9f7" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"
+              />
+              {/* Second chevron line */}
+              <path
+                d="M8 50 L24 62 L40 50"
+                fill="none" stroke="#faf9f7" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"
+              />
             </g>
-            {/* PALANTIR wordmark */}
+            {/* Wordmark */}
             <text
-              x="58" y="38"
+              x="68" y="52"
               fontFamily="'Inter', 'Helvetica Neue', Arial, sans-serif"
-              fontSize="28"
-              fontWeight="300"
+              fontSize="38"
+              fontWeight="400"
               fill="#faf9f7"
-              letterSpacing="6"
-            >PALANTIR</text>
+              letterSpacing="1"
+            >Palantir</text>
           </svg>
         </div>
 
