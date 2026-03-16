@@ -659,7 +659,7 @@ export default function Dashboard() {
       {/* Dashboard Body */}
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar - White (hidden when Studio, Campaigns, Crisis, Vault, or Opportunities is active) */}
-        {activeModule !== 'studio' && activeModule !== 'campaigns' && activeModule !== 'crisis' && activeModule !== 'vault' && activeModule !== 'opportunities' && activeModule !== 'publicaffairs' && (
+        {activeModule !== 'studio' && activeModule !== 'campaigns' && activeModule !== 'crisis' && activeModule !== 'vault' && activeModule !== 'opportunities' && activeModule !== 'publicaffairs' && activeModule !== 'simulations' && (
         <aside className="w-[260px] bg-white border-r border-[var(--grey-200)] flex flex-col shrink-0">
           {/* Sidebar Header */}
           <div className="px-5 py-5 border-b border-[var(--grey-200)]">
