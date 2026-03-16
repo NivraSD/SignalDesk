@@ -73,18 +73,13 @@ export default function PalantirDemoPage() {
           <span style={{ color: '#444', fontSize: 20, fontWeight: 300 }}>×</span>
 
           {/* Palantir Logo */}
-          <svg width="150" height="40" viewBox="0 0 300 80" fill="none">
+          <svg width="160" height="44" viewBox="0 0 320 88" fill="none">
             {/* Symbol: circle with gap at bottom, sitting on a downward chevron */}
-            <g transform="translate(8, 4)">
+            <g transform="translate(14, 6)">
               {/* Circle with gap at bottom */}
               <path
                 d="M24 6 A18 18 0 1 1 10.5 38"
                 fill="none" stroke="#faf9f7" strokeWidth="5" strokeLinecap="round"
-              />
-              <path
-                d="M37.5 38 A18 18 0 0 1 24 44"
-                fill="none" stroke="#faf9f7" strokeWidth="5" strokeLinecap="round"
-                opacity="0"
               />
               {/* Downward chevron below */}
               <path
@@ -99,7 +94,7 @@ export default function PalantirDemoPage() {
             </g>
             {/* Wordmark */}
             <text
-              x="68" y="52"
+              x="76" y="56"
               fontFamily="'Inter', 'Helvetica Neue', Arial, sans-serif"
               fontSize="38"
               fontWeight="400"
