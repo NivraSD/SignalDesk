@@ -98,6 +98,7 @@ export default function SimulationViewer({ simulationId, onBack }: SimulationVie
   const [watchConditions, setWatchConditions] = useState<any[]>([])
   const [processingOutput, setProcessingOutput] = useState(false)
   const [expandedPlaybooks, setExpandedPlaybooks] = useState<Set<string>>(new Set())
+  const [scenario, setScenario] = useState<any>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -115,7 +116,18 @@ export default function SimulationViewer({ simulationId, onBack }: SimulationVie
           .order('round_number', { ascending: true })
       ])
 
-      if (simRes.data) setSimulation(simRes.data)
+      if (simRes.data) {
+        setSimulation(simRes.data)
+        // Fetch the scenario for title/description
+        if (simRes.data.scenario_id) {
+          const { data: scenarioData } = await supabase
+            .from('lp_scenarios')
+            .select('scenario_id, type, action, timing, stakeholder_seed')
+            .eq('scenario_id', simRes.data.scenario_id)
+            .single()
+          if (scenarioData) setScenario(scenarioData)
+        }
+      }
       if (roundsRes.data) setRounds(roundsRes.data)
       setLoading(false)
     }
@@ -341,14 +353,14 @@ export default function SimulationViewer({ simulationId, onBack }: SimulationVie
   return (
     <div className="max-w-3xl mx-auto p-6 space-y-6">
       {/* ── REPORT HEADER ── */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-start gap-3">
         {onBack && (
-          <button onClick={onBack} className="p-1.5 text-gray-400 hover:text-gray-600 rounded">
+          <button onClick={onBack} className="p-1.5 text-gray-400 hover:text-gray-600 rounded mt-0.5">
             <ArrowLeft className="w-5 h-5" />
           </button>
         )}
         <div className="flex-1">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 mb-1">
             <FileText className="w-5 h-5 text-[var(--burnt-orange)]" />
             <h2 className="font-semibold" style={{ fontSize: '1.125rem', color: 'var(--charcoal)' }}>Simulation Report</h2>
             <span className={`px-2 py-0.5 text-[10px] rounded font-medium ${
@@ -360,7 +372,42 @@ export default function SimulationViewer({ simulationId, onBack }: SimulationVie
               {simulation.status.replace(/_/g, ' ')}
             </span>
           </div>
-          <p className="text-xs text-gray-500 mt-0.5">
+
+          {/* Scenario title & description */}
+          {scenario && (
+            <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 mb-2">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="px-2 py-0.5 text-[10px] rounded bg-[var(--burnt-orange)]/10 text-[var(--burnt-orange)] font-medium">
+                  {(scenario.type || '').replace(/_/g, ' ')}
+                </span>
+                {scenario.timing?.date && (
+                  <span className="text-[10px] text-gray-400">
+                    <Clock className="w-3 h-3 inline mr-0.5" />
+                    {scenario.timing.date}
+                  </span>
+                )}
+              </div>
+              <h3 className="font-semibold text-[var(--charcoal)] text-sm">
+                {scenario.action?.what || 'Untitled Scenario'}
+              </h3>
+              {scenario.action?.rationale?.length > 0 && (
+                <p className="text-xs text-gray-500 mt-1">
+                  {scenario.action.rationale[0]}
+                </p>
+              )}
+              {scenario.stakeholder_seed?.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {scenario.stakeholder_seed.map((s: any, i: number) => (
+                    <span key={i} className="px-1.5 py-0.5 text-[10px] bg-white border border-gray-200 text-gray-600 rounded">
+                      {s.name || s}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          <p className="text-xs text-gray-500">
             {simulation.rounds_completed} rounds · {simulation.entities?.length || 0} entities
             · Stabilization: {(simulation.stabilization_score * 100).toFixed(0)}%
             · {new Date(simulation.created_at).toLocaleDateString()}

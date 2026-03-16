@@ -31,6 +31,11 @@ interface SimulationSummary {
   created_at: string
   completed_at: string | null
   error: string | null
+  scenario?: {
+    type: string
+    action: { what: string; rationale?: string[] }
+    stakeholder_seed?: any[]
+  } | null
 }
 
 const STATUS_CONFIG: Record<string, { icon: any; color: string; label: string }> = {
@@ -63,7 +68,22 @@ export default function SimulationList({ onSelect, onNewSimulation }: Simulation
         .order('created_at', { ascending: false })
         .limit(20)
 
-      if (data && !error) setSimulations(data)
+      if (data && !error) {
+        // Fetch scenario details for each simulation
+        const scenarioIds = [...new Set(data.map(s => s.scenario_id).filter(Boolean))]
+        if (scenarioIds.length > 0) {
+          const { data: scenarios } = await supabase
+            .from('lp_scenarios')
+            .select('scenario_id, type, action, stakeholder_seed')
+            .in('scenario_id', scenarioIds)
+
+          const scenarioMap = new Map((scenarios || []).map(s => [s.scenario_id, s]))
+          for (const sim of data) {
+            (sim as any).scenario = scenarioMap.get(sim.scenario_id) || null
+          }
+        }
+        setSimulations(data as SimulationSummary[])
+      }
       setLoading(false)
     }
     load()
@@ -137,10 +157,20 @@ export default function SimulationList({ onSelect, onNewSimulation }: Simulation
               >
                 <div className="flex items-center gap-3">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
+                    {/* Scenario title */}
+                    <h3 className="text-sm font-semibold text-[var(--charcoal)] mb-1 truncate">
+                      {sim.scenario?.action?.what || 'Untitled Scenario'}
+                    </h3>
+
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className={`px-2 py-0.5 text-[10px] rounded font-medium ${statusConf.color}`}>
                         {statusConf.label}
                       </span>
+                      {sim.scenario?.type && (
+                        <span className="px-2 py-0.5 text-[10px] rounded bg-gray-100 text-gray-500">
+                          {sim.scenario.type.replace(/_/g, ' ')}
+                        </span>
+                      )}
                       <span className="text-xs text-gray-400">
                         {sim.rounds_completed} round{sim.rounds_completed !== 1 ? 's' : ''}
                       </span>
