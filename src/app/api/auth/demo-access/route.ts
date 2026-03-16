@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({
-      redirect: `/auth/callback?token_hash=${hashedToken}&type=magiclink&next=/onboarding`
+      redirect: `/auth/callback?token_hash=${hashedToken}&type=magiclink&next=/dashboard`
     })
   } catch (err) {
     console.error('Demo access error:', err)
