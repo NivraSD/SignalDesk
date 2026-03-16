@@ -76,11 +76,8 @@ export default function PalantirDemoPage() {
           <svg width="160" height="44" viewBox="0 0 320 88" fill="none">
             {/* Symbol: circle with gap at bottom, sitting on a downward chevron */}
             <g transform="translate(14, 4)">
-              {/* Circle with small gap at bottom center */}
-              <path
-                d="M19 40 A18 18 0 1 1 29 40"
-                fill="none" stroke="#faf9f7" strokeWidth="4.5" strokeLinecap="round"
-              />
+              {/* Full circle */}
+              <circle cx="24" cy="22" r="16" fill="none" stroke="#faf9f7" strokeWidth="4.5" />
               {/* Downward chevron */}
               <path
                 d="M6 46 L24 58 L42 46"
