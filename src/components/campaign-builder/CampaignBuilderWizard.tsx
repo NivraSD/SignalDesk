@@ -185,10 +185,17 @@ function blueprintToMarkdown(campaignName: string, campaignType: string, bluepri
 export function blueprintToHtml(campaignName: string, campaignType: string, blueprint: any, positioning: any): string {
   const esc = (s: any): string => {
     if (!s) return ''
-    const str = typeof s === 'string' ? s : typeof s === 'object' ? JSON.stringify(s) : String(s)
-    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    if (typeof s === 'string') return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    if (typeof s === 'number') return String(s)
+    return '' // skip objects entirely — extract fields explicitly instead
   }
   const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+  // Helper to get stakeholder name from either string or object
+  const stakeholderName = (s: any): string => {
+    if (!s) return 'Stakeholder'
+    if (typeof s === 'string') return s
+    return s.name || s.stakeholderName || 'Stakeholder'
+  }
 
   let html = `<!DOCTYPE html>
 <html lang="en">
@@ -225,13 +232,16 @@ export function blueprintToHtml(campaignName: string, campaignType: string, blue
   .stat-card .label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
   .lever { border-left: 3px solid #6d28d9; padding: 12px 16px; margin-bottom: 12px; background: #faf8ff; border-radius: 0 6px 6px 0; }
   .lever h4 { margin-top: 0; color: #6d28d9; }
-  .tactic { font-size: 13px; color: #444; padding: 4px 0; border-bottom: 1px solid #f0f0f0; }
+  .tactic { font-size: 13px; color: #444; padding: 6px 0; border-bottom: 1px solid #f0f0f0; }
   .tactic:last-child { border-bottom: none; }
-  .priority-high { color: #dc2626; font-weight: 600; }
-  .priority-medium { color: #d97706; font-weight: 600; }
-  .priority-low { color: #16a34a; font-weight: 600; }
+  .tactic strong { color: #1a1a2e; }
+  .tactic .who { color: #6d28d9; font-weight: 500; }
+  .tactic .where { color: #888; font-size: 12px; }
+  .tactic .when { color: #999; font-size: 11px; font-style: italic; }
   .footer { margin-top: 40px; padding-top: 12px; border-top: 1px solid #e0e0e0; font-size: 11px; color: #999; text-align: center; }
   .quote { border-left: 3px solid #6d28d9; padding: 12px 20px; background: #faf8ff; margin: 12px 0; border-radius: 0 6px 6px 0; font-style: italic; font-size: 15px; color: #333; }
+  .psych-detail { font-size: 12px; color: #666; margin-top: 4px; }
+  .psych-detail span { display: inline-block; margin-right: 16px; }
 </style>
 </head>
 <body>
@@ -239,8 +249,8 @@ export function blueprintToHtml(campaignName: string, campaignType: string, blue
 
 <div class="header">
   <h1>${esc(campaignName)}</h1>
-  <div class="meta">${date} &nbsp;|&nbsp; ${esc(campaignType.replace(/_/g, ' '))} Campaign</div>
-  <div class="badge">${esc(blueprint.overview?.pattern || campaignType.replace(/_/g, ' '))} Blueprint</div>
+  <div class="meta">${date} &nbsp;|&nbsp; ${esc((campaignType || '').replace(/_/g, ' '))} Campaign</div>
+  <div class="badge">${esc(blueprint.overview?.pattern || (campaignType || '').replace(/_/g, ' '))} Blueprint</div>
 </div>
 `
 
@@ -248,7 +258,11 @@ export function blueprintToHtml(campaignName: string, campaignType: string, blue
   if (blueprint.overview) {
     const ov = blueprint.overview
     html += `<div class="section"><h2>Campaign Overview</h2>\n`
+    if (ov.campaignName) html += `<p><strong>Campaign:</strong> ${esc(ov.campaignName)}</p>\n`
+    if (ov.pattern) html += `<p><strong>Pattern:</strong> ${esc(ov.pattern)}</p>\n`
     if (ov.duration) html += `<p><strong>Duration:</strong> ${esc(ov.duration)}</p>\n`
+    if (ov.complexity) html += `<p><strong>Complexity:</strong> ${esc(ov.complexity)}</p>\n`
+    if (ov.patternRationale) html += `<p>${esc(ov.patternRationale)}</p>\n`
     if (ov.description) html += `<p>${esc(ov.description)}</p>\n`
     html += `</div>\n`
   }
@@ -262,19 +276,20 @@ export function blueprintToHtml(campaignName: string, campaignType: string, blue
     html += `</div>\n`
   }
 
-  // Core Message
+  // Message Architecture
   if (blueprint.messageArchitecture) {
     const ma = blueprint.messageArchitecture
     html += `<div class="section"><h2>Message Architecture</h2>\n`
     if (ma.coreMessage) html += `<div class="quote">${esc(ma.coreMessage)}</div>\n`
+    if (ma.messageRationale) html += `<p>${esc(ma.messageRationale)}</p>\n`
     if (ma.keyMessages?.length > 0) {
       html += `<h3>Key Messages</h3><ul>\n`
-      ma.keyMessages.forEach((msg: string) => { html += `<li>${esc(msg)}</li>\n` })
+      ma.keyMessages.forEach((msg: any) => { html += `<li>${esc(typeof msg === 'string' ? msg : msg.message || msg.text || '')}</li>\n` })
       html += `</ul>\n`
     }
     if (ma.proofPoints?.length > 0) {
       html += `<h3>Proof Points</h3><ul>\n`
-      ma.proofPoints.forEach((p: string) => { html += `<li>${esc(p)}</li>\n` })
+      ma.proofPoints.forEach((p: any) => { html += `<li>${esc(typeof p === 'string' ? p : p.point || p.text || '')}</li>\n` })
       html += `</ul>\n`
     }
     html += `</div>\n`
@@ -285,43 +300,115 @@ export function blueprintToHtml(campaignName: string, campaignType: string, blue
     const gf = blueprint.part1_goalFramework
     html += `<div class="section"><h2>Goal Framework</h2>\n`
     if (gf.primaryObjective) html += `<p><strong>Primary Objective:</strong> ${esc(gf.primaryObjective)}</p>\n`
+    if (gf.successCriteria) html += `<p><strong>Success Criteria:</strong> ${esc(gf.successCriteria)}</p>\n`
     if (gf.behavioralGoals?.length > 0) {
       html += `<h3>Behavioral Goals</h3>\n`
       gf.behavioralGoals.forEach((bg: any) => {
-        html += `<div class="card"><strong>${esc(bg.stakeholder || bg.target || '')}</strong>`
-        html += `<div class="detail">${esc(bg.desiredBehavior || bg.behavior || '')}</div></div>\n`
+        if (typeof bg === 'string') {
+          html += `<div class="card">${esc(bg)}</div>\n`
+        } else {
+          html += `<div class="card"><strong>${esc(bg.stakeholder || bg.target || bg.audience || '')}</strong>`
+          if (bg.desiredBehavior || bg.behavior) html += `<div class="detail">${esc(bg.desiredBehavior || bg.behavior)}</div>`
+          html += `</div>\n`
+        }
+      })
+    }
+    if (gf.kpis?.length > 0) {
+      html += `<h3>KPIs</h3>\n`
+      gf.kpis.forEach((kpi: any) => {
+        if (typeof kpi === 'string') {
+          html += `<div class="card">${esc(kpi)}</div>\n`
+        } else {
+          html += `<div class="card"><strong>${esc(kpi.metric || kpi.name || '')}</strong>`
+          if (kpi.target) html += `<div class="detail">Target: ${esc(kpi.target)}</div>`
+          html += `</div>\n`
+        }
       })
     }
     html += `</div>\n`
   }
 
-  // Stakeholder Mapping
-  const stakeholders = blueprint.part2_stakeholderMapping?.stakeholderProfiles ||
+  // Stakeholder Mapping — handle both old and new formats
+  const stakeholderGroups = blueprint.part2_stakeholderMapping?.groups || []
+  const stakeholderProfiles = blueprint.part2_stakeholderMapping?.stakeholderProfiles ||
     blueprint.part1_stakeholderIdentification?.stakeholderProfiles || []
-  if (stakeholders.length > 0) {
+  // Also handle legacy targetStakeholders
+  const legacyStakeholders = blueprint.part1_strategicFoundation?.targetStakeholders || []
+
+  if (stakeholderGroups.length > 0 || stakeholderProfiles.length > 0 || legacyStakeholders.length > 0) {
     html += `<div class="section"><h2>Target Stakeholders</h2>\n`
-    stakeholders.forEach((s: any) => {
-      const pClass = s.priority === 'critical' || s.priority === 'high' ? 'priority-high'
-        : s.priority === 'medium' ? 'priority-medium' : 'priority-low'
-      html += `<div class="card"><strong>${esc(s.name)}</strong>`
-      if (s.priority) html += ` <span class="${pClass}" style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;">${esc(s.priority)}</span>`
+
+    // New groups format
+    stakeholderGroups.forEach((g: any) => {
+      html += `<div class="card"><strong>${esc(g.name || g.groupName || '')}</strong>`
+      if (g.size) html += ` <span style="color:#888;font-size:12px;">${esc(g.size)}</span>`
+      if (g.priority) html += ` <span style="font-size:11px;color:#6d28d9;font-weight:600;">P${g.priority}</span>`
+      if (g.psychologicalProfile) {
+        const pp = g.psychologicalProfile
+        html += `<div class="psych-detail">`
+        if (pp.primaryFear) html += `<span><strong>Fear:</strong> ${esc(pp.primaryFear)}</span>`
+        if (pp.primaryAspiration) html += `<span><strong>Aspiration:</strong> ${esc(pp.primaryAspiration)}</span>`
+        if (pp.decisionTrigger) html += `<span><strong>Trigger:</strong> ${esc(pp.decisionTrigger)}</span>`
+        if (pp.currentPerception) html += `<span><strong>Current:</strong> ${esc(pp.currentPerception)}</span>`
+        if (pp.targetPerception) html += `<span><strong>Target:</strong> ${esc(pp.targetPerception)}</span>`
+        html += `</div>`
+      }
+      html += `</div>\n`
+    })
+
+    // Old profiles format
+    stakeholderProfiles.forEach((s: any) => {
+      html += `<div class="card"><strong>${esc(s.name || '')}</strong>`
       if (s.role) html += `<div class="detail"><strong>Role:</strong> ${esc(s.role)}</div>`
-      if (s.goals?.length > 0) html += `<div class="detail"><strong>Goals:</strong> ${esc(s.goals.join('; '))}</div>`
-      if (s.psychologicalProfile) {
-        const pp = s.psychologicalProfile
-        if (pp.values?.length > 0) html += `<div class="detail"><strong>Values:</strong> ${esc(pp.values.join(', '))}</div>`
-        if (pp.fears?.length > 0) html += `<div class="detail"><strong>Fears:</strong> ${esc(pp.fears.join(', '))}</div>`
-        if (pp.aspirations?.length > 0) html += `<div class="detail"><strong>Aspirations:</strong> ${esc(pp.aspirations.join(', '))}</div>`
+      if (s.goals?.length > 0) html += `<div class="detail"><strong>Goals:</strong> ${s.goals.map((g: any) => esc(typeof g === 'string' ? g : g.goal || '')).join('; ')}</div>`
+      html += `</div>\n`
+    })
+
+    // Legacy format
+    legacyStakeholders.forEach((s: any) => {
+      html += `<div class="card"><strong>${esc(s.name || '')}</strong>`
+      if (s.role) html += `<div class="detail"><strong>Role:</strong> ${esc(s.role)}</div>`
+      if (s.primaryFear) html += `<div class="detail"><strong>Fear:</strong> ${esc(s.primaryFear)}</div>`
+      if (s.primaryAspiration) html += `<div class="detail"><strong>Aspiration:</strong> ${esc(s.primaryAspiration)}</div>`
+      html += `</div>\n`
+    })
+
+    if (blueprint.part2_stakeholderMapping?.priorityOrder?.length > 0) {
+      html += `<h3>Priority Order</h3><p>${blueprint.part2_stakeholderMapping.priorityOrder.map((s: any) => esc(typeof s === 'string' ? s : '')).join(' → ')}</p>\n`
+    }
+    html += `</div>\n`
+  }
+
+  // Psychological Influence Strategies (part2)
+  if (blueprint.part2_psychologicalInfluence?.influenceStrategies?.length > 0) {
+    html += `<div class="section"><h2>Psychological Influence Strategies</h2>\n`
+    blueprint.part2_psychologicalInfluence.influenceStrategies.forEach((strat: any) => {
+      html += `<div class="card"><strong>${esc(strat.stakeholder || '')}</strong>`
+      if (strat.psychologicalProfile) {
+        const pp = strat.psychologicalProfile
+        html += `<div class="psych-detail">`
+        if (pp.primaryFear) html += `<span><strong>Fear:</strong> ${esc(pp.primaryFear)}</span>`
+        if (pp.primaryAspiration) html += `<span><strong>Aspiration:</strong> ${esc(pp.primaryAspiration)}</span>`
+        if (pp.decisionTrigger) html += `<span><strong>Trigger:</strong> ${esc(pp.decisionTrigger)}</span>`
+        html += `</div>`
+      }
+      if (strat.positioningAlignment?.coreMessage) {
+        html += `<div class="detail"><strong>Message:</strong> ${esc(strat.positioningAlignment.coreMessage)}</div>`
+      }
+      if (strat.influenceLevers?.length > 0) {
+        html += `<div class="detail" style="margin-top:6px;"><strong>Levers:</strong></div>`
+        strat.influenceLevers.forEach((lever: any) => {
+          html += `<div style="font-size:12px;color:#555;padding:2px 0 2px 12px;">• <strong>${esc(lever.lever || '')}</strong>: ${esc(lever.approach || '')}${lever.channels?.length ? ` (${lever.channels.map((c: string) => esc(c)).join(', ')})` : ''}</div>\n`
+        })
       }
       html += `</div>\n`
     })
     html += `</div>\n`
   }
 
-  // Stakeholder Orchestration Plans
+  // Stakeholder Orchestration Plans (part3)
   const orchPlans = blueprint.part3_stakeholderOrchestration?.stakeholderOrchestrationPlans || []
   if (orchPlans.length > 0) {
-    // Stats bar
     let totalContent = 0, totalMedia = 0, totalSocial = 0, totalTL = 0
     orchPlans.forEach((plan: any) => {
       (plan.influenceLevers || plan.levers || []).forEach((lever: any) => {
@@ -342,46 +429,86 @@ export function blueprintToHtml(campaignName: string, campaignType: string, blue
     </div>\n`
 
     orchPlans.forEach((plan: any) => {
-      html += `<h3>${esc(plan.stakeholderName || plan.stakeholder || 'Stakeholder')}</h3>\n`
-      if (plan.priority) html += `<p style="font-size:12px;color:#888;">Priority: ${esc(plan.priority)}</p>\n`
+      // Handle stakeholder as string or object
+      const sName = stakeholderName(plan.stakeholderName || plan.stakeholder)
+      html += `<h3>${esc(sName)}</h3>\n`
+
+      // Show psychological profile if stakeholder is an object
+      const sObj = typeof plan.stakeholder === 'object' ? plan.stakeholder : null
+      if (sObj?.psychologicalProfile) {
+        const pp = sObj.psychologicalProfile
+        html += `<div class="psych-detail" style="margin-bottom:8px;">`
+        if (pp.primaryFear) html += `<span><strong>Fear:</strong> ${esc(pp.primaryFear)}</span>`
+        if (pp.primaryAspiration) html += `<span><strong>Aspiration:</strong> ${esc(pp.primaryAspiration)}</span>`
+        if (pp.decisionTrigger) html += `<span><strong>Trigger:</strong> ${esc(pp.decisionTrigger)}</span>`
+        html += `</div>\n`
+      }
 
       const levers = plan.influenceLevers || plan.levers || []
       levers.forEach((lever: any) => {
         html += `<div class="lever">\n`
-        if (lever.leverName || lever.name) html += `<h4>${esc(lever.leverName || lever.name)}</h4>\n`
-        if (lever.description) html += `<p style="font-size:13px;color:#555;">${esc(lever.description)}</p>\n`
+        const leverLabel = lever.leverName || lever.name || lever.campaign?.leverName || ''
+        if (leverLabel) html += `<h4>${esc(leverLabel)}</h4>\n`
+        const leverObj = lever.objective || lever.campaign?.objective || lever.description || ''
+        if (leverObj) html += `<p style="font-size:13px;color:#555;">${esc(leverObj)}</p>\n`
         const campaign = lever.campaign || {}
 
+        // Media Pitches — fields: who, outlet, beat, what, when
         if (campaign.mediaPitches?.length > 0) {
           html += `<p style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;margin-top:8px;">Media Pitches</p>\n`
           campaign.mediaPitches.forEach((item: any) => {
-            html += `<div class="tactic"><strong>${esc(item.topic || item.headline || '')}</strong>`
-            if (item.angle) html += ` — ${esc(item.angle)}`
-            if (item.targetOutlet) html += ` <span style="color:#888;font-size:12px;">(${esc(item.targetOutlet)})</span>`
+            const label = item.what || item.topic || item.headline || item.angle || ''
+            html += `<div class="tactic">`
+            html += `<strong>${esc(label)}</strong>`
+            if (item.who) html += ` <span class="who">→ ${esc(item.who)}</span>`
+            if (item.outlet || item.targetOutlet) html += ` <span class="where">(${esc(item.outlet || item.targetOutlet)})</span>`
+            if (item.when) html += ` <span class="when">${esc(item.when)}</span>`
             html += `</div>\n`
           })
         }
+
+        // Social Posts — fields: who, platform, what, keyMessages, when
         if (campaign.socialPosts?.length > 0) {
           html += `<p style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;margin-top:8px;">Social Posts</p>\n`
           campaign.socialPosts.forEach((item: any) => {
-            html += `<div class="tactic"><strong>${esc(item.topic || item.headline || '')}</strong>`
-            if (item.platform) html += ` <span style="color:#888;font-size:12px;">(${esc(item.platform)})</span>`
+            const label = item.what || item.topic || item.headline || ''
+            html += `<div class="tactic">`
+            html += `<strong>${esc(label)}</strong>`
+            if (item.who) html += ` <span class="who">by ${esc(item.who)}</span>`
+            if (item.platform) html += ` <span class="where">(${esc(item.platform)})</span>`
+            if (item.when) html += ` <span class="when">${esc(item.when)}</span>`
+            if (item.keyMessages?.length > 0) {
+              html += `<div style="font-size:12px;color:#666;padding-left:12px;margin-top:2px;">${item.keyMessages.map((m: any) => esc(typeof m === 'string' ? m : '')).join(' • ')}</div>`
+            }
             html += `</div>\n`
           })
         }
+
+        // Thought Leadership — fields: who, what, where, keyPoints, when
         if (campaign.thoughtLeadership?.length > 0) {
           html += `<p style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;margin-top:8px;">Thought Leadership</p>\n`
           campaign.thoughtLeadership.forEach((item: any) => {
-            html += `<div class="tactic"><strong>${esc(item.topic || item.title || '')}</strong>`
-            if (item.format) html += ` <span style="color:#888;font-size:12px;">(${esc(item.format)})</span>`
+            const label = item.what || item.topic || item.title || ''
+            html += `<div class="tactic">`
+            html += `<strong>${esc(label)}</strong>`
+            if (item.who) html += ` <span class="who">by ${esc(item.who)}</span>`
+            if (item.where || item.format) html += ` <span class="where">(${esc(item.where || item.format)})</span>`
+            if (item.when) html += ` <span class="when">${esc(item.when)}</span>`
             html += `</div>\n`
           })
         }
+
+        // Additional Tactics — fields: type, who, what, where, when
         if (campaign.additionalTactics?.length > 0) {
           html += `<p style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;margin-top:8px;">Additional Tactics</p>\n`
           campaign.additionalTactics.forEach((item: any) => {
-            html += `<div class="tactic"><strong>${esc(item.name || item.tactic || '')}</strong>`
-            if (item.description) html += ` — ${esc(item.description)}`
+            const label = item.what || item.name || item.tactic || ''
+            html += `<div class="tactic">`
+            if (item.type) html += `<span class="where">[${esc(item.type)}]</span> `
+            html += `<strong>${esc(label)}</strong>`
+            if (item.who) html += ` <span class="who">→ ${esc(item.who)}</span>`
+            if (item.where) html += ` <span class="where">(${esc(item.where)})</span>`
+            if (item.when) html += ` <span class="when">${esc(item.when)}</span>`
             html += `</div>\n`
           })
         }
@@ -402,9 +529,9 @@ export function blueprintToHtml(campaignName: string, campaignType: string, blue
       if (exec.teamBandwidth.recommendedTeamSize) html += `<p><strong>Recommended Team:</strong> ${esc(exec.teamBandwidth.recommendedTeamSize)}</p>\n`
       if (exec.teamBandwidth.roles?.length > 0) {
         exec.teamBandwidth.roles.forEach((role: any) => {
-          html += `<div class="card"><strong>${esc(role.role)}</strong> <span style="color:#6d28d9;font-size:12px;">${role.hoursPerWeek}h/week</span>`
+          html += `<div class="card"><strong>${esc(role.role || '')}</strong> <span style="color:#6d28d9;font-size:12px;">${role.hoursPerWeek || '?'}h/week</span>`
           if (role.responsibilities?.length > 0) {
-            html += `<div class="detail">${esc(role.responsibilities.join(' • '))}</div>`
+            html += `<div class="detail">${role.responsibilities.map((r: any) => esc(typeof r === 'string' ? r : '')).join(' • ')}</div>`
           }
           html += `</div>\n`
         })
@@ -422,15 +549,13 @@ export function blueprintToHtml(campaignName: string, campaignType: string, blue
     if (exec.weeklyExecutionRhythm) {
       html += `<h3>Weekly Rhythm</h3>\n`
       const rhythm = exec.weeklyExecutionRhythm
-      if (rhythm.monday?.length) {
-        html += `<h4>Monday</h4><ul>${rhythm.monday.map((t: string) => `<li>${esc(t)}</li>`).join('')}</ul>\n`
+      const renderDay = (label: string, items: any[]) => {
+        if (!items?.length) return
+        html += `<h4>${label}</h4><ul>${items.map((t: any) => `<li>${esc(typeof t === 'string' ? t : '')}</li>`).join('')}</ul>\n`
       }
-      if (rhythm.tuesdayThursday?.length) {
-        html += `<h4>Tuesday–Thursday</h4><ul>${rhythm.tuesdayThursday.map((t: string) => `<li>${esc(t)}</li>`).join('')}</ul>\n`
-      }
-      if (rhythm.friday?.length) {
-        html += `<h4>Friday</h4><ul>${rhythm.friday.map((t: string) => `<li>${esc(t)}</li>`).join('')}</ul>\n`
-      }
+      renderDay('Monday', rhythm.monday)
+      renderDay('Tuesday–Thursday', rhythm.tuesdayThursday)
+      renderDay('Friday', rhythm.friday)
     }
 
     if (exec.systemLevelSuccessMetrics) {
@@ -440,10 +565,11 @@ export function blueprintToHtml(campaignName: string, campaignType: string, blue
       metricKeys.forEach((key) => {
         const m = metrics[key]
         if (!m) return
-        html += `<div class="card"><strong>${esc(key.replace(/([A-Z])/g, ' $1').replace(/^./, (s: string) => s.toUpperCase()))}</strong>`
+        const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, (c: string) => c.toUpperCase())
+        html += `<div class="card"><strong>${esc(label)}</strong>`
         if (m.definition) html += `<div class="detail">${esc(m.definition)}</div>`
         if (m.measurement?.length > 0) {
-          html += `<div class="detail" style="margin-top:4px;">${m.measurement.map((s: string) => esc(s)).join(' • ')}</div>`
+          html += `<div class="detail" style="margin-top:4px;">${m.measurement.map((s: any) => esc(typeof s === 'string' ? s : '')).join(' • ')}</div>`
         }
         html += `</div>\n`
       })
@@ -452,9 +578,9 @@ export function blueprintToHtml(campaignName: string, campaignType: string, blue
     if (exec.adaptationStrategy?.pivotTriggers?.length > 0) {
       html += `<h3>Pivot Triggers</h3>\n`
       exec.adaptationStrategy.pivotTriggers.forEach((pt: any) => {
-        html += `<div class="card"><strong>${esc(pt.trigger)}</strong>`
+        html += `<div class="card"><strong>${esc(pt.trigger || '')}</strong>`
         if (pt.diagnosis) html += `<div class="detail"><strong>Diagnosis:</strong> ${esc(pt.diagnosis)}</div>`
-        if (pt.adaptations?.length > 0) html += `<div class="detail"><strong>Adaptations:</strong> ${esc(pt.adaptations.join('; '))}</div>`
+        if (pt.adaptations?.length > 0) html += `<div class="detail"><strong>Adaptations:</strong> ${pt.adaptations.map((a: any) => esc(typeof a === 'string' ? a : '')).join('; ')}</div>`
         html += `</div>\n`
       })
     }
@@ -470,7 +596,7 @@ export function blueprintToHtml(campaignName: string, campaignType: string, blue
       html += `<h3>Competitive Landscape</h3>\n`
       ci.competitiveIntelligence.dominant_players.forEach((p: any) => {
         html += `<div class="card"><strong>${esc(typeof p === 'string' ? p : p.name || p.entity || '')}</strong>`
-        if (p.description) html += `<div class="detail">${esc(p.description)}</div>`
+        if (typeof p === 'object' && p.description) html += `<div class="detail">${esc(p.description)}</div>`
         html += `</div>\n`
       })
     }
