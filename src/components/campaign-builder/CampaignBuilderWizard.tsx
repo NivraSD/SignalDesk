@@ -183,7 +183,11 @@ function blueprintToMarkdown(campaignName: string, campaignType: string, bluepri
 
 /** Convert blueprint to a printable HTML document */
 export function blueprintToHtml(campaignName: string, campaignType: string, blueprint: any, positioning: any): string {
-  const esc = (s: string) => s?.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') || ''
+  const esc = (s: any): string => {
+    if (!s) return ''
+    const str = typeof s === 'string' ? s : typeof s === 'object' ? JSON.stringify(s) : String(s)
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  }
   const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
 
   let html = `<!DOCTYPE html>
