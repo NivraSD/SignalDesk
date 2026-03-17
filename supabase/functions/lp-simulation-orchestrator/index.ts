@@ -711,12 +711,38 @@ async function runSimulationLoop(
       .map(t => t.theme)
 
     const gapsIdentified = lastAnalysis.gaps.map(g => g.description)
+    const finalStatus = isStabilized ? 'stabilized' : 'max_rounds_reached'
 
-    // Identify fulcrums (only after simulation completes)
-    const fulcrums = await identifyFulcrums(allResponses, allAnalyses, scenario)
+    // Write completed status IMMEDIATELY so it's saved even if we get killed during fulcrum analysis
+    console.log(`📝 Writing final status: ${finalStatus} (${currentRound} rounds)`)
+    await supabase
+      .from('lp_simulations')
+      .update({
+        status: finalStatus,
+        rounds_completed: currentRound,
+        stabilization_score: stabilizationScore,
+        dominant_narratives: dominantNarratives,
+        key_coalitions: lastAnalysis.coalitions,
+        gaps_identified: gapsIdentified,
+        completed_at: new Date().toISOString()
+      })
+      .eq('id', simulationId)
+
+    // Identify fulcrums as bonus — if we get killed here, simulation is still marked complete
+    let fulcrums: Fulcrum[] = []
+    try {
+      fulcrums = await identifyFulcrums(allResponses, allAnalyses, scenario)
+      // Update with fulcrums if we made it
+      await supabase
+        .from('lp_simulations')
+        .update({ fulcrums })
+        .eq('id', simulationId)
+    } catch (fulcrumErr: any) {
+      console.warn(`⚠️ Fulcrum identification failed: ${fulcrumErr.message} — simulation still complete`)
+    }
 
     return {
-      status: isStabilized ? 'stabilized' : 'max_rounds_reached',
+      status: finalStatus,
       roundsCompleted: currentRound,
       stabilizationScore,
       dominantNarratives,
