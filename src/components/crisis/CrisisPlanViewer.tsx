@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { FileText, X as CloseIcon, Users, Shield, MessageSquare, AlertTriangle, CheckCircle, Package, Circle, ExternalLink, Pencil, Plus, Trash2, Save } from 'lucide-react'
+import { FileText, X as CloseIcon, Users, Shield, MessageSquare, AlertTriangle, CheckCircle, Package, Circle, ExternalLink, Pencil, Plus, Trash2, Save, Loader2, Sparkles } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { useAppStore } from '@/stores/useAppStore'
 import { fetchMemoryVaultContent, saveToMemoryVault } from '@/lib/memoryVaultAPI'
@@ -17,6 +17,63 @@ interface DraftedComm {
   scenario: string
   stakeholder: string
 }
+
+const PRESET_ROLES = [
+  {
+    role: 'Crisis Response Leader',
+    title: 'Chief Executive Officer or designated senior executive',
+    responsibilities: [
+      'Overall crisis response authority and decision-making',
+      'External stakeholder communications approval',
+      'Resource allocation and strategic direction'
+    ]
+  },
+  {
+    role: 'Communications Director',
+    title: 'Head of Communications/PR or senior communications executive',
+    responsibilities: [
+      'Develop and implement communication strategies',
+      'Media relations and press release coordination',
+      'Message consistency across all channels'
+    ]
+  },
+  {
+    role: 'Operations Manager',
+    title: 'Chief Operating Officer or senior operations executive',
+    responsibilities: [
+      'Operational impact assessment and mitigation',
+      'Business continuity plan activation',
+      'Internal coordination and resource management'
+    ]
+  },
+  {
+    role: 'Legal Counsel',
+    title: 'General Counsel or external legal advisor',
+    responsibilities: [
+      'Legal risk assessment and regulatory compliance',
+      'Review all external communications for liability',
+      'Coordinate with regulators and enforcement agencies'
+    ]
+  },
+  {
+    role: 'Government Affairs Lead',
+    title: 'Head of Government Relations or Policy',
+    responsibilities: [
+      'Engage relevant government officials and regulators',
+      'Monitor and brief on legislative/regulatory response',
+      'Coordinate with industry associations and coalitions'
+    ]
+  },
+  {
+    role: 'Stakeholder Relations Lead',
+    title: 'Head of Investor Relations or Stakeholder Engagement',
+    responsibilities: [
+      'Manage investor, board, and partner communications',
+      'Monitor stakeholder sentiment and concerns',
+      'Coordinate briefings for key external stakeholders'
+    ]
+  },
+]
 
 export default function CrisisPlanViewer({ onClose, plan: providedPlan, embedded = false }: CrisisPlanViewerProps) {
   const { organization } = useAppStore()
@@ -143,8 +200,13 @@ export default function CrisisPlanViewer({ onClose, plan: providedPlan, embedded
     setEditingScenario(null)
   }
 
-  // Add new scenario
-  const addScenario = () => {
+  // Add new scenario — AI-generated with comms
+  const [showAddScenario, setShowAddScenario] = useState(false)
+  const [newScenarioTitle, setNewScenarioTitle] = useState('')
+  const [newScenarioDescription, setNewScenarioDescription] = useState('')
+  const [generatingScenario, setGeneratingScenario] = useState(false)
+
+  const addScenarioManual = () => {
     const newScenario = {
       title: 'New Scenario',
       description: '',
@@ -155,6 +217,60 @@ export default function CrisisPlanViewer({ onClose, plan: providedPlan, embedded
     setPlan({ ...plan, scenarios: [...(plan.scenarios || []), newScenario] })
     setHasChanges(true)
     setEditingScenario((plan.scenarios?.length || 0))
+    setShowAddScenario(false)
+  }
+
+  const addScenarioWithAI = async () => {
+    if (!newScenarioTitle.trim() || !organization) return
+    setGeneratingScenario(true)
+
+    try {
+      // Step 1: Generate full scenario details via mcp-crisis
+      const { data, error } = await supabase.functions.invoke('mcp-crisis', {
+        body: {
+          action: 'generate_single_scenario',
+          scenario_title: newScenarioTitle.trim(),
+          scenario_description: newScenarioDescription.trim(),
+          organization_id: organization.id,
+          organization_name: organization.name,
+          industry: organization.industry || plan?.industry || 'General'
+        }
+      })
+
+      if (error) throw error
+
+      const scenario = data?.scenario || {
+        title: newScenarioTitle.trim(),
+        description: newScenarioDescription.trim() || 'AI-generated scenario',
+        likelihood: 'Medium',
+        impact: 'Major'
+      }
+
+      // Add scenario to plan
+      setPlan({ ...plan, scenarios: [...(plan.scenarios || []), scenario] })
+      setHasChanges(true)
+
+      // Step 2: Auto-generate comms for this scenario
+      supabase.functions.invoke('mcp-crisis', {
+        body: {
+          action: 'generate_scenario_comms',
+          scenario,
+          organization_id: organization.id,
+          organization_name: organization.name,
+          industry: organization.industry || 'general'
+        }
+      }).catch(err => console.error('Background comms generation error:', err))
+
+      setNewScenarioTitle('')
+      setNewScenarioDescription('')
+      setShowAddScenario(false)
+    } catch (err) {
+      console.error('AI scenario generation error:', err)
+      // Fallback to manual
+      addScenarioManual()
+    } finally {
+      setGeneratingScenario(false)
+    }
   }
 
   // Update team member
@@ -173,10 +289,26 @@ export default function CrisisPlanViewer({ onClose, plan: providedPlan, embedded
     setEditingTeamMember(null)
   }
 
-  // Add new team member
-  const addTeamMember = () => {
+  // Add new team member — from preset or custom
+  const [showRoleSelector, setShowRoleSelector] = useState(false)
+
+  const addTeamMemberFromPreset = (preset: typeof PRESET_ROLES[0]) => {
     const newMember = {
-      role: 'New Role',
+      role: preset.role,
+      title: preset.title,
+      name: '',
+      contact: '',
+      responsibilities: [...preset.responsibilities]
+    }
+    setPlan({ ...plan, crisisTeam: [...(plan.crisisTeam || []), newMember] })
+    setHasChanges(true)
+    setEditingTeamMember((plan.crisisTeam?.length || 0))
+    setShowRoleSelector(false)
+  }
+
+  const addCustomTeamMember = () => {
+    const newMember = {
+      role: '',
       title: '',
       name: '',
       contact: '',
@@ -185,6 +317,22 @@ export default function CrisisPlanViewer({ onClose, plan: providedPlan, embedded
     setPlan({ ...plan, crisisTeam: [...(plan.crisisTeam || []), newMember] })
     setHasChanges(true)
     setEditingTeamMember((plan.crisisTeam?.length || 0))
+    setShowRoleSelector(false)
+  }
+
+  const applyRolePreset = (idx: number, presetRole: string) => {
+    const preset = PRESET_ROLES.find(p => p.role === presetRole)
+    if (preset) {
+      const newTeam = [...(plan.crisisTeam || [])]
+      newTeam[idx] = {
+        ...newTeam[idx],
+        role: preset.role,
+        title: preset.title,
+        responsibilities: [...preset.responsibilities]
+      }
+      setPlan({ ...plan, crisisTeam: newTeam })
+      setHasChanges(true)
+    }
   }
 
   // Update stakeholder
@@ -484,13 +632,69 @@ export default function CrisisPlanViewer({ onClose, plan: providedPlan, embedded
                 )}
               </div>
             ))}
-            {/* Add new scenario button */}
-            <button
-              onClick={addScenario}
-              className="w-full py-4 border-2 border-dashed border-zinc-700 hover:border-[var(--burnt-orange)] rounded-xl text-[var(--grey-400)] hover:text-[var(--burnt-orange)] transition-colors flex items-center justify-center gap-2"
-            >
-              <Plus className="w-5 h-5" /> Add Scenario
-            </button>
+            {/* Add new scenario */}
+            {showAddScenario ? (
+              <div className="bg-zinc-800 border border-zinc-700 rounded-xl p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-semibold text-white" style={{ fontFamily: 'var(--font-display)' }}>Add Crisis Scenario</h4>
+                  <button
+                    onClick={() => { setShowAddScenario(false); setNewScenarioTitle(''); setNewScenarioDescription('') }}
+                    className="text-[var(--grey-500)] hover:text-white text-xs"
+                  >
+                    Cancel
+                  </button>
+                </div>
+                <div>
+                  <label className="text-xs text-[var(--grey-500)] mb-1 block">Scenario Title</label>
+                  <input
+                    type="text"
+                    value={newScenarioTitle}
+                    onChange={(e) => setNewScenarioTitle(e.target.value)}
+                    placeholder="e.g. Supply Chain Disruption, Data Breach, Executive Departure"
+                    className="w-full bg-zinc-900 border border-zinc-600 rounded-lg px-3 py-2 text-white text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-[var(--grey-500)] mb-1 block">Description (optional — AI will expand)</label>
+                  <textarea
+                    value={newScenarioDescription}
+                    onChange={(e) => setNewScenarioDescription(e.target.value)}
+                    placeholder="Brief description of the crisis scenario..."
+                    rows={2}
+                    className="w-full bg-zinc-900 border border-zinc-600 rounded-lg px-3 py-2 text-white text-sm resize-none"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={addScenarioWithAI}
+                    disabled={!newScenarioTitle.trim() || generatingScenario}
+                    className="px-4 py-2 bg-[var(--burnt-orange)] hover:brightness-110 disabled:opacity-50 text-white rounded-lg text-sm font-medium flex items-center gap-2"
+                  >
+                    {generatingScenario ? (
+                      <><Loader2 className="w-4 h-4 animate-spin" /> Generating...</>
+                    ) : (
+                      <><Sparkles className="w-4 h-4" /> Generate with AI</>
+                    )}
+                  </button>
+                  <button
+                    onClick={addScenarioManual}
+                    className="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg text-sm"
+                  >
+                    Add Manually
+                  </button>
+                </div>
+                <p className="text-xs text-[var(--grey-600)]">
+                  AI will generate full scenario details, timeline, and pre-draft communications for all stakeholders.
+                </p>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowAddScenario(true)}
+                className="w-full py-4 border-2 border-dashed border-zinc-700 hover:border-[var(--burnt-orange)] rounded-xl text-[var(--grey-400)] hover:text-[var(--burnt-orange)] transition-colors flex items-center justify-center gap-2"
+              >
+                <Plus className="w-5 h-5" /> Add Scenario
+              </button>
+            )}
           </div>
         )}
 
@@ -504,12 +708,31 @@ export default function CrisisPlanViewer({ onClose, plan: providedPlan, embedded
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="text-xs text-[var(--grey-500)] mb-1 block">Role</label>
-                        <input
-                          type="text"
-                          value={member.role}
-                          onChange={(e) => updateTeamMember(idx, 'role', e.target.value)}
+                        <select
+                          value={PRESET_ROLES.some(p => p.role === member.role) ? member.role : '__custom__'}
+                          onChange={(e) => {
+                            if (e.target.value === '__custom__') {
+                              updateTeamMember(idx, 'role', member.role?.startsWith('__') ? '' : member.role)
+                            } else {
+                              applyRolePreset(idx, e.target.value)
+                            }
+                          }}
                           className="w-full bg-zinc-900 border border-zinc-600 rounded-lg px-3 py-2 text-white"
-                        />
+                        >
+                          {PRESET_ROLES.map(p => (
+                            <option key={p.role} value={p.role}>{p.role}</option>
+                          ))}
+                          <option value="__custom__">Custom Role...</option>
+                        </select>
+                        {!PRESET_ROLES.some(p => p.role === member.role) && (
+                          <input
+                            type="text"
+                            value={member.role}
+                            onChange={(e) => updateTeamMember(idx, 'role', e.target.value)}
+                            className="w-full bg-zinc-900 border border-zinc-600 rounded-lg px-3 py-2 text-white mt-2"
+                            placeholder="Enter custom role name"
+                          />
+                        )}
                       </div>
                       <div>
                         <label className="text-xs text-[var(--grey-500)] mb-1 block">Title</label>
@@ -614,13 +837,48 @@ export default function CrisisPlanViewer({ onClose, plan: providedPlan, embedded
                 )}
               </div>
             ))}
-            {/* Add new team member button */}
-            <button
-              onClick={addTeamMember}
-              className="w-full py-4 border-2 border-dashed border-zinc-700 hover:border-[var(--burnt-orange)] rounded-xl text-[var(--grey-400)] hover:text-[var(--burnt-orange)] transition-colors flex items-center justify-center gap-2"
-            >
-              <Plus className="w-5 h-5" /> Add Team Member
-            </button>
+            {/* Role selector or add button */}
+            {showRoleSelector ? (
+              <div className="bg-zinc-800 border border-zinc-700 rounded-xl p-5 space-y-3">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-sm font-semibold text-white" style={{ fontFamily: 'var(--font-display)' }}>Select a Role</h4>
+                  <button
+                    onClick={() => setShowRoleSelector(false)}
+                    className="text-[var(--grey-500)] hover:text-white text-xs"
+                  >
+                    Cancel
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {PRESET_ROLES
+                    .filter(preset => !(plan.crisisTeam || []).some((m: any) => m.role === preset.role))
+                    .map(preset => (
+                    <button
+                      key={preset.role}
+                      onClick={() => addTeamMemberFromPreset(preset)}
+                      className="text-left p-3 rounded-lg border border-zinc-700 hover:border-[var(--burnt-orange)] hover:bg-[var(--burnt-orange)]/5 transition-all group"
+                    >
+                      <div className="text-sm font-medium text-white group-hover:text-[var(--burnt-orange)]">{preset.role}</div>
+                      <div className="text-xs text-[var(--grey-500)] mt-0.5">{preset.title}</div>
+                      <div className="text-xs text-[var(--grey-600)] mt-1">{preset.responsibilities.length} responsibilities pre-defined</div>
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={addCustomTeamMember}
+                  className="w-full py-2.5 border border-dashed border-zinc-600 hover:border-[var(--burnt-orange)] rounded-lg text-sm text-[var(--grey-400)] hover:text-[var(--burnt-orange)] transition-colors"
+                >
+                  + Custom Role
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowRoleSelector(true)}
+                className="w-full py-4 border-2 border-dashed border-zinc-700 hover:border-[var(--burnt-orange)] rounded-xl text-[var(--grey-400)] hover:text-[var(--burnt-orange)] transition-colors flex items-center justify-center gap-2"
+              >
+                <Plus className="w-5 h-5" /> Add Team Member
+              </button>
+            )}
           </div>
         )}
 

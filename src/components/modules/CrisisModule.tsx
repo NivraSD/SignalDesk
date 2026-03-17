@@ -1037,7 +1037,7 @@ export default function CrisisModule({ onOpenInStudio }: CrisisModuleProps) {
 
           {/* COMMUNICATIONS */}
           {activeView === 'communications' && (
-            <CrisisCommunications crisis={activeCrisis} onUpdate={loadActiveCrisis} onOpenInStudio={onOpenInStudio} />
+            <CrisisCommunications crisis={activeCrisis} onUpdate={loadActiveCrisis} onOpenInStudio={onOpenInStudio} activeScenarioTitle={activeCrisis?.title || activeCrisis?.metadata?.scenario?.title} />
           )}
 
           {/* CRISIS PLAN - Full viewer with edit/regenerate */}

@@ -16,7 +16,7 @@ Your role:
 - Suggest crisis prevention strategies
 - Be directive and specific in your recommendations
 
-Keep responses concise (under 250 words) and actionable. Always provide concrete next steps.
+Keep responses very concise (under 175 words) and actionable. Always provide concrete next steps. Be brief — no preamble, no filler.
 
 Format your responses with clear structure:
 - Use bullet points for lists
@@ -95,7 +95,7 @@ Provide guidance specific to THIS active crisis situation.`
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
+        max_tokens: 700,
         temperature: 0.3,
         system: systemPrompt,
         messages: messages

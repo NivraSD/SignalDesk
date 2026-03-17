@@ -1219,6 +1219,54 @@ serve(async (req) => {
       );
     }
 
+    // Handle generate_single_scenario action (generate a full scenario from a title)
+    if (action === 'generate_single_scenario') {
+      const { scenario_title, scenario_description, organization_name, industry } = body;
+      if (!scenario_title) throw new Error('scenario_title is required');
+
+      const prompt = `For ${organization_name || 'an organization'} in the ${industry || 'general'} industry, generate a comprehensive crisis scenario based on:
+
+Title: ${scenario_title}
+${scenario_description ? `Description: ${scenario_description}` : ''}
+
+Return ONLY a valid JSON object:
+{
+  "title": "${scenario_title}",
+  "description": "2-3 sentence description of this crisis scenario, specific to this organization",
+  "likelihood": "High/Medium/Low",
+  "impact": "Critical/Major/Moderate/Minor",
+  "timeline": [
+    {"phase": "First 2 Hours", "action": "Immediate action", "detail": "Specific steps"},
+    {"phase": "Hours 2-12", "action": "Response action", "detail": "Steps"},
+    {"phase": "Day 1-2", "action": "Stabilization", "detail": "Steps"},
+    {"phase": "Day 2-7", "action": "Recovery", "detail": "Steps"}
+  ],
+  "keyRisks": ["risk1", "risk2", "risk3"],
+  "mitigationStrategies": ["strategy1", "strategy2", "strategy3"]
+}`;
+
+      const completion = await anthropic.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1500,
+        temperature: 0.5,
+        messages: [{ role: 'user', content: prompt }]
+      });
+
+      const text = completion.content[0].type === 'text' ? completion.content[0].text : '{}';
+      let scenario;
+      try {
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        scenario = jsonMatch ? JSON.parse(jsonMatch[0]) : { title: scenario_title, description: scenario_description || '', likelihood: 'Medium', impact: 'Major' };
+      } catch {
+        scenario = { title: scenario_title, description: scenario_description || '', likelihood: 'Medium', impact: 'Major' };
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, scenario }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+      );
+    }
+
     // Handle generate_scenario_comms action (generate comms for a single scenario)
     if (action === 'generate_scenario_comms') {
       const result = await generateScenarioComms(body);

@@ -30,9 +30,10 @@ interface CrisisCommunicationsProps {
   crisis: any | null
   onUpdate: () => void
   onOpenInStudio?: (content: { id: string; title: string; content: string }) => void
+  activeScenarioTitle?: string
 }
 
-export default function CrisisCommunications({ crisis, onUpdate, onOpenInStudio }: CrisisCommunicationsProps) {
+export default function CrisisCommunications({ crisis, onUpdate, onOpenInStudio, activeScenarioTitle }: CrisisCommunicationsProps) {
   const { organization } = useAppStore()
   const [scenarios, setScenarios] = useState<Scenario[]>([])
   const [preDraftedComms, setPreDraftedComms] = useState<PreDraftedComm[]>([])
@@ -58,10 +59,22 @@ export default function CrisisCommunications({ crisis, onUpdate, onOpenInStudio 
         })
         if (data.length > 0) {
           const plan = JSON.parse(data[0].content)
-          setScenarios(plan.scenarios || [])
-          // Auto-expand first scenario
-          if (plan.scenarios?.length > 0) {
-            setExpandedScenario(plan.scenarios[0].title)
+          let sortedScenarios = plan.scenarios || []
+
+          // Sort active scenario to top if crisis is active
+          if (activeScenarioTitle) {
+            sortedScenarios = [
+              ...sortedScenarios.filter((s: Scenario) => s.title === activeScenarioTitle),
+              ...sortedScenarios.filter((s: Scenario) => s.title !== activeScenarioTitle)
+            ]
+          }
+
+          setScenarios(sortedScenarios)
+          // Auto-expand active scenario, or first scenario
+          if (activeScenarioTitle && sortedScenarios.some((s: Scenario) => s.title === activeScenarioTitle)) {
+            setExpandedScenario(activeScenarioTitle)
+          } else if (sortedScenarios.length > 0) {
+            setExpandedScenario(sortedScenarios[0].title)
           }
         }
       } catch (err) {
@@ -236,6 +249,11 @@ export default function CrisisCommunications({ crisis, onUpdate, onOpenInStudio 
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <h3 className="text-white font-semibold">{scenario.title}</h3>
+                        {activeScenarioTitle === scenario.title && (
+                          <span className="px-2 py-0.5 bg-red-500/15 text-red-400 text-xs font-semibold rounded-full border border-red-500/30">
+                            ACTIVE
+                          </span>
+                        )}
                         {hasComms ? (
                           <span className="flex items-center gap-1 px-2 py-0.5 bg-emerald-500/10 text-emerald-400 text-xs rounded-full">
                             <CheckCircle className="w-3 h-3" />

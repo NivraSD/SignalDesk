@@ -9,9 +9,67 @@ interface CrisisTeamManagerProps {
   onUpdate: () => void
 }
 
+const PRESET_ROLES = [
+  {
+    role: 'Crisis Response Leader',
+    title: 'Chief Executive Officer or designated senior executive',
+    responsibilities: [
+      'Overall crisis response authority and decision-making',
+      'External stakeholder communications approval',
+      'Resource allocation and strategic direction'
+    ]
+  },
+  {
+    role: 'Communications Director',
+    title: 'Head of Communications/PR or senior communications executive',
+    responsibilities: [
+      'Develop and implement communication strategies',
+      'Media relations and press release coordination',
+      'Message consistency across all channels'
+    ]
+  },
+  {
+    role: 'Operations Manager',
+    title: 'Chief Operating Officer or senior operations executive',
+    responsibilities: [
+      'Operational impact assessment and mitigation',
+      'Business continuity plan activation',
+      'Internal coordination and resource management'
+    ]
+  },
+  {
+    role: 'Legal Counsel',
+    title: 'General Counsel or external legal advisor',
+    responsibilities: [
+      'Legal risk assessment and regulatory compliance',
+      'Review all external communications for liability',
+      'Coordinate with regulators and enforcement agencies'
+    ]
+  },
+  {
+    role: 'Government Affairs Lead',
+    title: 'Head of Government Relations or Policy',
+    responsibilities: [
+      'Engage relevant government officials and regulators',
+      'Monitor and brief on legislative/regulatory response',
+      'Coordinate with industry associations and coalitions'
+    ]
+  },
+  {
+    role: 'Stakeholder Relations Lead',
+    title: 'Head of Investor Relations or Stakeholder Engagement',
+    responsibilities: [
+      'Manage investor, board, and partner communications',
+      'Monitor stakeholder sentiment and concerns',
+      'Coordinate briefings for key external stakeholders'
+    ]
+  },
+]
+
 export default function CrisisTeamManager({ crisis, onUpdate }: CrisisTeamManagerProps) {
   const [newTask, setNewTask] = useState({ title: '', assignee: '', priority: 'medium' })
   const [showAddTask, setShowAddTask] = useState(false)
+  const [showAddMember, setShowAddMember] = useState(false)
 
   // Handle null crisis
   const teamStatus = crisis?.team_status || {}
@@ -68,6 +126,47 @@ export default function CrisisTeamManager({ crisis, onUpdate }: CrisisTeamManage
     if (!error) onUpdate()
   }
 
+  const addTeamMember = async (preset: typeof PRESET_ROLES[0], memberName?: string) => {
+    if (!crisis) return
+    const memberId = `member-${Date.now()}`
+    const updatedTeamStatus = {
+      ...teamStatus,
+      [memberId]: {
+        name: memberName || '',
+        role: preset.role,
+        title: preset.title,
+        status: 'pending',
+        notified: false,
+        responsibilities: preset.responsibilities
+      }
+    }
+
+    // Also create tasks from the new member's responsibilities
+    const now = Date.now()
+    const newTasks = preset.responsibilities.map((resp, idx) => ({
+      id: now + idx,
+      title: resp,
+      assignee: preset.role,
+      priority: 'high' as string,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      source: 'responsibility'
+    }))
+
+    const { error } = await supabase
+      .from('crisis_events')
+      .update({
+        team_status: updatedTeamStatus,
+        tasks: [...tasks, ...newTasks]
+      })
+      .eq('id', crisis.id)
+
+    if (!error) {
+      setShowAddMember(false)
+      onUpdate()
+    }
+  }
+
   const updateTeamMemberStatus = async (memberId: string, status: string, notified: boolean) => {
     if (!crisis) return
     const updatedTeamStatus = {
@@ -111,7 +210,8 @@ export default function CrisisTeamManager({ crisis, onUpdate }: CrisisTeamManage
                 <div className="flex items-start justify-between mb-2">
                   <div>
                     <div className="font-semibold text-white">{member.name || member.role}</div>
-                    <div className="text-sm text-[var(--grey-400)]">{member.role}</div>
+                    <div className="text-sm text-[var(--grey-400)]">{member.name ? member.role : ''}</div>
+                    {member.title && <div className="text-xs text-[var(--grey-500)]">{member.title}</div>}
                   </div>
                   <div className="flex items-center gap-2">
                     {member.notified ? (
@@ -162,8 +262,45 @@ export default function CrisisTeamManager({ crisis, onUpdate }: CrisisTeamManage
             <div className="text-center py-8 text-[var(--grey-500)]">
               <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
               <p className="text-sm">No team members assigned</p>
-              <p className="text-xs mt-1">Generate a crisis plan to define your team</p>
+              <p className="text-xs mt-1">Add team members below or generate a crisis plan to define your team</p>
             </div>
+          )}
+
+          {/* Add Team Member */}
+          {showAddMember ? (
+            <div className="mt-4 bg-zinc-800 border border-zinc-700 rounded-xl p-5">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-semibold text-white" style={{ fontFamily: 'var(--font-display)' }}>Add Team Member</h4>
+                <button
+                  onClick={() => setShowAddMember(false)}
+                  className="text-[var(--grey-500)] hover:text-white text-xs"
+                >
+                  Cancel
+                </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {PRESET_ROLES
+                  .filter(preset => !Object.values(teamStatus).some((m: any) => m.role === preset.role))
+                  .map(preset => (
+                  <button
+                    key={preset.role}
+                    onClick={() => addTeamMember(preset)}
+                    className="text-left p-3 rounded-lg border border-zinc-700 hover:border-[var(--burnt-orange)] hover:bg-[var(--burnt-orange)]/5 transition-all group"
+                  >
+                    <div className="text-sm font-medium text-white group-hover:text-[var(--burnt-orange)]">{preset.role}</div>
+                    <div className="text-xs text-[var(--grey-500)] mt-0.5">{preset.title}</div>
+                    <div className="text-xs text-[var(--grey-600)] mt-1">{preset.responsibilities.length} tasks will be auto-created</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowAddMember(true)}
+              className="mt-4 w-full py-3 border-2 border-dashed border-zinc-700 hover:border-[var(--burnt-orange)] rounded-xl text-[var(--grey-400)] hover:text-[var(--burnt-orange)] transition-colors flex items-center justify-center gap-2 text-sm"
+            >
+              <Plus className="w-4 h-4" /> Add Team Member
+            </button>
           )}
         </div>
 
