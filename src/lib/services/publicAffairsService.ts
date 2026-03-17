@@ -1001,7 +1001,9 @@ export class PublicAffairsService {
   .header { border-bottom: 3px solid #1a1a2e; padding-bottom: 24px; margin-bottom: 40px; }
   .header h1 { font-family: 'Playfair Display', Georgia, serif; font-size: 28px; font-weight: 700; line-height: 1.3; margin-bottom: 8px; }
   .header .meta { font-size: 13px; color: #666; }
-  .header .classification { display: inline-block; margin-top: 8px; padding: 4px 12px; border: 2px solid #1a1a2e; font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; }
+  .header .classification-row { display: flex; gap: 8px; margin-top: 8px; align-items: center; }
+  .header .classification { display: inline-block; padding: 4px 12px; border: 2px solid #1a1a2e; font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; }
+  .header .confidential { display: inline-block; padding: 4px 12px; background: #c41e1e; border: 2px solid #c41e1e; color: #fff; font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; }
   .section { margin-bottom: 36px; }
   .section h2 { font-family: 'Playfair Display', Georgia, serif; font-size: 20px; font-weight: 700; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid #e0e0e0; color: #1a1a2e; }
   .section h3 { font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: #444; margin: 20px 0 8px; }
@@ -1034,7 +1036,10 @@ export class PublicAffairsService {
 <div class="header">
   <h1>${esc(report.title)}</h1>
   <div class="meta">${date} &nbsp;|&nbsp; ${esc(report.trigger_event.source || 'Intelligence Pipeline')} &nbsp;|&nbsp; ${esc(report.urgency.toUpperCase())}</div>
-  <div class="classification">GEOPOLITICAL INTELLIGENCE BRIEF</div>
+  <div class="classification-row">
+    <div class="classification">GEOPOLITICAL INTELLIGENCE BRIEF</div>
+    <div class="confidential">CONFIDENTIAL</div>
+  </div>
 </div>
 `
 
@@ -1216,7 +1221,9 @@ export class PublicAffairsService {
   .header { border-bottom: 3px solid #1a1a2e; padding-bottom: 20px; margin-bottom: 32px; }
   .header h1 { font-family: 'Playfair Display', Georgia, serif; font-size: 26px; font-weight: 700; line-height: 1.3; margin-bottom: 6px; }
   .header .meta { font-size: 12px; color: #666; display: flex; align-items: center; gap: 8px; }
-  .header .classification { display: inline-block; margin-top: 8px; padding: 3px 10px; border: 2px solid #0891b2; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #0891b2; }
+  .header .classification-row { display: flex; gap: 8px; margin-top: 8px; align-items: center; }
+  .header .classification { display: inline-block; padding: 3px 10px; border: 2px solid #0891b2; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #0891b2; }
+  .header .confidential { display: inline-block; padding: 3px 10px; background: #c41e1e; border: 2px solid #c41e1e; color: #fff; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; }
   .headline { font-family: 'Playfair Display', Georgia, serif; font-size: 22px; font-weight: 700; color: #1a1a2e; margin-bottom: 20px; line-height: 1.35; }
   .bluf { background: #f0fdfa; border-left: 4px solid #0891b2; padding: 16px 20px; margin-bottom: 24px; border-radius: 0 6px 6px 0; }
   .bluf .label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #0891b2; margin-bottom: 6px; }
@@ -1265,7 +1272,10 @@ export class PublicAffairsService {
     <span>|</span>
     <span class="confidence ${(data.confidence_level || 'medium').toLowerCase()}">${esc((data.confidence_level || 'Medium').toUpperCase())} CONFIDENCE</span>
   </div>
-  <div class="classification">Executive One-Pager</div>
+  <div class="classification-row">
+    <div class="classification">Executive One-Pager</div>
+    <div class="confidential">CONFIDENTIAL</div>
+  </div>
 </div>
 
 <div class="headline">${esc(data.headline || '')}</div>
