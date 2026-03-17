@@ -2,8 +2,8 @@
 
 import React, { useState, useRef, useEffect } from 'react'
 import {
-  Send, Loader2, Shield, Search, Globe, ChevronRight,
-  Sparkles, Copy, Check, Brain
+  Send, Loader2, Shield, Search, Globe,
+  Copy, Check, Brain
 } from 'lucide-react'
 import { useAppStore } from '@/stores/useAppStore'
 import { PublicAffairsService } from '@/lib/services/publicAffairsService'
@@ -58,8 +58,7 @@ export default function IntelligenceAnalystChat({ onReportCreated }: Intelligenc
     setInput('')
     setIsThinking(true)
 
-    // Auto-resize textarea back
-    if (textareaRef.current) textareaRef.current.style.height = '44px'
+    if (textareaRef.current) textareaRef.current.style.height = '40px'
 
     try {
       const response = await fetch('/api/niv/intelligence-analyst', {
@@ -137,56 +136,53 @@ export default function IntelligenceAnalystChat({ onReportCreated }: Intelligenc
 
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value)
-    // Auto-resize
-    const el = e.target
-    el.style.height = '44px'
-    el.style.height = Math.min(el.scrollHeight, 120) + 'px'
+    e.target.style.height = '40px'
+    e.target.style.height = Math.min(e.target.scrollHeight, 200) + 'px'
   }
 
+  const NivAvatar = ({ size = 28 }: { size?: number }) => (
+    <svg width={size} height={size} viewBox="0 0 28 28" style={{ display: 'block', flexShrink: 0 }}>
+      <rect width="28" height="28" rx="6" fill="#faf9f7" />
+      <text x="4" y="19" fontFamily="Space Grotesk, sans-serif" fontWeight="700" fontSize="14" fill="#1a1a1a">NIV</text>
+      <polygon points="22,0 28,0 28,6" fill="#c75d3a" />
+    </svg>
+  )
+
   return (
-    <div className="flex flex-col h-full">
+    <div className="bg-[var(--charcoal)] flex flex-col overflow-hidden h-full">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-[var(--grey-800)]">
-        <div className="flex items-center gap-2">
-          <Brain className="w-4 h-4" style={{ color: '#60a5fa' }} />
-          <span className="text-sm font-semibold text-white" style={{ fontFamily: 'var(--font-display)' }}>
-            Intelligence Analyst
-          </span>
+      <div className="p-4 border-b border-zinc-800 flex-shrink-0">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center relative">
+            <span className="text-sm font-bold text-[var(--charcoal)]" style={{ fontFamily: 'var(--font-display)' }}>NIV</span>
+            <div className="absolute top-0 right-0 w-0 h-0 border-l-[10px] border-l-transparent border-t-[10px] border-t-[var(--burnt-orange)]" />
+          </div>
+          <div>
+            <h3 className="font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>Intelligence Analyst</h3>
+            <p className="text-xs text-[var(--grey-400)]">Live search · Deep reports</p>
+          </div>
         </div>
-        <p className="text-xs mt-0.5" style={{ color: '#71717a' }}>
-          Ask questions, get briefings, commission deep reports
-        </p>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 && (
-          <div className="space-y-3 pt-4">
-            <p className="text-xs uppercase tracking-wider font-medium" style={{ color: '#52525b' }}>
+          <div className="space-y-2 pt-2">
+            <p className="text-[10px] uppercase tracking-wider font-semibold mb-3" style={{ color: 'var(--grey-600)' }}>
               Suggested questions
             </p>
             {SUGGESTED_PROMPTS.map((prompt, i) => (
               <button
                 key={i}
                 onClick={() => handleSend(prompt)}
-                className="w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all"
+                className="w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all hover:bg-[var(--burnt-orange)]/8 hover:border-[var(--burnt-orange)]/20"
                 style={{
-                  backgroundColor: 'rgba(255,255,255,0.03)',
-                  color: '#a1a1aa',
-                  border: '1px solid rgba(255,255,255,0.06)',
-                }}
-                onMouseEnter={e => {
-                  (e.target as HTMLElement).style.backgroundColor = 'rgba(59,130,246,0.08)'
-                  ;(e.target as HTMLElement).style.borderColor = 'rgba(59,130,246,0.2)'
-                  ;(e.target as HTMLElement).style.color = '#93c5fd'
-                }}
-                onMouseLeave={e => {
-                  (e.target as HTMLElement).style.backgroundColor = 'rgba(255,255,255,0.03)'
-                  ;(e.target as HTMLElement).style.borderColor = 'rgba(255,255,255,0.06)'
-                  ;(e.target as HTMLElement).style.color = '#a1a1aa'
+                  backgroundColor: 'var(--grey-900)',
+                  color: 'var(--grey-300)',
+                  border: '1px solid var(--grey-800)',
                 }}
               >
-                <Search className="w-3 h-3 inline mr-2 opacity-50" />
+                <Search className="w-3 h-3 inline mr-2 opacity-40" />
                 {prompt}
               </button>
             ))}
@@ -195,53 +191,63 @@ export default function IntelligenceAnalystChat({ onReportCreated }: Intelligenc
 
         {messages.map(msg => (
           <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div
-              className={`max-w-[90%] rounded-lg px-3.5 py-2.5 text-sm leading-relaxed ${
-                msg.role === 'user'
-                  ? 'bg-blue-600/20 text-blue-100 border border-blue-500/20'
-                  : 'text-[var(--grey-200)]'
-              }`}
-              style={msg.role === 'assistant' ? {
-                backgroundColor: 'rgba(255,255,255,0.03)',
-                border: '1px solid rgba(255,255,255,0.06)'
-              } : undefined}
-            >
-              {/* Search indicator */}
-              {msg.role === 'assistant' && msg.searchUsed && (
-                <div className="flex items-center gap-1.5 mb-2 text-xs" style={{ color: '#60a5fa' }}>
-                  <Globe className="w-3 h-3" />
-                  <span>Searched live sources</span>
+            <div className={`max-w-[90%] ${msg.role === 'user' ? '' : ''}`}>
+              {/* NIV avatar for assistant */}
+              {msg.role === 'assistant' && (
+                <div className="flex items-center gap-2 mb-1">
+                  <NivAvatar />
                 </div>
               )}
 
-              {/* Message content with basic markdown */}
-              <div className="prose-sm whitespace-pre-wrap">
-                {renderMarkdown(msg.content)}
-              </div>
+              <div
+                className="rounded-xl px-3.5 py-2.5 relative group"
+                style={{
+                  background: msg.role === 'user' ? 'var(--burnt-orange)' : 'var(--grey-900)',
+                }}
+              >
+                {/* Search indicator */}
+                {msg.role === 'assistant' && msg.searchUsed && (
+                  <div className="flex items-center gap-1.5 mb-2 text-xs" style={{ color: 'var(--burnt-orange)' }}>
+                    <Globe className="w-3 h-3" />
+                    <span>Searched live sources</span>
+                  </div>
+                )}
 
-              {/* Actions for assistant messages */}
-              {msg.role === 'assistant' && (
-                <div className="flex items-center gap-2 mt-2.5 pt-2 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+                {/* Message content */}
+                <div className="text-sm whitespace-pre-wrap break-words" style={{
+                  color: msg.role === 'user' ? 'var(--white)' : 'var(--grey-200)',
+                  lineHeight: 1.5,
+                  wordBreak: 'break-word',
+                  overflowWrap: 'break-word',
+                }}>
+                  {renderMarkdown(msg.content)}
+                </div>
+
+                {/* Copy button (hover) */}
+                {msg.role === 'assistant' && (
                   <button
                     onClick={() => handleCopy(msg.content, msg.id)}
-                    className="flex items-center gap-1 px-2 py-1 rounded text-xs transition-all hover:bg-white/5"
-                    style={{ color: '#71717a' }}
+                    className="absolute top-2 right-2 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                    style={{ background: 'var(--grey-800)' }}
                   >
                     {copiedId === msg.id
-                      ? <><Check className="w-3 h-3" /> Copied</>
-                      : <><Copy className="w-3 h-3" /> Copy</>
+                      ? <Check className="w-3 h-3" style={{ color: 'var(--success)' }} />
+                      : <Copy className="w-3 h-3" style={{ color: 'var(--grey-400)' }} />
                     }
                   </button>
+                )}
 
-                  {msg.suggestsDeepReport && msg.reportTopic && (
+                {/* Actions for assistant messages */}
+                {msg.role === 'assistant' && msg.suggestsDeepReport && msg.reportTopic && (
+                  <div className="flex items-center gap-2 mt-2.5 pt-2 border-t" style={{ borderColor: 'var(--grey-800)' }}>
                     <button
                       onClick={() => handleGenerateReport(msg.reportTopic!, msg.id)}
                       disabled={generatingReport === msg.id}
-                      className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium transition-all"
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all"
                       style={{
-                        backgroundColor: generatingReport === msg.id ? 'rgba(255,255,255,0.05)' : 'rgba(59,130,246,0.12)',
-                        color: generatingReport === msg.id ? '#71717a' : '#93c5fd',
-                        border: `1px solid ${generatingReport === msg.id ? 'rgba(255,255,255,0.08)' : 'rgba(59,130,246,0.25)'}`,
+                        backgroundColor: generatingReport === msg.id ? 'var(--grey-800)' : 'rgba(199, 93, 58, 0.12)',
+                        color: generatingReport === msg.id ? 'var(--grey-500)' : 'var(--burnt-orange)',
+                        border: `1px solid ${generatingReport === msg.id ? 'var(--grey-700)' : 'rgba(199, 93, 58, 0.25)'}`,
                       }}
                     >
                       {generatingReport === msg.id ? (
@@ -250,21 +256,35 @@ export default function IntelligenceAnalystChat({ onReportCreated }: Intelligenc
                         <><Shield className="w-3 h-3" /> Generate Deep Report</>
                       )}
                     </button>
-                  )}
-                </div>
-              )}
+                  </div>
+                )}
+              </div>
+
+              {/* Timestamp */}
+              <div className="text-xs mt-1 px-1" style={{ color: 'var(--grey-600)' }}>
+                {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </div>
             </div>
           </div>
         ))}
 
         {isThinking && (
           <div className="flex justify-start">
-            <div
-              className="rounded-lg px-3.5 py-2.5 text-sm flex items-center gap-2"
-              style={{ backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: '#71717a' }}
-            >
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              <span>Analyzing...</span>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <div className="relative" style={{ width: 28, height: 28, flexShrink: 0 }}>
+                  <NivAvatar />
+                  <div
+                    className="absolute inset-0 flex items-center justify-center rounded-md"
+                    style={{ background: 'rgba(250, 249, 247, 0.85)' }}
+                  >
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: 'var(--charcoal)' }} />
+                  </div>
+                </div>
+              </div>
+              <div className="rounded-xl px-3.5 py-2.5" style={{ background: 'var(--grey-900)' }}>
+                <span className="text-sm" style={{ color: 'var(--grey-400)' }}>Analyzing...</span>
+              </div>
             </div>
           </div>
         )}
@@ -273,8 +293,8 @@ export default function IntelligenceAnalystChat({ onReportCreated }: Intelligenc
       </div>
 
       {/* Input */}
-      <div className="px-4 py-3 border-t border-[var(--grey-800)]">
-        <div className="flex items-end gap-2">
+      <div className="p-4 border-t border-zinc-800 flex-shrink-0">
+        <div className="flex space-x-2 items-end">
           <textarea
             ref={textareaRef}
             value={input}
@@ -282,16 +302,21 @@ export default function IntelligenceAnalystChat({ onReportCreated }: Intelligenc
             onKeyDown={handleKeyDown}
             placeholder="Ask about any geopolitical topic..."
             rows={1}
-            className="flex-1 resize-none px-3 py-2.5 rounded-lg text-sm bg-[var(--grey-900)] text-white border border-[var(--grey-700)] focus:border-blue-500/50 focus:outline-none placeholder:text-[var(--grey-600)]"
-            style={{ height: '44px', maxHeight: '120px' }}
+            className="flex-1 bg-zinc-800 text-white px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)] resize-none overflow-hidden placeholder:text-[var(--grey-600)]"
+            style={{ minHeight: '40px', maxHeight: '200px' }}
+            disabled={isThinking}
           />
           <button
             onClick={() => handleSend()}
             disabled={!input.trim() || isThinking}
-            className="shrink-0 p-2.5 rounded-lg transition-all disabled:opacity-30"
-            style={{ backgroundColor: '#2563eb', color: '#fff' }}
+            className="px-4 py-2.5 bg-[var(--burnt-orange)] hover:brightness-110 disabled:bg-zinc-700 disabled:cursor-not-allowed text-white rounded-lg transition-colors flex items-center flex-shrink-0"
+            style={{ height: '40px' }}
           >
-            <Send className="w-4 h-4" />
+            {isThinking ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <Send className="w-5 h-5" />
+            )}
           </button>
         </div>
       </div>
@@ -309,7 +334,6 @@ function renderMarkdown(text: string): React.ReactNode {
   for (let i = 0; i < lines.length; i++) {
     let line = lines[i]
 
-    // Headers
     if (line.startsWith('### ')) {
       elements.push(
         <div key={i} className="font-semibold text-white mt-3 mb-1" style={{ fontSize: '0.8125rem' }}>
@@ -327,24 +351,21 @@ function renderMarkdown(text: string): React.ReactNode {
       continue
     }
 
-    // Bullet points
     if (line.match(/^[-*]\s/)) {
       elements.push(
         <div key={i} className="flex gap-2 ml-1">
-          <span style={{ color: '#52525b' }}>-</span>
+          <span style={{ color: 'var(--grey-600)' }}>-</span>
           <span>{formatInline(line.slice(2))}</span>
         </div>
       )
       continue
     }
 
-    // Empty line = paragraph break
     if (line.trim() === '') {
       elements.push(<div key={i} className="h-2" />)
       continue
     }
 
-    // Regular text
     elements.push(<div key={i}>{formatInline(line)}</div>)
   }
 
@@ -352,7 +373,6 @@ function renderMarkdown(text: string): React.ReactNode {
 }
 
 function formatInline(text: string): React.ReactNode {
-  // Bold
   const parts = text.split(/(\*\*[^*]+\*\*)/g)
   return parts.map((part, i) => {
     if (part.startsWith('**') && part.endsWith('**')) {

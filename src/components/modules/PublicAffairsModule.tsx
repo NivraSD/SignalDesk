@@ -595,8 +595,8 @@ export default function PublicAffairsModule() {
       {/* Chat Panel */}
       {showChat && (
         <div
-          className="w-[420px] shrink-0 border-l flex flex-col pb-[20%]"
-          style={{ borderColor: 'var(--grey-800)', backgroundColor: 'rgba(0,0,0,0.2)' }}
+          className="w-[420px] shrink-0 border-l flex flex-col pb-[5%]"
+          style={{ borderColor: 'var(--grey-800)', backgroundColor: 'var(--charcoal)' }}
         >
           <IntelligenceAnalystChat onReportCreated={handleChatReportCreated} />
         </div>
