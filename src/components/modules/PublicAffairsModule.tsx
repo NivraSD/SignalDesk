@@ -888,12 +888,16 @@ function ReportDetailView({
               </button>
               <button
                 onClick={onGeneratePresentation}
-                disabled={generatingPresentation}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-50"
-                style={{ backgroundColor: 'rgba(139,92,246,0.1)', color: '#a78bfa', border: '1px solid rgba(139,92,246,0.3)' }}
+                disabled={generatingPresentation || hasPresentation}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-60"
+                style={{
+                  backgroundColor: hasPresentation ? 'rgba(34,197,94,0.1)' : 'rgba(139,92,246,0.1)',
+                  color: hasPresentation ? '#4ade80' : '#a78bfa',
+                  border: `1px solid ${hasPresentation ? 'rgba(34,197,94,0.3)' : 'rgba(139,92,246,0.3)'}`
+                }}
               >
-                {generatingPresentation ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <MonitorPlay className="w-3.5 h-3.5" />}
-                {generatingPresentation ? 'Generating...' : 'Presentation'}
+                {generatingPresentation ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : hasPresentation ? <Check className="w-3.5 h-3.5" /> : <MonitorPlay className="w-3.5 h-3.5" />}
+                {hasPresentation ? 'Deck Ready' : generatingPresentation ? 'Generating...' : 'Presentation'}
               </button>
             </div>
           )}
