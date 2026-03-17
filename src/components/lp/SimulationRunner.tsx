@@ -511,7 +511,7 @@ export default function SimulationRunner({
             <p className="text-xs text-gray-500">
               {state === 'starting'
                 ? 'Setting up entities and loading profiles...'
-                : `Round ${roundsCompleted} of up to 6 — watching for stabilization`}
+                : `Round ${roundsCompleted} of up to 5 — watching for stabilization`}
             </p>
           </div>
           <span className="text-xs text-gray-400 font-mono">{formatElapsed(elapsed)}</span>
@@ -522,11 +522,11 @@ export default function SimulationRunner({
           <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
             <div
               className="h-full bg-[var(--burnt-orange)] transition-all duration-500 rounded-full"
-              style={{ width: `${Math.max(5, (roundsCompleted / 6) * 100)}%` }}
+              style={{ width: `${Math.max(5, (roundsCompleted / 5) * 100)}%` }}
             />
           </div>
           <div className="flex items-center justify-between text-[10px] text-gray-400">
-            <span>Round {roundsCompleted}/6</span>
+            <span>Round {roundsCompleted}/5</span>
             <span>Stabilization: {(stabScore * 100).toFixed(0)}%</span>
           </div>
         </div>

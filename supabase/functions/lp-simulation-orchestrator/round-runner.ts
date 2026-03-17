@@ -46,7 +46,7 @@ export async function runRound(
   config: RoundRunnerConfig
 ): Promise<RoundResult> {
   const startTime = Date.now()
-  console.log(`🔄 Starting Round ${roundNumber} with ${entities.length} entities`)
+  console.log(`🔄 Starting Round ${roundNumber} (${context.phase.name}) with ${entities.length} entities`)
 
   // Filter to included entities only
   const activeEntities = entities.filter(e => e.included)
@@ -132,6 +132,7 @@ async function runEntitySimulation(
         entity_name: entity.entity_name,
         profile_id: entity.profile_id,
         round_number: context.round_number,
+        phase: context.phase,
         scenario: context.scenario,
         prior_responses: context.prior_responses,
         themes_so_far: context.themes_so_far,

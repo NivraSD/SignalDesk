@@ -382,7 +382,7 @@ export default function SimulationViewer({ simulationId, onBack }: SimulationVie
 
           {/* System explainer */}
           <p className="text-xs text-gray-400 mb-2 leading-relaxed">
-            Simulations model how real-world entities respond to scenarios, how influence moves between stakeholders, and identify fulcrum points for maximum impact. Each round captures entity decisions, coalition shifts, and emerging narratives.
+            Simulations model how real-world entities respond to scenarios across distinct phases — from initial reaction through adaptation or contingency planning. Each phase forces a different analytical lens, tracking how influence moves, coalitions form, and narratives evolve toward resolution.
           </p>
 
           {/* Scenario title & description */}
@@ -979,6 +979,8 @@ export default function SimulationViewer({ simulationId, onBack }: SimulationVie
               const isExpanded = expandedRounds.has(round.round_number)
               const crossAnalysis = round.cross_analysis
               const stabScore = crossAnalysis?.stabilization_score
+              const phaseName = crossAnalysis?.phase_name
+              const phaseDescription = crossAnalysis?.phase_description
 
               return (
                 <div key={round.round_number} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -987,11 +989,20 @@ export default function SimulationViewer({ simulationId, onBack }: SimulationVie
                     onClick={() => toggleRound(round.round_number)}
                     className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left"
                   >
-                    <span className="text-sm font-semibold text-[var(--burnt-orange)] w-16 shrink-0">
-                      Round {round.round_number}
+                    <span className="text-sm font-semibold text-[var(--burnt-orange)] w-8 shrink-0">
+                      {round.round_number}
                     </span>
                     <div className="flex-1 flex items-center gap-2 overflow-hidden">
-                      <span className="text-xs text-gray-500">
+                      {phaseName ? (
+                        <span className="text-sm font-medium text-[var(--charcoal)]">
+                          {phaseName}
+                        </span>
+                      ) : (
+                        <span className="text-sm font-medium text-[var(--charcoal)]">
+                          Round {round.round_number}
+                        </span>
+                      )}
+                      <span className="text-xs text-gray-400">
                         {(round.entity_responses || []).length} responses
                       </span>
                       {crossAnalysis?.themes?.length > 0 && (
@@ -1014,6 +1025,12 @@ export default function SimulationViewer({ simulationId, onBack }: SimulationVie
                   {/* Expanded round content */}
                   {isExpanded && (
                     <div className="border-t border-gray-100">
+                      {/* Phase description */}
+                      {phaseDescription && (
+                        <div className="px-4 pt-3 pb-1">
+                          <p className="text-xs text-gray-400 italic">{phaseDescription}</p>
+                        </div>
+                      )}
                       {/* Entity Responses */}
                       <div className="p-4 space-y-2">
                         <h5 className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold">Entity Responses</h5>

@@ -29,6 +29,7 @@ interface EntitySimulationRequest {
   entity_name: string
   profile_id: string
   round_number: number
+  phase?: { id: string; name: string; description: string; lens: string; focus_areas: string[] }
   scenario: any
   prior_responses?: any[]
   themes_so_far?: string[]
@@ -89,6 +90,7 @@ serve(async (req) => {
       profile,
       body.scenario,
       body.round_number,
+      body.phase,
       body.prior_responses || [],
       body.themes_so_far || [],
       body.dominant_narratives || [],
@@ -114,6 +116,7 @@ async function simulateEntityResponse(
   profile: any,
   scenario: any,
   roundNumber: number,
+  phase: any,
   priorResponses: any[],
   themesSoFar: string[],
   dominantNarratives: string[],
@@ -130,6 +133,7 @@ async function simulateEntityResponse(
     profile,
     scenario,
     roundNumber,
+    phase,
     priorResponses,
     themesSoFar,
     dominantNarratives,
@@ -166,6 +170,7 @@ function buildSimulationPrompt(
   profile: any,
   scenario: any,
   roundNumber: number,
+  phase: any,
   priorResponses: any[],
   themesSoFar: string[],
   dominantNarratives: string[],
@@ -173,6 +178,11 @@ function buildSimulationPrompt(
   entityMemory: any
 ): string {
   const entityProfile = profile.profile || profile
+
+  // Phase-specific framing
+  const phaseName = phase?.name || `Round ${roundNumber}`
+  const phaseLens = phase?.lens || ''
+  const phaseFocusAreas = phase?.focus_areas || []
 
   let prompt = `You are simulating how ${profile.entity_name} would respond to a scenario.
 
@@ -214,9 +224,15 @@ ${researchCtx.existing_scenarios?.length ? `### Analyst Scenarios\n${researchCtx
 `
   }
 
+  // Phase-specific simulation context
   prompt += `
-## Simulation Context
-Round: ${roundNumber}
+## Simulation Phase: ${phaseName} (Round ${roundNumber})
+${phase?.description || ''}
+
+### PHASE LENS — THIS IS YOUR FOCUS FOR THIS ROUND
+${phaseLens}
+
+You MUST respond through this specific lens. Do not repeat generic positioning from prior rounds. Your response should specifically address: ${phaseFocusAreas.join(', ')}.
 `
 
   if (roundNumber > 1 && priorResponses.length > 0) {
@@ -246,15 +262,14 @@ Credibility: ${entityMemory.credibility_trajectory || 'stable'}
 
   prompt += `
 ## Your Task
-Simulate ${profile.entity_name}'s response to this scenario. Think like their leadership team would think.
+Simulate ${profile.entity_name}'s response through the "${phaseName}" lens. Think like their leadership team would think at THIS stage of the unfolding situation.
 
-Consider:
-1. How does this scenario affect YOUR priorities and vulnerabilities?
-2. What's your strategic interest here?
-3. Who in the discourse are you aligned with? Opposed to?
-4. What narrative serves YOUR interests?
-5. Should you respond at all, or stay silent?
-6. If intelligence context was provided above, ground your response in those REAL developments and actor positions — don't invent facts that contradict the research.
+Your response MUST be specific to the ${phaseName} phase:
+${phaseFocusAreas.map((area: string) => `- Address: ${area.replace(/_/g, ' ')}`).join('\n')}
+
+Do NOT repeat your prior positions verbatim. EVOLVE your stance based on what other entities did in the prior round and the specific demands of this phase.
+
+If intelligence context was provided above, ground your response in those REAL developments and actor positions — don't invent facts that contradict the research.
 
 ## Response Decision Options
 - **respond**: Active, substantive response
@@ -270,14 +285,14 @@ Consider:
 Output ONLY valid JSON:
 {
   "response_decision": "respond|counter|amplify|fill_gap|differentiate|build|synthesize|wait|silent",
-  "decision_rationale": "Why this entity chose this response approach",
-  "position_summary": "1-2 sentence summary of their stance (empty if silent/wait)",
-  "key_claims": ["Specific claims they would make"],
+  "decision_rationale": "Why this entity chose this response approach AT THIS PHASE",
+  "position_summary": "1-2 sentence summary of their stance through the ${phaseName} lens (empty if silent/wait)",
+  "key_claims": ["Specific claims relevant to ${phaseFocusAreas.join(', ')}"],
   "thought_leadership": "A paragraph of thought leadership content they might publish (optional, only if responding)",
   "media_pitch": "A brief media pitch angle (optional)",
   "social_response": "A social media response (optional)",
   "entities_referenced": ["Names of entities they reference or respond to"],
-  "themes_championed": ["Key themes/narratives they're pushing"],
+  "themes_championed": ["Key themes/narratives they're pushing in this phase"],
   "predicted_reactions": [
     {
       "entity_id": "entity name",

@@ -31,8 +31,11 @@ import type {
   EntityResponse,
   CrossEntityAnalysis,
   EntityRoundMemory,
-  Fulcrum
+  Fulcrum,
+  SimulationPhase,
+  ScenarioMode
 } from './types.ts'
+import { getPhasesForMode } from './types.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -239,13 +242,19 @@ serve(async (req) => {
 
     console.log(`🆔 Simulation ID: ${simulation.id}`)
 
+    // Detect scenario mode: fait accompli (happened) vs speculative (might happen)
+    const scenarioData = scenario.scenario_data || scenario
+    const scenarioMode = detectScenarioMode(scenarioData)
+    console.log(`📋 Scenario mode: ${scenarioMode}`)
+
     // Run simulation loop
     const result = await runSimulationLoop(
       supabase,
       simulation.id,
       scenario,
       entities,
-      config
+      config,
+      scenarioMode
     )
 
     // Update final simulation state
@@ -414,6 +423,48 @@ async function identifyEntities(
 }
 
 /**
+ * Detect whether a scenario is fait accompli (already happened) or speculative (might happen).
+ * Uses scenario type, tense cues, and explicit markers.
+ */
+function detectScenarioMode(scenarioData: any): ScenarioMode {
+  const type = (scenarioData.type || scenarioData.scenario_type || '').toLowerCase()
+  const action = scenarioData.action || {}
+  const what = (action.what || action.trigger_description || '').toLowerCase()
+  const rationale = (action.rationale || []).join(' ').toLowerCase()
+
+  // Explicit marker if set by scenario builder
+  if (scenarioData.scenario_mode) {
+    return scenarioData.scenario_mode as ScenarioMode
+  }
+
+  // Types that strongly indicate fait accompli
+  const faitAccompliTypes = ['crisis', 'incident', 'breach', 'announcement', 'event', 'decision']
+  if (faitAccompliTypes.some(t => type.includes(t))) {
+    return 'fait_accompli'
+  }
+
+  // Types that strongly indicate speculative
+  const speculativeTypes = ['proposal', 'regulation', 'policy', 'potential', 'what_if', 'hypothetical']
+  if (speculativeTypes.some(t => type.includes(t))) {
+    return 'speculative'
+  }
+
+  // Tense detection from the scenario description
+  const pastIndicators = ['announced', 'launched', 'released', 'passed', 'enacted', 'signed', 'acquired', 'merged', 'collapsed', 'filed', 'published', 'revealed', 'happened', 'occurred']
+  const futureIndicators = ['proposed', 'considering', 'planning', 'might', 'could', 'would', 'potential', 'draft', 'expected', 'rumored', 'exploring', 'may', 'if ']
+
+  const text = `${what} ${rationale}`
+  const pastScore = pastIndicators.filter(w => text.includes(w)).length
+  const futureScore = futureIndicators.filter(w => text.includes(w)).length
+
+  if (pastScore > futureScore) return 'fait_accompli'
+  if (futureScore > pastScore) return 'speculative'
+
+  // Default to speculative (more cautious framing)
+  return 'speculative'
+}
+
+/**
  * Main simulation loop - runs rounds until stabilization or max rounds
  */
 async function runSimulationLoop(
@@ -421,7 +472,8 @@ async function runSimulationLoop(
   simulationId: string,
   scenario: any,
   entities: SimulationEntity[],
-  config: SimulationConfig
+  config: SimulationConfig,
+  scenarioMode: ScenarioMode
 ): Promise<{
   status: string
   roundsCompleted: number
@@ -436,18 +488,28 @@ async function runSimulationLoop(
   const allAnalyses: CrossEntityAnalysis[] = []
   const entityMemory = new Map<string, EntityRoundMemory>()
 
+  // Get phase progression for this scenario mode
+  const phases = getPhasesForMode(scenarioMode)
+  // Cap max_rounds to number of phases
+  const effectiveMaxRounds = Math.min(config.max_rounds, phases.length)
+
   let currentRound = 0
   let isStabilized = false
   let stabilizationScore = 0
 
   try {
-    while (currentRound < config.max_rounds) {
+    while (currentRound < effectiveMaxRounds) {
       currentRound++
+
+      // Get the phase for this round
+      const phase = phases[currentRound - 1]
+      console.log(`🔄 Round ${currentRound}/${effectiveMaxRounds}: ${phase.name}`)
 
       // Build context for this round
       const context: RoundContext = {
         simulation_id: simulationId,
         round_number: currentRound,
+        phase,
         scenario,
         prior_responses: currentRound === 1 ? [] : allResponses.filter(r => r.round_number === currentRound - 1),
         themes_so_far: allAnalyses.length > 0
@@ -475,14 +537,19 @@ async function runSimulationLoop(
         }
       )
 
-      // Store round in DB
+      // Store round in DB (phase info stored in cross_analysis for backward compat)
       await supabase
         .from('lp_simulation_rounds')
         .insert({
           simulation_id: simulationId,
           round_number: currentRound,
           entity_responses: roundResult.responses,
-          cross_analysis: roundResult.analysis,
+          cross_analysis: {
+            ...roundResult.analysis,
+            phase_id: phase.id,
+            phase_name: phase.name,
+            phase_description: phase.description,
+          },
           started_at: new Date(Date.now() - roundResult.duration_ms).toISOString(),
           completed_at: new Date().toISOString(),
           status: 'completed'
