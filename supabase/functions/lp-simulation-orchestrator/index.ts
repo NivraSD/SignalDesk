@@ -350,38 +350,27 @@ async function identifyEntities(
   }
 
   // If explicit entity names provided (from UI selection), look them up
+  // Entity profiles are global (not org-scoped) so search across all orgs
   if (overrideEntityNames && overrideEntityNames.length > 0) {
-    console.log(`🎯 Looking up ${overrideEntityNames.length} user-selected entities by name (org: ${organizationId})`)
+    console.log(`🎯 Looking up ${overrideEntityNames.length} user-selected entities by name`)
 
     for (const name of overrideEntityNames) {
       if (!name) continue
-      // Try exact match first (case-insensitive), scoped to this org
+      // Exact match first (case-insensitive)
       let { data: profile } = await supabase
         .from('lp_entity_profiles')
         .select('id, entity_name, entity_type')
-        .eq('organization_id', organizationId)
         .ilike('entity_name', name)
         .limit(1)
 
-      // If no org-scoped exact match, try fuzzy within org
+      // Fuzzy fallback
       if (!profile || profile.length === 0) {
         const fuzzy = await supabase
           .from('lp_entity_profiles')
           .select('id, entity_name, entity_type')
-          .eq('organization_id', organizationId)
           .ilike('entity_name', `%${name}%`)
           .limit(1)
         profile = fuzzy.data
-      }
-
-      // Last resort: global fuzzy (for entities shared across orgs)
-      if (!profile || profile.length === 0) {
-        const global = await supabase
-          .from('lp_entity_profiles')
-          .select('id, entity_name, entity_type')
-          .ilike('entity_name', name)
-          .limit(1)
-        profile = global.data
       }
 
       const match = profile?.[0]
