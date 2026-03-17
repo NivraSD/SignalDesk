@@ -111,7 +111,8 @@ export interface SimulationRequest {
   max_rounds?: number           // default 5
   min_rounds?: number           // default 2
   stabilization_threshold?: number  // default 0.8
-  entity_ids?: string[]         // override auto-detection
+  entity_ids?: string[]         // override auto-detection by ID
+  entity_names?: string[]       // override auto-detection by name (from UI selection)
   include_client?: boolean      // include user's org in simulation
 }
 

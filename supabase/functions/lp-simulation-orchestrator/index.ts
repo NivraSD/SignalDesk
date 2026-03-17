@@ -213,7 +213,8 @@ serve(async (req) => {
       scenario,
       body.organization_id,
       body.entity_ids,
-      body.include_client
+      body.include_client,
+      body.entity_names
     )
 
     if (entities.length === 0) {
@@ -303,7 +304,8 @@ async function identifyEntities(
   scenario: any,
   organizationId: string,
   overrideEntityIds?: string[],
-  includeClient?: boolean
+  includeClient?: boolean,
+  overrideEntityNames?: string[]
 ): Promise<SimulationEntity[]> {
   const entities: SimulationEntity[] = []
 
@@ -325,6 +327,40 @@ async function identifyEntities(
       })
     }
     return entities
+  }
+
+  // If explicit entity names provided (from UI selection), look them up
+  if (overrideEntityNames && overrideEntityNames.length > 0) {
+    console.log(`🎯 Looking up ${overrideEntityNames.length} user-selected entities by name`)
+
+    for (const name of overrideEntityNames) {
+      if (!name) continue
+      const { data: profile } = await supabase
+        .from('lp_entity_profiles')
+        .select('id, entity_name, entity_type')
+        .ilike('entity_name', `%${name}%`)
+        .limit(1)
+        .single()
+
+      if (profile && !entities.find(e => e.entity_id === profile.id)) {
+        entities.push({
+          entity_id: profile.id,
+          entity_name: profile.entity_name,
+          entity_type: profile.entity_type,
+          profile_id: profile.id,
+          relevance_score: 1.0,
+          included: true
+        })
+      } else if (!profile) {
+        console.log(`⚠️ No profile found for "${name}" — skipping`)
+      }
+    }
+
+    if (entities.length > 0) {
+      console.log(`👥 Matched ${entities.length}/${overrideEntityNames.length} user-selected entities`)
+      return entities
+    }
+    console.log(`⚠️ No profiles matched user-selected names, falling back to scenario detection`)
   }
 
   // Auto-detect from scenario stakeholders
