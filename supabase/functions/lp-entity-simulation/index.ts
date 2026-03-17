@@ -22,7 +22,7 @@ import { corsHeaders, jsonResponse, errorResponse } from '../_shared/cors.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-const GOOGLE_API_KEY = Deno.env.get('GOOGLE_API_KEY') || Deno.env.get('GEMINI_API_KEY')
+const GOOGLE_API_KEY = Deno.env.get('GOOGLE_AI_API_KEY') || Deno.env.get('GEMINI_API_KEY') || Deno.env.get('GOOGLE_API_KEY')
 
 interface EntitySimulationRequest {
   entity_id: string
@@ -141,7 +141,7 @@ async function simulateEntityResponse(
     entityMemory
   )
 
-  // Call Gemini
+  // Call Gemini with timeout
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GOOGLE_API_KEY}`,
     {
@@ -150,7 +150,8 @@ async function simulateEntityResponse(
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         generationConfig: { temperature: 0.7, maxOutputTokens: 4000 }
-      })
+      }),
+      signal: AbortSignal.timeout(45000) // 45s timeout
     }
   )
 

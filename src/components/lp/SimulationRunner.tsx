@@ -476,14 +476,19 @@ export default function SimulationRunner({
               >
                 Back
               </button>
-              <button
-                onClick={startSimulation}
-                disabled={selectedList.length === 0}
-                className="px-4 py-2 bg-[var(--burnt-orange)] hover:bg-[var(--terracotta)] disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-              >
-                <Play className="w-4 h-4" />
-                Run with {selectedList.length} {selectedList.length === 1 ? 'Entity' : 'Entities'}
-              </button>
+              <div className="flex items-center gap-2">
+                {selectedList.length > 8 && (
+                  <span className="text-[10px] text-amber-600">Max 8 entities</span>
+                )}
+                <button
+                  onClick={startSimulation}
+                  disabled={selectedList.length === 0 || selectedList.length > 8}
+                  className="px-4 py-2 bg-[var(--burnt-orange)] hover:bg-[var(--terracotta)] disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                >
+                  <Play className="w-4 h-4" />
+                  Run with {selectedList.length} {selectedList.length === 1 ? 'Entity' : 'Entities'}
+                </button>
+              </div>
             </div>
           </>
         )}
@@ -549,12 +554,33 @@ export default function SimulationRunner({
           </div>
         </div>
 
-        {/* Animated dots */}
-        <div className="flex items-center justify-center gap-1 py-2">
-          <span className="text-xs text-gray-400">Simulating stakeholder responses</span>
-          <span className="animate-pulse">.</span>
-          <span className="animate-pulse" style={{ animationDelay: '0.2s' }}>.</span>
-          <span className="animate-pulse" style={{ animationDelay: '0.4s' }}>.</span>
+        {/* Animated dots + cancel */}
+        <div className="flex items-center justify-between py-2">
+          <div className="flex items-center gap-1">
+            <span className="text-xs text-gray-400">Simulating stakeholder responses</span>
+            <span className="animate-pulse">.</span>
+            <span className="animate-pulse" style={{ animationDelay: '0.2s' }}>.</span>
+            <span className="animate-pulse" style={{ animationDelay: '0.4s' }}>.</span>
+          </div>
+          <button
+            onClick={async () => {
+              // Mark simulation as failed/cancelled in DB
+              const targetId = simulationId || progress?.id
+              if (targetId) {
+                await supabase
+                  .from('lp_simulations')
+                  .update({ status: 'failed', error: 'Cancelled by user', completed_at: new Date().toISOString() })
+                  .eq('id', targetId)
+              }
+              if (pollRef.current) clearInterval(pollRef.current)
+              if (timerRef.current) clearInterval(timerRef.current)
+              setState('failed')
+              setError('Cancelled by user')
+            }}
+            className="px-3 py-1.5 text-xs text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+          >
+            Cancel
+          </button>
         </div>
       </div>
     )

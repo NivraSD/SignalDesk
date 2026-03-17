@@ -39,7 +39,7 @@ import { getPhasesForMode } from './types.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-const GOOGLE_API_KEY = Deno.env.get('GOOGLE_API_KEY') || Deno.env.get('GEMINI_API_KEY')
+const GOOGLE_API_KEY = Deno.env.get('GOOGLE_AI_API_KEY') || Deno.env.get('GEMINI_API_KEY') || Deno.env.get('GOOGLE_API_KEY')
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY') || Deno.env.get('CLAUDE_API_KEY')
 
 // === AI Helpers ===
@@ -292,6 +292,26 @@ serve(async (req) => {
 
   } catch (err: any) {
     console.error('❌ Simulation orchestrator error:', err.message)
+
+    // Mark simulation as failed so it doesn't stay stuck as "running"
+    try {
+      const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+      const body2 = await req.clone().json().catch(() => ({}))
+      if (body2.scenario_id) {
+        await supabase
+          .from('lp_simulations')
+          .update({
+            status: 'failed',
+            error: err.message || 'Simulation failed',
+            completed_at: new Date().toISOString()
+          })
+          .eq('scenario_id', body2.scenario_id)
+          .eq('status', 'running')
+      }
+    } catch (_) {
+      console.error('Failed to mark simulation as failed in DB')
+    }
+
     return errorResponse(err.message || 'Simulation failed', 500)
   }
 })
@@ -331,34 +351,58 @@ async function identifyEntities(
 
   // If explicit entity names provided (from UI selection), look them up
   if (overrideEntityNames && overrideEntityNames.length > 0) {
-    console.log(`🎯 Looking up ${overrideEntityNames.length} user-selected entities by name`)
+    console.log(`🎯 Looking up ${overrideEntityNames.length} user-selected entities by name (org: ${organizationId})`)
 
     for (const name of overrideEntityNames) {
       if (!name) continue
-      const { data: profile } = await supabase
+      // Try exact match first (case-insensitive), scoped to this org
+      let { data: profile } = await supabase
         .from('lp_entity_profiles')
         .select('id, entity_name, entity_type')
-        .ilike('entity_name', `%${name}%`)
+        .eq('organization_id', organizationId)
+        .ilike('entity_name', name)
         .limit(1)
-        .single()
 
-      if (profile && !entities.find(e => e.entity_id === profile.id)) {
+      // If no org-scoped exact match, try fuzzy within org
+      if (!profile || profile.length === 0) {
+        const fuzzy = await supabase
+          .from('lp_entity_profiles')
+          .select('id, entity_name, entity_type')
+          .eq('organization_id', organizationId)
+          .ilike('entity_name', `%${name}%`)
+          .limit(1)
+        profile = fuzzy.data
+      }
+
+      // Last resort: global fuzzy (for entities shared across orgs)
+      if (!profile || profile.length === 0) {
+        const global = await supabase
+          .from('lp_entity_profiles')
+          .select('id, entity_name, entity_type')
+          .ilike('entity_name', name)
+          .limit(1)
+        profile = global.data
+      }
+
+      const match = profile?.[0]
+      if (match && !entities.find(e => e.entity_id === match.id)) {
         entities.push({
-          entity_id: profile.id,
-          entity_name: profile.entity_name,
-          entity_type: profile.entity_type,
-          profile_id: profile.id,
+          entity_id: match.id,
+          entity_name: match.entity_name,
+          entity_type: match.entity_type,
+          profile_id: match.id,
           relevance_score: 1.0,
           included: true
         })
-      } else if (!profile) {
-        console.log(`⚠️ No profile found for "${name}" — skipping`)
+        console.log(`  ✅ "${name}" → ${match.entity_name} (${match.id})`)
+      } else if (!match) {
+        console.log(`  ⚠️ No profile found for "${name}" — skipping`)
       }
     }
 
     if (entities.length > 0) {
       console.log(`👥 Matched ${entities.length}/${overrideEntityNames.length} user-selected entities`)
-      return entities
+      return entities.slice(0, 8) // Cap at 8
     }
     console.log(`⚠️ No profiles matched user-selected names, falling back to scenario detection`)
   }
