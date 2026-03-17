@@ -177,9 +177,8 @@ export default function SimulationRunner({
           .eq('organization_id', organizationId)
           .order('created_at', { ascending: false })
           .limit(1)
-          .single()
-        if (res.data) {
-          data = res.data
+        if (res.data?.[0]) {
+          data = res.data[0]
           setSimulationId(res.data.id)
         }
       }
