@@ -108,7 +108,7 @@ export default function CrisisAIAssistant({ crisis, onUpdate }: CrisisAIAssistan
   ]
 
   return (
-    <div className="bg-[var(--charcoal)] border border-zinc-800 rounded-xl flex flex-col" style={{ height: '420px' }}>
+    <div className="bg-[var(--charcoal)] border border-zinc-800 rounded-xl flex flex-col" style={{ height: '485px' }}>
       {/* Header */}
       <div className="p-4 border-b border-zinc-800 flex-shrink-0">
         <div className="flex items-center space-x-3">
