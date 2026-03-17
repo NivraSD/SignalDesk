@@ -393,7 +393,7 @@ async function identifyEntities(
             id: placeholderId,
             organization_id: organizationId,
             entity_name: name,
-            entity_type: 'unknown',
+            entity_type: 'company',
             profile: {
               identity: { name, description: `${name} - profile auto-generated for simulation` },
               voice: {},
