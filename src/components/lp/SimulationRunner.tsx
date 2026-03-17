@@ -46,7 +46,7 @@ export default function SimulationRunner({
   onComplete,
   onCancel
 }: SimulationRunnerProps) {
-  const [state, setState] = useState<'idle' | 'selecting' | 'starting' | 'running' | 'complete' | 'failed'>('idle')
+  const [state, setState] = useState<'idle' | 'selecting' | 'starting' | 'running' | 'complete' | 'failed'>('selecting')
   const [simulationId, setSimulationId] = useState<string | null>(null)
   const [progress, setProgress] = useState<SimulationProgress | null>(null)
   const [error, setError] = useState<string | null>(null)

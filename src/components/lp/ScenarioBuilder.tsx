@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useAppStore } from '@/stores/useAppStore'
 import {
@@ -32,8 +32,19 @@ import {
   Scale,
   Zap,
   Globe2,
-  ArrowRightLeft
+  ArrowRightLeft,
+  Database,
+  Search,
+  Plus,
+  X,
+  Check,
+  Landmark,
+  Newspaper,
+  TreePine,
+  GraduationCap,
+  Factory
 } from 'lucide-react'
+import { ENTITY_DATABASE, formatEntityName } from './entityDatabase'
 
 // Types matching the backend
 type TriggerSource = 'internal' | 'external'
@@ -221,6 +232,20 @@ const INTERNAL_ACTION_TYPES: ScenarioType[] = [
   'crisis_response', 'competitive_response', 'leadership_change', 'strategic_initiative', 'expansion'
 ]
 
+// Icon resolver for entity database groups
+function getGroupIcon(iconName: string) {
+  switch (iconName) {
+    case 'landmark': return Landmark
+    case 'newspaper': return Newspaper
+    case 'lightbulb': return Lightbulb
+    case 'scale': return Scale
+    case 'tree': return TreePine
+    case 'graduation': return GraduationCap
+    case 'building': return Factory
+    default: return Database
+  }
+}
+
 interface ScenarioBuilderProps {
   onRunSimulation?: (scenarioId: string) => void
 }
@@ -249,6 +274,11 @@ export default function ScenarioBuilder({ onRunSimulation }: ScenarioBuilderProp
 
   // Research context from PA seed (passed on submit)
   const [paResearchContext, setPaResearchContext] = useState<any>(null)
+
+  // Entity database browser state
+  const [showEntityBrowser, setShowEntityBrowser] = useState(false)
+  const [entitySearch, setEntitySearch] = useState('')
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
 
   // Existing scenarios
   const [existingScenarios, setExistingScenarios] = useState<ExistingScenario[]>([])
@@ -451,6 +481,79 @@ export default function ScenarioBuilder({ onRunSimulation }: ScenarioBuilderProp
     setInitialDescription('')
     setSelectedExternalType(null)
   }
+
+  // Add entity to stakeholder_seed (uses 'ecosystem' as default category for DB entities)
+  const addEntityToStakeholders = (name: string, category: string = 'ecosystem') => {
+    if (!scenario) return
+    const seed = { ...(scenario.stakeholder_seed || {}) }
+    // Map entity database groups to stakeholder categories
+    const catKey = mapGroupToCategory(category)
+    if (!seed[catKey]) seed[catKey] = []
+    if (!(seed[catKey] as string[]).includes(name)) {
+      seed[catKey] = [...(seed[catKey] as string[]), name]
+    }
+    setScenario({ ...scenario, stakeholder_seed: seed })
+  }
+
+  const removeEntityFromStakeholders = (name: string) => {
+    if (!scenario) return
+    const seed = { ...(scenario.stakeholder_seed || {}) }
+    for (const key of Object.keys(seed)) {
+      seed[key as StakeholderCategory] = (seed[key as StakeholderCategory] as string[]).filter(e => e !== name)
+      if ((seed[key as StakeholderCategory] as string[]).length === 0) delete seed[key as StakeholderCategory]
+    }
+    setScenario({ ...scenario, stakeholder_seed: seed })
+  }
+
+  const addCategoryToStakeholders = (entities: string[], groupKey: string) => {
+    if (!scenario) return
+    const seed = { ...(scenario.stakeholder_seed || {}) }
+    const catKey = mapGroupToCategory(groupKey)
+    const existing = new Set((seed[catKey] as string[]) || [])
+    for (const name of entities) existing.add(name)
+    seed[catKey] = Array.from(existing)
+    setScenario({ ...scenario, stakeholder_seed: seed })
+  }
+
+  // Map entity database group names to StakeholderCategory
+  function mapGroupToCategory(group: string): StakeholderCategory {
+    if (group.includes('journalist') || group.includes('media_outlet')) return 'media'
+    if (group.includes('government') || group.includes('congress') || group.includes('regulator')) return 'regulators'
+    if (group.includes('advocacy') || group.includes('environmental')) return 'ecosystem'
+    if (group.includes('think_tank') || group.includes('academic')) return 'analysts'
+    if (group.includes('executive') || group.includes('influencer')) return 'ecosystem'
+    if (group.includes('finance') || group.includes('venture')) return 'investors'
+    return 'ecosystem'
+  }
+
+  // All stakeholder names currently in the scenario (for highlighting)
+  const allStakeholderNames = useMemo(() => {
+    const names = new Set<string>()
+    if (scenario?.stakeholder_seed) {
+      for (const entities of Object.values(scenario.stakeholder_seed)) {
+        for (const e of (entities as string[])) names.add(e)
+      }
+    }
+    return names
+  }, [scenario?.stakeholder_seed])
+
+  // Filtered entity database based on search
+  const filteredEntityDB = useMemo(() => {
+    if (!entitySearch.trim()) return ENTITY_DATABASE
+    const q = entitySearch.toLowerCase()
+    const result: typeof ENTITY_DATABASE = {}
+    for (const [groupKey, group] of Object.entries(ENTITY_DATABASE)) {
+      const filteredCats: Record<string, string[]> = {}
+      for (const [catKey, entities] of Object.entries(group.categories)) {
+        const matches = entities.filter(e => e.toLowerCase().includes(q))
+        if (matches.length > 0) filteredCats[catKey] = matches
+      }
+      if (Object.keys(filteredCats).length > 0) {
+        result[groupKey] = { ...group, categories: filteredCats }
+      }
+    }
+    return result
+  }, [entitySearch])
 
   const Section = ({ id, icon: Icon, title, children, badge }: {
     id: string
@@ -865,6 +968,7 @@ export default function ScenarioBuilder({ onRunSimulation }: ScenarioBuilderProp
               title="Stakeholders"
               badge={Object.keys(scenario.stakeholder_seed || {}).length ? `${Object.values(scenario.stakeholder_seed || {}).flat().length}` : undefined}
             >
+              {/* Current stakeholders with remove buttons */}
               {Object.keys(scenario.stakeholder_seed || {}).length > 0 ? (
                 <div className="space-y-2">
                   {Object.entries(scenario.stakeholder_seed || {}).map(([category, entities]) => (
@@ -872,8 +976,15 @@ export default function ScenarioBuilder({ onRunSimulation }: ScenarioBuilderProp
                       <strong className="text-[var(--charcoal)] capitalize">{category}:</strong>
                       <div className="flex flex-wrap gap-1 mt-1">
                         {(entities as string[]).map((e, i) => (
-                          <span key={i} className="px-2 py-0.5 text-xs bg-gray-100 text-gray-700 rounded">
+                          <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-gray-100 text-gray-700 rounded group">
                             {e}
+                            <button
+                              onClick={() => removeEntityFromStakeholders(e)}
+                              className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-opacity"
+                              title="Remove"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
                           </span>
                         ))}
                       </div>
@@ -881,7 +992,116 @@ export default function ScenarioBuilder({ onRunSimulation }: ScenarioBuilderProp
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-400 italic">Will be inferred when probing completes</p>
+                <p className="text-gray-400 italic">No stakeholders yet — add from the entity database below</p>
+              )}
+
+              {/* Add from Entity Database button */}
+              <button
+                onClick={() => setShowEntityBrowser(!showEntityBrowser)}
+                className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 border border-dashed border-gray-300 rounded-lg text-xs text-gray-500 hover:border-[var(--burnt-orange)] hover:text-[var(--burnt-orange)] transition-colors"
+              >
+                <Database className="w-3.5 h-3.5" />
+                {showEntityBrowser ? 'Hide Entity Database' : 'Add from Entity Database'}
+              </button>
+
+              {/* Entity Database Browser */}
+              {showEntityBrowser && (
+                <div className="mt-3 border border-gray-200 rounded-lg overflow-hidden">
+                  {/* Search */}
+                  <div className="px-3 py-2 bg-gray-50 border-b border-gray-200">
+                    <div className="relative">
+                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                      <input
+                        type="text"
+                        value={entitySearch}
+                        onChange={e => setEntitySearch(e.target.value)}
+                        placeholder="Search entities..."
+                        className="w-full pl-8 pr-3 py-1.5 text-xs border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-[var(--burnt-orange)]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Groups */}
+                  <div className="max-h-64 overflow-y-auto">
+                    {Object.entries(filteredEntityDB).map(([groupKey, group]) => {
+                      const GroupIcon = getGroupIcon(group.icon)
+                      const isExpanded = expandedGroups.has(groupKey) || entitySearch.trim().length > 0
+                      const totalInGroup = Object.values(group.categories).flat().length
+                      const selectedInGroup = Object.values(group.categories).flat().filter(e => allStakeholderNames.has(e)).length
+
+                      return (
+                        <div key={groupKey} className="border-b border-gray-100 last:border-0">
+                          <button
+                            onClick={() => {
+                              const next = new Set(expandedGroups)
+                              if (next.has(groupKey)) next.delete(groupKey)
+                              else next.add(groupKey)
+                              setExpandedGroups(next)
+                            }}
+                            className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 transition-colors text-left"
+                          >
+                            {isExpanded ? <ChevronDown className="w-3 h-3 text-gray-400" /> : <ChevronRight className="w-3 h-3 text-gray-400" />}
+                            <GroupIcon className="w-3.5 h-3.5 text-[var(--burnt-orange)]" />
+                            <span className="text-xs font-medium text-gray-800 flex-1">{formatEntityName(groupKey)}</span>
+                            {selectedInGroup > 0 && (
+                              <span className="text-[10px] text-[var(--burnt-orange)]">{selectedInGroup}/{totalInGroup}</span>
+                            )}
+                          </button>
+
+                          {isExpanded && (
+                            <div className="pl-8 pr-3 pb-2 space-y-2">
+                              {Object.entries(group.categories).map(([catKey, entities]) => {
+                                const allSelected = entities.every(e => allStakeholderNames.has(e))
+                                return (
+                                  <div key={catKey}>
+                                    <div className="flex items-center justify-between mb-1">
+                                      <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">
+                                        {formatEntityName(catKey)}
+                                      </span>
+                                      <button
+                                        onClick={() => addCategoryToStakeholders(entities, groupKey)}
+                                        className={`text-[10px] flex items-center gap-0.5 ${
+                                          allSelected
+                                            ? 'text-green-600'
+                                            : 'text-[var(--burnt-orange)] hover:underline'
+                                        }`}
+                                        disabled={allSelected}
+                                      >
+                                        {allSelected ? (
+                                          <><Check className="w-2.5 h-2.5" /> All added</>
+                                        ) : (
+                                          <><Plus className="w-2.5 h-2.5" /> Add all</>
+                                        )}
+                                      </button>
+                                    </div>
+                                    <div className="flex flex-wrap gap-1">
+                                      {entities.map(name => {
+                                        const isSelected = allStakeholderNames.has(name)
+                                        return (
+                                          <button
+                                            key={name}
+                                            onClick={() => isSelected ? removeEntityFromStakeholders(name) : addEntityToStakeholders(name, groupKey)}
+                                            className={`px-1.5 py-0.5 text-[11px] rounded transition-colors ${
+                                              isSelected
+                                                ? 'bg-[var(--burnt-orange)] text-white'
+                                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                            }`}
+                                          >
+                                            {name}
+                                          </button>
+                                        )
+                                      })}
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
               )}
             </Section>
 
@@ -941,8 +1161,8 @@ export default function ScenarioBuilder({ onRunSimulation }: ScenarioBuilderProp
                     }
                   }}
                 >
-                  <Play className="w-3 h-3" />
-                  Run Simulation
+                  <Users className="w-3 h-3" />
+                  Select Entities &amp; Run
                 </button>
               </div>
             </div>
