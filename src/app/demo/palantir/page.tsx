@@ -73,7 +73,7 @@ export default function PalantirDemoPage() {
           <span style={{ color: '#444', fontSize: 20, fontWeight: 300 }}>×</span>
 
           {/* Palantir Logo */}
-          <svg width="160" height="44" viewBox="0 0 320 88" fill="none">
+          <svg width="200" height="48" viewBox="0 0 400 88" fill="none">
             {/* Symbol: circle with gap at bottom, sitting on a downward chevron */}
             <g transform="translate(14, 4)">
               {/* Full circle */}
@@ -86,9 +86,9 @@ export default function PalantirDemoPage() {
             </g>
             {/* Wordmark */}
             <text
-              x="76" y="56"
+              x="72" y="58"
               fontFamily="'Inter', 'Helvetica Neue', Arial, sans-serif"
-              fontSize="38"
+              fontSize="52"
               fontWeight="400"
               fill="#faf9f7"
               letterSpacing="1"
