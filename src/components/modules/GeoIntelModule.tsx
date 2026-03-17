@@ -262,7 +262,7 @@ export default function GeoIntelModule() {
               GEO Intelligence
             </div>
             <h1
-              className="text-lg font-normal text-white"
+              className="text-sm font-normal text-white"
               style={{ fontFamily: 'var(--font-serif)' }}
             >
               Generative Engine Optimization
