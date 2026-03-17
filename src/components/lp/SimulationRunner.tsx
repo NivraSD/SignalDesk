@@ -198,6 +198,18 @@ export default function SimulationRunner({
         if (timerRef.current) clearInterval(timerRef.current)
       } else if (data.status === 'running' || data.status === 'analyzing') {
         setState('running')
+        // If running for more than 6 minutes, assume it died
+        const createdAt = new Date(data.created_at).getTime()
+        if (Date.now() - createdAt > 6 * 60 * 1000) {
+          await supabase
+            .from('lp_simulations')
+            .update({ status: 'failed', error: 'Timed out', completed_at: new Date().toISOString() })
+            .eq('id', data.id)
+          setState('failed')
+          setError('Simulation timed out after 6 minutes')
+          if (pollRef.current) clearInterval(pollRef.current)
+          if (timerRef.current) clearInterval(timerRef.current)
+        }
       }
     }
 
