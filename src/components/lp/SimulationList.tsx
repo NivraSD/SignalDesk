@@ -11,7 +11,8 @@ import {
   Clock,
   AlertTriangle,
   ChevronRight,
-  Sparkles
+  Sparkles,
+  Trash2
 } from 'lucide-react'
 
 interface SimulationListProps {
@@ -51,6 +52,23 @@ export default function SimulationList({ onSelect, onNewSimulation }: Simulation
   const organization = useAppStore(s => s.organization)
   const [simulations, setSimulations] = useState<SimulationSummary[]>([])
   const [loading, setLoading] = useState(true)
+  const [deleting, setDeleting] = useState<string | null>(null)
+
+  const deleteSimulation = async (e: React.MouseEvent, simId: string) => {
+    e.stopPropagation()
+    if (!confirm('Delete this simulation?')) return
+    setDeleting(simId)
+    try {
+      // Delete rounds first (FK dependency)
+      await supabase.from('lp_simulation_rounds').delete().eq('simulation_id', simId)
+      await supabase.from('lp_simulations').delete().eq('id', simId)
+      setSimulations(prev => prev.filter(s => s.id !== simId))
+    } catch (err) {
+      console.error('Delete failed:', err)
+    } finally {
+      setDeleting(null)
+    }
+  }
 
   useEffect(() => {
     if (!organization?.id) {
@@ -202,6 +220,18 @@ export default function SimulationList({ onSelect, onNewSimulation }: Simulation
                       {sim.stabilization_score > 0 && ` · ${(sim.stabilization_score * 100).toFixed(0)}% stabilization`}
                     </p>
                   </div>
+                  <button
+                    onClick={(e) => deleteSimulation(e, sim.id)}
+                    disabled={deleting === sim.id}
+                    className="p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
+                    title="Delete simulation"
+                  >
+                    {deleting === sim.id ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-4 h-4" />
+                    )}
+                  </button>
                   <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors" />
                 </div>
               </button>
