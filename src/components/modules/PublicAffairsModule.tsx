@@ -695,8 +695,9 @@ function ReportDetailView({
   const hasResearch = !!report.research_data
   const hasBlueprint = !!report.blueprint_data
   const hasPresentation = !!report.presentation_url
-  const isProcessing = report.status.includes('in_progress')
+  const isProcessing = report.status.includes('in_progress') && !generatingBlueprint && !generatingPresentation && !generatingOnePager
   const isIntelligenceComplete = report.status === 'research_complete' || report.status === 'blueprint_complete' || report.status === 'complete'
+    || generatingBlueprint || generatingPresentation || generatingOnePager // keep buttons visible during individual generations
   const useNew = isNewFormat(report.research_data)
   const safeFilename = report.title.replace(/[^a-zA-Z0-9\s-]/g, '').trim()
 
