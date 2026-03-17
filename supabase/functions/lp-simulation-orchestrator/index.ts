@@ -385,7 +385,44 @@ async function identifyEntities(
         })
         console.log(`  ✅ "${name}" → ${match.entity_name} (${match.id})`)
       } else if (!match) {
-        console.log(`  ⚠️ No profile found for "${name}" — skipping`)
+        // No profile exists — create a placeholder so the entity still runs
+        // The entity simulation will use the name + AI general knowledge
+        const placeholderId = crypto.randomUUID()
+        const { data: created } = await supabase
+          .from('lp_entity_profiles')
+          .insert({
+            id: placeholderId,
+            organization_id: organizationId,
+            entity_name: name,
+            entity_type: 'unknown',
+            profile: {
+              identity: { name, description: `${name} - profile auto-generated for simulation` },
+              voice: {},
+              priorities: {},
+              patterns: {},
+              vulnerabilities: {},
+              current_context: {}
+            },
+            profile_version: 0,
+            built_at: new Date().toISOString(),
+            expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+          })
+          .select('id, entity_name, entity_type')
+          .single()
+
+        if (created) {
+          entities.push({
+            entity_id: created.id,
+            entity_name: created.entity_name,
+            entity_type: created.entity_type,
+            profile_id: created.id,
+            relevance_score: 0.7,
+            included: true
+          })
+          console.log(`  🆕 "${name}" → created placeholder profile (${created.id})`)
+        } else {
+          console.log(`  ⚠️ Failed to create placeholder for "${name}" — skipping`)
+        }
       }
     }
 
