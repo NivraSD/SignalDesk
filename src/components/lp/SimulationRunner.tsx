@@ -158,6 +158,16 @@ export default function SimulationRunner({
   // Cancelled ref for aborting the round loop
   const cancelledRef = useRef(false)
 
+  // Timeout wrapper for edge function calls — 55s max per entity
+  function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+    return Promise.race([
+      promise,
+      new Promise<T>((_, reject) =>
+        setTimeout(() => reject(new Error(`${label} timed out after ${ms / 1000}s`)), ms)
+      )
+    ])
+  }
+
   // === Client-side cross-entity analysis (algorithmic, no AI) ===
 
   function analyzeRound(roundNumber: number, responses: any[], priorResponses: any[]) {
@@ -309,21 +319,25 @@ export default function SimulationRunner({
 
         const entityResults = await Promise.allSettled(
           activeEntitiesForRound.map((entity: any) =>
-            supabase.functions.invoke('lp-entity-simulation', {
-              body: {
-                entity_id: entity.entity_id,
-                entity_name: entity.entity_name,
-                profile_id: entity.profile_id,
-                round_number: round,
-                phase,
-                scenario,
-                prior_responses: priorResponses,
-                themes_so_far: lastAnalysis?.themes?.map((t: any) => t.theme) || [],
-                dominant_narratives: lastAnalysis?.themes?.filter((t: any) => t.momentum === 'rising')?.map((t: any) => t.theme) || [],
-                gaps_identified: lastAnalysis?.gaps?.map((g: any) => g.description) || [],
-                entity_memory: entityMemory[entity.entity_id]
-              }
-            })
+            withTimeout(
+              supabase.functions.invoke('lp-entity-simulation', {
+                body: {
+                  entity_id: entity.entity_id,
+                  entity_name: entity.entity_name,
+                  profile_id: entity.profile_id,
+                  round_number: round,
+                  phase,
+                  scenario,
+                  prior_responses: priorResponses,
+                  themes_so_far: lastAnalysis?.themes?.map((t: any) => t.theme) || [],
+                  dominant_narratives: lastAnalysis?.themes?.filter((t: any) => t.momentum === 'rising')?.map((t: any) => t.theme) || [],
+                  gaps_identified: lastAnalysis?.gaps?.map((g: any) => g.description) || [],
+                  entity_memory: entityMemory[entity.entity_id]
+                }
+              }),
+              55000,
+              entity.entity_name
+            )
           )
         )
 
