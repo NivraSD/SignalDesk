@@ -1,9 +1,5 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
+import { corsHeaders } from '../_shared/cors.ts'
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -123,10 +119,11 @@ RULES:
 1. Build on Stage 1 findings — do NOT contradict them. Stage 1 is your ground truth.
 2. Base scenarios and impact analysis ONLY on the research data and Stage 1 findings. Do NOT use your training data for current events — it is outdated.
 3. If a war or conflict is described as active in Stage 1, your scenarios must reflect that reality — do NOT create scenarios where "diplomacy prevails" if the research shows active combat.
-4. Scenarios must be genuinely distinct. Likelihoods must sum to ~100%.
-5. Every prose section must be multi-paragraph. Connect insights back to ${organization_name}.
-6. Do NOT invent events, statistics, or developments not in the research.
-7. Pay attention to DATES. The most recent information supersedes older information. If Stage 1 says X happened and then Y happened after, Y is the current state.
+4. Scenarios must be genuinely distinct. Likelihoods must sum to ~100%. CRITICALLY: determine actual probabilities from the evidence — do NOT default to 55/30/15 or any fixed split. If one scenario is 70% likely based on the evidence, say 70%. If another is 40/40/20, say that. Assess the real probabilities.
+5. Give each scenario a SPECIFIC, DESCRIPTIVE name based on the research (e.g. "EU Regulatory Crackdown Accelerates" not "Most Likely Outcome"). Never use generic names like "Most Likely Outcome", "Escalation Scenario", or "De-escalation / Wildcard".
+6. Every prose section must be multi-paragraph. Connect insights back to ${organization_name}.
+7. Do NOT invent events, statistics, or developments not in the research.
+8. Pay attention to DATES. The most recent information supersedes older information. If Stage 1 says X happened and then Y happened after, Y is the current state.
 
 ${stage1Summary}
 
@@ -156,8 +153,8 @@ Based on Stage 1 findings and the research above, generate Stage 2 as a JSON obj
   "scenario_analysis": {
     "scenarios": [
       {
-        "name": "Most Likely Outcome",
-        "likelihood": "55%",
+        "name": "Give this scenario a specific, descriptive name based on the research (NOT 'Most Likely Outcome')",
+        "likelihood": "Determine the actual percentage likelihood based on the weight of evidence in the research. Do NOT default to 55% — assess the real probability.",
         "narrative": "2-3 paragraphs. How this unfolds based on evidence in the research. Specific sequence, timing, causal mechanisms.",
         "key_drivers": "2-3 factors from the research that make this scenario most probable",
         "leading_indicators": ["Observable signals from research"],
@@ -165,8 +162,8 @@ Based on Stage 1 findings and the research above, generate Stage 2 as a JSON obj
         "client_impact": "Specific implications for ${organization_name}"
       },
       {
-        "name": "Escalation Scenario",
-        "likelihood": "30%",
+        "name": "Give this scenario a specific name describing what escalation looks like (NOT 'Escalation Scenario')",
+        "likelihood": "Determine the actual percentage based on research evidence. Do NOT default to 30%.",
         "narrative": "2-3 paragraphs. What triggers escalation based on research evidence.",
         "key_drivers": "What would have to change",
         "leading_indicators": ["Early warning signs"],
@@ -174,8 +171,8 @@ Based on Stage 1 findings and the research above, generate Stage 2 as a JSON obj
         "client_impact": "How this affects ${organization_name}"
       },
       {
-        "name": "De-escalation / Wildcard",
-        "likelihood": "15%",
+        "name": "Give this scenario a specific name (NOT 'De-escalation / Wildcard')",
+        "likelihood": "Determine the actual percentage based on research evidence. Do NOT default to 15%.",
         "narrative": "2-3 paragraphs. Only if research evidence supports the possibility.",
         "key_drivers": "What factor could produce this",
         "leading_indicators": ["What to watch"],
@@ -218,7 +215,7 @@ Return ONLY valid JSON. No markdown fencing, no preamble.`
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
             temperature: 0.3,
-            maxOutputTokens: 12000,
+            maxOutputTokens: 16000,
             responseMimeType: 'application/json'
           }
         })
@@ -277,17 +274,46 @@ Return ONLY valid JSON. No markdown fencing, no preamble.`
         else if (ch === '}') { depth--; if (depth === 0) { end = i + 1; break } }
       }
       if (end === -1) {
-        // Truncated JSON — try to repair by closing open braces
+        // Truncated JSON — try progressively aggressive repair
         let repair = cleaned.substring(start)
-        repair = repair.replace(/,\s*"[^"]*"?\s*:?\s*"?[^"]*$/, '')
-        const opens = (repair.match(/{/g) || []).length
-        const closes = (repair.match(/}/g) || []).length
-        for (let i = 0; i < opens - closes; i++) repair += '}'
-        stage2Data = tryParse(repair)
-        if (stage2Data) {
-          console.log('Stage 2: repaired truncated JSON')
-        } else {
-          throw new Error(`Incomplete JSON in Stage 2 (content length: ${content.length}, finishReason: ${finishReason})`)
+        // Try multiple truncation patterns — from least to most aggressive
+        const truncationPatterns = [
+          /,\s*"[^"]*"?\s*:?\s*"?[^"]*$/,           // trailing partial key:value
+          /,\s*"[^"]*"?\s*:?\s*\[[^\]]*$/,            // trailing partial array value
+          /,\s*"[^"]*"?\s*:?\s*\{[^}]*$/,             // trailing partial object value
+          /,\s*"[^"]*"?\s*:?\s*$/,                     // trailing key with no value
+          /,\s*\{[^}]*$/,                               // trailing partial object in array
+          /,\s*"[^"]*$/,                                // trailing partial string in array
+        ]
+        for (const pattern of truncationPatterns) {
+          let attempt = repair.replace(pattern, '')
+          // Also strip any trailing commas after cleanup
+          attempt = attempt.replace(/,\s*$/, '')
+          // Close open brackets/braces
+          const openBraces = (attempt.match(/{/g) || []).length - (attempt.match(/}/g) || []).length
+          const openBrackets = (attempt.match(/\[/g) || []).length - (attempt.match(/\]/g) || []).length
+          for (let i = 0; i < openBrackets; i++) attempt += ']'
+          for (let i = 0; i < openBraces; i++) attempt += '}'
+          stage2Data = tryParse(attempt)
+          if (stage2Data) {
+            console.log('Stage 2: repaired truncated JSON with pattern', pattern.source)
+            break
+          }
+        }
+        if (!stage2Data) {
+          // Last resort: find the last valid closing brace and truncate there
+          let lastValid = -1
+          for (let i = repair.length - 1; i >= 0; i--) {
+            if (repair[i] === '}') {
+              const sub = repair.substring(0, i + 1)
+              if (tryParse(sub)) { stage2Data = tryParse(sub); lastValid = i; break }
+            }
+          }
+          if (stage2Data) {
+            console.log('Stage 2: repaired by truncating to last valid brace at', lastValid)
+          } else {
+            throw new Error(`Incomplete JSON in Stage 2 (content length: ${content.length}, finishReason: ${finishReason})`)
+          }
         }
       } else {
         stage2Data = tryParse(cleaned.substring(start, end))
