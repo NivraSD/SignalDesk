@@ -467,7 +467,7 @@ export default function Dashboard() {
     { id: 'studio', label: 'Studio' },
     { id: 'campaigns', label: 'Campaigns' },
     { id: 'crisis', label: 'Crisis' },
-    { id: 'publicaffairs', label: 'Public Affairs' },
+    { id: 'publicaffairs', label: 'Research' },
     { id: 'simulations', label: 'Simulations' },
     { id: 'vault', label: 'Vault' },
   ]
