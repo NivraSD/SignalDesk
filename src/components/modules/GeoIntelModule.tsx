@@ -251,23 +251,18 @@ export default function GeoIntelModule() {
   return (
     <div className="h-full flex flex-col bg-[var(--charcoal)]">
       {/* Header */}
-      <div className="px-8 py-6 border-b border-[var(--grey-800)]">
+      <div className="px-8 py-3 border-b border-[var(--grey-800)]">
         <div className="flex items-center justify-between">
-          <div>
+          <div className="flex items-center gap-3">
             <div
-              className="text-[0.65rem] uppercase tracking-[0.15em] text-[var(--burnt-orange)] flex items-center gap-2 mb-2"
+              className="text-[0.65rem] uppercase tracking-[0.15em] text-[var(--burnt-orange)] flex items-center gap-2"
               style={{ fontFamily: 'var(--font-display)' }}
             >
               <span className="w-1.5 h-1.5 bg-[var(--burnt-orange)] rounded-full" />
               GEO Intelligence
             </div>
-            <h1
-              className="text-[1.5rem] font-normal text-white"
-              style={{ fontFamily: 'var(--font-serif)' }}
-            >
-              Generative Engine Optimization
-            </h1>
-            <p className="text-[var(--grey-400)] text-sm mt-1">
+            <span className="text-[var(--grey-700)]">·</span>
+            <p className="text-[var(--grey-400)] text-xs">
               Monitor and optimize your visibility across AI platforms
             </p>
           </div>

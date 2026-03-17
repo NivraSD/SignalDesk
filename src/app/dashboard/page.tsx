@@ -464,11 +464,11 @@ export default function Dashboard() {
   const navLinks: { id: ModuleView; label: string }[] = [
     { id: 'hub', label: 'Hub' },
     { id: 'opportunities', label: 'Opportunities' },
-    { id: 'studio', label: 'Studio' },
     { id: 'campaigns', label: 'Campaigns' },
     { id: 'crisis', label: 'Crisis' },
     { id: 'publicaffairs', label: 'Research' },
     { id: 'simulations', label: 'Simulations' },
+    { id: 'studio', label: 'Studio' },
     { id: 'vault', label: 'Vault' },
   ]
 
