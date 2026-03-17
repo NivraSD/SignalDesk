@@ -464,13 +464,23 @@ export default function SimulationRunner({
         }
       }
 
-      // Fulcrum identification (optional, fire-and-forget)
+      // Fulcrum identification — awaited so user sees progress
       if (!cancelledRef.current) {
-        supabase.functions.invoke('lp-identify-fulcrums', { body: { simulation_id } })
-          .then(({ data }) => {
-            if (data?.fulcrums) supabase.from('lp_simulations').update({ fulcrums: data.fulcrums }).eq('id', simulation_id)
+        setProgress(prev => prev ? { ...prev, status: 'analyzing' } : null)
+
+        try {
+          const { data: fulcrumData, error: fulcrumErr } = await supabase.functions.invoke('lp-identify-fulcrums', {
+            body: { simulation_id }
           })
-          .catch(() => {})
+          if (fulcrumErr) throw fulcrumErr
+          if (fulcrumData?.fulcrums) {
+            await supabase.from('lp_simulations')
+              .update({ fulcrums: fulcrumData.fulcrums })
+              .eq('id', simulation_id)
+          }
+        } catch (err: any) {
+          console.warn('[LP] Fulcrum identification failed:', err.message || err)
+        }
       }
 
     } catch (err: any) {
@@ -756,6 +766,8 @@ export default function SimulationRunner({
             <p className="text-xs text-gray-500">
               {state === 'starting'
                 ? 'Setting up entities and loading profiles...'
+                : progress?.status === 'analyzing'
+                ? 'Identifying strategic fulcrums...'
                 : `Round ${roundsCompleted} — watching for stabilization`}
             </p>
           </div>
