@@ -145,7 +145,21 @@ export default function HomePage() {
           font-size: 1.15rem;
           line-height: 1.7;
           color: var(--grey-600);
+          margin-bottom: 16px;
+        }
+
+        .landing-hero-subline {
+          max-width: 440px;
+          font-size: 1.3rem;
+          line-height: 1.5;
+          color: var(--charcoal);
           margin-bottom: 48px;
+          letter-spacing: -0.01em;
+        }
+
+        .landing-hero-subline strong {
+          color: var(--burnt-orange);
+          font-weight: 700;
         }
 
         .landing-hero-cta-row {
@@ -854,6 +868,9 @@ export default function HomePage() {
           <p className="landing-hero-intro">
             NIV transforms how organizations discover opportunities, generate strategies, and execute campaigns — with AI that learns and compounds over time.
           </p>
+          <p className="landing-hero-subline">
+            AI that doesn't just analyze. <strong>AI that acts.</strong>
+          </p>
           <div className="landing-hero-cta-row">
             <button className="landing-btn-primary" onClick={() => router.push('/auth/login')}>
               Sign In
@@ -928,7 +945,7 @@ export default function HomePage() {
               AI built for you, <em>working around the clock</em>
             </h2>
             <p className="landing-statement-text">
-              Unlike generic AI tools that start from scratch every time, NIV knows your organization — your voice, your competitors, your stakeholders, your goals. Every insight, every strategy, every piece of content is built with <em>you</em> in mind.
+              Other platforms give you dashboards. NIV gives you outcomes. It monitors, strategizes, drafts, and executes — proactively — so opportunities don't slip by while you're asleep. Every insight, every strategy, every piece of content is built with <em>you</em> in mind.
             </p>
           </div>
           <div className="landing-statement-visual">
