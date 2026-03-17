@@ -299,12 +299,16 @@ export default function SimulationRunner({
         const phase = phases[round - 1]
         if (!phase) break
 
+        const roundStart = Date.now()
         console.log(`[LP] Round ${round}/${config.max_rounds}: ${phase.name}`)
         const priorResponses = allResponses.filter(r => r.round_number === round - 1)
 
         // Call ALL entity simulations in parallel — each is its own edge function call
+        const activeEntitiesForRound = entities.filter((e: any) => e.included)
+        console.log(`[LP] Round ${round}: calling ${activeEntitiesForRound.length} entity simulations in parallel...`)
+
         const entityResults = await Promise.allSettled(
-          entities.filter((e: any) => e.included).map((entity: any) =>
+          activeEntitiesForRound.map((entity: any) =>
             supabase.functions.invoke('lp-entity-simulation', {
               body: {
                 entity_id: entity.entity_id,
@@ -323,9 +327,11 @@ export default function SimulationRunner({
           )
         )
 
+        console.log(`[LP] Round ${round}: all entity calls returned in ${((Date.now() - roundStart) / 1000).toFixed(1)}s`)
+
         // Collect responses
         const roundResponses: any[] = []
-        const activeEntities = entities.filter((e: any) => e.included)
+        const activeEntities = activeEntitiesForRound
 
         entityResults.forEach((result: any, idx: number) => {
           const entity = activeEntities[idx]
@@ -366,8 +372,13 @@ export default function SimulationRunner({
         // Cross-entity analysis (client-side, pure algorithmic)
         const analysis = analyzeRound(round, roundResponses, priorResponses)
 
-        // Save round to DB
-        await supabase.from('lp_simulation_rounds').insert({
+        // Save round to DB — delete any orphaned round first to avoid 409 conflict
+        await supabase.from('lp_simulation_rounds')
+          .delete()
+          .eq('simulation_id', simulation_id)
+          .eq('round_number', round)
+
+        const { error: roundInsertErr } = await supabase.from('lp_simulation_rounds').insert({
           simulation_id, round_number: round,
           entity_responses: roundResponses,
           cross_analysis: { ...analysis, phase_id: phase.id, phase_name: phase.name, phase_description: phase.description },
@@ -375,6 +386,10 @@ export default function SimulationRunner({
           completed_at: new Date().toISOString(),
           status: 'completed'
         })
+
+        if (roundInsertErr) {
+          console.error(`[LP] Round ${round} save failed:`, roundInsertErr.message)
+        }
 
         // Accumulate
         allResponses.push(...roundResponses)
@@ -398,10 +413,14 @@ export default function SimulationRunner({
         }
 
         // Update progress in UI + DB
-        await supabase.from('lp_simulations').update({
+        const { error: updateErr } = await supabase.from('lp_simulations').update({
           rounds_completed: round,
           stabilization_score: analysis.stabilization_score
         }).eq('id', simulation_id)
+
+        if (updateErr) {
+          console.error(`[LP] Simulation progress update failed:`, updateErr.message)
+        }
 
         setProgress(prev => prev ? { ...prev, rounds_completed: round, stabilization_score: analysis.stabilization_score } : null)
         console.log(`[LP] Round ${round} complete — stabilization: ${analysis.stabilization_score.toFixed(2)}`)
