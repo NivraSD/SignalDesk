@@ -65,6 +65,21 @@ export default function SimulationList({ onSelect, onNewSimulation, onRunSimulat
   const [pendingScenarios, setPendingScenarios] = useState<PendingScenario[]>([])
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState<string | null>(null)
+  const [deletingScenario, setDeletingScenario] = useState<string | null>(null)
+
+  const deleteScenario = async (e: React.MouseEvent, scenarioId: string) => {
+    e.stopPropagation()
+    if (!confirm('Delete this scenario?')) return
+    setDeletingScenario(scenarioId)
+    try {
+      await supabase.from('lp_scenarios').delete().eq('id', scenarioId)
+      setPendingScenarios(prev => prev.filter(s => s.id !== scenarioId))
+    } catch (err) {
+      console.error('Delete scenario failed:', err)
+    } finally {
+      setDeletingScenario(null)
+    }
+  }
 
   const deleteSimulation = async (e: React.MouseEvent, simId: string) => {
     e.stopPropagation()
@@ -218,6 +233,18 @@ export default function SimulationList({ onSelect, onNewSimulation, onRunSimulat
                   </span>
                 </div>
               </div>
+              <button
+                onClick={(e) => deleteScenario(e, sc.id)}
+                disabled={deletingScenario === sc.id}
+                className="p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+                title="Delete scenario"
+              >
+                {deletingScenario === sc.id ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Trash2 className="w-4 h-4" />
+                )}
+              </button>
               <button
                 onClick={() => onRunSimulation(sc.id)}
                 className="px-3 py-1.5 bg-[var(--burnt-orange)] hover:bg-[var(--terracotta)] text-white rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5"
