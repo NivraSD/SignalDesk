@@ -155,75 +155,14 @@ export default function SimulationRunner({
     return filtered
   }, [browserSearch])
 
-  // Poll for simulation progress
-  useEffect(() => {
-    if (state !== 'starting' && state !== 'running') return
+  // Cancelled ref for aborting the round loop
+  const cancelledRef = useRef(false)
 
-    const poll = async () => {
-      let data: SimulationProgress | null = null
-
-      if (simulationId) {
-        const res = await supabase
-          .from('lp_simulations')
-          .select('id, status, rounds_completed, stabilization_score, entities, error, created_at, completed_at')
-          .eq('id', simulationId)
-          .single()
-        data = res.data
-      } else {
-        const res = await supabase
-          .from('lp_simulations')
-          .select('id, status, rounds_completed, stabilization_score, entities, error, created_at, completed_at')
-          .eq('scenario_id', scenarioId)
-          .eq('organization_id', organizationId)
-          .order('created_at', { ascending: false })
-          .limit(1)
-        if (res.data?.[0]) {
-          data = res.data[0]
-          setSimulationId(res.data.id)
-        }
-      }
-
-      if (!data) return
-      setProgress(data)
-
-      if (data.status === 'stabilized' || data.status === 'max_rounds_reached') {
-        setState('complete')
-        if (!simulationId) setSimulationId(data.id)
-        if (pollRef.current) clearInterval(pollRef.current)
-        if (timerRef.current) clearInterval(timerRef.current)
-      } else if (data.status === 'failed') {
-        setState('failed')
-        setError(data.error || 'Simulation failed')
-        if (pollRef.current) clearInterval(pollRef.current)
-        if (timerRef.current) clearInterval(timerRef.current)
-      } else if (data.status === 'running' || data.status === 'analyzing') {
-        setState('running')
-        // If running for more than 6 minutes, assume it died
-        const createdAt = new Date(data.created_at).getTime()
-        if (Date.now() - createdAt > 6 * 60 * 1000) {
-          await supabase
-            .from('lp_simulations')
-            .update({ status: 'failed', error: 'Timed out', completed_at: new Date().toISOString() })
-            .eq('id', data.id)
-          setState('failed')
-          setError('Simulation timed out after 6 minutes')
-          if (pollRef.current) clearInterval(pollRef.current)
-          if (timerRef.current) clearInterval(timerRef.current)
-        }
-      }
-    }
-
-    const timeout = setTimeout(poll, 2000)
-    pollRef.current = setInterval(poll, 3000)
-    return () => {
-      clearTimeout(timeout)
-      if (pollRef.current) clearInterval(pollRef.current)
-    }
-  }, [simulationId, state, scenarioId, organizationId])
-
+  // Client-driven simulation: setup → run rounds one at a time
   const startSimulation = async () => {
     if (invokeRef.current) return
     invokeRef.current = true
+    cancelledRef.current = false
 
     setState('starting')
     setError(null)
@@ -233,27 +172,168 @@ export default function SimulationRunner({
       setElapsed(Math.floor((Date.now() - startTimeRef.current) / 1000))
     }, 1000)
 
-    // Collect selected entity names
     const entityNames = Array.from(selectedEntities.values()).map(e => e.name)
     console.log(`[LP] Launching simulation with ${entityNames.length} entities:`, entityNames)
 
-    // Fire-and-forget: the edge function takes 2-4 minutes but the gateway
-    // times out at ~60s. The orchestrator writes progress to DB as it goes.
-    supabase.functions.invoke('lp-simulation-orchestrator', {
-      body: {
-        scenario_id: scenarioId,
-        organization_id: organizationId,
-        entity_names: entityNames
+    try {
+      // Step 1: Setup — create simulation, identify entities
+      const { data: setup, error: setupError } = await supabase.functions.invoke('lp-simulation-orchestrator', {
+        body: {
+          scenario_id: scenarioId,
+          organization_id: organizationId,
+          entity_names: entityNames
+        }
+      })
+
+      if (setupError || !setup?.simulation_id) {
+        throw new Error(setupError?.message || setup?.error || 'Setup failed')
       }
-    }).then(({ data, error: invokeError }) => {
-      if (!invokeError && data?.simulation_id) {
-        setSimulationId(data.simulation_id)
+
+      const { simulation_id, scenario, entities, config, phases } = setup
+      setSimulationId(simulation_id)
+      setProgress({
+        id: simulation_id,
+        status: 'running',
+        rounds_completed: 0,
+        stabilization_score: 0,
+        entities,
+        created_at: new Date().toISOString()
+      })
+      setState('running')
+
+      console.log(`[LP] Setup complete: ${simulation_id}, ${entities.length} entities, ${phases.length} phases`)
+
+      // Step 2: Run rounds one at a time
+      let allResponses: any[] = []
+      let lastAnalysis: any = null
+      const entityMemory: Record<string, any> = {}
+
+      for (let round = 1; round <= config.max_rounds; round++) {
+        if (cancelledRef.current) break
+
+        const phase = phases[round - 1]
+        if (!phase) break
+
+        console.log(`[LP] Starting Round ${round}/${config.max_rounds}: ${phase.name}`)
+
+        const priorResponses = allResponses.filter(r => r.round_number === round - 1)
+
+        const { data: roundResult, error: roundError } = await supabase.functions.invoke('lp-run-simulation-round', {
+          body: {
+            simulation_id,
+            round_number: round,
+            phase,
+            scenario,
+            entities,
+            prior_responses: priorResponses,
+            themes_so_far: lastAnalysis?.themes?.map((t: any) => t.theme) || [],
+            dominant_narratives: lastAnalysis?.themes
+              ?.filter((t: any) => t.momentum === 'rising')
+              ?.map((t: any) => t.theme) || [],
+            gaps_identified: lastAnalysis?.gaps?.map((g: any) => g.description) || [],
+            entity_memory: entityMemory
+          }
+        })
+
+        if (roundError || !roundResult) {
+          console.error(`[LP] Round ${round} failed:`, roundError?.message)
+          // Don't fail the whole simulation — mark what we have
+          if (round > 1) {
+            await supabase.from('lp_simulations').update({
+              status: 'max_rounds_reached',
+              completed_at: new Date().toISOString(),
+              error: `Round ${round} failed: ${roundError?.message || 'unknown'}`
+            }).eq('id', simulation_id)
+            setState('complete')
+          } else {
+            throw new Error(`Round 1 failed: ${roundError?.message || 'unknown'}`)
+          }
+          break
+        }
+
+        // Accumulate responses
+        allResponses.push(...(roundResult.responses || []))
+        lastAnalysis = roundResult.analysis
+
+        // Build entity memory for next round
+        for (const entity of entities) {
+          const entityResponses = allResponses.filter((r: any) => r.entity_id === entity.entity_id)
+          const entityName = entityResponses[0]?.entity_name || ''
+          entityMemory[entity.entity_id] = {
+            entity_id: entity.entity_id,
+            positions_taken: entityResponses.map((r: any) => ({ round: r.round_number, position: r.position_summary })),
+            entities_referenced: [...new Set(entityResponses.flatMap((r: any) => r.entities_referenced || []))],
+            themes_championed: [...new Set(entityResponses.flatMap((r: any) => r.themes_championed || []))],
+            attacks_received: allResponses
+              .filter((r: any) => r.entity_id !== entity.entity_id && r.response_decision === 'counter' &&
+                (r.entities_referenced || []).some((ref: string) => ref === entity.entity_id || ref.toLowerCase() === entityName.toLowerCase()))
+              .map((r: any) => ({ from: r.entity_name, round: r.round_number, attack: r.position_summary })),
+            credibility_trajectory: 'stable'
+          }
+        }
+
+        // Update UI progress
+        setProgress(prev => prev ? {
+          ...prev,
+          rounds_completed: round,
+          stabilization_score: lastAnalysis?.stabilization_score || 0
+        } : null)
+
+        console.log(`[LP] Round ${round} complete — stabilization: ${(lastAnalysis?.stabilization_score || 0).toFixed(2)}`)
+
+        // Check stabilization (after min rounds)
+        if (round >= (config.min_rounds || 2) && lastAnalysis?.stabilization_score >= (config.stabilization_threshold || 0.8)) {
+          console.log(`[LP] Stabilized at round ${round}`)
+          await supabase.from('lp_simulations').update({
+            status: 'stabilized',
+            rounds_completed: round,
+            stabilization_score: lastAnalysis.stabilization_score,
+            dominant_narratives: lastAnalysis.themes?.filter((t: any) => t.momentum === 'rising').map((t: any) => t.theme) || [],
+            key_coalitions: lastAnalysis.coalitions || [],
+            gaps_identified: lastAnalysis.gaps?.map((g: any) => g.description) || [],
+            completed_at: new Date().toISOString()
+          }).eq('id', simulation_id)
+          setState('complete')
+          break
+        }
+
+        // If last round, mark max_rounds_reached
+        if (round === config.max_rounds) {
+          await supabase.from('lp_simulations').update({
+            status: 'max_rounds_reached',
+            rounds_completed: round,
+            stabilization_score: lastAnalysis?.stabilization_score || 0,
+            dominant_narratives: lastAnalysis?.themes?.filter((t: any) => t.momentum === 'rising').map((t: any) => t.theme) || [],
+            key_coalitions: lastAnalysis?.coalitions || [],
+            gaps_identified: lastAnalysis?.gaps?.map((g: any) => g.description) || [],
+            completed_at: new Date().toISOString()
+          }).eq('id', simulation_id)
+          setState('complete')
+        }
       }
-    }).catch(() => {
-      // Expected: gateway timeout. Polling handles everything.
-    }).finally(() => {
+
+      // Try fulcrum identification as a bonus (fire-and-forget, non-blocking)
+      if (state === 'complete' || !cancelledRef.current) {
+        try {
+          const { data: fulcrumResult } = await supabase.functions.invoke('lp-identify-fulcrums', {
+            body: { simulation_id }
+          })
+          if (fulcrumResult?.fulcrums) {
+            await supabase.from('lp_simulations').update({ fulcrums: fulcrumResult.fulcrums }).eq('id', simulation_id)
+          }
+        } catch (_) {
+          // Fulcrums are optional — don't fail the simulation
+        }
+      }
+
+    } catch (err: any) {
+      console.error('[LP] Simulation error:', err.message)
+      setState('failed')
+      setError(err.message || 'Simulation failed')
+    } finally {
+      if (timerRef.current) clearInterval(timerRef.current)
       invokeRef.current = false
-    })
+    }
   }
 
   const formatElapsed = (s: number) => {
@@ -529,7 +609,7 @@ export default function SimulationRunner({
             <p className="text-xs text-gray-500">
               {state === 'starting'
                 ? 'Setting up entities and loading profiles...'
-                : `Round ${roundsCompleted} of up to 5 — watching for stabilization`}
+                : `Round ${roundsCompleted} — watching for stabilization`}
             </p>
           </div>
           <span className="text-xs text-gray-400 font-mono">{formatElapsed(elapsed)}</span>
@@ -540,11 +620,11 @@ export default function SimulationRunner({
           <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
             <div
               className="h-full bg-[var(--burnt-orange)] transition-all duration-500 rounded-full"
-              style={{ width: `${Math.max(5, (roundsCompleted / 5) * 100)}%` }}
+              style={{ width: `${Math.max(5, roundsCompleted * 20)}%` }}
             />
           </div>
           <div className="flex items-center justify-between text-[10px] text-gray-400">
-            <span>Round {roundsCompleted}/5</span>
+            <span>Round {roundsCompleted}</span>
             <span>Stabilization: {(stabScore * 100).toFixed(0)}%</span>
           </div>
         </div>
@@ -578,7 +658,7 @@ export default function SimulationRunner({
           </div>
           <button
             onClick={async () => {
-              // Mark simulation as failed/cancelled in DB
+              cancelledRef.current = true
               const targetId = simulationId || progress?.id
               if (targetId) {
                 await supabase
@@ -586,7 +666,6 @@ export default function SimulationRunner({
                   .update({ status: 'failed', error: 'Cancelled by user', completed_at: new Date().toISOString() })
                   .eq('id', targetId)
               }
-              if (pollRef.current) clearInterval(pollRef.current)
               if (timerRef.current) clearInterval(timerRef.current)
               setState('failed')
               setError('Cancelled by user')

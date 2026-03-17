@@ -1,172 +1,26 @@
 /**
- * LP Simulation Orchestrator
+ * LP Simulation Orchestrator — SETUP ONLY
  *
- * Multi-round simulation engine where entity responses propagate across rounds.
- *
- * Flow:
- * 1. Load scenario + identify relevant entities
- * 2. Run Round 1: all entities respond to scenario (parallel)
- * 3. Cross-entity analysis: themes, influence, coalitions, gaps
- * 4. Check stabilization - if not stable and rounds < max, continue
- * 5. Round 2+: entities respond to prior round outputs
- * 6. Repeat until stabilization or max rounds
- * 7. Identify fulcrums (only after seeing full cascade)
- *
- * Key insight: Fulcrums only become visible after watching the cascade play out.
+ * Creates simulation record, identifies entities, returns config.
+ * The CLIENT drives rounds by calling lp-run-simulation-round repeatedly.
+ * This avoids the edge function timeout that killed monolithic simulations.
  */
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 import { corsHeaders, jsonResponse, errorResponse } from '../_shared/cors.ts'
-import { runRound, buildEntityMemory } from './round-runner.ts'
-import { detectStabilization } from './stabilization-detector.ts'
-import type {
-  SimulationRequest,
-  SimulationResponse,
-  Simulation,
-  SimulationConfig,
-  SimulationEntity,
-  SimulationRound,
-  RoundContext,
-  EntityResponse,
-  CrossEntityAnalysis,
-  EntityRoundMemory,
-  Fulcrum,
-  SimulationPhase,
-  ScenarioMode
-} from './types.ts'
+import type { SimulationRequest, SimulationConfig, SimulationEntity, ScenarioMode } from './types.ts'
 import { getPhasesForMode } from './types.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-const GOOGLE_API_KEY = Deno.env.get('GOOGLE_AI_API_KEY') || Deno.env.get('GEMINI_API_KEY') || Deno.env.get('GOOGLE_API_KEY')
-const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY') || Deno.env.get('CLAUDE_API_KEY')
-
-// === AI Helpers ===
-
-async function fetchWithRetry(
-  url: string,
-  options: RequestInit,
-  maxRetries = 3,
-  baseDelay = 2000
-): Promise<Response> {
-  const retryableStatuses = [429, 500, 502, 503, 529]
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    const response = await fetch(url, options)
-    if (response.ok || !retryableStatuses.includes(response.status)) {
-      return response
-    }
-    if (attempt < maxRetries) {
-      const jitter = Math.random() * 0.5 + 1
-      const delay = Math.round(baseDelay * Math.pow(2, attempt) * jitter)
-      console.log(`⚠️ AI API returned ${response.status}, retrying in ${delay}ms...`)
-      await new Promise(resolve => setTimeout(resolve, delay))
-    } else {
-      return response
-    }
-  }
-  throw new Error('Unexpected: retry loop exited without returning')
-}
-
-function parseJSON(text: string): any {
-  let clean = text.trim()
-  try { return JSON.parse(clean) } catch (_) { /* continue */ }
-
-  if (clean.includes('```json')) {
-    const match = clean.match(/```json\s*([\s\S]*?)```/)
-    if (match) clean = match[1].trim()
-  } else if (clean.includes('```')) {
-    const match = clean.match(/```\s*([\s\S]*?)```/)
-    if (match) clean = match[1].trim()
-  }
-  try { return JSON.parse(clean) } catch (_) { /* continue */ }
-
-  // Array extraction
-  const firstBracket = clean.indexOf('[')
-  const lastBracket = clean.lastIndexOf(']')
-  if (firstBracket >= 0 && lastBracket > firstBracket) {
-    try { return JSON.parse(clean.substring(firstBracket, lastBracket + 1)) } catch (_) { /* continue */ }
-  }
-
-  // Object extraction
-  const firstBrace = clean.indexOf('{')
-  const lastBrace = clean.lastIndexOf('}')
-  if (firstBrace >= 0 && lastBrace > firstBrace) {
-    try { return JSON.parse(clean.substring(firstBrace, lastBrace + 1)) } catch (_) { /* continue */ }
-  }
-
-  throw new Error('Failed to parse JSON from AI response')
-}
-
-async function callGemini(prompt: string): Promise<any> {
-  if (!GOOGLE_API_KEY) throw new Error('No Google API key configured')
-
-  const response = await fetchWithRetry(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GOOGLE_API_KEY}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.3, maxOutputTokens: 6000 }
-      })
-    }
-  )
-
-  if (!response.ok) {
-    throw new Error(`Gemini error: ${response.status}`)
-  }
-
-  const result = await response.json()
-  const content = result.candidates?.[0]?.content?.parts?.[0]?.text || ''
-  return parseJSON(content)
-}
-
-async function callClaude(prompt: string): Promise<any> {
-  if (!ANTHROPIC_API_KEY) throw new Error('No Anthropic API key configured')
-
-  const response = await fetchWithRetry(
-    'https://api.anthropic.com/v1/messages',
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 6000,
-        temperature: 0.3,
-        messages: [{ role: 'user', content: prompt }]
-      })
-    }
-  )
-
-  if (!response.ok) {
-    throw new Error(`Claude error: ${response.status}`)
-  }
-
-  const result = await response.json()
-  const content = result.content?.[0]?.text || ''
-  return parseJSON(content)
-}
-
-async function callAI(prompt: string): Promise<any> {
-  try {
-    return await callGemini(prompt)
-  } catch (err: any) {
-    console.warn(`Gemini failed: ${err.message}, trying Claude...`)
-    return await callClaude(prompt)
-  }
-}
 
 const DEFAULT_CONFIG: SimulationConfig = {
   max_rounds: 5,
   min_rounds: 2,
   stabilization_threshold: 0.8,
-  parallel_batch_size: 5,
-  entity_timeout_ms: 30000
+  parallel_batch_size: 8,
+  entity_timeout_ms: 45000
 }
 
 serve(async (req) => {
@@ -174,11 +28,8 @@ serve(async (req) => {
     return new Response(null, { status: 204, headers: corsHeaders })
   }
 
-  const startTime = Date.now()
-
   try {
     const body: SimulationRequest = await req.json()
-    console.log(`🎭 LP Simulation Orchestrator: scenario ${body.scenario_id}`)
 
     if (!body.scenario_id) {
       return errorResponse('scenario_id is required', 400)
@@ -207,21 +58,23 @@ serve(async (req) => {
       stabilization_threshold: body.stabilization_threshold || DEFAULT_CONFIG.stabilization_threshold
     }
 
-    // Identify entities for simulation
+    // Identify entities
     const entities = await identifyEntities(
-      supabase,
-      scenario,
-      body.organization_id,
-      body.entity_ids,
-      body.include_client,
-      body.entity_names
+      supabase, scenario, body.organization_id,
+      body.entity_ids, body.include_client, body.entity_names
     )
 
     if (entities.length === 0) {
       return errorResponse('No entities found for simulation', 400)
     }
 
-    console.log(`👥 ${entities.length} entities identified for simulation`)
+    console.log(`👥 ${entities.length} entities identified`)
+
+    // Detect scenario mode
+    const scenarioData = scenario.scenario_data || scenario
+    const scenarioMode = detectScenarioMode(scenarioData)
+    const phases = getPhasesForMode(scenarioMode)
+    const effectiveMaxRounds = Math.min(config.max_rounds, phases.length)
 
     // Create simulation record
     const { data: simulation, error: simError } = await supabase
@@ -230,7 +83,7 @@ serve(async (req) => {
         scenario_id: body.scenario_id,
         organization_id: body.organization_id,
         status: 'running',
-        config,
+        config: { ...config, max_rounds: effectiveMaxRounds },
         entities,
         rounds_completed: 0
       })
@@ -241,78 +94,21 @@ serve(async (req) => {
       return errorResponse(`Failed to create simulation: ${simError.message}`, 500)
     }
 
-    console.log(`🆔 Simulation ID: ${simulation.id}`)
+    console.log(`🆔 Simulation ${simulation.id} created — ${scenarioMode} mode, ${effectiveMaxRounds} max rounds`)
 
-    // Detect scenario mode: fait accompli (happened) vs speculative (might happen)
-    const scenarioData = scenario.scenario_data || scenario
-    const scenarioMode = detectScenarioMode(scenarioData)
-    console.log(`📋 Scenario mode: ${scenarioMode}`)
-
-    // Run simulation loop
-    const result = await runSimulationLoop(
-      supabase,
-      simulation.id,
-      scenario,
-      entities,
-      config,
-      scenarioMode
-    )
-
-    // Update final simulation state
-    await supabase
-      .from('lp_simulations')
-      .update({
-        status: result.status,
-        rounds_completed: result.roundsCompleted,
-        stabilization_score: result.stabilizationScore,
-        dominant_narratives: result.dominantNarratives,
-        key_coalitions: result.keyCoalitions,
-        gaps_identified: result.gapsIdentified,
-        fulcrums: result.fulcrums,
-        completed_at: new Date().toISOString(),
-        error: result.error
-      })
-      .eq('id', simulation.id)
-
-    const totalTime = Date.now() - startTime
-    console.log(`✅ Simulation complete in ${totalTime}ms - ${result.roundsCompleted} rounds, status: ${result.status}`)
-
+    // Return everything the client needs to drive rounds
     return jsonResponse({
-      success: true,
       simulation_id: simulation.id,
-      status: result.status,
-      rounds_completed: result.roundsCompleted,
-      stabilization_score: result.stabilizationScore,
-      dominant_narratives: result.dominantNarratives,
-      key_coalitions: result.keyCoalitions,
-      gaps_identified: result.gapsIdentified,
-      fulcrums: result.fulcrums,
-      duration_ms: totalTime
+      scenario,
+      scenario_mode: scenarioMode,
+      entities,
+      config: { ...config, max_rounds: effectiveMaxRounds },
+      phases: phases.slice(0, effectiveMaxRounds)
     })
 
   } catch (err: any) {
-    console.error('❌ Simulation orchestrator error:', err.message)
-
-    // Mark simulation as failed so it doesn't stay stuck as "running"
-    try {
-      const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
-      const body2 = await req.clone().json().catch(() => ({}))
-      if (body2.scenario_id) {
-        await supabase
-          .from('lp_simulations')
-          .update({
-            status: 'failed',
-            error: err.message || 'Simulation failed',
-            completed_at: new Date().toISOString()
-          })
-          .eq('scenario_id', body2.scenario_id)
-          .eq('status', 'running')
-      }
-    } catch (_) {
-      console.error('Failed to mark simulation as failed in DB')
-    }
-
-    return errorResponse(err.message || 'Simulation failed', 500)
+    console.error('❌ Setup error:', err.message)
+    return errorResponse(err.message || 'Setup failed', 500)
   }
 })
 
@@ -349,13 +145,13 @@ async function identifyEntities(
     return entities
   }
 
-  // If explicit entity names provided (from UI selection), look them up
-  // Entity profiles are global (not org-scoped) so search across all orgs
+  // If explicit entity names provided (from UI selection), look them up globally
   if (overrideEntityNames && overrideEntityNames.length > 0) {
     console.log(`🎯 Looking up ${overrideEntityNames.length} user-selected entities by name`)
 
     for (const name of overrideEntityNames) {
       if (!name) continue
+
       // Exact match first (case-insensitive)
       let { data: profile } = await supabase
         .from('lp_entity_profiles')
@@ -385,7 +181,7 @@ async function identifyEntities(
         })
         console.log(`  ✅ "${name}" → ${match.entity_name} (${match.id})`)
       } else if (!match) {
-        // No profile exists — create a placeholder so the entity still runs
+        // Create placeholder profile
         const placeholderId = crypto.randomUUID()
         const { data: created, error: insertErr } = await supabase
           .from('lp_entity_profiles')
@@ -395,12 +191,8 @@ async function identifyEntities(
             entity_name: name,
             entity_type: 'company',
             profile: {
-              identity: { name, description: `${name} - profile auto-generated for simulation` },
-              voice: {},
-              priorities: {},
-              patterns: {},
-              vulnerabilities: {},
-              current_context: {}
+              identity: { name, description: `${name} - auto-generated for simulation` },
+              voice: {}, priorities: {}, patterns: {}, vulnerabilities: {}, current_context: {}
             },
             confidence_score: 0.3,
             model_used: 'placeholder',
@@ -420,46 +212,36 @@ async function identifyEntities(
             relevance_score: 0.7,
             included: true
           })
-          console.log(`  🆕 "${name}" → created placeholder profile (${created.id})`)
+          console.log(`  🆕 "${name}" → created placeholder (${created.id})`)
         } else {
-          console.log(`  ⚠️ Failed to create placeholder for "${name}": ${insertErr?.message || 'unknown error'}`)
+          console.log(`  ⚠️ Failed to create placeholder for "${name}": ${insertErr?.message}`)
         }
       }
     }
 
     if (entities.length > 0) {
-      console.log(`👥 Matched ${entities.length}/${overrideEntityNames.length} user-selected entities`)
-      return entities.slice(0, 8) // Cap at 8
+      console.log(`👥 Matched ${entities.length}/${overrideEntityNames.length} entities`)
+      return entities.slice(0, 8)
     }
-    console.log(`⚠️ No profiles matched user-selected names, falling back to scenario detection`)
   }
 
   // Auto-detect from scenario stakeholders
-  // scenario_data contains the LPScenario with stakeholder_seed as an object:
-  // { competitors: ["Palantir", "Accenture"], media: ["WSJ"], ... }
   const scenarioData = scenario.scenario_data || scenario
   const stakeholderSeed = scenarioData.stakeholder_seed || {}
 
-  // Flatten stakeholder_seed object into a list of entity names
   const stakeholderNames: string[] = []
   if (typeof stakeholderSeed === 'object' && !Array.isArray(stakeholderSeed)) {
-    for (const [_category, names] of Object.entries(stakeholderSeed)) {
-      if (Array.isArray(names)) {
-        stakeholderNames.push(...names)
-      }
+    for (const [_cat, names] of Object.entries(stakeholderSeed)) {
+      if (Array.isArray(names)) stakeholderNames.push(...names)
     }
   } else if (Array.isArray(stakeholderSeed)) {
-    // Legacy format: array of objects or strings
     for (const s of stakeholderSeed) {
       stakeholderNames.push(typeof s === 'string' ? s : s.name || '')
     }
   }
 
-  console.log(`🔍 Looking up ${stakeholderNames.length} stakeholder names from scenario`)
-
   for (const name of stakeholderNames) {
     if (!name) continue
-    // Try to find existing profile
     const { data: profile } = await supabase
       .from('lp_entity_profiles')
       .select('id, entity_name, entity_type')
@@ -479,11 +261,8 @@ async function identifyEntities(
     }
   }
 
-  console.log(`👥 Matched ${entities.length} entities from stakeholder_seed`)
-
-  // If still no entities, pull from industry-relevant profiles
+  // Fallback to industry profiles if too few
   if (entities.length < 3) {
-    console.log(`⚠️ Only ${entities.length} entities found, falling back to industry profiles`)
     const { data: industryProfiles } = await supabase
       .from('lp_entity_profiles')
       .select('id, entity_name, entity_type')
@@ -498,13 +277,12 @@ async function identifyEntities(
           entity_type: profile.entity_type,
           profile_id: profile.id,
           relevance_score: 0.5,
-          included: entities.length < 10 // Include up to 10
+          included: entities.length < 10
         })
       }
     }
   }
 
-  // Optionally include client's org
   if (includeClient && organizationId) {
     const { data: clientProfile } = await supabase
       .from('lp_entity_profiles')
@@ -529,502 +307,28 @@ async function identifyEntities(
   return entities
 }
 
-/**
- * Detect whether a scenario is fait accompli (already happened) or speculative (might happen).
- * Uses scenario type, tense cues, and explicit markers.
- */
 function detectScenarioMode(scenarioData: any): ScenarioMode {
   const type = (scenarioData.type || scenarioData.scenario_type || '').toLowerCase()
   const action = scenarioData.action || {}
   const what = (action.what || action.trigger_description || '').toLowerCase()
   const rationale = (action.rationale || []).join(' ').toLowerCase()
 
-  // Explicit marker if set by scenario builder
-  if (scenarioData.scenario_mode) {
-    return scenarioData.scenario_mode as ScenarioMode
-  }
+  if (scenarioData.scenario_mode) return scenarioData.scenario_mode as ScenarioMode
 
-  // Types that strongly indicate fait accompli
   const faitAccompliTypes = ['crisis', 'incident', 'breach', 'announcement', 'event', 'decision']
-  if (faitAccompliTypes.some(t => type.includes(t))) {
-    return 'fait_accompli'
-  }
+  if (faitAccompliTypes.some(t => type.includes(t))) return 'fait_accompli'
 
-  // Types that strongly indicate speculative
   const speculativeTypes = ['proposal', 'regulation', 'policy', 'potential', 'what_if', 'hypothetical']
-  if (speculativeTypes.some(t => type.includes(t))) {
-    return 'speculative'
-  }
+  if (speculativeTypes.some(t => type.includes(t))) return 'speculative'
 
-  // Tense detection from the scenario description
+  const text = `${what} ${rationale}`
   const pastIndicators = ['announced', 'launched', 'released', 'passed', 'enacted', 'signed', 'acquired', 'merged', 'collapsed', 'filed', 'published', 'revealed', 'happened', 'occurred']
   const futureIndicators = ['proposed', 'considering', 'planning', 'might', 'could', 'would', 'potential', 'draft', 'expected', 'rumored', 'exploring', 'may', 'if ']
 
-  const text = `${what} ${rationale}`
   const pastScore = pastIndicators.filter(w => text.includes(w)).length
   const futureScore = futureIndicators.filter(w => text.includes(w)).length
 
   if (pastScore > futureScore) return 'fait_accompli'
   if (futureScore > pastScore) return 'speculative'
-
-  // Default to speculative (more cautious framing)
   return 'speculative'
-}
-
-/**
- * Main simulation loop - runs rounds until stabilization or max rounds
- */
-async function runSimulationLoop(
-  supabase: any,
-  simulationId: string,
-  scenario: any,
-  entities: SimulationEntity[],
-  config: SimulationConfig,
-  scenarioMode: ScenarioMode
-): Promise<{
-  status: string
-  roundsCompleted: number
-  stabilizationScore: number
-  dominantNarratives: string[]
-  keyCoalitions: any[]
-  gapsIdentified: string[]
-  fulcrums: Fulcrum[]
-  error?: string
-}> {
-  const allResponses: EntityResponse[] = []
-  const allAnalyses: CrossEntityAnalysis[] = []
-  const entityMemory = new Map<string, EntityRoundMemory>()
-
-  // Get phase progression for this scenario mode
-  const phases = getPhasesForMode(scenarioMode)
-  // Cap max_rounds to number of phases
-  const effectiveMaxRounds = Math.min(config.max_rounds, phases.length)
-
-  let currentRound = 0
-  let isStabilized = false
-  let stabilizationScore = 0
-
-  try {
-    while (currentRound < effectiveMaxRounds) {
-      currentRound++
-
-      // Get the phase for this round
-      const phase = phases[currentRound - 1]
-      console.log(`🔄 Round ${currentRound}/${effectiveMaxRounds}: ${phase.name}`)
-
-      // Build context for this round
-      const context: RoundContext = {
-        simulation_id: simulationId,
-        round_number: currentRound,
-        phase,
-        scenario,
-        prior_responses: currentRound === 1 ? [] : allResponses.filter(r => r.round_number === currentRound - 1),
-        themes_so_far: allAnalyses.length > 0
-          ? allAnalyses[allAnalyses.length - 1].themes.map(t => t.theme)
-          : [],
-        dominant_narratives: allAnalyses.length > 0
-          ? allAnalyses[allAnalyses.length - 1].themes
-              .filter(t => t.momentum === 'rising')
-              .map(t => t.theme)
-          : [],
-        gaps_identified: allAnalyses.length > 0
-          ? allAnalyses[allAnalyses.length - 1].gaps.map(g => g.description)
-          : [],
-        entity_memory: entityMemory
-      }
-
-      // Run the round
-      const roundResult = await runRound(
-        currentRound,
-        entities,
-        context,
-        {
-          parallelBatchSize: config.parallel_batch_size,
-          entityTimeoutMs: config.entity_timeout_ms
-        }
-      )
-
-      // Store round in DB (phase info stored in cross_analysis for backward compat)
-      await supabase
-        .from('lp_simulation_rounds')
-        .insert({
-          simulation_id: simulationId,
-          round_number: currentRound,
-          entity_responses: roundResult.responses,
-          cross_analysis: {
-            ...roundResult.analysis,
-            phase_id: phase.id,
-            phase_name: phase.name,
-            phase_description: phase.description,
-          },
-          started_at: new Date(Date.now() - roundResult.duration_ms).toISOString(),
-          completed_at: new Date().toISOString(),
-          status: 'completed'
-        })
-
-      // Update simulation progress
-      await supabase
-        .from('lp_simulations')
-        .update({
-          rounds_completed: currentRound,
-          stabilization_score: roundResult.analysis.stabilization_score
-        })
-        .eq('id', simulationId)
-
-      // Accumulate results
-      allResponses.push(...roundResult.responses)
-      allAnalyses.push(roundResult.analysis)
-
-      // Update entity memory
-      for (const entity of entities) {
-        entityMemory.set(entity.entity_id, buildEntityMemory(entity.entity_id, allResponses))
-      }
-
-      // Check stabilization (only after min rounds)
-      if (currentRound >= config.min_rounds) {
-        const priorAnalysis = allAnalyses.length > 1 ? allAnalyses[allAnalyses.length - 2] : undefined
-        const priorResponses = allResponses.filter(r => r.round_number === currentRound - 1)
-
-        const stabilization = detectStabilization({
-          currentRound,
-          currentResponses: roundResult.responses,
-          priorResponses,
-          currentAnalysis: roundResult.analysis,
-          priorAnalysis,
-          threshold: config.stabilization_threshold
-        })
-
-        stabilizationScore = stabilization.score
-        isStabilized = stabilization.isStabilized
-
-        if (isStabilized) {
-          console.log(`🎯 Stabilization reached at round ${currentRound}: ${stabilization.reasons.join(', ')}`)
-          break
-        }
-      }
-    }
-
-    // Extract final results
-    const lastAnalysis = allAnalyses[allAnalyses.length - 1]
-    const dominantNarratives = lastAnalysis.themes
-      .filter(t => t.momentum === 'rising' || t.adopters.length > 2)
-      .map(t => t.theme)
-
-    const gapsIdentified = lastAnalysis.gaps.map(g => g.description)
-    const finalStatus = isStabilized ? 'stabilized' : 'max_rounds_reached'
-
-    // Write completed status IMMEDIATELY so it's saved even if we get killed during fulcrum analysis
-    console.log(`📝 Writing final status: ${finalStatus} (${currentRound} rounds)`)
-    await supabase
-      .from('lp_simulations')
-      .update({
-        status: finalStatus,
-        rounds_completed: currentRound,
-        stabilization_score: stabilizationScore,
-        dominant_narratives: dominantNarratives,
-        key_coalitions: lastAnalysis.coalitions,
-        gaps_identified: gapsIdentified,
-        completed_at: new Date().toISOString()
-      })
-      .eq('id', simulationId)
-
-    // Identify fulcrums as bonus — if we get killed here, simulation is still marked complete
-    let fulcrums: Fulcrum[] = []
-    try {
-      fulcrums = await identifyFulcrums(allResponses, allAnalyses, scenario)
-      // Update with fulcrums if we made it
-      await supabase
-        .from('lp_simulations')
-        .update({ fulcrums })
-        .eq('id', simulationId)
-    } catch (fulcrumErr: any) {
-      console.warn(`⚠️ Fulcrum identification failed: ${fulcrumErr.message} — simulation still complete`)
-    }
-
-    return {
-      status: finalStatus,
-      roundsCompleted: currentRound,
-      stabilizationScore,
-      dominantNarratives,
-      keyCoalitions: lastAnalysis.coalitions,
-      gapsIdentified,
-      fulcrums
-    }
-
-  } catch (err: any) {
-    console.error('Simulation loop error:', err.message)
-    return {
-      status: 'failed',
-      roundsCompleted: currentRound,
-      stabilizationScore,
-      dominantNarratives: [],
-      keyCoalitions: [],
-      gapsIdentified: [],
-      fulcrums: [],
-      error: err.message
-    }
-  }
-}
-
-/**
- * Identify fulcrums - high-leverage intervention points
- * Hybrid approach: algorithmic pre-filter for candidate signals, then AI synthesis
- * for grounded descriptions referencing actual entity behavior.
- */
-async function identifyFulcrums(
-  allResponses: EntityResponse[],
-  allAnalyses: CrossEntityAnalysis[],
-  scenario: any
-): Promise<Fulcrum[]> {
-  if (allAnalyses.length === 0) return []
-
-  const lastAnalysis = allAnalyses[allAnalyses.length - 1]
-  const lastRound = allAnalyses.length
-
-  // === Step 1: Extract algorithmic candidate signals ===
-
-  // Top influencers with citation detail
-  const influencerCandidates = lastAnalysis.influence_rankings
-    .slice(0, 5)
-    .filter(inf => inf.citations_received >= 2)
-    .map(inf => {
-      const citers = lastAnalysis.influence_flows
-        .filter(f => f.to_entity === inf.entity_id && (f.type === 'citation' || f.type === 'frame_adoption'))
-        .map(f => f.from_entity)
-      return {
-        entity_id: inf.entity_id,
-        entity_name: inf.entity_name,
-        citations: inf.citations_received,
-        frames_adopted: inf.frames_adopted,
-        cited_by: citers
-      }
-    })
-
-  // High-value gaps with potential fillers
-  const gapCandidates = lastAnalysis.gaps
-    .filter(g => g.strategic_value === 'high' || g.strategic_value === 'medium')
-    .map(g => ({
-      description: g.description,
-      strategic_value: g.strategic_value,
-      potential_fillers: g.potential_fillers,
-      related_aspects: g.related_aspects
-    }))
-
-  // Coalitions with diverging member positions
-  const wedgeCandidates = lastAnalysis.coalitions
-    .filter(c => c.members.length >= 2)
-    .map(coalition => {
-      const memberPositions = allResponses
-        .filter(r => coalition.members.includes(r.entity_id) && r.round_number === lastRound)
-        .map(r => ({
-          entity_id: r.entity_id,
-          entity_name: r.entity_name,
-          position: r.position_summary,
-          decision: r.response_decision,
-          key_claims: r.key_claims
-        }))
-      const uniquePositions = new Set(memberPositions.map(m => m.position))
-      return {
-        coalition_name: coalition.name,
-        coalition_id: coalition.coalition_id,
-        stability: coalition.stability,
-        members: memberPositions,
-        has_divergence: uniquePositions.size > 1
-      }
-    })
-
-  // Entities with high-confidence predicted reactions (preemption targets)
-  const preemptionCandidates = allResponses
-    .filter(r => r.round_number === lastRound && r.predicted_reactions.length > 0)
-    .flatMap(r => r.predicted_reactions
-      .filter(p => p.confidence > 0.5)
-      .map(p => ({
-        predictor_entity: r.entity_name,
-        target_entity_id: p.entity_id,
-        predicted_response: p.predicted_response,
-        confidence: p.confidence
-      }))
-    )
-    .slice(0, 5)
-
-  // === Step 2: Build entity position summaries from final round ===
-
-  const entityPositions = allResponses
-    .filter(r => r.round_number === lastRound)
-    .map(r => ({
-      name: r.entity_name,
-      decision: r.response_decision,
-      position: r.position_summary,
-      key_claims: r.key_claims.slice(0, 3),
-      themes: r.themes_championed
-    }))
-
-  // Theme momentum
-  const themeMomentum = lastAnalysis.themes.map(t => ({
-    theme: t.theme,
-    momentum: t.momentum,
-    owner: t.owner,
-    adopters: t.adopters
-  }))
-
-  // === Step 3: AI call to synthesize grounded fulcrums ===
-
-  const prompt = `You are analyzing the results of a multi-round narrative simulation to identify strategic fulcrums — high-leverage intervention points where a small action produces disproportionate impact.
-
-## Scenario
-Type: ${scenario.scenario_type || scenario.type || 'unknown'}
-Action: ${JSON.stringify(scenario.action || scenario.scenario_data?.action || scenario.title || '')}
-
-## Entity Final Positions (Round ${lastRound})
-${entityPositions.map(e => `- **${e.name}** [${e.decision}]: ${e.position}
-  Claims: ${e.key_claims.join('; ')}
-  Themes: ${e.themes.join(', ')}`).join('\n')}
-
-## Theme Momentum
-${themeMomentum.map(t => `- "${t.theme}" — ${t.momentum}, owned by ${t.owner}, adopted by: ${t.adopters.join(', ')}`).join('\n')}
-
-## Candidate Signals
-
-### High-Influence Entities
-${influencerCandidates.length > 0
-  ? influencerCandidates.map(i => `- ${i.entity_name}: ${i.citations} citations, ${i.frames_adopted} frames adopted. Cited by: ${i.cited_by.join(', ')}`).join('\n')
-  : '(none with 2+ citations)'}
-
-### Narrative Gaps
-${gapCandidates.length > 0
-  ? gapCandidates.map(g => `- [${g.strategic_value}] ${g.description}. Potential fillers: ${g.potential_fillers.join(', ')}`).join('\n')
-  : '(no significant gaps)'}
-
-### Coalition Dynamics
-${wedgeCandidates.map(c => `- "${c.coalition_name}" (${c.stability}): ${c.has_divergence ? 'DIVERGING' : 'aligned'}
-  ${c.members.map(m => `  ${m.entity_name}: ${m.position}`).join('\n')}`).join('\n')}
-
-### Preemption Opportunities
-${preemptionCandidates.length > 0
-  ? preemptionCandidates.map(p => `- ${p.predictor_entity} predicts ${p.target_entity_id} will: "${p.predicted_response}" (confidence: ${p.confidence})`).join('\n')
-  : '(no high-confidence predictions)'}
-
-## Instructions
-
-Identify 3-8 strategic fulcrums. Each fulcrum MUST:
-1. Be grounded in specific entity behavior from this simulation (reference entity names and their actual positions/decisions)
-2. Have a unique, specific description — no generic phrases like "endorsement cascades to others"
-3. Include concrete cascade predictions specific to this scenario
-4. Be actionable for the organization running this simulation
-
-For each fulcrum, output a JSON object with these exact fields:
-- fulcrum_id: string (use format: type_entityname, e.g. "validator_techcorp")
-- type: one of "validator_path" | "unoccupied_position" | "wedge_issue" | "preemption"
-- description: string (1-2 sentences, specific to this simulation)
-- target_entity: string or null (entity_id if applicable)
-- rationale: string (explain WHY this is a leverage point, referencing actual simulation data)
-- cascade_prediction: string[] (2-3 specific predicted outcomes)
-- effort_level: "low" | "medium" | "high"
-- impact_level: "low" | "medium" | "high"
-- confidence: number 0-1
-
-Output a JSON array of fulcrum objects. No commentary outside the JSON.`
-
-  try {
-    console.log('🔍 AI fulcrum identification starting...')
-    const startTime = Date.now()
-    const aiFulcrums = await callAI(prompt)
-    console.log(`🔍 AI fulcrum identification complete in ${Date.now() - startTime}ms`)
-
-    // Validate and normalize the response
-    const fulcrumArray = Array.isArray(aiFulcrums) ? aiFulcrums : [aiFulcrums]
-    const validTypes = ['validator_path', 'unoccupied_position', 'wedge_issue', 'preemption']
-
-    const validated: Fulcrum[] = fulcrumArray
-      .filter((f: any) => f && f.description && f.type && validTypes.includes(f.type))
-      .slice(0, 8)
-      .map((f: any) => ({
-        fulcrum_id: f.fulcrum_id || `fulcrum_${Math.random().toString(36).substring(2, 8)}`,
-        type: f.type as Fulcrum['type'],
-        description: f.description,
-        target_entity: f.target_entity || undefined,
-        rationale: f.rationale || f.description,
-        cascade_prediction: Array.isArray(f.cascade_prediction) ? f.cascade_prediction : [f.cascade_prediction || 'Impact depends on execution timing'],
-        effort_level: (['low', 'medium', 'high'].includes(f.effort_level) ? f.effort_level : 'medium') as Fulcrum['effort_level'],
-        impact_level: (['low', 'medium', 'high'].includes(f.impact_level) ? f.impact_level : 'medium') as Fulcrum['impact_level'],
-        confidence: typeof f.confidence === 'number' ? Math.min(1, Math.max(0, f.confidence)) : 0.5
-      }))
-
-    if (validated.length > 0) {
-      return validated
-    }
-
-    // If AI returned nothing valid, fall through to algorithmic fallback
-    console.warn('⚠️ AI returned no valid fulcrums, using algorithmic fallback')
-  } catch (err: any) {
-    console.error(`❌ AI fulcrum identification failed: ${err.message}, using algorithmic fallback`)
-  }
-
-  // === Algorithmic fallback (same structure, kept minimal) ===
-  return buildAlgorithmicFulcrums(allResponses, lastAnalysis, lastRound)
-}
-
-/**
- * Algorithmic fallback for fulcrum identification.
- * Used only if the AI call fails.
- */
-function buildAlgorithmicFulcrums(
-  allResponses: EntityResponse[],
-  lastAnalysis: CrossEntityAnalysis,
-  lastRound: number
-): Fulcrum[] {
-  const fulcrums: Fulcrum[] = []
-
-  // Validator paths
-  for (const inf of lastAnalysis.influence_rankings.slice(0, 3)) {
-    if (inf.citations_received >= 2) {
-      fulcrums.push({
-        fulcrum_id: `validator_${inf.entity_id}`,
-        type: 'validator_path',
-        description: `${inf.entity_name} received ${inf.citations_received} citations and had ${inf.frames_adopted} frames adopted by others`,
-        target_entity: inf.entity_id,
-        rationale: `High influence score — other entities are already adopting their framing`,
-        cascade_prediction: [`${inf.entity_name}'s endorsement would likely cascade through citing entities`],
-        effort_level: 'medium',
-        impact_level: 'high',
-        confidence: 0.6
-      })
-    }
-  }
-
-  // Gap fulcrums
-  for (const gap of lastAnalysis.gaps.filter(g => g.strategic_value === 'high')) {
-    fulcrums.push({
-      fulcrum_id: `gap_${gap.gap_id}`,
-      type: 'unoccupied_position',
-      description: gap.description,
-      rationale: `No entity addressed this area. Potential fillers: ${gap.potential_fillers.join(', ') || 'none identified'}`,
-      cascade_prediction: ['First mover in this space establishes the frame others must respond to'],
-      effort_level: 'low',
-      impact_level: 'medium',
-      confidence: 0.5
-    })
-  }
-
-  // Wedge issues
-  for (const coalition of lastAnalysis.coalitions.filter(c => c.members.length >= 3)) {
-    const memberPositions = allResponses
-      .filter(r => coalition.members.includes(r.entity_id) && r.round_number === lastRound)
-      .map(r => r.position_summary)
-    if (new Set(memberPositions).size > 1) {
-      fulcrums.push({
-        fulcrum_id: `wedge_${coalition.coalition_id}`,
-        type: 'wedge_issue',
-        description: `${coalition.name} coalition (${coalition.stability}) shows position divergence among ${coalition.members.length} members`,
-        target_entity: coalition.members[0],
-        rationale: `Members hold ${new Set(memberPositions).size} distinct positions despite coalition alignment`,
-        cascade_prediction: ['Targeting the divergence point could fracture coalition coordination'],
-        effort_level: 'medium',
-        impact_level: 'high',
-        confidence: 0.4
-      })
-    }
-  }
-
-  return fulcrums
 }
