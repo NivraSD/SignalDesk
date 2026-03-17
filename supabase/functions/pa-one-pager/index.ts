@@ -51,7 +51,7 @@ serve(async (req: Request) => {
       return errorResponse('report_content is required', 400)
     }
 
-    const geminiKey = Deno.env.get('GOOGLE_AI_API_KEY') || Deno.env.get('GEMINI_API_KEY')
+    const geminiKey = Deno.env.get('GOOGLE_AI_API_KEY') || Deno.env.get('GEMINI_API_KEY') || Deno.env.get('GOOGLE_API_KEY')
     const claudeKey = Deno.env.get('ANTHROPIC_API_KEY')
 
     if (!geminiKey && !claudeKey) {

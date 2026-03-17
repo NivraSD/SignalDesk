@@ -1,7 +1,60 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { withCors, jsonResponse, errorResponse } from '../_shared/cors.ts';
 
+const GEMINI_API_KEY = Deno.env.get('GOOGLE_AI_API_KEY') || Deno.env.get('GEMINI_API_KEY') || Deno.env.get('GOOGLE_API_KEY');
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
+
+const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+
+async function callAI(prompt: string, opts: { maxTokens?: number, temperature?: number, systemPrompt?: string, timeoutMs?: number } = {}): Promise<string> {
+  const { maxTokens = 4000, temperature = 0.3, systemPrompt, timeoutMs = 45000 } = opts;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    if (GEMINI_API_KEY) {
+      const res = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          ...(systemPrompt ? { systemInstruction: { parts: [{ text: systemPrompt }] } } : {}),
+          generationConfig: { temperature, maxOutputTokens: maxTokens }
+        }),
+        signal: controller.signal
+      });
+      if (!res.ok) throw new Error(`Gemini error: ${res.status}`);
+      const data = await res.json();
+      return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    }
+
+    if (ANTHROPIC_API_KEY) {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: maxTokens,
+          temperature,
+          ...(systemPrompt ? { system: systemPrompt } : {}),
+          messages: [{ role: 'user', content: prompt }]
+        }),
+        signal: controller.signal
+      });
+      if (!res.ok) throw new Error(`Claude error: ${res.status}`);
+      const data = await res.json();
+      return data.content?.[0]?.text || '';
+    }
+
+    throw new Error('No AI API key configured');
+  } finally {
+    clearTimeout(timeout);
+  }
+}
 
 /**
  * Campaign Research Synthesis - Final Synthesis Function
@@ -92,31 +145,7 @@ Provide a clear, structured summary that captures:
 Be concise but preserve all important specific details (names, numbers, outlets, etc.).`;
 
       try {
-        const response = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': ANTHROPIC_API_KEY!,
-            'anthropic-version': '2023-06-01'
-          },
-          body: JSON.stringify({
-            model: 'claude-sonnet-4-20250514',
-            max_tokens: 1000,
-            temperature: 0.3,
-            messages: [{
-              role: 'user',
-              content: summarizationPrompt
-            }]
-          })
-        });
-
-        if (!response.ok) {
-          console.error(`Failed to summarize ${sectionName}`);
-          return `Summary unavailable for ${sectionName}`;
-        }
-
-        const data = await response.json();
-        return data.content[0].text;
+        return await callAI(summarizationPrompt, { maxTokens: 1000, temperature: 0.3 });
       } catch (error) {
         console.error(`Error summarizing ${sectionName}:`, error);
         return `Summary unavailable for ${sectionName}`;
@@ -348,139 +377,39 @@ Focus on creating actionable, detailed intelligence that will enable:
 
 Return ONLY the JSON object.`;
 
-    console.log('🤖 Calling Claude for final synthesis...');
+    console.log('🤖 Calling AI for final synthesis...');
     console.log(`📏 System prompt size: ${systemPrompt.length} chars`);
     console.log(`📏 User prompt size: ${userPrompt.length} chars`);
-    console.log(`📏 Total prompt size: ${systemPrompt.length + userPrompt.length} chars`);
 
-    // Call Claude for synthesis with timeout and error handling
-    const claudeRequestBody = {
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 16000,  // Reduced from 32k since we're using pre-summarized data
-      system: systemPrompt,
-      messages: [
-        {
-          role: 'user',
-          content: userPrompt
-        }
-      ]
-    };
+    const rawText = await callAI(userPrompt, {
+      systemPrompt,
+      maxTokens: 16000,
+      temperature: 0.3,
+      timeoutMs: 180000
+    });
 
-    console.log(`🚀 Sending request to Claude API...`);
-
-    // Timeout protection (3 minutes should be sufficient with pre-summarized data)
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 180000); // 3 minutes
-
-    let response;
-    try {
-      response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': ANTHROPIC_API_KEY!,
-          'anthropic-version': '2023-06-01'
-        },
-        body: JSON.stringify(claudeRequestBody),
-        signal: controller.signal
-      });
-
-      clearTimeout(timeoutId);
-      console.log(`📨 Received response from Claude API: ${response.status}`);
-
-    } catch (fetchError: any) {
-      clearTimeout(timeoutId);
-      if (fetchError.name === 'AbortError') {
-        console.error('❌ Claude API request timed out after 3 minutes');
-        throw new Error('Claude API request timed out after 3 minutes - synthesis may be taking longer than expected');
-      }
-      console.error('❌ Fetch error calling Claude API:', fetchError);
-      throw new Error(`Failed to call Claude API: ${fetchError.message}`);
-    }
-
-    if (!response.ok) {
-      let errorBody = 'Unknown error';
-      try {
-        errorBody = await response.text();
-      } catch (e) {
-        errorBody = `Failed to read error body: ${e.message}`;
-      }
-      console.error(`❌ Claude API returned error ${response.status}:`, errorBody);
-      throw new Error(`Claude API error: ${response.status} - ${errorBody.substring(0, 500)}`);
-    }
-
-    console.log('📦 Parsing Claude response...');
-    let claudeResponse;
-    try {
-      const responseText = await response.text();
-      console.log(`📏 Raw response size: ${responseText.length} bytes`);
-      claudeResponse = JSON.parse(responseText);
-      console.log(`✅ Claude response parsed successfully`);
-    } catch (jsonError: any) {
-      console.error('❌ Failed to parse Claude response as JSON:', jsonError);
-      throw new Error(`Failed to parse Claude response: ${jsonError.message}`);
-    }
-
-    // Check for usage info
-    if (claudeResponse.usage) {
-      console.log(`📊 Token usage:`, JSON.stringify(claudeResponse.usage));
-    }
-
-    const textContent = claudeResponse.content?.find((c: any) => c.type === 'text');
-
-    if (!textContent) {
-      console.error('❌ No text content in Claude response');
-      console.error('Response structure:', JSON.stringify(claudeResponse, null, 2).substring(0, 1000));
-      throw new Error('No text content in Claude response');
-    }
-
-    console.log(`📝 Claude returned ${textContent.text.length} characters`);
+    console.log(`📝 AI returned ${rawText.length} characters`);
 
     // Parse the synthesized CampaignIntelligenceBrief
     let campaignIntelligenceBrief;
     try {
-      let cleanedText = textContent.text;
-
-      // Remove markdown code fences - try multiple patterns
-      // First, remove leading `json\n or ```json\n
-      if (cleanedText.startsWith('```json\n')) {
-        cleanedText = cleanedText.substring(8); // Remove ```json\n
-      } else if (cleanedText.startsWith('`json\n')) {
-        cleanedText = cleanedText.substring(6); // Remove `json\n
-      } else if (cleanedText.startsWith('```\n')) {
-        cleanedText = cleanedText.substring(4); // Remove ```\n
-      }
-
-      // Remove trailing backticks
-      cleanedText = cleanedText.replace(/\n```$/g, '').replace(/`+$/g, '').trim();
-
-      // Try to parse the cleaned response as JSON
+      let cleanedText = rawText.trim();
+      // Remove markdown code fences
+      cleanedText = cleanedText.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/, '').trim();
       campaignIntelligenceBrief = JSON.parse(cleanedText);
     } catch (e) {
-      console.error('Failed to parse Claude synthesis response as JSON');
-      console.error('Parse error:', e.message);
-      console.error('Raw response (first 1000 chars):', textContent.text.substring(0, 1000));
-      console.error('Response length:', textContent.text.length);
-
-      // Try more aggressive JSON extraction - find the outermost JSON object
+      // Try aggressive JSON extraction
       try {
-        // Look for any JSON object in the response
-        let testText = textContent.text;
-        // Remove all markdown formatting
-        testText = testText.replace(/```[a-z]*\n?/g, '').replace(/`+/g, '').trim();
-
+        let testText = rawText.replace(/```[a-z]*\n?/g, '').replace(/`+/g, '').trim();
         const jsonStart = testText.indexOf('{');
         const jsonEnd = testText.lastIndexOf('}') + 1;
         if (jsonStart >= 0 && jsonEnd > jsonStart) {
-          const extracted = testText.substring(jsonStart, jsonEnd);
-          campaignIntelligenceBrief = JSON.parse(extracted);
-          console.log('✅ Extracted JSON from position', jsonStart, 'to', jsonEnd);
+          campaignIntelligenceBrief = JSON.parse(testText.substring(jsonStart, jsonEnd));
         } else {
           throw new Error('No JSON object found in response');
         }
       } catch (extractError) {
-        console.error('Even aggressive extraction failed:', extractError);
-        throw new Error(`Failed to parse synthesis response as JSON. Response starts with: ${textContent.text.substring(0, 200)}`);
+        throw new Error(`Failed to parse synthesis response as JSON. Response starts with: ${rawText.substring(0, 200)}`);
       }
     }
 

@@ -5,6 +5,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { corsHeaders } from '../_shared/cors.ts'
 
+const GEMINI_API_KEY = Deno.env.get('GOOGLE_AI_API_KEY') || Deno.env.get('GEMINI_API_KEY') || Deno.env.get('GOOGLE_API_KEY')
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY') || Deno.env.get('CLAUDE_API_KEY')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -318,33 +319,51 @@ Respond with a JSON object in this exact structure:
 RESPOND WITH ONLY THE JSON OBJECT, NO OTHER TEXT.`
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 4000,
-        temperature: 0.7,
-        messages: [
-          {
-            role: 'user',
-            content: prompt
-          }
-        ]
-      })
-    })
+    let responseText: string
 
-    if (!response.ok) {
-      console.error('Claude API error:', response.status)
+    if (GEMINI_API_KEY) {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.7, maxOutputTokens: 4000 }
+          })
+        }
+      )
+      if (!response.ok) {
+        console.error('Gemini API error:', response.status)
+        return null
+      }
+      const data = await response.json()
+      responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
+    } else if (ANTHROPIC_API_KEY) {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key': ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 4000,
+          temperature: 0.7,
+          messages: [{ role: 'user', content: prompt }]
+        })
+      })
+      if (!response.ok) {
+        console.error('Claude API error:', response.status)
+        return null
+      }
+      const data = await response.json()
+      responseText = data.content[0].text
+    } else {
+      console.error('No AI API key configured')
       return null
     }
-
-    const data = await response.json()
-    const responseText = data.content[0].text
 
     // Extract JSON from response
     const jsonMatch = responseText.match(/\{[\s\S]*\}/)

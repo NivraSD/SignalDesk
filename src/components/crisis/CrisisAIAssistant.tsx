@@ -108,7 +108,7 @@ export default function CrisisAIAssistant({ crisis, onUpdate }: CrisisAIAssistan
   ]
 
   return (
-    <div className="bg-[var(--charcoal)] border border-zinc-800 rounded-xl flex flex-col h-full max-h-[800px]">
+    <div className="bg-[var(--charcoal)] border border-zinc-800 rounded-xl flex flex-col" style={{ height: '420px' }}>
       {/* Header */}
       <div className="p-4 border-b border-zinc-800 flex-shrink-0">
         <div className="flex items-center space-x-3">
@@ -126,19 +126,19 @@ export default function CrisisAIAssistant({ crisis, onUpdate }: CrisisAIAssistan
       {/* Messages */}
       <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
         {conversation.length === 0 && (
-          <div className="text-center py-12">
-            <Bot className="w-12 h-12 text-[var(--grey-600)] mx-auto mb-4" />
-            <h4 className="text-lg font-semibold text-white mb-2" style={{ fontFamily: 'var(--font-display)' }}>AI Crisis Advisor Ready</h4>
-            <p className="text-sm text-[var(--grey-400)] mb-6">
+          <div className="text-center py-4">
+            <Bot className="w-8 h-8 text-[var(--grey-600)] mx-auto mb-2" />
+            <h4 className="text-sm font-semibold text-white mb-1" style={{ fontFamily: 'var(--font-display)' }}>AI Crisis Advisor Ready</h4>
+            <p className="text-xs text-[var(--grey-400)] mb-3">
               Ask me what to do. I'll give you one specific action at a time.
             </p>
-            <div className="space-y-2">
-              <div className="text-xs text-[var(--grey-500)] uppercase font-semibold mb-2">Quick Actions</div>
+            <div className="space-y-1.5">
+              <div className="text-[0.65rem] text-[var(--grey-500)] uppercase font-semibold mb-1.5">Quick Actions</div>
               {quickQuestions.map((action, idx) => (
                 <button
                   key={idx}
                   onClick={() => setMessage(action)}
-                  className="block w-full text-left px-4 py-2 bg-zinc-800/50 hover:bg-zinc-800 rounded-lg text-sm text-[var(--grey-300)] transition-colors"
+                  className="block w-full text-left px-3 py-1.5 bg-zinc-800/50 hover:bg-zinc-800 rounded-lg text-xs text-[var(--grey-300)] transition-colors"
                 >
                   {action}
                 </button>

@@ -39,6 +39,7 @@ interface OwnedContentRequest {
 interface MediaEngagementRequest {
   type: string
   journalists: string[]
+  journalistDetails: { name: string, beat?: string, outlet?: string, rationale?: string }[]
   story: string
   positioning: string
 }
@@ -916,13 +917,24 @@ function extractPhaseCampaigns(blueprint: any, campaignType: string): PhaseCampa
     const mediaEngagement: MediaEngagementRequest[] = []
     if (phaseData.pillar4_mediaEngagement && Array.isArray(phaseData.pillar4_mediaEngagement)) {
       phaseData.pillar4_mediaEngagement.forEach((media: any) => {
-        const journalists = Array.isArray(media.journalists)
-          ? media.journalists.map((j: any) => (typeof j === 'string' ? j : j.name || 'Unknown'))
+        // Preserve full journalist details (name, beat, outlet, rationale) for pitch personalization
+        const journalistDetails = Array.isArray(media.journalists)
+          ? media.journalists.map((j: any) => {
+              if (typeof j === 'string') return { name: j }
+              return {
+                name: j.name || 'Unknown',
+                beat: j.beat || j.coverage || j.focus || undefined,
+                outlet: j.outlet || j.publication || j.media || undefined,
+                rationale: j.rationale || j.reason || j.whyTarget || undefined
+              }
+            })
           : []
+        const journalists = journalistDetails.map(j => j.name)
 
         mediaEngagement.push({
           type: media.contentType || 'media-pitch',
           journalists: journalists,
+          journalistDetails: journalistDetails,
           story: media.story || media.angle || 'Media story',
           positioning: media.positioningMessage || media.positioning || ''
         })
@@ -986,9 +998,10 @@ async function generateCampaignSummary(
 ): Promise<any> {
   console.log('📋 Generating campaign summary from blueprint...')
 
+  const GEMINI_API_KEY = Deno.env.get('GOOGLE_AI_API_KEY') || Deno.env.get('GEMINI_API_KEY') || Deno.env.get('GOOGLE_API_KEY')
   const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
-  if (!ANTHROPIC_API_KEY) {
-    console.warn('⚠️ No Anthropic API key, skipping campaign summary generation')
+  if (!GEMINI_API_KEY && !ANTHROPIC_API_KEY) {
+    console.warn('⚠️ No AI API key, skipping campaign summary generation')
     return null
   }
 
@@ -1073,31 +1086,52 @@ Create a campaign summary with the following structure (return ONLY valid JSON):
 6. Return ONLY the JSON object, nothing else`
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 2000,
-        temperature: 0.7,
-        messages: [{
-          role: 'user',
-          content: summaryPrompt
-        }]
-      })
-    })
+    let summaryText: string
 
-    if (!response.ok) {
-      console.error('❌ Failed to generate campaign summary:', response.status)
-      return null
+    if (GEMINI_API_KEY) {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: summaryPrompt }] }],
+            generationConfig: { temperature: 0.7, maxOutputTokens: 2000 }
+          })
+        }
+      )
+      if (!response.ok) {
+        console.error('❌ Gemini failed, trying Claude fallback:', response.status)
+        throw new Error('Gemini failed')
+      }
+      const data = await response.json()
+      summaryText = (data.candidates?.[0]?.content?.parts?.[0]?.text || '').trim()
+    } else {
+      throw new Error('No Gemini key, use Claude')
     }
 
-    const data = await response.json()
-    const summaryText = data.content[0].text.trim()
+    if (!summaryText && ANTHROPIC_API_KEY) {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 2000,
+          temperature: 0.7,
+          messages: [{ role: 'user', content: summaryPrompt }]
+        })
+      })
+      if (!response.ok) {
+        console.error('❌ Failed to generate campaign summary:', response.status)
+        return null
+      }
+      const data = await response.json()
+      summaryText = data.content[0].text.trim()
+    }
 
     // Parse JSON from response
     const jsonMatch = summaryText.match(/\{[\s\S]*\}/)

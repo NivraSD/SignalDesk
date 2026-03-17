@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { corsHeaders } from '../_shared/cors.ts';
 
+const GEMINI_API_KEY = Deno.env.get('GOOGLE_AI_API_KEY') || Deno.env.get('GEMINI_API_KEY') || Deno.env.get('GOOGLE_API_KEY');
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || 'https://zskaxjtyuaqazydouifp.supabase.co';
 const SUPABASE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
@@ -173,8 +174,8 @@ serve(async (req) => {
   }
 });
 
-// Define MCP tools available to Claude
-const tools = [
+// Define MCP tools - Claude format
+const claudeTools = [
   {
     name: 'mcp_discovery',
     description: 'Get comprehensive organization profile including competitors, stakeholders, industry context',
@@ -240,6 +241,15 @@ const tools = [
   }
 ];
 
+// Gemini format tools
+const geminiTools = [{
+  functionDeclarations: claudeTools.map(t => ({
+    name: t.name,
+    description: t.description,
+    parameters: t.input_schema
+  }))
+}];
+
 // STAGE 1: Research Stakeholder Intelligence
 async function researchStakeholders(params: any) {
   const { campaignGoal, orgName, industry } = params;
@@ -268,7 +278,7 @@ Industry: ${industry}
 
 Research stakeholder intelligence. Identify key groups and their psychological profiles.`;
 
-  return await runClaudeResearch(systemPrompt, userPrompt);
+  return await runAIResearch(systemPrompt, userPrompt);
 }
 
 // STAGE 2: Research Narrative Landscape
@@ -299,7 +309,7 @@ Stakeholder Context: ${JSON.stringify(stakeholderContext?.stakeholderGroups || [
 
 Research the narrative landscape. Find opportunities for differentiated positioning.`;
 
-  return await runClaudeResearch(systemPrompt, userPrompt);
+  return await runAIResearch(systemPrompt, userPrompt);
 }
 
 // STAGE 3: Research Channel Intelligence
@@ -329,7 +339,7 @@ Stakeholder Groups: ${JSON.stringify(stakeholderGroups)}
 
 Research channel intelligence. Map information consumption for each stakeholder group.`;
 
-  return await runClaudeResearch(systemPrompt, userPrompt);
+  return await runAIResearch(systemPrompt, userPrompt);
 }
 
 // STAGE 4: Research Historical Patterns
@@ -370,14 +380,109 @@ Campaign Type: ${campaignType || 'General'}
 
 Research historical patterns. Find successful campaigns and extractable principles.`;
 
-  return await runClaudeResearch(systemPrompt, userPrompt);
+  return await runAIResearch(systemPrompt, userPrompt);
 }
 
-// Generic Claude research runner with tool support
-async function runClaudeResearch(systemPrompt: string, userPrompt: string) {
-  const messages = [{ role: 'user', content: userPrompt }];
+// Execute a tool call by name
+async function executeTool(name: string, input: any): Promise<any> {
+  switch (name) {
+    case 'mcp_discovery': return await callMCPDiscovery(input);
+    case 'niv_fireplexity': return await callNIVFireplexity(input);
+    case 'journalist_registry': return await callJournalistRegistry(input);
+    case 'master_source_registry': return await callMasterSourceRegistry(input);
+    case 'knowledge_library_registry': return await callKnowledgeLibrary(input);
+    default: return { error: `Unknown tool: ${name}` };
+  }
+}
+
+// Parse findings from AI text response
+function parseFindings(text: string): any {
+  try {
+    const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/);
+    if (jsonMatch) return JSON.parse(jsonMatch[1]);
+    const cleaned = text.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/, '').trim();
+    return JSON.parse(cleaned);
+  } catch {
+    // Try bracket extraction
+    const start = text.indexOf('{');
+    const end = text.lastIndexOf('}');
+    if (start >= 0 && end > start) {
+      try { return JSON.parse(text.substring(start, end + 1)); } catch {}
+    }
+    return { rawResponse: text, parseError: true };
+  }
+}
+
+// Gemini research runner with function calling
+async function runGeminiResearch(systemPrompt: string, userPrompt: string) {
+  const contents: any[] = [{ role: 'user', parts: [{ text: userPrompt }] }];
   let toolCalls = 0;
-  let maxIterations = 10; // Allow Claude up to 10 tool calls per stage
+  let maxIterations = 10;
+
+  while (maxIterations > 0) {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents,
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          tools: geminiTools,
+          generationConfig: { maxOutputTokens: 4000 }
+        })
+      }
+    );
+
+    if (!response.ok) throw new Error(`Gemini API error: ${response.status}`);
+    const data = await response.json();
+    const candidate = data.candidates?.[0];
+    if (!candidate?.content) break;
+
+    contents.push(candidate.content);
+
+    const functionCalls = candidate.content.parts?.filter((p: any) => p.functionCall) || [];
+
+    if (functionCalls.length === 0) {
+      // No more tool calls — extract text response
+      const textPart = candidate.content.parts?.find((p: any) => p.text);
+      if (textPart) {
+        return { findings: parseFindings(textPart.text), toolCalls };
+      }
+      break;
+    }
+
+    // Execute function calls
+    const functionResponses: any[] = [];
+    for (const fc of functionCalls) {
+      toolCalls++;
+      console.log(`  🔧 Tool: ${fc.functionCall.name}`);
+      let result;
+      try {
+        result = await executeTool(fc.functionCall.name, fc.functionCall.args);
+      } catch (error: any) {
+        result = { error: error.message };
+      }
+      functionResponses.push({
+        functionResponse: {
+          name: fc.functionCall.name,
+          response: result
+        }
+      });
+    }
+
+    contents.push({ role: 'user', parts: functionResponses });
+    maxIterations--;
+  }
+
+  return { findings: { error: 'Research did not complete' }, toolCalls };
+}
+
+// Claude research runner with tool use
+async function runClaudeResearch(systemPrompt: string, userPrompt: string) {
+  const messages: any[] = [{ role: 'user', content: userPrompt }];
+  let toolCalls = 0;
+  let maxIterations = 10;
 
   while (maxIterations > 0) {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -392,32 +497,19 @@ async function runClaudeResearch(systemPrompt: string, userPrompt: string) {
         max_tokens: 4000,
         system: systemPrompt,
         messages,
-        tools
+        tools: claudeTools
       })
     });
 
-    if (!response.ok) {
-      throw new Error(`Claude API error: ${response.status}`);
-    }
-
+    if (!response.ok) throw new Error(`Claude API error: ${response.status}`);
     const claudeResponse = await response.json();
 
-    messages.push({
-      role: 'assistant',
-      content: claudeResponse.content
-    });
+    messages.push({ role: 'assistant', content: claudeResponse.content });
 
     if (claudeResponse.stop_reason === 'end_turn') {
       const textContent = claudeResponse.content.find((c: any) => c.type === 'text');
       if (textContent) {
-        let findings;
-        try {
-          const jsonMatch = textContent.text.match(/```json\n([\s\S]*?)\n```/);
-          findings = jsonMatch ? JSON.parse(jsonMatch[1]) : JSON.parse(textContent.text);
-        } catch (e) {
-          findings = { rawResponse: textContent.text, parseError: true };
-        }
-        return { findings, toolCalls };
+        return { findings: parseFindings(textContent.text), toolCalls };
       }
       break;
     }
@@ -429,32 +521,12 @@ async function runClaudeResearch(systemPrompt: string, userPrompt: string) {
       for (const toolUse of toolUses) {
         toolCalls++;
         console.log(`  🔧 Tool: ${toolUse.name}`);
-
         let result;
         try {
-          switch (toolUse.name) {
-            case 'mcp_discovery':
-              result = await callMCPDiscovery(toolUse.input);
-              break;
-            case 'niv_fireplexity':
-              result = await callNIVFireplexity(toolUse.input);
-              break;
-            case 'journalist_registry':
-              result = await callJournalistRegistry(toolUse.input);
-              break;
-            case 'master_source_registry':
-              result = await callMasterSourceRegistry(toolUse.input);
-              break;
-            case 'knowledge_library_registry':
-              result = await callKnowledgeLibrary(toolUse.input);
-              break;
-            default:
-              result = { error: `Unknown tool: ${toolUse.name}` };
-          }
+          result = await executeTool(toolUse.name, toolUse.input);
         } catch (error: any) {
           result = { error: error.message };
         }
-
         toolResults.push({
           type: 'tool_result',
           tool_use_id: toolUse.id,
@@ -462,11 +534,7 @@ async function runClaudeResearch(systemPrompt: string, userPrompt: string) {
         });
       }
 
-      messages.push({
-        role: 'user',
-        content: toolResults
-      });
-
+      messages.push({ role: 'user', content: toolResults });
       maxIterations--;
       continue;
     }
@@ -475,6 +543,25 @@ async function runClaudeResearch(systemPrompt: string, userPrompt: string) {
   }
 
   return { findings: { error: 'Research did not complete' }, toolCalls };
+}
+
+// Generic research runner - uses Gemini (primary) with Claude fallback
+async function runAIResearch(systemPrompt: string, userPrompt: string) {
+  if (GEMINI_API_KEY) {
+    try {
+      return await runGeminiResearch(systemPrompt, userPrompt);
+    } catch (err: any) {
+      console.error('Gemini research failed, trying Claude fallback:', err.message);
+      if (ANTHROPIC_API_KEY) {
+        return await runAIResearch(systemPrompt, userPrompt);
+      }
+      throw err;
+    }
+  }
+  if (ANTHROPIC_API_KEY) {
+    return await runAIResearch(systemPrompt, userPrompt);
+  }
+  throw new Error('No AI API key configured');
 }
 
 // Tool execution functions

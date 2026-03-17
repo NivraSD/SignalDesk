@@ -167,7 +167,7 @@ export default function CrisisPlanViewer({ onClose, plan: providedPlan, embedded
     try {
       await saveToMemoryVault({
         organization_id: organization.id,
-        content_type: 'crisis-plan',
+        type: 'crisis-plan',
         title: `Crisis Management Plan - ${plan.industry || 'Updated'}`,
         content: JSON.stringify(plan),
         metadata: {

@@ -1,7 +1,7 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { corsHeaders, jsonResponse, errorResponse, handleCors } from '../_shared/cors.ts'
 
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent'
+const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
 const CLAUDE_URL = 'https://api.anthropic.com/v1/messages'
 
 interface ExecutionRequest {
@@ -78,7 +78,7 @@ serve(async (req: Request) => {
       org: organizationContext.name
     })
 
-    const geminiKey = Deno.env.get('GOOGLE_AI_API_KEY') || Deno.env.get('GEMINI_API_KEY')
+    const geminiKey = Deno.env.get('GOOGLE_AI_API_KEY') || Deno.env.get('GEMINI_API_KEY') || Deno.env.get('GOOGLE_API_KEY')
     const claudeKey = Deno.env.get('ANTHROPIC_API_KEY')
 
     if (!geminiKey && !claudeKey) {
