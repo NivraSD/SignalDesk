@@ -136,32 +136,6 @@ export default function StudioContentTypeSidebar({
               Content Types
             </span>
           </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setShowPrompts(!showPrompts)}
-              className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-colors ${
-                showPrompts
-                  ? 'bg-[var(--burnt-orange-muted)] text-[var(--burnt-orange)] border border-[var(--burnt-orange)]'
-                  : 'bg-[var(--grey-100)] text-[var(--grey-600)] hover:bg-[var(--grey-200)]'
-              }`}
-              style={{ fontFamily: 'var(--font-display)' }}
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              Prompts
-            </button>
-            <button
-              onClick={() => setShowLibrary(!showLibrary)}
-              className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-colors ${
-                showLibrary
-                  ? 'bg-[var(--burnt-orange-muted)] text-[var(--burnt-orange)] border border-[var(--burnt-orange)]'
-                  : 'bg-[var(--grey-100)] text-[var(--grey-600)] hover:bg-[var(--grey-200)]'
-              }`}
-              style={{ fontFamily: 'var(--font-display)' }}
-            >
-              <Library className="w-3.5 h-3.5" />
-              Library
-            </button>
-          </div>
         </div>
 
         {/* Content Types List */}
@@ -242,65 +216,6 @@ export default function StudioContentTypeSidebar({
         )}
       </div>
 
-      {/* Library Slide-out Panel */}
-      {showLibrary && (
-        <div className="fixed inset-0 z-50 flex">
-          <div className="absolute inset-0 bg-black/20" onClick={() => setShowLibrary(false)} />
-          <div className="relative w-[420px] ml-72 h-full bg-white border-r border-[var(--grey-200)] shadow-xl flex flex-col animate-slide-up">
-            <div className="p-4 border-b border-[var(--grey-200)] flex items-center justify-between">
-              <h3
-                className="text-lg font-medium"
-                style={{ fontFamily: 'var(--font-display)', color: 'var(--charcoal)' }}
-              >
-                Content Library
-              </h3>
-              <button
-                onClick={() => setShowLibrary(false)}
-                className="p-2 hover:bg-[var(--grey-100)] rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5" style={{ color: 'var(--grey-500)' }} />
-              </button>
-            </div>
-            <div className="flex-1 overflow-hidden">
-              <ContentLibraryWithFolders
-                organization={organization}
-                onContentSelect={(item: any) => {
-                  onItemSelect(item as ContentItem)
-                  setShowLibrary(false)
-                }}
-                className="h-full"
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Prompts Slide-out Panel */}
-      {showPrompts && (
-        <div className="fixed inset-0 z-50 flex">
-          <div className="absolute inset-0 bg-black/20" onClick={() => setShowPrompts(false)} />
-          <div className="relative w-[600px] ml-72 h-full bg-white border-r border-[var(--grey-200)] shadow-xl flex flex-col animate-slide-up">
-            <div className="p-4 border-b border-[var(--grey-200)] flex items-center justify-between">
-              <h3
-                className="text-lg font-medium flex items-center gap-2"
-                style={{ fontFamily: 'var(--font-display)', color: 'var(--charcoal)' }}
-              >
-                <Sparkles className="w-5 h-5" style={{ color: 'var(--burnt-orange)' }} />
-                Content Prompts
-              </h3>
-              <button
-                onClick={() => setShowPrompts(false)}
-                className="p-2 hover:bg-[var(--grey-100)] rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5" style={{ color: 'var(--grey-500)' }} />
-              </button>
-            </div>
-            <div className="flex-1 overflow-hidden">
-              <ContentPrompts />
-            </div>
-          </div>
-        </div>
-      )}
     </>
   )
 }
