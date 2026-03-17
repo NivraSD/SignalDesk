@@ -83,11 +83,6 @@ export default function PalantirDemoPage() {
                 d="M6 46 L24 58 L42 46"
                 fill="none" stroke="#faf9f7" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round"
               />
-              {/* Second chevron */}
-              <path
-                d="M6 54 L24 66 L42 54"
-                fill="none" stroke="#faf9f7" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round"
-              />
             </g>
             {/* Wordmark */}
             <text
