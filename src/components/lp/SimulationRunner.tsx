@@ -294,8 +294,10 @@ export default function SimulationRunner({
         <div className="flex items-center gap-2">
           <Users className="w-5 h-5 text-[var(--burnt-orange)]" />
           <h3 className="text-sm font-semibold text-[var(--charcoal)]">Build Your Entity List</h3>
-          <span className="px-1.5 py-0.5 text-[10px] rounded bg-green-100 text-green-700 font-medium">
-            {selectedList.length} selected
+          <span className={`px-1.5 py-0.5 text-[10px] rounded font-medium ${
+            selectedList.length > 8 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
+          }`}>
+            {selectedList.length}/8
           </span>
         </div>
 
