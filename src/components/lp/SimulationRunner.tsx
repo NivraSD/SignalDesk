@@ -158,7 +158,100 @@ export default function SimulationRunner({
   // Cancelled ref for aborting the round loop
   const cancelledRef = useRef(false)
 
-  // Client-driven simulation: setup → run rounds one at a time
+  // === Client-side cross-entity analysis (algorithmic, no AI) ===
+
+  function analyzeRound(roundNumber: number, responses: any[], priorResponses: any[]) {
+    // Extract themes
+    const themeMap = new Map<string, any>()
+    const priorThemes = new Set<string>()
+    for (const r of priorResponses) {
+      for (const t of (r.themes_championed || [])) priorThemes.add(t.toLowerCase())
+    }
+    for (const r of responses) {
+      for (const theme of (r.themes_championed || [])) {
+        const key = theme.toLowerCase()
+        if (!themeMap.has(key)) {
+          themeMap.set(key, { theme, momentum: priorThemes.has(key) ? 'stable' : 'rising', owner: r.entity_name, adopters: [r.entity_name], first_appeared: priorThemes.has(key) ? 0 : roundNumber })
+        } else {
+          themeMap.get(key)!.adopters.push(r.entity_name)
+          if (themeMap.get(key)!.adopters.length > 2) themeMap.get(key)!.momentum = 'rising'
+        }
+      }
+    }
+    for (const pt of priorThemes) {
+      if (!themeMap.has(pt)) themeMap.set(pt, { theme: pt, momentum: 'falling', owner: '', adopters: [], first_appeared: 0 })
+    }
+    const themes = Array.from(themeMap.values())
+
+    // Influence
+    const scores = new Map<string, { citations: number, framesAdopted: number }>()
+    const nameToId = new Map<string, string>()
+    const flows: any[] = []
+    for (const r of responses) {
+      nameToId.set(r.entity_name.toLowerCase(), r.entity_id)
+      if (!scores.has(r.entity_id)) scores.set(r.entity_id, { citations: 0, framesAdopted: 0 })
+    }
+    for (const r of responses) {
+      for (const ref of (r.entities_referenced || [])) {
+        const rid = scores.has(ref) ? ref : nameToId.get(ref.toLowerCase())
+        if (!rid || rid === r.entity_id) continue
+        const s = scores.get(rid)
+        if (s) s.citations++
+        flows.push({ from_entity: rid, to_entity: r.entity_id, type: 'citation', strength: 0.5 })
+      }
+    }
+    const themeOrigins = new Map<string, string>()
+    for (const r of responses) {
+      for (const t of (r.themes_championed || [])) {
+        const k = t.toLowerCase()
+        if (!themeOrigins.has(k)) themeOrigins.set(k, r.entity_id)
+        else if (themeOrigins.get(k) !== r.entity_id) {
+          const s = scores.get(themeOrigins.get(k)!)
+          if (s) s.framesAdopted++
+        }
+      }
+    }
+    const influence_rankings = responses.map(r => {
+      const s = scores.get(r.entity_id) || { citations: 0, framesAdopted: 0 }
+      return { entity_id: r.entity_id, entity_name: r.entity_name, score: s.citations * 0.7 + s.framesAdopted * 0.3, citations_received: s.citations, frames_adopted: s.framesAdopted }
+    }).sort((a, b) => b.score - a.score)
+
+    // Coalitions
+    const tg = new Map<string, string[]>()
+    for (const r of responses) for (const t of (r.themes_championed || [])) {
+      const k = t.toLowerCase()
+      if (!tg.has(k)) tg.set(k, [])
+      tg.get(k)!.push(r.entity_id)
+    }
+    const coalitions: any[] = []
+    let cid = 0
+    for (const [theme, members] of tg) {
+      if (members.length >= 2) coalitions.push({ coalition_id: `c_${cid++}`, name: `${theme} advocates`, members, shared_position: theme, stability: 'forming', formed_round: roundNumber })
+    }
+
+    // Gaps
+    const gaps: any[] = []
+    const silent = responses.filter(r => r.response_decision === 'silent')
+    if (silent.length > responses.length * 0.3) {
+      gaps.push({ gap_id: 'g_0', description: `${silent.length} entities silent — narrative leadership opportunity`, strategic_value: 'high', related_aspects: [], potential_fillers: silent.map((e: any) => e.entity_id) })
+    }
+
+    // Stabilization
+    let positionChanges = responses.length
+    if (priorResponses.length > 0) {
+      const priorPos = new Map(priorResponses.map(r => [r.entity_id, r.position_summary]))
+      positionChanges = responses.filter(r => { const p = priorPos.get(r.entity_id); return !p || p !== r.position_summary }).length
+    }
+    const newThemes = themes.filter(t => t.first_appeared === roundNumber).length
+    const stabilization_score = responses.length > 0
+      ? Math.max(0, 1 - ((positionChanges / responses.length) * 0.6 + (Math.min(newThemes / 5, 1)) * 0.4))
+      : 0
+
+    return { round_number: roundNumber, themes, influence_rankings, influence_flows: flows, coalitions, gaps, position_changes: positionChanges, new_themes_count: newThemes, stabilization_score }
+  }
+
+  // === Main simulation driver ===
+
   const startSimulation = async () => {
     if (invokeRef.current) return
     invokeRef.current = true
@@ -176,7 +269,7 @@ export default function SimulationRunner({
     console.log(`[LP] Launching simulation with ${entityNames.length} entities:`, entityNames)
 
     try {
-      // Step 1: Setup — create simulation, identify entities
+      // Step 1: Setup — create simulation record, identify entities, get phases
       const { data: setup, error: setupError } = await supabase.functions.invoke('lp-simulation-orchestrator', {
         body: {
           scenario_id: scenarioId,
@@ -191,187 +284,160 @@ export default function SimulationRunner({
 
       const { simulation_id, scenario, entities, config, phases } = setup
       setSimulationId(simulation_id)
-      setProgress({
-        id: simulation_id,
-        status: 'running',
-        rounds_completed: 0,
-        stabilization_score: 0,
-        entities,
-        created_at: new Date().toISOString()
-      })
+      setProgress({ id: simulation_id, status: 'running', rounds_completed: 0, stabilization_score: 0, entities, created_at: new Date().toISOString() })
       setState('running')
 
       console.log(`[LP] Setup complete: ${simulation_id}, ${entities.length} entities, ${phases.length} phases`)
 
-      // Step 2: Run rounds one at a time
+      // Step 2: Run rounds — client calls each entity directly, collects results
       let allResponses: any[] = []
       let lastAnalysis: any = null
       const entityMemory: Record<string, any> = {}
 
       for (let round = 1; round <= config.max_rounds; round++) {
         if (cancelledRef.current) break
-
         const phase = phases[round - 1]
         if (!phase) break
 
-        console.log(`[LP] Starting Round ${round}/${config.max_rounds}: ${phase.name}`)
-
+        console.log(`[LP] Round ${round}/${config.max_rounds}: ${phase.name}`)
         const priorResponses = allResponses.filter(r => r.round_number === round - 1)
 
-        let roundResult: any = null
-        let roundError: any = null
-
-        try {
-          const res = await supabase.functions.invoke('lp-run-simulation-round', {
-            body: {
-              simulation_id,
-              round_number: round,
-              phase,
-              scenario,
-              entities,
-              prior_responses: priorResponses,
-              themes_so_far: lastAnalysis?.themes?.map((t: any) => t.theme) || [],
-              dominant_narratives: lastAnalysis?.themes
-                ?.filter((t: any) => t.momentum === 'rising')
-                ?.map((t: any) => t.theme) || [],
-              gaps_identified: lastAnalysis?.gaps?.map((g: any) => g.description) || [],
-              entity_memory: entityMemory
-            }
-          })
-          roundResult = res.data
-          roundError = res.error
-          console.log(`[LP] Round ${round} response:`, { hasData: !!roundResult, error: roundError?.message, dataKeys: roundResult ? Object.keys(roundResult) : [] })
-        } catch (invokeErr: any) {
-          // Gateway timeout — round may still be running on the server
-          // Poll DB to see if it completed
-          console.warn(`[LP] Round ${round} invoke error (likely gateway timeout):`, invokeErr.message)
-
-          // Wait a bit then check if the round was saved to DB
-          await new Promise(r => setTimeout(r, 5000))
-          const { data: savedRound } = await supabase
-            .from('lp_simulation_rounds')
-            .select('entity_responses, cross_analysis')
-            .eq('simulation_id', simulation_id)
-            .eq('round_number', round)
-            .single()
-
-          if (savedRound) {
-            console.log(`[LP] Round ${round} completed on server despite gateway timeout`)
-            roundResult = {
-              responses: savedRound.entity_responses,
-              analysis: savedRound.cross_analysis
-            }
-          } else {
-            // Wait more and retry once
-            await new Promise(r => setTimeout(r, 10000))
-            const { data: retryRound } = await supabase
-              .from('lp_simulation_rounds')
-              .select('entity_responses, cross_analysis')
-              .eq('simulation_id', simulation_id)
-              .eq('round_number', round)
-              .single()
-
-            if (retryRound) {
-              console.log(`[LP] Round ${round} completed on server (found on retry)`)
-              roundResult = {
-                responses: retryRound.entity_responses,
-                analysis: retryRound.cross_analysis
+        // Call ALL entity simulations in parallel — each is its own edge function call
+        const entityResults = await Promise.allSettled(
+          entities.filter((e: any) => e.included).map((entity: any) =>
+            supabase.functions.invoke('lp-entity-simulation', {
+              body: {
+                entity_id: entity.entity_id,
+                entity_name: entity.entity_name,
+                profile_id: entity.profile_id,
+                round_number: round,
+                phase,
+                scenario,
+                prior_responses: priorResponses,
+                themes_so_far: lastAnalysis?.themes?.map((t: any) => t.theme) || [],
+                dominant_narratives: lastAnalysis?.themes?.filter((t: any) => t.momentum === 'rising')?.map((t: any) => t.theme) || [],
+                gaps_identified: lastAnalysis?.gaps?.map((g: any) => g.description) || [],
+                entity_memory: entityMemory[entity.entity_id]
               }
-            } else {
-              roundError = { message: `Round ${round} timed out and no result found in DB` }
-            }
-          }
-        }
+            })
+          )
+        )
 
-        if (roundError || !roundResult) {
-          console.error(`[LP] Round ${round} failed:`, roundError?.message)
-          // Don't fail the whole simulation — mark what we have
-          if (round > 1) {
-            await supabase.from('lp_simulations').update({
-              status: 'max_rounds_reached',
-              completed_at: new Date().toISOString(),
-              error: `Round ${round} failed: ${roundError?.message || 'unknown'}`
-            }).eq('id', simulation_id)
-            setState('complete')
+        // Collect responses
+        const roundResponses: any[] = []
+        const activeEntities = entities.filter((e: any) => e.included)
+
+        entityResults.forEach((result: any, idx: number) => {
+          const entity = activeEntities[idx]
+          if (result.status === 'fulfilled' && result.value.data && !result.value.error) {
+            const d = result.value.data
+            roundResponses.push({
+              entity_id: entity.entity_id,
+              entity_name: entity.entity_name,
+              round_number: round,
+              response_decision: d.response_decision || 'respond',
+              decision_rationale: d.decision_rationale || '',
+              position_summary: d.position_summary || '',
+              key_claims: d.key_claims || [],
+              thought_leadership: d.thought_leadership,
+              media_pitch: d.media_pitch,
+              social_response: d.social_response,
+              entities_referenced: d.entities_referenced || [],
+              themes_championed: d.themes_championed || [],
+              predicted_reactions: d.predicted_reactions || [],
+              processing_time_ms: d.processing_time_ms || 0,
+              model_used: d.model_used || 'unknown'
+            })
+            console.log(`  ✅ ${entity.entity_name}: ${d.response_decision}`)
           } else {
-            throw new Error(`Round 1 failed: ${roundError?.message || 'unknown'}`)
+            const errMsg = result.status === 'rejected' ? result.reason?.message : result.value?.error?.message
+            console.warn(`  ⚠️ ${entity.entity_name} failed: ${errMsg || 'unknown'}`)
+            roundResponses.push({
+              entity_id: entity.entity_id, entity_name: entity.entity_name, round_number: round,
+              response_decision: 'silent', decision_rationale: 'Entity simulation failed', position_summary: '',
+              key_claims: [], entities_referenced: [], themes_championed: [], predicted_reactions: [],
+              processing_time_ms: 0, model_used: 'none'
+            })
           }
-          break
-        }
+        })
 
-        // Accumulate responses
-        allResponses.push(...(roundResult.responses || []))
-        lastAnalysis = roundResult.analysis
+        console.log(`[LP] Round ${round}: ${roundResponses.filter(r => r.response_decision !== 'silent').length}/${activeEntities.length} responded`)
+
+        // Cross-entity analysis (client-side, pure algorithmic)
+        const analysis = analyzeRound(round, roundResponses, priorResponses)
+
+        // Save round to DB
+        await supabase.from('lp_simulation_rounds').insert({
+          simulation_id, round_number: round,
+          entity_responses: roundResponses,
+          cross_analysis: { ...analysis, phase_id: phase.id, phase_name: phase.name, phase_description: phase.description },
+          started_at: new Date(Date.now() - 60000).toISOString(),
+          completed_at: new Date().toISOString(),
+          status: 'completed'
+        })
+
+        // Accumulate
+        allResponses.push(...roundResponses)
+        lastAnalysis = analysis
 
         // Build entity memory for next round
         for (const entity of entities) {
-          const entityResponses = allResponses.filter((r: any) => r.entity_id === entity.entity_id)
-          const entityName = entityResponses[0]?.entity_name || ''
+          const eResps = allResponses.filter((r: any) => r.entity_id === entity.entity_id)
+          const eName = eResps[0]?.entity_name || ''
           entityMemory[entity.entity_id] = {
             entity_id: entity.entity_id,
-            positions_taken: entityResponses.map((r: any) => ({ round: r.round_number, position: r.position_summary })),
-            entities_referenced: [...new Set(entityResponses.flatMap((r: any) => r.entities_referenced || []))],
-            themes_championed: [...new Set(entityResponses.flatMap((r: any) => r.themes_championed || []))],
+            positions_taken: eResps.map((r: any) => ({ round: r.round_number, position: r.position_summary })),
+            entities_referenced: [...new Set(eResps.flatMap((r: any) => r.entities_referenced || []))],
+            themes_championed: [...new Set(eResps.flatMap((r: any) => r.themes_championed || []))],
             attacks_received: allResponses
               .filter((r: any) => r.entity_id !== entity.entity_id && r.response_decision === 'counter' &&
-                (r.entities_referenced || []).some((ref: string) => ref === entity.entity_id || ref.toLowerCase() === entityName.toLowerCase()))
+                (r.entities_referenced || []).some((ref: string) => ref === entity.entity_id || ref.toLowerCase() === eName.toLowerCase()))
               .map((r: any) => ({ from: r.entity_name, round: r.round_number, attack: r.position_summary })),
             credibility_trajectory: 'stable'
           }
         }
 
-        // Update UI progress
-        setProgress(prev => prev ? {
-          ...prev,
+        // Update progress in UI + DB
+        await supabase.from('lp_simulations').update({
           rounds_completed: round,
-          stabilization_score: lastAnalysis?.stabilization_score || 0
-        } : null)
+          stabilization_score: analysis.stabilization_score
+        }).eq('id', simulation_id)
 
-        console.log(`[LP] Round ${round} complete — stabilization: ${(lastAnalysis?.stabilization_score || 0).toFixed(2)}`)
+        setProgress(prev => prev ? { ...prev, rounds_completed: round, stabilization_score: analysis.stabilization_score } : null)
+        console.log(`[LP] Round ${round} complete — stabilization: ${analysis.stabilization_score.toFixed(2)}`)
 
-        // Check stabilization (after min rounds)
-        if (round >= (config.min_rounds || 2) && lastAnalysis?.stabilization_score >= (config.stabilization_threshold || 0.8)) {
+        // Check stabilization
+        if (round >= (config.min_rounds || 2) && analysis.stabilization_score >= (config.stabilization_threshold || 0.8)) {
           console.log(`[LP] Stabilized at round ${round}`)
           await supabase.from('lp_simulations').update({
-            status: 'stabilized',
-            rounds_completed: round,
-            stabilization_score: lastAnalysis.stabilization_score,
-            dominant_narratives: lastAnalysis.themes?.filter((t: any) => t.momentum === 'rising').map((t: any) => t.theme) || [],
-            key_coalitions: lastAnalysis.coalitions || [],
-            gaps_identified: lastAnalysis.gaps?.map((g: any) => g.description) || [],
+            status: 'stabilized', rounds_completed: round, stabilization_score: analysis.stabilization_score,
+            dominant_narratives: analysis.themes.filter((t: any) => t.momentum === 'rising').map((t: any) => t.theme),
+            key_coalitions: analysis.coalitions, gaps_identified: analysis.gaps.map((g: any) => g.description),
             completed_at: new Date().toISOString()
           }).eq('id', simulation_id)
           setState('complete')
           break
         }
 
-        // If last round, mark max_rounds_reached
+        // Last round
         if (round === config.max_rounds) {
           await supabase.from('lp_simulations').update({
-            status: 'max_rounds_reached',
-            rounds_completed: round,
-            stabilization_score: lastAnalysis?.stabilization_score || 0,
-            dominant_narratives: lastAnalysis?.themes?.filter((t: any) => t.momentum === 'rising').map((t: any) => t.theme) || [],
-            key_coalitions: lastAnalysis?.coalitions || [],
-            gaps_identified: lastAnalysis?.gaps?.map((g: any) => g.description) || [],
+            status: 'max_rounds_reached', rounds_completed: round, stabilization_score: analysis.stabilization_score,
+            dominant_narratives: analysis.themes.filter((t: any) => t.momentum === 'rising').map((t: any) => t.theme),
+            key_coalitions: analysis.coalitions, gaps_identified: analysis.gaps.map((g: any) => g.description),
             completed_at: new Date().toISOString()
           }).eq('id', simulation_id)
           setState('complete')
         }
       }
 
-      // Try fulcrum identification as a bonus (fire-and-forget, non-blocking)
-      if (state === 'complete' || !cancelledRef.current) {
-        try {
-          const { data: fulcrumResult } = await supabase.functions.invoke('lp-identify-fulcrums', {
-            body: { simulation_id }
+      // Fulcrum identification (optional, fire-and-forget)
+      if (!cancelledRef.current) {
+        supabase.functions.invoke('lp-identify-fulcrums', { body: { simulation_id } })
+          .then(({ data }) => {
+            if (data?.fulcrums) supabase.from('lp_simulations').update({ fulcrums: data.fulcrums }).eq('id', simulation_id)
           })
-          if (fulcrumResult?.fulcrums) {
-            await supabase.from('lp_simulations').update({ fulcrums: fulcrumResult.fulcrums }).eq('id', simulation_id)
-          }
-        } catch (_) {
-          // Fulcrums are optional — don't fail the simulation
-        }
+          .catch(() => {})
       }
 
     } catch (err: any) {
