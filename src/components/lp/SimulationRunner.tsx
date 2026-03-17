@@ -218,22 +218,70 @@ export default function SimulationRunner({
 
         const priorResponses = allResponses.filter(r => r.round_number === round - 1)
 
-        const { data: roundResult, error: roundError } = await supabase.functions.invoke('lp-run-simulation-round', {
-          body: {
-            simulation_id,
-            round_number: round,
-            phase,
-            scenario,
-            entities,
-            prior_responses: priorResponses,
-            themes_so_far: lastAnalysis?.themes?.map((t: any) => t.theme) || [],
-            dominant_narratives: lastAnalysis?.themes
-              ?.filter((t: any) => t.momentum === 'rising')
-              ?.map((t: any) => t.theme) || [],
-            gaps_identified: lastAnalysis?.gaps?.map((g: any) => g.description) || [],
-            entity_memory: entityMemory
+        let roundResult: any = null
+        let roundError: any = null
+
+        try {
+          const res = await supabase.functions.invoke('lp-run-simulation-round', {
+            body: {
+              simulation_id,
+              round_number: round,
+              phase,
+              scenario,
+              entities,
+              prior_responses: priorResponses,
+              themes_so_far: lastAnalysis?.themes?.map((t: any) => t.theme) || [],
+              dominant_narratives: lastAnalysis?.themes
+                ?.filter((t: any) => t.momentum === 'rising')
+                ?.map((t: any) => t.theme) || [],
+              gaps_identified: lastAnalysis?.gaps?.map((g: any) => g.description) || [],
+              entity_memory: entityMemory
+            }
+          })
+          roundResult = res.data
+          roundError = res.error
+          console.log(`[LP] Round ${round} response:`, { hasData: !!roundResult, error: roundError?.message, dataKeys: roundResult ? Object.keys(roundResult) : [] })
+        } catch (invokeErr: any) {
+          // Gateway timeout — round may still be running on the server
+          // Poll DB to see if it completed
+          console.warn(`[LP] Round ${round} invoke error (likely gateway timeout):`, invokeErr.message)
+
+          // Wait a bit then check if the round was saved to DB
+          await new Promise(r => setTimeout(r, 5000))
+          const { data: savedRound } = await supabase
+            .from('lp_simulation_rounds')
+            .select('entity_responses, cross_analysis')
+            .eq('simulation_id', simulation_id)
+            .eq('round_number', round)
+            .single()
+
+          if (savedRound) {
+            console.log(`[LP] Round ${round} completed on server despite gateway timeout`)
+            roundResult = {
+              responses: savedRound.entity_responses,
+              analysis: savedRound.cross_analysis
+            }
+          } else {
+            // Wait more and retry once
+            await new Promise(r => setTimeout(r, 10000))
+            const { data: retryRound } = await supabase
+              .from('lp_simulation_rounds')
+              .select('entity_responses, cross_analysis')
+              .eq('simulation_id', simulation_id)
+              .eq('round_number', round)
+              .single()
+
+            if (retryRound) {
+              console.log(`[LP] Round ${round} completed on server (found on retry)`)
+              roundResult = {
+                responses: retryRound.entity_responses,
+                analysis: retryRound.cross_analysis
+              }
+            } else {
+              roundError = { message: `Round ${round} timed out and no result found in DB` }
+            }
           }
-        })
+        }
 
         if (roundError || !roundResult) {
           console.error(`[LP] Round ${round} failed:`, roundError?.message)
