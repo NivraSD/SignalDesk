@@ -447,9 +447,9 @@ export class PublicAffairsService {
         throw new Error('No generation ID returned from Gamma')
       }
 
-      // Poll for completion (up to 90 seconds)
+      // Poll for completion (up to 3 minutes — research decks are content-heavy)
       let presentationUrl: string | null = null
-      const maxAttempts = 18 // 18 * 5s = 90s
+      const maxAttempts = 36 // 36 * 5s = 180s
       for (let attempt = 0; attempt < maxAttempts; attempt++) {
         await new Promise(resolve => setTimeout(resolve, 5000))
 
@@ -457,25 +457,45 @@ export class PublicAffairsService {
           body: { generationId }
         })
 
-        console.log(`Gamma poll attempt ${attempt + 1}:`, statusResult?.status)
+        console.log(`Gamma poll attempt ${attempt + 1}/${maxAttempts}:`, JSON.stringify({
+          status: statusResult?.status,
+          gammaUrl: statusResult?.gammaUrl,
+          hasExportUrls: !!statusResult?.exportUrls,
+          success: statusResult?.success,
+          error: statusError?.message
+        }))
 
         if (statusError) {
           console.error('Gamma status poll error:', statusError)
           continue
         }
 
+        // Check for completed status
         if (statusResult?.status === 'completed') {
           presentationUrl = statusResult?.gammaUrl || statusResult?.url || statusResult?.exportUrls?.view
+          console.log('Gamma presentation completed! URL:', presentationUrl)
           break
         }
 
-        if (statusResult?.status === 'error') {
-          throw new Error(statusResult?.error || 'Gamma generation failed')
+        if (statusResult?.status === 'error' || statusResult?.status === 'failed') {
+          throw new Error(statusResult?.error || statusResult?.message || 'Gamma generation failed')
         }
       }
 
       if (!presentationUrl) {
-        throw new Error('Presentation generation timed out')
+        // Last-ditch: check Gamma one more time with longer wait
+        console.warn('Gamma polling exhausted — making final check...')
+        await new Promise(resolve => setTimeout(resolve, 10000))
+        const { data: finalCheck } = await supabase.functions.invoke('gamma-presentation', {
+          body: { generationId }
+        })
+        if (finalCheck?.status === 'completed' && finalCheck?.gammaUrl) {
+          presentationUrl = finalCheck.gammaUrl
+          console.log('Final check succeeded! URL:', presentationUrl)
+        } else {
+          console.error('Final check result:', JSON.stringify(finalCheck))
+          throw new Error('Presentation generation timed out after 3 minutes')
+        }
       }
 
       await supabase
@@ -501,6 +521,12 @@ export class PublicAffairsService {
       onProgress?.('completed')
       return { success: true, url: presentationUrl }
     } catch (err) {
+      // Reset status so buttons don't stay stuck
+      await supabase
+        .from('public_affairs_reports')
+        .update({ status: 'research_complete' })
+        .eq('id', reportId)
+
       onProgress?.('failed')
       throw err
     }
