@@ -855,14 +855,8 @@ export default function HomePage() {
             NIV transforms how organizations discover opportunities, generate strategies, and execute campaigns — with AI that learns and compounds over time.
           </p>
           <div className="landing-hero-cta-row">
-            <button className="landing-btn-primary" onClick={() => router.push('/auth/signup')}>
-              Start Free Trial
-            </button>
-            <button className="landing-btn-text" onClick={() => router.push('/auth/login')}>
-              Watch Demo
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M5 12h14M12 5l7 7-7 7" />
-              </svg>
+            <button className="landing-btn-primary" onClick={() => router.push('/auth/login')}>
+              Sign In
             </button>
           </div>
         </div>
@@ -2670,8 +2664,8 @@ export default function HomePage() {
         <div className="landing-cta-content">
           <h2 className="landing-cta-headline">Ready to seize <em>opportunities others miss?</em></h2>
           <div className="landing-cta-actions">
-            <button className="landing-cta-btn" onClick={() => router.push('/auth/signup')}>Start Free Trial</button>
-            <button className="landing-cta-btn landing-cta-btn-outline" onClick={() => router.push('/contact?demo=true')}>Schedule Demo</button>
+            <button className="landing-cta-btn" onClick={() => router.push('/auth/login')}>Sign In</button>
+            <button className="landing-cta-btn landing-cta-btn-outline" onClick={() => router.push('/contact?demo=true')}>Contact Us</button>
           </div>
         </div>
       </section>
