@@ -834,6 +834,7 @@ export default function Dashboard() {
                   <SimulationList
                     onSelect={(id) => { setSelectedSimulationId(id); setSimView('viewer') }}
                     onNewSimulation={() => setSimView('scenario')}
+                    onRunSimulation={(scenarioId) => { setSelectedScenarioId(scenarioId); setSimView('runner') }}
                   />
                 )}
                 {simView === 'scenario' && (

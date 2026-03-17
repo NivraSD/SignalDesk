@@ -604,49 +604,8 @@ export default function ScenarioBuilder({ onRunSimulation }: ScenarioBuilderProp
       <div className="flex items-center gap-2 text-sm text-gray-500 bg-gray-50 rounded-lg px-3 py-2">
         <Building2 className="w-4 h-4" />
         <span>Org: <strong className="text-[var(--charcoal)]">{organization?.name || 'None selected'}</strong></span>
-        {existingScenarios.length > 0 && (
-          <span className="ml-auto text-xs text-gray-400">{existingScenarios.length} scenarios</span>
-        )}
       </div>
 
-      {/* Existing scenarios */}
-      {existingScenarios.length > 0 && !scenario && (
-        <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
-          <div className="flex items-center gap-2">
-            <FileText className="w-4 h-4 text-[var(--burnt-orange)]" />
-            <h3 className="text-sm font-semibold text-[var(--charcoal)]">Recent Scenarios</h3>
-            {loadingScenarios && <Loader2 className="w-3 h-3 animate-spin text-gray-400" />}
-          </div>
-          <div className="space-y-1.5">
-            {existingScenarios.slice(0, 5).map(s => {
-              const TypeIcon = TYPE_INFO[s.type as ScenarioType]?.icon || FileText
-              return (
-                <button
-                  key={s.id}
-                  onClick={() => loadScenario(s)}
-                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-colors text-left"
-                >
-                  <TypeIcon className="w-4 h-4 text-gray-400" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-[var(--charcoal)] truncate">
-                      {s.scenario_data.action?.what?.substring(0, 60) || 'Untitled scenario'}
-                    </p>
-                    <p className="text-[10px] text-gray-400">
-                      {s.scenario_data?.trigger_source === 'external' ? '⚡ ' : ''}{TYPE_INFO[s.type as ScenarioType]?.label || s.type} · {s.status} · {new Date(s.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                  {s.status === 'ready' && (
-                    <span className="px-1.5 py-0.5 text-[10px] rounded bg-green-100 text-green-700">Ready</span>
-                  )}
-                  {s.status === 'building' && (
-                    <span className="px-1.5 py-0.5 text-[10px] rounded bg-yellow-100 text-yellow-700">In progress</span>
-                  )}
-                </button>
-              )
-            })}
-          </div>
-        </div>
-      )}
 
       {/* New scenario input */}
       {!scenario && (

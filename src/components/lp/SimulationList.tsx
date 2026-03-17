@@ -12,12 +12,23 @@ import {
   AlertTriangle,
   ChevronRight,
   Sparkles,
-  Trash2
+  Trash2,
+  Play,
+  FileText
 } from 'lucide-react'
 
 interface SimulationListProps {
   onSelect: (simulationId: string) => void
   onNewSimulation: () => void
+  onRunSimulation?: (scenarioId: string) => void
+}
+
+interface PendingScenario {
+  id: string
+  type: string
+  scenario_data: any
+  status: string
+  created_at: string
 }
 
 interface SimulationSummary {
@@ -48,9 +59,10 @@ const STATUS_CONFIG: Record<string, { icon: any; color: string; label: string }>
   failed: { icon: XCircle, color: 'bg-red-100 text-red-700', label: 'Failed' }
 }
 
-export default function SimulationList({ onSelect, onNewSimulation }: SimulationListProps) {
+export default function SimulationList({ onSelect, onNewSimulation, onRunSimulation }: SimulationListProps) {
   const organization = useAppStore(s => s.organization)
   const [simulations, setSimulations] = useState<SimulationSummary[]>([])
+  const [pendingScenarios, setPendingScenarios] = useState<PendingScenario[]>([])
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState<string | null>(null)
 
@@ -102,6 +114,21 @@ export default function SimulationList({ onSelect, onNewSimulation }: Simulation
           }
         }
         setSimulations(data as SimulationSummary[])
+
+        // Find pending scenarios (ready but no simulation yet)
+        const simulatedScenarioIds = new Set(data.map(s => s.scenario_id))
+        const { data: readyScenarios } = await supabase
+          .from('lp_scenarios')
+          .select('id, type, scenario_data, status, created_at')
+          .eq('organization_id', organization.id)
+          .eq('status', 'ready')
+          .order('created_at', { ascending: false })
+          .limit(10)
+
+        if (readyScenarios) {
+          const pending = readyScenarios.filter(s => !simulatedScenarioIds.has(s.id))
+          setPendingScenarios(pending)
+        }
       }
       setLoading(false)
     }
@@ -139,7 +166,7 @@ export default function SimulationList({ onSelect, onNewSimulation }: Simulation
       </div>
 
       {/* Empty state */}
-      {simulations.length === 0 && (
+      {simulations.length === 0 && pendingScenarios.length === 0 && (
         <div className="bg-white rounded-xl border border-gray-200 p-8 text-center space-y-3">
           <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto">
             <Zap className="w-6 h-6 text-gray-400" />
@@ -156,6 +183,50 @@ export default function SimulationList({ onSelect, onNewSimulation }: Simulation
           >
             Go to Scenario Builder
           </button>
+        </div>
+      )}
+
+      {/* Pending scenarios (ready but not yet simulated) */}
+      {pendingScenarios.length > 0 && onRunSimulation && (
+        <div className="space-y-2">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400 px-1">
+            Ready to Simulate
+          </h3>
+          {pendingScenarios.map(sc => (
+            <div
+              key={sc.id}
+              className="bg-amber-50 rounded-xl border border-amber-200 p-4 flex items-center gap-3"
+            >
+              <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+                <FileText className="w-4 h-4 text-amber-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm font-semibold text-[var(--charcoal)] truncate">
+                  {sc.scenario_data?.action?.what || 'Untitled Scenario'}
+                </h3>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="px-2 py-0.5 text-[10px] rounded font-medium bg-amber-100 text-amber-700">
+                    Pending
+                  </span>
+                  {sc.type && (
+                    <span className="px-2 py-0.5 text-[10px] rounded bg-gray-100 text-gray-500">
+                      {sc.type.replace(/_/g, ' ')}
+                    </span>
+                  )}
+                  <span className="text-[10px] text-gray-400">
+                    {new Date(sc.created_at).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => onRunSimulation(sc.id)}
+                className="px-3 py-1.5 bg-[var(--burnt-orange)] hover:bg-[var(--terracotta)] text-white rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5"
+              >
+                <Play className="w-3 h-3" />
+                Run
+              </button>
+            </div>
+          ))}
         </div>
       )}
 
