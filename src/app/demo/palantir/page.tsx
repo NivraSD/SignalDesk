@@ -141,7 +141,7 @@ export default function PalantirDemoPage() {
           </p>
           <p style={{
             fontSize: 16,
-            color: '#888',
+            color: '#bbb',
             lineHeight: 1.9,
             margin: '20px 0 0 0',
           }}>
