@@ -205,6 +205,33 @@ export default function PalantirDemoPage() {
           </div>
         </div>
 
+        {/* How it works */}
+        <div style={{
+          background: 'transparent',
+          borderRadius: 12,
+          padding: '28px 28px',
+          textAlign: 'left',
+          marginBottom: 40,
+          border: '1px solid #333',
+        }}>
+          <p style={{
+            fontSize: 15,
+            color: '#ccc',
+            lineHeight: 1.8,
+            margin: 0,
+          }}>
+            Everything that was pre-loaded was generated from a single signal — the announcement of a driverless truck pilot program in Texas. NIV detected it, assessed its strategic relevance, simulated how key actors would engage, built a research foundation, generated a campaign strategy with multiple types of fully generated content, and is now programmed to monitor for any external event that may have an impact. And all of it done without touching your keyboard once.
+          </p>
+          <p style={{
+            fontSize: 15,
+            color: '#999',
+            lineHeight: 1.8,
+            margin: '16px 0 0 0',
+          }}>
+            NIV is actively working to identify and capitalize on opportunities for Palantir, and its ability to do so will sharpen over time as the system continues to operate and learn.
+          </p>
+        </div>
+
         {/* Enter button */}
         <button
           onClick={handleEnter}
