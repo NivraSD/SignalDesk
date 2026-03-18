@@ -117,11 +117,13 @@ export default function SimulationRunner({
     load()
   }, [state, organizationId])
 
-  // Add entity to the simulation list
+  // Add entity to the simulation list (max 8)
   const addEntity = useCallback((name: string) => {
     const key = name.toLowerCase()
     if (selectedEntities.has(key)) return
+    if (selectedEntities.size >= 8) return
     setSelectedEntities(prev => {
+      if (prev.size >= 8) return prev
       const next = new Map(prev)
       next.set(key, { name, hasProfile: globalProfiles.has(key) })
       return next
@@ -448,7 +450,6 @@ export default function SimulationRunner({
             key_coalitions: analysis.coalitions, gaps_identified: analysis.gaps.map((g: any) => g.description),
             completed_at: new Date().toISOString()
           }).eq('id', simulation_id)
-          setState('complete')
           break
         }
 
@@ -460,15 +461,17 @@ export default function SimulationRunner({
             key_coalitions: analysis.coalitions, gaps_identified: analysis.gaps.map((g: any) => g.description),
             completed_at: new Date().toISOString()
           }).eq('id', simulation_id)
-          setState('complete')
         }
       }
 
-      // Fulcrum identification — awaited so user sees progress
+      // Post-simulation processing — fulcrums + output processing
+      // Don't show results until everything is done
       if (!cancelledRef.current) {
         setProgress(prev => prev ? { ...prev, status: 'analyzing' } : null)
 
+        // Fulcrum identification
         try {
+          console.log('[LP] Identifying fulcrums...')
           const { data: fulcrumData, error: fulcrumErr } = await supabase.functions.invoke('lp-identify-fulcrums', {
             body: { simulation_id }
           })
@@ -477,10 +480,27 @@ export default function SimulationRunner({
             await supabase.from('lp_simulations')
               .update({ fulcrums: fulcrumData.fulcrums })
               .eq('id', simulation_id)
+            console.log(`[LP] ${fulcrumData.fulcrums.length} fulcrums identified`)
+
+            // Generate watch conditions + playbooks from fulcrums
+            try {
+              console.log('[LP] Generating watch conditions + playbooks...')
+              await supabase.functions.invoke('lp-output-processor', {
+                body: { simulation_id }
+              })
+              console.log('[LP] Watch conditions + playbooks generated')
+            } catch (err: any) {
+              console.warn('[LP] Output processing failed:', err.message || err)
+            }
           }
         } catch (err: any) {
           console.warn('[LP] Fulcrum identification failed:', err.message || err)
         }
+      }
+
+      // NOW show results — everything is done
+      if (!cancelledRef.current) {
+        setState('complete')
       }
 
     } catch (err: any) {
@@ -549,6 +569,7 @@ export default function SimulationRunner({
             {selectedList.length}/8
           </span>
         </div>
+        <p className="text-xs text-gray-500">Select up to 8 entities to simulate. More entities = longer simulation time.</p>
 
         {loadingEntities ? (
           <div className="flex items-center justify-center py-8">
@@ -727,10 +748,7 @@ export default function SimulationRunner({
               >
                 Back
               </button>
-              <div className="flex items-center gap-2">
-                {selectedList.length > 8 && (
-                  <span className="text-[10px] text-amber-600">Max 8 entities</span>
-                )}
+              <div className="flex flex-col items-end gap-1.5">
                 <button
                   onClick={startSimulation}
                   disabled={selectedList.length === 0 || selectedList.length > 8}
@@ -739,6 +757,9 @@ export default function SimulationRunner({
                   <Play className="w-4 h-4" />
                   Run with {selectedList.length} {selectedList.length === 1 ? 'Entity' : 'Entities'}
                 </button>
+                <span className={`text-[10px] ${selectedList.length > 8 ? 'text-red-500 font-medium' : 'text-gray-400'}`}>
+                  {selectedList.length > 8 ? `Remove ${selectedList.length - 8} to continue` : `Maximum 8 entities`}
+                </span>
               </div>
             </div>
           </>

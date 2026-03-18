@@ -707,9 +707,27 @@ function ReportDetailView({
     setTimeout(() => setCopied(false), 2000)
   }
 
-  // Action: Monitor — create tracked narrative
+  // Action: Monitor — create tracked narrative (with duplicate check)
   const handleMonitor = async () => {
     try {
+      // Check if already monitoring this narrative
+      const { data: existing } = await supabase
+        .from('tracked_narratives')
+        .select('id')
+        .eq('organization_id', report.organization_id)
+        .eq('title', report.title)
+        .limit(1)
+
+      if (existing && existing.length > 0) {
+        // Already exists — just update the timestamp
+        await supabase.from('tracked_narratives')
+          .update({ last_updated_at: new Date().toISOString() })
+          .eq('id', existing[0].id)
+        setMonitorSuccess(true)
+        setTimeout(() => setMonitorSuccess(false), 3000)
+        return
+      }
+
       await supabase.from('tracked_narratives').insert({
         organization_id: report.organization_id,
         title: report.title,

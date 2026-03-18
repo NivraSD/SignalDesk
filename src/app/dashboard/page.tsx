@@ -300,8 +300,15 @@ export default function Dashboard() {
         console.error('Failed to load tracked narratives:', narrativesError)
         setTrackedNarratives([])
       } else {
-        console.log(`📊 Tracked narratives loaded: ${narrativesData?.length || 0} for org ${organization.id}`)
-        setTrackedNarratives(narrativesData || [])
+        // Deduplicate by title — keep the most recent version of each
+        const seen = new Map<string, any>()
+        for (const n of (narrativesData || [])) {
+          const key = (n.title || '').toLowerCase().trim()
+          if (!seen.has(key)) seen.set(key, n)
+        }
+        const deduped = Array.from(seen.values())
+        console.log(`📊 Tracked narratives loaded: ${narrativesData?.length || 0} for org ${organization.id} (${deduped.length} unique)`)
+        setTrackedNarratives(deduped)
       }
 
       // Also load predictions from unified signals table (for Cascades)
