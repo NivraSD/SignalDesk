@@ -962,55 +962,15 @@ export default function MemoryVaultModule({ onOpenInStudio }: MemoryVaultModuleP
     setGeneratingCoverImage(true)
     setCoverImageError(null)
     try {
-      // Build prompt from content metadata
-      const title = itemToPublish.title || 'Untitled'
-      const contentType = itemToPublish.content_type || 'general'
-      const imagePrompt = `Professional, modern cover image for a ${contentType.replace(/-/g, ' ')} titled "${title}". Abstract, clean composition with geometric shapes, gradients, and subtle depth. Dark moody background with accent lighting. Corporate and sophisticated. No text, no words, no letters, no people, no faces. Style: modern, editorial design.`
-
-      // Call vertex-ai-visual edge function directly (Gemini 2.5 Flash Image / Imagen 3.0)
-      const { data, error } = await supabase.functions.invoke('vertex-ai-visual', {
-        body: {
-          type: 'image',
-          prompt: imagePrompt,
-          style: 'digital_art',
-          aspectRatio: '16:9',
-        }
+      // Call generate-cover-image edge function (Gemini 2.5 Flash Image)
+      const { data, error } = await supabase.functions.invoke('generate-cover-image', {
+        body: { contentId: itemToPublish.id, regenerate }
       })
 
       if (error) throw new Error(error.message || 'Image generation failed')
+      if (!data?.success) throw new Error(data?.error || 'No image generated')
 
-      let imageUrl = data?.imageUrl || data?.images?.[0]?.url
-      if (!imageUrl) throw new Error('No image generated')
-
-      // If data URI, upload to storage for a persistent URL
-      if (imageUrl.startsWith('data:image/')) {
-        const base64Data = imageUrl.split(',')[1]
-        const imageType = imageUrl.match(/data:image\/(\w+);/)?.[1] || 'png'
-        const fileName = `covers/${itemToPublish.organization_id || 'global'}/${itemToPublish.id}-${Date.now()}.${imageType}`
-
-        // Decode base64 to Uint8Array for upload
-        const binaryStr = atob(base64Data)
-        const bytes = new Uint8Array(binaryStr.length)
-        for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i)
-
-        const { error: uploadError } = await supabase.storage
-          .from('content-library')
-          .upload(fileName, bytes, { contentType: `image/${imageType}`, upsert: true })
-
-        if (uploadError) throw new Error(`Upload failed: ${uploadError.message}`)
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('content-library')
-          .getPublicUrl(fileName)
-
-        imageUrl = publicUrl
-      }
-
-      // Save cover URL to DB
-      await supabase
-        .from('content_library')
-        .update({ cover_image_url: imageUrl })
-        .eq('id', itemToPublish.id)
+      const imageUrl = data.coverImageUrl
 
       setCoverImagePreview(imageUrl)
       setContentItems(prev => prev.map(i =>
