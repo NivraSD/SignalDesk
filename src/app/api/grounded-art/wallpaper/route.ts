@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { compositeWallpaper } from '@/lib/grounded-overlay'
 
-// Simple GET endpoint for Shortcuts
-// GET /api/grounded-art/wallpaper?key=YOUR_KEY
-// Returns: composited JPEG image directly
+// Simple GET endpoint for iOS Shortcuts
+// GET /api/grounded-art/wallpaper?key=API_KEY
+// Returns JSON: { title, image_url }
+// Shortcut uses native "Overlay Text on Image" for the title
 
-export const maxDuration = 30
+export const maxDuration = 10
 
 const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co'
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
-const GROUNDED_API_KEY = process.env.GROUNDED_API_KEY || 'd677fcd4-7d0f-4e99-b53e-5243e9f99fea'
+const GROUNDED_API_KEY = 'd677fcd4-7d0f-4e99-b53e-5243e9f99fea'
 
 export async function GET(req: NextRequest) {
   const key = new URL(req.url).searchParams.get('key')
@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
 
     const { data: latest } = await supabase
       .from('grounded_art_pieces')
-      .select('id, title, image_url, composited_url')
+      .select('title, image_url')
       .eq('user_id', 'aa40db0f-ec2f-45cc-840f-e227c830e175')
       .order('created_at', { ascending: false })
       .limit(1)
@@ -33,21 +33,9 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'No art found' }, { status: 404 })
     }
 
-    // If composited version exists, redirect to it
-    if (latest.composited_url) {
-      return NextResponse.redirect(latest.composited_url)
-    }
-
-    // Otherwise composite on the fly
-    const imgRes = await fetch(latest.image_url)
-    const imgBuffer = Buffer.from(await imgRes.arrayBuffer())
-    const composited = await compositeWallpaper(imgBuffer, latest.title)
-
-    return new NextResponse(composited, {
-      headers: {
-        'Content-Type': 'image/jpeg',
-        'Cache-Control': 'no-cache',
-      },
+    return NextResponse.json({
+      title: latest.title,
+      image_url: latest.image_url,
     })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
