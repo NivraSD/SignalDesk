@@ -5,8 +5,9 @@ import { svg2png, initialize } from 'npm:svg2png-wasm@1.4.1'
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const GOOGLE_API_KEY = Deno.env.get('GOOGLE_API_KEY')!
+const GROUNDED_API_KEY = Deno.env.get('GROUNDED_API_KEY')!
 
-// Imagen model — use Gemini Flash Image (works with API key, same as grounded-orchestrate)
+// Gemini Flash Image — same model as grounded-orchestrate (proven working)
 const IMAGEN_MODEL = 'gemini-2.5-flash-image'
 
 // iPhone 17 Pro: 1206 x 2622 at 460ppi
@@ -156,8 +157,7 @@ Do NOT include any text, words, letters, or writing in the image.`
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: {
-          responseModalities: ['IMAGE', 'TEXT'],
-          temperature: 1.0,
+          responseModalities: ['TEXT', 'IMAGE'],
         }
       })
     }
@@ -171,19 +171,19 @@ Do NOT include any text, words, letters, or writing in the image.`
 
   const data = await response.json()
 
-  // Extract image from Gemini response (inline_data format)
+  // Extract image from Gemini response — uses inlineData (camelCase, REST API format)
   const parts = data.candidates?.[0]?.content?.parts || []
-  for (const part of parts) {
-    if (part.inline_data?.mime_type?.startsWith('image/')) {
-      return {
-        imageBase64: part.inline_data.data,
-        mimeType: part.inline_data.mime_type,
-      }
-    }
+  const imagePart = parts.find((p: any) => p.inlineData?.mimeType?.startsWith('image/'))
+
+  if (!imagePart?.inlineData?.data) {
+    console.error('No image in response parts:', parts.map((p: any) => Object.keys(p)))
+    throw new Error('RETRY: No image data in response')
   }
 
-  console.error('No image in response parts:', parts.map((p: any) => Object.keys(p)))
-  throw new Error('RETRY: No image data in response')
+  return {
+    imageBase64: imagePart.inlineData.data,
+    mimeType: imagePart.inlineData.mimeType,
+  }
 }
 
 // ── Text Overlay (programmatic — pixel-perfect every time) ───────────────────
@@ -282,33 +282,30 @@ async function uploadToStorage(
   return urlData.publicUrl
 }
 
-// ── Auth Helper ─────────────────────────────────────────────────────────────
+// ── Auth Helper (same pattern as grounded-orchestrate) ──────────────────────
 
 async function resolveUserId(req: Request): Promise<string | null> {
   const url = new URL(req.url)
   const apiKey = req.headers.get('x-api-key') || url.searchParams.get('key')
-  if (apiKey) {
-    const svc = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
-    const { data } = await svc
-      .from('grounded_api_keys')
-      .select('user_id')
-      .eq('api_key', apiKey)
-      .eq('is_active', true)
-      .single()
-    return data?.user_id ?? null
+
+  // API key auth — simple env var comparison, hardcoded user (single-user app)
+  if (apiKey && apiKey === GROUNDED_API_KEY) {
+    return 'aa40db0f-ec2f-45cc-840f-e227c830e175'
   }
 
+  // Bearer token auth (frontend/Supabase client)
   const authHeader = req.headers.get('Authorization')
-  if (!authHeader) return null
+  if (authHeader?.startsWith('Bearer ')) {
+    const token = authHeader.replace('Bearer ', '')
+    const anonClient = createClient(
+      SUPABASE_URL,
+      Deno.env.get('SUPABASE_ANON_KEY') || SUPABASE_SERVICE_KEY
+    )
+    const { data: { user }, error } = await anonClient.auth.getUser(token)
+    if (!error && user) return user.id
+  }
 
-  const token = authHeader.replace('Bearer ', '')
-  const anonClient = createClient(
-    SUPABASE_URL,
-    Deno.env.get('SUPABASE_ANON_KEY') || SUPABASE_SERVICE_KEY
-  )
-  const { data: { user }, error } = await anonClient.auth.getUser(token)
-  if (error || !user) return null
-  return user.id
+  return null
 }
 
 // ── Main Handler ────────────────────────────────────────────────────────────
