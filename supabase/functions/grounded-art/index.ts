@@ -354,8 +354,8 @@ Deno.serve(async (req: Request) => {
       const title = await generateTitle(seed, recentTitles)
       console.log('Title:', title)
 
-      // Step 2: Generate art (Imagen 4 Ultra via Vertex AI)
-      console.log('Generating art with Imagen 4 Ultra...')
+      // Step 2: Generate art (Gemini 2.5 Flash Image)
+      console.log('Generating art...')
       const artResult = await generateArtWithRetry(seed)
 
       // Step 3: Try to overlay title programmatically

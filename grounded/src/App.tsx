@@ -14,6 +14,7 @@ import CalendarPage from '@/components/calendar/CalendarPage'
 import SettingsPage from '@/components/settings/SettingsPage'
 import FeedbackView from '@/components/feedback/FeedbackView'
 import OnOpenScreen from '@/components/open/OnOpenScreen'
+import ArtPage from '@/components/art/ArtPage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { loading, user } = useAuth()
@@ -125,6 +126,15 @@ export default function App() {
           element={
             <ProtectedRoute>
               <AppShell><FeedbackView /></AppShell>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/art"
+          element={
+            <ProtectedRoute>
+              <AppShell><ArtPage /></AppShell>
             </ProtectedRoute>
           }
         />
