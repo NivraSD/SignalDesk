@@ -13,7 +13,7 @@ const GROUNDED_ART_FN = `${SUPABASE_URL}/functions/v1/grounded-art`
 // 1080x1920 output. Title at y=1580 keeps it visible but not cut off.
 const OUTPUT_W = 1080
 const OUTPUT_H = 1920
-const TITLE_Y = 1580
+const TITLE_Y = 1680
 
 export async function POST(req: NextRequest) {
   try {
@@ -92,17 +92,17 @@ export async function POST(req: NextRequest) {
             <stop offset="100%" stop-color="black" stop-opacity="0.35"/>
           </linearGradient>
         </defs>
-        <rect x="0" y="${OUTPUT_H - 500}" width="${OUTPUT_W}" height="500" fill="url(#scrim)"/>
+        <rect x="0" y="${OUTPUT_H - 600}" width="${OUTPUT_W}" height="600" fill="url(#scrim)"/>
         <text
           x="${OUTPUT_W / 2}"
           y="${TITLE_Y}"
           text-anchor="middle"
           font-family="Georgia, 'Times New Roman', serif"
-          font-size="48"
+          font-size="72"
           font-weight="normal"
           fill="white"
-          fill-opacity="0.85"
-          letter-spacing="3"
+          fill-opacity="0.9"
+          letter-spacing="4"
         >${escapedTitle}</text>
       </svg>
     `

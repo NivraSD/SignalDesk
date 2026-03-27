@@ -135,9 +135,11 @@ Palette: ${seed.palette}
 Technique: ${seed.technique}
 Composition: ${seed.composition}
 
-CRITICAL: No text, no letters, no words, no symbols. Pure abstract visual art only. Portrait orientation (9:16 aspect ratio).
-
-Do NOT include any text, words, letters, or writing in the image.`
+ABSOLUTE RULES:
+- ZERO text, letters, words, numbers, symbols, signatures, watermarks, or writing of ANY kind anywhere in the image
+- Fill the ENTIRE canvas edge to edge — no blank margins, no borders, no empty space
+- Portrait orientation (9:16 aspect ratio)
+- This must look like a photograph of a real physical painting, not a digital rendering`
 
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${IMAGEN_MODEL}:generateContent?key=${GOOGLE_API_KEY}`,
