@@ -275,11 +275,80 @@ export default function PalantirDemoPage() {
             </p>
           </div>
 
+          {/* How to explore */}
+          <div style={{
+            textAlign: 'left',
+            marginBottom: 48,
+            opacity: visible ? 1 : 0,
+            transform: visible ? 'translateY(0)' : 'translateY(20px)',
+            transition: 'all 1s cubic-bezier(0.16, 1, 0.3, 1) 0.7s',
+          }}>
+            <h2 style={{
+              fontSize: 11,
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: '0.16em',
+              color: '#c75d3a',
+              marginBottom: 20,
+            }}>How to explore</h2>
+
+            {[
+              {
+                label: 'Intelligence Brief',
+                text: 'Click "Regenerate" to generate a fresh intelligence brief synthesized from live signals. Takes 2\u20133 minutes.',
+              },
+              {
+                label: 'Opportunities',
+                text: 'Click "Generate Opportunity" to discover and fully execute a new opportunity \u2014 you\u2019ll receive completed content and a presentation deck. Takes 2\u20133 minutes.',
+              },
+              {
+                label: 'From any story',
+                text: 'Inside the intelligence brief, click any story to generate a research report or opportunity directly from that signal \u2014 one click.',
+              },
+            ].map((step, i) => (
+              <div key={i} style={{
+                display: 'flex',
+                gap: 14,
+                marginBottom: 16,
+                padding: '14px 18px',
+                background: 'rgba(255,255,255,0.02)',
+                borderRadius: 8,
+                border: '1px solid rgba(199,93,58,0.08)',
+              }}>
+                <div style={{
+                  minWidth: 24,
+                  height: 24,
+                  borderRadius: '50%',
+                  border: '1.5px solid rgba(199,93,58,0.4)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: '#c75d3a',
+                  marginTop: 1,
+                }}>{i + 1}</div>
+                <div>
+                  <span style={{
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: '#ddd',
+                  }}>{step.label}</span>
+                  <span style={{
+                    fontSize: 13,
+                    color: '#888',
+                    marginLeft: 6,
+                  }}>&mdash; {step.text}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
           {/* What's inside — two columns */}
           <div style={{
             opacity: visible ? 1 : 0,
             transform: visible ? 'translateY(0)' : 'translateY(20px)',
-            transition: 'all 1s cubic-bezier(0.16, 1, 0.3, 1) 0.8s',
+            transition: 'all 1s cubic-bezier(0.16, 1, 0.3, 1) 0.9s',
             marginBottom: 52,
           }}>
             <h2 style={{
@@ -342,7 +411,7 @@ export default function PalantirDemoPage() {
           <div style={{
             opacity: visible ? 1 : 0,
             transform: visible ? 'translateY(0) scale(1)' : 'translateY(12px) scale(0.98)',
-            transition: 'all 0.8s cubic-bezier(0.16, 1, 0.3, 1) 1s',
+            transition: 'all 0.8s cubic-bezier(0.16, 1, 0.3, 1) 1.1s',
           }}>
             <button
               onClick={handleEnter}
@@ -386,7 +455,7 @@ export default function PalantirDemoPage() {
             marginTop: 40,
             letterSpacing: '0.03em',
             opacity: visible ? 1 : 0,
-            transition: 'opacity 1s ease 1.2s',
+            transition: 'opacity 1s ease 1.3s',
           }}>
             This is a private demo environment. All data is illustrative.
           </p>
