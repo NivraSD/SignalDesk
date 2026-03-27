@@ -1,6 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders, handleCors, jsonResponse, errorResponse } from '../_shared/cors.ts'
-import { svg2png, initialize } from 'npm:svg2png-wasm@1.4.1'
+// WASM overlay removed — compositing now handled by Vercel Node.js route with Sharp
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -16,16 +16,6 @@ const IMG_H = 2622
 // Title: centered, 1.5 inches (690px) from bottom
 const TITLE_Y = IMG_H - 690
 
-// ── WASM initialization (lazy, once) ──────────────────────────────────────────
-
-let wasmReady = false
-async function ensureWasm() {
-  if (wasmReady) return
-  const wasmResponse = await fetch('https://unpkg.com/svg2png-wasm@1.4.1/svg2png_wasm_bg.wasm')
-  const wasmBuffer = await wasmResponse.arrayBuffer()
-  await initialize(new Uint8Array(wasmBuffer))
-  wasmReady = true
-}
 
 // ── Style Dimensions — grounded in real art movements & artists ──────────────
 
@@ -186,44 +176,6 @@ Do NOT include any text, words, letters, or writing in the image.`
   }
 }
 
-// ── Text Overlay (programmatic — pixel-perfect every time) ───────────────────
-
-async function overlayTitle(
-  imageBase64: string,
-  mimeType: string,
-  title: string
-): Promise<{ imageBase64: string; mimeType: string }> {
-  await ensureWasm()
-
-  const fontSize = Math.round(IMG_H * 0.012) // ~31px — small gallery label
-  const escapedTitle = title.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${IMG_W}" height="${IMG_H}">
-  <image href="data:${mimeType};base64,${imageBase64}" width="${IMG_W}" height="${IMG_H}" />
-  <text
-    x="${IMG_W / 2}"
-    y="${TITLE_Y}"
-    text-anchor="middle"
-    font-family="Helvetica, Arial, sans-serif"
-    font-weight="300"
-    font-size="${fontSize}"
-    fill="white"
-    fill-opacity="0.45"
-    letter-spacing="2"
-  >${escapedTitle}</text>
-</svg>`
-
-  const pngBuffer = await svg2png(svg, { width: IMG_W, height: IMG_H })
-
-  // Convert Uint8Array to base64
-  let binary = ''
-  for (let i = 0; i < pngBuffer.length; i++) {
-    binary += String.fromCharCode(pngBuffer[i])
-  }
-  const composited = btoa(binary)
-
-  return { imageBase64: composited, mimeType: 'image/png' }
-}
 
 // ── Retry wrapper ────────────────────────────────────────────────────────────
 
@@ -358,20 +310,8 @@ Deno.serve(async (req: Request) => {
       console.log('Generating art...')
       const artResult = await generateArtWithRetry(seed)
 
-      // Step 3: Try to overlay title programmatically
-      let finalImage = artResult
-      let overlayApplied = false
-      try {
-        console.log('Compositing title overlay...')
-        finalImage = await overlayTitle(artResult.imageBase64, artResult.mimeType, title)
-        overlayApplied = true
-        console.log('Title overlay applied successfully')
-      } catch (overlayErr: any) {
-        console.error('Title overlay failed (returning raw image):', overlayErr.message)
-      }
-
-      // Step 4: Upload
-      const imageUrl = await uploadToStorage(supabase, userId, finalImage.imageBase64, finalImage.mimeType)
+      // Step 3: Upload raw image (overlay done by Vercel Node.js route with Sharp)
+      const imageUrl = await uploadToStorage(supabase, userId, artResult.imageBase64, artResult.mimeType)
       console.log('Uploaded to:', imageUrl)
 
       const { data: record, error: insertError } = await supabase
@@ -408,7 +348,7 @@ Deno.serve(async (req: Request) => {
         title: record.title,
         image_url: record.image_url,
         created_at: record.created_at,
-        overlay_applied: overlayApplied,
+        overlay_applied: false,
       })
     }
 
