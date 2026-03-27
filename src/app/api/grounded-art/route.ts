@@ -4,6 +4,9 @@ import sharp from 'sharp'
 // DO NOT add: export const runtime = 'edge'
 // Node.js runtime required for Sharp
 
+// Allow up to 60s for AI image generation + overlay compositing
+export const maxDuration = 60
+
 const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co'
 const GROUNDED_ART_FN = `${SUPABASE_URL}/functions/v1/grounded-art`
 
