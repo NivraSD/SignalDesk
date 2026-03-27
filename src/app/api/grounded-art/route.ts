@@ -7,13 +7,8 @@ import sharp from 'sharp'
 const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co'
 const GROUNDED_ART_FN = `${SUPABASE_URL}/functions/v1/grounded-art`
 
-// iPhone lock screen safe zone: title needs to be above the clock/widgets
-// but below the top notch area. Bottom third is safest — between the
-// time display and the flashlight/camera buttons there's a sweet spot.
-// 1080x1920 output. Title at y=1580 keeps it visible but not cut off.
 const OUTPUT_W = 1080
 const OUTPUT_H = 1920
-const TITLE_Y = 1680
 
 export async function POST(req: NextRequest) {
   try {
@@ -77,40 +72,44 @@ export async function POST(req: NextRequest) {
     }
     const imgBuffer = Buffer.from(await imgRes.arrayBuffer())
 
-    // Step 3: Composite title overlay with Sharp
+    // Step 3: Create text overlay as a separate Sharp image, then composite
+    // Sharp's SVG renderer has limited font support in serverless — use sans-serif
+    // and the full SVG namespace for reliable rendering
     const escapedTitle = title
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
 
-    const svgOverlay = `
-      <svg width="${OUTPUT_W}" height="${OUTPUT_H}">
-        <defs>
-          <linearGradient id="scrim" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="black" stop-opacity="0"/>
-            <stop offset="100%" stop-color="black" stop-opacity="0.35"/>
-          </linearGradient>
-        </defs>
-        <rect x="0" y="${OUTPUT_H - 600}" width="${OUTPUT_W}" height="600" fill="url(#scrim)"/>
-        <text
-          x="${OUTPUT_W / 2}"
-          y="${TITLE_Y}"
-          text-anchor="middle"
-          font-family="Georgia, 'Times New Roman', serif"
-          font-size="72"
-          font-weight="normal"
-          fill="white"
-          fill-opacity="0.9"
-          letter-spacing="4"
-        >${escapedTitle}</text>
-      </svg>
-    `
+    // Gradient scrim + large readable title text
+    // Position: bottom area, above the lock screen flashlight/camera buttons
+    // iPhone safe zone: buttons are at ~y=1800+, clock at ~y=200
+    // Sweet spot for title: y=1620 (comfortably visible)
+    const svgOverlay = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${OUTPUT_W}" height="${OUTPUT_H}">
+  <defs>
+    <linearGradient id="scrim" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="black" stop-opacity="0"/>
+      <stop offset="100%" stop-color="black" stop-opacity="0.45"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="${OUTPUT_H - 650}" width="${OUTPUT_W}" height="650" fill="url(#scrim)"/>
+  <text
+    x="${OUTPUT_W / 2}"
+    y="1620"
+    text-anchor="middle"
+    font-family="sans-serif"
+    font-size="80"
+    font-weight="300"
+    fill="white"
+    fill-opacity="0.92"
+    letter-spacing="6"
+  >${escapedTitle}</text>
+</svg>`)
 
     const composited = await sharp(imgBuffer)
       .resize(OUTPUT_W, OUTPUT_H, { fit: 'cover' })
       .composite([{
-        input: Buffer.from(svgOverlay),
+        input: svgOverlay,
         top: 0,
         left: 0,
       }])
