@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing API key' }, { status: 401 })
     }
 
-    const body = await req.json().catch(() => ({}))
+    const body = await req.json().catch(() => ({ action: 'generate' }))
     const action = body.action || 'generate'
 
     // Pass through non-generate actions directly to edge function
