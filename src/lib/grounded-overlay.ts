@@ -3,28 +3,36 @@ import sharp from 'sharp'
 const OUTPUT_W = 1080
 const OUTPUT_H = 1920
 
-/**
- * Composites title text onto an art image for phone wallpaper.
- * Dynamically sizes text based on title length.
- * Gradient scrim ensures readability over any image.
- * Positioned for iPhone lock screen — visible above bottom buttons,
- * below the clock.
- */
 export async function compositeWallpaper(
   imageBuffer: Buffer,
   title: string
 ): Promise<Buffer> {
-  const escaped = title
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-
-  // Dynamic font size: shorter titles get bigger text
+  // Dynamic font size based on title length
   const charCount = title.length
   const fontSize = charCount <= 15 ? 80 : charCount <= 25 ? 64 : 52
 
-  const svg = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${OUTPUT_W}" height="${OUTPUT_H}">
+  // Create text image using Sharp's built-in text rendering (Pango)
+  // This works in serverless because it doesn't depend on system fonts
+  const textImage = await sharp({
+    text: {
+      text: `<span foreground="white" font_size="${fontSize * 1024}" letter_spacing="${4 * 1024}">${title.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>`,
+      font: 'sans-serif',
+      fontfile: '',
+      rgba: true,
+      dpi: 72,
+      width: OUTPUT_W - 120, // Leave margins
+      align: 'centre',
+    },
+  })
+    .png()
+    .toBuffer()
+
+  // Get text image dimensions to position it
+  const textMeta = await sharp(textImage).metadata()
+  const textHeight = textMeta.height || 100
+
+  // Gradient scrim — just a dark overlay at the bottom
+  const scrimSvg = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${OUTPUT_W}" height="${OUTPUT_H}">
   <defs>
     <linearGradient id="s" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="#000" stop-opacity="0"/>
@@ -32,15 +40,22 @@ export async function compositeWallpaper(
     </linearGradient>
   </defs>
   <rect x="0" y="${OUTPUT_H - 650}" width="${OUTPUT_W}" height="650" fill="url(#s)"/>
-  <text x="${OUTPUT_W / 2}" y="1620" text-anchor="middle" font-family="sans-serif" font-size="${fontSize}" font-weight="300" fill="white" fill-opacity="0.9" letter-spacing="4">${escaped}</text>
 </svg>`)
+
+  // Center text horizontally, position in lower third
+  const textWidth = textMeta.width || 400
+  const textTop = OUTPUT_H - 300 - Math.floor(textHeight / 2)
+  const textLeft = Math.floor((OUTPUT_W - textWidth) / 2)
 
   const base = await sharp(imageBuffer)
     .resize(OUTPUT_W, OUTPUT_H, { fit: 'cover' })
     .toBuffer()
 
   return sharp(base)
-    .composite([{ input: svg, top: 0, left: 0 }])
+    .composite([
+      { input: scrimSvg, top: 0, left: 0 },
+      { input: textImage, top: textTop, left: textLeft },
+    ])
     .jpeg({ quality: 92 })
     .toBuffer()
 }
