@@ -12,9 +12,12 @@ export async function compositeWallpaper(
   const charCount = title.length
   const fontSize = charCount <= 15 ? 72 : charCount <= 25 ? 58 : 46
 
-  // Render text using Canvas API — works everywhere, no font file needed
-  const canvas = createCanvas(OUTPUT_W, OUTPUT_H)
+  // Render text using Canvas API
+  // Use 2x scale to ensure text is large enough on all environments
+  const scale = 2
+  const canvas = createCanvas(OUTPUT_W * scale, OUTPUT_H * scale)
   const ctx = canvas.getContext('2d')
+  ctx.scale(scale, scale)
 
   // Transparent background
   ctx.clearRect(0, 0, OUTPUT_W, OUTPUT_H)
@@ -37,8 +40,12 @@ export async function compositeWallpaper(
   const textY = OUTPUT_H - 300
   ctx.fillText(title, OUTPUT_W / 2, textY)
 
-  // Convert canvas to PNG buffer
-  const overlayBuffer = Buffer.from(canvas.toBuffer('image/png'))
+  // Convert canvas to PNG buffer, resize back to output dimensions
+  const rawOverlay = Buffer.from(canvas.toBuffer('image/png'))
+  const overlayBuffer = await sharp(rawOverlay)
+    .resize(OUTPUT_W, OUTPUT_H)
+    .png()
+    .toBuffer()
 
   // Resize source image and composite
   const base = await sharp(imageBuffer)
