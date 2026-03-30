@@ -12,7 +12,61 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')!;
+const GOOGLE_API_KEY = Deno.env.get('GOOGLE_AI_API_KEY') || Deno.env.get('GEMINI_API_KEY') || Deno.env.get('GOOGLE_API_KEY');
+const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
+
+// Shared AI caller: Gemini 2.5 Flash primary, Claude fallback
+async function callAI(prompt: string, maxTokens = 4000): Promise<string> {
+  if (GOOGLE_API_KEY) {
+    try {
+      const resp = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GOOGLE_API_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.3, maxOutputTokens: maxTokens }
+          }),
+          signal: AbortSignal.timeout(55000)
+        }
+      );
+      if (resp.ok) {
+        const data = await resp.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        if (text) return text;
+      }
+      console.warn(`Gemini ${resp.status}, falling back to Claude`);
+    } catch (err: any) {
+      console.warn(`Gemini failed: ${err.message}, falling back to Claude`);
+    }
+  }
+
+  if (ANTHROPIC_API_KEY) {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: maxTokens,
+        messages: [{ role: 'user', content: prompt }]
+      }),
+      signal: AbortSignal.timeout(60000)
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      const text = data.content?.[0]?.text || '';
+      if (text) return text;
+    }
+    throw new Error(`Claude API error: ${resp.status}`);
+  }
+
+  throw new Error('No AI model available');
+}
 
 // Configuration
 const MAX_MATCHES_PER_RUN = 50;  // Process up to 50 matches per run
@@ -300,7 +354,7 @@ serve(async (req) => {
                 article_title: articleMatch.raw_articles.title,
                 article_source: articleMatch.raw_articles.source_name,
                 article_published_at: articleMatch.raw_articles.published_at,
-                extraction_model: 'claude-sonnet-4'
+                extraction_model: 'gemini-2.5-flash'
               }, {
                 onConflict: 'target_id,article_id'
               });
@@ -436,7 +490,7 @@ serve(async (req) => {
                       article_title: `[Search] ${compResults[0]?.title || competitorName}`,
                       article_source: 'Competitor Search',
                       article_published_at: new Date().toISOString(),
-                      extraction_model: 'claude-sonnet-4'
+                      extraction_model: 'gemini-2.5-flash'
                     }, {
                       onConflict: 'target_id,fact_summary',
                       ignoreDuplicates: true
@@ -565,30 +619,7 @@ Return JSON array:
 Return ONLY the JSON array.`;
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 4000,
-        messages: [{
-          role: 'user',
-          content: prompt
-        }]
-      })
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Claude API error: ${response.status} - ${errorText}`);
-    }
-
-    const data = await response.json();
-    const content = data.content?.[0]?.text || '';
+    const content = await callAI(prompt, 4000);
 
     // Parse JSON from response
     const jsonMatch = content.match(/\[[\s\S]*\]/);
@@ -622,7 +653,7 @@ Return ONLY the JSON array.`;
     }));
 
   } catch (error: any) {
-    console.error(`     Claude extraction error: ${error.message}`);
+    console.error(`     AI extraction error: ${error.message}`);
     return [];
   }
 }
@@ -688,30 +719,7 @@ Return JSON array:
 Return ONLY the JSON array. Return empty array [] if no meaningful facts can be extracted.`;
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 3000,
-        messages: [{
-          role: 'user',
-          content: prompt
-        }]
-      })
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Claude API error: ${response.status} - ${errorText}`);
-    }
-
-    const data = await response.json();
-    const content = data.content?.[0]?.text || '';
+    const content = await callAI(prompt, 3000);
 
     // Parse JSON from response
     const jsonMatch = content.match(/\[[\s\S]*\]/);
@@ -738,7 +746,7 @@ Return ONLY the JSON array. Return empty array [] if no meaningful facts can be 
     }));
 
   } catch (error: any) {
-    console.error(`     Search fact extraction error: ${error.message}`);
+    console.error(`     AI search extraction error: ${error.message}`);
     return [];
   }
 }

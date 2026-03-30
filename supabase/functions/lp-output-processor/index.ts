@@ -98,58 +98,85 @@ function robustParseJSON(content: string): any {
   return null
 }
 
+// Normalize fulcrum type to safe values (handles CHECK constraint if it exists)
+const VALID_FULCRUM_TYPES = new Set(['narrative_shift', 'regulatory', 'market', 'reputational', 'political', 'alliance'])
+function safeFulcrumType(raw: string): string {
+  const normalized = (raw || '').toLowerCase().replace(/[\s_-]+/g, '_')
+  if (VALID_FULCRUM_TYPES.has(normalized)) return normalized
+  // Map common variants
+  if (normalized.includes('narrat')) return 'narrative_shift'
+  if (normalized.includes('regulat') || normalized.includes('legal') || normalized.includes('policy')) return 'regulatory'
+  if (normalized.includes('market') || normalized.includes('econom') || normalized.includes('financ')) return 'market'
+  if (normalized.includes('reput') || normalized.includes('brand') || normalized.includes('trust')) return 'reputational'
+  if (normalized.includes('politic') || normalized.includes('govern') || normalized.includes('election')) return 'political'
+  if (normalized.includes('allian') || normalized.includes('partner') || normalized.includes('coalition')) return 'alliance'
+  return 'reputational' // safe default
+}
+
 async function callAI(prompt: string): Promise<{ text: string; model: string }> {
+  const t0 = Date.now()
+  const elapsed = () => ((Date.now() - t0) / 1000).toFixed(1)
+
+  // v3: direct fetch, no retry wrapper, Gemini 2.0 Flash (faster)
   if (GOOGLE_API_KEY) {
+    console.log('[v3] Calling Gemini 2.5 Flash...')
     try {
-      const resp = await fetchWithRetry(
+      const resp = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GOOGLE_API_KEY}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.5, maxOutputTokens: 6000 }
+            generationConfig: { temperature: 0.5, maxOutputTokens: 16000 }
           }),
-          signal: AbortSignal.timeout(50000)
+          signal: AbortSignal.timeout(60000)
         }
       )
+      console.log(`[v3] Gemini responded: ${resp.status} after ${elapsed()}s`)
       if (resp.ok) {
         const data = await resp.json()
         const text = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
         if (text) return { text, model: 'gemini-2.5-flash' }
       }
     } catch (err: any) {
-      console.warn('Gemini failed:', err.message)
+      console.warn(`[v3] Gemini failed after ${elapsed()}s:`, err.message)
     }
   }
 
   if (ANTHROPIC_API_KEY) {
-    const resp = await fetchWithRetry(
-      'https://api.anthropic.com/v1/messages',
-      {
-        method: 'POST',
-        headers: {
-          'x-api-key': ANTHROPIC_API_KEY,
-          'anthropic-version': '2023-06-01',
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 6000,
-          temperature: 0.5,
-          messages: [{ role: 'user', content: prompt }]
-        }),
-        signal: AbortSignal.timeout(50000)
+    console.log(`[v3] Calling Claude after ${elapsed()}s...`)
+    try {
+      const resp = await fetch(
+        'https://api.anthropic.com/v1/messages',
+        {
+          method: 'POST',
+          headers: {
+            'x-api-key': ANTHROPIC_API_KEY,
+            'anthropic-version': '2023-06-01',
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 16000,
+            temperature: 0.5,
+            messages: [{ role: 'user', content: prompt }]
+          }),
+          signal: AbortSignal.timeout(70000)
+        }
+      )
+      console.log(`[v3] Claude responded: ${resp.status} after ${elapsed()}s`)
+      if (resp.ok) {
+        const data = await resp.json()
+        const text = data.content?.[0]?.text || ''
+        if (text) return { text, model: 'claude-sonnet-4' }
       }
-    )
-    if (resp.ok) {
-      const data = await resp.json()
-      const text = data.content?.[0]?.text || ''
-      if (text) return { text, model: 'claude-sonnet-4' }
+    } catch (err: any) {
+      console.warn(`[v3] Claude failed after ${elapsed()}s:`, err.message)
     }
   }
 
-  throw new Error('No AI model available')
+  throw new Error(`No AI model available (elapsed: ${elapsed()}s)`)
 }
 
 // === Main handler ===
@@ -188,66 +215,39 @@ serve(async (req) => {
     // Delete any existing watch conditions for this simulation (re-processing)
     await supabase.from('lp_watch_conditions').delete().eq('simulation_id', simulation_id)
 
-    // Build context from rounds
+    // Build CONCISE context from rounds — just decisions, not full summaries
     const roundContext = rounds.map((round: any) => {
       const responses = round.entity_responses || []
       const active = responses.filter((r: any) => r.response_decision !== 'silent')
-      return `Round ${round.round_number} (${round.cross_analysis?.phase_name || 'Unknown'}): ${active.map((r: any) => `${r.entity_name}: ${r.position_summary || r.decision_rationale}`).join('; ')}`
+      return `R${round.round_number} (${round.cross_analysis?.phase_name || '?'}): ${active.map((r: any) => `${r.entity_name}=${r.response_decision}`).join(', ')}`
     }).join('\n')
 
     const fulcrumContext = fulcrums.map((f: any) =>
-      `[${f.fulcrum_id}] ${f.type}: ${f.description}${f.target_entity ? ` (target: ${f.target_entity})` : ''} — ${f.rationale}`
+      `[${f.fulcrum_id}] ${f.type}: ${f.description} (target: ${f.target_entity || 'N/A'})`
     ).join('\n')
 
-    const prompt = `You are a strategic communications advisor. Generate watch conditions and playbooks for each fulcrum identified in this simulation.
+    const prompt = `Generate watch conditions and playbooks for these simulation fulcrums. Output ONLY valid JSON.
 
-## Simulation Context
 Entities: ${(simulation.entities || []).map((e: any) => e.entity_name).join(', ')}
-Dominant narratives: ${(simulation.dominant_narratives || []).join(', ')}
+Narratives: ${(simulation.dominant_narratives || []).slice(0, 3).join(', ')}
+Rounds: ${roundContext}
 
-## Round Summary
-${roundContext}
-
-## Fulcrums to Process
+Fulcrums:
 ${fulcrumContext}
 
-For EACH fulcrum, generate:
-1. A **watch condition**: a specific, observable trigger signal to monitor
-2. A **playbook**: tactical response plan if the trigger fires
+For EACH fulcrum, output a watch_condition and playbook. JSON format:
+{"outputs":[{"fulcrum_id":"f_1","watch_condition":{"condition_name":"Short name","fulcrum_type":"narrative_shift|regulatory|market|reputational|political|alliance","trigger_description":"Observable trigger event","target_entity":"Entity to monitor","effort_level":"critical|high|medium|low","impact_level":"critical|high|medium|low"},"playbook":{"playbook_name":"Action name","headline_response":"First thing to say/do","talking_points":["Point 1","Point 2","Point 3"],"positioning_statement":"2 sentence position","media_angle":"Pitch angle","social_draft":"Ready-to-post message","sequence_notes":"72hr action plan","cascade_prediction":"What happens next","priority":"critical|high|medium|low"}}]}
 
-Output ONLY valid JSON:
-{
-  "outputs": [
-    {
-      "fulcrum_id": "f_1",
-      "watch_condition": {
-        "condition_name": "Short descriptive name",
-        "trigger_description": "Specific observable event that signals this fulcrum is activating",
-        "monitoring_source": "media monitoring|regulatory filings|social listening|industry events|financial reports|etc",
-        "threshold": "When to trigger (e.g., '2+ media mentions in 48hrs', 'official statement published')",
-        "priority": "critical|high|medium|low"
-      },
-      "playbook": {
-        "playbook_name": "Action-oriented name",
-        "headline_response": "One sentence: the first thing the client should say/do",
-        "talking_points": ["3-5 specific, ready-to-use talking points"],
-        "positioning_statement": "2-3 sentence positioning statement for the client",
-        "media_angle": "How to pitch this to media",
-        "social_draft": "Ready-to-post social media message",
-        "sequence_notes": "Step-by-step: what to do in what order over 72 hours",
-        "cascade_prediction": "What happens after the client executes this playbook",
-        "priority": "critical|high|medium|low"
-      }
-    }
-  ]
-}
-
-Be specific and actionable. Reference actual entity names. Every talking point should be usable as-is.`
+Be specific but CONCISE. Each field should be 1-2 sentences max. Talking points: 3 bullet points, each under 20 words. Return one output per fulcrum.`
 
     const { text, model } = await callAI(prompt)
+    console.log(`[v3] AI text (${text.length} chars): ${text.substring(0, 300)}...`)
+
     const parsed = robustParseJSON(text)
+    console.log(`[v3] Parsed keys: ${parsed ? Object.keys(parsed).join(',') : 'NULL'}`)
 
     if (!parsed?.outputs || !Array.isArray(parsed.outputs)) {
+      console.error(`[v3] Parse failed. Raw text last 200: ${text.substring(text.length - 200)}`)
       return errorResponse('Failed to parse AI output', 500)
     }
 
@@ -261,18 +261,21 @@ Be specific and actionable. Reference actual entity names. Every talking point s
       const pb = output.playbook
       if (!wc || !pb) continue
 
-      // Insert watch condition
+      // Insert watch condition (matches actual lp_watch_conditions schema)
       const { data: wcRow, error: wcErr } = await supabase
         .from('lp_watch_conditions')
         .insert({
           simulation_id,
+          organization_id: simulation.organization_id || null,
           fulcrum_id: output.fulcrum_id || 'unknown',
-          condition_name: wc.condition_name || 'Unnamed condition',
-          trigger_description: wc.trigger_description || '',
-          monitoring_source: wc.monitoring_source || null,
-          threshold: wc.threshold || null,
+          fulcrum_type: safeFulcrumType(wc.fulcrum_type),
+          condition_text: wc.condition_name || wc.condition_text || 'Unnamed condition',
+          condition_context: wc.trigger_description || wc.condition_context || '',
+          target_entity: wc.target_entity || wc.monitoring_source || null,
           status: 'active',
-          priority: ['critical', 'high', 'medium', 'low'].includes(wc.priority) ? wc.priority : 'medium'
+          effort_level: wc.effort_level || wc.priority || 'medium',
+          impact_level: wc.impact_level || 'medium',
+          scenario_context: wc.scenario_context || wc.threshold || null
         })
         .select()
         .single()
@@ -282,21 +285,25 @@ Be specific and actionable. Reference actual entity names. Every talking point s
         continue
       }
 
-      // Insert playbook linked to watch condition
+      // Insert playbook linked to watch condition (matches actual lp_playbooks schema)
       const { data: pbRow, error: pbErr } = await supabase
         .from('lp_playbooks')
         .insert({
           watch_condition_id: wcRow.id,
           simulation_id,
-          playbook_name: pb.playbook_name || 'Unnamed playbook',
+          organization_id: simulation.organization_id || null,
+          title: pb.playbook_name || pb.title || 'Unnamed playbook',
           headline_response: pb.headline_response || null,
-          talking_points: Array.isArray(pb.talking_points) ? pb.talking_points : [],
+          talking_points: Array.isArray(pb.talking_points) ? pb.talking_points : (typeof pb.talking_points === 'string' ? [pb.talking_points] : []),
           positioning_statement: pb.positioning_statement || null,
           media_angle: pb.media_angle || null,
           social_draft: pb.social_draft || null,
-          sequence_notes: pb.sequence_notes || null,
-          cascade_prediction: pb.cascade_prediction || null,
-          priority: ['critical', 'high', 'medium', 'low'].includes(pb.priority) ? pb.priority : 'medium'
+          sequence_notes: typeof pb.sequence_notes === 'string' ? pb.sequence_notes : JSON.stringify(pb.sequence_notes || ''),
+          cascade_prediction: Array.isArray(pb.cascade_prediction) ? pb.cascade_prediction : (typeof pb.cascade_prediction === 'string' ? [pb.cascade_prediction] : []),
+          response_urgency: ['critical', 'high', 'medium', 'low'].includes(pb.priority) ? pb.priority : 'medium',
+          fulcrum_type: safeFulcrumType(wc.fulcrum_type),
+          target_entity: wc.target_entity || null,
+          status: 'ready'
         })
         .select()
         .single()

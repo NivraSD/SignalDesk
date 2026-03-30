@@ -1,0 +1,508 @@
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://www.humain.com/#organization",
+      "name": "HUMAIN",
+      "alternateName": ["Humain AI", "HUMAIN AI"],
+      "legalName": "Al-Mustaqbal Lil-Thaka Al-Istinai Company",
+      "url": "https://www.humain.com/",
+      "logo": "https://www.humain.com/content/dam/PIF-Humain/humain-logo.png",
+      "foundingDate": "2025-05-12",
+      "founder": {
+        "@type": "Person",
+        "name": "H.R.H. Prince Mohammed bin Salman bin Abdulaziz Al Saud",
+        "jobTitle": "Crown Prince and Prime Minister of the Kingdom of Saudi Arabia"
+      },
+      "parentOrganization": {
+        "@type": "Organization",
+        "name": "Public Investment Fund",
+        "alternateName": "PIF",
+        "url": "https://www.pif.gov.sa/"
+      },
+      "slogan": "The End of Limits",
+      "description": "HUMAIN is Saudi Arabia's flagship artificial intelligence company, operating as a subsidiary of the Public Investment Fund (PIF) as part of the Kingdom's Vision 2030 economic diversification strategy. Founded on May 12, 2025 to establish Saudi Arabia as a global AI hub, HUMAIN develops sovereign AI capabilities including the Arabic-first ALLAM large language model, the next-generation agentic AI operating system HUMAIN ONE, comprehensive AI infrastructure including next-generation data centers with 18,000+ NVIDIA GPUs, and full-stack AI solutions serving the Middle East and North Africa region. HUMAIN pursues a 'silicon diversity' strategy partnering with NVIDIA, AMD, Groq, and Qualcomm.",
+      "industry": "Artificial Intelligence",
+      "numberOfEmployees": {
+        "@type": "QuantitativeValue",
+        "value": "500+"
+      },
+      "sameAs": [
+        "https://x.com/HUMAINAI",
+        "https://www.linkedin.com/company/humainai/",
+        "https://en.wikipedia.org/wiki/Humain",
+        "https://www.vision2030.gov.sa/en/explore/projects/humain",
+        "https://www.pif.gov.sa/en/our-investments/our-portfolio/humain/"
+      ],
+      "makesOffer": [
+        {"@id": "https://www.humain.com/#product-0"},
+        {"@id": "https://www.humain.com/#product-1"},
+        {"@id": "https://www.humain.com/#product-2"},
+        {"@id": "https://www.humain.com/#product-3"},
+        {"@id": "https://www.humain.com/#product-4"},
+        {"@id": "https://www.humain.com/#product-5"}
+      ],
+      "hasOfferCatalog": {
+        "@type": "OfferCatalog",
+        "itemListElement": [
+          {"@id": "https://www.humain.com/#service-0"},
+          {"@id": "https://www.humain.com/#service-1"},
+          {"@id": "https://www.humain.com/#service-2"},
+          {"@id": "https://www.humain.com/#service-3"},
+          {"@id": "https://www.humain.com/#service-4"}
+        ]
+      },
+      "location": [
+        {"@id": "https://www.humain.com/#location-0"},
+        {"@id": "https://www.humain.com/#location-1"}
+      ],
+      "subOrganization": [
+        {"@id": "https://www.humain.com/#subsidiary-0"}
+      ],
+      "member": [
+        {"@id": "https://www.humain.com/#person-0"},
+        {"@id": "https://www.humain.com/#person-1"},
+        {"@id": "https://www.humain.com/#person-2"},
+        {"@id": "https://www.humain.com/#person-3"},
+        {"@id": "https://www.humain.com/#person-4"},
+        {"@id": "https://www.humain.com/#person-5"},
+        {"@id": "https://www.humain.com/#person-6"},
+        {"@id": "https://www.humain.com/#person-7"},
+        {"@id": "https://www.humain.com/#person-8"},
+        {"@id": "https://www.humain.com/#person-9"}
+      ],
+      "sponsor": [
+        {
+          "@type": "Organization",
+          "name": "Saudi Aramco",
+          "description": "Significant minority stakeholder in HUMAIN, contributing AI assets including Aramco Digital subsidiary",
+          "url": "https://www.aramco.com/"
+        }
+      ],
+      "knowsAbout": [
+        "sovereign artificial intelligence",
+        "Arabic language model",
+        "ALLAM LLM",
+        "Saudi AI company",
+        "Public Investment Fund PIF",
+        "agentic AI operating system",
+        "AI infrastructure Middle East",
+        "enterprise AI agents",
+        "smart cities AI",
+        "government AI solutions",
+        "Arabic conversational AI",
+        "Vision 2030 Saudi Arabia",
+        "AI data centers",
+        "LPU inference engines",
+        "Islamic AI chatbot",
+        "sovereign computing",
+        "Arabic AI content creation",
+        "MENA region AI",
+        "energy sector AI",
+        "financial markets AI",
+        "AI-native data centers",
+        "GPU cluster training infrastructure",
+        "edge-to-cloud AI",
+        "Arabic natural language processing",
+        "culturally relevant AI",
+        "AI for healthcare",
+        "semiconductor design",
+        "hyperscale GPU data centers",
+        "full-stack AI ecosystem"
+      ],
+      "mainEntity": [
+        {"@id": "https://www.humain.com/#faqpage"}
+      ],
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "email": "chat@humain.ai",
+        "contactType": "customer service"
+      }
+    },
+
+    {
+      "@type": "Product",
+      "@id": "https://www.humain.com/#product-0",
+      "name": "HUMAIN ONE",
+      "description": "Next-generation agentic AI operating system that provides a single AI-powered interface for all enterprise apps, executing tasks with precision so teams can focus on outcomes, not processes. Launched with strategic partners EY, Groq, and Replit.",
+      "brand": {"@type": "Brand", "name": "HUMAIN"},
+      "category": "Enterprise AI Software",
+      "offers": {
+        "@type": "Offer",
+        "availability": "https://schema.org/InStock",
+        "price": "0",
+        "priceCurrency": "USD",
+        "description": "Contact for enterprise pricing"
+      }
+    },
+    {
+      "@type": "Product",
+      "@id": "https://www.humain.com/#product-1",
+      "name": "HUMAIN Chat",
+      "description": "Conversational AI fluent in Islamic culture, values, and heritage. Runs locally with ALLAM 7B, and scales to the cloud with ALLAM 34B for unlimited knowledge and deeper conversations. Specifically designed for Arab and Muslim users, launched August 2025.",
+      "brand": {"@type": "Brand", "name": "HUMAIN"},
+      "category": "AI Chat Application",
+      "offers": {
+        "@type": "Offer",
+        "availability": "https://schema.org/InStock",
+        "price": "0",
+        "priceCurrency": "USD",
+        "description": "Free to use"
+      }
+    },
+    {
+      "@type": "Product",
+      "@id": "https://www.humain.com/#product-2",
+      "name": "HUMAIN Create",
+      "description": "Bring your ideas to life. Generate stories, visuals, and videos. Limited only by your imagination.",
+      "brand": {"@type": "Brand", "name": "HUMAIN"},
+      "category": "AI Content Creation",
+      "offers": {
+        "@type": "Offer",
+        "availability": "https://schema.org/InStock",
+        "price": "0",
+        "priceCurrency": "USD",
+        "description": "Free to use"
+      }
+    },
+    {
+      "@type": "Product",
+      "@id": "https://www.humain.com/#product-3",
+      "name": "HUMAIN Search",
+      "description": "Deep research tool powered by industry-leading accuracy that delivers comprehensive, citation-backed results you can trust.",
+      "brand": {"@type": "Brand", "name": "HUMAIN"},
+      "category": "AI Search Engine",
+      "offers": {
+        "@type": "Offer",
+        "availability": "https://schema.org/InStock",
+        "price": "0",
+        "priceCurrency": "USD",
+        "description": "Free to use"
+      }
+    },
+    {
+      "@type": "Product",
+      "@id": "https://www.humain.com/#product-4",
+      "name": "HUMAIN Horizon Pro",
+      "description": "AI PC with enterprise-grade capacity for creators, coders, and power users. Features 1TB SSD storage, 32GB RAM, up to 18hrs battery, 14\" AMOLED display, powered by Snapdragon X Elite processors.",
+      "brand": {"@type": "Brand", "name": "HUMAIN"},
+      "category": "AI Personal Computer",
+      "offers": {
+        "@type": "Offer",
+        "availability": "https://schema.org/PreOrder",
+        "priceCurrency": "SAR",
+        "description": "Contact for pricing and availability"
+      }
+    },
+    {
+      "@type": "Product",
+      "@id": "https://www.humain.com/#product-5",
+      "name": "ALLAM",
+      "description": "Arabic-first large language model built in Saudi Arabia, co-developed with SDAIA. Trained on 500Bn+ Arabic tokens, 394k+ Arabic books, and 380Bn+ Arabic words. Available in 7B (on-device) and 34B (cloud) parameter versions. One of the world's most powerful multimodal Arabic large language models.",
+      "brand": {"@type": "Brand", "name": "HUMAIN"},
+      "category": "Large Language Model",
+      "offers": {
+        "@type": "Offer",
+        "availability": "https://schema.org/InStock",
+        "price": "0",
+        "priceCurrency": "USD",
+        "description": "Available via HUMAIN platform and API"
+      }
+    },
+
+    {
+      "@type": "Service",
+      "@id": "https://www.humain.com/#service-0",
+      "name": "AI Infrastructure",
+      "description": "Next-generation AI-native data centers and training infrastructure featuring enterprise-grade GPU clusters with 18,000+ NVIDIA GPUs (including GB300), Groq LPU-powered inference engines optimized for Arabic language processing, and secure cloud services with elastic computing environments. Pursuing a 'silicon diversity' strategy with NVIDIA, AMD, Groq, and Qualcomm. Infrastructure designed to support sovereign AI development and deployment across the MENA region, including a flagship 500 MW+ facility with xAI.",
+      "serviceType": "Infrastructure as a Service",
+      "provider": {"@id": "https://www.humain.com/#organization"}
+    },
+    {
+      "@type": "Service",
+      "@id": "https://www.humain.com/#service-1",
+      "name": "HUMAIN Cloud",
+      "description": "Enterprise-grade data lifecycle management platform providing real-time ingestion pipelines, advanced orchestration capabilities, multi-modal processing, interactive visualization, and secured governance frameworks. Features adaptive APIs and integration adaptors specifically designed for Arabic language data and Middle Eastern enterprise requirements. AWS manages up to 150,000 NVIDIA GPUs within a dedicated AI Zone in Riyadh as part of a $5B+ joint investment.",
+      "serviceType": "Platform as a Service",
+      "provider": {"@id": "https://www.humain.com/#organization"}
+    },
+    {
+      "@type": "Service",
+      "@id": "https://www.humain.com/#service-2",
+      "name": "AI Models",
+      "description": "Sovereign intelligence platform centered around ALLAM, the Arabic-first large language model trained on 500Bn+ Arabic tokens and 394k+ Arabic books. Includes full-duplex voice capabilities, marketplace for model access and exchange, and specialized models for Islamic culture and heritage understanding. Built in collaboration with Adobe for culturally intelligent generative AI tuned for the Arab world.",
+      "serviceType": "Model as a Service",
+      "provider": {"@id": "https://www.humain.com/#organization"}
+    },
+    {
+      "@type": "Service",
+      "@id": "https://www.humain.com/#service-3",
+      "name": "Applications & Solutions",
+      "description": "Comprehensive AI solutions portfolio serving smart cities, sovereign governments, energy sector automation, financial markets intelligence, healthcare systems, sports analytics, advertising, and gaming. Designed specifically for Middle Eastern markets with cultural sensitivity and regulatory compliance for government and enterprise clients.",
+      "serviceType": "Software as a Service",
+      "provider": {"@id": "https://www.humain.com/#organization"}
+    },
+    {
+      "@type": "Service",
+      "@id": "https://www.humain.com/#service-4",
+      "name": "Enterprise Intelligence",
+      "description": "Advanced suite of autonomous AI agents that integrate with existing enterprise systems to automate complex workflows, enhance decision-making processes, and drive operational efficiency. Features Arabic language processing and understanding of regional business practices and cultural contexts. Powered by HUMAIN ONE agentic operating system.",
+      "serviceType": "Software as a Service",
+      "provider": {"@id": "https://www.humain.com/#organization"}
+    },
+
+    {
+      "@type": "Place",
+      "@id": "https://www.humain.com/#location-0",
+      "name": "HUMAIN Headquarters",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "King Fahad District 3254, King Fahad Branch Road 7295",
+        "addressLocality": "Riyadh",
+        "postalCode": "12262",
+        "addressCountry": "SA"
+      },
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": "24.7136",
+        "longitude": "46.6753"
+      }
+    },
+    {
+      "@type": "Place",
+      "@id": "https://www.humain.com/#location-1",
+      "name": "HUMAIN Registered Office",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "Al Aqeeq District 7956, Al Intessar Street 3229",
+        "addressLocality": "Riyadh",
+        "postalCode": "13511",
+        "addressCountry": "SA"
+      }
+    },
+
+    {
+      "@type": "Organization",
+      "@id": "https://www.humain.com/#subsidiary-0",
+      "name": "Al-Mustaqbal Lil-Thaka Al-Istinai Company",
+      "alternateName": "Future Artificial Intelligence Company",
+      "description": "The legal entity name for HUMAIN, registered in the Kingdom of Saudi Arabia",
+      "parentOrganization": {"@id": "https://www.humain.com/#organization"}
+    },
+
+    {
+      "@type": "Person",
+      "@id": "https://www.humain.com/#person-0",
+      "name": "Tareq Amin",
+      "jobTitle": "Chief Executive Officer",
+      "description": "Tareq Amin is a technologist, business leader and entrepreneur with over two decades of leadership experience in technology and telecom industry. In May 2025, he was appointed Chief Executive Officer of HUMAIN. Previously served as CEO of Aramco Digital, launched Rakuten Symphony, and held senior positions at Bharti Airtel and T-Mobile. Holds bachelor's degrees in Electrical Engineering and Physics from Portland State University.",
+      "image": "https://www.humain.com/content/dam/PIF-Humain/1-4.jpg",
+      "worksFor": {"@id": "https://www.humain.com/#organization"},
+      "alumniOf": [
+        {"@type": "Organization", "name": "Aramco Digital"},
+        {"@type": "Organization", "name": "Rakuten Symphony"},
+        {"@type": "Organization", "name": "Bharti Airtel"},
+        {"@type": "Organization", "name": "T-Mobile"},
+        {"@type": "CollegeOrUniversity", "name": "Portland State University"}
+      ]
+    },
+    {
+      "@type": "Person",
+      "@id": "https://www.humain.com/#person-1",
+      "name": "H.R.H. Prince Mohammed bin Salman bin Abdulaziz Al Saud",
+      "jobTitle": "Chairman of HUMAIN Board of Directors",
+      "description": "Crown Prince and Prime Minister of the Kingdom of Saudi Arabia, President of the Council for Economic and Development Affairs, Chairman of the Public Investment Fund (PIF). Launched HUMAIN on May 12, 2025 as part of Vision 2030.",
+      "image": "https://www.humain.com/content/dam/PIF-Humain/leadership/HRH-Prince-Mohammed-bin-Salman-bin-Abdulaziz-Al-Saud.webp",
+      "worksFor": {"@id": "https://www.humain.com/#organization"}
+    },
+    {
+      "@type": "Person",
+      "@id": "https://www.humain.com/#person-2",
+      "name": "H.E. Eng. Abdullah bin Amer Alswaha",
+      "jobTitle": "Board Member",
+      "description": "Minister of Communications and Information Technology, Kingdom of Saudi Arabia",
+      "image": "https://www.humain.com/content/dam/PIF-Humain/leadership/HE-Eng-Abdullah-bin-Amer-Alswaha.webp",
+      "worksFor": {"@id": "https://www.humain.com/#organization"}
+    },
+    {
+      "@type": "Person",
+      "@id": "https://www.humain.com/#person-3",
+      "name": "H.E. Mr. Yasir bin Othman Al-Rumayyan",
+      "jobTitle": "Board Member",
+      "description": "Governor of the Public Investment Fund (PIF)",
+      "image": "https://www.humain.com/content/dam/PIF-Humain/leadership/HE-Mr-Yasir-bin-Othman-Al-Rumayyan.webp",
+      "worksFor": {"@id": "https://www.humain.com/#organization"}
+    },
+    {
+      "@type": "Person",
+      "@id": "https://www.humain.com/#person-4",
+      "name": "H.E. Dr. Abdullah bin Sharaf Alghamdi",
+      "jobTitle": "Board Member",
+      "description": "President of the Saudi Data and AI Authority (SDAIA)",
+      "image": "https://www.humain.com/content/dam/PIF-Humain/leadership/HE-Dr-Abdullah-bin-Sharaf-Alghamdi.webp",
+      "worksFor": {"@id": "https://www.humain.com/#organization"}
+    },
+    {
+      "@type": "Person",
+      "@id": "https://www.humain.com/#person-5",
+      "name": "Eng. Amin bin Hassan Nasser",
+      "jobTitle": "Board Member",
+      "description": "President & CEO of Saudi Aramco",
+      "image": "https://www.humain.com/content/dam/PIF-Humain/leadership/Eng-Amin-bin-Hassan-Nasser.webp",
+      "worksFor": {"@id": "https://www.humain.com/#organization"}
+    },
+    {
+      "@type": "Person",
+      "@id": "https://www.humain.com/#person-6",
+      "name": "Dr. Yaser Al-Onaizan",
+      "jobTitle": "Deputy CEO and President of Data & AI Models",
+      "description": "Deputy CEO and President of Data & AI Models at HUMAIN. Former Amazon and IBM executive, and CEO of Saudi Arabia's National Center for AI. Holds 20+ patents and has published 60+ research papers. Leading the development of Arabic-first large language models.",
+      "worksFor": {"@id": "https://www.humain.com/#organization"},
+      "alumniOf": [
+        {"@type": "Organization", "name": "Amazon"},
+        {"@type": "Organization", "name": "IBM"},
+        {"@type": "Organization", "name": "Saudi National Center for AI"}
+      ]
+    },
+    {
+      "@type": "Person",
+      "@id": "https://www.humain.com/#person-7",
+      "name": "Samih Elhage",
+      "jobTitle": "Chief Financial & Operating Officer",
+      "description": "Chief Financial & Operating Officer at HUMAIN. Previously on the Advisory Board at McKinsey & Company and held senior positions at Madison Dearborn Partners, Nokia, and Nortel Networks.",
+      "worksFor": {"@id": "https://www.humain.com/#organization"},
+      "alumniOf": [
+        {"@type": "Organization", "name": "McKinsey & Company"},
+        {"@type": "Organization", "name": "Nokia"},
+        {"@type": "Organization", "name": "Nortel Networks"}
+      ]
+    },
+    {
+      "@type": "Person",
+      "@id": "https://www.humain.com/#person-8",
+      "name": "Dr. Khalid Alodhaibi",
+      "jobTitle": "EVP Technology",
+      "description": "EVP Technology at HUMAIN with 30+ years of global experience across organizations including AT&T, IBM, and Saudi Arabia's National Center for AI. Has built mission-critical systems and led AI infrastructure design and build for Arabic large language models.",
+      "worksFor": {"@id": "https://www.humain.com/#organization"},
+      "alumniOf": [
+        {"@type": "Organization", "name": "AT&T"},
+        {"@type": "Organization", "name": "IBM"},
+        {"@type": "Organization", "name": "Saudi National Center for AI"}
+      ]
+    },
+    {
+      "@type": "Person",
+      "@id": "https://www.humain.com/#person-9",
+      "name": "Steve Plimsoll",
+      "jobTitle": "Chief Strategy Officer",
+      "description": "Chief Strategy Officer at HUMAIN. Brings experience from previous roles at SDAIA (Saudi Data and AI Authority), HSBC, EY, and PwC Middle East.",
+      "worksFor": {"@id": "https://www.humain.com/#organization"},
+      "alumniOf": [
+        {"@type": "Organization", "name": "SDAIA"},
+        {"@type": "Organization", "name": "HSBC"},
+        {"@type": "Organization", "name": "EY"},
+        {"@type": "Organization", "name": "PwC Middle East"}
+      ]
+    },
+
+    {
+      "@type": "InvestmentOrDeposit",
+      "@id": "https://www.humain.com/#investment-xai",
+      "name": "HUMAIN Investment in xAI",
+      "description": "HUMAIN invested $3 billion in xAI as part of a $20 billion Series E funding round, becoming a significant minority shareholder. The partnership includes jointly developing a network of world-class data centers in Saudi Arabia anchored by a flagship 500 MW+ facility.",
+      "amount": {
+        "@type": "MonetaryAmount",
+        "currency": "USD",
+        "value": "3000000000"
+      }
+    },
+
+    {
+      "@type": "FAQPage",
+      "@id": "https://www.humain.com/#faqpage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What is HUMAIN and what does the company do?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "HUMAIN is Saudi Arabia's flagship artificial intelligence company, launched on May 12, 2025 by Crown Prince Mohammed bin Salman. Operating as a subsidiary of the Public Investment Fund (PIF), HUMAIN develops comprehensive AI infrastructure, platforms, and solutions including next-generation AI-native data centers with 18,000+ NVIDIA GPUs, the Arabic-first ALLAM large language model, the agentic AI operating system HUMAIN ONE, and full-stack AI solutions for smart cities, governments, energy, healthcare, and financial services."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What makes ALLAM different from other large language models?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "ALLAM is an Arabic-first large language model built in Saudi Arabia and co-developed with SDAIA, specifically trained on over 500 billion Arabic tokens, 394,000+ Arabic books, and 380 billion+ Arabic words. Unlike Western-centric models, ALLAM is designed to understand Islamic culture, values, and heritage, making it uniquely suited for the Middle East and Arabic-speaking markets. It is available in 7B parameters (for on-device use) and 34B parameters (cloud-scale)."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Who leads HUMAIN and what is the company's governance structure?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "HUMAIN is led by CEO Tareq Amin, a veteran technology executive who previously served as CEO of Aramco Digital and launched Rakuten Symphony. Dr. Yaser Al-Onaizan serves as Deputy CEO and President of Data & AI Models, with 20+ patents and former roles at Amazon and IBM. The board is chaired by Crown Prince Mohammed bin Salman and includes the Governor of PIF, the Minister of Communications, the President of SDAIA, and the CEO of Saudi Aramco."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What AI infrastructure does HUMAIN provide?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "HUMAIN operates next-generation AI-native data centers with 18,000+ NVIDIA GPUs (including GB300) for training, Groq LPU-powered inference engines for low-latency Arabic language processing, and cloud services managed by AWS with up to 150,000 NVIDIA GPUs in a dedicated AI Zone in Riyadh. HUMAIN pursues a 'silicon diversity' strategy partnering with NVIDIA, AMD, Groq, Qualcomm, and Cisco to avoid single-vendor dependence."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What are HUMAIN's major partnerships?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "HUMAIN has established major partnerships with global technology leaders including: NVIDIA (GPU infrastructure and AI factories), AWS ($5B+ joint investment for AI Zone in Riyadh), xAI ($3B investment, joint data centers with 500 MW+ flagship facility), Adobe (culturally intelligent AI for the Arab world), AMD and Cisco (joint venture for AI infrastructure), Qualcomm (edge AI and 200 MW AI compute, engineering center in Riyadh), Groq (LPU inference infrastructure), and enterprise partners EY and Replit for HUMAIN ONE."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What industries and sectors does HUMAIN serve?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "HUMAIN provides full-stack AI solutions across multiple sectors including smart cities, sovereign governments, energy systems (in collaboration with Aramco), financial markets, healthcare, sports analytics, advertising, gaming, and enterprise intelligence. The company offers specialized AI agents and applications tailored for Middle Eastern markets and government entities seeking sovereign AI capabilities."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What is HUMAIN ONE and how does it work?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "HUMAIN ONE is a next-generation agentic AI operating system that provides a unified AI-powered interface for all enterprise applications. It executes tasks with precision, allowing teams to focus on outcomes rather than processes. Launched with strategic partners EY (enterprise consulting), Groq (AI inference), and Replit (application development), HUMAIN ONE is powered by the Arabic-first ALLAM large language model and is culturally adapted for Middle Eastern enterprises."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Where is HUMAIN headquartered and what is its geographic presence?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "HUMAIN is headquartered in Riyadh, Saudi Arabia, with offices in the King Fahad District and Al Aqeeq District. The company is building AI infrastructure across Saudi Arabia including data centers in Riyadh and planned expansions to Dammam. A Qualcomm AI Engineering Center in Riyadh opened in December 2025. HUMAIN primarily serves the Middle East and North Africa (MENA) region as part of Saudi Arabia's Vision 2030 initiative."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How is HUMAIN funded and what is its relationship with Aramco?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "HUMAIN is primarily owned by the Public Investment Fund (PIF), Saudi Arabia's sovereign wealth fund. Saudi Aramco has agreed to acquire a significant minority stake in HUMAIN while PIF retains majority ownership. Aramco is contributing AI assets to HUMAIN including its subsidiary Aramco Digital and its Groq AI inference data center cluster. Saudi Arabia invested approximately $15 billion in AI prior to HUMAIN's launch, now consolidated under this unified initiative, with plans for a $10 billion venture capital fund."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What is HUMAIN's role in Saudi Arabia's Vision 2030?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "HUMAIN is a cornerstone of Vision 2030, Saudi Arabia's economic diversification roadmap to reduce oil dependency. The company aims to position Saudi Arabia as a top-tier global AI hub, lead in Arabic-language AI capabilities, attract international talent and investment, and train over 100,000 Saudi citizens in cloud and AI skills. HUMAIN consolidates the Kingdom's AI ambitions into a single full-stack entity spanning data centers, models, applications, and investment."
+          }
+        }
+      ]
+    }
+  ]
+}

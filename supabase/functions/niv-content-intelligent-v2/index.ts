@@ -2307,6 +2307,15 @@ ${journalists.map((j)=>`| ${j.name} | ${j.outlet} | ${j.beat || 'N/A'} | ${j.tie
               };
             }
             // For other media types (press_release, media_pitch), use standard flow
+            // Build journalist context string for the brief
+            const journalistContext = (mediaReq.journalistDetails || []).map((j: any) => {
+              const parts = [j.name]
+              if (j.outlet) parts.push(`at ${j.outlet}`)
+              if (j.beat) parts.push(`(covers: ${j.beat})`)
+              if (j.rationale) parts.push(`— ${j.rationale}`)
+              return parts.join(' ')
+            }).join('\n') || mediaReq.journalists?.join(', ') || ''
+
             // Use NIV to craft a strategic media brief
             const strategicBrief = await craftStrategicContentBrief({
               contentType: mediaReq.type,
@@ -2321,7 +2330,7 @@ ${journalists.map((j)=>`| ${j.name} | ${j.outlet} | ${j.beat || 'N/A'} | ${j.tie
               positioning,
               targetStakeholders,
               organization: orgProfile.organizationName,
-              specificGuidance: mediaReq.journalists || [],
+              specificGuidance: journalistContext ? [`Target journalists:\n${journalistContext}`] : [],
               campaignSummary: campaignContext?.campaignSummary,
               currentDate: currentDate
             });
@@ -2337,6 +2346,7 @@ ${journalists.map((j)=>`| ${j.name} | ${j.outlet} | ${j.beat || 'N/A'} | ${j.tie
                 angle: strategicBrief,
                 keyPoints: keyMessages || [],
                 mediaTargets: mediaReq.journalists || [],
+                journalistDetails: mediaReq.journalistDetails || [],
                 research: researchInsights?.join('; ') || '',
                 positioning: positioning || '',
                 currentDate: currentDate,
@@ -2352,6 +2362,7 @@ ${journalists.map((j)=>`| ${j.name} | ${j.outlet} | ${j.beat || 'N/A'} | ${j.tie
                   positioning: positioning,
                   mediaStory: mediaReq.story,
                   journalists: mediaReq.journalists,
+                  journalistDetails: mediaReq.journalistDetails,
                   strategicBrief: strategicBrief
                 }
               }), 2, 3000) // 2 retries, 3 second delay
@@ -7436,6 +7447,47 @@ async function generateContentDirectly(contentType, strategicBrief, parameters) 
   const phase = fullFramework.phase || '';
   const objective = fullFramework.objective || '';
   const targetAudiences = parameters.targetAudiences || [];
+  // Writing style rules injected into all long-form content prompts
+  const writingStyleRules = `
+**WRITING STYLE — MANDATORY:**
+- NEVER use em dashes (—). Use commas, periods, or semicolons instead.
+- NEVER use these AI cliché phrases or anything similar:
+  "But here's the critical question almost no one is asking"
+  "Here's the thing"
+  "Let's be clear"
+  "It's not just about X — it's about Y"
+  "The question isn't whether... it's when"
+  "In today's rapidly evolving landscape"
+  "At the intersection of"
+  "This is not just a trend"
+  "The implications are profound"
+  "A paradigm shift"
+  "It begs the question"
+  "What keeps me up at night"
+  "The real question is"
+  "Make no mistake"
+  "The uncomfortable truth"
+  "Here's what nobody is talking about"
+  "Buckle up"
+  "Game-changer" / "game-changing"
+  "Double-edged sword"
+  "Navigate" (as metaphor)
+  "Landscape" (as metaphor)
+  "Unpack" (as metaphor)
+  "Dive deep" / "deep dive"
+  "Lean in" / "lean into"
+  "Move the needle"
+  "Table stakes"
+  "North star"
+  "Quietly preparing for" / "quietly discussing" / "quietly building"
+  "Behind closed doors"
+  "The silent revolution"
+  "Few people realize"
+- NEVER use "quietly" as a dramatic device (e.g. "quietly reshaping", "quietly revolutionizing"). Just state what is happening.
+- Write like a sharp human expert, not a language model. Be direct, specific, and conversational.
+- Vary sentence length. Use short sentences for impact. Don't let every paragraph follow the same rhythm.
+- Prefer concrete details over abstract claims.`
+
   // Build comprehensive prompt based on content type
   const contentPrompts = {
     'blog-post': `Write a compelling, strategic blog post for ${organization}:
@@ -7472,6 +7524,7 @@ ${targetAudiences.length > 0 ? `**TARGET AUDIENCE:**\n${targetAudiences[0]}` : '
 - NEVER invent statistics, percentages, or data points not found in the strategic brief or research insights
 - NEVER claim specific events happened unless the context supports it
 - Better to be compelling with real insights than impressive with fabricated data
+${writingStyleRules}
 
 Write ONLY the blog post content. No meta-commentary.`,
     'social-post': `${parameters.platform ? `Create ONE ${parameters.platform.toUpperCase()} post` : `Create ${parameters.variations || 3} distinct, platform-specific social media posts`}:
@@ -7559,6 +7612,8 @@ Platform: [Platform Name]
 [Actual post content respecting character limits]
 ---`}
 
+${writingStyleRules}
+
 Write ONLY the post${parameters.platform ? '' : 's'}. No explanations. STRICTLY respect character limits.`,
     'media-pitch': `Write a compelling, personalized media pitch email:
 
@@ -7576,11 +7631,18 @@ ${keyMessages.length > 0 ? keyMessages.map((msg)=>`- ${msg}`).join('\n') : ''}
 
 ${researchInsights.length > 0 ? `**SUPPORTING DATA:**\n${researchInsights.slice(0, 3).map((insight)=>`- ${insight}`).join('\n')}` : ''}
 
-${parameters.journalists?.length > 0 ? `**RECIPIENT JOURNALISTS:**\n${parameters.journalists.join(', ')}` : ''}
+${parameters.journalistDetails?.length > 0 ? `**TARGET JOURNALISTS (personalize the pitch to each):**\n${parameters.journalistDetails.map((j: any) => {
+  const parts = [`- **${j.name}**`]
+  if (j.outlet) parts.push(`| ${j.outlet}`)
+  if (j.beat) parts.push(`| Beat: ${j.beat}`)
+  if (j.rationale) parts.push(`| Why: ${j.rationale}`)
+  return parts.join(' ')
+}).join('\n')}` : parameters.journalists?.length > 0 ? `**RECIPIENT JOURNALISTS:**\n${parameters.journalists.join(', ')}` : ''}
 
 **REQUIREMENTS:**
-- Personalize to journalist's beat
-- Lead with newsworthy angle
+- Address the journalist BY NAME in the email greeting (e.g. "Hi Sarah,")
+- Reference their specific beat or recent coverage area to show you know their work
+- Lead with a newsworthy angle that matches their beat
 - Include specific data and proof points
 - Reference research insights
 - Align with strategic brief
@@ -7588,6 +7650,8 @@ ${parameters.journalists?.length > 0 ? `**RECIPIENT JOURNALISTS:**\n${parameters
 - Keep concise (150-250 words)
 - Include compelling subject line
 - Professional tone
+${parameters.journalistDetails?.length > 1 ? '- Write ONE pitch addressed to the FIRST journalist listed. Reference why this story fits their specific coverage.' : ''}
+${writingStyleRules}
 
 Format:
 Subject: [Subject Line]
@@ -7621,6 +7685,7 @@ ${researchInsights.length > 0 ? `**PROOF POINTS/DATA:**\n${researchInsights.slic
 - Include customer quotes (realistic examples)
 - Professional tone
 - Make results specific and credible
+${writingStyleRules}
 
 Write ONLY the case study content.`,
     'white-paper': `Write a comprehensive, authoritative white paper:
@@ -7652,6 +7717,7 @@ ${targetAudiences.length > 0 ? `**TARGET AUDIENCE:**\n${targetAudiences[0]}` : '
 - Include section headings
 - Cite credible sources
 - Align with strategic brief and positioning
+${writingStyleRules}
 
 Write ONLY the white paper content.`,
     'press-release': `Write a professional press release in proper AP format:
@@ -7694,6 +7760,7 @@ ${keyMessages.length > 0 ? keyMessages.map((msg)=>`- ${msg}`).join('\n') : ''}
 - 400-600 words
 - Newsworthy angle
 - Timely relevance to ${currentDate}
+${writingStyleRules}
 
 Write the complete press release with ALL required elements in proper format.`,
     'thought-leadership': `Write an authoritative thought leadership article:
@@ -7722,6 +7789,7 @@ ${researchInsights.length > 0 ? `**RESEARCH/TRENDS:**\n${researchInsights.slice(
 - Authoritative voice
 - Align with strategic brief
 - Reference current market context (${currentDate})
+${writingStyleRules}
 
 Write ONLY the thought leadership content.`
   };

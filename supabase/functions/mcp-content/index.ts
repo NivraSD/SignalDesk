@@ -670,7 +670,11 @@ REQUIREMENTS:
 - Reference the research insights to add credibility
 - Ensure the content supports the ${phase || 'campaign'} objective${objective ? `: ${objective}` : ''}
 - Write with authority and expertise on this specific topic
-- Include specific details, not generic platitudes`;
+- Include specific details, not generic platitudes
+- NEVER use em dashes (—). Use commas, periods, or semicolons instead.
+- NEVER use AI cliché phrases like: "But here's the critical question", "Here's the thing", "Let's be clear", "In today's rapidly evolving landscape", "At the intersection of", "The implications are profound", "A paradigm shift", "Game-changer", "Deep dive", "Navigate the landscape", "Move the needle", "Table stakes", "North star", "Unpack", "Lean into", "Double-edged sword", "Quietly preparing for", "Quietly discussing", "Behind closed doors", "Few people realize"
+- NEVER use "quietly" as a dramatic device (e.g. "quietly reshaping", "quietly revolutionizing"). Just state what is happening.
+- Write like a sharp human expert. Vary sentence length. Be direct and specific.`;
 
   const blogPost = await callAnthropic(
     [{ role: 'user', content: prompt }],
@@ -1218,6 +1222,9 @@ Write a ${tone} thought leadership article:
   - If constraints are provided above, follow them strictly
   - DO NOT reference years before ${currentYear} unless providing historical context
   - FOLLOW THE ANTI-HALLUCINATION RULES STRICTLY - do not invent company capabilities or methodologies
+  - NEVER use em dashes (—). Use commas, periods, or semicolons instead.
+  - NEVER use AI cliché phrases like: "But here's the critical question", "Here's the thing", "Let's be clear", "In today's rapidly evolving landscape", "At the intersection of", "The implications are profound", "A paradigm shift", "Game-changer", "Deep dive", "Navigate the landscape", "Move the needle", "Table stakes", "North star", "Unpack", "Lean into", "Double-edged sword"
+  - Write like a sharp human expert. Vary sentence length. Be direct and specific.
 
   ⚠️ FINAL CHECK: Before submitting, verify you have NOT invented any:
   - Specific percentages (e.g., "23% increase")
@@ -1727,6 +1734,8 @@ REQUIREMENTS FOR THE PITCH:
 - If the story angle references achievements that aren't backed by supporting data, reframe as aspirational/forward-looking
 - Use qualitative language ("many organizations", "growing demand") instead of inventing specific numbers
 - If a claim seems fabricated (e.g., specific NHS pilots, percentage gains without source), rephrase to be truthful
+- NEVER use em dashes (—). Use commas, periods, or semicolons instead.
+- Avoid AI cliché phrases. Write like a sharp, experienced PR professional.
 
 FORMAT:
 Subject: [Compelling Subject Line]

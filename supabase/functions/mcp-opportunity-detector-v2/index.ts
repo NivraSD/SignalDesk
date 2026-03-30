@@ -610,7 +610,7 @@ async function detectOpportunitiesV2(
 
   const prompt = buildOpportunityDetectionPromptV2({
     organizationName,
-    events: allEvents.slice(0, 15), // Reduced from 25 to prevent timeout - focus on highest priority events
+    events: allEvents.slice(0, 15), // Focus on highest priority events
     topics: extractedData.topics.slice(0, 8), // Limit topics
     quotes: extractedData.quotes.slice(0, 8), // Limit quotes
     entities: extractedData.entities.slice(0, 12), // Limit entities
@@ -618,12 +618,17 @@ async function detectOpportunitiesV2(
     organizationProfile: extractedData.organizationProfile
   })
 
-  console.log('Calling Claude Sonnet 4 for V2 opportunity generation...')
+  console.log('Calling Claude Sonnet 4.5 for V2 opportunity generation...')
   console.log('Prompt length:', prompt.length, 'characters')
 
   try {
+    // Add 150s timeout to fail gracefully before Supabase kills us at ~200s
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 150000)
+
     const response = await fetchWithRetry('https://api.anthropic.com/v1/messages', {
       method: 'POST',
+      signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': ANTHROPIC_API_KEY,
@@ -631,8 +636,8 @@ async function detectOpportunitiesV2(
         'anthropic-dangerous-direct-browser-access': 'true'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 16000,
+        model: 'claude-sonnet-4-5-20250929',  // Back to Sonnet with simplified prompt
+        max_tokens: 12000,
         temperature: 0.7,
         system: OPPORTUNITY_SYSTEM_PROMPT_V2,
         messages: [{
@@ -641,6 +646,8 @@ async function detectOpportunitiesV2(
         }]
       })
     })
+
+    clearTimeout(timeoutId)
 
     if (!response.ok) {
       console.error('Claude API error:', response.status, response.statusText)
@@ -776,9 +783,14 @@ async function detectOpportunitiesV2(
     return validOpportunities
 
   } catch (error: any) {
-    console.error('❌ Error in V2 opportunity detection:', error)
+    if (error.name === 'AbortError') {
+      console.error('❌ Claude API request timed out after 150 seconds - API may be slow/degraded')
+    } else {
+      console.error('❌ Error in V2 opportunity detection:', error)
+    }
     console.error('Error details:', {
       message: error.message,
+      name: error.name,
       stack: error.stack
     })
     return []

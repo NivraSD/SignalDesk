@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NIV Platform - Pitch Deck Dashboard</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --burnt-orange: #c75d3a;
+        --burnt-orange-light: #e07b5a;
+        --burnt-orange-muted: rgba(199, 93, 58, 0.1);
+        --charcoal: #1a1a1a;
+        --grey-900: #212121;
+        --grey-800: #2e2e2e;
+        --grey-700: #3d3d3d;
+        --grey-600: #555555;
+        --grey-500: #757575;
+        --grey-400: #9e9e9e;
+        --grey-300: #bdbdbd;
+        --grey-200: #e0e0e0;
+        --grey-100: #f5f5f5;
+        --cream: #faf9f7;
+        --white: #ffffff;
+        --font-display: "Space Grotesk", sans-serif;
+        --font-serif: "Playfair Display", serif;
+        --font-body: "Inter", sans-serif;
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+        --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+        --green: #22c55e;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: var(--font-body);
+        background: var(--charcoal);
+        color: var(--charcoal);
+        min-height: 100vh;
+      }
+
+      /* ==================== MAIN LAYOUT ==================== */
+      .dashboard {
+        display: grid;
+        grid-template-columns: 260px 1fr 320px;
+        grid-template-rows: 64px 1fr;
+        height: 100vh;
+        overflow: hidden;
+      }
+
+      /* ==================== TOP NAV ==================== */
+      .nav {
+        grid-column: 1 / -1;
+        background: var(--white);
+        border-bottom: 1px solid var(--grey-200);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 24px;
+      }
+
+      .nav-left {
+        display: flex;
+        align-items: center;
+        gap: 32px;
+      }
+
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      /* NIV Logo - Trapezoid shape */
+      .logo-mark {
+        position: relative;
+        width: 60px;
+        height: 36px;
+      }
+
+      .logo-mark svg {
+        width: 100%;
+        height: 100%;
+      }
+
+      .logo-divider {
+        width: 1px;
+        height: 24px;
+        background: var(--grey-200);
+        margin-left: 4px;
+      }
+
+      .logo-subtitle {
+        font-family: var(--font-display);
+        font-size: 0.75rem;
+        color: var(--grey-400);
+        letter-spacing: 1px;
+      }
+
+      .nav-links {
+        display: flex;
+        gap: 4px;
+      }
+
+      .nav-link {
+        padding: 8px 16px;
+        font-family: var(--font-display);
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: var(--grey-500);
+        text-decoration: none;
+        border-radius: 6px;
+        transition: all 0.2s;
+      }
+
+      .nav-link:hover {
+        color: var(--charcoal);
+        background: var(--grey-100);
+      }
+
+      .nav-link.active {
+        color: var(--charcoal);
+        background: var(--grey-100);
+      }
+
+      .nav-right {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .org-switcher {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 14px;
+        background: var(--white);
+        border: 1px solid var(--grey-200);
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: var(--charcoal);
+      }
+
+      .org-switcher svg {
+        width: 14px;
+        height: 14px;
+        color: var(--grey-400);
+      }
+
+      .profile-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: var(--charcoal);
+        color: var(--white);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-size: 0.8rem;
+        font-weight: 600;
+      }
+
+      /* ==================== LEFT SIDEBAR ==================== */
+      .sidebar {
+        background: var(--white);
+        border-right: 1px solid var(--grey-200);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .sidebar-header {
+        padding: 20px;
+        border-bottom: 1px solid var(--grey-200);
+      }
+
+      .sidebar-label {
+        font-family: var(--font-display);
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        color: var(--grey-500);
+        margin-bottom: 8px;
+      }
+
+      .sidebar-title {
+        font-family: var(--font-serif);
+        font-size: 1.1rem;
+        font-weight: 400;
+        color: var(--charcoal);
+      }
+
+      .sidebar-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 16px;
+      }
+
+      .sidebar-section {
+        margin-bottom: 24px;
+      }
+
+      .sidebar-section-title {
+        font-family: var(--font-display);
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--grey-400);
+        margin-bottom: 12px;
+        padding: 0 12px;
+      }
+
+      .sidebar-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        border-radius: 8px;
+        color: var(--grey-600);
+        font-size: 0.85rem;
+        margin-bottom: 2px;
+        transition: all 0.15s;
+        cursor: pointer;
+      }
+
+      .sidebar-item:hover {
+        background: var(--grey-100);
+        color: var(--charcoal);
+      }
+
+      .sidebar-item.active {
+        background: var(--grey-100);
+        color: var(--charcoal);
+      }
+
+      .sidebar-item svg {
+        width: 18px;
+        height: 18px;
+        opacity: 0.7;
+      }
+
+      .sidebar-item.active svg {
+        opacity: 0.9;
+      }
+
+      .sidebar-item-badge {
+        margin-left: auto;
+        min-width: 20px;
+        height: 20px;
+        padding: 0 6px;
+        font-family: var(--font-display);
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: var(--burnt-orange);
+        background: var(--burnt-orange-muted);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* ==================== MAIN WORKSPACE (DARK) ==================== */
+      .workspace {
+        background: var(--charcoal);
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .workspace-header {
+        padding: 24px 32px;
+        border-bottom: 1px solid var(--grey-800);
+      }
+
+      .workspace-date {
+        font-family: var(--font-display);
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        color: var(--grey-500);
+        margin-bottom: 8px;
+      }
+
+      .workspace-greeting {
+        font-family: var(--font-serif);
+        font-size: 3rem;
+        font-weight: 400;
+        color: var(--white);
+        line-height: 1.15;
+      }
+
+      .workspace-greeting em {
+        font-style: italic;
+        color: var(--burnt-orange);
+      }
+
+      .workspace-content {
+        flex: 1;
+        padding: 24px 32px;
+        overflow-y: auto;
+      }
+
+      /* ==================== INTELLIGENCE BRIEF CARD ==================== */
+      .brief-card {
+        background: var(--grey-900);
+        border: 1px solid var(--grey-800);
+        border-radius: 12px;
+      }
+
+      .brief-header {
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--grey-800);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .brief-label {
+        font-family: var(--font-display);
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--burnt-orange);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .brief-label-dot {
+        width: 6px;
+        height: 6px;
+        background: var(--burnt-orange);
+        border-radius: 50%;
+      }
+
+      .brief-external {
+        color: var(--grey-500);
+        cursor: pointer;
+      }
+
+      .brief-external:hover {
+        color: var(--white);
+      }
+
+      .brief-external svg {
+        width: 16px;
+        height: 16px;
+      }
+
+      .brief-body {
+        padding: 20px;
+      }
+
+      .brief-text {
+        font-family: var(--font-body);
+        font-size: 1rem;
+        line-height: 1.7;
+        color: var(--grey-300);
+      }
+
+      .brief-actions {
+        padding: 16px 20px;
+        border-top: 1px solid var(--grey-800);
+        display: flex;
+        gap: 12px;
+      }
+
+      .brief-btn {
+        padding: 10px 16px;
+        font-family: var(--font-display);
+        font-size: 0.8rem;
+        font-weight: 500;
+        border-radius: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s;
+      }
+
+      .brief-btn.primary {
+        background: var(--charcoal);
+        color: var(--white);
+        border: none;
+      }
+
+      .brief-btn.primary:hover {
+        background: var(--grey-800);
+      }
+
+      .brief-btn.secondary {
+        background: transparent;
+        color: var(--grey-400);
+        border: none;
+      }
+
+      .brief-btn.secondary:hover {
+        color: var(--white);
+      }
+
+      .brief-btn svg {
+        width: 14px;
+        height: 14px;
+      }
+
+      /* ==================== RIGHT INTEL SIDEBAR (DARK) ==================== */
+      .intel-sidebar {
+        background: var(--grey-900);
+        border-left: 1px solid var(--grey-800);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        position: relative;
+      }
+
+      .intel-header {
+        padding: 20px;
+        border-bottom: 1px solid var(--grey-800);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .intel-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .intel-title svg {
+        width: 14px;
+        height: 14px;
+        color: var(--burnt-orange);
+      }
+
+      .intel-title-text {
+        font-family: var(--font-display);
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--grey-500);
+      }
+
+      .intel-count {
+        min-width: 20px;
+        height: 20px;
+        padding: 0 6px;
+        background: rgba(199, 93, 58, 0.2);
+        border-radius: 4px;
+        font-family: var(--font-display);
+        font-size: 0.65rem;
+        font-weight: 600;
+        color: var(--burnt-orange);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .intel-view-all {
+        font-family: var(--font-display);
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: var(--grey-500);
+        cursor: pointer;
+      }
+
+      .intel-view-all:hover {
+        color: var(--white);
+      }
+
+      .intel-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 16px;
+      }
+
+      .cascade-card {
+        background: var(--grey-800);
+        border-radius: 8px;
+        padding: 14px;
+        margin-bottom: 10px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .cascade-card:hover {
+        background: var(--grey-700);
+      }
+
+      .cascade-meta {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 8px;
+      }
+
+      .cascade-time {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.7rem;
+        color: var(--grey-500);
+        padding: 2px 6px;
+        background: var(--grey-700);
+        border-radius: 4px;
+      }
+
+      .cascade-time svg {
+        width: 10px;
+        height: 10px;
+      }
+
+      .cascade-score {
+        font-family: var(--font-display);
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: var(--burnt-orange);
+      }
+
+      .cascade-title {
+        font-family: var(--font-body);
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: var(--white);
+        line-height: 1.4;
+        margin-bottom: 10px;
+      }
+
+      .cascade-tag {
+        display: inline-block;
+        font-size: 0.65rem;
+        color: var(--grey-400);
+      }
+
+      /* ==================== NIV CHAT BUBBLE ==================== */
+      .niv-bubble {
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+        width: 52px;
+        height: 52px;
+        background: var(--charcoal);
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: var(--shadow-lg);
+        transition: all 0.2s;
+      }
+
+      .niv-bubble:hover {
+        transform: scale(1.05);
+      }
+
+      .niv-bubble-text {
+        font-family: var(--font-display);
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--white);
+        letter-spacing: 0.05em;
+      }
+
+      .niv-bubble-dot {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        width: 8px;
+        height: 8px;
+        background: var(--green);
+        border-radius: 50%;
+        border: 2px solid var(--charcoal);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="dashboard">
+      <!-- ==================== TOP NAV ==================== -->
+      <nav class="nav">
+        <div class="nav-left">
+          <div class="logo">
+            <div class="logo-mark">
+              <svg viewBox="0 0 80 48">
+                <path d="M10 0 H80 V48 H0 L10 0 Z" fill="#1a1a1a" />
+                <text
+                  x="40"
+                  y="33"
+                  text-anchor="middle"
+                  font-family="Space Grotesk, sans-serif"
+                  font-size="16"
+                  font-weight="700"
+                  fill="#faf9f7"
+                  letter-spacing="-0.5"
+                >
+                  NIV
+                </text>
+                <path d="M68 0 H80 V12 L68 0 Z" fill="#c75d3a" />
+              </svg>
+            </div>
+            <div class="logo-divider"></div>
+            <span class="logo-subtitle">by nivria</span>
+          </div>
+          <div class="nav-links">
+            <a href="#" class="nav-link active">Hub</a>
+            <a href="#" class="nav-link">Opportunities</a>
+            <a href="#" class="nav-link">Studio</a>
+            <a href="#" class="nav-link">Campaigns</a>
+            <a href="#" class="nav-link">Crisis</a>
+            <a href="#" class="nav-link">Vault</a>
+          </div>
+        </div>
+        <div class="nav-right">
+          <div class="org-switcher">
+            <span>nivria</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6,9 12,15 18,9"/>
+            </svg>
+          </div>
+          <div class="profile-btn">JL</div>
+        </div>
+      </nav>
+
+      <!-- ==================== LEFT SIDEBAR ==================== -->
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <div class="sidebar-label">Intelligence Hub</div>
+          <div class="sidebar-title">Daily Brief</div>
+        </div>
+        <div class="sidebar-content">
+          <div class="sidebar-section">
+            <div class="sidebar-section-title">Quick Actions</div>
+            <div class="sidebar-item active">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="5"/>
+                <line x1="12" y1="1" x2="12" y2="3"/>
+                <line x1="12" y1="21" x2="12" y2="23"/>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                <line x1="1" y1="12" x2="3" y2="12"/>
+                <line x1="21" y1="12" x2="23" y2="12"/>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+              </svg>
+              <span>Today's Brief</span>
+            </div>
+            <div class="sidebar-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                <polyline points="17 6 23 6 23 12"/>
+              </svg>
+              <span>Opportunities</span>
+              <span class="sidebar-item-badge">3</span>
+            </div>
+            <div class="sidebar-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              <span>Crisis Monitor</span>
+            </div>
+          </div>
+          <div class="sidebar-section">
+            <div class="sidebar-section-title">Intelligence</div>
+            <div class="sidebar-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+              </svg>
+              <span>Cascades</span>
+            </div>
+            <div class="sidebar-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+              </svg>
+              <span>Social</span>
+            </div>
+            <div class="sidebar-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="2" y1="12" x2="22" y2="12"/>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+              </svg>
+              <span>Geo Intel</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- ==================== MAIN WORKSPACE (DARK) ==================== -->
+      <main class="workspace">
+        <div class="workspace-header">
+          <div class="workspace-date">Monday, December 29, 2025</div>
+          <h1 class="workspace-greeting">Good morning. <em>3<br/>opportunities</em> detected.</h1>
+        </div>
+        <div class="workspace-content">
+          <!-- Intelligence Brief Card -->
+          <div class="brief-card">
+            <div class="brief-header">
+              <div class="brief-label">
+                <span class="brief-label-dot"></span>
+                Intelligence Brief
+              </div>
+              <div class="brief-external">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                  <polyline points="15 3 21 3 21 9"/>
+                  <line x1="10" y1="14" x2="21" y2="3"/>
+                </svg>
+              </div>
+            </div>
+            <div class="brief-body">
+              <p class="brief-text">
+                Today's intelligence reveals significant narrative opportunities around AI trust and evaluation as the industry enters 2026. Multiple outlets are positioning trust as AI's most critical benchmark this year, creating an opening for nivria to establish thought leadership on AI reliability in strategic communications. The discourse around AI business model validation and use case evaluation presents positioning opportunities against competitors who may be overpromising on AI capabilities. Agency talent acquisition is being reshaped by generative AI adoption, with Digiday reporting that agencies now require AI fluency from junior hires. This signals a broader shift in how communications professionals are being evaluated and trained, creating opportunities for nivria to position as the platform that bridges traditional PR expertise with AI-powered capabilities. OpenAI's internal restructuring to fix audio AI accuracy issues also reinforces the trust narrative – highlighting that even leading AI companies are struggling with reliability challenges that nivria's platform is designed to address.
+              </p>
+            </div>
+            <div class="brief-actions">
+              <button class="brief-btn primary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                  <polyline points="15 3 21 3 21 9"/>
+                  <line x1="10" y1="14" x2="21" y2="3"/>
+                </svg>
+                View Full Report
+              </button>
+              <button class="brief-btn secondary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 3v1m0 16v1m-9-9h1m16 0h1m-2.636-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m11.314 11.314l.707.707"/>
+                  <circle cx="12" cy="12" r="4"/>
+                </svg>
+                Regenerate
+              </button>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- ==================== RIGHT INTEL SIDEBAR (DARK) ==================== -->
+      <aside class="intel-sidebar">
+        <div class="intel-header">
+          <div class="intel-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+            </svg>
+            <span class="intel-title-text">Intelligence Cascades</span>
+            <span class="intel-count">6</span>
+          </div>
+          <span class="intel-view-all">View All</span>
+        </div>
+        <div class="intel-content">
+          <div class="cascade-card">
+            <div class="cascade-meta">
+              <div class="cascade-time">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12 6 12 12 16 14"/>
+                </svg>
+                180d
+              </div>
+              <div class="cascade-score">6500%</div>
+            </div>
+            <div class="cascade-title">Telecom operators adopting agentic AI networks – new market opening for PR...</div>
+            <div class="cascade-tag">Communications AI</div>
+          </div>
+
+          <div class="cascade-card">
+            <div class="cascade-meta">
+              <div class="cascade-time">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12 6 12 12 16 14"/>
+                </svg>
+                90d
+              </div>
+              <div class="cascade-score">7500%</div>
+            </div>
+            <div class="cascade-title">Olive.is targeting telcos/education with AI-as-a-Service – direct threat to PR AI tools</div>
+            <div class="cascade-tag">Communications AI</div>
+          </div>
+
+          <div class="cascade-card">
+            <div class="cascade-meta">
+              <div class="cascade-time">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12 6 12 12 16 14"/>
+                </svg>
+                180d
+              </div>
+              <div class="cascade-score">7200%</div>
+            </div>
+            <div class="cascade-title">China's AI transparency rules will create competitive advantage for compliant...</div>
+            <div class="cascade-tag">AI Ethics</div>
+          </div>
+
+          <div class="cascade-card">
+            <div class="cascade-meta">
+              <div class="cascade-time">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12 6 12 12 16 14"/>
+                </svg>
+                180d
+              </div>
+              <div class="cascade-score">6800%</div>
+            </div>
+            <div class="cascade-title">LLM trust crisis creates opening for PR-specific AI with transparency features</div>
+            <div class="cascade-tag">Natural Language Processing</div>
+          </div>
+
+          <div class="cascade-card">
+            <div class="cascade-meta">
+              <div class="cascade-time">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12 6 12 12 16 14"/>
+                </svg>
+                90d
+              </div>
+              <div class="cascade-score">8000%</div>
+            </div>
+            <div class="cascade-title">Trust becoming primary AI differentiator opens new positioning opportunity...</div>
+            <div class="cascade-tag">Machine Learning Innovations</div>
+          </div>
+        </div>
+
+        <!-- NIV Chat Bubble -->
+        <div class="niv-bubble">
+          <span class="niv-bubble-text">NIV</span>
+          <span class="niv-bubble-dot"></span>
+        </div>
+      </aside>
+    </div>
+  </body>
+</html>

@@ -20,11 +20,22 @@ console.log("NIV Fireplexity - Enhanced Search Engine with Multi-Query Strategy 
 const FIRECRAWL_API_KEY = 'fc-3048810124b640eb99293880a4ab25d0'
 const FIRECRAWL_BASE_URL = 'https://api.firecrawl.dev/v2'
 
+// Timeout helper — aborts fetch after `ms` milliseconds
+function fetchWithTimeout(url: string, options: RequestInit, ms: number): Promise<Response> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), ms)
+  return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timer))
+}
+
 serve(async (req) => {
   // Handle CORS
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
+
+  // Overall 140s safety net — return partial results rather than timing out
+  const startTime = Date.now()
+  const HARD_LIMIT_MS = 140_000
 
   try {
     const {
@@ -94,7 +105,9 @@ serve(async (req) => {
       enhancedQuery,
       searchMode,
       { ...context, orgContext }, // Include org context
-      organizationId
+      organizationId,
+      startTime,
+      HARD_LIMIT_MS
     )
 
     // Cache the result
@@ -131,7 +144,9 @@ async function performIntelligentSearch(
   query: string,
   searchMode: string,
   context: any,
-  organizationId: string
+  organizationId: string,
+  startTime: number,
+  HARD_LIMIT_MS: number
 ) {
   const firecrawlKey = Deno.env.get('FIRECRAWL_API_KEY') || FIRECRAWL_API_KEY
 
@@ -206,14 +221,14 @@ async function performIntelligentSearch(
         }
       }
 
-      const searchResponse = await fetch(`${FIRECRAWL_BASE_URL}/search`, {
+      const searchResponse = await fetchWithTimeout(`${FIRECRAWL_BASE_URL}/search`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${firecrawlKey}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(searchBody)
-      })
+      }, 45_000) // 45s per search query
 
       if (!searchResponse.ok) {
         const errorText = await searchResponse.text()
@@ -228,7 +243,11 @@ async function performIntelligentSearch(
       console.log(`📊 Query ${index + 1} returned ${webResults.length} web + ${newsResults.length} news = ${results.length} total results`)
       return results
     } catch (error) {
-      console.error(`Search ${index + 1} error:`, error)
+      if (error.name === 'AbortError') {
+        console.error(`⏱️ Search ${index + 1} timed out after 45s`)
+      } else {
+        console.error(`Search ${index + 1} error:`, error)
+      }
       return []
     }
   })
@@ -247,10 +266,13 @@ async function performIntelligentSearch(
     // Step 3: Process and score results with advanced relevance scoring
     const processedResults = await processSearchResults(allResults, query, searchStrategy, context)
 
-    // Step 4: If comprehensive mode, enrich top results with full content extraction
+    // Step 4: If comprehensive mode AND we have time, enrich top results
     let enrichedResults = processedResults
-    if (searchMode === 'comprehensive' && processedResults.length > 0) {
+    const elapsed = Date.now() - startTime
+    if (searchMode === 'comprehensive' && processedResults.length > 0 && elapsed < HARD_LIMIT_MS - 40_000) {
       enrichedResults = await enrichTopResults(processedResults.slice(0, 5), firecrawlKey)
+    } else if (searchMode === 'comprehensive' && elapsed >= HARD_LIMIT_MS - 40_000) {
+      console.log(`⏱️ Skipping enrichment — ${Math.round(elapsed/1000)}s elapsed, not enough time left`)
     }
 
     // Step 5: Generate intelligent summary (Perplexity-style)
@@ -406,7 +428,7 @@ async function enrichTopResults(results: any[], firecrawlKey: string): Promise<a
       }
 
       // Scrape the URL for full content
-      const scrapeResponse = await fetch(`${FIRECRAWL_BASE_URL}/scrape`, {
+      const scrapeResponse = await fetchWithTimeout(`${FIRECRAWL_BASE_URL}/scrape`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${firecrawlKey}`,
@@ -417,7 +439,7 @@ async function enrichTopResults(results: any[], firecrawlKey: string): Promise<a
           formats: ['markdown'],
           onlyMainContent: true  // This is correct for scrape endpoint
         })
-      })
+      }, 30_000) // 30s per scrape
 
       if (scrapeResponse.ok) {
         const scrapeData = await scrapeResponse.json()
@@ -430,7 +452,11 @@ async function enrichTopResults(results: any[], firecrawlKey: string): Promise<a
         }
       }
     } catch (error) {
-      console.log(`⚠️ Failed to enrich ${result.url}: ${error.message}`)
+      if (error.name === 'AbortError') {
+        console.log(`⏱️ Scrape timed out for ${result.url}`)
+      } else {
+        console.log(`⚠️ Failed to enrich ${result.url}: ${error.message}`)
+      }
     }
 
     return result

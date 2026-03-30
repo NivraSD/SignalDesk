@@ -129,7 +129,7 @@ For EACH neutral/negative event, ask:
 3. "Where's the hidden opportunity?" (second-order thinking)
 
 DETECTION MANDATE:
-- Identify 3-5 HIGH-QUALITY opportunities with complete execution plans
+- Identify 2-3 HIGH-QUALITY opportunities with complete execution plans (NO MORE THAN 3!)
 - Quality over quantity - each opportunity must be fully executable
 - Be BOLD - include creative angles even if unconventional
 - Mix defensive (respond to threats) AND offensive (seize opportunities)
@@ -510,27 +510,30 @@ Return ONLY a JSON array with this EXACT structure:
 ]
 
 ====================================================================
-CRITICAL REQUIREMENTS
+CRITICAL REQUIREMENTS (CONCISE OUTPUT)
 ====================================================================
 
-1. Each opportunity MUST have 2-4 stakeholder campaigns
-2. Each stakeholder campaign MUST have 3-7 content items
-3. Each content item MUST have a complete brief with:
+⚠️ IMPORTANT: Keep responses CONCISE to avoid truncation!
+
+1. Return EXACTLY 2-3 opportunities (not more!)
+2. Each opportunity MUST have 1-2 stakeholder campaigns (not more!)
+3. Each stakeholder campaign MUST have 2-4 content items (not more!)
+4. Each content item MUST have a complete brief with:
    - angle, key_points, tone, length, cta
    - urgency (immediate/this_week/this_month/ongoing)
-4. **URGENCY VALUES:**
+5. **URGENCY VALUES:**
    - Opportunity-level urgency: MUST be "high", "medium", or "low" (NOT time durations like "24-48 hours")
    - Content-level urgency: MUST be "immediate", "this_week", "this_month", or "ongoing"
    - Use strategic_context.time_window for time-based descriptions like "3-5 days"
-5. **MEDIA TARGETING (REQUIRED):**
+6. **MEDIA TARGETING (REQUIRED):**
    - strategic_context.media_targeting MUST be included for every opportunity
    - Must specify primary_journalist_types, target_industries, target_outlets, reasoning, and beat_keywords
    - Think like a PR strategist: WHO would care about this story and WHY?
-6. Content briefs must be SPECIFIC and ACTIONABLE
-7. Reference SPECIFIC events from the data provided
-8. Map 80% of content to competitor/market events (not internal)
-9. Be realistic about time windows and execution effort
-10. Score opportunities: impact (40%) + time sensitivity (30%) + feasibility (30%)
+7. Content briefs must be SPECIFIC and ACTIONABLE
+8. Reference SPECIFIC events from the data provided
+9. Map 80% of content to competitor/market events (not internal)
+10. Be realistic about time windows and execution effort
+11. Score opportunities: impact (40%) + time sensitivity (30%) + feasibility (30%)
 
 CONTENT BRIEF QUALITY CHECKLIST:
 ✅ Angle is specific and differentiated
@@ -589,7 +592,7 @@ HUNT FOR OPPORTUNITIES IN:
    - How do 2+ events combine into a bigger story?
 
 FOCUS ON QUALITY OVER QUANTITY:
-- Identify 3-5 HIGH-IMPACT opportunities with complete execution plans
+- Identify 2-3 HIGH-IMPACT opportunities with complete execution plans (MAXIMUM 3!)
 - Each opportunity must be FULLY ACTIONABLE with detailed content briefs
 - Think like a scrappy PR strategist, not a conservative analyst
 - Look for angles others would miss

@@ -99,8 +99,11 @@ function robustParseJSON(content: string): any {
 }
 
 async function callAI(prompt: string): Promise<{ text: string; model: string }> {
-  // Try Gemini first
-  if (GOOGLE_API_KEY) {
+  const startTime = Date.now()
+  const remainingMs = () => 140000 - (Date.now() - startTime)
+
+  // Try Gemini: 2 attempts max, 25s timeout each
+  if (GOOGLE_API_KEY && remainingMs() > 30000) {
     try {
       const resp = await fetchWithRetry(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GOOGLE_API_KEY}`,
@@ -109,10 +112,11 @@ async function callAI(prompt: string): Promise<{ text: string; model: string }> 
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.5, maxOutputTokens: 4000 }
+            generationConfig: { temperature: 0.5, maxOutputTokens: 8000 }
           }),
-          signal: AbortSignal.timeout(45000)
-        }
+          signal: AbortSignal.timeout(25000)
+        },
+        1 // max 1 retry (2 attempts)
       )
       if (resp.ok) {
         const data = await resp.json()
@@ -120,38 +124,45 @@ async function callAI(prompt: string): Promise<{ text: string; model: string }> 
         if (text) return { text, model: 'gemini-2.5-flash' }
       }
     } catch (err: any) {
-      console.warn('Gemini failed:', err.message)
+      console.warn(`Gemini failed after ${((Date.now() - startTime) / 1000).toFixed(1)}s:`, err.message)
     }
   }
 
-  // Claude fallback
-  if (ANTHROPIC_API_KEY) {
-    const resp = await fetchWithRetry(
-      'https://api.anthropic.com/v1/messages',
-      {
-        method: 'POST',
-        headers: {
-          'x-api-key': ANTHROPIC_API_KEY,
-          'anthropic-version': '2023-06-01',
-          'content-type': 'application/json',
+  // Try Claude: single attempt with remaining time
+  if (ANTHROPIC_API_KEY && remainingMs() > 10000) {
+    try {
+      const timeout = Math.min(remainingMs() - 5000, 60000)
+      console.log(`Trying Claude with ${(timeout / 1000).toFixed(0)}s timeout`)
+      const resp = await fetchWithRetry(
+        'https://api.anthropic.com/v1/messages',
+        {
+          method: 'POST',
+          headers: {
+            'x-api-key': ANTHROPIC_API_KEY,
+            'anthropic-version': '2023-06-01',
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 8000,
+            temperature: 0.5,
+            messages: [{ role: 'user', content: prompt }]
+          }),
+          signal: AbortSignal.timeout(timeout)
         },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 4000,
-          temperature: 0.5,
-          messages: [{ role: 'user', content: prompt }]
-        }),
-        signal: AbortSignal.timeout(45000)
+        0 // no retries
+      )
+      if (resp.ok) {
+        const data = await resp.json()
+        const text = data.content?.[0]?.text || ''
+        if (text) return { text, model: 'claude-sonnet-4' }
       }
-    )
-    if (resp.ok) {
-      const data = await resp.json()
-      const text = data.content?.[0]?.text || ''
-      if (text) return { text, model: 'claude-sonnet-4' }
+    } catch (err: any) {
+      console.warn(`Claude failed after ${((Date.now() - startTime) / 1000).toFixed(1)}s:`, err.message)
     }
   }
 
-  throw new Error('No AI model available')
+  throw new Error(`No AI model available (elapsed: ${((Date.now() - startTime) / 1000).toFixed(1)}s)`)
 }
 
 // === Main handler ===
@@ -209,7 +220,9 @@ Stabilization: ${(analysis.stabilization_score || 0).toFixed(2)}`
       .map((r: any) => `${r.entity_name}: score ${r.score?.toFixed(1) || 0}`)
       .join(', ')
 
-    const prompt = `You are a strategic analyst. Analyze this multi-round stakeholder simulation and identify 3-7 strategic fulcrums — actionable leverage points for the client.
+    const prompt = `You are a strategic analyst. Analyze this multi-round stakeholder simulation and identify EXACTLY 5 strategic fulcrums — actionable leverage points for the client.
+
+You MUST return exactly 5 fulcrums, one of each type listed below. Do not return fewer than 5.
 
 ## Simulation Summary
 Scenario: ${JSON.stringify(simulation.dominant_narratives || []).substring(0, 200)}
@@ -228,43 +241,72 @@ ${(simulation.gaps_identified || []).join('; ') || 'None'}
 ## Coalitions
 ${(simulation.key_coalitions || []).map((c: any) => `${c.name}: ${(c.members || []).join(', ')} — ${c.shared_position}`).join('\n') || 'None'}
 
-## Fulcrum Types
+## Required Fulcrum Types (one of each)
 1. **validator_path**: An entity whose endorsement/validation would cascade support from others. Identify WHO and WHY their validation matters.
 2. **unoccupied_position**: A narrative gap no entity claimed. The client can own this space.
 3. **wedge_issue**: A topic that could split an existing coalition. Identify the coalition and the fracture line.
 4. **preemption**: A strategic move the client can make before competitors. Time-sensitive opportunity.
+5. **validator_path**: A SECOND validator — a different entity whose support would unlock a different constituency.
 
-Output ONLY valid JSON:
+Output ONLY valid JSON with exactly 5 fulcrums. Keep each fulcrum concise (2-3 sentences per field):
 {
   "fulcrums": [
     {
       "fulcrum_id": "f_1",
-      "type": "validator_path|unoccupied_position|wedge_issue|preemption",
-      "description": "Clear description of the fulcrum",
-      "target_entity": "Entity name if applicable",
-      "rationale": "Why this is a leverage point based on simulation evidence",
+      "type": "validator_path",
+      "description": "2-3 sentence description",
+      "target_entity": "Entity name",
+      "rationale": "Why this is a leverage point",
       "cascade_prediction": ["What happens if client acts on this"],
       "effort_level": "low|medium|high",
       "impact_level": "low|medium|high",
       "confidence": 0.0-1.0
-    }
+    },
+    { "fulcrum_id": "f_2", "type": "unoccupied_position", "..." : "..." },
+    { "fulcrum_id": "f_3", "type": "wedge_issue", "..." : "..." },
+    { "fulcrum_id": "f_4", "type": "preemption", "..." : "..." },
+    { "fulcrum_id": "f_5", "type": "validator_path", "..." : "..." }
   ]
 }
 
-Be specific. Reference actual entity names and positions from the simulation.`
+Be specific. Reference actual entity names and positions from the simulation. You MUST return all 5 fulcrums.`
 
     const { text, model } = await callAI(prompt)
-    const parsed = robustParseJSON(text)
+    console.log(`[LP] Raw AI response (${text.length} chars, first 500): ${text.substring(0, 500)}`)
+
+    let parsed = robustParseJSON(text)
+
+    // Handle case where AI returns array directly or uses different key
+    if (parsed && !parsed.fulcrums) {
+      if (Array.isArray(parsed)) {
+        parsed = { fulcrums: parsed }
+      } else if (parsed.results && Array.isArray(parsed.results)) {
+        parsed = { fulcrums: parsed.results }
+      } else if (parsed.data && Array.isArray(parsed.data)) {
+        parsed = { fulcrums: parsed.data }
+      }
+    }
 
     if (!parsed?.fulcrums || !Array.isArray(parsed.fulcrums)) {
-      console.error('Failed to parse fulcrums from AI response')
+      console.error('Failed to parse fulcrums. Parsed result:', JSON.stringify(parsed)?.substring(0, 300))
+      console.error('Raw text (last 200):', text.substring(text.length - 200))
       return jsonResponse({ fulcrums: [], model_used: model, error: 'Parse failed' })
     }
 
-    // Validate fulcrum structure
-    const validTypes = new Set(['validator_path', 'unoccupied_position', 'wedge_issue', 'preemption'])
+    // Normalize type names flexibly — keep all fulcrums that have a description
+    const typeMap: Record<string, string> = {
+      validator_path: 'validator_path', validator: 'validator_path', validation: 'validator_path',
+      unoccupied_position: 'unoccupied_position', unoccupied: 'unoccupied_position', gap: 'unoccupied_position', narrative_gap: 'unoccupied_position',
+      wedge_issue: 'wedge_issue', wedge: 'wedge_issue', fracture: 'wedge_issue', split: 'wedge_issue', coalition_fracture: 'wedge_issue',
+      preemption: 'preemption', preemptive: 'preemption', first_mover: 'preemption', timing: 'preemption',
+      narrative_ownership: 'unoccupied_position', narrative_shift: 'unoccupied_position',
+      regulatory: 'preemption', regulatory_alignment: 'validator_path',
+      coalition: 'wedge_issue', coalition_building: 'wedge_issue',
+      differentiation: 'unoccupied_position', positioning: 'unoccupied_position',
+    }
     const fulcrums = parsed.fulcrums
-      .filter((f: any) => f.description && validTypes.has(f.type))
+      .filter((f: any) => f.description)
+      .map((f: any) => ({ ...f, type: typeMap[f.type?.toLowerCase()] || 'unoccupied_position' }))
       .map((f: any, i: number) => ({
         fulcrum_id: f.fulcrum_id || `f_${i + 1}`,
         type: f.type,
@@ -277,7 +319,11 @@ Be specific. Reference actual entity names and positions from the simulation.`
         confidence: typeof f.confidence === 'number' ? Math.min(1, Math.max(0, f.confidence)) : 0.5
       }))
 
-    console.log(`✅ Identified ${fulcrums.length} fulcrums [${model}]`)
+    console.log(`✅ Identified ${fulcrums.length}/${parsed.fulcrums.length} fulcrums [${model}]`)
+    if (fulcrums.length < parsed.fulcrums.length) {
+      const dropped = parsed.fulcrums.filter((f: any) => !f.description)
+      console.warn(`Dropped ${dropped.length} fulcrums without description`)
+    }
 
     return jsonResponse({ fulcrums, model_used: model })
 

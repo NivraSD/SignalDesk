@@ -177,16 +177,16 @@ export default function CrisisModule({ onOpenInStudio }: CrisisModuleProps) {
 
     try {
       const alerts: any[] = []
-      const oneDayAgo = new Date()
-      oneDayAgo.setHours(oneDayAgo.getHours() - 24)
+      const sevenDaysAgo = new Date()
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
 
-      // Check crisis_events table for 'monitoring' status
+      // Check crisis_events table for 'monitoring' or 'active' status
       const { data: monitoringCrises, error: crisisError } = await supabase
         .from('crisis_events')
         .select('*')
         .eq('organization_id', organization.id)
-        .eq('status', 'monitoring')
-        .gte('started_at', oneDayAgo.toISOString())
+        .in('status', ['monitoring', 'active'])
+        .gte('started_at', sevenDaysAgo.toISOString())
         .order('started_at', { ascending: false })
         .limit(10)
 

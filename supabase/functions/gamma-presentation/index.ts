@@ -789,7 +789,8 @@ async function checkGenerationStatus(generationId: string, captureRequest?: Pres
       console.log('📊 Status response:', JSON.stringify(data))
 
       // According to docs: completed response has gammaUrl field
-      const isCompleted = data.status === 'completed'
+      // Also check for gammaUrl presence as a completion signal (in case status field changes)
+      const isCompleted = data.status === 'completed' || data.status === 'complete' || (data.gammaUrl && data.status !== 'pending' && data.status !== 'processing')
 
       // Extract export options from the Gamma URL if available
       const exportUrls: any = {}
