@@ -17,7 +17,6 @@ export async function compositeWallpaper(
     text: {
       text: `<span foreground="white" font_size="${fontSize * 1024}" letter_spacing="${4 * 1024}">${title.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>`,
       font: 'sans-serif',
-      fontfile: '',
       rgba: true,
       dpi: 72,
       width: OUTPUT_W - 120, // Leave margins
