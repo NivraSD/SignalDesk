@@ -1,4 +1,5 @@
 import sharp from 'sharp'
+import { createCanvas } from '@napi-rs/canvas'
 
 const OUTPUT_W = 1080
 const OUTPUT_H = 1920
@@ -7,58 +8,45 @@ export async function compositeWallpaper(
   imageBuffer: Buffer,
   title: string
 ): Promise<Buffer> {
-  const escaped = title
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-
-  // Dynamic sizing
+  // Dynamic font size
   const charCount = title.length
-  // Pango font_size is in 1/1024 of a point. For ~60px visible text at 72dpi: 60 * 1024 = 61440
-  const pxSize = charCount <= 15 ? 72 : charCount <= 25 ? 58 : 46
-  const pangoSize = pxSize * 1024
+  const fontSize = charCount <= 15 ? 72 : charCount <= 25 ? 58 : 46
 
-  // Create text as a separate image using Sharp's Pango text renderer
-  const textImage = await sharp({
-    text: {
-      text: `<span foreground="white" font_size="${pangoSize}" letter_spacing="${4 * 1024}">${escaped}</span>`,
-      rgba: true,
-      dpi: 72,
-      width: OUTPUT_W - 120,
-      align: 'centre',
-    },
-  })
-    .png()
-    .toBuffer()
+  // Render text using Canvas API — works everywhere, no font file needed
+  const canvas = createCanvas(OUTPUT_W, OUTPUT_H)
+  const ctx = canvas.getContext('2d')
 
-  const textMeta = await sharp(textImage).metadata()
-  const textWidth = textMeta.width || 400
-  const textHeight = textMeta.height || 80
+  // Transparent background
+  ctx.clearRect(0, 0, OUTPUT_W, OUTPUT_H)
 
-  // Gradient scrim as SVG (no text, no font issues)
-  const scrimSvg = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${OUTPUT_W}" height="${OUTPUT_H}">
-  <defs>
-    <linearGradient id="s" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#000" stop-opacity="0"/>
-      <stop offset="100%" stop-color="#000" stop-opacity="0.5"/>
-    </linearGradient>
-  </defs>
-  <rect x="0" y="${OUTPUT_H - 650}" width="${OUTPUT_W}" height="650" fill="url(#s)"/>
-</svg>`)
+  // Gradient scrim in the bottom portion
+  const gradient = ctx.createLinearGradient(0, OUTPUT_H - 650, 0, OUTPUT_H)
+  gradient.addColorStop(0, 'rgba(0, 0, 0, 0)')
+  gradient.addColorStop(1, 'rgba(0, 0, 0, 0.5)')
+  ctx.fillStyle = gradient
+  ctx.fillRect(0, OUTPUT_H - 650, OUTPUT_W, 650)
 
-  // Center text, position in lower third (above lock screen buttons)
-  const textTop = OUTPUT_H - 300 - Math.floor(textHeight / 2)
-  const textLeft = Math.max(0, Math.floor((OUTPUT_W - textWidth) / 2))
+  // Draw title text
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.9)'
+  ctx.font = `300 ${fontSize}px sans-serif`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.letterSpacing = '4px'
 
+  // Position: lower third, above lock screen buttons
+  const textY = OUTPUT_H - 300
+  ctx.fillText(title, OUTPUT_W / 2, textY)
+
+  // Convert canvas to PNG buffer
+  const overlayBuffer = Buffer.from(canvas.toBuffer('image/png'))
+
+  // Resize source image and composite
   const base = await sharp(imageBuffer)
     .resize(OUTPUT_W, OUTPUT_H, { fit: 'cover' })
     .toBuffer()
 
   return sharp(base)
-    .composite([
-      { input: scrimSvg, top: 0, left: 0 },
-      { input: textImage, top: textTop, left: textLeft },
-    ])
+    .composite([{ input: overlayBuffer, top: 0, left: 0 }])
     .jpeg({ quality: 92 })
     .toBuffer()
 }
