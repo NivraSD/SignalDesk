@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-// Simple GET endpoint for iOS Shortcuts
-// GET /api/grounded-art/wallpaper?key=API_KEY
-// Returns JSON: { title, image_url }
-// Shortcut uses native "Overlay Text on Image" for the title
+// Two endpoints for iOS Shortcuts:
+// GET /api/grounded-art/wallpaper?key=KEY&get=image  → returns JPEG image
+// GET /api/grounded-art/wallpaper?key=KEY&get=title  → returns plain text title
 
 export const maxDuration = 10
 
@@ -13,9 +12,12 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
 const GROUNDED_API_KEY = 'd677fcd4-7d0f-4e99-b53e-5243e9f99fea'
 
 export async function GET(req: NextRequest) {
-  const key = new URL(req.url).searchParams.get('key')
+  const url = new URL(req.url)
+  const key = url.searchParams.get('key')
+  const get = url.searchParams.get('get') || 'image'
+
   if (key !== GROUNDED_API_KEY) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return new Response('Unauthorized', { status: 401 })
   }
 
   try {
@@ -30,14 +32,20 @@ export async function GET(req: NextRequest) {
       .single()
 
     if (!latest) {
-      return NextResponse.json({ error: 'No art found' }, { status: 404 })
+      return new Response('No art found', { status: 404 })
     }
 
-    return NextResponse.json({
-      title: latest.title,
-      image_url: latest.image_url,
-    })
+    // Return just the title as plain text
+    if (get === 'title') {
+      return new Response(latest.title, {
+        headers: { 'Content-Type': 'text/plain' },
+      })
+    }
+
+    // Return the image — redirect to storage URL
+    return NextResponse.redirect(latest.image_url)
+
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+    return new Response(err.message, { status: 500 })
   }
 }
