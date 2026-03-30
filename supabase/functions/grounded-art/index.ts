@@ -9,57 +9,84 @@ const GROUNDED_API_KEY = Deno.env.get('GROUNDED_API_KEY')!
 const GEMINI_TEXT = 'gemini-2.5-flash'
 const GEMINI_IMAGE = 'gemini-2.5-flash-image'
 
-// ── Emotionally evocative title generation (THE INTERVENTION) ────────────────
-// The title is the ghost note. It creates the ambiguous gap that makes
-// the brain reach toward action. It's not an art label — it's a provocation.
+// ── Step 1: Conceive the piece — title, emotion, and visual direction as one ──
 
-const EMOTIONAL_REGISTERS = [
-  'the quiet tension before starting something difficult',
-  'the feeling of potential energy — something about to shift',
-  'the strange comfort of being mid-process, not finished',
-  'the pull toward something you keep avoiding',
-  'the moment stillness becomes unbearable in a good way',
-  'the weight of an idea that hasn\'t been expressed yet',
-  'what it feels like to finally stop resisting',
-  'the gap between knowing and doing',
-  'the texture of a day that could go either way',
-  'the particular energy of early momentum',
-  'permission you didn\'t know you needed',
-  'what clarity feels like before the words arrive',
-  'the restlessness that precedes creation',
-  'the feeling of returning to something abandoned',
-  'the moment right before commitment',
-  'the strange relief of choosing one direction',
-  'what it means to move without a plan',
-  'the difference between waiting and preparing',
-  'the tension between comfort and growth',
-  'the first mark on a blank surface',
+const SEEDS = [
+  'the tension of something about to begin',
+  'the relief of finally letting go of control',
+  'restlessness that wants to become movement',
+  'the ache of a project left half-finished',
+  'clarity arriving uninvited',
+  'the heaviness right before a breakthrough',
+  'wanting to create but not knowing what',
+  'the strange peace of accepting imperfection',
+  'momentum building from nothing',
+  'returning to something you abandoned',
+  'the courage it takes to start ugly',
+  'sitting with discomfort instead of escaping it',
+  'the difference between stalling and preparing',
+  'feeling ready but not starting',
+  'the pull of something unresolved',
+  'choosing difficulty over comfort',
+  'a door you keep walking past',
+  'the energy just after a decision',
+  'holding two contradictions at once',
+  'the silence before honest work begins',
 ]
 
-async function generateTitle(recentTitles: string[]): Promise<string> {
-  const register = EMOTIONAL_REGISTERS[Math.floor(Math.random() * EMOTIONAL_REGISTERS.length)]
+const FALLBACK_PALETTES = [
+  'burnt sienna, prussian blue, and raw umber — warm against cold',
+  'ivory black layered over cadmium orange with titanium white accents',
+  'payne\'s gray, cerulean, and naples yellow — coastal tension',
+  'mars violet, raw sienna, and zinc white — bruised warmth',
+  'viridian, burnt umber, and flake white — forest floor',
+]
 
-  const avoidSection = recentTitles.length > 0
-    ? `\nPhrases already used (do NOT repeat or closely resemble): ${recentTitles.slice(0, 20).join(', ')}`
+const FALLBACK_TEXTURES = [
+  'oil paint scraped with a palette knife, revealing underlayers',
+  'charcoal and gesso on raw linen, marks half-erased and redrawn',
+  'thick oil stick marks with visible hand pressure',
+  'sumi ink on wet paper, controlled accidents and feathered edges',
+  'thin glazes built up in layers, luminous depth through transparency',
+]
+
+const FALLBACK_COMPOSITIONS = [
+  'dense energy in the center fading to quiet edges',
+  'diagonal tension pulling from corner to corner',
+  'a single dominant form offset to one side, space breathing around it',
+  'horizon line in the lower third, weight settled at the bottom',
+  'layered veils of color with edges that never quite align',
+]
+
+function pickRandom<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)]
+}
+
+interface ArtConcept {
+  title: string
+  emotion: string
+  palette: string
+  texture: string
+  composition: string
+}
+
+async function conceiveArt(recentTitles: string[]): Promise<ArtConcept> {
+  const seed = SEEDS[Math.floor(Math.random() * SEEDS.length)]
+
+  const avoidList = recentTitles.length > 0
+    ? `\nDo NOT use or closely resemble these recent titles: ${recentTitles.join(', ')}`
     : ''
 
-  const prompt = `You are generating a short emotionally evocative phrase (2-5 words) that will appear on an abstract painting used as a phone wallpaper.
+  const prompt = `Create a concept for an abstract painting. Starting feeling: "${seed}"
 
-This phrase is NOT a title for art. It's a provocation — something that creates an ambiguous emotional gap in the viewer's mind. Something that makes the brain reach toward meaning, toward action, toward resolution.
+Respond with EXACTLY 5 lines, no labels, no extra text:
+Line 1: An evocative 3-5 word phrase (lowercase, no punctuation) that creates emotional tension — like "what hasn't been built yet" or "closer than it feels"${avoidList}
+Line 2: The specific emotion to evoke (one sentence)
+Line 3: Color palette using real pigment names (3-5 colors)
+Line 4: Paint texture and technique
+Line 5: Composition and where the visual energy sits
 
-The emotional register for this one: ${register}
-
-Rules:
-- 2 to 5 words, lowercase, no punctuation
-- Must feel like something you'd pause on — not inspirational poster language
-- NOT generic poetry ("whispers of dawn", "silent echoes") — that's cliché
-- NOT commands or instructions ("start now", "keep going")
-- NOT art labels ("blue study", "composition in grey")
-- Think more like: "what hasn't been built yet" or "the weight before moving" or "permission to start rough" or "almost ready isn't ready"
-- Ambiguous enough that the viewer's brain completes the meaning based on what's alive in them
-- Should create a slight tension — not comfortable, not uncomfortable${avoidSection}
-
-Return ONLY the phrase, nothing else.`
+ONLY these 5 lines. Nothing else.`
 
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_TEXT}:generateContent?key=${GOOGLE_API_KEY}`,
@@ -68,68 +95,82 @@ Return ONLY the phrase, nothing else.`
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 1.2, maxOutputTokens: 50 }
+        generationConfig: { temperature: 0.95, maxOutputTokens: 500 }
       })
     }
   )
 
-  if (!response.ok) throw new Error(`Title generation failed: ${response.status}`)
+  if (!response.ok) throw new Error(`Concept generation failed: ${response.status}`)
   const data = await response.json()
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || ''
-  return text.replace(/^["']|["']$/g, '').replace(/\.$/,'').toLowerCase() || 'what comes next'
+
+  // Gemini 2.5 Flash may have thinking parts — find the actual text part
+  const allParts = data.candidates?.[0]?.content?.parts || []
+  console.log('Response parts:', allParts.length, allParts.map((p: any) => ({ hasText: !!p.text, thought: p.thought, len: p.text?.length })))
+
+  // Get the last text part that isn't a thought
+  const textPart = allParts.filter((p: any) => p.text && !p.thought).pop()
+  const text = (textPart?.text || allParts[allParts.length - 1]?.text || '').trim()
+
+  // Parse as lines
+  console.log('Raw concept text:', text.substring(0, 500))
+  const lines = text.split('\n').map((l: string) => l.trim()).filter((l: string) => l.length > 0)
+
+  if (lines.length < 1 || !lines[0]) {
+    console.error('Empty response:', text)
+    throw new Error('Concept generation returned empty')
+  }
+
+  // Clean title: remove any numbering, quotes, labels
+  let title = lines[0]
+    .replace(/^\d+[.:)\s]*/g, '')
+    .replace(/^(title|line\s*1)[:\s]*/i, '')
+    .replace(/^["']|["']$/g, '')
+    .replace(/[.!?,;:'"]/g, '')
+    .toLowerCase()
+    .trim()
+
+  // Enforce 3+ words
+  if (title.split(/\s+/).length < 3) {
+    title = 'not yet but almost'
+  }
+
+  const concept: ArtConcept = {
+    title,
+    emotion: lines[1]?.replace(/^\d+[.:)\s]*/g, '').replace(/^(emotion|line\s*2)[:\s]*/i, '').trim() || seed,
+    palette: lines[2]?.replace(/^\d+[.:)\s]*/g, '').replace(/^(palette|colors?|line\s*3)[:\s]*/i, '').trim() || pickRandom(FALLBACK_PALETTES),
+    texture: lines[3]?.replace(/^\d+[.:)\s]*/g, '').replace(/^(texture|technique|line\s*4)[:\s]*/i, '').trim() || pickRandom(FALLBACK_TEXTURES),
+    composition: lines[4]?.replace(/^\d+[.:)\s]*/g, '').replace(/^(composition|line\s*5)[:\s]*/i, '').trim() || pickRandom(FALLBACK_COMPOSITIONS),
+  }
+
+  return concept
 }
 
-// ── Art Generation — driven by the title's emotional content ─────────────────
+// ── Step 2: Generate art from the unified concept ────────────────────────────
 
-const VISUAL_LANGUAGES = [
-  'Mark Rothko — large soft-edged color fields vibrating against each other, depth through translucent washes',
-  'Gerhard Richter — dragged paint, accidental beauty, color bleeding through scraped layers',
-  'Agnes Martin — subtle grids, pale washes, barely-there lines, meditative minimalism',
-  'Zao Wou-Ki — Chinese ink meets Western abstraction, atmospheric space, gestural energy',
-  'Helen Frankenthaler — stained canvas, color soaked into surface rather than sitting on top',
-  'Pierre Soulages — black as a color of light, texture creating luminosity from darkness',
-  'Sean Scully — stacked blocks and bands of matte color, architectural but warm',
-  'Clyfford Still — jagged vertical forms tearing through fields of color, raw and geological',
-  'Lee Ufan — sparse marks on empty space, tension between gesture and void',
-  'Hiroshi Sugimoto — extreme simplicity, horizon dividing two infinite tones',
-]
+async function generateArt(concept: ArtConcept): Promise<{ imageBase64: string; mimeType: string }> {
+  const prompt = `Create an abstract painting. This is a single emotional experience — the image and the feeling are inseparable.
 
-const TECHNIQUES = [
-  'oil paint scraped with a palette knife, revealing underlayers',
-  'thin glazes built up over weeks, luminous depth through transparency',
-  'charcoal and gesso on raw linen, marks half-erased and redrawn',
-  'sumi ink on wet paper, controlled accidents and feathered edges',
-  'oil stick on canvas, thick gestural marks with visible hand pressure',
-  'encaustic wax with embedded pigment, surface catching light at angles',
-  'gouache on toned paper, opaque strokes building from middle values',
-  'acrylic poured and tilted, gravity as collaborator',
-]
+THE FEELING: ${concept.emotion}
 
-function pickRandom<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)]
-}
+THE PALETTE: ${concept.palette}
 
-async function generateArt(title: string): Promise<{ imageBase64: string; mimeType: string }> {
-  const artist = pickRandom(VISUAL_LANGUAGES)
-  const technique = pickRandom(TECHNIQUES)
+THE TEXTURE: ${concept.texture}
 
-  const prompt = `Create an abstract painting that embodies the feeling of: "${title}"
+THE COMPOSITION: ${concept.composition}
 
-This image should be the VISUAL TEXTURE of that phrase. If someone saw this painting and read those words together, both should feel inevitable — like they belong together.
+This must look like a photograph of a REAL physical painting. Not digital art. Real paint on real canvas:
+- Visible brushstrokes, palette knife marks, scrapes
+- Paint buildup, drips, canvas grain showing through
+- The imperfection and materiality of a human hand
+- Color mixing that happened physically on the surface
 
-Visual language: ${artist}
-Technique: ${technique}
-
-This must look like a photograph of a real physical painting — visible brushstrokes, scrapes, material texture, canvas grain, paint buildup. The imperfection of a human hand.
-
-NOT digital art. No perfect gradients, no glow effects, no lens flares, no neon, no fractals.
-No people, faces, hands, bodies, silhouettes, or recognizable objects.
+The painting should make the viewer FEEL something before they can name what it is. It should create the same emotional response as the phrase "${concept.title}" — not illustrate those words, but evoke the same inner state.
 
 ABSOLUTE RULES:
-- ZERO text, letters, words, numbers, symbols, signatures, watermarks anywhere in the image
-- Fill the ENTIRE canvas edge to edge — no blank margins, borders, or empty space
-- Portrait orientation (9:16 aspect ratio)
-- Pure abstract visual art that FEELS like the phrase "${title}"`
+- ZERO text, letters, words, numbers, symbols, signatures, or watermarks anywhere
+- Fill the ENTIRE canvas edge to edge — no margins, borders, or empty space
+- Portrait orientation (9:16)
+- Pure abstraction — no people, faces, objects, or recognizable forms`
 
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_IMAGE}:generateContent?key=${GOOGLE_API_KEY}`,
@@ -166,14 +207,13 @@ ABSOLUTE RULES:
 
 // ── Retry wrapper ────────────────────────────────────────────────────────────
 
-async function generateArtWithRetry(title: string, maxRetries = 3): Promise<{ imageBase64: string; mimeType: string }> {
+async function generateArtWithRetry(concept: ArtConcept, maxRetries = 3): Promise<{ imageBase64: string; mimeType: string }> {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      console.log(`Art generation attempt ${attempt}/${maxRetries}`)
-      return await generateArt(title)
+      return await generateArt(concept)
     } catch (e: any) {
       if (e.message?.startsWith('RETRY:') && attempt < maxRetries) {
-        console.log(`Retrying (${attempt}/${maxRetries})...`)
+        console.log(`Retrying art generation (${attempt}/${maxRetries})...`)
         continue
       }
       throw new Error(e.message?.replace('RETRY: ', '') || 'Art generation failed')
@@ -203,10 +243,7 @@ async function uploadToStorage(
     .from('grounded-art')
     .upload(fileName, bytes, { contentType: mimeType, upsert: false })
 
-  if (uploadError) {
-    console.error('Storage upload error:', uploadError)
-    throw new Error(`Storage upload failed: ${uploadError.message}`)
-  }
+  if (uploadError) throw new Error(`Storage upload failed: ${uploadError.message}`)
 
   const { data: urlData } = supabase.storage.from('grounded-art').getPublicUrl(fileName)
   return urlData.publicUrl
@@ -262,7 +299,6 @@ Deno.serve(async (req: Request) => {
 
     // ── GENERATE ──────────────────────────────────────────────────────────
     if (action === 'generate') {
-      // Get recent titles to avoid repetition
       const { data: recentPieces } = await supabase
         .from('grounded_art_pieces')
         .select('title')
@@ -272,36 +308,38 @@ Deno.serve(async (req: Request) => {
 
       const recentTitles = (recentPieces || []).map((p: { title: string }) => p.title)
 
-      // Step 1: Title FIRST — the emotional provocation
-      console.log('Generating evocative title...')
-      const title = await generateTitle(recentTitles)
-      console.log('Title:', title)
+      // Single creative act: conceive the whole piece
+      console.log('Conceiving art piece...')
+      const concept = await conceiveArt(recentTitles)
+      console.log('Concept:', JSON.stringify(concept))
 
-      // Step 2: Art driven by the title's feeling
-      console.log('Generating art from title...')
-      const artResult = await generateArtWithRetry(title)
+      // Generate art driven by the unified concept
+      console.log('Generating art...')
+      const artResult = await generateArtWithRetry(concept)
 
-      // Step 3: Upload raw image
+      // Upload
       const imageUrl = await uploadToStorage(supabase, userId, artResult.imageBase64, artResult.mimeType)
-      console.log('Uploaded:', imageUrl)
 
-      // Step 4: Save to DB
+      // Save
       const { data: record, error: insertError } = await supabase
         .from('grounded_art_pieces')
-        .insert({ user_id: userId, title, image_url: imageUrl })
+        .insert({
+          user_id: userId,
+          title: concept.title,
+          image_url: imageUrl,
+          prompt_seed: concept,
+        })
         .select('id, title, image_url, created_at')
         .single()
 
-      if (insertError) {
-        console.error('DB insert error:', insertError)
-        throw new Error(`Failed to save: ${insertError.message}`)
-      }
+      if (insertError) throw new Error(`Failed to save: ${insertError.message}`)
 
       return jsonResponse({
         id: record.id,
         title: record.title,
         image_url: record.image_url,
         created_at: record.created_at,
+        concept,
       })
     }
 
