@@ -141,14 +141,16 @@ serve(async (req) => {
     const maxTargets = body.max_targets || MAX_TARGETS_PER_RUN;
     const minFacts = body.min_facts || MIN_FACTS_FOR_ANALYSIS;
 
-    // Build query for targets with enough accumulated context
+    // Build query for targets with accumulated context
+    // Don't filter by fact_count here — the denormalized column can fall out of sync
+    // with accumulated_context.total_facts. We filter in-code after fetching.
     let query = supabase
       .from('intelligence_targets')
       .select('id, organization_id, name, target_type, priority, monitoring_context, accumulated_context, baseline_metrics, fact_count')
-      .gte('fact_count', minFacts)
       .eq('is_active', true)
+      .not('accumulated_context', 'is', null)
       .order('fact_count', { ascending: false })
-      .limit(maxTargets);
+      .limit(maxTargets * 3); // fetch extra since we filter in-code
 
     if (organizationId) {
       query = query.eq('organization_id', organizationId);
@@ -157,13 +159,20 @@ serve(async (req) => {
       query = query.eq('id', targetId);
     }
 
-    const { data: targets, error: targetError } = await query;
+    const { data: rawTargets, error: targetError } = await query;
 
     if (targetError) {
       throw new Error(`Failed to load targets: ${targetError.message}`);
     }
 
-    if (!targets || targets.length === 0) {
+    // In-code filter: use whichever fact count is higher (column vs JSONB)
+    const targets = (rawTargets || []).filter((t: any) => {
+      const colCount = t.fact_count || 0;
+      const jsonCount = t.accumulated_context?.total_facts || 0;
+      return Math.max(colCount, jsonCount) >= minFacts;
+    }).slice(0, maxTargets);
+
+    if (targets.length === 0) {
       console.log('   No targets with sufficient data for pattern analysis');
       return new Response(JSON.stringify({
         success: true,
@@ -176,7 +185,7 @@ serve(async (req) => {
       });
     }
 
-    console.log(`   Found ${targets.length} targets to analyze`);
+    console.log(`   Found ${targets.length} targets to analyze (from ${rawTargets?.length || 0} candidates)`);
 
     // Group targets by organization for efficient processing
     const targetsByOrg = new Map<string, Target[]>();
@@ -186,6 +195,17 @@ serve(async (req) => {
         targetsByOrg.set(orgId, []);
       }
       targetsByOrg.get(orgId)!.push(target);
+    }
+
+    // Sync fact_count column where JSONB total_facts is ahead (fixes desync)
+    for (const t of targets as any[]) {
+      const jsonCount = t.accumulated_context?.total_facts || 0;
+      if (jsonCount > (t.fact_count || 0)) {
+        await supabase
+          .from('intelligence_targets')
+          .update({ fact_count: jsonCount })
+          .eq('id', t.id);
+      }
     }
 
     let totalPatternsDetected = 0;

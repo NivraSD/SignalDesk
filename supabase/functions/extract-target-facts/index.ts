@@ -947,6 +947,8 @@ async function updateAccumulatedContext(
     .from('intelligence_targets')
     .update({
       accumulated_context: ctx,
+      fact_count: ctx.total_facts, // keep denormalized column in sync
+      last_fact_at: ctx.last_fact_at,
       updated_at: new Date().toISOString()
     })
     .eq('id', targetId);
