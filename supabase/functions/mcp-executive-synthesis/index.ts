@@ -8,6 +8,7 @@ const VOYAGE_API_KEY = Deno.env.get('VOYAGE_API_KEY');
 
 // Try both API key names like NIV does
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY') || Deno.env.get('CLAUDE_API_KEY');
+const GOOGLE_API_KEY = Deno.env.get('GOOGLE_API_KEY');
 
 /**
  * Generate embedding using Voyage AI voyage-3-large
@@ -51,6 +52,204 @@ async function generateEmbedding(text: string): Promise<number[] | null> {
 
 if (!ANTHROPIC_API_KEY) {
   console.error('❌ No API key found - checked ANTHROPIC_API_KEY and CLAUDE_API_KEY');
+}
+
+/**
+ * Load historical context for narrative continuity
+ * - Past 3-5 syntheses for context
+ * - Active tracked narratives
+ */
+async function loadHistoricalContext(organizationId: string) {
+  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+
+  // Load past syntheses (last 5)
+  const { data: pastSyntheses } = await supabase
+    .from('executive_synthesis')
+    .select('id, synthesis_data, created_at')
+    .eq('organization_id', organizationId)
+    .order('created_at', { ascending: false })
+    .limit(5);
+
+  // Load active tracked narratives
+  const { data: trackedNarratives } = await supabase
+    .from('tracked_narratives')
+    .select('*')
+    .eq('organization_id', organizationId)
+    .neq('status', 'resolved')
+    .order('last_updated_at', { ascending: false })
+    .limit(15);
+
+  console.log('📚 Historical context loaded:', {
+    past_syntheses: pastSyntheses?.length || 0,
+    tracked_narratives: trackedNarratives?.length || 0
+  });
+
+  return {
+    pastSyntheses: pastSyntheses || [],
+    trackedNarratives: trackedNarratives || []
+  };
+}
+
+/**
+ * Format historical context for the synthesis prompt
+ */
+function formatHistoricalContext(historicalContext: any) {
+  const { pastSyntheses, trackedNarratives } = historicalContext;
+
+  let contextSection = '';
+
+  // Add tracked narratives context
+  if (trackedNarratives && trackedNarratives.length > 0) {
+    contextSection += `
+═══════════════════════════════════════════════════════════
+📊 DEVELOPING STORIES (Tracked Narratives)
+═══════════════════════════════════════════════════════════
+
+These are stories we've been tracking across multiple monitoring cycles.
+UPDATE their status based on today's intelligence.
+
+`;
+    trackedNarratives.forEach((narrative: any, i: number) => {
+      const daysSinceDetected = Math.floor((Date.now() - new Date(narrative.first_detected_at).getTime()) / (1000 * 60 * 60 * 24));
+      contextSection += `${i + 1}. "${narrative.title}"
+   Status: ${narrative.status} | Trajectory: ${narrative.trajectory}
+   Tracked for: ${daysSinceDetected} days | Mentions: ${narrative.mention_count}
+   Summary: ${narrative.summary || 'No summary'}
+   Entities: ${JSON.stringify(narrative.related_entities?.competitors?.slice(0, 3) || [])}
+
+`;
+    });
+    contextSection += `
+For each narrative above, determine if today's intelligence:
+- UPDATES it (new developments)
+- Changes its TRAJECTORY (growing/stable/declining)
+- Should mark it as RESOLVED (story concluded)
+
+Also identify NEW narratives emerging from today's intelligence.
+
+`;
+  }
+
+  // Add brief recap of recent synthesis themes
+  if (pastSyntheses && pastSyntheses.length > 0) {
+    contextSection += `
+═══════════════════════════════════════════════════════════
+📜 RECENT SYNTHESIS THEMES (Last ${pastSyntheses.length} briefings)
+═══════════════════════════════════════════════════════════
+
+`;
+    pastSyntheses.slice(0, 3).forEach((synthesis: any, i: number) => {
+      const date = new Date(synthesis.created_at).toLocaleDateString();
+      const data = synthesis.synthesis_data?.synthesis || {};
+      const watchingClosely = data.watching_closely?.slice(0, 3).join(', ') || 'None specified';
+      contextSection += `${date}: Key themes - ${watchingClosely}
+`;
+    });
+    contextSection += `
+Reference these themes for CONTINUITY. If something we were "watching closely"
+develops today, highlight it prominently.
+
+`;
+  }
+
+  return contextSection;
+}
+
+/**
+ * Process narrative updates from synthesis output and save to database
+ */
+async function processNarrativeUpdates(
+  organizationId: string,
+  narrativeUpdates: any[],
+  synthesisId: string,
+  existingNarratives: any[]
+) {
+  if (!narrativeUpdates || narrativeUpdates.length === 0) {
+    console.log('📊 No narrative updates to process');
+    return;
+  }
+
+  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+  console.log(`📊 Processing ${narrativeUpdates.length} narrative updates...`);
+
+  for (const update of narrativeUpdates) {
+    try {
+      // Check if this matches an existing narrative (by title similarity)
+      const existingMatch = existingNarratives.find(n =>
+        n.title.toLowerCase() === update.title?.toLowerCase() ||
+        n.title.toLowerCase().includes(update.title?.toLowerCase()) ||
+        update.title?.toLowerCase().includes(n.title.toLowerCase())
+      );
+
+      if (existingMatch) {
+        // Update existing narrative
+        const newMentionCount = (existingMatch.mention_count || 1) + 1;
+        const newSynthesisIds = [...(existingMatch.synthesis_ids || []), synthesisId];
+        const newDevelopments = [
+          ...(existingMatch.key_developments || []),
+          ...(update.new_developments || []).map((d: string) => ({
+            date: new Date().toISOString().split('T')[0],
+            development: d
+          }))
+        ].slice(-10); // Keep last 10 developments
+
+        const { error } = await supabase
+          .from('tracked_narratives')
+          .update({
+            status: update.status || existingMatch.status,
+            trajectory: update.trajectory || existingMatch.trajectory,
+            summary: update.summary || existingMatch.summary,
+            mention_count: newMentionCount,
+            synthesis_ids: newSynthesisIds,
+            key_developments: newDevelopments,
+            last_updated_at: new Date().toISOString(),
+            resolved_at: update.status === 'resolved' ? new Date().toISOString() : null
+          })
+          .eq('id', existingMatch.id);
+
+        if (error) {
+          console.error(`❌ Failed to update narrative "${update.title}":`, error);
+        } else {
+          console.log(`✅ Updated narrative: "${update.title}" (${update.status}, ${update.trajectory})`);
+        }
+      } else {
+        // Create new narrative (no existing match found, so it's new regardless of is_new flag)
+        const textForEmbedding = `${update.title}\n\n${update.summary || ''}\n\nEntities: ${JSON.stringify(update.entities || [])}`;
+        const embedding = await generateEmbedding(textForEmbedding);
+
+        const { error } = await supabase
+          .from('tracked_narratives')
+          .insert({
+            organization_id: organizationId,
+            title: update.title,
+            summary: update.summary,
+            status: update.status || 'emerging',
+            trajectory: update.trajectory || 'growing',
+            related_entities: {
+              competitors: update.entities?.filter((e: string) => e) || [],
+              stakeholders: [],
+              topics: []
+            },
+            key_developments: (update.new_developments || []).map((d: string) => ({
+              date: new Date().toISOString().split('T')[0],
+              development: d
+            })),
+            synthesis_ids: [synthesisId],
+            embedding: embedding,
+            embedding_model: 'voyage-3-large',
+            embedding_updated_at: embedding ? new Date().toISOString() : null
+          });
+
+        if (error) {
+          console.error(`❌ Failed to create narrative "${update.title}":`, error);
+        } else {
+          console.log(`✅ Created new narrative: "${update.title}"`);
+        }
+      }
+    } catch (err) {
+      console.error(`❌ Error processing narrative "${update.title}":`, err);
+    }
+  }
 }
 
 // Executive Synthesis MCP - Synthesizes pre-analyzed intelligence
@@ -219,6 +418,16 @@ async function synthesizeExecutiveIntelligence(args: any) {
   };
   let synthesisMetadata = null; // Declare at function scope to avoid reference error
   let companyProfile = {}; // Declare at function scope
+
+  // Load historical context for narrative continuity
+  let historicalContext = { pastSyntheses: [], trackedNarratives: [] };
+  if (organization_id) {
+    try {
+      historicalContext = await loadHistoricalContext(organization_id);
+    } catch (err) {
+      console.error('⚠️ Failed to load historical context (non-blocking):', err);
+    }
+  }
 
   try {
     // CRITICAL FIX: Load targets from intelligence_targets table instead of old profile
@@ -1349,9 +1558,27 @@ Generate your COMMUNICATIONS INTELLIGENCE BRIEF as valid JSON:
 
     "strategic_implications": "What ${organization?.name}'s communications team should know and consider based on these developments. Focus on narrative, positioning, and messaging implications.",
 
-    "watching_closely": ["Emerging narratives, competitors, or topics the PR team should monitor"]
+    "watching_closely": ["Emerging narratives, competitors, or topics the PR team should monitor"],
+
+    "narrative_updates": [
+      {
+        "title": "Narrative title (use exact title for existing narratives, or descriptive title for new ones)",
+        "is_new": false,
+        "status": "emerging | developing | stable | declining | resolved",
+        "trajectory": "growing | stable | declining",
+        "summary": "Brief summary of the narrative's current state",
+        "new_developments": ["New development 1 from today's intelligence", "New development 2"],
+        "entities": ["Company A", "Person B"]
+      }
+    ]
   }
 }
+
+NARRATIVE TRACKING INSTRUCTIONS:
+- For EXISTING narratives (listed above in DEVELOPING STORIES section): Update their status/trajectory based on today's news
+- For NEW narratives: Create entries with is_new=true for significant stories that will likely develop over time
+- Only track narratives that are ONGOING (multi-day stories), not one-off announcements
+- A good narrative has: clear protagonist/antagonist, evolving situation, strategic implications
 
 CRITICAL INSTRUCTIONS - QUALITY OVER QUANTITY:
 ${articleOnlyMode ? `- Include ONLY 10-15 key_developments from the ${enrichedArticles.length} articles - choose the MOST strategically relevant` : `- Include ONLY 10-15 key_developments from the ${topEvents.length} events - choose the MOST strategically relevant`}
@@ -1424,9 +1651,9 @@ Provide a concise executive synthesis focusing on:
     prompt = prompt.substring(0, MAX_PROMPT_LENGTH) + '\n\n[TRUNCATED DUE TO SIZE LIMITS - Please synthesize based on the data provided above]';
   }
   
-  console.log('🚀 Calling Claude for synthesis...');
+  console.log('🚀 Calling Gemini Flash 2.5 for synthesis...');
   console.log('Prompt length:', prompt.length, 'characters');
-  
+
   // DEBUG: Check if real data is in the prompt
   const promptSample = prompt.substring(0, 2000);
   console.log('📝 PROMPT SAMPLE (first 2000 chars):', promptSample);
@@ -1447,45 +1674,60 @@ Provide a concise executive synthesis focusing on:
     eventTypes: eventTypes
   });
 
-  // Helper function to make Claude API call with retry
-  const callClaudeWithRetry = async (requestBody: any, maxRetries = 2): Promise<Response> => {
+  // Helper function to call Gemini Flash 2.5 with retry
+  const callGeminiWithRetry = async (systemPrompt: string, userPrompt: string, maxOutputTokens: number, temperature: number, maxRetries = 2): Promise<string> => {
+    if (!GOOGLE_API_KEY) {
+      throw new Error('GOOGLE_API_KEY not set - required for Gemini Flash 2.5');
+    }
+
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': ANTHROPIC_API_KEY,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true'
-        },
-        body: JSON.stringify(requestBody)
-      });
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GOOGLE_API_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            systemInstruction: {
+              parts: [{ text: systemPrompt }]
+            },
+            contents: [{
+              role: 'user',
+              parts: [{ text: userPrompt }]
+            }],
+            generationConfig: {
+              temperature,
+              maxOutputTokens
+            }
+          })
+        }
+      );
 
       if (response.ok) {
-        return response;
+        const data = await response.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        if (!text) {
+          throw new Error('Empty response from Gemini Flash 2.5');
+        }
+        return text;
       }
 
       const status = response.status;
-      // Retry on 529 (overloaded), 500, 503 (server errors)
-      if ((status === 529 || status === 500 || status === 503) && attempt < maxRetries) {
-        const delayMs = (attempt + 1) * 5000 + Math.random() * 3000; // 5-8s, 10-13s
-        console.log(`⚠️ Claude API ${status} error (attempt ${attempt + 1}/${maxRetries + 1}) - retrying in ${Math.round(delayMs/1000)}s...`);
+      if ((status === 429 || status === 500 || status === 503) && attempt < maxRetries) {
+        const delayMs = (attempt + 1) * 5000 + Math.random() * 3000;
+        console.log(`⚠️ Gemini API ${status} error (attempt ${attempt + 1}/${maxRetries + 1}) - retrying in ${Math.round(delayMs/1000)}s...`);
         await new Promise(resolve => setTimeout(resolve, delayMs));
         continue;
       }
 
-      // Non-retryable error or max retries reached
-      return response;
+      const errorText = await response.text();
+      console.error('❌ Gemini API Error:', status, errorText);
+      throw new Error(`Gemini API error: ${status}`);
     }
     throw new Error('Unexpected retry loop exit');
   };
 
   try {
-    const requestBody = {
-      model: 'claude-sonnet-4-20250514',  // Back to Sonnet 4 - was working before
-      max_tokens: 8000,  // Increased from 4000 - was causing truncated JSON responses
-      temperature: 0.3,  // Lower temperature for more focused, strategic output
-      system: `You are a STRATEGIC COMMUNICATIONS ANALYST writing a DAILY PR & NARRATIVE INTELLIGENCE BRIEF for ${organization?.name}'s communications team.
+    const systemPrompt = `You are a STRATEGIC COMMUNICATIONS ANALYST writing a DAILY PR & NARRATIVE INTELLIGENCE BRIEF for ${organization?.name}'s communications team.
 
 MISSION: Identify PR OPPORTUNITIES, NARRATIVE HOOKS, POSITIONING MOMENTS, and MEDIA ANGLES from today's news landscape. Think like a senior PR strategist, not a business analyst.
 
@@ -1537,6 +1779,8 @@ ${discoveryTargets.stakeholders.slice(0, 15).join(', ') || 'None specified'}
 
 Think: "What would a world-class PR agency tell ${organization?.name} to DO with this intelligence?"
 ` : ''}
+
+${formatHistoricalContext(historicalContext)}
 
 WHAT YOU ARE RECEIVING:
 This is NOT raw data. You are receiving the OUTPUT of our intelligence pipeline:
@@ -1601,38 +1845,16 @@ CRITICAL RULES:
 - Reference specific RECENT events to show your analysis is grounded in today's monitoring
 - ALWAYS end with "what should ${organization?.name}'s comms team DO about this?"
 
-Remember: You're not writing a business report - you're writing a COMMUNICATIONS ACTION BRIEF.`,
-      messages: [
-        {
-          role: 'user',
-          content: prompt
-        }
-      ]
-    };
+Remember: You're not writing a business report - you're writing a COMMUNICATIONS ACTION BRIEF.`;
 
-    const response = await callClaudeWithRetry(requestBody);
+    const synthesisText = await callGeminiWithRetry(systemPrompt, prompt, 16000, 0.3);
 
-    if (!response.ok) {
-      const status = response.status;
-      let errorData = '';
-      try {
-        errorData = await response.text();
-        console.error('❌ Claude API Error:', status, errorData);
-      } catch (e) {
-        console.error('Failed to parse error response:', e);
-      }
-      throw new Error(`Claude API error: ${status}`);
-    }
-    
-    const data = await response.json();
-    const synthesisText = data.content?.[0]?.text || 'No synthesis generated';
-    
-    console.log('✅ Claude response received, length:', synthesisText.length);
-    console.log('🔍 First 500 chars of Claude response:', synthesisText.substring(0, 500));
-    console.log('🔍 Last 100 chars of Claude response:', synthesisText.substring(synthesisText.length - 100));
+    console.log('✅ Gemini response received, length:', synthesisText.length);
+    console.log('🔍 First 500 chars of Gemini response:', synthesisText.substring(0, 500));
+    console.log('🔍 Last 100 chars of Gemini response:', synthesisText.substring(synthesisText.length - 100));
     
     // Log the ENTIRE response to see what we're getting
-    console.log('📝 FULL CLAUDE RESPONSE:', synthesisText);
+    console.log('📝 FULL GEMINI RESPONSE:', synthesisText);
     
     // Check for completeness - updated for journalistic format
     const hasExecutiveSynthesis = synthesisText.includes('executive_synthesis') || synthesisText.includes('intelligence_report');
@@ -1650,7 +1872,7 @@ Remember: You're not writing a business report - you're writing a COMMUNICATIONS
       console.error('❌ INCOMPLETE RESPONSE - Response too short');
     }
     
-    // Parse the JSON response from Claude if it's in JSON format
+    // Parse the JSON response from Gemini if it's in JSON format
     let synthesis;
     try {
       // Clean potential markdown formatting
@@ -1942,7 +2164,7 @@ Remember: You're not writing a business report - you're writing a COMMUNICATIONS
           opportunities_found: context.strategicInsights.opportunities.length,
           threats_identified: context.strategicInsights.threats.length,
           synthesis_focus: synthesis_focus || 'standard',
-          model: 'claude-sonnet-4-20250514'
+          model: 'gemini-2.5-flash'
         },
         key_insights: {
           immediate: context.strategicInsights.immediate.slice(0, 3),
@@ -2035,6 +2257,23 @@ Remember: You're not writing a business report - you're writing a COMMUNICATIONS
             }
           } catch (libraryErr) {
             console.error('⚠️ Error saving to content_library (non-blocking):', libraryErr);
+          }
+
+          // Process narrative updates from synthesis output
+          try {
+            const narrativeUpdates = result.synthesis?.narrative_updates;
+            if (narrativeUpdates && Array.isArray(narrativeUpdates) && narrativeUpdates.length > 0) {
+              await processNarrativeUpdates(
+                organization_id,
+                narrativeUpdates,
+                insertData?.id,
+                historicalContext.trackedNarratives
+              );
+            } else {
+              console.log('📊 No narrative_updates in synthesis output');
+            }
+          } catch (narrativeErr) {
+            console.error('⚠️ Error processing narrative updates (non-blocking):', narrativeErr);
           }
         }
       } catch (dbError) {
