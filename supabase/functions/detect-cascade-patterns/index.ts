@@ -18,6 +18,9 @@ const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')!;
 const MIN_PATTERN_CONFIDENCE = 0.5;
 const LOOKBACK_HOURS = 48;
 
+// SCOPE: only run cascade detection for these orgs (cost control). To broaden, edit/remove.
+const SCOPED_ORG_FILTER = 'name.ilike.%palantir%,name.ilike.%mitsui%,name.ilike.%nivria%';
+
 interface CascadePattern {
   id: string;
   pattern_name: string;
@@ -87,6 +90,21 @@ serve(async (req) => {
 
     const cutoffTime = new Date(Date.now() - lookbackHours * 60 * 60 * 1000).toISOString();
 
+    // SCOPE: resolve allowed org IDs (Palantir, Mitsui, Nivria)
+    const { data: scopedOrgs } = await supabase
+      .from('organizations')
+      .select('id')
+      .or(SCOPED_ORG_FILTER);
+    const allowedOrgIds = (scopedOrgs || []).map((o: any) => o.id);
+
+    if (organizationId && !allowedOrgIds.includes(organizationId)) {
+      console.log(`   Org ${organizationId} not in scope — skipping`);
+      return new Response(JSON.stringify({
+        success: true, skipped: true, reason: 'org_not_in_scope',
+        cascades_detected: 0
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     // Get active cascade patterns
     const { data: patterns, error: patternError } = await supabase
       .from('cascade_patterns')
@@ -123,6 +141,8 @@ serve(async (req) => {
 
     if (organizationId) {
       signalQuery = signalQuery.eq('organization_id', organizationId);
+    } else {
+      signalQuery = signalQuery.in('organization_id', allowedOrgIds);
     }
 
     const { data: signals, error: signalError } = await signalQuery;

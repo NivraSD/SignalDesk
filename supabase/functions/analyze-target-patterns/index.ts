@@ -62,6 +62,9 @@ async function callAI(prompt: string, maxTokens = 2000): Promise<string> {
 const MIN_FACTS_FOR_ANALYSIS = 2;  // Minimum facts needed to analyze a target
 const MAX_TARGETS_PER_RUN = 20;    // Process up to 20 targets per run
 
+// SCOPE: only run pattern analysis for these orgs (cost control). To broaden, edit/remove.
+const SCOPED_ORG_FILTER = 'name.ilike.%palantir%,name.ilike.%mitsui%,name.ilike.%nivria%';
+
 interface AccumulatedContext {
   total_facts: number;
   facts_last_7d: number;
@@ -141,6 +144,21 @@ serve(async (req) => {
     const maxTargets = body.max_targets || MAX_TARGETS_PER_RUN;
     const minFacts = body.min_facts || MIN_FACTS_FOR_ANALYSIS;
 
+    // SCOPE: resolve allowed org IDs (Palantir, Mitsui, Nivria)
+    const { data: scopedOrgs } = await supabase
+      .from('organizations')
+      .select('id')
+      .or(SCOPED_ORG_FILTER);
+    const allowedOrgIds = (scopedOrgs || []).map((o: any) => o.id);
+
+    if (organizationId && !allowedOrgIds.includes(organizationId)) {
+      console.log(`   Org ${organizationId} not in scope — skipping`);
+      return new Response(JSON.stringify({
+        success: true, skipped: true, reason: 'org_not_in_scope',
+        signals_created: 0, patterns_detected: 0
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     // Build query for targets with accumulated context
     // Don't filter by fact_count here — the denormalized column can fall out of sync
     // with accumulated_context.total_facts. We filter in-code after fetching.
@@ -149,6 +167,7 @@ serve(async (req) => {
       .select('id, organization_id, name, target_type, priority, monitoring_context, accumulated_context, baseline_metrics, fact_count')
       .eq('is_active', true)
       .not('accumulated_context', 'is', null)
+      .in('organization_id', allowedOrgIds)
       .order('fact_count', { ascending: false })
       .limit(maxTargets * 3); // fetch extra since we filter in-code
 

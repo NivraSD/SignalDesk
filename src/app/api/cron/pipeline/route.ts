@@ -11,6 +11,10 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 // Vercel cron secret to prevent unauthorized access
 const CRON_SECRET = process.env.CRON_SECRET
 
+// SCOPE: Only run pipeline for these orgs (cost control — Anthropic/Firecrawl)
+// To re-enable broader monitoring, remove the .or() filter on the org query below.
+const SCOPED_ORG_FILTER = 'name.ilike.%palantir%,name.ilike.%mitsui%,name.ilike.%nivria%'
+
 // Pipeline stages in order. Each stage calls a Supabase edge function.
 const PIPELINE_STAGES = [
   {
@@ -76,6 +80,7 @@ export async function GET(request: Request) {
     let orgQuery = supabase
       .from('organizations')
       .select('id, name')
+      .or(SCOPED_ORG_FILTER)
 
     if (orgFilter) {
       orgQuery = orgQuery.ilike('name', `%${orgFilter}%`)

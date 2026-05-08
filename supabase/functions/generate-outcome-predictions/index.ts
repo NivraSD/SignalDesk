@@ -58,6 +58,9 @@ async function callAI(prompt: string, maxTokens = 2000): Promise<string> {
   throw new Error('No AI model available');
 }
 
+// SCOPE: only generate predictions for these orgs (cost control). To broaden, edit/remove.
+const SCOPED_ORG_FILTER = 'name.ilike.%palantir%,name.ilike.%mitsui%,name.ilike.%nivria%';
+
 // Configuration
 const MAX_SIGNALS_PER_ORG = 10; // Process up to 10 signals per organization
 const MAX_CONNECTIONS_PER_ORG = 5;
@@ -238,7 +241,21 @@ serve(async (req) => {
     // ========================================================================
     let orgsToProcess: { id: string; name: string }[] = [];
 
+    // SCOPE: resolve allowed org IDs (Palantir, Mitsui, Nivria)
+    const { data: scopedOrgs } = await supabase
+      .from('organizations')
+      .select('id')
+      .or(SCOPED_ORG_FILTER);
+    const allowedOrgIds = (scopedOrgs || []).map((o: any) => o.id);
+
     if (singleOrgId) {
+      if (!allowedOrgIds.includes(singleOrgId)) {
+        console.log(`   Org ${singleOrgId} not in scope — skipping`);
+        return new Response(JSON.stringify({
+          success: true, skipped: true, reason: 'org_not_in_scope',
+          predictions_created: 0
+        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
       const { data: org } = await supabase
         .from('organizations')
         .select('id, name')
@@ -246,10 +263,11 @@ serve(async (req) => {
         .single();
       if (org) orgsToProcess = [org];
     } else {
-      // Get all orgs that have signals needing predictions
+      // Get all orgs that have signals needing predictions (scoped)
       const { data: orgsWithSignals } = await supabase
         .from('signals')
         .select('organization_id')
+        .in('organization_id', allowedOrgIds)
         .gte('created_at', cutoffTime)
         .eq('status', 'active')
         .or('has_prediction.is.null,has_prediction.eq.false');

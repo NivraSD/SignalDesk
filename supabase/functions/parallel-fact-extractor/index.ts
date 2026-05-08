@@ -16,6 +16,9 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const DEFAULT_MAX_PER_ORG = 30;  // Max matches to process per org
 const MIN_SIMILARITY = 0.40;
 
+// SCOPE: only process these orgs (cost control). To broaden, edit or remove.
+const SCOPED_ORG_FILTER = 'name.ilike.%palantir%,name.ilike.%mitsui%,name.ilike.%nivria%';
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -50,9 +53,17 @@ serve(async (req) => {
       throw new Error(`Failed to get orgs: ${matchError.message}`);
     }
 
-    // Get unique org IDs
-    const uniqueOrgIds = [...new Set((matchData || []).map(m => m.organization_id))];
-    console.log(`   Found ${uniqueOrgIds.length} orgs with pending matches\n`);
+    // SCOPE: resolve allowed org IDs (Palantir, Mitsui, Nivria)
+    const { data: scopedOrgs } = await supabase
+      .from('organizations')
+      .select('id')
+      .or(SCOPED_ORG_FILTER);
+    const allowedOrgIds = new Set((scopedOrgs || []).map((o: any) => o.id));
+
+    // Get unique org IDs, filtered to allowed scope
+    const uniqueOrgIds = [...new Set((matchData || []).map(m => m.organization_id))]
+      .filter(id => allowedOrgIds.has(id));
+    console.log(`   Found ${uniqueOrgIds.length} orgs with pending matches (scoped to ${allowedOrgIds.size} allowed orgs)\n`);
 
     if (uniqueOrgIds.length === 0) {
       return new Response(JSON.stringify({
