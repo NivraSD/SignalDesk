@@ -365,7 +365,7 @@ export default function AdminDashboard() {
     const [scrapeRunsResult, embeddingJobsResult, pipelineRunsResult] = await Promise.all([
       supabase
         .from('batch_scrape_runs')
-        .select('id,run_type,status,started_at,completed_at,articles_discovered,articles_new,articles_processed,duration_seconds,error_summary,error_message,sources_successful,sources_failed')
+        .select('id,run_type,status,started_at,completed_at,articles_discovered,articles_new,duration_seconds,error_summary,sources_successful,sources_failed')
         .order('started_at', { ascending: false })
         .limit(100),
       supabase
@@ -418,12 +418,11 @@ export default function AdminDashboard() {
         details: {
           articles_discovered: run.articles_discovered || 0,
           articles_new: run.articles_new || 0,
-          articles_processed: run.articles_processed || 0,
           sources_successful: run.sources_successful || 0,
           sources_failed: run.sources_failed || 0,
           status: run.status
         },
-        error: run.error_summary ? JSON.stringify(run.error_summary).substring(0, 200) : (run.error_message || undefined)
+        error: run.error_summary ? JSON.stringify(run.error_summary).substring(0, 200) : undefined
       })
     }
 
