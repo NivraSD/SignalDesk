@@ -16,8 +16,13 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const DEFAULT_MAX_PER_ORG = 30;  // Max matches to process per org
 const MIN_SIMILARITY = 0.40;
 
-// SCOPE: only process these orgs (cost control). To broaden, edit or remove.
-const SCOPED_ORG_FILTER = 'name.ilike.%palantir%,name.ilike.%mitsui%,name.ilike.%nivria%';
+// SCOPE: only process these orgs (cost control).
+// Locked to user 94cfe154's Palantir, Mitsui & Co., nivria.
+const SCOPED_ORG_IDS = [
+  'f1679f68-73c3-420d-a427-1bdbb325cdad', // Palantir
+  '3a417215-a49f-4885-9a4b-08ac1f51ca31', // Mitsui & Co.
+  '888a79a0-fa6e-4125-8c97-74a0c3ae9fa7', // nivria
+];
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -53,12 +58,8 @@ serve(async (req) => {
       throw new Error(`Failed to get orgs: ${matchError.message}`);
     }
 
-    // SCOPE: resolve allowed org IDs (Palantir, Mitsui, Nivria)
-    const { data: scopedOrgs } = await supabase
-      .from('organizations')
-      .select('id')
-      .or(SCOPED_ORG_FILTER);
-    const allowedOrgIds = new Set((scopedOrgs || []).map((o: any) => o.id));
+    // SCOPE: filter to allowed org IDs (Palantir, Mitsui, nivria)
+    const allowedOrgIds = new Set(SCOPED_ORG_IDS);
 
     // Get unique org IDs, filtered to allowed scope
     const uniqueOrgIds = [...new Set((matchData || []).map(m => m.organization_id))]

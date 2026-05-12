@@ -62,8 +62,13 @@ async function callAI(prompt: string, maxTokens = 2000): Promise<string> {
 const MIN_FACTS_FOR_ANALYSIS = 2;  // Minimum facts needed to analyze a target
 const MAX_TARGETS_PER_RUN = 20;    // Process up to 20 targets per run
 
-// SCOPE: only run pattern analysis for these orgs (cost control). To broaden, edit/remove.
-const SCOPED_ORG_FILTER = 'name.ilike.%palantir%,name.ilike.%mitsui%,name.ilike.%nivria%';
+// SCOPE: only run pattern analysis for these orgs (cost control).
+// Locked to user 94cfe154's Palantir, Mitsui & Co., nivria.
+const SCOPED_ORG_IDS = [
+  'f1679f68-73c3-420d-a427-1bdbb325cdad', // Palantir
+  '3a417215-a49f-4885-9a4b-08ac1f51ca31', // Mitsui & Co.
+  '888a79a0-fa6e-4125-8c97-74a0c3ae9fa7', // nivria
+];
 
 interface AccumulatedContext {
   total_facts: number;
@@ -144,12 +149,8 @@ serve(async (req) => {
     const maxTargets = body.max_targets || MAX_TARGETS_PER_RUN;
     const minFacts = body.min_facts || MIN_FACTS_FOR_ANALYSIS;
 
-    // SCOPE: resolve allowed org IDs (Palantir, Mitsui, Nivria)
-    const { data: scopedOrgs } = await supabase
-      .from('organizations')
-      .select('id')
-      .or(SCOPED_ORG_FILTER);
-    const allowedOrgIds = (scopedOrgs || []).map((o: any) => o.id);
+    // SCOPE: allowed org IDs (Palantir, Mitsui, nivria)
+    const allowedOrgIds = SCOPED_ORG_IDS;
 
     if (organizationId && !allowedOrgIds.includes(organizationId)) {
       console.log(`   Org ${organizationId} not in scope — skipping`);

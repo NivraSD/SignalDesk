@@ -12,8 +12,12 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 const CRON_SECRET = process.env.CRON_SECRET
 
 // SCOPE: Only run pipeline for these orgs (cost control — Anthropic/Firecrawl)
-// To re-enable broader monitoring, remove the .or() filter on the org query below.
-const SCOPED_ORG_FILTER = 'name.ilike.%palantir%,name.ilike.%mitsui%,name.ilike.%nivria%'
+// Locked to user 94cfe154's Palantir, Mitsui & Co., nivria. To broaden, edit array.
+const SCOPED_ORG_IDS = [
+  'f1679f68-73c3-420d-a427-1bdbb325cdad', // Palantir
+  '3a417215-a49f-4885-9a4b-08ac1f51ca31', // Mitsui & Co.
+  '888a79a0-fa6e-4125-8c97-74a0c3ae9fa7', // nivria
+]
 
 // Pipeline stages in order. Each stage calls a Supabase edge function.
 const PIPELINE_STAGES = [
@@ -80,7 +84,7 @@ export async function GET(request: Request) {
     let orgQuery = supabase
       .from('organizations')
       .select('id, name')
-      .or(SCOPED_ORG_FILTER)
+      .in('id', SCOPED_ORG_IDS)
 
     if (orgFilter) {
       orgQuery = orgQuery.ilike('name', `%${orgFilter}%`)

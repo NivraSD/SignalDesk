@@ -18,8 +18,13 @@ const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')!;
 const MIN_PATTERN_CONFIDENCE = 0.5;
 const LOOKBACK_HOURS = 48;
 
-// SCOPE: only run cascade detection for these orgs (cost control). To broaden, edit/remove.
-const SCOPED_ORG_FILTER = 'name.ilike.%palantir%,name.ilike.%mitsui%,name.ilike.%nivria%';
+// SCOPE: only run cascade detection for these orgs (cost control).
+// Locked to user 94cfe154's Palantir, Mitsui & Co., nivria.
+const SCOPED_ORG_IDS = [
+  'f1679f68-73c3-420d-a427-1bdbb325cdad', // Palantir
+  '3a417215-a49f-4885-9a4b-08ac1f51ca31', // Mitsui & Co.
+  '888a79a0-fa6e-4125-8c97-74a0c3ae9fa7', // nivria
+];
 
 interface CascadePattern {
   id: string;
@@ -90,12 +95,8 @@ serve(async (req) => {
 
     const cutoffTime = new Date(Date.now() - lookbackHours * 60 * 60 * 1000).toISOString();
 
-    // SCOPE: resolve allowed org IDs (Palantir, Mitsui, Nivria)
-    const { data: scopedOrgs } = await supabase
-      .from('organizations')
-      .select('id')
-      .or(SCOPED_ORG_FILTER);
-    const allowedOrgIds = (scopedOrgs || []).map((o: any) => o.id);
+    // SCOPE: allowed org IDs (Palantir, Mitsui, nivria)
+    const allowedOrgIds = SCOPED_ORG_IDS;
 
     if (organizationId && !allowedOrgIds.includes(organizationId)) {
       console.log(`   Org ${organizationId} not in scope — skipping`);

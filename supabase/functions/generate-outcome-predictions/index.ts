@@ -58,8 +58,13 @@ async function callAI(prompt: string, maxTokens = 2000): Promise<string> {
   throw new Error('No AI model available');
 }
 
-// SCOPE: only generate predictions for these orgs (cost control). To broaden, edit/remove.
-const SCOPED_ORG_FILTER = 'name.ilike.%palantir%,name.ilike.%mitsui%,name.ilike.%nivria%';
+// SCOPE: only generate predictions for these orgs (cost control).
+// Locked to user 94cfe154's Palantir, Mitsui & Co., nivria.
+const SCOPED_ORG_IDS = [
+  'f1679f68-73c3-420d-a427-1bdbb325cdad', // Palantir
+  '3a417215-a49f-4885-9a4b-08ac1f51ca31', // Mitsui & Co.
+  '888a79a0-fa6e-4125-8c97-74a0c3ae9fa7', // nivria
+];
 
 // Configuration
 const MAX_SIGNALS_PER_ORG = 10; // Process up to 10 signals per organization
@@ -241,12 +246,8 @@ serve(async (req) => {
     // ========================================================================
     let orgsToProcess: { id: string; name: string }[] = [];
 
-    // SCOPE: resolve allowed org IDs (Palantir, Mitsui, Nivria)
-    const { data: scopedOrgs } = await supabase
-      .from('organizations')
-      .select('id')
-      .or(SCOPED_ORG_FILTER);
-    const allowedOrgIds = (scopedOrgs || []).map((o: any) => o.id);
+    // SCOPE: allowed org IDs (Palantir, Mitsui, nivria)
+    const allowedOrgIds = SCOPED_ORG_IDS;
 
     if (singleOrgId) {
       if (!allowedOrgIds.includes(singleOrgId)) {
