@@ -467,10 +467,12 @@ export default function Dashboard() {
     }
   }
 
-  // Top nav links matching design mockup
-  const navLinks: { id: ModuleView; label: string }[] = [
+  // Top nav links matching design mockup.
+  // Items with `href` navigate to a standalone route; the rest switch in-page modules.
+  const navLinks: { id: ModuleView | 'projects'; label: string; href?: string }[] = [
     { id: 'hub', label: 'Hub' },
     { id: 'opportunities', label: 'Opportunities' },
+    { id: 'projects', label: 'Projects', href: '/dashboard/projects' },
     { id: 'campaigns', label: 'Campaigns' },
     { id: 'crisis', label: 'Crisis' },
     { id: 'publicaffairs', label: 'Research' },
@@ -515,9 +517,9 @@ export default function Dashboard() {
               <button
                 key={link.id}
                 data-tour={`nav-${link.id}`}
-                onClick={() => setActiveModule(link.id)}
+                onClick={() => link.href ? router.push(link.href) : setActiveModule(link.id as ModuleView)}
                 className={`px-4 py-2 text-[0.85rem] font-medium rounded-md transition-colors ${
-                  activeModule === link.id
+                  !link.href && activeModule === link.id
                     ? 'text-[var(--charcoal)] bg-[var(--grey-100)]'
                     : 'text-[var(--grey-500)] hover:text-[var(--charcoal)] hover:bg-[var(--grey-100)]'
                 }`}
