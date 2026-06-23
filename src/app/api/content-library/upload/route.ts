@@ -8,8 +8,7 @@ import { randomUUID } from 'crypto'
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://zskaxjtyuaqazydouifp.supabase.co'
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
-
+const supabase = createClient((SUPABASE_URL || 'https://placeholder.supabase.co'), (SUPABASE_SERVICE_KEY || 'placeholder-build-key'))
 // Max file size: 50MB
 const MAX_FILE_SIZE = 50 * 1024 * 1024
 

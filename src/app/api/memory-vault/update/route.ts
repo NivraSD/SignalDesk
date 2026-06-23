@@ -4,8 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co'
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
-
+const supabase = createClient((SUPABASE_URL || 'https://placeholder.supabase.co'), (SUPABASE_SERVICE_KEY || 'placeholder-build-key'))
 // Shared handler for both PUT and POST
 async function handleUpdate(request: NextRequest) {
   try {

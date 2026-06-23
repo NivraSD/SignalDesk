@@ -19,11 +19,7 @@ import {
   saveToMemoryVault
 } from '@/lib/memoryVaultAPI'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
-
+const supabase = createClient((process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'), (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-build-key'))
 type TabType = 'library' | 'assets' | 'analytics'
 
 interface ContentItem {

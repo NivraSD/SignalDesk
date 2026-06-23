@@ -12,8 +12,7 @@ const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABAS
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
 const WORKER_ID = `worker-${process.pid}-${Date.now()}`
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
-
+const supabase = createClient((SUPABASE_URL || 'https://placeholder.supabase.co'), (SUPABASE_SERVICE_KEY || 'placeholder-build-key'))
 interface Job {
   id: string
   job_type: string

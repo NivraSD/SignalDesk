@@ -13,13 +13,12 @@ if (!SUPABASE_SERVICE_KEY) {
   console.log('✅ Service key loaded:', SUPABASE_SERVICE_KEY.substring(0, 20) + '...')
 }
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
+const supabase = createClient((SUPABASE_URL || 'https://placeholder.supabase.co'), (SUPABASE_SERVICE_KEY, {
   auth: {
     persistSession: false,
     autoRefreshToken: false
   }
-})
-
+} || 'placeholder-build-key'))
 /**
  * Sync ALL intelligence_targets to company_profile
  * Called after any target change to keep company_profile (source of truth for analysis) in sync

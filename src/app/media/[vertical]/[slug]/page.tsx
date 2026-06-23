@@ -6,11 +6,7 @@ import { getVertical, isValidVertical } from '@/lib/config/verticals'
 import { generateArticleJsonLd, generateBreadcrumbJsonLd } from '@/lib/utils/jsonld'
 import { Logo } from '@/components/ui/Logo'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
-
+const supabase = createClient((process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'), (process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-build-key'))
 interface PageProps {
   params: Promise<{ vertical: string; slug: string }>
 }

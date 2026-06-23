@@ -6,8 +6,7 @@ import { generateSlug, generateOrgSlug } from '@/lib/utils/slugify'
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
-
+const supabase = createClient((SUPABASE_URL || 'https://placeholder.supabase.co'), (SUPABASE_SERVICE_KEY || 'placeholder-build-key'))
 const PUBLISHABLE_TYPES = ['thought-leadership', 'press-release']
 
 /**
