@@ -286,7 +286,7 @@ function NivriaLogo({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
   // x-positions so the dot bodies (r=1.6) don't visually overshoot the
   // i-stems on either side.
   const TRUNK_LX_BOT = 99
-  const TRUNK_RX_BOT = 141
+  const TRUNK_RX_BOT = 142.5
 
   // CANOPY — bounded within wordmark width, with a curved dome ridge
   // (outer top dots lowered, peak raised) so it reads more tree-like.
@@ -1642,24 +1642,39 @@ const CSS = `
   top: -0.20em;
 }
 .nv .nv-inline-wordmark .nv-logo-i-line { width: 1.5px; }
-/* header logo (md) — slimmer i-stem to match the in-prose feel */
+/* ─── PROPORTIONAL LOGO SYSTEM ────────────────────────────────────────
+   All chart heights and overlap margins derive from --logo-font-size
+   via em ratios. To add a new size, set --logo-font-size + width and
+   the rest cascades. To tune visual proportions site-wide, change the
+   ratios below in one place.
+
+   RATIOS (vs wordmark font-size):
+     top canopy height            1.21
+     top canopy → wordmark overlap 0.184  (margin-bottom on .nv-logo-chart)
+     bot canopy height             0.37
+     bot canopy → wordmark overlap 0.184  (margin-top  on .nv-logo-chart-bot)
+*/
+.nv .nv-logo-text { font-size: var(--logo-font-size, 30px); }
+.nv .nv-logo-chart {
+  height: calc(var(--logo-font-size, 30px) * 1.21);
+  margin-bottom: calc(var(--logo-font-size, 30px) * -0.184);
+}
+.nv .nv-logo-chart-bot {
+  height: calc(var(--logo-font-size, 30px) * 0.37);
+  margin-top: calc(var(--logo-font-size, 30px) * -0.184);
+}
+
+/* sizes — variant only sets font-size + container width (+ small text
+   tweaks where letter-spacing benefits from per-size attention). */
+.nv .nv-logo-lg { --logo-font-size: 76px; width: 560px; }
+.nv .nv-logo-lg .nv-logo-text { letter-spacing: 0.05em; }
+
+.nv .nv-logo-md { --logo-font-size: 30px; width: 220px; }
 .nv .nv-logo-md .nv-logo-i-line { width: 1.5px; }
 
-/* sizes */
-.nv .nv-logo-lg { width: 560px; }
-.nv .nv-logo-lg .nv-logo-text { font-size: 76px; letter-spacing: 0.05em; }
-.nv .nv-logo-lg .nv-logo-chart { height: 92px; margin-bottom: -14px; }
-.nv .nv-logo-lg .nv-logo-chart-bot { height: 28px; margin-top: -24px; }
-
-.nv .nv-logo-md { width: 220px; }
-.nv .nv-logo-md .nv-logo-text { font-size: 30px; }
-.nv .nv-logo-md .nv-logo-chart { height: 34px; margin-bottom: -5px; }
-.nv .nv-logo-md .nv-logo-chart-bot { height: 10px; margin-top: -10px; }
-
-.nv .nv-logo-sm { width: 150px; }
-.nv .nv-logo-sm .nv-logo-text { font-size: 20px; letter-spacing: 0.03em; }
-.nv .nv-logo-sm .nv-logo-chart { height: 22px; margin-bottom: -3px; }
-.nv .nv-logo-sm .nv-logo-chart-bot { height: 7px; margin-top: -7px; }
+.nv .nv-logo-sm { --logo-font-size: 20px; width: 150px; }
+.nv .nv-logo-sm .nv-logo-text { letter-spacing: 0.03em; }
+.nv .nv-logo-sm .nv-logo-i-line { width: 1.5px; }
 .nv .nv-nav { display: flex; align-items: center; gap: 28px; }
 .nv .nv-nav-cta {
   font-family: var(--font-reader), serif; font-style: italic;
@@ -3488,11 +3503,11 @@ const CSS = `
         to the edge — buying enough space to keep all three nav items
         (Request a briefing · Founder · Sign in) visible without squish. */
   .nv .nv-hdr { padding: 12px 0; }
-  .nv .nv-hdr .nv-wrap { padding-left: 10px; padding-right: 14px; }
+  /* hug the left edge on mobile — 4px keeps it inside the viewport but
+     close enough to the boundary that the logo doesn't float awkwardly. */
+  .nv .nv-hdr .nv-wrap { padding-left: 4px; padding-right: 14px; }
   .nv .nv-hdr-row { gap: 10px; }
-  .nv .nv-logo-md { width: 150px; }
-  .nv .nv-logo-md .nv-logo-text { font-size: 21px; }
-  .nv .nv-logo-md .nv-logo-chart { height: 24px; margin-bottom: -2px; }
+  .nv .nv-logo-md { --logo-font-size: 21px; width: 150px; }
   .nv .nv-nav { gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
   .nv .nv-nav-cta { font-size: 13px; padding-bottom: 1px; }
   .nv .nv-nav-founder { font-size: 13px; }
@@ -3527,12 +3542,11 @@ const CSS = `
   .nv .nv-life-list::before { display: none; }
   .nv .nv-life-callout { padding: 14px; margin-top: 14px; }
 
-  /* ── CLOSE-SECTION lockup: the lg logo is 560px wide. Scale it down
-        proportionally on narrow viewports so the canopy + wordmark fit. */
-  .nv .nv-logo-lg { width: 100%; max-width: 480px; }
-  .nv .nv-logo-lg .nv-logo-text { font-size: clamp(40px, 13vw, 64px); letter-spacing: 0.04em; }
-  .nv .nv-logo-lg .nv-logo-chart { height: clamp(50px, 16vw, 80px); margin-bottom: clamp(-12px, -2.2vw, -7px); }
-  .nv .nv-logo-lg .nv-logo-chart-bot { height: clamp(16px, 5vw, 26px); margin-top: clamp(-21px, -3.9vw, -13px); }
+  /* ── CLOSE-SECTION lockup: lg shrinks to fit narrow viewports.
+        With the proportional system, just clamp --logo-font-size and
+        the canopy heights + overlaps recalculate automatically. */
+  .nv .nv-logo-lg { --logo-font-size: clamp(40px, 13vw, 64px); width: 100%; max-width: 480px; }
+  .nv .nv-logo-lg .nv-logo-text { letter-spacing: 0.04em; }
   .nv .nv-close-logo { margin-bottom: 48px; }
 
   /* ── SECTION HEADS: the centered h2 with clamp(48px, 6vw, 84px)

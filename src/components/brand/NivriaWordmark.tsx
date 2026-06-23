@@ -25,7 +25,7 @@ const TRUNK_TOP = 36   // branches converge AT the i-top dot center (was 38 = SV
 // Bot-canopy junction dots — inboard so the dot bodies don't overshoot
 // the i-stems on either side.
 const TRUNK_LX_BOT = 99
-const TRUNK_RX_BOT = 141
+const TRUNK_RX_BOT = 142.5
 
 // CANOPY — bounded within wordmark width, with a curved dome ridge
 // (outer top dots lowered, peak raised) so it reads more tree-like.
@@ -287,26 +287,42 @@ const CSS = `
   border-radius: 50%;
   transform: translateX(-50%);
 }
-/* sizes — match homepage .nv-logo-{lg,md,sm} exactly */
-.nivria-logo--lg { width: 560px; }
-.nivria-logo--lg .nivria-logo-text { font-size: 76px; letter-spacing: 0.05em; }
-.nivria-logo--lg .nivria-logo-chart { height: 92px; margin-bottom: -14px; }
-.nivria-logo--lg .nivria-logo-chart-bot { height: 28px; margin-top: -24px; }
+/* ─── PROPORTIONAL LOGO SYSTEM ────────────────────────────────────────
+   All chart heights and overlap margins derive from --logo-font-size
+   via em ratios. To add a new size, set --logo-font-size + width.
+   To tune visual proportions, change the ratios below in one place.
 
-.nivria-logo--md { width: 220px; }
-.nivria-logo--md .nivria-logo-text { font-size: 30px; }
-.nivria-logo--md .nivria-logo-chart { height: 34px; margin-bottom: -5px; }
-.nivria-logo--md .nivria-logo-chart-bot { height: 10px; margin-top: -10px; }
+   RATIOS (vs wordmark font-size):
+     top canopy height            1.21
+     top canopy → wordmark overlap 0.184
+     bot canopy height             0.37
+     bot canopy → wordmark overlap 0.184
+*/
+.nivria-logo-text { font-size: var(--logo-font-size, 30px); }
+.nivria-logo-chart {
+  height: calc(var(--logo-font-size, 30px) * 1.21);
+  margin-bottom: calc(var(--logo-font-size, 30px) * -0.184);
+}
+.nivria-logo-chart-bot {
+  height: calc(var(--logo-font-size, 30px) * 0.37);
+  margin-top: calc(var(--logo-font-size, 30px) * -0.184);
+}
+
+/* sizes — each variant only sets font-size + container width */
+.nivria-logo--lg { --logo-font-size: 76px; width: 560px; }
+.nivria-logo--lg .nivria-logo-text { letter-spacing: 0.05em; }
+
+.nivria-logo--md { --logo-font-size: 30px; width: 220px; }
 .nivria-logo--md .nivria-logo-i-line { width: 1.5px; }
 
-.nivria-logo--sm { width: 150px; }
-.nivria-logo--sm .nivria-logo-text { font-size: 20px; letter-spacing: 0.03em; }
-.nivria-logo--sm .nivria-logo-chart { height: 22px; margin-bottom: -3px; }
-.nivria-logo--sm .nivria-logo-chart-bot { height: 7px; margin-top: -7px; }
+.nivria-logo--sm { --logo-font-size: 20px; width: 150px; }
+.nivria-logo--sm .nivria-logo-text { letter-spacing: 0.03em; }
 .nivria-logo--sm .nivria-logo-i-line { width: 1.5px; }
 
-/* in-prose: drop both canopies, bump the i-dot, slim the stem */
+/* in-prose: drop both canopies, inherit font-size from surrounding
+   text (override the system's default), bump the i-dot, slim the stem */
 .nivria-logo--in-prose { display: inline; width: auto; }
+.nivria-logo--in-prose .nivria-logo-text { font-size: inherit; }
 .nivria-logo--in-prose .nivria-logo-chart,
 .nivria-logo--in-prose .nivria-logo-chart-bot { display: none; }
 .nivria-logo--in-prose .nivria-logo-i-top {
