@@ -71,20 +71,13 @@ export const metadata: Metadata = {
     siteName: 'nivria',
     locale: 'en_US',
     type: 'website',
-    images: [
-      {
-        url: '/api/og',
-        width: 1200,
-        height: 630,
-        alt: 'nivria · A new standard for the evaluation and stewardship of complex ventures',
-      },
-    ],
+    // Image is provided by src/app/opengraph-image.png (Next.js file convention)
   },
   twitter: {
     card: 'summary_large_image',
     title: 'nivria · A new standard for the evaluation and stewardship of complex ventures',
     description: "Every complex effort has a connectome. We map it — and score whether it'll survive.",
-    images: ['/api/og'],
+    // Image picked up from the opengraph-image.png convention
   },
 };
 
