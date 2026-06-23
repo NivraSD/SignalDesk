@@ -7,9 +7,18 @@ import { createClient } from '@supabase/supabase-js'
 import { invalidateBrandContextCache } from '@/lib/memory-vault/brand-context-cache'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://zskaxjtyuaqazydouifp.supabase.co'
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+// Lazy client — prevents build-time crash when SUPABASE_SERVICE_ROLE_KEY
+// isn't present during `next build` page-data collection. The client is
+// only constructed when a request actually hits a handler.
+let _supabase: ReturnType<typeof createClient> | null = null
+function getSupabase() {
+  if (_supabase) return _supabase
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!key) throw new Error('SUPABASE_SERVICE_ROLE_KEY is not set')
+  _supabase = createClient(SUPABASE_URL, key)
+  return _supabase
+}
 
 // Max file sizes (in bytes)
 const MAX_FILE_SIZES = {
@@ -58,6 +67,7 @@ export async function POST(request: NextRequest) {
     console.log(`📤 Uploading brand asset: ${file.name} (${assetType})`)
 
     // 1. Upload file to Supabase Storage
+    const supabase = getSupabase()
     const fileName = `${organizationId}/${Date.now()}-${file.name}`
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('brand-assets')
@@ -156,7 +166,7 @@ async function queueAnalysisJob(
   fileName: string,
   assetType: string
 ): Promise<void> {
-  await supabase
+  await getSupabase()
     .from('job_queue')
     .insert({
       job_type: 'analyze-brand-asset',
@@ -217,7 +227,7 @@ export async function GET(request: NextRequest) {
       }, { status: 400 })
     }
 
-    let query = supabase
+    let query = getSupabase()
       .from('brand_assets')
       .select('*')
       .eq('organization_id', organizationId)
