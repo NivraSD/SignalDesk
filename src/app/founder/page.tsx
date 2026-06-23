@@ -31,7 +31,7 @@ function useHeaderVisible() {
 const EXPERIENCE = [
   {
     title: 'Saudi Arabia — Public Investment Fund (PIF)',
-    body: 'Advised in connection with PIF during a defining period, around the Aramco IPO and H.E. Yasir Al-Rumayyan’s tenure as Governor of PIF. Work spanned the fund’s anchor positions in the SoftBank Vision Fund and Blackstone’s infrastructure fund.',
+    body: 'Provided support in connection with PIF during a defining period, around the Aramco IPO and H.E. Yasir Al-Rumayyan’s tenure as Governor of PIF. Work spanned the fund’s anchor positions in the SoftBank Vision Fund and Blackstone’s infrastructure fund.',
   },
   {
     title: 'African LNG',
@@ -96,7 +96,7 @@ export default function FounderPage() {
               Jonathan <em>Leibowitz.</em>
             </h1>
             <p className="nv-fnd-bio">
-              Jonathan is the founder of nivria. Over nearly fifteen years at <strong>KARV</strong>, where he was the second employee, he built a global practice in strategic communications and geopolitical intelligence spanning <em>more than sixty countries.</em> He has worked at the centre of high-stakes, multi-stakeholder situations — sovereign wealth funds, global trading houses, complex cross-border ventures — where the hardest task is <em>getting the truth to land before a louder fiction takes hold,</em> and where misunderstandings, left unmanaged, become catastrophes.
+              Jonathan is the founder of nivria. Over nearly fifteen years at <strong>KARV</strong>, where he was the second employee, he helped build a global practice in strategic communications and geopolitical intelligence spanning <em>more than sixty countries.</em> He has worked at the centre of high-stakes, multi-stakeholder situations — sovereign wealth funds, global trading houses, complex cross-border ventures — where the hardest task is <em>getting the truth to land before a louder fiction takes hold,</em> and where misunderstandings, left unmanaged, become catastrophes.
             </p>
           </div>
         </section>
@@ -569,5 +569,16 @@ const CSS = `
   .nv-fnd-hero { padding: 56px 0 48px; }
   .nv-fnd-exp { padding: 64px 0 72px; }
   .nv-fnd-foot-row { flex-direction: column; gap: 12px; text-align: center; }
+
+  /* ── HEADER: shrink the shared logo, push it left, tighten the nav so
+        "Request a briefing" + "Sign in" stay on one line. Mirrors the
+        homepage's mobile header treatment in src/app/page.tsx. */
+  .nv-fnd-hdr { padding: 12px 0; }
+  .nv-fnd-hdr .nv-fnd-wrap { padding-left: 4px; padding-right: 14px; }
+  .nv-fnd-hdr-row { gap: 10px; }
+  .nivria-logo--md { --logo-font-size: 21px; }
+  .nv-fnd-nav { gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
+  .nv-fnd-nav-cta { font-size: 13px; padding-bottom: 1px; }
+  .nv-fnd-nav-link { font-size: 13px; }
 }
 `
