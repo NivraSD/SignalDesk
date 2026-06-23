@@ -1,2715 +1,3431 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
-import { createAuthClient } from '@/lib/supabase/auth-client'
-import {
-  Brain, Target, Palette, Layers, Globe, Shield, MessageSquare, Database,
-  ChevronRight, AlertTriangle, TrendingUp, Users, FileText, Mail, Megaphone,
-  Check, Clock, Zap, Search, Folder, BookOpen, Hash, Presentation, Activity, Play, BarChart3
-} from 'lucide-react'
 
-export default function HomePage() {
-  const router = useRouter()
-  const [loading, setLoading] = useState(true)
-  const todayFormatted = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+// section nav data — used by the side dots
+const SECTIONS = [
+  { id: 'sec-instrument', label: 'The standard' },
+  { id: 'sec-who',        label: 'Who this is for' },
+  { id: 'sec-how',        label: 'How it works' },
+  { id: 'sec-lifecycle',  label: 'Lifecycle' },
+  { id: 'sec-people',     label: 'People' },
+  { id: 'briefing',       label: 'Briefing' },
+]
 
+// auto-hide header — hides on scroll down, reveals on scroll up,
+// always shown near the top of the page
+function useHeaderVisible() {
+  const [visible, setVisible] = useState(true)
   useEffect(() => {
-    const checkAuth = async () => {
-      const supabase = createAuthClient()
-      const { data: { session } } = await supabase.auth.getSession()
-
-      if (session) {
-        router.push('/dashboard')
-      } else {
-        setLoading(false)
-      }
+    let lastY = window.scrollY
+    let ticking = false
+    const onScroll = () => {
+      if (ticking) return
+      ticking = true
+      requestAnimationFrame(() => {
+        const y = window.scrollY
+        if (y < 80) setVisible(true)
+        else if (y > lastY + 4) setVisible(false)
+        else if (y < lastY - 4) setVisible(true)
+        lastY = y
+        ticking = false
+      })
     }
-
-    checkAuth()
-  }, [router])
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#faf9f7' }}>
-        <div style={{ color: 'var(--charcoal)' }}>Loading...</div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="landing-container">
-      <style jsx>{`
-        .landing-container {
-          width: 100%;
-          min-height: 100vh;
-          overflow-x: hidden;
-          background: #faf9f7;
-        }
-
-        .landing-nav {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          z-index: 100;
-          padding: 24px 60px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          background: linear-gradient(to bottom, #faf9f7 50%, transparent);
-        }
-
-        .landing-nav-logo {
-          display: flex;
-          align-items: center;
-          gap: 14px;
-          text-decoration: none;
-          cursor: pointer;
-        }
-
-        .landing-nav-links {
-          display: flex;
-          gap: 40px;
-          align-items: center;
-        }
-
-        .landing-nav-link {
-          color: var(--grey-600);
-          text-decoration: none;
-          font-size: 0.9rem;
-          font-weight: 400;
-          transition: color 0.2s;
-          cursor: pointer;
-        }
-
-        .landing-nav-link:hover {
-          color: var(--charcoal);
-        }
-
-        .landing-nav-cta {
-          color: var(--white);
-          background: var(--charcoal);
-          text-decoration: none;
-          font-size: 0.85rem;
-          font-weight: 500;
-          padding: 12px 28px;
-          border-radius: 6px;
-          transition: background 0.2s;
-          cursor: pointer;
-          border: none;
-        }
-
-        .landing-nav-cta:hover {
-          background: var(--burnt-orange);
-        }
-
-        /* HERO */
-        .landing-hero {
-          min-height: 100vh;
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          position: relative;
-          padding-left: 60px;
-        }
-
-        .landing-hero-content {
-          padding: 200px 60px 100px 40px;
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-        }
-
-        .landing-hero-headline {
-          font-family: var(--font-serif);
-          font-size: clamp(3.2rem, 7vw, 5.5rem);
-          font-weight: 400;
-          line-height: 0.95;
-          letter-spacing: -0.03em;
-          margin-bottom: 40px;
-          color: var(--charcoal);
-        }
-
-        .landing-hero-headline .line {
-          display: block;
-        }
-
-        .landing-hero-headline .italic {
-          font-style: italic;
-          color: var(--burnt-orange);
-        }
-
-        .landing-hero-intro {
-          max-width: 440px;
-          font-size: 1.15rem;
-          line-height: 1.7;
-          color: var(--grey-600);
-          margin-bottom: 16px;
-        }
-
-        .landing-hero-subline {
-          max-width: 440px;
-          font-size: 1.3rem;
-          line-height: 1.5;
-          color: var(--charcoal);
-          margin-bottom: 48px;
-          letter-spacing: -0.01em;
-        }
-
-        .landing-hero-subline strong {
-          color: var(--burnt-orange);
-          font-weight: 700;
-        }
-
-        .landing-hero-cta-row {
-          display: flex;
-          gap: 24px;
-          align-items: center;
-        }
-
-        .landing-btn-primary {
-          padding: 18px 44px;
-          background: var(--charcoal);
-          color: var(--white);
-          border: none;
-          font-family: var(--font-body);
-          font-size: 0.95rem;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.3s;
-          text-decoration: none;
-        }
-
-        .landing-btn-primary:hover {
-          background: var(--burnt-orange);
-        }
-
-        .landing-btn-text {
-          color: var(--charcoal);
-          text-decoration: none;
-          font-size: 0.95rem;
-          font-weight: 500;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          transition: color 0.2s;
-          cursor: pointer;
-          background: none;
-          border: none;
-        }
-
-        .landing-btn-text:hover {
-          color: var(--burnt-orange);
-        }
-
-        .landing-hero-visual {
-          background: var(--charcoal);
-          position: relative;
-          overflow: hidden;
-          clip-path: polygon(15% 0, 100% 0, 100% 100%, 0 100%);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .landing-loop-container {
-          position: relative;
-          width: 380px;
-          height: 380px;
-        }
-
-        .landing-loop-ring {
-          position: absolute;
-          inset: 0;
-          border: 2px solid var(--burnt-orange);
-          border-radius: 50%;
-          opacity: 0.3;
-        }
-
-        .landing-loop-ring-inner {
-          position: absolute;
-          inset: 60px;
-          border: 1px solid var(--grey-600);
-          border-radius: 50%;
-          opacity: 0.5;
-        }
-
-        .landing-loop-arrows {
-          position: absolute;
-          inset: 20px;
-          animation: landingRotate 30s linear infinite;
-        }
-
-        @keyframes landingRotate {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-
-        .landing-loop-arrow {
-          position: absolute;
-          color: var(--burnt-orange);
-          opacity: 0.6;
-        }
-
-        .landing-loop-arrow:nth-child(1) { top: 0; left: 50%; transform: translateX(-50%) rotate(0deg); }
-        .landing-loop-arrow:nth-child(2) { top: 50%; right: 0; transform: translateY(-50%) rotate(90deg); }
-        .landing-loop-arrow:nth-child(3) { bottom: 0; left: 50%; transform: translateX(-50%) rotate(180deg); }
-        .landing-loop-arrow:nth-child(4) { top: 50%; left: 0; transform: translateY(-50%) rotate(270deg); }
-
-        .landing-loop-node {
-          position: absolute;
-          background: var(--charcoal);
-          border: 2px solid var(--burnt-orange);
-          padding: 14px 18px;
-          text-align: center;
-          min-width: 120px;
-        }
-
-        .landing-loop-node-label {
-          font-family: var(--font-display);
-          font-size: 0.65rem;
-          text-transform: uppercase;
-          letter-spacing: 0.12em;
-          color: var(--white);
-          font-weight: 500;
-        }
-
-        .landing-loop-node.intelligence { top: -20px; left: 50%; transform: translateX(-50%); }
-        .landing-loop-node.strategy { top: 50%; right: -30px; transform: translateY(-50%); }
-        .landing-loop-node.execution { bottom: -20px; left: 50%; transform: translateX(-50%); }
-        .landing-loop-node.learning { top: 50%; left: -30px; transform: translateY(-50%); }
-
-        .landing-loop-center {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          text-align: center;
-        }
-
-        /* MARQUEE */
-        .landing-marquee-section {
-          background: var(--charcoal);
-          padding: 20px 0;
-          overflow: hidden;
-        }
-
-        .landing-marquee {
-          display: flex;
-          gap: 60px;
-          animation: landingMarquee 25s linear infinite;
-        }
-
-        @keyframes landingMarquee {
-          from { transform: translateX(0); }
-          to { transform: translateX(-50%); }
-        }
-
-        .landing-marquee-item {
-          font-family: var(--font-display);
-          font-size: 0.7rem;
-          text-transform: uppercase;
-          letter-spacing: 0.2em;
-          color: var(--grey-500);
-          white-space: nowrap;
-          display: flex;
-          align-items: center;
-          gap: 60px;
-        }
-
-        .landing-marquee-item::after {
-          content: "◆";
-          color: var(--burnt-orange);
-          font-size: 0.4rem;
-        }
-
-        /* STATEMENT SECTION */
-        .landing-statement-section {
-          padding: 140px 80px;
-          position: relative;
-          background: #faf9f7;
-        }
-
-        .landing-statement-grid {
-          display: grid;
-          grid-template-columns: 1.2fr 1fr;
-          gap: 80px;
-          align-items: center;
-        }
-
-        .landing-statement-number {
-          font-family: var(--font-serif);
-          font-size: 10rem;
-          font-weight: 400;
-          color: var(--burnt-orange);
-          opacity: 0.12;
-          line-height: 1;
-          position: absolute;
-          top: 60px;
-          left: 60px;
-        }
-
-        .landing-statement-content {
-          position: relative;
-        }
-
-        .landing-statement-headline {
-          font-family: var(--font-serif);
-          font-size: 3rem;
-          font-weight: 400;
-          line-height: 1.15;
-          letter-spacing: -0.02em;
-          margin-bottom: 24px;
-          color: var(--charcoal);
-        }
-
-        .landing-statement-headline em {
-          font-style: italic;
-          color: var(--burnt-orange);
-        }
-
-        .landing-statement-text {
-          font-size: 1.05rem;
-          line-height: 1.8;
-          color: var(--grey-600);
-          max-width: 460px;
-        }
-
-        .landing-statement-text em {
-          font-style: italic;
-          color: var(--charcoal);
-        }
-
-        /* TIMELAPSE */
-        .landing-timelapse {
-          background: var(--charcoal);
-          border-radius: 16px;
-          overflow: hidden;
-          box-shadow: 0 24px 64px rgba(0,0,0,0.2);
-        }
-
-        .landing-timelapse-header {
-          display: flex;
-          align-items: center;
-          gap: 16px;
-          padding: 20px 24px;
-          border-bottom: 1px solid var(--grey-800);
-        }
-
-        .landing-timelapse-clock {
-          width: 44px;
-          height: 44px;
-          position: relative;
-        }
-
-        .landing-timelapse-clock-ring {
-          position: absolute;
-          inset: 0;
-          border: 2px solid var(--grey-700);
-          border-radius: 50%;
-        }
-
-        .landing-timelapse-clock-hand {
-          position: absolute;
-          width: 2px;
-          height: 14px;
-          background: var(--burnt-orange);
-          top: 8px;
-          left: 50%;
-          transform: translateX(-50%) rotate(45deg);
-          transform-origin: bottom center;
-          animation: clockSpin 8s linear infinite;
-        }
-
-        @keyframes clockSpin {
-          from { transform: translateX(-50%) rotate(0deg); }
-          to { transform: translateX(-50%) rotate(360deg); }
-        }
-
-        .landing-timelapse-clock-center {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          width: 6px;
-          height: 6px;
-          background: var(--burnt-orange);
-          border-radius: 50%;
-        }
-
-        .landing-timelapse-time {
-          flex: 1;
-        }
-
-        .landing-timelapse-current {
-          font-family: var(--font-display);
-          font-size: 1.3rem;
-          font-weight: 600;
-          color: var(--white);
-          letter-spacing: -0.02em;
-        }
-
-        .landing-timelapse-label {
-          font-size: 0.7rem;
-          color: var(--burnt-orange);
-          font-weight: 500;
-        }
-
-        .landing-timelapse-org {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          font-size: 0.8rem;
-          color: var(--grey-400);
-        }
-
-        .landing-timelapse-org-avatar {
-          width: 24px;
-          height: 24px;
-          background: var(--grey-700);
-          border-radius: 6px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-family: var(--font-display);
-          font-size: 0.55rem;
-          font-weight: 600;
-          color: var(--white);
-        }
-
-        .landing-timelapse-stream {
-          padding: 8px 0;
-        }
-
-        .landing-timelapse-item {
-          display: flex;
-          align-items: flex-start;
-          gap: 12px;
-          padding: 12px 24px;
-          position: relative;
-        }
-
-        .landing-timelapse-item::before {
-          content: '';
-          position: absolute;
-          left: 67px;
-          top: 28px;
-          bottom: -12px;
-          width: 1px;
-          background: var(--grey-800);
-        }
-
-        .landing-timelapse-item:last-child::before {
-          display: none;
-        }
-
-        .landing-timelapse-item-time {
-          width: 56px;
-          font-size: 0.7rem;
-          color: var(--grey-500);
-          font-weight: 500;
-          flex-shrink: 0;
-          padding-top: 2px;
-        }
-
-        .landing-timelapse-item-dot {
-          width: 10px;
-          height: 10px;
-          border-radius: 50%;
-          background: var(--grey-700);
-          border: 2px solid var(--grey-600);
-          flex-shrink: 0;
-          margin-top: 4px;
-          position: relative;
-          z-index: 1;
-        }
-
-        .landing-timelapse-item.completed .landing-timelapse-item-dot {
-          background: var(--burnt-orange);
-          border-color: var(--burnt-orange);
-        }
-
-        .landing-timelapse-item.active .landing-timelapse-item-dot {
-          background: var(--burnt-orange);
-          border-color: var(--burnt-orange);
-          box-shadow: 0 0 0 4px rgba(199, 93, 58, 0.25);
-          animation: activePulse 2s ease-in-out infinite;
-        }
-
-        @keyframes activePulse {
-          0%, 100% { box-shadow: 0 0 0 4px rgba(199, 93, 58, 0.25); }
-          50% { box-shadow: 0 0 0 8px rgba(199, 93, 58, 0.1); }
-        }
-
-        .landing-timelapse-item-content {
-          flex: 1;
-        }
-
-        .landing-timelapse-item-action {
-          font-size: 0.85rem;
-          font-weight: 500;
-          color: var(--white);
-          margin-bottom: 2px;
-        }
-
-        .landing-timelapse-item.completed .landing-timelapse-item-action {
-          color: var(--grey-400);
-        }
-
-        .landing-timelapse-item-detail {
-          font-size: 0.75rem;
-          color: var(--grey-500);
-          display: flex;
-          align-items: center;
-          gap: 6px;
-        }
-
-        .landing-timelapse-score {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          width: 22px;
-          height: 22px;
-          background: linear-gradient(135deg, var(--burnt-orange), #e07b5a);
-          border-radius: 5px;
-          font-family: var(--font-display);
-          font-size: 0.65rem;
-          font-weight: 700;
-          color: white;
-        }
-
-        .landing-timelapse-item-assets {
-          display: flex;
-          gap: 6px;
-          flex-wrap: wrap;
-          margin-top: 6px;
-        }
-
-        .landing-timelapse-item-assets span {
-          font-size: 0.7rem;
-          padding: 4px 10px;
-          background: var(--grey-800);
-          border-radius: 4px;
-          color: var(--grey-300);
-        }
-
-        .landing-timelapse-footer {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 16px 24px;
-          background: var(--grey-900);
-          border-top: 1px solid var(--grey-800);
-        }
-
-        .landing-timelapse-status {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          font-size: 0.8rem;
-          font-weight: 500;
-          color: var(--white);
-        }
-
-        .landing-timelapse-status-dot {
-          width: 8px;
-          height: 8px;
-          background: #22c55e;
-          border-radius: 50%;
-          animation: livePulse 2s ease-in-out infinite;
-        }
-
-        @keyframes livePulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.4; }
-        }
-
-        .landing-timelapse-stats {
-          display: flex;
-          gap: 8px;
-          font-size: 0.7rem;
-          color: var(--grey-500);
-        }
-
-        /* CTA SECTION */
-        .landing-cta-section {
-          background: var(--charcoal);
-          color: var(--white);
-          padding: 100px 80px;
-          position: relative;
-          overflow: hidden;
-        }
-
-        .landing-cta-decoration {
-          position: absolute;
-          right: -60px;
-          top: 50%;
-          transform: translateY(-50%);
-          width: 300px;
-          height: 300px;
-          border: 1px solid var(--burnt-orange);
-          opacity: 0.15;
-          border-radius: 50%;
-        }
-
-        .landing-cta-content {
-          display: grid;
-          grid-template-columns: 1.5fr 1fr;
-          gap: 50px;
-          align-items: center;
-          position: relative;
-        }
-
-        .landing-cta-headline {
-          font-family: var(--font-serif);
-          font-size: clamp(2.2rem, 4.5vw, 3.5rem);
-          font-weight: 400;
-          line-height: 1.15;
-          letter-spacing: -0.02em;
-          color: var(--white);
-        }
-
-        .landing-cta-headline em {
-          font-style: italic;
-          color: var(--burnt-orange);
-        }
-
-        .landing-cta-actions {
-          display: flex;
-          flex-direction: column;
-          gap: 14px;
-        }
-
-        .landing-cta-btn {
-          padding: 16px 36px;
-          background: var(--burnt-orange);
-          color: var(--white);
-          border: none;
-          font-family: var(--font-body);
-          font-size: 0.9rem;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.3s;
-          text-align: center;
-          text-decoration: none;
-        }
-
-        .landing-cta-btn:hover {
-          background: #d66b48;
-        }
-
-        .landing-cta-btn-outline {
-          background: transparent;
-          border: 1px solid var(--grey-600);
-          color: var(--grey-300);
-        }
-
-        .landing-cta-btn-outline:hover {
-          border-color: var(--white);
-          color: var(--white);
-          background: transparent;
-        }
-
-        /* FOOTER */
-        .landing-footer {
-          background: var(--charcoal);
-          color: var(--grey-400);
-          padding: 40px 80px;
-          border-top: 1px solid var(--grey-800);
-        }
-
-        .landing-footer-content {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-
-        .landing-footer-logo {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-
-        .landing-footer-links {
-          display: flex;
-          gap: 32px;
-        }
-
-        .landing-footer-link {
-          color: var(--grey-500);
-          text-decoration: none;
-          font-size: 0.8rem;
-          transition: color 0.2s;
-        }
-
-        .landing-footer-link:hover {
-          color: var(--white);
-        }
-
-        .landing-footer-copy {
-          font-size: 0.75rem;
-        }
-
-        /* RESPONSIVE */
-        @media (max-width: 1024px) {
-          .landing-hero {
-            grid-template-columns: 1fr;
-            padding-left: 0;
-          }
-
-          .landing-hero-visual {
-            display: none;
-          }
-
-          .landing-hero-content {
-            padding: 160px 40px 80px;
-          }
-
-          .landing-nav {
-            padding: 20px 30px;
-          }
-
-          .landing-statement-grid {
-            grid-template-columns: 1fr;
-            gap: 40px;
-          }
-
-          .landing-statement-section,
-          .landing-cta-section,
-          .landing-footer {
-            padding: 80px 40px;
-          }
-
-          .landing-cta-content {
-            grid-template-columns: 1fr;
-            text-align: center;
-          }
-
-          .landing-cta-actions {
-            align-items: center;
-          }
-        }
-
-        @media (max-width: 640px) {
-          .landing-nav-links {
-            gap: 20px;
-          }
-
-          .landing-nav-link {
-            display: none;
-          }
-
-          .landing-hero-content {
-            padding: 140px 24px 60px;
-          }
-
-          .landing-hero-cta-row {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 16px;
-          }
-
-          .landing-btn-primary {
-            width: 100%;
-            text-align: center;
-          }
-
-          .landing-statement-number {
-            font-size: 5rem;
-          }
-
-          .landing-statement-section,
-          .landing-cta-section,
-          .landing-footer {
-            padding: 60px 24px;
-          }
-
-          .landing-footer-content {
-            flex-direction: column;
-            gap: 20px;
-            text-align: center;
-          }
-
-          .landing-footer-links {
-            flex-wrap: wrap;
-            justify-content: center;
-          }
-        }
-      `}</style>
-
-      {/* Navigation */}
-      <nav className="landing-nav">
-        <div className="landing-nav-logo">
-          <svg width="80" height="48" viewBox="0 0 80 48">
-            <path d="M10 0 H80 V48 H0 L10 0 Z" fill="#1a1a1a" />
-            <text x="40" y="33" textAnchor="middle" fontFamily="Space Grotesk, sans-serif" fontSize="22" fontWeight="700" fill="#faf9f7" letterSpacing="-0.5">NIV</text>
-            <path d="M68 0 H80 V12 L68 0 Z" fill="#c75d3a" />
-          </svg>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '6px', alignSelf: 'flex-end' }}>
-            <span style={{ color: 'rgba(0,0,0,0.2)', fontSize: '28px', fontWeight: 200, lineHeight: 1 }}>|</span>
-            <span style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '14px', color: 'rgba(0,0,0,0.4)', letterSpacing: '1px' }}>by nivria</span>
-          </div>
-        </div>
-        <div className="landing-nav-links">
-          <Link href="/contact?demo=true" className="landing-nav-link">Schedule Demo</Link>
-          <button className="landing-nav-cta" onClick={() => router.push('/auth/signup')}>Get Started</button>
-        </div>
-      </nav>
-
-      {/* Hero Section */}
-      <section className="landing-hero">
-        <div className="landing-hero-content">
-          <h1 className="landing-hero-headline">
-            <span className="line">The <span className="italic">influence</span></span>
-            <span className="line">orchestration</span>
-            <span className="line">operating system</span>
-          </h1>
-          <p className="landing-hero-intro">
-            NIV transforms how organizations discover opportunities, generate strategies, and execute campaigns — with AI that learns and compounds over time.
-          </p>
-          <p className="landing-hero-subline">
-            AI that doesn't just analyze. <strong>AI that acts.</strong>
-          </p>
-          <div className="landing-hero-cta-row">
-            <button className="landing-btn-primary" onClick={() => router.push('/auth/login')}>
-              Sign In
-            </button>
-          </div>
-        </div>
-        <div className="landing-hero-visual">
-          <div className="landing-loop-container">
-            <div className="landing-loop-ring"></div>
-            <div className="landing-loop-ring-inner"></div>
-            <div className="landing-loop-arrows">
-              <svg className="landing-loop-arrow" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z" />
-              </svg>
-              <svg className="landing-loop-arrow" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z" />
-              </svg>
-              <svg className="landing-loop-arrow" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z" />
-              </svg>
-              <svg className="landing-loop-arrow" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z" />
-              </svg>
-            </div>
-            <div className="landing-loop-node intelligence">
-              <div className="landing-loop-node-label">Intelligence</div>
-            </div>
-            <div className="landing-loop-node strategy">
-              <div className="landing-loop-node-label">Strategy</div>
-            </div>
-            <div className="landing-loop-node execution">
-              <div className="landing-loop-node-label">Execution</div>
-            </div>
-            <div className="landing-loop-node learning">
-              <div className="landing-loop-node-label">Learning</div>
-            </div>
-            <div className="landing-loop-center">
-              <svg width="80" height="48" viewBox="0 0 80 48">
-                <path d="M10 0 H80 V48 H0 L10 0 Z" fill="#faf9f7" />
-                <text x="40" y="33" textAnchor="middle" fontFamily="Space Grotesk, sans-serif" fontSize="22" fontWeight="700" fill="#1a1a1a" letterSpacing="-0.5">NIV</text>
-                <path d="M68 0 H80 V12 L68 0 Z" fill="#c75d3a" />
-              </svg>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Marquee Section */}
-      <section className="landing-marquee-section">
-        <div className="landing-marquee">
-          <span className="landing-marquee-item">Intelligence Pipeline</span>
-          <span className="landing-marquee-item">VECTOR Campaigns</span>
-          <span className="landing-marquee-item">Crisis Command</span>
-          <span className="landing-marquee-item">Memory Vault</span>
-          <span className="landing-marquee-item">NIV Advisor</span>
-          <span className="landing-marquee-item">Content Execution</span>
-          <span className="landing-marquee-item">Intelligence Pipeline</span>
-          <span className="landing-marquee-item">VECTOR Campaigns</span>
-          <span className="landing-marquee-item">Crisis Command</span>
-          <span className="landing-marquee-item">Memory Vault</span>
-          <span className="landing-marquee-item">NIV Advisor</span>
-          <span className="landing-marquee-item">Content Execution</span>
-        </div>
-      </section>
-
-      {/* Statement Section - 24/7 */}
-      <section className="landing-statement-section">
-        <div className="landing-statement-number">24/7</div>
-        <div className="landing-statement-grid">
-          <div className="landing-statement-content">
-            <h2 className="landing-statement-headline">
-              AI built for you, <em>working around the clock</em>
-            </h2>
-            <p className="landing-statement-text">
-              Other platforms give you dashboards. NIV gives you outcomes. It monitors, strategizes, drafts, and executes — proactively — so opportunities don't slip by while you're asleep. Every insight, every strategy, every piece of content is built with <em>you</em> in mind.
-            </p>
-          </div>
-          <div className="landing-statement-visual">
-            <div className="landing-timelapse">
-              <div className="landing-timelapse-header">
-                <div className="landing-timelapse-clock">
-                  <div className="landing-timelapse-clock-ring"></div>
-                  <div className="landing-timelapse-clock-hand"></div>
-                  <div className="landing-timelapse-clock-center"></div>
-                </div>
-                <div className="landing-timelapse-time">
-                  <div className="landing-timelapse-current">3:42 AM</div>
-                  <div className="landing-timelapse-label">NIV is working</div>
-                </div>
-                <div className="landing-timelapse-org">
-                  <div className="landing-timelapse-org-avatar">AC</div>
-                  <span>Acme Corp</span>
-                </div>
-              </div>
-
-              <div className="landing-timelapse-stream">
-                <div className="landing-timelapse-item completed">
-                  <div className="landing-timelapse-item-time">2:15 AM</div>
-                  <div className="landing-timelapse-item-dot"></div>
-                  <div className="landing-timelapse-item-content">
-                    <div className="landing-timelapse-item-action">Signal detected</div>
-                    <div className="landing-timelapse-item-detail">TechRival announces AI partnership</div>
-                  </div>
-                </div>
-                <div className="landing-timelapse-item completed">
-                  <div className="landing-timelapse-item-time">2:18 AM</div>
-                  <div className="landing-timelapse-item-dot"></div>
-                  <div className="landing-timelapse-item-content">
-                    <div className="landing-timelapse-item-action">Opportunity scored</div>
-                    <div className="landing-timelapse-item-detail">
-                      <span className="landing-timelapse-score">92</span>
-                      Response window identified
-                    </div>
-                  </div>
-                </div>
-                <div className="landing-timelapse-item completed">
-                  <div className="landing-timelapse-item-time">2:24 AM</div>
-                  <div className="landing-timelapse-item-dot"></div>
-                  <div className="landing-timelapse-item-content">
-                    <div className="landing-timelapse-item-action">Strategy generated</div>
-                    <div className="landing-timelapse-item-detail">4-phase response plan drafted</div>
-                  </div>
-                </div>
-                <div className="landing-timelapse-item active">
-                  <div className="landing-timelapse-item-time">3:42 AM</div>
-                  <div className="landing-timelapse-item-dot"></div>
-                  <div className="landing-timelapse-item-content">
-                    <div className="landing-timelapse-item-action">Content ready</div>
-                    <div className="landing-timelapse-item-assets">
-                      <span>Press release</span>
-                      <span>Exec talking points</span>
-                      <span>Social posts</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="landing-timelapse-footer">
-                <div className="landing-timelapse-status">
-                  <span className="landing-timelapse-status-dot"></span>
-                  Ready when you wake up
-                </div>
-                <div className="landing-timelapse-stats">
-                  <span>47 signals processed</span>
-                  <span>·</span>
-                  <span>3 opportunities found</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Platform Capabilities */}
-      <div className="bg-[#0a0a0a]">
-        {/* Platform intro header */}
-        <section className="pt-24 pb-12 px-6">
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-4xl md:text-5xl text-white mb-6" style={{ fontFamily: 'Playfair Display, serif' }}>
-              Platform <em className="text-[#c75d3a]">Capabilities</em>
-            </h2>
-            <p className="text-xl text-[#9e9e9e] max-w-2xl mx-auto" style={{ fontFamily: 'Inter, sans-serif' }}>
-              NIV orchestrates everything you need to achieve your goals and get an edge — automated.
-            </p>
-          </div>
-        </section>
-
-      {/* Section 1: Intelligence Hub */}
-      <section className="py-24 px-6 border-t border-[#1a1a1a]">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-16 items-start">
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <Brain className="w-5 h-5 text-[#c75d3a]" />
-                <span className="text-[#c75d3a] text-xs font-semibold tracking-[0.2em] uppercase" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>Intelligence Hub</span>
-              </div>
-              <h2 className="text-4xl text-white mb-6" style={{ fontFamily: 'Playfair Display, serif' }}>
-                Executive Intelligence Briefs
-              </h2>
-              <p className="text-[#9e9e9e] text-lg mb-8" style={{ fontFamily: 'Inter, sans-serif' }}>
-                NIV continuously monitors market signals, competitor movements, and industry developments to deliver actionable executive briefings with strategic recommendations.
-              </p>
-              <ul className="space-y-3">
-                {['Real-time signal analysis', 'Competitive intelligence', 'Strategic implications', 'Priority action items'].map((item, i) => (
-                  <li key={i} className="flex items-center gap-3 text-[#bdbdbd]">
-                    <div className="w-5 h-5 rounded-full bg-[#c75d3a]/10 flex items-center justify-center">
-                      <Check className="w-3 h-3 text-[#c75d3a]" />
-                    </div>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Intelligence Brief Mockup */}
-            <div className="bg-[#1a1a1a] rounded-2xl border border-[#2e2e2e] overflow-hidden">
-              {/* Brief Header */}
-              <div className="p-6 border-b border-[#2e2e2e]">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <div className="text-[#c75d3a] text-xs font-semibold tracking-[0.15em] uppercase mb-1" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>Executive Intelligence Brief</div>
-                    <div className="text-[#757575] text-sm">{todayFormatted} • 47 signals analyzed</div>
-                  </div>
-                  <div className="px-3 py-1 bg-[#c75d3a]/10 rounded-full">
-                    <span className="text-[#c75d3a] text-xs font-medium">LIVE</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Executive Summary */}
-              <div className="p-6 border-b border-[#2e2e2e]">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-2 h-2 rounded-full bg-[#c75d3a]"></div>
-                  <span className="text-white text-sm font-semibold" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>EXECUTIVE SUMMARY</span>
-                </div>
-                <p className="text-[#bdbdbd] leading-relaxed" style={{ fontFamily: 'Playfair Display, serif', fontStyle: 'italic' }}>
-                  &quot;Market conditions have shifted significantly this quarter with three major competitors announcing AI partnerships. Your positioning as an innovation leader creates a <span className="text-[#c75d3a]">72-hour window</span> to establish thought leadership before the narrative solidifies...&quot;
-                </p>
-              </div>
-
-              {/* Key Developments */}
-              <div className="p-6 border-b border-[#2e2e2e]">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-2 h-2 rounded-full bg-[#c75d3a]"></div>
-                  <span className="text-white text-sm font-semibold" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>KEY DEVELOPMENTS</span>
-                </div>
-                <div className="space-y-3">
-                  <div className="bg-[#212121] rounded-lg p-4 border border-[#2e2e2e]">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="px-2 py-0.5 bg-red-500/10 text-red-400 text-xs rounded">COMPETITIVE</span>
-                      <span className="text-[#757575] text-xs">TODAY</span>
-                    </div>
-                    <p className="text-[#e0e0e0] text-sm">TechRival announces Azure AI integration partnership</p>
-                    <p className="text-[#757575] text-xs mt-1">Impact: Threatens market positioning</p>
-                  </div>
-                  <div className="bg-[#212121] rounded-lg p-4 border border-[#2e2e2e]">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 text-xs rounded">INDUSTRY</span>
-                      <span className="text-[#757575] text-xs">2 DAYS AGO</span>
-                    </div>
-                    <p className="text-[#e0e0e0] text-sm">New regulatory framework published for AI compliance</p>
-                    <p className="text-[#757575] text-xs mt-1">Impact: Creates thought leadership opportunity</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Priority Signals Sidebar */}
-              <div className="p-6 bg-[#212121]">
-                <div className="flex items-center gap-2 mb-4">
-                  <AlertTriangle className="w-4 h-4 text-[#c75d3a]" />
-                  <span className="text-white text-sm font-semibold" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>PRIORITY SIGNALS</span>
-                </div>
-                <div className="space-y-3">
-                  <div>
-                    <div className="text-red-400 text-xs font-semibold mb-1">IMMEDIATE THREATS</div>
-                    <ul className="text-[#9e9e9e] text-sm space-y-1">
-                      <li className="flex items-start gap-2"><span className="text-red-400">•</span>Competitor narrative gaining Tier-1 traction</li>
-                      <li className="flex items-start gap-2"><span className="text-red-400">•</span>Key analyst shifting perspective</li>
-                    </ul>
-                  </div>
-                  <div>
-                    <div className="text-[#c75d3a] text-xs font-semibold mb-1">OPPORTUNITIES</div>
-                    <ul className="text-[#9e9e9e] text-sm space-y-1">
-                      <li className="flex items-start gap-2"><span className="text-[#c75d3a]">•</span>Industry award nomination window open</li>
-                      <li className="flex items-start gap-2"><span className="text-[#c75d3a]">•</span>Speaking slot available at TechConf</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Section 2: Opportunity Engine */}
-      <section className="py-24 px-6 bg-[#0d0d0d] border-t border-[#1a1a1a]">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-16 items-start">
-            {/* Opportunity Card Mockup */}
-            <div className="bg-[#1a1a1a] rounded-2xl border border-[#2e2e2e] overflow-hidden">
-              {/* Card Header */}
-              <div className="p-6 border-b border-[#2e2e2e]">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-4">
-                    <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-green-500/20 to-green-600/10 border border-green-500/30 flex items-center justify-center">
-                      <span className="text-green-400 text-2xl font-bold" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>92</span>
-                    </div>
-                    <div>
-                      <h3 className="text-white text-lg font-semibold mb-1" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>AI Partnership Response Strategy</h3>
-                      <p className="text-[#9e9e9e] text-sm">Position as the established leader in enterprise AI before competitor narrative solidifies</p>
-                      <div className="flex items-center gap-3 mt-2">
-                        <span className="text-[#757575] text-xs">leadership</span>
-                        <span className="text-[#757575] text-xs">•</span>
-                        <span className="text-[#757575] text-xs">12 content items</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="px-2 py-1 bg-red-500/10 text-red-400 text-xs font-semibold rounded border border-red-500/30">HIGH</span>
-                    <span className="px-2 py-1 bg-[#c75d3a]/10 text-[#c75d3a] text-xs font-semibold rounded border border-[#c75d3a]/30">EXECUTED</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Strategic Context */}
-              <div className="p-6 border-b border-[#2e2e2e]">
-                <div className="text-white text-sm font-semibold mb-4" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>STRATEGIC CONTEXT</div>
-
-                <div className="bg-[#212121] rounded-lg p-4 border border-[#2e2e2e] mb-3">
-                  <div className="text-[#757575] text-xs font-semibold mb-2">TRIGGER EVENTS</div>
-                  <ul className="text-[#bdbdbd] text-sm space-y-1">
-                    <li className="flex items-start gap-2"><ChevronRight className="w-3 h-3 text-[#c75d3a] mt-1 flex-shrink-0" />TechRival announces Azure AI integration</li>
-                    <li className="flex items-start gap-2"><ChevronRight className="w-3 h-3 text-[#c75d3a] mt-1 flex-shrink-0" />Industry report shows 40% AI adoption increase</li>
-                    <li className="flex items-start gap-2"><ChevronRight className="w-3 h-3 text-[#c75d3a] mt-1 flex-shrink-0" />Key analyst publishes competitive comparison</li>
-                  </ul>
-                </div>
-
-                <div className="bg-[#c75d3a]/5 rounded-lg p-4 border border-[#c75d3a]/20">
-                  <div className="text-[#c75d3a] text-xs font-semibold mb-2">WHY NOW</div>
-                  <p className="text-[#bdbdbd] text-sm">72-hour window before competitor narrative becomes the default industry framing. Early movers will shape the conversation and capture media attention.</p>
-                </div>
-              </div>
-
-              {/* Execution Plan */}
-              <div className="p-6 border-b border-[#2e2e2e]">
-                <div className="text-white text-sm font-semibold mb-4" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>EXECUTION PLAN</div>
-                <div className="space-y-3">
-                  {[
-                    { stakeholder: 'Industry Analysts', priority: 1, lever: 'Authority & Early Access', items: [
-                      { type: 'Press Release', platform: null, urgency: 'immediate', angle: 'First-mover advantage in enterprise AI' },
-                      { type: 'Embargo Briefing', platform: null, urgency: 'immediate', angle: 'Exclusive data for analyst report inclusion' },
-                      { type: 'Thought Leadership', platform: 'linkedin', urgency: 'this_week', angle: 'CEO perspective on AI automation maturity' },
-                    ]},
-                    { stakeholder: 'Enterprise Buyers', priority: 2, lever: 'Social Proof & ROI', items: [
-                      { type: 'Case Study', platform: null, urgency: 'this_week', angle: 'Fortune 500 beta partner results' },
-                      { type: 'Social Thread', platform: 'linkedin', urgency: 'immediate', angle: 'Customer transformation story' },
-                    ]},
-                    { stakeholder: 'Tech Community', priority: 3, lever: 'Technical Credibility', items: [
-                      { type: 'Technical Blog', platform: null, urgency: 'this_week', angle: 'Architecture deep-dive with benchmarks' },
-                      { type: 'Social Thread', platform: 'twitter', urgency: 'immediate', angle: 'Thread on why this matters for devs' },
-                    ]},
-                  ].map((campaign, i) => (
-                    <div key={i} className="bg-[#1a1a1a] rounded-lg border border-[#2e2e2e] overflow-hidden">
-                      <div className="px-4 py-3 flex items-center gap-2 border-b border-[#2e2e2e]">
-                        <Users className="w-3.5 h-3.5 text-[#c75d3a]" />
-                        <span className="text-white text-sm font-medium">{campaign.stakeholder}</span>
-                        <span className="px-1.5 py-0.5 text-[10px] bg-[#c75d3a]/10 text-[#c75d3a] rounded">P{campaign.priority}</span>
-                        <span className="text-[#555555] text-xs ml-auto">{campaign.lever}</span>
-                      </div>
-                      <div className="divide-y divide-[#2e2e2e]">
-                        {campaign.items.map((item, j) => (
-                          <div key={j} className="px-4 py-2.5 flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <span className="text-white text-xs">{item.type}</span>
-                              {item.platform && (
-                                <span className={`px-1.5 py-0.5 text-[10px] rounded ${
-                                  item.platform === 'linkedin' ? 'bg-blue-500/20 text-blue-400' :
-                                  item.platform === 'twitter' ? 'bg-sky-500/20 text-sky-400' :
-                                  'bg-[#3d3d3d] text-[#9e9e9e]'
-                                }`}>{item.platform}</span>
-                              )}
-                            </div>
-                            <span className={`px-2 py-0.5 text-[10px] rounded ${
-                              item.urgency === 'immediate' ? 'text-[#c75d3a] bg-[#c75d3a]/10' : 'text-[#757575] bg-[#3d3d3d]'
-                            }`}>{item.urgency}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Execution Timeline + Execute */}
-              <div className="p-6 bg-[#212121]">
-                <div className="text-white text-sm font-semibold mb-3" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>EXECUTION TIMELINE</div>
-                <div className="grid grid-cols-4 gap-3 mb-4">
-                  <div className="bg-[#1a1a1a] rounded-lg p-3 border border-[#2e2e2e]">
-                    <div className="text-[#c75d3a] text-xs font-semibold mb-1">IMMEDIATE</div>
-                    <div className="text-[#9e9e9e] text-xs">Press release, Social threads, Talking points</div>
-                  </div>
-                  <div className="bg-[#1a1a1a] rounded-lg p-3 border border-[#2e2e2e]">
-                    <div className="text-[#757575] text-xs font-semibold mb-1">THIS WEEK</div>
-                    <div className="text-[#9e9e9e] text-xs">Case study, Technical blog, Media pitches</div>
-                  </div>
-                  <div className="bg-[#1a1a1a] rounded-lg p-3 border border-[#2e2e2e]">
-                    <div className="text-[#757575] text-xs font-semibold mb-1">THIS MONTH</div>
-                    <div className="text-[#9e9e9e] text-xs">Webinar series, White paper</div>
-                  </div>
-                  <div className="bg-[#1a1a1a] rounded-lg p-3 border border-[#2e2e2e]">
-                    <div className="text-[#757575] text-xs font-semibold mb-1">ONGOING</div>
-                    <div className="text-[#9e9e9e] text-xs">Social cadence, Analyst updates</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 mb-4 text-xs text-[#757575]">
-                  <span>Success: Media pickup in 3+ Tier-1 outlets</span>
-                  <span>•</span>
-                  <span>Analyst mention in next MQ update</span>
-                  <span>•</span>
-                  <span>15% increase in inbound demo requests</span>
-                </div>
-                <button className="w-full py-3 bg-[#c75d3a] text-white font-semibold rounded-lg hover:bg-[#e07b5a] transition-colors flex items-center justify-center gap-2">
-                  <Zap className="w-4 h-4" />
-                  Execute — Generate All 12 Content Items
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <Target className="w-5 h-5 text-[#c75d3a]" />
-                <span className="text-[#c75d3a] text-xs font-semibold tracking-[0.2em] uppercase" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>Opportunity Engine</span>
-              </div>
-              <h2 className="text-4xl text-white mb-6" style={{ fontFamily: 'Playfair Display, serif' }}>
-                One-Click Campaign Execution
-              </h2>
-              <p className="text-[#9e9e9e] text-lg mb-8" style={{ fontFamily: 'Inter, sans-serif' }}>
-                NIV identifies strategic opportunities from market signals and creates complete execution plans. One click generates all campaign content—press releases, social posts, pitches, and more.
-              </p>
-              <ul className="space-y-3">
-                {['Automatic opportunity scoring', 'Strategic context analysis', 'Multi-stakeholder campaign plans', 'Full content generation'].map((item, i) => (
-                  <li key={i} className="flex items-center gap-3 text-[#bdbdbd]">
-                    <div className="w-5 h-5 rounded-full bg-[#c75d3a]/10 flex items-center justify-center">
-                      <Check className="w-3 h-3 text-[#c75d3a]" />
-                    </div>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Section 3: Studio */}
-      <section className="py-24 px-6 border-t border-[#1a1a1a]">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-16 items-start">
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <Palette className="w-5 h-5 text-[#c75d3a]" />
-                <span className="text-[#c75d3a] text-xs font-semibold tracking-[0.2em] uppercase" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>Studio</span>
-              </div>
-              <h2 className="text-4xl text-white mb-6" style={{ fontFamily: 'Playfair Display, serif' }}>
-                AI-Powered Content Creation
-              </h2>
-              <p className="text-[#9e9e9e] text-lg mb-8" style={{ fontFamily: 'Inter, sans-serif' }}>
-                Generate any type of communications content with organizational context. From press releases to executive statements, NIV creates on-brand content informed by your Memory Vault.
-              </p>
-              <div className="grid grid-cols-2 gap-4">
-                {[
-                  { label: 'Written', items: 'Press Release, Blog, Thought Leadership' },
-                  { label: 'Social', items: 'LinkedIn, Twitter Thread, Instagram' },
-                  { label: 'Executive', items: 'Statements, Board Decks, Investor Updates' },
-                  { label: 'Media', items: 'Pitches, Media Lists, Interview Prep' },
-                ].map((cat, i) => (
-                  <div key={i} className="p-4 bg-[#1a1a1a] rounded-lg border border-[#2e2e2e]">
-                    <div className="text-[#c75d3a] text-xs font-semibold mb-2" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>{cat.label}</div>
-                    <div className="text-[#9e9e9e] text-sm">{cat.items}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Studio Content Examples Mockup */}
-            <div className="space-y-4">
-              {/* Press Release Example */}
-              <div className="bg-[#1a1a1a] rounded-xl border border-[#2e2e2e] overflow-hidden">
-                <div className="px-4 py-3 border-b border-[#2e2e2e] flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-[#c75d3a]" />
-                    <span className="text-white text-sm font-medium">Press Release</span>
-                  </div>
-                  <span className="text-[#757575] text-xs">Generated</span>
-                </div>
-                <div className="p-5">
-                  <div className="text-[#757575] text-xs tracking-wider mb-3">FOR IMMEDIATE RELEASE</div>
-                  <h4 className="text-white text-lg font-semibold mb-3" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-                    Acme Corp Announces Industry-First AI Integration Platform, Transforming Enterprise Workflows
-                  </h4>
-                  <p className="text-[#9e9e9e] text-sm leading-relaxed mb-3">
-                    <span className="text-[#bdbdbd]">SAN FRANCISCO – {todayFormatted}</span> – Acme Corp, the leading provider of enterprise automation solutions, today announced the launch of AIFlow, a groundbreaking platform that seamlessly integrates artificial intelligence...
-                  </p>
-                  <p className="text-[#9e9e9e] text-sm leading-relaxed italic" style={{ fontFamily: 'Playfair Display, serif' }}>
-                    &quot;This represents a fundamental shift in how enterprises approach automation,&quot; said Jane Smith, CEO of Acme Corp. &quot;We&apos;ve spent two years developing technology that...&quot;
-                  </p>
-                </div>
-              </div>
-
-              {/* Two Column: LinkedIn + Executive Statement */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-[#1a1a1a] rounded-xl border border-[#2e2e2e] overflow-hidden">
-                  <div className="px-4 py-3 border-b border-[#2e2e2e] flex items-center gap-2">
-                    <Hash className="w-4 h-4 text-[#c75d3a]" />
-                    <span className="text-white text-sm font-medium">LinkedIn Post</span>
-                  </div>
-                  <div className="p-4">
-                    <p className="text-[#bdbdbd] text-sm leading-relaxed">
-                      Excited to share that we&apos;ve just launched AIFlow — transforming how enterprises work.
-                      <br /><br />
-                      After 18 months of development with Fortune 500 beta partners, we&apos;ve proven that AI automation can deliver 40% efficiency gains...
-                    </p>
-                  </div>
-                </div>
-
-                <div className="bg-[#1a1a1a] rounded-xl border border-[#2e2e2e] overflow-hidden">
-                  <div className="px-4 py-3 border-b border-[#2e2e2e] flex items-center gap-2">
-                    <Users className="w-4 h-4 text-[#c75d3a]" />
-                    <span className="text-white text-sm font-medium">Executive Statement</span>
-                  </div>
-                  <div className="p-4">
-                    <p className="text-[#bdbdbd] text-sm leading-relaxed italic" style={{ fontFamily: 'Playfair Display, serif' }}>
-                      &quot;Our commitment to innovation has never been stronger. Today marks a pivotal moment in our company&apos;s journey toward redefining what&apos;s possible...&quot;
-                    </p>
-                    <p className="text-[#757575] text-xs mt-3">— Jane Smith, CEO</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Section 4: Presentations */}
-      <section className="py-24 px-6 bg-[#0d0d0d] border-t border-[#1a1a1a]">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-16 items-start">
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <Presentation className="w-5 h-5 text-[#c75d3a]" />
-                <span className="text-[#c75d3a] text-xs font-semibold tracking-[0.2em] uppercase" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>Presentations</span>
-              </div>
-              <h2 className="text-4xl text-white mb-6" style={{ fontFamily: 'Playfair Display, serif' }}>
-                From Insight to <em className="text-[#c75d3a]">Presentation</em> in Minutes
-              </h2>
-              <p className="text-[#9e9e9e] text-lg mb-8" style={{ fontFamily: 'Inter, sans-serif' }}>
-                Work with NIV to create beautiful, professional presentations on any topic. Whether it&apos;s a campaign blueprint, executive briefing, board deck, or strategic analysis—NIV transforms your ideas into polished, ready-to-present materials.
-              </p>
-              <ul className="space-y-3 mb-8">
-                {['Campaign blueprints & strategies', 'Executive briefings & board decks', 'Competitive analyses & market reports', 'Crisis communication plans', 'Any custom topic you need'].map((item, i) => (
-                  <li key={i} className="flex items-center gap-3 text-[#bdbdbd]">
-                    <div className="w-5 h-5 rounded-full bg-[#c75d3a]/10 flex items-center justify-center">
-                      <Check className="w-3 h-3 text-[#c75d3a]" />
-                    </div>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-
-              {/* How it works */}
-              <div className="bg-[#1a1a1a] rounded-xl border border-[#2e2e2e] p-6">
-                <div className="text-white text-sm font-semibold mb-4" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>HOW IT WORKS</div>
-                <div className="space-y-4">
-                  {[
-                    { step: '1', title: 'Describe what you need', desc: 'Tell NIV what presentation you want to create' },
-                    { step: '2', title: 'NIV researches & structures', desc: 'AI gathers insights and builds your narrative' },
-                    { step: '3', title: 'Review & refine together', desc: 'Iterate with NIV until it\'s perfect' },
-                    { step: '4', title: 'Export & present', desc: 'Download or present directly from NIV' },
-                  ].map((item, i) => (
-                    <div key={i} className="flex items-start gap-4">
-                      <div className="w-8 h-8 rounded-full bg-[#c75d3a]/10 border border-[#c75d3a]/30 flex items-center justify-center flex-shrink-0">
-                        <span className="text-[#c75d3a] text-sm font-bold">{item.step}</span>
-                      </div>
-                      <div>
-                        <div className="text-white text-sm font-medium">{item.title}</div>
-                        <div className="text-[#757575] text-xs">{item.desc}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Presentation Visual Mockup */}
-            <div className="space-y-4">
-              {/* Main Presentation Slide */}
-              <div className="bg-[#1a1a1a] rounded-2xl border border-[#2e2e2e] overflow-hidden">
-                {/* Slide Header */}
-                <div className="px-4 py-3 border-b border-[#2e2e2e] flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Presentation className="w-4 h-4 text-[#c75d3a]" />
-                    <span className="text-white text-sm font-medium">Campaign Blueprint</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[#757575] text-xs">Slide 1 of 8</span>
-                    <div className="flex gap-1">
-                      <div className="w-2 h-2 rounded-full bg-[#c75d3a]"></div>
-                      <div className="w-2 h-2 rounded-full bg-[#3d3d3d]"></div>
-                      <div className="w-2 h-2 rounded-full bg-[#3d3d3d]"></div>
-                      <div className="w-2 h-2 rounded-full bg-[#3d3d3d]"></div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Slide Content */}
-                <div className="p-8 bg-gradient-to-br from-[#1a1a1a] to-[#212121]">
-                  <div className="text-[#c75d3a] text-xs font-semibold tracking-[0.15em] uppercase mb-2" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>STRATEGIC BLUEPRINT</div>
-                  <h3 className="text-white text-2xl font-semibold mb-4" style={{ fontFamily: 'Playfair Display, serif' }}>
-                    AI Leadership <em className="text-[#c75d3a]">Positioning</em> Campaign
-                  </h3>
-                  <p className="text-[#9e9e9e] text-sm mb-6">Establish thought leadership in enterprise AI before competitor narratives solidify</p>
-
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="bg-[#2a2a2a] rounded-lg p-4 border border-[#3d3d3d]">
-                      <div className="text-[#c75d3a] text-2xl font-bold mb-1" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>72hr</div>
-                      <div className="text-[#757575] text-xs">Window</div>
-                    </div>
-                    <div className="bg-[#2a2a2a] rounded-lg p-4 border border-[#3d3d3d]">
-                      <div className="text-white text-2xl font-bold mb-1" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>23</div>
-                      <div className="text-[#757575] text-xs">Content Pieces</div>
-                    </div>
-                    <div className="bg-[#2a2a2a] rounded-lg p-4 border border-[#3d3d3d]">
-                      <div className="text-white text-2xl font-bold mb-1" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>3</div>
-                      <div className="text-[#757575] text-xs">Stakeholder Groups</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Slide Thumbnails */}
-              <div className="grid grid-cols-4 gap-3">
-                {/* Executive Summary */}
-                <div className="bg-[#1a1a1a] rounded-lg border border-[#2e2e2e] p-2 cursor-pointer hover:border-[#c75d3a]/50 transition-colors">
-                  <div className="bg-[#212121] rounded p-2 mb-2">
-                    <div className="w-full h-1 bg-[#c75d3a]/40 rounded mb-1.5"></div>
-                    <div className="w-3/4 h-0.5 bg-[#3d3d3d] rounded mb-1"></div>
-                    <div className="w-full h-0.5 bg-[#3d3d3d] rounded mb-1"></div>
-                    <div className="flex gap-1 mt-2">
-                      <div className="flex-1 h-4 bg-[#2a2a2a] rounded"></div>
-                      <div className="flex-1 h-4 bg-[#2a2a2a] rounded"></div>
-                    </div>
-                  </div>
-                  <div className="text-[#9e9e9e] text-xs truncate">Executive Summary</div>
-                </div>
-
-                {/* Market Analysis */}
-                <div className="bg-[#1a1a1a] rounded-lg border border-[#2e2e2e] p-2 cursor-pointer hover:border-[#c75d3a]/50 transition-colors">
-                  <div className="bg-[#212121] rounded p-2 mb-2">
-                    <div className="w-2/3 h-1 bg-[#c75d3a]/40 rounded mb-1.5"></div>
-                    <div className="flex items-end gap-0.5 h-6 mt-1">
-                      <div className="flex-1 bg-[#c75d3a]/30 rounded-t" style={{ height: '40%' }}></div>
-                      <div className="flex-1 bg-[#c75d3a]/40 rounded-t" style={{ height: '60%' }}></div>
-                      <div className="flex-1 bg-[#c75d3a]/50 rounded-t" style={{ height: '80%' }}></div>
-                      <div className="flex-1 bg-[#c75d3a]/60 rounded-t" style={{ height: '100%' }}></div>
-                    </div>
-                  </div>
-                  <div className="text-[#9e9e9e] text-xs truncate">Market Analysis</div>
-                </div>
-
-                {/* Strategic Approach */}
-                <div className="bg-[#1a1a1a] rounded-lg border border-[#2e2e2e] p-2 cursor-pointer hover:border-[#c75d3a]/50 transition-colors">
-                  <div className="bg-[#212121] rounded p-2 mb-2">
-                    <div className="w-3/4 h-1 bg-[#c75d3a]/40 rounded mb-1.5"></div>
-                    <div className="space-y-1 mt-1">
-                      <div className="flex items-center gap-1">
-                        <div className="w-1.5 h-1.5 rounded-full bg-[#c75d3a]/50"></div>
-                        <div className="flex-1 h-0.5 bg-[#3d3d3d] rounded"></div>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <div className="w-1.5 h-1.5 rounded-full bg-[#c75d3a]/50"></div>
-                        <div className="flex-1 h-0.5 bg-[#3d3d3d] rounded"></div>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <div className="w-1.5 h-1.5 rounded-full bg-[#c75d3a]/50"></div>
-                        <div className="flex-1 h-0.5 bg-[#3d3d3d] rounded"></div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-[#9e9e9e] text-xs truncate">Strategic Approach</div>
-                </div>
-
-                {/* Timeline & KPIs */}
-                <div className="bg-[#1a1a1a] rounded-lg border border-[#2e2e2e] p-2 cursor-pointer hover:border-[#c75d3a]/50 transition-colors">
-                  <div className="bg-[#212121] rounded p-2 mb-2">
-                    <div className="w-2/3 h-1 bg-[#c75d3a]/40 rounded mb-1.5"></div>
-                    <div className="flex items-center gap-0.5 mt-2">
-                      <div className="w-2 h-2 rounded-full bg-[#c75d3a]/50"></div>
-                      <div className="flex-1 h-0.5 bg-[#3d3d3d]"></div>
-                      <div className="w-2 h-2 rounded-full bg-[#3d3d3d]"></div>
-                      <div className="flex-1 h-0.5 bg-[#3d3d3d]"></div>
-                      <div className="w-2 h-2 rounded-full bg-[#3d3d3d]"></div>
-                    </div>
-                    <div className="flex gap-1 mt-1.5">
-                      <div className="flex-1 h-2 bg-[#2a2a2a] rounded text-center">
-                        <span className="text-[4px] text-[#555]">Q1</span>
-                      </div>
-                      <div className="flex-1 h-2 bg-[#2a2a2a] rounded"></div>
-                    </div>
-                  </div>
-                  <div className="text-[#9e9e9e] text-xs truncate">Timeline & KPIs</div>
-                </div>
-              </div>
-
-              {/* NIV Chat Integration */}
-              <div className="bg-[#1a1a1a] rounded-xl border border-[#2e2e2e] p-4">
-                <div className="flex items-start gap-3">
-                  <svg width="32" height="32" viewBox="0 0 72 72" className="flex-shrink-0">
-                    <rect width="72" height="72" rx="16" fill="#faf9f7" />
-                    <text x="10" y="50" fontFamily="Space Grotesk, sans-serif" fontWeight="700" fontSize="36" fill="#1a1a1a">NIV</text>
-                    <polygon points="58,0 72,0 72,14" fill="#c75d3a" />
-                  </svg>
-                  <div className="flex-1">
-                    <p className="text-[#bdbdbd] text-sm mb-3">
-                      I&apos;ve created an 8-slide blueprint based on your AI partnership response strategy. Want me to add a competitive analysis section or adjust the timeline?
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      <button className="px-3 py-1.5 bg-[#c75d3a] text-white text-xs rounded-lg">Add Competitive Analysis</button>
-                      <button className="px-3 py-1.5 bg-[#3d3d3d] text-[#bdbdbd] text-xs rounded-lg">Adjust Timeline</button>
-                      <button className="px-3 py-1.5 bg-[#3d3d3d] text-[#bdbdbd] text-xs rounded-lg">Export PDF</button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Section 5: VECTOR Campaign Builder */}
-      <section className="py-24 px-6 border-t border-[#1a1a1a]">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <Layers className="w-5 h-5 text-[#c75d3a]" />
-              <span className="text-[#c75d3a] text-xs font-semibold tracking-[0.2em] uppercase" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>VECTOR Campaign Builder</span>
-            </div>
-            <h2 className="text-4xl text-white mb-6" style={{ fontFamily: 'Playfair Display, serif' }}>
-              Multi-Stakeholder Influence Orchestration
-            </h2>
-            <p className="text-[#9e9e9e] text-lg max-w-3xl mx-auto" style={{ fontFamily: 'Inter, sans-serif' }}>
-              VECTOR campaigns coordinate messaging across stakeholder groups through four strategic phases, leveraging psychological insights to maximize influence and narrative control.
-            </p>
-          </div>
-
-          {/* VECTOR Matrix Mockup */}
-          <div className="bg-[#1a1a1a] rounded-2xl border border-[#2e2e2e] overflow-hidden">
-            {/* Campaign Header */}
-            <div className="p-6 border-b border-[#2e2e2e]">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-white text-xl font-semibold mb-1" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>VECTOR CAMPAIGN: AI Leadership Positioning</h3>
-                  <p className="text-[#757575] text-sm">23 content pieces • 3 stakeholder groups • 8-week timeline</p>
-                </div>
-                <div className="px-4 py-2 bg-[#c75d3a]/10 rounded-lg border border-[#c75d3a]/30">
-                  <div className="text-[#c75d3a] text-xs font-semibold mb-0.5">PATTERN</div>
-                  <div className="text-white text-sm font-medium">CASCADE</div>
-                </div>
-              </div>
-              <p className="text-[#9e9e9e] text-sm mt-3 italic">&quot;Influencer groups shift first, creating validation for mass adoption&quot;</p>
-            </div>
-
-            {/* Matrix */}
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-[#2e2e2e]">
-                    <th className="p-4 text-left text-[#757575] text-xs font-semibold" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>STAKEHOLDER</th>
-                    <th className="p-4 text-center text-[#757575] text-xs font-semibold border-l border-[#2e2e2e]" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-                      <div>AWARENESS</div>
-                      <div className="text-[#555555] font-normal mt-1">Week 1-2</div>
-                    </th>
-                    <th className="p-4 text-center text-[#757575] text-xs font-semibold border-l border-[#2e2e2e]" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-                      <div>CONSIDERATION</div>
-                      <div className="text-[#555555] font-normal mt-1">Week 3-4</div>
-                    </th>
-                    <th className="p-4 text-center text-[#757575] text-xs font-semibold border-l border-[#2e2e2e]" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-                      <div>CONVERSION</div>
-                      <div className="text-[#555555] font-normal mt-1">Week 5-6</div>
-                    </th>
-                    <th className="p-4 text-center text-[#757575] text-xs font-semibold border-l border-[#2e2e2e]" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-                      <div>ADVOCACY</div>
-                      <div className="text-[#555555] font-normal mt-1">Week 7+</div>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[
-                    {
-                      name: 'Industry Analysts',
-                      bias: 'Authority bias, early-adopter identity',
-                      cells: [
-                        ['Thought leadership', 'Embargo briefings'],
-                        ['Deep-dive briefings', '1:1 analyst calls'],
-                        ['Case studies', 'Demo access'],
-                        ['Speaking circuit', 'Quote inclusions']
-                      ]
-                    },
-                    {
-                      name: 'Enterprise Buyers',
-                      bias: 'Loss aversion, social proof from analysts',
-                      cells: [
-                        ['PR coverage', 'LinkedIn campaign'],
-                        ['Webinar series', 'White papers'],
-                        ['ROI calculator', 'Free trial'],
-                        ['Customer stories', 'Reference program']
-                      ]
-                    },
-                    {
-                      name: 'Tech Community',
-                      bias: 'Technical credibility, innovation identity',
-                      cells: [
-                        ['Social threads', 'Reddit AMA'],
-                        ['Technical blogs', 'API documentation'],
-                        ['GitHub access', 'Beta program'],
-                        ['Community champions', 'Open source']
-                      ]
-                    }
-                  ].map((row, i) => (
-                    <tr key={i} className="border-b border-[#2e2e2e] last:border-b-0">
-                      <td className="p-4">
-                        <div className="text-white text-sm font-medium mb-1">{row.name}</div>
-                        <div className="text-[#555555] text-xs">{row.bias}</div>
-                      </td>
-                      {row.cells.map((cell, j) => (
-                        <td key={j} className="p-4 border-l border-[#2e2e2e]">
-                          <ul className="space-y-1">
-                            {cell.map((item, k) => (
-                              <li key={k} className="text-[#9e9e9e] text-xs flex items-center gap-1">
-                                <span className="text-[#c75d3a]">•</span> {item}
-                              </li>
-                            ))}
-                          </ul>
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Psychological Leverage Footer */}
-            <div className="p-6 bg-[#212121] border-t border-[#2e2e2e]">
-              <div className="text-white text-sm font-semibold mb-3" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>PSYCHOLOGICAL LEVERAGE</div>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="text-[#9e9e9e] text-sm"><span className="text-[#c75d3a]">Analysts:</span> Authority bias, early-adopter identity</div>
-                <div className="text-[#9e9e9e] text-sm"><span className="text-[#c75d3a]">Buyers:</span> Loss aversion, social proof validation</div>
-                <div className="text-[#9e9e9e] text-sm"><span className="text-[#c75d3a]">Community:</span> Technical credibility, innovation identity</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Section 5b: GEO Intelligence */}
-      <section className="py-24 px-6 border-t border-[#1a1a1a]">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-16 items-start">
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <Globe className="w-5 h-5 text-[#c75d3a]" />
-                <span className="text-[#c75d3a] text-xs font-semibold tracking-[0.2em] uppercase" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>GEO Intelligence</span>
-              </div>
-              <h2 className="text-4xl text-white mb-6" style={{ fontFamily: 'Playfair Display, serif' }}>
-                AI Platform Visibility
-              </h2>
-              <p className="text-[#9e9e9e] text-lg mb-8" style={{ fontFamily: 'Inter, sans-serif' }}>
-                Optimize your organization&apos;s presence in AI-powered search and recommendation systems. GEO generates Schema.org structured data and tracks visibility across major AI platforms.
-              </p>
-              <ul className="space-y-3">
-                {['Schema.org structured data generation', 'Multi-platform AI visibility tracking', 'Competitive visibility analysis', 'Optimization recommendations'].map((item, i) => (
-                  <li key={i} className="flex items-center gap-3 text-[#bdbdbd]">
-                    <div className="w-5 h-5 rounded-full bg-[#c75d3a]/10 flex items-center justify-center">
-                      <Check className="w-3 h-3 text-[#c75d3a]" />
-                    </div>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* GEO Mockup */}
-            <div className="space-y-4">
-              {/* Schema Preview */}
-              <div className="bg-[#1a1a1a] rounded-xl border border-[#2e2e2e] overflow-hidden">
-                <div className="px-4 py-3 border-b border-[#2e2e2e] flex items-center justify-between">
-                  <span className="text-white text-sm font-medium">Generated Schema</span>
-                  <div className="flex items-center gap-2">
-                    <Check className="w-3 h-3 text-green-400" />
-                    <span className="text-green-400 text-xs">Validated</span>
-                  </div>
-                </div>
-                <div className="p-4 font-mono text-xs overflow-x-auto">
-                  <pre className="text-[#9e9e9e]">
-{`<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "Organization",
-  "name": "Acme Corp",
-  "description": "Enterprise AI automation leader",
-  "url": "https://acme.com",
-  "founder": {
-    "@type": "Person",
-    "name": "Jane Smith",
-    "jobTitle": "CEO"
-  },
-  "knowsAbout": [
-    "Artificial Intelligence",
-    "Enterprise Automation"
-  ]
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+  return visible
 }
-</script>`}
-                  </pre>
-                </div>
-                <div className="px-4 py-3 bg-[#212121] border-t border-[#2e2e2e] flex items-center gap-4">
-                  <span className="text-[#757575] text-xs">✓ 12 entities defined</span>
-                  <span className="text-[#757575] text-xs">✓ Rich snippets eligible</span>
-                </div>
-              </div>
 
-              {/* AI Platform Visibility */}
-              <div className="bg-[#1a1a1a] rounded-xl border border-[#2e2e2e] p-6">
-                <div className="text-white text-sm font-semibold mb-4" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>AI PLATFORM VISIBILITY</div>
-                <div className="grid grid-cols-2 gap-4">
-                  {[
-                    { name: 'ChatGPT', logo: '🤖', score: 72, trend: '+12%', color: 'text-green-400' },
-                    { name: 'Gemini', logo: '✨', score: 58, trend: '+8%', color: 'text-green-400' },
-                    { name: 'Perplexity', logo: '🔍', score: 84, trend: '+23%', color: 'text-green-400' },
-                    { name: 'Claude', logo: '🧠', score: 45, trend: '-3%', color: 'text-red-400' },
-                  ].map((platform, i) => (
-                    <div key={i} className="bg-[#212121] rounded-lg p-4 border border-[#2e2e2e]">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xl">{platform.logo}</span>
-                          <span className="text-white text-sm font-medium">{platform.name}</span>
-                        </div>
-                        <span className={`text-xs ${platform.color}`}>{platform.trend} MTD</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="flex-1 h-2 bg-[#3d3d3d] rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-[#c75d3a] rounded-full"
-                            style={{ width: `${platform.score}%` }}
-                          ></div>
-                        </div>
-                        <span className="text-white text-sm font-semibold">{platform.score}%</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-4 pt-4 border-t border-[#2e2e2e]">
-                  <div className="text-[#757575] text-xs mb-2">TOP QUERIES WHERE YOU APPEAR:</div>
-                  <div className="space-y-1">
-                    <div className="text-[#9e9e9e] text-sm">&quot;best enterprise AI tools&quot; — <span className="text-[#c75d3a]">Position #3</span></div>
-                    <div className="text-[#9e9e9e] text-sm">&quot;AI automation platforms&quot; — <span className="text-[#c75d3a]">Position #5</span></div>
-                    <div className="text-[#757575] text-sm">&quot;machine learning for business&quot; — <span className="text-red-400">Not ranking</span></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+// ============================================================================
+// NIVRIA — Homepage
+// Built to the three rules:
+//   1. The headline IS the identity
+//   2. The description sits directly under the headline (defines connectome)
+//   3. The supporting graphic sits under the description (the product, visible)
+// ============================================================================
 
-      {/* Section 6: Crisis Command */}
-      <section className="py-24 px-6 bg-[#0d0d0d] border-t border-[#1a1a1a]">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-16 items-start">
-            {/* Crisis Mockup */}
-            <div className="bg-[#1a1a1a] rounded-2xl border border-[#2e2e2e] overflow-hidden">
-              {/* Header */}
-              <div className="p-6 border-b border-[#2e2e2e]">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-[#c75d3a] rounded-lg flex items-center justify-center">
-                      <Shield className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="text-white text-lg font-semibold" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>Crisis Command</h3>
-                      <p className="text-[#757575] text-sm">Readiness Dashboard</p>
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[#9e9e9e] text-sm">Overall Readiness</span>
-                    <span className="text-white text-sm font-semibold">78%</span>
-                  </div>
-                  <div className="h-2 bg-[#3d3d3d] rounded-full overflow-hidden">
-                    <div className="h-full bg-[#c75d3a] rounded-full" style={{ width: '78%' }}></div>
-                  </div>
-                </div>
-              </div>
+// ─── Illustrative example: a nickel processing JV in formation ──────────
+// Generic by design — sector + role rather than named individuals.
+type Stance = 'against' | 'neutral' | 'aligned'
+type Sector = 'gov' | 'capital' | 'community' | 'media'
 
-              {/* Crisis Scenarios */}
-              <div className="p-6 border-b border-[#2e2e2e]">
-                <div className="text-white text-sm font-semibold mb-4" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>CRISIS SCENARIOS</div>
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { severity: 'CRITICAL', color: 'red', title: 'Data Breach Response', desc: 'Unauthorized access to customer data detected', likelihood: 'HIGH' },
-                    { severity: 'HIGH', color: 'orange', title: 'Executive Misconduct', desc: 'Allegations of improper conduct by senior leader', likelihood: 'MEDIUM' },
-                    { severity: 'HIGH', color: 'orange', title: 'Product Safety Recall', desc: 'Product defect requiring public announcement', likelihood: 'LOW' },
-                    { severity: 'MODERATE', color: 'yellow', title: 'Social Media Backlash', desc: 'Viral negative content threatening brand', likelihood: 'HIGH' },
-                  ].map((scenario, i) => (
-                    <div key={i} className="bg-[#212121] rounded-lg p-4 border border-[#2e2e2e] hover:border-[#c75d3a]/50 transition-colors cursor-pointer">
-                      <div className={`text-xs font-semibold mb-2 ${
-                        scenario.color === 'red' ? 'text-red-400' :
-                        scenario.color === 'orange' ? 'text-[#c75d3a]' : 'text-yellow-400'
-                      }`}>
-                        {scenario.color === 'red' ? '🔴' : scenario.color === 'orange' ? '🟠' : '🟡'} {scenario.severity}
-                      </div>
-                      <h4 className="text-white text-sm font-medium mb-1">{scenario.title}</h4>
-                      <p className="text-[#757575] text-xs mb-2">{scenario.desc}</p>
-                      <div className="flex items-center justify-between">
-                        <span className="text-[#555555] text-xs">Likelihood: {scenario.likelihood}</span>
-                        <span className="text-[#c75d3a] text-xs">View →</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+interface Node {
+  n: number
+  name: string
+  role: string
+  stance: Stance
+  sector: Sector
+  inf: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
+  x: number
+  y: number
+  r: number
+  /** label position offset from dot center */
+  lx: number
+  ly: number
+  /** label anchor */
+  la: 'start' | 'middle' | 'end'
+}
 
-              {/* Crisis Team */}
-              <div className="p-6 bg-[#212121]">
-                <div className="text-white text-sm font-semibold mb-3" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>CRISIS TEAM READINESS</div>
-                <div className="space-y-2">
-                  {[
-                    { role: 'Crisis Lead (CEO)', assigned: true },
-                    { role: 'Comms Lead (VP Comms)', assigned: true },
-                    { role: 'Legal Counsel', assigned: true },
-                    { role: 'Technical Lead', assigned: false },
-                    { role: 'HR Representative', assigned: false },
-                  ].map((member, i) => (
-                    <div key={i} className="flex items-center justify-between">
-                      <span className="text-[#9e9e9e] text-sm">{member.role}</span>
-                      {member.assigned ? (
-                        <span className="text-green-400 text-xs flex items-center gap-1">
-                          <Check className="w-3 h-3" /> Assigned
-                        </span>
-                      ) : (
-                        <span className="text-[#757575] text-xs flex items-center gap-1">
-                          <AlertTriangle className="w-3 h-3 text-yellow-400" /> Not Assigned
-                        </span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+// SVG viewBox 0 0 760 540 — split into four sector quadrants
+const NODES: Node[] = [
+  // ── GOVERNMENT & JUDICIARY (top-left quadrant) ──
+  { n: 1,  name: 'Head of state',         role: 'Executive',         stance: 'against', sector: 'gov',       inf: 9, x: 175, y: 100, r: 22, lx: 0,   ly: -34, la: 'middle' },
+  { n: 2,  name: 'Constitutional court',  role: 'Judiciary',         stance: 'against', sector: 'gov',       inf: 9, x: 95,  y: 175, r: 22, lx: -32, ly:  4,  la: 'end'    },
+  { n: 3,  name: 'Min. of environment',   role: 'Cabinet',           stance: 'against', sector: 'gov',       inf: 8, x: 245, y: 175, r: 19, lx: 28,  ly:  4,  la: 'start'  },
+  { n: 4,  name: 'Opposition coalition',  role: 'Legislature',       stance: 'against', sector: 'gov',       inf: 7, x: 70,  y: 270, r: 17, lx: -28, ly:  4,  la: 'end'    },
+  { n: 5,  name: 'Attorney general',      role: 'Public ministry',   stance: 'neutral', sector: 'gov',       inf: 7, x: 175, y: 250, r: 17, lx: 0,   ly: 30,  la: 'middle' },
+  { n: 6,  name: 'Min. of commerce',      role: 'Cabinet',           stance: 'neutral', sector: 'gov',       inf: 7, x: 290, y: 270, r: 17, lx: 26,  ly:  4,  la: 'start'  },
 
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <Shield className="w-5 h-5 text-[#c75d3a]" />
-                <span className="text-[#c75d3a] text-xs font-semibold tracking-[0.2em] uppercase" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>Crisis Command</span>
-              </div>
-              <h2 className="text-4xl text-white mb-6" style={{ fontFamily: 'Playfair Display, serif' }}>
-                Crisis Readiness & Response
-              </h2>
-              <p className="text-[#9e9e9e] text-lg mb-8" style={{ fontFamily: 'Inter, sans-serif' }}>
-                Pre-built crisis playbooks tailored to your organization. NIV generates comprehensive crisis plans with scenario-specific response protocols, stakeholder communications, and real-time AI guidance during active situations.
-              </p>
-              <ul className="space-y-3">
-                {['AI-generated crisis plans', 'Scenario-specific playbooks', 'Team role assignments', 'Real-time crisis AI assistant'].map((item, i) => (
-                  <li key={i} className="flex items-center gap-3 text-[#bdbdbd]">
-                    <div className="w-5 h-5 rounded-full bg-[#c75d3a]/10 flex items-center justify-center">
-                      <Check className="w-3 h-3 text-[#c75d3a]" />
-                    </div>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
+  // ── OPERATORS & CAPITAL (top-right) ──
+  { n: 7,  name: 'Lead operator',         role: 'Sponsor',           stance: 'aligned', sector: 'capital',   inf: 8, x: 500, y: 115, r: 21, lx: 0,   ly: -32, la: 'middle' },
+  { n: 8,  name: 'Anchor lender (DFI)',   role: 'Senior debt',       stance: 'aligned', sector: 'capital',   inf: 7, x: 640, y: 165, r: 18, lx: 28,  ly:  4,  la: 'start'  },
+  { n: 9,  name: 'EPC contractor',        role: 'Build partner',     stance: 'aligned', sector: 'capital',   inf: 6, x: 430, y: 215, r: 16, lx: -26, ly:  4,  la: 'end'    },
+  { n: 10, name: 'Royalty partner',       role: 'Off-take',          stance: 'aligned', sector: 'capital',   inf: 6, x: 580, y: 260, r: 16, lx: 26,  ly:  4,  la: 'start'  },
 
-      {/* Section 7: NIV Advisor */}
-      <section className="py-24 px-6 border-t border-[#1a1a1a]">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-16 items-start">
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <MessageSquare className="w-5 h-5 text-[#c75d3a]" />
-                <span className="text-[#c75d3a] text-xs font-semibold tracking-[0.2em] uppercase" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>NIV Advisor</span>
-              </div>
-              <h2 className="text-4xl text-white mb-6" style={{ fontFamily: 'Playfair Display, serif' }}>
-                Your AI Communications Partner
-              </h2>
-              <p className="text-[#9e9e9e] text-lg mb-8" style={{ fontFamily: 'Inter, sans-serif' }}>
-                NIV is your always-available strategic advisor. Ask anything about your organization, get recommendations on opportunities, generate content, or navigate crisis situations—all with full organizational context.
-              </p>
-              <ul className="space-y-3">
-                {['Organizational context awareness', 'Strategic recommendations', 'Any content type generation', 'Memory across conversations'].map((item, i) => (
-                  <li key={i} className="flex items-center gap-3 text-[#bdbdbd]">
-                    <div className="w-5 h-5 rounded-full bg-[#c75d3a]/10 flex items-center justify-center">
-                      <Check className="w-3 h-3 text-[#c75d3a]" />
-                    </div>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
+  // ── COMMUNITY & GROUND (bottom-left) ──
+  { n: 11, name: 'Affected community',    role: 'Coastal pop.',      stance: 'neutral', sector: 'community', inf: 7, x: 150, y: 370, r: 17, lx: -28, ly:  4,  la: 'end'    },
+  { n: 12, name: 'Indigenous council',    role: 'Traditional auth.', stance: 'against', sector: 'community', inf: 6, x: 80,  y: 450, r: 16, lx: 0,   ly: 32,  la: 'middle' },
+  { n: 13, name: 'Labor union',           role: 'Workforce',         stance: 'aligned', sector: 'community', inf: 5, x: 245, y: 445, r: 15, lx: 0,   ly: 30,  la: 'middle' },
 
-            {/* NIV Chat Mockup */}
-            <div className="bg-[#1a1a1a] rounded-2xl border border-[#2e2e2e] overflow-hidden">
-              {/* NIV Header with Badge */}
-              <div className="p-6 border-b border-[#2e2e2e] flex items-center gap-4">
-                {/* NIV Square Icon - Primary Icon (Light) */}
-                <svg width="56" height="56" viewBox="0 0 72 72">
-                  <rect width="72" height="72" rx="16" fill="#faf9f7" />
-                  <text
-                    x="10"
-                    y="50"
-                    fontFamily="Space Grotesk, sans-serif"
-                    fontWeight="700"
-                    fontSize="36"
-                    fill="#1a1a1a"
-                  >
-                    NIV
-                  </text>
-                  <polygon points="58,0 72,0 72,14" fill="#c75d3a" />
-                </svg>
-                <div>
-                  <h3 className="text-white text-lg font-semibold" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>NIV Advisor</h3>
-                  <p className="text-[#757575] text-sm">Neural Intelligence Vehicle</p>
-                </div>
-              </div>
+  // ── MEDIA & SCRUTINY (bottom-right) ──
+  { n: 14, name: 'National daily',        role: 'Print press',       stance: 'neutral', sector: 'media',     inf: 7, x: 460, y: 360, r: 17, lx: -26, ly:  4,  la: 'end'    },
+  { n: 15, name: 'Regional broadcaster',  role: 'Broadcast',         stance: 'aligned', sector: 'media',     inf: 5, x: 620, y: 400, r: 15, lx: 26,  ly:  4,  la: 'start'  },
+  { n: 16, name: 'Investigative watchdog',role: 'Online',            stance: 'against', sector: 'media',     inf: 6, x: 510, y: 460, r: 16, lx: 0,   ly: 30,  la: 'middle' },
+]
 
-              {/* Chat Messages */}
-              <div className="p-6 space-y-4 max-h-96">
-                {/* User Message */}
-                <div className="flex justify-end">
-                  <div className="bg-[#3d3d3d] rounded-2xl rounded-tr-md px-4 py-3 max-w-[80%]">
-                    <p className="text-white text-sm">What opportunities should I prioritize this week?</p>
-                  </div>
-                </div>
+interface Link {
+  a: number   // index into NODES
+  b: number
+  kind: 'iron' | 'forest' | 'bronze'
+}
 
-                {/* NIV Response */}
-                <div className="flex justify-start">
-                  <div className="bg-[#212121] rounded-2xl rounded-tl-md px-4 py-3 max-w-[90%] border border-[#2e2e2e]">
-                    <p className="text-[#bdbdbd] text-sm mb-4">Based on my analysis of 47 signals from the past 48 hours, I recommend prioritizing:</p>
+const LINKS: Link[] = [
+  // Resistance alliance (iron) — government bloc + their pressure points
+  { a: 0,  b: 1,  kind: 'iron' },
+  { a: 0,  b: 2,  kind: 'iron' },
+  { a: 1,  b: 2,  kind: 'iron' },
+  { a: 1,  b: 3,  kind: 'iron' },
+  { a: 2,  b: 4,  kind: 'iron' },
+  { a: 3,  b: 4,  kind: 'iron' },
+  { a: 11, b: 0,  kind: 'iron' },   // indigenous → head of state
+  { a: 15, b: 2,  kind: 'iron' },   // watchdog → environment ministry
+  // Aligned coalitions (forest)
+  { a: 6,  b: 7,  kind: 'forest' },
+  { a: 6,  b: 8,  kind: 'forest' },
+  { a: 7,  b: 8,  kind: 'forest' },
+  { a: 6,  b: 9,  kind: 'forest' },
+  { a: 12, b: 6,  kind: 'forest' },   // labor → operator
+  { a: 14, b: 6,  kind: 'forest' },   // regional broadcaster → operator
+  // Cross-stance dependencies (bronze, dotted) — the score's pressure points
+  { a: 5,  b: 6,  kind: 'bronze' },   // commerce → operator
+  { a: 4,  b: 6,  kind: 'bronze' },   // attorney general → operator
+  { a: 13, b: 6,  kind: 'bronze' },   // press → operator
+  { a: 13, b: 0,  kind: 'bronze' },   // press → head of state
+  { a: 10, b: 8,  kind: 'bronze' },   // community → EPC
+  { a: 5,  b: 0,  kind: 'bronze' },   // attorney general → head of state
+]
 
-                    <div className="space-y-3 mb-4">
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-green-500/10 border border-green-500/30 flex items-center justify-center flex-shrink-0">
-                          <span className="text-green-400 text-xs font-bold">92</span>
-                        </div>
-                        <div>
-                          <div className="text-white text-sm font-medium">AI Partnership Response</div>
-                          <div className="text-[#757575] text-xs">72-hour window before narrative solidifies</div>
-                          <div className="text-[#c75d3a] text-xs mt-1">→ Execute now for maximum impact</div>
-                        </div>
-                      </div>
+// Sector zone background labels
+const SECTORS: { label: string; x: number; y: number; align: 'start' | 'end' }[] = [
+  { label: 'Government & judiciary', x: 30,  y: 38,  align: 'start' },
+  { label: 'Operators & capital',    x: 730, y: 38,  align: 'end'   },
+  { label: 'Community & ground',     x: 30,  y: 516, align: 'start' },
+  { label: 'Media & scrutiny',       x: 730, y: 516, align: 'end'   },
+]
 
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-center flex-shrink-0">
-                          <span className="text-yellow-400 text-xs font-bold">78</span>
-                        </div>
-                        <div>
-                          <div className="text-white text-sm font-medium">Earnings Narrative Setup</div>
-                          <div className="text-[#757575] text-xs">Q4 results release in 2 weeks</div>
-                          <div className="text-[#9e9e9e] text-xs mt-1">→ Begin analyst briefings this week</div>
-                        </div>
-                      </div>
-                    </div>
+const SUBSCORES = [
+  { k: 'Alignment health',  v: 50, note: 'Government bloc opposed at L3+; capital + operators aligned.' },
+  { k: 'Trust trajectory',  v: 42, note: 'Slipping — no upward movement on the deal-breaker bloc.' },
+  { k: 'Narrative risk',    v: 30, note: 'Sponsor messaging diverges from press and watchdog readings.' },
+  { k: 'Execution risk',    v: 55, note: 'Build chain aligned; gated by political resolution.' },
+]
 
-                    <p className="text-[#bdbdbd] text-sm mb-3">Should I generate a campaign for the AI response?</p>
+// Recent movements — the live activity strip
+const MOVEMENTS = [
+  { date: '21 Jun', text: 'Min. of environment escalated to L4 deal-breaker',     impact: 'alignment',  arrow: 'down' as const, delta: '-3' },
+  { date: '18 Jun', text: 'National daily filed critical investigation',          impact: 'narrative',  arrow: 'down' as const, delta: '-5' },
+  { date: '14 Jun', text: 'Anchor lender requested stakeholder coordination proof', impact: 'trust',    arrow: 'down' as const, delta: '-2' },
+]
 
-                    <div className="flex flex-wrap gap-2">
-                      <button className="px-3 py-1.5 bg-[#c75d3a] text-white text-xs rounded-lg">Generate Campaign</button>
-                      <button className="px-3 py-1.5 bg-[#3d3d3d] text-[#bdbdbd] text-xs rounded-lg">Show Details</button>
-                      <button className="px-3 py-1.5 bg-[#3d3d3d] text-[#bdbdbd] text-xs rounded-lg">Other</button>
-                    </div>
-                  </div>
-                </div>
-              </div>
+// 6-month score trend for the readout sparkline
+const TREND = [72, 70, 68, 67, 64, 62, 60]
 
-              {/* Input */}
-              <div className="p-4 border-t border-[#2e2e2e]">
-                <div className="flex items-center gap-3 bg-[#212121] rounded-xl px-4 py-3 border border-[#2e2e2e]">
-                  <MessageSquare className="w-5 h-5 text-[#555555]" />
-                  <input
-                    type="text"
-                    placeholder="Ask NIV anything about your organization..."
-                    className="flex-1 bg-transparent text-white text-sm placeholder-[#555555] outline-none"
-                  />
-                  <button className="px-4 py-1.5 bg-[#c75d3a] text-white text-xs rounded-lg">Send</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Section 8: Memory Vault */}
-      <section className="py-24 px-6 bg-[#0d0d0d] border-t border-[#1a1a1a]">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-16 items-start">
-            {/* Memory Vault Mockup */}
-            <div className="bg-[#1a1a1a] rounded-2xl border border-[#2e2e2e] overflow-hidden">
-              {/* Header */}
-              <div className="p-6 border-b border-[#2e2e2e]">
-                <div className="flex items-center gap-3 mb-4">
-                  <Database className="w-5 h-5 text-[#c75d3a]" />
-                  <h3 className="text-white text-lg font-semibold" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>Memory Vault</h3>
-                </div>
-                <div className="flex items-center gap-3 bg-[#212121] rounded-xl px-4 py-3 border border-[#2e2e2e]">
-                  <Search className="w-5 h-5 text-[#555555]" />
-                  <input
-                    type="text"
-                    placeholder="Search your organizational knowledge..."
-                    className="flex-1 bg-transparent text-white text-sm placeholder-[#555555] outline-none"
-                  />
-                </div>
-                <div className="text-[#555555] text-xs mt-2">Semantic search powered by AI</div>
-              </div>
-
-              {/* Content */}
-              <div className="flex">
-                {/* Folders */}
-                <div className="w-48 border-r border-[#2e2e2e] p-4">
-                  <div className="text-[#757575] text-xs font-semibold mb-3" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>FOLDERS</div>
-                  <div className="space-y-1">
-                    {[
-                      { name: 'Campaigns', count: 12, expanded: true, children: ['Q4 Launch', 'AI Response'] },
-                      { name: 'Intelligence', count: 24, expanded: false },
-                      { name: 'Content', count: 89, expanded: false },
-                      { name: 'Crisis Plans', count: 3, expanded: false },
-                      { name: 'Org Profile', count: 1, expanded: false },
-                    ].map((folder, i) => (
-                      <div key={i}>
-                        <div className="flex items-center gap-2 py-1.5 px-2 rounded hover:bg-[#212121] cursor-pointer">
-                          <Folder className="w-4 h-4 text-[#c75d3a]" />
-                          <span className="text-[#bdbdbd] text-sm flex-1">{folder.name}</span>
-                          <span className="text-[#555555] text-xs">{folder.count}</span>
-                        </div>
-                        {folder.expanded && folder.children && (
-                          <div className="ml-6 space-y-1 mt-1">
-                            {folder.children.map((child, j) => (
-                              <div key={j} className="flex items-center gap-2 py-1 px-2 text-[#757575] text-xs hover:text-[#bdbdbd] cursor-pointer">
-                                <span>└</span> {child}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Recent Items */}
-                <div className="flex-1 p-4">
-                  <div className="text-[#757575] text-xs font-semibold mb-3" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>RECENT & HIGH-SALIENCE</div>
-                  <div className="space-y-2">
-                    {[
-                      { icon: FileText, title: 'AI Partnership Response Blueprint', type: 'campaign', time: '2 hours ago', score: 92 },
-                      { icon: Brain, title: 'Executive Intelligence Brief', type: 'intelligence', time: 'today', meta: '47 signals' },
-                      { icon: FileText, title: 'Q4 Launch Press Release', type: 'press-release', time: 'yesterday' },
-                      { icon: Shield, title: 'Crisis Management Plan', type: 'crisis-plan', time: 'last week' },
-                    ].map((item, i) => (
-                      <div key={i} className="bg-[#212121] rounded-lg p-3 border border-[#2e2e2e] hover:border-[#c75d3a]/30 cursor-pointer transition-colors">
-                        <div className="flex items-start gap-3">
-                          <item.icon className="w-4 h-4 text-[#c75d3a] mt-0.5" />
-                          <div className="flex-1 min-w-0">
-                            <div className="text-white text-sm font-medium truncate">{item.title}</div>
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className="text-[#c75d3a] text-xs">{item.type}</span>
-                              <span className="text-[#555555] text-xs">•</span>
-                              <span className="text-[#555555] text-xs">{item.time}</span>
-                              {item.score && (
-                                <>
-                                  <span className="text-[#555555] text-xs">•</span>
-                                  <span className="text-green-400 text-xs">Score: {item.score}</span>
-                                </>
-                              )}
-                              {item.meta && (
-                                <>
-                                  <span className="text-[#555555] text-xs">•</span>
-                                  <span className="text-[#555555] text-xs">{item.meta}</span>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Footer */}
-              <div className="px-6 py-3 bg-[#212121] border-t border-[#2e2e2e]">
-                <span className="text-[#555555] text-xs">234 items • 12 folders • 1.2GB</span>
-              </div>
-            </div>
-
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <Database className="w-5 h-5 text-[#c75d3a]" />
-                <span className="text-[#c75d3a] text-xs font-semibold tracking-[0.2em] uppercase" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>Memory Vault</span>
-              </div>
-              <h2 className="text-4xl text-white mb-6" style={{ fontFamily: 'Playfair Display, serif' }}>
-                Organizational Intelligence
-              </h2>
-              <p className="text-[#9e9e9e] text-lg mb-8" style={{ fontFamily: 'Inter, sans-serif' }}>
-                Everything NIV learns about your organization is stored and searchable. Campaigns, content, intelligence briefs, and crisis plans—all accessible through AI-powered semantic search.
-              </p>
-              <ul className="space-y-3">
-                {['Semantic search with embeddings', 'Automatic content organization', 'Salience-based ranking', 'Content deduplication'].map((item, i) => (
-                  <li key={i} className="flex items-center gap-3 text-[#bdbdbd]">
-                    <div className="w-5 h-5 rounded-full bg-[#c75d3a]/10 flex items-center justify-center">
-                      <Check className="w-3 h-3 text-[#c75d3a]" />
-                    </div>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Section: Predictions */}
-      <section className="py-24 px-6 border-t border-[#1a1a1a]">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-16 items-start">
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <TrendingUp className="w-5 h-5 text-[#c75d3a]" />
-                <span className="text-[#c75d3a] text-xs font-semibold tracking-[0.2em] uppercase" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>Predictions Engine</span>
-              </div>
-              <h2 className="text-4xl text-white mb-6" style={{ fontFamily: 'Playfair Display, serif' }}>
-                Forward-Looking <em className="text-[#c75d3a]">Intelligence</em>
-              </h2>
-              <p className="text-[#9e9e9e] text-lg mb-8" style={{ fontFamily: 'Inter, sans-serif' }}>
-                NIV doesn&apos;t just report what happened — it predicts what&apos;s coming next. AI-generated predictions with confidence scores, timeframes, and validation tracking let you act before events unfold.
-              </p>
-              <ul className="space-y-3">
-                {['AI-generated forward predictions', 'Confidence scoring & timeframes', 'Automatic validation tracking', 'Pattern-based trend detection'].map((item, i) => (
-                  <li key={i} className="flex items-center gap-3 text-[#bdbdbd]">
-                    <div className="w-5 h-5 rounded-full bg-[#c75d3a]/10 flex items-center justify-center">
-                      <Check className="w-3 h-3 text-[#c75d3a]" />
-                    </div>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Predictions Mockup */}
-            <div className="bg-[#1a1a1a] rounded-2xl border border-[#2e2e2e] overflow-hidden">
-              <div className="p-6 border-b border-[#2e2e2e]">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <TrendingUp className="w-5 h-5 text-[#c75d3a]" />
-                    <h3 className="text-white text-lg font-semibold" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>Active Predictions</h3>
-                  </div>
-                  <div className="px-3 py-1 bg-[#c75d3a]/10 rounded-full">
-                    <span className="text-[#c75d3a] text-xs font-medium">12 Active</span>
-                  </div>
-                </div>
-                <div className="grid grid-cols-4 gap-3">
-                  <div className="bg-[#212121] rounded-lg p-3 text-center border border-[#2e2e2e]">
-                    <div className="text-white text-xl font-bold" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>12</div>
-                    <div className="text-[#757575] text-xs">Active</div>
-                  </div>
-                  <div className="bg-[#212121] rounded-lg p-3 text-center border border-[#2e2e2e]">
-                    <div className="text-green-400 text-xl font-bold" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>8</div>
-                    <div className="text-[#757575] text-xs">Validated</div>
-                  </div>
-                  <div className="bg-[#212121] rounded-lg p-3 text-center border border-[#2e2e2e]">
-                    <div className="text-[#757575] text-xl font-bold" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>3</div>
-                    <div className="text-[#757575] text-xs">Expired</div>
-                  </div>
-                  <div className="bg-[#212121] rounded-lg p-3 text-center border border-[#2e2e2e]">
-                    <div className="text-[#c75d3a] text-xl font-bold" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>73%</div>
-                    <div className="text-[#757575] text-xs">Accuracy</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-6 space-y-3">
-                {[
-                  { confidence: 87, title: 'TechRival likely to announce enterprise pricing restructure', timeframe: '14 days', category: 'COMPETITIVE', categoryColor: 'text-red-400 bg-red-500/10' },
-                  { confidence: 74, title: 'Regulatory framework draft expected from EU committee', timeframe: '30 days', category: 'REGULATORY', categoryColor: 'text-blue-400 bg-blue-500/10' },
-                  { confidence: 91, title: 'Market consolidation: 2-3 acquisitions in AI middleware space', timeframe: '60 days', category: 'MARKET', categoryColor: 'text-purple-400 bg-purple-500/10' },
-                ].map((pred, i) => (
-                  <div key={i} className="bg-[#212121] rounded-lg p-4 border border-[#2e2e2e]">
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-[#c75d3a]/10 border border-[#c75d3a]/30 flex items-center justify-center flex-shrink-0">
-                        <span className="text-[#c75d3a] text-sm font-bold" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>{pred.confidence}%</span>
-                      </div>
-                      <div className="flex-1">
-                        <div className="text-white text-sm font-medium mb-1">{pred.title}</div>
-                        <div className="flex items-center gap-2">
-                          <span className={`px-2 py-0.5 text-xs rounded ${pred.categoryColor}`}>{pred.category}</span>
-                          <span className="text-[#555555] text-xs">•</span>
-                          <span className="text-[#757575] text-xs flex items-center gap-1"><Clock className="w-3 h-3" />{pred.timeframe}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="px-6 py-4 bg-[#212121] border-t border-[#2e2e2e]">
-                <div className="flex items-center justify-between">
-                  <span className="text-[#757575] text-xs">Predictions auto-generated from intelligence pipeline</span>
-                  <span className="text-[#c75d3a] text-xs">View all →</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Section: Cascade Analysis */}
-      <section className="py-24 px-6 bg-[#0d0d0d] border-t border-[#1a1a1a]">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-16 items-start">
-            {/* Cascade Mockup */}
-            <div className="bg-[#1a1a1a] rounded-2xl border border-[#2e2e2e] overflow-hidden">
-              <div className="p-6 border-b border-[#2e2e2e]">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <Activity className="w-5 h-5 text-[#c75d3a]" />
-                    <h3 className="text-white text-lg font-semibold" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>Cascade Intelligence</h3>
-                  </div>
-                  <div className="px-3 py-1 bg-green-500/10 rounded-full">
-                    <span className="text-green-400 text-xs font-medium">MONITORING</span>
-                  </div>
-                </div>
-                <p className="text-[#9e9e9e] text-sm">Tracking how signals propagate across stakeholder networks and media ecosystems</p>
-              </div>
-
-              <div className="p-6 border-b border-[#2e2e2e]">
-                <div className="text-white text-sm font-semibold mb-4" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>SIGNAL CASCADE MAP</div>
-                <div className="space-y-4">
-                  {/* Cascade Flow */}
-                  <div className="relative">
-                    <div className="bg-[#212121] rounded-lg p-4 border border-red-500/30 mb-2">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="px-2 py-0.5 bg-red-500/10 text-red-400 text-xs rounded font-semibold">ORIGIN</span>
-                        <span className="text-[#757575] text-xs">2 hours ago</span>
-                      </div>
-                      <div className="text-white text-sm font-medium">TechRival CEO interview on CNBC</div>
-                    </div>
-                    <div className="ml-6 border-l-2 border-[#c75d3a]/30 pl-4 space-y-2">
-                      <div className="bg-[#212121] rounded-lg p-3 border border-[#2e2e2e]">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="px-2 py-0.5 bg-[#c75d3a]/10 text-[#c75d3a] text-xs rounded">+1hr</span>
-                          <span className="text-white text-sm">3 Tier-1 outlets amplified</span>
-                        </div>
-                        <div className="text-[#757575] text-xs">Reuters, Bloomberg, TechCrunch picked up narrative</div>
-                      </div>
-                      <div className="bg-[#212121] rounded-lg p-3 border border-[#2e2e2e]">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="px-2 py-0.5 bg-[#c75d3a]/10 text-[#c75d3a] text-xs rounded">+2hr</span>
-                          <span className="text-white text-sm">Analyst sentiment shifting</span>
-                        </div>
-                        <div className="text-[#757575] text-xs">2 key analysts revised competitor outlook positively</div>
-                      </div>
-                      <div className="bg-[#212121] rounded-lg p-3 border border-yellow-500/30">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="px-2 py-0.5 bg-yellow-500/10 text-yellow-400 text-xs rounded">PREDICTED</span>
-                          <span className="text-white text-sm">Social amplification wave</span>
-                        </div>
-                        <div className="text-[#757575] text-xs">Expected: 50K+ impressions within 24hrs based on cascade velocity</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-6 bg-[#212121]">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-white text-sm font-medium">Cascade Velocity</div>
-                    <div className="text-[#757575] text-xs">How fast this signal is spreading</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-[#c75d3a] text-xl font-bold" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>HIGH</div>
-                    <div className="text-[#757575] text-xs">3 hops in 2 hours</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <Activity className="w-5 h-5 text-[#c75d3a]" />
-                <span className="text-[#c75d3a] text-xs font-semibold tracking-[0.2em] uppercase" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>Cascade Analysis</span>
-              </div>
-              <h2 className="text-4xl text-white mb-6" style={{ fontFamily: 'Playfair Display, serif' }}>
-                Track How Narratives <em className="text-[#c75d3a]">Spread</em>
-              </h2>
-              <p className="text-[#9e9e9e] text-lg mb-8" style={{ fontFamily: 'Inter, sans-serif' }}>
-                Understand how signals cascade through media ecosystems and stakeholder networks. NIV maps propagation patterns, predicts amplification, and identifies intervention points before narratives solidify.
-              </p>
-              <ul className="space-y-3">
-                {['Signal propagation mapping', 'Cascade velocity tracking', 'Narrative amplification prediction', 'Optimal intervention timing'].map((item, i) => (
-                  <li key={i} className="flex items-center gap-3 text-[#bdbdbd]">
-                    <div className="w-5 h-5 rounded-full bg-[#c75d3a]/10 flex items-center justify-center">
-                      <Check className="w-3 h-3 text-[#c75d3a]" />
-                    </div>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Section: Simulations */}
-      <section className="py-24 px-6 border-t border-[#1a1a1a]">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <Play className="w-5 h-5 text-[#c75d3a]" />
-              <span className="text-[#c75d3a] text-xs font-semibold tracking-[0.2em] uppercase" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>Simulation Engine</span>
-            </div>
-            <h2 className="text-4xl text-white mb-6" style={{ fontFamily: 'Playfair Display, serif' }}>
-              Test Strategies <em className="text-[#c75d3a]">Before</em> You Act
-            </h2>
-            <p className="text-[#9e9e9e] text-lg max-w-3xl mx-auto" style={{ fontFamily: 'Inter, sans-serif' }}>
-              Run multi-round stakeholder simulations to predict how competitors, regulators, journalists, and customers will respond to your actions. Know the outcome before you commit.
-            </p>
-          </div>
-
-          <div className="bg-[#1a1a1a] rounded-2xl border border-[#2e2e2e] overflow-hidden">
-            {/* Simulation Header */}
-            <div className="p-6 border-b border-[#2e2e2e]">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-white text-xl font-semibold mb-1" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>SIMULATION: AI Partnership Announcement</h3>
-                  <p className="text-[#757575] text-sm">Testing stakeholder response to proposed partnership press release</p>
-                </div>
-                <div className="px-4 py-2 bg-green-500/10 rounded-lg border border-green-500/30">
-                  <div className="text-green-400 text-xs font-semibold mb-0.5">STATUS</div>
-                  <div className="text-white text-sm font-medium">COMPLETE</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Simulation Metrics */}
-            <div className="p-6 border-b border-[#2e2e2e]">
-              <div className="grid grid-cols-4 gap-4">
-                <div className="bg-[#212121] rounded-lg p-4 border border-[#2e2e2e] text-center">
-                  <div className="text-[#c75d3a] text-2xl font-bold mb-1" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>4</div>
-                  <div className="text-[#757575] text-xs">Rounds</div>
-                </div>
-                <div className="bg-[#212121] rounded-lg p-4 border border-[#2e2e2e] text-center">
-                  <div className="text-white text-2xl font-bold mb-1" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>94%</div>
-                  <div className="text-[#757575] text-xs">Stabilization</div>
-                </div>
-                <div className="bg-[#212121] rounded-lg p-4 border border-[#2e2e2e] text-center">
-                  <div className="text-white text-2xl font-bold mb-1" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>8</div>
-                  <div className="text-[#757575] text-xs">Entities</div>
-                </div>
-                <div className="bg-[#212121] rounded-lg p-4 border border-[#2e2e2e] text-center">
-                  <div className="text-white text-2xl font-bold mb-1" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>2:34</div>
-                  <div className="text-[#757575] text-xs">Duration</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Entity Responses */}
-            <div className="p-6 border-b border-[#2e2e2e]">
-              <div className="text-white text-sm font-semibold mb-4" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>STABILIZED ENTITY POSITIONS</div>
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  { name: 'Gartner', type: 'ANALYST', stance: 'Cautiously Positive', stanceColor: 'text-green-400', action: 'Will seek briefing before publishing updated MQ' },
-                  { name: 'TechRival', type: 'COMPETITOR', stance: 'Defensive Counter', stanceColor: 'text-red-400', action: 'Likely to accelerate own partnership announcements' },
-                  { name: 'WSJ Tech Desk', type: 'JOURNALIST', stance: 'Interest / Skepticism', stanceColor: 'text-yellow-400', action: 'Will want exclusive data points for coverage' },
-                  { name: 'Enterprise Buyers', type: 'CUSTOMER', stance: 'Wait-and-See', stanceColor: 'text-blue-400', action: 'Need proof points before shifting procurement' },
-                ].map((entity, i) => (
-                  <div key={i} className="bg-[#212121] rounded-lg p-4 border border-[#2e2e2e]">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-white text-sm font-medium">{entity.name}</span>
-                      <span className="px-2 py-0.5 bg-[#3d3d3d] text-[#757575] text-xs rounded">{entity.type}</span>
-                    </div>
-                    <div className={`text-sm font-medium mb-1 ${entity.stanceColor}`}>{entity.stance}</div>
-                    <div className="text-[#757575] text-xs">{entity.action}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Key Findings */}
-            <div className="p-6 bg-[#212121]">
-              <div className="text-white text-sm font-semibold mb-3" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>KEY SIMULATION FINDINGS</div>
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <div className="text-[#c75d3a] text-xs font-semibold mb-2">DOMINANT NARRATIVES</div>
-                  <ul className="text-[#9e9e9e] text-sm space-y-1">
-                    <li className="flex items-start gap-2"><span className="text-[#c75d3a]">•</span>Market consolidation accelerating</li>
-                    <li className="flex items-start gap-2"><span className="text-[#c75d3a]">•</span>Enterprise AI becoming table stakes</li>
-                  </ul>
-                </div>
-                <div>
-                  <div className="text-[#c75d3a] text-xs font-semibold mb-2">COALITIONS FORMED</div>
-                  <ul className="text-[#9e9e9e] text-sm space-y-1">
-                    <li className="flex items-start gap-2"><span className="text-[#c75d3a]">•</span>Analysts + Enterprise = validation loop</li>
-                    <li className="flex items-start gap-2"><span className="text-[#c75d3a]">•</span>Competitors + Media = counter-narrative</li>
-                  </ul>
-                </div>
-                <div>
-                  <div className="text-[#c75d3a] text-xs font-semibold mb-2">LEVERAGE POINTS</div>
-                  <ul className="text-[#9e9e9e] text-sm space-y-1">
-                    <li className="flex items-start gap-2"><span className="text-[#c75d3a]">•</span>Analyst briefings critical in first 48hrs</li>
-                    <li className="flex items-start gap-2"><span className="text-[#c75d3a]">•</span>Customer proof points neutralize skepticism</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Section: Deep Research */}
-      <section className="py-24 px-6 bg-[#0d0d0d] border-t border-[#1a1a1a]">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <Search className="w-5 h-5 text-[#c75d3a]" />
-              <span className="text-[#c75d3a] text-xs font-semibold tracking-[0.2em] uppercase" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>Deep Research Engine</span>
-            </div>
-            <h2 className="text-4xl text-white mb-6" style={{ fontFamily: 'Playfair Display, serif' }}>
-              Research That Actually <em className="text-[#c75d3a]">Understands</em>
-            </h2>
-            <p className="text-[#9e9e9e] text-lg max-w-3xl mx-auto" style={{ fontFamily: 'Inter, sans-serif' }}>
-              NIV conducts multi-stage deep research across stakeholder psychology, narrative landscapes, channel intelligence, and historical patterns — then synthesizes everything into actionable intelligence briefs.
-            </p>
-          </div>
-
-          {/* Full Research Report Mockup */}
-          <div className="bg-[#1a1a1a] rounded-2xl border border-[#2e2e2e] overflow-hidden">
-            {/* Report Header */}
-            <div className="p-6 border-b border-[#2e2e2e]">
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <div className="text-[#c75d3a] text-xs font-semibold tracking-[0.15em] uppercase mb-1" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>Campaign Intelligence Brief</div>
-                  <h3 className="text-white text-xl font-semibold" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>AI Partnership Positioning Strategy</h3>
-                  <div className="text-[#757575] text-sm mt-1">4-stage research • 47 sources analyzed • Confidence: 92%</div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="px-3 py-1 bg-green-500/10 rounded-full">
-                    <span className="text-green-400 text-xs font-medium">COMPLETE</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Key Insights - Top Priority */}
-            <div className="p-6 border-b border-[#2e2e2e]">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-2 h-2 rounded-full bg-[#c75d3a]"></div>
-                <span className="text-white text-sm font-semibold" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>KEY INSIGHTS</span>
-              </div>
-              <div className="space-y-3">
-                {[
-                  { insight: 'Enterprise buyers are in a "wait-and-see" posture — the first mover with credible proof points will capture disproportionate market share', significance: 'CRITICAL', category: 'stakeholder' },
-                  { insight: 'There is a narrative vacuum around "responsible AI automation" that no competitor has claimed', significance: 'HIGH', category: 'narrative' },
-                  { insight: 'Gartner and Forrester analyst briefings within 48hrs of announcement increase media pickup by 3.2x', significance: 'HIGH', category: 'channel' },
-                ].map((item, i) => (
-                  <div key={i} className="bg-[#212121] rounded-lg p-4 border border-[#2e2e2e]">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className={`px-2 py-0.5 text-xs rounded font-semibold ${item.significance === 'CRITICAL' ? 'bg-red-500/10 text-red-400' : 'bg-[#c75d3a]/10 text-[#c75d3a]'}`}>{item.significance}</span>
-                      <span className="text-[#555555] text-xs uppercase">{item.category}</span>
-                    </div>
-                    <p className="text-[#e0e0e0] text-sm">{item.insight}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Four Research Stages Grid */}
-            <div className="grid grid-cols-2 border-b border-[#2e2e2e]">
-              {/* Stakeholder Intelligence */}
-              <div className="p-6 border-r border-[#2e2e2e]">
-                <div className="flex items-center gap-2 mb-4">
-                  <Users className="w-4 h-4 text-[#c75d3a]" />
-                  <span className="text-white text-sm font-semibold" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>STAKEHOLDER INTELLIGENCE</span>
-                </div>
-                <div className="space-y-3">
-                  <div className="bg-[#212121] rounded-lg p-3 border border-[#2e2e2e]">
-                    <div className="text-white text-sm font-medium mb-1">Industry Analysts</div>
-                    <div className="text-[#757575] text-xs mb-2">Psychology: Authority bias, early-adopter identity</div>
-                    <div className="space-y-1">
-                      <div className="text-[#9e9e9e] text-xs"><span className="text-[#c75d3a]">Values:</span> Exclusive access, being first to call trends</div>
-                      <div className="text-[#9e9e9e] text-xs"><span className="text-[#c75d3a]">Fears:</span> Missing paradigm shifts, losing credibility</div>
-                      <div className="text-[#9e9e9e] text-xs"><span className="text-[#c75d3a]">Triggers:</span> Embargo briefings, proprietary data access</div>
-                    </div>
-                  </div>
-                  <div className="bg-[#212121] rounded-lg p-3 border border-[#2e2e2e]">
-                    <div className="text-white text-sm font-medium mb-1">Enterprise Buyers</div>
-                    <div className="text-[#757575] text-xs mb-2">Psychology: Loss aversion, social proof dependency</div>
-                    <div className="space-y-1">
-                      <div className="text-[#9e9e9e] text-xs"><span className="text-[#c75d3a]">Values:</span> ROI evidence, peer validation, risk mitigation</div>
-                      <div className="text-[#9e9e9e] text-xs"><span className="text-[#c75d3a]">Fears:</span> Making wrong technology bet, vendor lock-in</div>
-                      <div className="text-[#9e9e9e] text-xs"><span className="text-[#c75d3a]">Triggers:</span> Competitor adoption, analyst endorsement</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Narrative Landscape */}
-              <div className="p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <MessageSquare className="w-4 h-4 text-[#c75d3a]" />
-                  <span className="text-white text-sm font-semibold" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>NARRATIVE LANDSCAPE</span>
-                </div>
-                <div className="space-y-3">
-                  <div>
-                    <div className="text-[#c75d3a] text-xs font-semibold mb-2">DOMINANT NARRATIVES</div>
-                    <div className="space-y-2">
-                      <div className="bg-[#212121] rounded-lg p-3 border border-[#2e2e2e]">
-                        <div className="text-[#e0e0e0] text-sm">&quot;AI is transforming enterprise workflows&quot;</div>
-                        <div className="text-[#757575] text-xs mt-1">Source: Major tech media • Resonance: HIGH</div>
-                      </div>
-                      <div className="bg-[#212121] rounded-lg p-3 border border-[#2e2e2e]">
-                        <div className="text-[#e0e0e0] text-sm">&quot;Most AI investments failing to deliver ROI&quot;</div>
-                        <div className="text-[#757575] text-xs mt-1">Source: Business press • Resonance: GROWING</div>
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-green-400 text-xs font-semibold mb-2">NARRATIVE VACUUMS (OPPORTUNITIES)</div>
-                    <div className="bg-[#212121] rounded-lg p-3 border border-green-500/20">
-                      <div className="text-[#e0e0e0] text-sm">&quot;Responsible AI automation with measurable outcomes&quot;</div>
-                      <div className="text-green-400 text-xs mt-1">No competitor has claimed this positioning</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Bottom Two Stages */}
-            <div className="grid grid-cols-2">
-              {/* Channel Intelligence */}
-              <div className="p-6 border-r border-[#2e2e2e]">
-                <div className="flex items-center gap-2 mb-4">
-                  <Globe className="w-4 h-4 text-[#c75d3a]" />
-                  <span className="text-white text-sm font-semibold" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>CHANNEL INTELLIGENCE</span>
-                </div>
-                <div className="space-y-3">
-                  <div>
-                    <div className="text-[#c75d3a] text-xs font-semibold mb-2">KEY JOURNALISTS</div>
-                    <div className="space-y-1">
-                      {[
-                        { name: 'Sarah Chen', outlet: 'Reuters Tech', tier: 'TIER 1', beat: 'Enterprise AI' },
-                        { name: 'Mike Park', outlet: 'Bloomberg', tier: 'TIER 1', beat: 'Tech M&A' },
-                        { name: 'Lisa Torres', outlet: 'TechCrunch', tier: 'TIER 1', beat: 'AI startups' },
-                      ].map((j, i) => (
-                        <div key={i} className="flex items-center justify-between bg-[#212121] rounded p-2 border border-[#2e2e2e]">
-                          <div>
-                            <span className="text-white text-xs font-medium">{j.name}</span>
-                            <span className="text-[#757575] text-xs ml-2">{j.outlet}</span>
-                          </div>
-                          <span className="px-1.5 py-0.5 bg-[#c75d3a]/10 text-[#c75d3a] text-[10px] rounded">{j.tier}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-[#757575] text-xs font-semibold mb-1">OPTIMAL TIMING</div>
-                    <div className="text-[#9e9e9e] text-xs">Tue-Thu morning, 48hrs before competitor events</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Historical Patterns */}
-              <div className="p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <BookOpen className="w-4 h-4 text-[#c75d3a]" />
-                  <span className="text-white text-sm font-semibold" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>HISTORICAL PATTERNS</span>
-                </div>
-                <div className="space-y-3">
-                  <div className="bg-[#212121] rounded-lg p-3 border border-[#2e2e2e]">
-                    <div className="text-white text-sm font-medium mb-1">Salesforce + Slack Announcement</div>
-                    <div className="text-[#757575] text-xs mb-2">Similar context: Partnership positioning in crowded market</div>
-                    <div className="text-[#9e9e9e] text-xs"><span className="text-[#c75d3a]">Key lesson:</span> Analyst pre-briefing 72hrs before drove 4x coverage</div>
-                  </div>
-                  <div className="bg-[#212121] rounded-lg p-3 border border-[#2e2e2e]">
-                    <div className="text-white text-sm font-medium mb-1">Microsoft Copilot Launch</div>
-                    <div className="text-[#757575] text-xs mb-2">Similar context: AI product differentiation</div>
-                    <div className="text-[#9e9e9e] text-xs"><span className="text-[#c75d3a]">Key lesson:</span> Customer proof points at launch neutralized skepticism</div>
-                  </div>
-                  <div>
-                    <div className="text-[#c75d3a] text-xs font-semibold mb-1">RISK FACTORS</div>
-                    <div className="text-[#9e9e9e] text-xs">Over-promising on AI capabilities without demos invites backlash</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Report Footer */}
-            <div className="px-6 py-4 bg-[#212121] border-t border-[#2e2e2e] flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <span className="text-[#757575] text-xs">Completeness: <span className="text-green-400">94%</span></span>
-                <span className="text-[#757575] text-xs">Confidence: <span className="text-green-400">92%</span></span>
-                <span className="text-[#757575] text-xs">47 sources across 4 research stages</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <button className="px-3 py-1.5 bg-[#3d3d3d] text-[#bdbdbd] text-xs rounded-lg">Refine Research</button>
-                <button className="px-3 py-1.5 bg-[#c75d3a] text-white text-xs rounded-lg">Proceed to Strategy</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      </div>
-
-      {/* CTA Section */}
-      <section className="landing-cta-section">
-        <div className="landing-cta-decoration"></div>
-        <div className="landing-cta-content">
-          <h2 className="landing-cta-headline">Ready to seize <em>opportunities others miss?</em></h2>
-          <div className="landing-cta-actions">
-            <button className="landing-cta-btn" onClick={() => router.push('/auth/login')}>Sign In</button>
-            <button className="landing-cta-btn landing-cta-btn-outline" onClick={() => router.push('/contact?demo=true')}>Contact Us</button>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="landing-footer">
-        <div className="landing-footer-content">
-          <div className="landing-footer-logo">
-            <svg width="60" height="36" viewBox="0 0 80 48">
-              <path d="M10 0 H80 V48 H0 L10 0 Z" fill="#faf9f7" />
-              <text x="40" y="33" textAnchor="middle" fontFamily="Space Grotesk, sans-serif" fontSize="22" fontWeight="700" fill="#1a1a1a" letterSpacing="-0.5">NIV</text>
-              <path d="M68 0 H80 V12 L68 0 Z" fill="#c75d3a" />
-            </svg>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '4px', alignSelf: 'flex-end' }}>
-              <span style={{ color: 'var(--grey-600)', fontSize: '22px', fontWeight: 200, lineHeight: 1 }}>|</span>
-              <span style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '12px', color: 'var(--grey-500)', letterSpacing: '1px' }}>by nivria</span>
-            </div>
-          </div>
-          <div className="landing-footer-links">
-            <a href="#" className="landing-footer-link">Pricing</a>
-            <a href="/thoughts" className="landing-footer-link">Thoughts</a>
-            <a href="/contact" className="landing-footer-link">Contact</a>
-            <a href="#" className="landing-footer-link">Privacy</a>
-          </div>
-          <div className="landing-footer-copy">© 2025 Nivria</div>
-        </div>
-      </footer>
+// ============================================================================
+export default function Home() {
+  return (
+    <div className="nv">
+      <style>{CSS}</style>
+      <Header />
+      <main>
+        <Hero />
+        <Instrument />
+        <WhoIsThisFor />
+        <HowItWorks />
+        <Lifecycle />
+        <People />
+        <Close />
+      </main>
+      <Colophon />
+      <SectionNav />
+      <BackToTop />
     </div>
   )
 }
+
+// ─── SECTION NAV — vertical row of dots, fixed right ────────────────────
+function SectionNav() {
+  const [active, setActive] = useState<string>('')
+  useEffect(() => {
+    const TOP_THRESHOLD = 600   // nothing lit until we scroll past this
+    let ticking = false
+    const update = () => {
+      if (ticking) return
+      ticking = true
+      requestAnimationFrame(() => {
+        ticking = false
+        if (window.scrollY < TOP_THRESHOLD) {
+          setActive('')
+          return
+        }
+        // Pick the section whose centre is closest to the viewport's centre.
+        const vpCentre = window.scrollY + window.innerHeight / 2
+        let closestId = ''
+        let closestDist = Infinity
+        SECTIONS.forEach(s => {
+          const el = document.getElementById(s.id)
+          if (!el) return
+          const rect = el.getBoundingClientRect()
+          const sectionCentre = window.scrollY + rect.top + rect.height / 2
+          const dist = Math.abs(sectionCentre - vpCentre)
+          if (dist < closestDist) {
+            closestDist = dist
+            closestId = s.id
+          }
+        })
+        setActive(closestId)
+      })
+    }
+    window.addEventListener('scroll', update, { passive: true })
+    window.addEventListener('resize', update)
+    update()
+    return () => {
+      window.removeEventListener('scroll', update)
+      window.removeEventListener('resize', update)
+    }
+  }, [])
+  return (
+    <nav className="nv-sn" aria-label="Sections">
+      {SECTIONS.map(s => (
+        <a
+          key={s.id}
+          href={`#${s.id}`}
+          className={`nv-sn-dot${active === s.id ? ' nv-sn-dot-active' : ''}`}
+          aria-label={s.label}
+        >
+          <span className="nv-sn-label">{s.label}</span>
+        </a>
+      ))}
+    </nav>
+  )
+}
+
+// ─── BACK-TO-TOP — fixed bottom-right, appears after some scroll ────────
+function BackToTop() {
+  const [visible, setVisible] = useState(false)
+  useEffect(() => {
+    const onScroll = () => setVisible(window.scrollY > 600)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+  return (
+    <button
+      type="button"
+      className={`nv-top${visible ? ' nv-top-visible' : ''}`}
+      onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+      aria-label="Back to top"
+    >
+      <svg width="16" height="14" viewBox="0 0 16 14" fill="none" aria-hidden="true">
+        <path d="M8 13V2M2 7l6-6 6 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </button>
+  )
+}
+
+// ─── HEADER ──────────────────────────────────────────────────────────────
+function Header() {
+  const visible = useHeaderVisible()
+  return (
+    <header className={`nv-hdr${visible ? '' : ' nv-hdr-hidden'}`}>
+      <div className="nv-wrap nv-hdr-row">
+        <NivriaLogo />
+        <nav className="nv-nav">
+          <a href="mailto:briefing@nivria.ai?subject=Briefing%20request" className="nv-nav-cta">Request a briefing</a>
+          <a href="/founder" className="nv-nav-founder">Founder</a>
+          <a href="/auth/login" className="nv-nav-link">Sign in</a>
+        </nav>
+      </div>
+    </header>
+  )
+}
+
+// ─── LOGO — NIVRIA beneath a dense web (filter feel) ───────────────
+// 6 top nodes + 6 bottom nodes, fully bipartite (every top connects to
+// every bottom) plus cross-connections within each row, plus interior
+// scatter dots. The combined opacity reads as a ~60% cloudy filter.
+// ─── LOGO — wide criss-cross canopy with two trunks from the i-dots ──
+// The i-dots in "nivria" anchor two SHORT vertical gold trunks that rise
+// to where the canopy begins. Above that, the canopy fans WIDER than
+// the trunks — scatter data points with criss-cross lacework between.
+// Branches from the canopy converge down to the tops of the two trunks.
+function NivriaLogo({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
+  const TRUNK_LX = 97    // aligns with first i in "nivria"
+  const TRUNK_RX = 143   // aligns with second i
+  const TRUNK_TOP = 38   // bottom of SVG — branches converge directly at the i-top
+
+  // CANOPY — bounded within wordmark width, with a curved dome ridge
+  // (outer top dots lowered, peak raised) so it reads more tree-like.
+  const CANOPY = [
+    { x: 66,  y: 14, c: 'l' as const },
+    { x: 76,  y: 12, c: 'l' as const },   // lowered (was y=6) — left shoulder of dome
+    { x: 84,  y: 14, c: 'l' as const },
+    { x: 72,  y: 24, c: 'l' as const },
+    { x: 80,  y: 26, c: 'l' as const },
+    { x: 96,  y: 14, c: 'c' as const },
+    { x: 108, y: 6,  c: 'c' as const },   // raised slightly (was y=8) — climbing up
+    { x: 120, y: 2,  c: 'c' as const },   // peak raised (was y=4) — top of dome
+    { x: 132, y: 6,  c: 'c' as const },
+    { x: 144, y: 14, c: 'c' as const },
+    { x: 102, y: 22, c: 'c' as const },
+    { x: 120, y: 18, c: 'c' as const },
+    { x: 138, y: 22, c: 'c' as const },
+    { x: 120, y: 30, c: 'c' as const },
+    { x: 156, y: 14, c: 'r' as const },
+    { x: 164, y: 12, c: 'r' as const },   // lowered (mirror of left shoulder)
+    { x: 174, y: 14, c: 'r' as const },
+    { x: 160, y: 26, c: 'r' as const },
+    { x: 168, y: 24, c: 'r' as const },
+  ]
+
+  type Line = { x1: number; y1: number; x2: number; y2: number; w: number; o: number; d?: string }
+  const branches: Line[] = []
+  // each trunk top reaches up to its own cluster + the centre
+  CANOPY.forEach(p => {
+    if (p.c === 'l' || p.c === 'c') {
+      branches.push({ x1: TRUNK_LX, y1: TRUNK_TOP, x2: p.x, y2: p.y,
+        w: p.c === 'l' ? 0.7 : 0.5,
+        o: p.c === 'l' ? 0.55 : 0.30,
+        d: p.c === 'c' ? '2 3' : undefined,
+      })
+    }
+    if (p.c === 'r' || p.c === 'c') {
+      branches.push({ x1: TRUNK_RX, y1: TRUNK_TOP, x2: p.x, y2: p.y,
+        w: p.c === 'r' ? 0.7 : 0.5,
+        o: p.c === 'r' ? 0.55 : 0.30,
+        d: p.c === 'c' ? '2 3' : undefined,
+      })
+    }
+  })
+
+  // Lacework: inter-canopy connections that thicken the criss-cross.
+  const lace: Line[] = [
+    // upper canopy ridge — left → centre → right (curved dome)
+    { x1: 76,  y1: 12, x2: 108, y2: 6,  w: 0.5, o: 0.25 },
+    { x1: 108, y1: 6,  x2: 120, y2: 2,  w: 0.5, o: 0.32 },
+    { x1: 120, y1: 2,  x2: 132, y2: 6,  w: 0.5, o: 0.32 },
+    { x1: 132, y1: 6,  x2: 164, y2: 12, w: 0.5, o: 0.25 },
+    // upper-centre cross-hatching
+    { x1: 96,  y1: 14, x2: 108, y2: 6,  w: 0.5, o: 0.30 },
+    { x1: 96,  y1: 14, x2: 120, y2: 2,  w: 0.5, o: 0.22, d: '2 3' },
+    { x1: 144, y1: 14, x2: 132, y2: 6,  w: 0.5, o: 0.30 },
+    { x1: 144, y1: 14, x2: 120, y2: 2,  w: 0.5, o: 0.22, d: '2 3' },
+    { x1: 96,  y1: 14, x2: 144, y2: 14, w: 0.5, o: 0.20, d: '2 3' },
+    // middle band
+    { x1: 84,  y1: 14, x2: 96,  y2: 14, w: 0.5, o: 0.30 },
+    { x1: 144, y1: 14, x2: 156, y2: 14, w: 0.5, o: 0.30 },
+    { x1: 102, y1: 22, x2: 120, y2: 18, w: 0.5, o: 0.30 },
+    { x1: 138, y1: 22, x2: 120, y2: 18, w: 0.5, o: 0.30 },
+    { x1: 102, y1: 22, x2: 138, y2: 22, w: 0.5, o: 0.20, d: '2 3' },
+    { x1: 96,  y1: 14, x2: 102, y2: 22, w: 0.5, o: 0.25 },
+    { x1: 144, y1: 14, x2: 138, y2: 22, w: 0.5, o: 0.25 },
+    // outer reach — within wordmark bounds (dome shoulders lowered)
+    { x1: 66,  y1: 14, x2: 76,  y2: 12, w: 0.5, o: 0.25 },
+    { x1: 66,  y1: 14, x2: 72,  y2: 24, w: 0.5, o: 0.22, d: '2 3' },
+    { x1: 76,  y1: 12, x2: 84,  y2: 14, w: 0.5, o: 0.25 },
+    { x1: 174, y1: 14, x2: 164, y2: 12, w: 0.5, o: 0.25 },
+    { x1: 174, y1: 14, x2: 168, y2: 24, w: 0.5, o: 0.22, d: '2 3' },
+    { x1: 164, y1: 12, x2: 156, y2: 14, w: 0.5, o: 0.25 },
+    // lower canopy
+    { x1: 72,  y1: 24, x2: 80,  y2: 26, w: 0.5, o: 0.30 },
+    { x1: 160, y1: 26, x2: 168, y2: 24, w: 0.5, o: 0.30 },
+    { x1: 80,  y1: 26, x2: 120, y2: 30, w: 0.5, o: 0.22 },
+    { x1: 120, y1: 30, x2: 160, y2: 26, w: 0.5, o: 0.22 },
+  ]
+  const trunkLines: Line[] = []      // empty — no middle scatter anymore
+  const TRUNK_SCATTER: { x: number; y: number }[] = []
+
+  // HANGING branches — small data points drop down from canopy dots so
+  // the tree reads as hanging/drooping (less starburst, more weeping).
+  const HANGS = [
+    { from: { x: 66,  y: 14 }, to: { x: 64,  y: 22 } },
+    { from: { x: 76,  y: 12 }, to: { x: 74,  y: 20 } },
+    { from: { x: 84,  y: 14 }, to: { x: 82,  y: 24 } },
+    { from: { x: 72,  y: 24 }, to: { x: 70,  y: 32 } },
+    { from: { x: 80,  y: 26 }, to: { x: 82,  y: 34 } },
+    { from: { x: 108, y: 6  }, to: { x: 106, y: 14 } },
+    { from: { x: 132, y: 6  }, to: { x: 134, y: 14 } },
+    { from: { x: 120, y: 18 }, to: { x: 120, y: 28 } },
+    { from: { x: 120, y: 30 }, to: { x: 120, y: 37 } },
+    { from: { x: 156, y: 14 }, to: { x: 158, y: 24 } },
+    { from: { x: 164, y: 12 }, to: { x: 162, y: 20 } },
+    { from: { x: 174, y: 14 }, to: { x: 172, y: 22 } },
+    { from: { x: 160, y: 26 }, to: { x: 158, y: 34 } },
+    { from: { x: 168, y: 24 }, to: { x: 170, y: 32 } },
+  ]
+
+  return (
+    <a href="/" className={`nv-logo nv-logo-${size}`} aria-label="nivria — home">
+      <span className="nv-logo-chart" aria-hidden="true">
+        <svg viewBox="0 0 240 38" preserveAspectRatio="none">
+          {/* lacework connections in the canopy */}
+          {lace.map((l, i) => (
+            <line key={`la${i}`} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2}
+              stroke="currentColor" strokeWidth={l.w} strokeOpacity={l.o}
+              strokeDasharray={l.d} strokeLinecap="round" />
+          ))}
+          {/* branches from trunk tops out to canopy dots */}
+          {branches.map((l, i) => (
+            <line key={`br${i}`} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2}
+              stroke="currentColor" strokeWidth={l.w} strokeOpacity={l.o}
+              strokeDasharray={l.d} strokeLinecap="round" />
+          ))}
+          {/* canopy scatter dots — small so they don't compete with the
+              prominent i-dots below */}
+          {CANOPY.map((p, i) => (
+            <circle key={`c${i}`} cx={p.x} cy={p.y} r="1.0"
+              fill="currentColor" />
+          ))}
+          {/* criss-cross between the two trunks (trunk-channel scatter) */}
+          {trunkLines.map((l, i) => (
+            <line key={`tl${i}`} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2}
+              stroke="currentColor" strokeWidth={l.w} strokeOpacity={l.o}
+              strokeLinecap="round" />
+          ))}
+          {TRUNK_SCATTER.map((p, i) => (
+            <circle key={`ts${i}`} cx={p.x} cy={p.y} r="0.9" fill="currentColor" />
+          ))}
+          {/* HANGING branches — drops that hang down from canopy dots */}
+          {HANGS.map((h, i) => (
+            <g key={`h${i}`}>
+              <line x1={h.from.x} y1={h.from.y} x2={h.to.x} y2={h.to.y}
+                stroke="currentColor" strokeWidth="0.5" strokeOpacity="0.42" strokeLinecap="round" />
+              <circle cx={h.to.x} cy={h.to.y} r="0.8" fill="currentColor" />
+            </g>
+          ))}
+          {/* trunks have moved OUT of the SVG — they're now CSS elements
+              attached to each i in the wordmark below, so they're always
+              centered on the i (no coordinate calibration needed) */}
+        </svg>
+      </span>
+      <span className="nv-logo-text">
+        n
+        <span className="nv-logo-i" role="img" aria-label="i">
+          <span className="nv-logo-i-line" aria-hidden="true" />
+          <span className="nv-logo-i-top" aria-hidden="true" />
+          <svg className="nv-logo-i-roots" viewBox="0 0 20 10" aria-hidden="true"><line x1="10" y1="0" x2="2" y2="9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /><line x1="10" y1="0" x2="18" y2="9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /><circle cx="2" cy="9" r="1.7" fill="currentColor" /><circle cx="18" cy="9" r="1.7" fill="currentColor" /></svg>
+        </span>
+        vr
+        <span className="nv-logo-i" role="img" aria-label="i">
+          <span className="nv-logo-i-line" aria-hidden="true" />
+          <span className="nv-logo-i-top" aria-hidden="true" />
+          <svg className="nv-logo-i-roots" viewBox="0 0 20 10" aria-hidden="true"><line x1="10" y1="0" x2="2" y2="9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /><line x1="10" y1="0" x2="18" y2="9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /><circle cx="2" cy="9" r="1.7" fill="currentColor" /><circle cx="18" cy="9" r="1.7" fill="currentColor" /></svg>
+        </span>
+        a
+      </span>
+    </a>
+  )
+}
+
+// ─── HERO — the three rules, applied (split layout) ──────────────────────
+function Hero() {
+  return (
+    <section className="nv-hero">
+      <div className="nv-wrap nv-hero-split">
+        {/* LEFT — text */}
+        <div className="nv-hero-text">
+          {/* RULE 1 — the headline IS the identity */}
+          <h1 className="nv-h1">
+            <span className="nv-h1-mark">nivria.</span>
+          </h1>
+          <p className="nv-h1-sub">
+            <em>A new standard</em> for the evaluation and stewardship of complex ventures.
+          </p>
+
+          {/* RULE 2 — description directly under headline */}
+          <div className="nv-desc">
+            <p>
+              Every complex venture runs on <em>millions of nodes</em> — decisions, incentives, relationships, dependencies. We get <em>beneath the surface</em> to find what is actually true, score the integrity of the whole, and build the accurate picture from which strategy can be developed — and then <em>stay on</em> to actively help you put it in motion.
+            </p>
+            <p>
+              Where finance and legal stop, <span className="nv-inline-wordmark">n<span className="nv-logo-i" role="img" aria-label="i"><span className="nv-logo-i-line" aria-hidden="true" /><span className="nv-logo-i-top" aria-hidden="true" /><svg className="nv-logo-i-roots" viewBox="0 0 20 10" aria-hidden="true"><line x1="10" y1="0" x2="2" y2="9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /><line x1="10" y1="0" x2="18" y2="9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /><circle cx="2" cy="9" r="1.7" fill="currentColor" /><circle cx="18" cy="9" r="1.7" fill="currentColor" /></svg></span>vr<span className="nv-logo-i" role="img" aria-label="i"><span className="nv-logo-i-line" aria-hidden="true" /><span className="nv-logo-i-top" aria-hidden="true" /><svg className="nv-logo-i-roots" viewBox="0 0 20 10" aria-hidden="true"><line x1="10" y1="0" x2="2" y2="9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /><line x1="10" y1="0" x2="18" y2="9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /><circle cx="2" cy="9" r="1.7" fill="currentColor" /><circle cx="18" cy="9" r="1.7" fill="currentColor" /></svg></span>a</span> begins.
+            </p>
+            <a href="mailto:briefing@nivria.ai?subject=Briefing%20request" className="nv-cta">
+              Request a briefing
+              <svg width="18" height="11" viewBox="0 0 18 11" fill="none" aria-hidden="true">
+                <path d="M0 5.5h17M12 1l5 4.5L12 10" stroke="currentColor" strokeWidth="1.4" />
+              </svg>
+            </a>
+          </div>
+        </div>
+
+        {/* RIGHT — RULE 3, supporting graphic: who we serve */}
+        <HeldBy />
+      </div>
+    </section>
+  )
+}
+
+// ─── Held by — 4 audience tiles + lifecycle strip ────────────────────────
+function HeldBy() {
+  return (
+    <figure className="nv-held">
+      <div className="nv-held-k">Held by</div>
+      <div className="nv-held-grid">
+        <div className="nv-held-tile">
+          <div className="nv-held-mark">01 · Sponsors &amp; operators</div>
+          <div className="nv-held-name">Consortia<br/>&amp; joint ventures.</div>
+          <div className="nv-held-line">Sponsors, operators, lenders inside the structure.</div>
+        </div>
+        <div className="nv-held-tile">
+          <div className="nv-held-mark">02 · Stewards</div>
+          <div className="nv-held-name">Family offices<br/>&amp; foundations.</div>
+          <div className="nv-held-line">Every member a stakeholder. Legacy as the asset.</div>
+        </div>
+        <div className="nv-held-tile">
+          <div className="nv-held-mark">03 · Capital</div>
+          <div className="nv-held-name">Lenders, DFIs,<br/>sovereigns.</div>
+          <div className="nv-held-line">Examining the field — diligence before commitment.</div>
+        </div>
+        <div className="nv-held-tile">
+          <div className="nv-held-mark">04 · The ground</div>
+          <div className="nv-held-name">People<br/>&amp; communities.</div>
+          <div className="nv-held-line">The relationship that breaks projects first.</div>
+        </div>
+      </div>
+      <figcaption className="nv-held-cap">
+        <span className="nv-held-cap-k">Across the lifecycle</span>
+        <span className="nv-held-cap-bar">
+          <span>i. Evaluation</span>
+          <em>·</em>
+          <span>ii. Formation</span>
+          <em>·</em>
+          <span>iii. Execution</span>
+          <em>·</em>
+          <span>iv. Stewardship</span>
+        </span>
+      </figcaption>
+    </figure>
+  )
+}
+
+// ─── METHODOLOGY — viewport 03 ───────────────────────────────────────────
+// Four hiring positions (who can engage NIVRIA — and NIVRIA does both
+// evaluation AND active help, not just evaluation).
+// Plus four capabilities that back the work.
+const POSITIONS = [
+  {
+    kicker: 'The consortium',
+    name: 'The whole venture.',
+    body: 'A JV, mega-project, family enterprise, or coalition engages nivria on behalf of the entire structure — to assess the venture, drive coordination across all parties, and actively maintain stakeholder alignment over time.',
+    use: 'When a venture has too many moving parts for one party to hold together. nivria becomes the shared instrument.',
+  },
+  {
+    kicker: 'A member of it',
+    name: 'One party inside.',
+    body: 'A sponsor, operator, lender, family office, or anchor partner inside the venture engages nivria to see what peers are actually doing, find where the weak links are forming, and actively protect their position.',
+    use: 'When you want an independent voice not on anyone else’s payroll — assessment plus active counsel from inside the deal.',
+  },
+  {
+    kicker: 'An outside examiner',
+    name: 'Capital looking in.',
+    body: 'A lender doing diligence, a DFI weighing a facility, or a would-be partner evaluating a deal engages nivria for an independent assessment before committing — or to actively monitor an existing position from arm’s length.',
+    use: 'When you need a structural picture produced outside the venture, with no incentive to find what the venture wants found.',
+  },
+  {
+    kicker: 'The community',
+    name: 'The ground holding it accountable.',
+    body: 'A community group, civil society organization, or watchdog engages nivria to surface where the equilibrium actually lives — and to actively hold sponsors and lenders to the standards their funders are supposed to require.',
+    use: 'When the official “community liaison” is the filter. Source, not filter — the engagement is the leverage.',
+  },
+]
+
+const CAPABILITIES = [
+  {
+    k: 'Continuous monitoring',
+    h: '24/7 across the connectome web.',
+    body: 'Every signal logged, every drift surfaced as it begins. The score is live; the system never sleeps. Built to watch the relationships that move first.',
+    stat: 'real-time · always on',
+  },
+  {
+    k: 'Proprietary simulations',
+    h: 'Stress-test before reality does.',
+    body: 'Model interventions and run scenarios across the full web — see what moves the score, what happens if, where the weak link forms next. Before you make the call.',
+    stat: 'scenario engine · in-house',
+  },
+  {
+    k: 'Deep research',
+    h: 'Dossiers on every load-bearing actor.',
+    body: 'Historical and current — incentives, voting records, decision patterns, behavior under pressure. Every actor inside the venture and out, by name and by file.',
+    stat: 'human-led · machine-augmented',
+  },
+  {
+    k: 'Multi-source corroboration',
+    h: 'No single voice carries truth.',
+    body: 'Every signal corroborated by two to three independent witnesses minimum. Documented, timestamped, traceable to source. If it isn’t backed, it isn’t in the score.',
+    stat: '≥ 2 witnesses · per signal',
+  },
+  {
+    k: 'AI pattern detection',
+    h: 'Across millions of signals, in real time.',
+    body: 'Pattern detection across the full connectome web — surfacing drift, correlations, and weak-link formation before they cascade. Machine handles the volume; the examiner makes the call.',
+    stat: 'real-time · millions of signals',
+  },
+  {
+    k: 'Global network of subject matter experts',
+    h: 'Vetted SMEs in every market we work.',
+    body: 'Practitioners, sector specialists, in-region partners — selected for domain depth and ground-level reach. The network that sees on the ground is the same one that actively reaches to move things.',
+    stat: 'in-domain · in-region',
+  },
+]
+
+function WhoIsThisFor() {
+  return (
+    <section className="nv-sect nv-who" id="sec-who">
+      <div className="nv-wrap">
+        <header className="nv-sect-head nv-sect-head-center">
+          <h2 className="nv-h2"><span>Who this is <em>for.</em></span></h2>
+          <div className="nv-sect-desc">
+            <p>People running <em>complex, high-stakes initiatives</em> that demand more <em>depth and discretion</em> than the market can offer.</p>
+          </div>
+        </header>
+        <HiringPositions />
+      </div>
+    </section>
+  )
+}
+
+function HowItWorks() {
+  return (
+    <section className="nv-sect nv-system" id="sec-how">
+      <div className="nv-wrap">
+        <header className="nv-sect-head nv-sect-head-center">
+          <h2 className="nv-h2"><span>How it <em>works.</em></span></h2>
+          <div className="nv-sect-desc">
+            <p>The nivria team&rsquo;s balance — <em>AI</em> for processing data at scale, <em>experience</em> for <em>knowing what to do with it.</em></p>
+          </div>
+        </header>
+        <Capabilities />
+        <p className="nv-system-coda">Custom to <em>you, your needs, your goals</em> — and <em>continuously improving</em> over time.</p>
+      </div>
+    </section>
+  )
+}
+
+function HiringPositions() {
+  return (
+    <figure className="nv-hire">
+      <div className="nv-hire-grid">
+        {POSITIONS.map((p, i) => (
+          <article key={p.kicker} className="nv-hire-cell">
+            <div className="nv-hire-num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</div>
+            <div className="nv-hire-kicker">{p.kicker}</div>
+            <h3 className="nv-hire-name">{p.name}</h3>
+            <p className="nv-hire-body">{p.body}</p>
+            <div className="nv-hire-foot">
+              <div className="nv-hire-foot-k">When they engage us</div>
+              <p>{p.use}</p>
+            </div>
+          </article>
+        ))}
+      </div>
+    </figure>
+  )
+}
+
+function Capabilities() {
+  return (
+    <div className="nv-cap">
+      <div className="nv-cap-grid">
+        {CAPABILITIES.map((c, i) => (
+          <article key={c.k} className="nv-cap-card">
+            <div className="nv-cap-num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</div>
+            <div className="nv-cap-card-k">{c.k}</div>
+            <h4 className="nv-cap-card-h">{c.h}</h4>
+            <p className="nv-cap-card-body">{c.body}</p>
+            <div className="nv-cap-card-stat">{c.stat}</div>
+          </article>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── LIFECYCLE — viewport 04 ─────────────────────────────────────────────
+const LIFECYCLE = [
+  {
+    num: '01',
+    name: 'Evaluation',
+    sub: 'Diligence before commitment',
+    fee: 'Project engagement',
+    body: 'An independent read of a potential venture’s connectome web. Is it viable, what is the stakeholder terrain, where are the landmines? Output: a go / no-go and a map of what it would take to make it work.',
+  },
+  {
+    num: '02',
+    name: 'Formation',
+    sub: 'Qualify, coordinate, develop the strategy',
+    fee: 'Project engagement',
+    pivot: true,
+    body: 'Securing the EXIM loan, the DFI facility, or the major grant requires demonstrating real stakeholder coordination up front. nivria drives that coordination, develops the strategy to hold it, and the NIV score becomes the auditable picture of where it stands.',
+    callout: 'The NIV score helps you meet or exceed the stakeholder coordination and community-engagement standards typically required by EXIM, DFC, IFC Performance Standards, the Equator and Santiago Principles, and prestigious foundation diligence.',
+  },
+  {
+    num: '03',
+    name: 'Execution',
+    sub: 'Stay on to put the strategy in motion',
+    fee: 'Retainer',
+    body: 'With the strategy developed, nivria stays on with the team to actively execute it — tracking the strain, intervening where the weak link is forming, reaching stakeholders before things cascade. Live monitoring, active hand on the work.',
+  },
+  {
+    num: '04',
+    name: 'Stewardship',
+    sub: 'Stay on to keep it intact',
+    fee: 'Retainer',
+    body: 'Once the venture is running, nivria stays on as long-term steward — keeping the NIV score up, catching the inside-breakdown early, and ready to move on drift, narrative risk, or alignment slip the moment they appear.',
+  },
+]
+
+function Lifecycle() {
+  return (
+    <section className="nv-sect nv-life" id="sec-lifecycle">
+      <div className="nv-wrap">
+        <header className="nv-sect-head nv-sect-head-center">
+          <h2 className="nv-h2"><span>At any <em>phase</em> of the venture.</span></h2>
+          <div className="nv-sect-desc">
+            <p>Engage nivria at <em>one phase,</em> several, or for the <em>whole life</em> of the venture.</p>
+          </div>
+        </header>
+
+        <div className="nv-life-panel">
+          <div className="nv-life-head">
+            <span className="nv-life-k">The four phases</span>
+            <span className="nv-life-meta">Engage at any one — or all</span>
+          </div>
+
+          <ol className="nv-life-list">
+            {LIFECYCLE.map(p => (
+              <li
+                key={p.name}
+                className={`nv-life-stage${p.pivot ? ' nv-life-stage-pivot' : ''}`}
+              >
+                <div className="nv-life-num-wrap">
+                  <div className="nv-life-num">{p.num}</div>
+                  {p.pivot && <div className="nv-life-pin" aria-hidden="true">★</div>}
+                </div>
+                <div className="nv-life-meta-col">
+                  <div className="nv-life-name">{p.name}</div>
+                  <div className="nv-life-sub">{p.sub}</div>
+                  <div className="nv-life-fee">{p.fee}</div>
+                </div>
+                <div className="nv-life-body">
+                  <p>{p.body}</p>
+                  {p.pivot && p.callout && (
+                    <div className="nv-life-callout">
+                      <div className="nv-life-callout-k">Meets the bar funders set</div>
+                      <p>{p.callout}</p>
+                    </div>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ol>
+
+          <footer className="nv-life-foot">
+            <span className="nv-life-foot-k">Engagement model</span>
+            <span className="nv-life-foot-v">
+              Project engagements at <strong>Evaluation</strong> and <strong>Formation.</strong> Retainer through <strong>Execution</strong> and <strong>Stewardship.</strong>
+            </span>
+          </footer>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ─── CASE FILE — viewport 06 ─────────────────────────────────────────────
+// A worked example. Institutional case-file format: subject + divergence
+// (market vs NIVRIA) + drivers + recommended interventions + score trend
+// + recent activity + sources.
+
+const DIVERGENCE = {
+  market: {
+    label: 'Market consensus',
+    quote: 'DFI financing expected to close Q3 2026, with first ore by Q2 2027.',
+    source: 'Standard project-finance press, sponsor IR statements',
+  },
+  nivria: {
+    label: 'nivria',
+    quote: 'No earlier than Q1 2027 close. First ore Q4 2027 at the earliest. Three drivers gate the financing milestone.',
+    source: 'Live connectome web · 16 stakeholders monitored · 30-day movement log',
+  },
+}
+
+const INTERVENTIONS = [
+  {
+    n: '01',
+    title: 'Open formal consultation with the indigenous council.',
+    body: 'Begin substantive dialogue before the anchor lender’s review window. The council is asking for a process, not just an outcome — start it now, on the record, with a published consultation calendar.',
+    impact: '+8',
+    on: 'alignment',
+  },
+  {
+    n: '02',
+    title: 'Move the EIA ahead of the political timeline.',
+    body: 'Engage the operator’s government affairs to bring the environmental impact assessment in front of the environment ministry before the next legislative session, not behind it. Take the framing initiative.',
+    impact: '+12',
+    on: 'alignment',
+  },
+  {
+    n: '03',
+    title: 'Pre-brief the national daily with verifiable data.',
+    body: 'Equip the editorial team with on-the-record numbers ahead of the next investigative cycle. Shift the framing from “opaque sponsor” to “transparent operator under independent monitoring.”',
+    impact: '+15',
+    on: 'narrative',
+  },
+]
+
+function CaseFile() {
+  return (
+    <section className="nv-sect nv-case">
+      <div className="nv-wrap">
+        <header className="nv-sect-head nv-sect-head-center">
+          <h2 className="nv-h2"><span>The <em>divergence,</em> and what to do.</span></h2>
+          <div className="nv-sect-desc">
+            <p>Continuing the example — the same nickel JV.</p>
+            <p>Where nivria <em>diverges</em> from the market consensus, and three moves we&rsquo;d run from here.</p>
+          </div>
+        </header>
+
+        {/* THE DIVERGENCE — the most concrete value moment */}
+        <div className="nv-div">
+          <div className="nv-div-grid">
+            <div className="nv-div-col nv-div-them">
+              <div className="nv-div-label">{DIVERGENCE.market.label}</div>
+              <blockquote className="nv-div-quote">&ldquo;{DIVERGENCE.market.quote}&rdquo;</blockquote>
+              <div className="nv-div-src">{DIVERGENCE.market.source}</div>
+            </div>
+            <div className="nv-div-vs" aria-hidden="true">⟷</div>
+            <div className="nv-div-col nv-div-us">
+              <div className="nv-div-label">{DIVERGENCE.nivria.label}</div>
+              <blockquote className="nv-div-quote">&ldquo;{DIVERGENCE.nivria.quote}&rdquo;</blockquote>
+              <div className="nv-div-src">{DIVERGENCE.nivria.source}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* THREE MOVES — active help made concrete */}
+        <div className="nv-int">
+          <div className="nv-int-head">
+            <span className="nv-int-k">Three moves we&rsquo;d run from here</span>
+            <span className="nv-int-meta">Projected score impact · proprietary simulation</span>
+          </div>
+          <ol className="nv-int-list">
+            {INTERVENTIONS.map(i => (
+              <li key={i.n} className="nv-int-row">
+                <div className="nv-int-num">{i.n}</div>
+                <div className="nv-int-body">
+                  <h3 className="nv-int-title">{i.title}</h3>
+                  <p>{i.body}</p>
+                </div>
+                <div className="nv-int-impact">
+                  <span className="nv-int-impact-v">{i.impact}</span>
+                  <span className="nv-int-impact-on">{i.on}</span>
+                </div>
+              </li>
+            ))}
+          </ol>
+          <div className="nv-int-foot">
+            Illustrative. Real engagements produce a longer playbook of moves, sequenced and assigned. <em>nivria stays on to run them.</em>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ─── PEOPLE — viewport 06 (the team behind the system) ─────────────────
+// 2×2 grid of principles, each with a custom geometric SVG mark.
+// The marks are abstract — not stock icons. They gesture at the concept.
+
+// Every side — four points around a center (compass / every position)
+const IconEverySide = () => (
+  <svg viewBox="0 0 44 44" width="44" height="44" fill="none" aria-hidden="true">
+    <circle cx="22" cy="6"  r="2.4" fill="currentColor" />
+    <circle cx="38" cy="22" r="2.4" fill="currentColor" />
+    <circle cx="22" cy="38" r="2.4" fill="currentColor" />
+    <circle cx="6"  cy="22" r="2.4" fill="currentColor" />
+    <circle cx="22" cy="22" r="3"   stroke="currentColor" strokeWidth="1.2" />
+    <line x1="22" y1="9"  x2="22" y2="19" stroke="currentColor" strokeWidth="0.8" strokeOpacity="0.35" />
+    <line x1="35" y1="22" x2="25" y2="22" stroke="currentColor" strokeWidth="0.8" strokeOpacity="0.35" />
+    <line x1="22" y1="35" x2="22" y2="25" stroke="currentColor" strokeWidth="0.8" strokeOpacity="0.35" />
+    <line x1="9"  y1="22" x2="19" y2="22" stroke="currentColor" strokeWidth="0.8" strokeOpacity="0.35" />
+  </svg>
+)
+
+// Hard thing — a bridge arching across a gap (the hard thing, said and
+// carried across). Two grounded endpoints, an arc between them, a faint
+// ground line beneath suggesting the gap that's been spanned.
+const IconHardThing = () => (
+  <svg viewBox="0 0 44 44" width="44" height="44" fill="none" aria-hidden="true">
+    <line x1="4" y1="36" x2="40" y2="36" stroke="currentColor" strokeWidth="0.8" strokeOpacity="0.35" />
+    <path d="M 8 32 Q 22 6 36 32" stroke="currentColor" strokeWidth="1.4" fill="none" strokeLinecap="round" />
+    <circle cx="8"  cy="32" r="2.4" fill="currentColor" />
+    <circle cx="36" cy="32" r="2.4" fill="currentColor" />
+  </svg>
+)
+
+// Every incentive — three equal hollow circles in a triangle, connected.
+// Equal sizes signal "no party weighted above another." A small centroid
+// dot inside shows the equilibrium they hold together.
+const IconEveryIncentive = () => (
+  <svg viewBox="0 0 44 44" width="44" height="44" fill="none" aria-hidden="true">
+    <line x1="22" y1="13" x2="12" y2="30" stroke="currentColor" strokeWidth="0.9" strokeOpacity="0.55" />
+    <line x1="22" y1="13" x2="32" y2="30" stroke="currentColor" strokeWidth="0.9" strokeOpacity="0.55" />
+    <line x1="14" y1="33" x2="30" y2="33" stroke="currentColor" strokeWidth="0.9" strokeOpacity="0.55" />
+    <circle cx="22" cy="10" r="3" stroke="currentColor" strokeWidth="1.3" />
+    <circle cx="10" cy="33" r="3" stroke="currentColor" strokeWidth="1.3" />
+    <circle cx="34" cy="33" r="3" stroke="currentColor" strokeWidth="1.3" />
+    <circle cx="22" cy="25" r="1.5" fill="currentColor" />
+  </svg>
+)
+
+// When it matters most — a circle with a single tick at the moment
+const IconMattersMost = () => (
+  <svg viewBox="0 0 44 44" width="44" height="44" fill="none" aria-hidden="true">
+    <circle cx="22" cy="22" r="15" stroke="currentColor" strokeWidth="1.3" />
+    <line x1="22" y1="9"  x2="22" y2="14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    <line x1="22" y1="22" x2="22" y2="14" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeOpacity="0.55" />
+    <line x1="22" y1="22" x2="28" y2="22" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeOpacity="0.55" />
+    <circle cx="22" cy="22" r="1.6" fill="currentColor" />
+  </svg>
+)
+
+const PEOPLE_NOTES = [
+  {
+    Icon: IconEverySide,
+    h: 'We have been on <em>every side.</em>',
+    body: 'The team has served as sponsors, operators, lenders, government counterparts, community advocates, and cross-border intermediaries. We are not theorizing about your situation — we have been in it, on every side of the table, around the world.',
+  },
+  {
+    Icon: IconHardThing,
+    h: 'We know how to say the <em>hard thing</em> in a way people can hear.',
+    body: 'High-stakes communication is its own craft. What to say, what not to say, when to wait, when to push. Across cultures, across borders, across tables that do not trust each other.',
+  },
+  {
+    Icon: IconEveryIncentive,
+    h: '<em>Every incentive</em> gets respected.',
+    body: 'No party in your stakeholder web is moved by being ignored. Every incentive — even the inconvenient ones — gets read, respected, and worked with. That is how alignment actually holds.',
+  },
+  {
+    Icon: IconMattersMost,
+    h: 'We are there <em>when it matters most.</em>',
+    body: 'Decisions do not get made by models or spreadsheets. They are made by people, often under pressure, often late. We are the ones beside you when those calls come — there to help you feel comfortable and confident in what you are about to do.',
+  },
+]
+
+function People() {
+  return (
+    <section className="nv-sect nv-people" id="sec-people">
+      <div className="nv-wrap">
+        <header className="nv-sect-head nv-sect-head-center">
+          <h2 className="nv-h2"><span>The nivria secret: <em>people.</em></span></h2>
+          <div className="nv-sect-desc">
+            <p>Beneath the AI, the system, the global network — <em>people.</em></p>
+          </div>
+        </header>
+
+        <div className="nv-ppl-grid">
+          {PEOPLE_NOTES.map(({ Icon, h, body }, i) => (
+            <article key={i} className="nv-ppl-cell">
+              <div className="nv-ppl-icon"><Icon /></div>
+              <h3
+                className="nv-ppl-cell-h"
+                dangerouslySetInnerHTML={{ __html: h }}
+              />
+              <p className="nv-ppl-cell-body">{body}</p>
+            </article>
+          ))}
+        </div>
+
+        <div className="nv-ppl-sig">— The nivria team</div>
+      </div>
+    </section>
+  )
+}
+
+// ─── CLOSE — viewport 07 (briefing CTA) ────────────────────────────────
+function Close() {
+  return (
+    <section className="nv-sect nv-close" id="briefing">
+      <div className="nv-wrap nv-close-wrap">
+        <div className="nv-close-logo"><NivriaLogo size="lg" /></div>
+
+        <h2 className="nv-close-h">
+          For the initiatives that <em>matter most</em><span className="nv-close-dash">—</span>
+          <span>and making sure they <em>succeed.</em></span>
+        </h2>
+
+        <div className="nv-close-actions">
+          <a href="mailto:briefing@nivria.ai?subject=Briefing%20request" className="nv-close-cta">
+            Request a briefing
+            <svg width="20" height="12" viewBox="0 0 20 12" fill="none" aria-hidden="true">
+              <path d="M0 6h18.5M14 1l5 5-5 5" stroke="currentColor" strokeWidth="1.4" />
+            </svg>
+          </a>
+          <a href="mailto:briefing@nivria.ai" className="nv-close-mail">briefing@nivria.ai</a>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ─── COLOPHON — page foot ──────────────────────────────────────────────
+function Colophon() {
+  return (
+    <footer className="nv-colo">
+      <div className="nv-wrap nv-colo-row">
+        <div className="nv-colo-l">
+          <NivriaLogo size="sm" />
+          <span className="nv-colo-tag">For the evaluation and stewardship of complex ventures.</span>
+        </div>
+        <a href="/auth/login" className="nv-colo-sign">Sign in</a>
+      </div>
+    </footer>
+  )
+}
+
+function SourceNotFilter() {
+  return (
+    <aside className="nv-snf">
+      <div className="nv-snf-k">The operating principle</div>
+      <h3 className="nv-snf-h"><em>Source,</em> not <em>filter.</em></h3>
+      <div className="nv-snf-grid">
+        <p>
+          Most stakeholder work talks to the top — the minister, the CEO, the official &ldquo;community liaison.&rdquo; <strong>The top is the filter.</strong> The real equilibrium lives where nobody goes.
+        </p>
+        <p>
+          nivria reads where it actually lives — through community leaders, ground operators, businesses in the area, civil society. The people we talk to to <em>read</em> the connectome web are the people we engage to <em>fix</em> it. Measurement and remedy run on <strong>the identical network</strong>.
+        </p>
+      </div>
+    </aside>
+  )
+}
+
+// ─── INSTRUMENT — viewport 02 (connectome web + NIV score) ───────────────
+// Two columns. Each side owns one product piece: headline → definition →
+// the visual. Spatial mapping is one-to-one.
+function Instrument() {
+  return (
+    <section className="nv-sect nv-inst" id="sec-instrument">
+      <div className="nv-wrap">
+        <header className="nv-sect-head nv-sect-head-center">
+          <h2 className="nv-h2"><span>The <em>new standard.</em></span></h2>
+        </header>
+
+        <div className="nv-inst-pair">
+          {/* LEFT — the connectome web */}
+          <div className="nv-inst-col">
+            <h3 className="nv-inst-h">The <em>connectome web.</em></h3>
+            <p className="nv-inst-p">
+              A <em>connectome</em> is the complete wiring diagram of a brain — every connection, mapped. Every complex venture has one too: the live web of stakeholders, partners, communities, regulators, and capital it actually runs on. We map it.
+            </p>
+            <ConnectomeWeb />
+          </div>
+
+          {/* RIGHT — the NIV score */}
+          <div className="nv-inst-col">
+            <h3 className="nv-inst-h">The <em>NIV score.</em></h3>
+            <p className="nv-inst-p">
+              A real-time picture of the integrity of that web — decomposed into alignment, trust, narrative, and execution health. Backed by sourced, time-stamped evidence, not reputation.
+            </p>
+            <ScoreReadout />
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ─── Connectome web visualization ───────────────────────────────────────
+function ConnectomeWeb() {
+  const W = 760, H = 540
+  const tone = (k: 'iron' | 'forest' | 'bronze') =>
+    k === 'iron'   ? '#8C2820' :
+    k === 'forest' ? '#5A6F4F' :
+                     '#A37A2E'
+  const nodeTone = (s: Stance) =>
+    s === 'against' ? '#8C2820' :
+    s === 'aligned' ? '#5A6F4F' :
+                      '#A37A2E'
+
+  return (
+    <figure className="nv-conn">
+      <div className="nv-conn-frame">
+        <div className="nv-conn-head">
+          <div className="nv-conn-subject">
+            <strong>Nickel processing JV</strong>
+            <span className="nv-conn-stage">formation stage</span>
+          </div>
+          <div className="nv-conn-count">
+            <span className="nv-conn-count-n">16</span>
+            <span className="nv-conn-count-l">load-bearing actors</span>
+          </div>
+        </div>
+
+        <svg viewBox={`0 0 ${W} ${H}`} className="nv-conn-svg" role="img"
+             aria-label="Connectome web for an illustrative nickel processing JV — 16 stakeholders across four sectors">
+          <defs>
+            <radialGradient id="nv-halo-iron" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#8C2820" stopOpacity="0.40" />
+              <stop offset="100%" stopColor="#8C2820" stopOpacity="0" />
+            </radialGradient>
+            <radialGradient id="nv-halo-forest" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#5A6F4F" stopOpacity="0.36" />
+              <stop offset="100%" stopColor="#5A6F4F" stopOpacity="0" />
+            </radialGradient>
+            <radialGradient id="nv-halo-bronze" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#A37A2E" stopOpacity="0.30" />
+              <stop offset="100%" stopColor="#A37A2E" stopOpacity="0" />
+            </radialGradient>
+          </defs>
+
+          {/* very faint cross-quadrant dividers */}
+          <line x1={W/2} y1={20} x2={W/2} y2={H-20} stroke="#1F1C16" strokeDasharray="2 8" />
+          <line x1={20} y1={H/2} x2={W-20} y2={H/2} stroke="#1F1C16" strokeDasharray="2 8" />
+
+          {/* sector zone labels */}
+          {SECTORS.map((s, i) => (
+            <text
+              key={i}
+              x={s.x} y={s.y}
+              textAnchor={s.align}
+              className="nv-conn-sec"
+            >{s.label.toUpperCase()}</text>
+          ))}
+
+          {/* links */}
+          {LINKS.map((l, i) => {
+            const a = NODES[l.a], b = NODES[l.b]
+            const c = tone(l.kind)
+            return (
+              <line
+                key={i}
+                x1={a.x} y1={a.y} x2={b.x} y2={b.y}
+                stroke={c}
+                strokeWidth={l.kind === 'bronze' ? 1 : 1.4}
+                strokeOpacity={l.kind === 'bronze' ? 0.30 : 0.50}
+                strokeDasharray={l.kind === 'bronze' ? '3 5' : undefined}
+              />
+            )
+          })}
+
+          {/* nodes + labels */}
+          {NODES.map(n => {
+            const c = nodeTone(n.stance)
+            const haloId =
+              n.stance === 'against' ? 'nv-halo-iron' :
+              n.stance === 'aligned' ? 'nv-halo-forest' :
+                                       'nv-halo-bronze'
+            return (
+              <g key={n.n} className="nv-node">
+                <circle cx={n.x} cy={n.y} r={n.r + 14} fill={`url(#${haloId})`} />
+                <circle cx={n.x} cy={n.y} r={n.r} fill="#0D0B08" stroke={c} strokeWidth="1.6" />
+                <circle cx={n.x} cy={n.y} r={n.r - 5} fill={c} fillOpacity="0.85" />
+                <text x={n.x} y={n.y + 4} textAnchor="middle" className="nv-node-n">{n.n}</text>
+                <text
+                  x={n.x + n.lx}
+                  y={n.y + n.ly}
+                  textAnchor={n.la}
+                  className={`nv-node-lbl nv-node-lbl-${n.stance}`}
+                >{n.name}</text>
+                <title>{`${n.n}. ${n.name} — ${n.role} · influence ${n.inf}/10`}</title>
+              </g>
+            )
+          })}
+        </svg>
+
+        <div className="nv-conn-mvmt">
+          <div className="nv-conn-mvmt-k">Recent movements <span>· last 30 days</span></div>
+          <ul>
+            {MOVEMENTS.map((m, i) => (
+              <li key={i} className="nv-mvmt-row">
+                <span className="nv-mvmt-date">{m.date}</span>
+                <span className="nv-mvmt-text">{m.text}</span>
+                <span className={`nv-mvmt-impact nv-mvmt-${m.arrow}`}>
+                  {m.impact} {m.arrow === 'down' ? '▼' : '▲'} {m.delta}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <figcaption className="nv-conn-cap">
+          <span className="nv-conn-cap-note">Illustrative — generic JV in formation. Hover a node for detail.</span>
+          <span className="nv-conn-key">
+            <span><i style={{background:'#8C2820'}}/> resistance</span>
+            <span><i style={{background:'#A37A2E'}}/> neutral</span>
+            <span><i style={{background:'#5A6F4F'}}/> aligned</span>
+          </span>
+        </figcaption>
+      </div>
+    </figure>
+  )
+}
+
+// ─── NIV score readout ──────────────────────────────────────────────────
+function ScoreReadout() {
+  return (
+    <aside className="nv-read">
+      <div className="nv-read-k">NIV score · live</div>
+      <div className="nv-read-num">
+        <span className="nv-read-big">60</span>
+        <span className="nv-read-of">/ 100</span>
+      </div>
+      <div className="nv-read-state">Strained</div>
+      <div className="nv-read-meta">Nickel JV · formation · evaluated 21 June 2026</div>
+
+      <div className="nv-read-trend">
+        <Sparkline data={TREND} />
+        <div className="nv-read-trend-info">
+          <span className="nv-read-trend-k">last 30 days</span>
+          <span className="nv-read-trend-v">▼ 12</span>
+        </div>
+      </div>
+
+      <div className="nv-read-rule" />
+
+      <ul className="nv-sub">
+        {SUBSCORES.map(s => (
+          <li key={s.k} className="nv-sub-row">
+            <div className="nv-sub-line">
+              <span className="nv-sub-k">{s.k}</span>
+              <span className="nv-sub-v">{s.v}</span>
+            </div>
+            <div className="nv-sub-bar" aria-hidden="true">
+              <div className="nv-sub-bar-fill" style={{ width: `${s.v}%` }} />
+            </div>
+            <div className="nv-sub-note">{s.note}</div>
+          </li>
+        ))}
+      </ul>
+
+      <div className="nv-read-foot">
+        <span className="nv-read-foot-k">Next decision window</span>
+        <span className="nv-read-foot-v">Q4 2026 · anchor lender review</span>
+      </div>
+    </aside>
+  )
+}
+
+// ─── small inline sparkline ─────────────────────────────────────────────
+function Sparkline({ data }: { data: number[] }) {
+  const W = 160, H = 40, pad = 4
+  const min = Math.min(...data), max = Math.max(...data)
+  const span = Math.max(1, max - min)
+  const pts = data.map((v, i) => {
+    const x = pad + (i / (data.length - 1)) * (W - pad * 2)
+    const y = pad + (1 - (v - min) / span) * (H - pad * 2)
+    return `${x},${y}`
+  }).join(' ')
+  const lastX = pad + (W - pad * 2)
+  const lastY = pad + (1 - (data[data.length - 1] - min) / span) * (H - pad * 2)
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="nv-spark" aria-hidden="true">
+      <polyline points={pts} fill="none" stroke="#C9912E" strokeWidth="1.4" strokeOpacity="0.85" />
+      <circle cx={lastX} cy={lastY} r="2.6" fill="#C9912E" />
+    </svg>
+  )
+}
+
+// ============================================================================
+// CSS
+// ============================================================================
+const CSS = `
+.nv {
+  --bg: #0D0B08;
+  --bg-2: #110F0B;
+  --panel: #15130F;
+  --panel-2: #1A1813;
+  --ink: #F4ECD9;
+  --ink-2: #D9CFB7;
+  --ink-3: #A89E86;
+  --ink-4: #6E6651;
+  --rule: #2F2A20;
+  --rule-soft: #211D16;
+  --accent: #C9912E;
+  --accent-deep: #8A6420;
+  --iron: #8C2820;
+  --bronze: #A37A2E;
+  --forest: #5A6F4F;
+
+  min-height: 100vh;
+  color: var(--ink);
+  font-family: var(--font-reader), 'Newsreader', Georgia, serif;
+  font-feature-settings: "kern" 1, "liga" 1, "calt" 1, "onum" 1;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
+  font-size: 17px;
+  line-height: 1.6;
+  position: relative;
+  isolation: isolate;
+
+  /* page-wide spotlight bed — multiple warm sources, fixed to viewport so
+     they stay anchored while content scrolls through them (subtle parallax). */
+  background:
+    /* primary sun — top-left, large + warm */
+    radial-gradient(1600px 1000px at 8% 4%,    rgba(201,145,46,.20), transparent 60%),
+    /* mid-right glow */
+    radial-gradient(1100px 760px  at 92% 32%,  rgba(201,145,46,.12), transparent 62%),
+    /* deeper anchor — bottom-left, warm red */
+    radial-gradient(1100px 880px  at 14% 82%,  rgba(140,40,32,.10),  transparent 65%),
+    /* small bottom-right gold */
+    radial-gradient(900px  720px  at 96% 96%,  rgba(201,145,46,.10), transparent 68%),
+    /* center secondary — soft warmth in the middle of the page */
+    radial-gradient(1200px 1000px at 50% 50%,  rgba(201,145,46,.04), transparent 70%),
+    var(--bg);
+  background-attachment: fixed;
+}
+/* page-wide paper grain layer, fixed under content */
+.nv::before {
+  content: '';
+  position: fixed; inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 240 240' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='nvbg'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 0.95  0 0 0 0 0.88  0 0 0 0.045 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23nvbg)'/%3E%3C/svg%3E");
+  opacity: 0.45;
+  mix-blend-mode: overlay;
+}
+/* a second very faint vignette so the edges feel deeper than the centre */
+.nv::after {
+  content: '';
+  position: fixed; inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background: radial-gradient(1400px 900px at 50% 40%, transparent 0%, transparent 55%, rgba(0,0,0,0.45) 100%);
+}
+.nv *, .nv *::before, .nv *::after { box-sizing: border-box; }
+.nv ::selection { background: rgba(201,145,46,.32); color: var(--ink); }
+.nv a { color: inherit; text-decoration: none; }
+.nv em { font-style: italic; color: var(--accent); }
+/* selectively bold the em accents in small body copy where italic alone
+   reads too thin — large display italics keep their natural weight. */
+.nv .nv-desc p em,
+.nv .nv-inst-p em,
+.nv .nv-life-callout p em { font-weight: 700; }
+.nv strong { font-weight: 600; color: var(--ink); }
+.nv .nv-wrap { max-width: 1360px; margin: 0 auto; padding: 0 48px; }
+
+/* ─── HEADER ─────────────────────────────────────────────────────────── */
+.nv .nv-hdr {
+  padding: 18px 0;
+  border-bottom: 1px solid var(--rule-soft);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(13, 11, 8, 0.75);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transform: translateY(0);
+  transition: transform .35s cubic-bezier(.4, 0, .2, 1);
+  will-change: transform;
+}
+.nv .nv-hdr.nv-hdr-hidden { transform: translateY(-110%); }
+
+/* ─── SECTION NAV — fixed vertical dots, right side ──────────────────── */
+.nv .nv-sn {
+  position: fixed;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  pointer-events: auto;
+}
+/* link element is a generous 32×32 invisible hit area */
+.nv .nv-sn-dot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+/* the visible dot — small by default, grows large on hover */
+.nv .nv-sn-dot::before {
+  content: '';
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid var(--accent-deep);
+  background: transparent;
+  transition:
+    width .25s cubic-bezier(.4, 0, .2, 1),
+    height .25s cubic-bezier(.4, 0, .2, 1),
+    background .2s,
+    border-color .2s;
+}
+.nv .nv-sn-dot:hover::before {
+  width: 20px;
+  height: 20px;
+  border-color: var(--accent);
+  background: rgba(201,145,46,.22);
+}
+.nv .nv-sn-dot.nv-sn-dot-active::before {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.nv .nv-sn-dot.nv-sn-dot-active:hover::before {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.nv .nv-sn-label {
+  position: absolute;
+  right: 100%;
+  margin-right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  white-space: nowrap;
+  font-family: var(--font-reader), serif;
+  font-style: italic;
+  font-size: 17px;
+  line-height: 1.3;
+  color: var(--ink);
+  background: rgba(13,11,8,.88);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 9px 18px;
+  border: 1px solid var(--accent-deep);
+  box-shadow: 0 14px 36px -18px rgba(0, 0, 0, .6);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .25s, transform .25s;
+}
+.nv .nv-sn-dot:hover .nv-sn-label {
+  opacity: 1;
+  transform: translateY(-50%) translateX(-4px);
+}
+
+/* ─── BACK TO TOP — fixed bottom-right ──────────────────────────────── */
+.nv .nv-top {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  z-index: 30;
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--accent-deep);
+  background: rgba(13,11,8,.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(10px);
+  transition: opacity .3s, transform .3s, background .25s, border-color .25s;
+}
+.nv .nv-top.nv-top-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+.nv .nv-top:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg);
+}
+
+@media (max-width: 720px) {
+  .nv .nv-sn { display: none; }
+  .nv .nv-top { right: 14px; bottom: 14px; width: 40px; height: 40px; }
+}
+.nv .nv-hdr-row {
+  display: flex; align-items: center; justify-content: space-between;
+}
+/* ─── LOGO — NIVRIA beneath a web of connected nodes ──────────────── */
+.nv .nv-logo {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  text-decoration: none;
+  color: var(--accent);
+  transition: opacity .2s ease;
+  line-height: 1;
+}
+.nv .nv-logo:hover { opacity: 0.92; }
+
+/* chart sits above the wordmark — could stand alone as a logomark */
+.nv .nv-logo-chart {
+  display: block;
+  width: 100%;
+  color: var(--accent);
+  pointer-events: none;
+}
+.nv .nv-logo-chart svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.nv .nv-logo-text {
+  font-family: var(--font-logo), 'DM Serif Display', serif;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  border-bottom: 0.04em solid var(--accent);
+  padding-bottom: 0.02em;
+}
+/* the i is REPLACED with a custom data column. Line + top dot + bot dot
+   are all child elements using the SAME centering technique (left:50% +
+   translateX(-50%)) so they're guaranteed to align on the vertical axis. */
+.nv .nv-logo-i {
+  display: inline-block;
+  position: relative;
+  width: 0.22em;
+  height: 0.70em;
+  vertical-align: baseline;
+  margin: 0 0.04em;
+  top: 0.08em;            /* nudge i down to sit lower against the wordmark */
+}
+.nv .nv-logo-i-line {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: -0.05em;
+  width: 3px;
+  background: var(--accent);
+  transform: translateX(-50%);
+}
+.nv .nv-logo-i-trunk {
+  position: absolute;
+  left: 50%;
+  bottom: -0.20em;        /* anchored AT the bottom dot */
+  width: 1.2px;
+  height: 1.55em;          /* extends through i and up to close gap to canopy */
+  background: var(--accent);
+  transform: translateX(-50%);
+}
+.nv .nv-logo-i-top {
+  position: absolute;
+  left: 50%;
+  top: -0.15em;
+  width: 0.17em;
+  height: 0.17em;
+  background: var(--accent);
+  border-radius: 50%;
+  transform: translateX(-50%);
+}
+.nv .nv-logo-i-trunktop {
+  /* data point where the trunk meets the canopy */
+  position: absolute;
+  left: 50%;
+  bottom: 1.30em;
+  width: 0.11em;
+  height: 0.11em;
+  background: var(--accent);
+  border-radius: 50%;
+  transform: translate(calc(-50% - 0.6px), 0);
+}
+/* roots: upside-down V that sits BELOW the gold ground line.
+   translateY pushes the whole splay past the border so the line
+   reads as the ground surface and the V is what's underneath. */
+.nv .nv-logo-i-roots {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 0.55em;
+  height: 0.28em;
+  color: var(--accent);
+  transform: translate(-50%, 0.02em);
+  overflow: visible;
+  display: block;
+  pointer-events: none;
+}
+
+/* inline wordmark — "nivria" rendered with the logo's font + gold-i
+   styling, but without the trunks (so it sits cleanly inside prose) */
+.nv .nv-inline-wordmark {
+  font-family: var(--font-logo), 'DM Serif Display', serif;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+}
+/* in-prose usage: drop the ground line + roots, bump the i-dot, slim the stem */
+.nv .nv-inline-wordmark .nv-logo-i-roots { display: none; }
+.nv .nv-inline-wordmark .nv-logo-i-top {
+  width: 0.24em;
+  height: 0.24em;
+  top: -0.20em;
+}
+.nv .nv-inline-wordmark .nv-logo-i-line { width: 1.5px; }
+/* header logo (md) — slimmer i-stem to match the in-prose feel */
+.nv .nv-logo-md .nv-logo-i-line { width: 1.5px; }
+
+/* sizes */
+.nv .nv-logo-lg { width: 560px; }
+.nv .nv-logo-lg .nv-logo-text { font-size: 76px; letter-spacing: 0.05em; }
+.nv .nv-logo-lg .nv-logo-chart { height: 92px; margin-bottom: -6px; }
+
+.nv .nv-logo-md { width: 220px; }
+.nv .nv-logo-md .nv-logo-text { font-size: 30px; }
+.nv .nv-logo-md .nv-logo-chart { height: 34px; margin-bottom: -2px; }
+
+.nv .nv-logo-sm { width: 150px; }
+.nv .nv-logo-sm .nv-logo-text { font-size: 20px; letter-spacing: 0.03em; }
+.nv .nv-logo-sm .nv-logo-chart { height: 22px; margin-bottom: -2px; }
+.nv .nv-nav { display: flex; align-items: center; gap: 28px; }
+.nv .nv-nav-cta {
+  font-family: var(--font-reader), serif; font-style: italic;
+  font-size: 17px; color: var(--accent);
+  border-bottom: 1px solid var(--accent-deep);
+  padding-bottom: 2px;
+}
+.nv .nv-nav-cta:hover { color: var(--accent); border-color: var(--accent); }
+.nv .nv-nav-link {
+  font-family: var(--font-reader), serif;
+  font-size: 16.5px; color: var(--ink-3);
+}
+.nv .nv-nav-link:hover { color: var(--ink); }
+.nv .nv-nav-founder {
+  font-family: var(--font-reader), serif;
+  font-style: italic;
+  font-size: 17px;
+  color: var(--accent);
+  border-bottom: 1px solid var(--accent-deep);
+  padding-bottom: 2px;
+  transition: color .2s, border-color .2s;
+}
+.nv .nv-nav-founder:hover { color: var(--accent); border-color: var(--accent); }
+
+/* ─── HERO ──────────────────────────────────────────────────────────── */
+.nv .nv-hero {
+  position: relative;
+  padding: 64px 0 96px;
+}
+
+.nv .nv-hero-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  gap: 64px;
+  align-items: start;
+}
+.nv .nv-hero-text { min-width: 0; }
+
+/* RULE 1 — headline IS the identity */
+.nv .nv-h1 {
+  font-family: var(--font-editorial), 'Fraunces', serif;
+  font-variation-settings: "opsz" 144, "SOFT" 0;
+  font-weight: 700;
+  font-size: clamp(44px, 5.4vw, 80px);
+  line-height: 0.98;
+  letter-spacing: -0.028em;
+  color: var(--ink);
+  margin: 0;
+  display: grid;
+  gap: 6px;
+}
+.nv .nv-h1-mark {
+  display: block;
+  font-variation-settings: "opsz" 144, "SOFT" 0;
+  letter-spacing: -0.012em;
+}
+.nv .nv-h1-line {
+  display: block;
+  font-weight: 500;
+  font-variation-settings: "opsz" 144, "SOFT" 18;
+  color: var(--ink-2);
+}
+.nv .nv-h1 em {
+  color: var(--accent);
+  font-variation-settings: "opsz" 144, "SOFT" 60;
+}
+/* sub-headline — sits directly under the NIVRIA wordmark */
+.nv .nv-h1-sub {
+  font-family: var(--font-editorial), 'Fraunces', serif;
+  font-variation-settings: "opsz" 60, "SOFT" 18;
+  font-weight: 500;
+  font-style: italic;
+  font-size: clamp(24px, 2.6vw, 36px);
+  line-height: 1.18;
+  letter-spacing: -0.012em;
+  color: var(--ink-2);
+  max-width: 22ch;
+  margin: 18px 0 0;
+}
+.nv .nv-h1-sub em {
+  color: var(--accent);
+  font-variation-settings: "opsz" 60, "SOFT" 60;
+  font-style: italic;
+}
+
+/* RULE 2 — description directly under headline */
+.nv .nv-desc {
+  max-width: 560px;
+  margin-top: 32px;
+}
+.nv .nv-desc p {
+  font-family: var(--font-reader), serif;
+  font-size: 20px;
+  line-height: 1.6;
+  color: var(--ink-2);
+  margin: 0 0 16px;
+}
+.nv .nv-desc p strong { color: var(--ink); font-weight: 600; }
+.nv .nv-desc p em { font-style: italic; color: var(--accent); }
+.nv .nv-cta {
+  display: inline-flex; align-items: center; gap: 12px;
+  margin-top: 18px;
+  padding: 12px 22px;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-family: var(--font-reader), serif;
+  font-style: italic;
+  font-size: 15.5px;
+  font-weight: 500;
+  transition: background .2s, color .2s;
+}
+.nv .nv-cta:hover { background: var(--accent); color: var(--bg); }
+.nv .nv-cta svg { transition: transform .2s; }
+.nv .nv-cta:hover svg { transform: translateX(3px); }
+
+/* RULE 3 — supporting graphic */
+
+/* "Held by" — 4 audience tiles + lifecycle strip */
+.nv .nv-held {
+  margin: 0;
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  border: 1px solid var(--rule);
+  position: relative;
+  padding: 26px 28px 24px;
+  display: flex; flex-direction: column;
+  isolation: isolate;
+}
+.nv .nv-held::before {
+  content: '';
+  position: absolute; top: -1px; left: 0; width: 96px; height: 2px;
+  background: var(--accent);
+}
+.nv .nv-held-k {
+  font-family: var(--font-label), sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 22px;
+}
+.nv .nv-held-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-top: 1px solid var(--rule-soft);
+  border-left: 1px solid var(--rule-soft);
+}
+.nv .nv-held-tile {
+  padding: 22px 22px 22px;
+  border-right: 1px solid var(--rule-soft);
+  border-bottom: 1px solid var(--rule-soft);
+  transition: background .2s ease;
+}
+.nv .nv-held-tile:hover {
+  background: rgba(201,145,46,.04);
+}
+.nv .nv-held-mark {
+  font-family: var(--font-label), sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 14px;
+}
+.nv .nv-held-name {
+  font-family: var(--font-editorial), 'Fraunces', serif;
+  font-variation-settings: "opsz" 60, "SOFT" 0;
+  font-weight: 600;
+  font-size: 24px;
+  line-height: 1.1;
+  letter-spacing: -0.018em;
+  color: var(--ink);
+  margin-bottom: 14px;
+}
+.nv .nv-held-line {
+  font-family: var(--font-reader), serif;
+  font-style: italic;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--ink-3);
+}
+.nv .nv-held-cap {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--rule-soft);
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 22px; flex-wrap: wrap;
+}
+.nv .nv-held-cap-k {
+  font-family: var(--font-label), sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.nv .nv-held-cap-bar {
+  display: inline-flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+  font-family: var(--font-reader), serif;
+  font-style: italic;
+  font-size: 18px;
+  color: var(--ink-2);
+}
+.nv .nv-held-cap-bar em {
+  font-style: normal;
+  color: var(--ink-4);
+  padding: 0 2px;
+}
+
+/* connectome web */
+.nv .nv-conn {
+  margin: 0;
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  border: 1px solid var(--rule);
+  position: relative;
+  overflow: hidden;
+}
+.nv .nv-conn::before {
+  content: '';
+  position: absolute; top: -1px; left: 0; width: 96px; height: 2px;
+  background: var(--accent);
+}
+.nv .nv-conn-frame { padding: 22px 24px 18px; }
+
+/* header row above the SVG */
+.nv .nv-conn-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--rule-soft);
+  gap: 16px;
+}
+.nv .nv-conn-subject {
+  display: flex; align-items: baseline; gap: 10px;
+  font-family: var(--font-editorial), serif;
+  font-variation-settings: "opsz" 28, "SOFT" 0;
+  font-size: 16px;
+}
+.nv .nv-conn-subject strong {
+  color: var(--ink); font-weight: 600;
+}
+.nv .nv-conn-stage {
+  font-family: var(--font-reader), serif;
+  font-style: italic;
+  font-size: 13px;
+  color: var(--ink-3);
+}
+.nv .nv-conn-count {
+  display: inline-flex; align-items: baseline; gap: 8px;
+}
+.nv .nv-conn-count-n {
+  font-family: var(--font-editorial), serif;
+  font-variation-settings: "opsz" 60, "SOFT" 0;
+  font-weight: 700; font-size: 24px;
+  color: var(--accent);
+  line-height: 1;
+}
+.nv .nv-conn-count-l {
+  font-family: var(--font-label), sans-serif;
+  font-size: 11px; font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.nv .nv-conn-svg { display: block; width: 100%; height: auto; }
+
+/* svg text styles */
+.nv .nv-conn-svg .nv-conn-sec {
+  font-family: var(--font-label), sans-serif;
+  font-size: 12px; letter-spacing: 0.20em;
+  fill: var(--ink);
+  font-weight: 600;
+}
+.nv .nv-conn-svg .nv-node-n {
+  font-family: var(--font-mono), monospace;
+  font-size: 10.5px;
+  font-weight: 500;
+  fill: var(--ink);
+  pointer-events: none;
+}
+.nv .nv-conn-svg .nv-node-lbl {
+  font-family: var(--font-reader), serif;
+  font-style: italic;
+  font-size: 11.5px;
+  fill: var(--ink-2);
+  pointer-events: none;
+}
+.nv .nv-conn-svg .nv-node-lbl-against { fill: #BC7E76; }
+.nv .nv-conn-svg .nv-node-lbl-aligned { fill: #9CB395; }
+.nv .nv-conn-svg .nv-node-lbl-neutral { fill: #C9B486; }
+
+/* recent movements strip */
+.nv .nv-conn-mvmt {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--rule-soft);
+}
+.nv .nv-conn-mvmt-k {
+  font-family: var(--font-label), sans-serif;
+  font-size: 11px; font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+.nv .nv-conn-mvmt-k span {
+  color: var(--ink-3);
+  font-style: italic;
+  font-family: var(--font-reader), serif;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 11.5px;
+  margin-left: 4px;
+}
+.nv .nv-conn-mvmt ul {
+  list-style: none; padding: 0; margin: 0;
+  display: grid; gap: 6px;
+}
+.nv .nv-mvmt-row {
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  gap: 14px;
+  align-items: baseline;
+  padding: 6px 0;
+  border-bottom: 1px dotted var(--rule-soft);
+  font-size: 13.5px;
+}
+.nv .nv-mvmt-row:last-child { border-bottom: none; }
+.nv .nv-mvmt-date {
+  font-family: var(--font-mono), monospace;
+  font-size: 11px; letter-spacing: 0.06em;
+  color: var(--ink-3);
+}
+.nv .nv-mvmt-text {
+  font-family: var(--font-reader), serif;
+  color: var(--ink-2);
+  line-height: 1.45;
+}
+.nv .nv-mvmt-impact {
+  font-family: var(--font-label), sans-serif;
+  font-size: 11px; font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--iron);
+  white-space: nowrap;
+}
+.nv .nv-mvmt-up { color: var(--forest); }
+
+.nv .nv-conn-cap {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--rule-soft);
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 16px; flex-wrap: wrap;
+  font-family: var(--font-reader), serif;
+  font-style: italic;
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+.nv .nv-conn-cap-note { font-style: italic; }
+.nv .nv-conn-key {
+  display: flex; gap: 16px;
+  font-family: var(--font-label), sans-serif;
+  font-style: normal;
+  font-size: 11px; font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.nv .nv-conn-key span { display: inline-flex; align-items: center; gap: 7px; }
+.nv .nv-conn-key i {
+  display: inline-block;
+  width: 8px; height: 8px; border-radius: 50%;
+}
+
+/* NIV score readout */
+.nv .nv-read {
+  margin: 0;
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  border: 1px solid var(--rule);
+  padding: 24px 26px 22px;
+  display: flex; flex-direction: column;
+  position: relative;
+}
+.nv .nv-read::before {
+  content: '';
+  position: absolute; top: -1px; left: 0; right: 0; height: 2px;
+  background: var(--accent);
+}
+.nv .nv-read-k {
+  font-family: var(--font-label), sans-serif;
+  font-size: 12px; font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 14px;
+}
+.nv .nv-read-num {
+  display: flex; align-items: baseline; gap: 10px;
+}
+.nv .nv-read-big {
+  font-family: var(--font-editorial), 'Fraunces', serif;
+  font-variation-settings: "opsz" 144, "SOFT" 0;
+  font-weight: 700;
+  font-size: 96px;
+  line-height: 0.9;
+  letter-spacing: -0.04em;
+  color: var(--ink);
+}
+.nv .nv-read-of {
+  font-family: var(--font-mono), monospace;
+  font-size: 16px;
+  letter-spacing: 0.05em;
+  color: var(--ink-3);
+}
+.nv .nv-read-state {
+  font-family: var(--font-reader), serif;
+  font-style: italic;
+  font-size: 18px;
+  color: var(--accent);
+  margin-top: 4px;
+}
+.nv .nv-read-meta {
+  font-family: var(--font-reader), serif;
+  font-style: italic;
+  font-size: 12.5px;
+  color: var(--ink-3);
+  margin-top: 8px;
+}
+.nv .nv-read-trend {
+  margin-top: 18px;
+  padding: 14px 0 12px;
+  border-top: 1px solid var(--rule-soft);
+  border-bottom: 1px solid var(--rule-soft);
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 14px;
+}
+.nv .nv-spark {
+  width: 160px; height: 40px;
+  display: block;
+}
+.nv .nv-read-trend-info {
+  display: flex; flex-direction: column; align-items: flex-end;
+  gap: 2px;
+}
+.nv .nv-read-trend-k {
+  font-family: var(--font-label), sans-serif;
+  font-size: 11px; font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.nv .nv-read-trend-v {
+  font-family: var(--font-mono), monospace;
+  font-size: 14px;
+  color: var(--iron);
+  letter-spacing: 0.04em;
+}
+.nv .nv-read-rule {
+  height: 1px;
+  background: transparent;
+  margin: 16px 0 16px;
+}
+.nv .nv-sub {
+  list-style: none;
+  margin: 0; padding: 0;
+  display: grid; gap: 18px;
+}
+.nv .nv-sub-line {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 6px;
+}
+.nv .nv-sub-k {
+  font-family: var(--font-editorial), serif;
+  font-variation-settings: "opsz" 18, "SOFT" 0;
+  font-weight: 500;
+  font-size: 13.5px;
+  color: var(--ink);
+  letter-spacing: -0.005em;
+}
+.nv .nv-sub-v {
+  font-family: var(--font-mono), monospace;
+  font-size: 13px;
+  color: var(--ink-2);
+  letter-spacing: 0.04em;
+}
+.nv .nv-sub-bar {
+  height: 2px;
+  background: var(--rule-soft);
+  position: relative;
+}
+.nv .nv-sub-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  opacity: 0.75;
+}
+.nv .nv-sub-note {
+  margin-top: 6px;
+  font-family: var(--font-reader), serif;
+  font-style: italic;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--ink-3);
+}
+.nv .nv-read-foot {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--rule-soft);
+  display: flex; flex-direction: column; gap: 4px;
+}
+.nv .nv-read-foot-k {
+  font-family: var(--font-label), sans-serif;
+  font-size: 11px; font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.nv .nv-read-foot-v {
+  font-family: var(--font-reader), serif;
+  font-style: italic;
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+
+/* ─── SECTION SCAFFOLD ──────────────────────────────────────────────── */
+.nv .nv-sect {
+  padding: 96px 0;
+  position: relative;
+  border-top: 1px solid var(--rule-soft);
+  /* each section has a soft gradient cap — subtle warm tint that gives the
+     section its own "lighting", layered over the fixed spotlights */
+  background:
+    radial-gradient(900px 340px at 50% 0%, rgba(201,145,46,.06), transparent 70%);
+}
+/* alternating warm-cool gradient cast so the page has rhythm */
+.nv main > section:nth-of-type(odd) {
+  background:
+    radial-gradient(1000px 380px at 30% 0%, rgba(201,145,46,.08), transparent 70%),
+    radial-gradient(800px 320px at 80% 100%, rgba(140,40,32,.04), transparent 70%);
+}
+.nv main > section:nth-of-type(even) {
+  background:
+    radial-gradient(1000px 380px at 70% 0%, rgba(201,145,46,.05), transparent 70%),
+    radial-gradient(800px 320px at 20% 100%, rgba(201,145,46,.06), transparent 70%);
+}
+.nv .nv-sect-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 64px;
+  align-items: start;
+  margin-bottom: 48px;
+}
+.nv .nv-h2 {
+  font-family: var(--font-editorial), 'Fraunces', serif;
+  font-variation-settings: "opsz" 144, "SOFT" 0;
+  font-weight: 600;
+  font-size: clamp(36px, 4.4vw, 64px);
+  line-height: 1.02;
+  letter-spacing: -0.024em;
+  color: var(--ink);
+  margin: 0;
+  display: grid;
+  gap: 4px;
+}
+.nv .nv-h2 span { display: block; }
+.nv .nv-h2 em {
+  color: var(--accent);
+  font-variation-settings: "opsz" 144, "SOFT" 60;
+}
+.nv .nv-sect-desc p {
+  font-family: var(--font-reader), serif;
+  font-size: 17px;
+  line-height: 1.62;
+  color: var(--ink-2);
+  margin: 0 0 14px;
+}
+.nv .nv-sect-desc p:last-child { margin-bottom: 0; }
+.nv .nv-sect-desc p em { font-style: italic; color: var(--accent); }
+.nv .nv-sect-desc p strong { color: var(--ink); font-weight: 600; }
+
+/* ─── WHO IS THIS FOR (V03) + HOW IT WORKS (V04) ──────────────────────── */
+.nv .nv-who { padding: 112px 0 96px; }
+.nv .nv-system { padding: 96px 0 112px; }
+
+/* centered section header variant — used by V03 */
+.nv .nv-sect-head-center {
+  grid-template-columns: 1fr;
+  text-align: center;
+  justify-items: center;
+  margin-bottom: 72px;
+  gap: 32px;
+}
+.nv .nv-sect-head-center .nv-h2 {
+  font-size: clamp(48px, 6vw, 84px);
+  letter-spacing: -0.028em;
+  margin: 0;
+}
+.nv .nv-sect-head-center .nv-sect-desc {
+  max-width: 820px;
+}
+.nv .nv-sect-head-center .nv-sect-desc p {
+  font-family: var(--font-editorial), 'Fraunces', serif;
+  font-variation-settings: "opsz" 36, "SOFT" 14;
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(22px, 2.4vw, 30px);
+  line-height: 1.35;
+  letter-spacing: -0.008em;
+  color: var(--ink-2);
+  margin: 0 0 8px;
+}
+.nv .nv-sect-head-center .nv-sect-desc p:last-child { margin-bottom: 0; }
+.nv .nv-sect-head-center .nv-sect-desc p em {
+  color: var(--accent);
+  font-variation-settings: "opsz" 36, "SOFT" 60;
+  font-style: italic;
+}
+
+/* Hiring positions — 2×2 panel of who can engage NIVRIA */
+.nv .nv-hire {
+  margin: 0 0 72px;
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  border: 1px solid var(--rule);
+  position: relative;
+}
+.nv .nv-hire::before {
+  content: ''; position: absolute; top: -1px; left: 0; right: 0; height: 2px;
+  background: var(--accent);
+}
+.nv .nv-hire-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 20px 28px;
+  border-bottom: 1px solid var(--rule-soft);
+}
+.nv .nv-hire-k {
+  font-family: var(--font-label), sans-serif;
+  font-size: 12px; font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.nv .nv-hire-meta {
+  font-family: var(--font-reader), serif; font-style: italic;
+  font-size: 13.5px;
+  color: var(--ink-3);
+}
+.nv .nv-hire-meta em { color: var(--accent); font-style: italic; }
+.nv .nv-hire-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-top: 1px solid var(--rule-soft);
+}
+.nv .nv-hire-cell {
+  padding: 32px 32px;
+  border-right: 1px solid var(--rule-soft);
+  border-bottom: 1px solid var(--rule-soft);
+  position: relative;
+  display: flex; flex-direction: column;
+}
+.nv .nv-hire-cell:nth-child(2n) { border-right: none; }
+.nv .nv-hire-cell:nth-child(n+3) { border-bottom: none; }
+.nv .nv-hire-num {
+  font-family: var(--font-mono), monospace;
+  font-size: 11px; letter-spacing: 0.18em;
+  color: var(--ink-4);
+  margin-bottom: 10px;
+}
+.nv .nv-hire-kicker {
+  font-family: var(--font-label), sans-serif;
+  font-size: 12px; font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+.nv .nv-hire-name {
+  font-family: var(--font-editorial), 'Fraunces', serif;
+  font-variation-settings: "opsz" 60, "SOFT" 0;
+  font-weight: 600;
+  font-size: 26px;
+  line-height: 1.1;
+  letter-spacing: -0.018em;
+  color: var(--ink);
+  margin: 0 0 14px;
+}
+.nv .nv-hire-body {
+  font-family: var(--font-reader), serif;
+  font-size: 17.5px; line-height: 1.6;
+  color: var(--ink-2);
+  margin: 0 0 20px;
+  flex: 1;
+}
+.nv .nv-hire-foot {
+  padding-top: 14px;
+  border-top: 1px dotted var(--rule);
+  display: flex; flex-direction: column; gap: 6px;
+}
+.nv .nv-hire-foot-k {
+  font-family: var(--font-label), sans-serif;
+  font-size: 11px; font-weight: 500;
+  letter-spacing: 0.20em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.nv .nv-hire-foot p {
+  font-family: var(--font-reader), serif; font-style: italic;
+  font-size: 16.5px; line-height: 1.55;
+  color: var(--ink);
+  margin: 0;
+}
+
+/* Coda — italic statement that lands below the 6 capability cards */
+.nv .nv-system-coda {
+  margin: 56px auto 0;
+  max-width: 760px;
+  text-align: center;
+  font-family: var(--font-editorial), 'Fraunces', serif;
+  font-variation-settings: "opsz" 60, "SOFT" 14;
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(20px, 2.2vw, 28px);
+  line-height: 1.35;
+  letter-spacing: -0.008em;
+  color: var(--ink-2);
+  padding-top: 36px;
+  border-top: 1px dotted var(--rule);
+}
+.nv .nv-system-coda em {
+  color: var(--accent);
+  font-variation-settings: "opsz" 60, "SOFT" 60;
+  font-style: italic;
+}
+
+/* Capabilities — 6 cards in a 3×2 grid */
+.nv .nv-cap { margin: 0; }
+.nv .nv-cap-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+.nv .nv-cap-card {
+  padding: 24px 22px 22px;
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  border: 1px solid var(--rule-soft);
+  position: relative;
+  display: flex; flex-direction: column;
+}
+.nv .nv-cap-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; width: 32px; height: 1px;
+  background: var(--accent);
+}
+.nv .nv-cap-num {
+  font-family: var(--font-mono), monospace;
+  font-size: 11px; letter-spacing: 0.18em;
+  color: var(--ink-4);
+  margin-bottom: 10px;
+}
+.nv .nv-cap-card-k {
+  font-family: var(--font-label), sans-serif;
+  font-size: 12px; font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+.nv .nv-cap-card-h {
+  font-family: var(--font-editorial), 'Fraunces', serif;
+  font-variation-settings: "opsz" 60, "SOFT" 0;
+  font-weight: 600;
+  font-size: 21px;
+  line-height: 1.15;
+  letter-spacing: -0.012em;
+  color: var(--ink);
+  margin: 0 0 14px;
+}
+.nv .nv-cap-card-body {
+  font-family: var(--font-reader), serif;
+  font-size: 16.5px; line-height: 1.55;
+  color: var(--ink-2);
+  margin: 0 0 18px;
+  flex: 1;
+}
+.nv .nv-cap-card-stat {
+  font-family: var(--font-label), sans-serif;
+  font-size: 11px; font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  padding-top: 12px;
+  border-top: 1px dotted var(--rule-soft);
+}
+
+/* Source-not-filter principle callout */
+.nv .nv-snf {
+  margin: 0;
+  padding: 36px 40px 36px 44px;
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--accent);
+  position: relative;
+}
+.nv .nv-snf-k {
+  font-family: var(--font-mono), monospace;
+  font-size: 10.5px; letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 14px;
+}
+.nv .nv-snf-h {
+  font-family: var(--font-editorial), 'Fraunces', serif;
+  font-variation-settings: "opsz" 144, "SOFT" 0;
+  font-weight: 600;
+  font-size: clamp(34px, 4vw, 52px);
+  line-height: 1.02;
+  letter-spacing: -0.022em;
+  color: var(--ink);
+  margin: 0 0 22px;
+}
+.nv .nv-snf-h em {
+  color: var(--accent);
+  font-variation-settings: "opsz" 144, "SOFT" 60;
+}
+.nv .nv-snf-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 36px;
+}
+.nv .nv-snf-grid p {
+  font-family: var(--font-reader), serif;
+  font-size: 16px; line-height: 1.62;
+  color: var(--ink-2);
+  margin: 0;
+}
+.nv .nv-snf-grid p em { font-style: italic; color: var(--accent); }
+.nv .nv-snf-grid p strong { color: var(--ink); font-weight: 600; }
+
+/* ─── PEOPLE — viewport 06, 2×2 grid with custom icons ────────────────── */
+.nv .nv-people { padding: 112px 0 120px; }
+
+.nv .nv-ppl-grid {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0;
+  border-top: 1px solid var(--rule-soft);
+  border-left: 1px solid var(--rule-soft);
+}
+.nv .nv-ppl-cell {
+  padding: 44px 40px 40px;
+  border-right: 1px solid var(--rule-soft);
+  border-bottom: 1px solid var(--rule-soft);
+  display: flex; flex-direction: column;
+  align-items: flex-start;
+  transition: background .25s ease;
+  min-width: 0;
+}
+.nv .nv-ppl-cell:hover {
+  background: rgba(201,145,46,.03);
+}
+.nv .nv-ppl-icon {
+  color: var(--accent);
+  margin-bottom: 22px;
+  display: block;
+}
+.nv .nv-ppl-cell-h {
+  font-family: var(--font-editorial), 'Fraunces', serif;
+  font-variation-settings: "opsz" 60, "SOFT" 0;
+  font-weight: 600;
+  font-size: clamp(22px, 2.2vw, 28px);
+  line-height: 1.18;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+  margin: 0 0 14px;
+  max-width: 22ch;
+}
+.nv .nv-ppl-cell-h em {
+  color: var(--accent);
+  font-variation-settings: "opsz" 60, "SOFT" 60;
+  font-style: italic;
+}
+.nv .nv-ppl-cell-body {
+  font-family: var(--font-reader), serif;
+  font-size: 18px; line-height: 1.6;
+  color: var(--ink-2);
+  margin: 0;
+  max-width: 50ch;
+}
+.nv .nv-ppl-sig {
+  margin: 48px auto 0;
+  font-family: var(--font-reader), serif;
+  font-style: italic;
+  font-size: 14.5px;
+  letter-spacing: 0.02em;
+  color: var(--ink-3);
+  padding-top: 22px;
+  border-top: 1px dotted var(--rule);
+  display: block;
+  width: fit-content;
+  padding-left: 36px;
+  padding-right: 36px;
+  text-align: center;
+}
+
+/* ─── CLOSE — viewport 07, the final moment ────────────────────────────── */
+.nv .nv-close {
+  padding: 200px 0 220px;
+  text-align: center;
+  position: relative;
+  /* a dramatic warm-gold spotlight behind the close — bigger than any
+     other section's gradient, makes this feel like the page's final breath */
+  background:
+    radial-gradient(1600px 1000px at 50% 50%, rgba(201,145,46,.15), transparent 65%),
+    radial-gradient(900px  700px  at 50% 110%, rgba(140,40,32,.08), transparent 70%);
+}
+/* override the alternating section cast for the close — own atmosphere */
+.nv main > section.nv-close {
+  background:
+    radial-gradient(1600px 1000px at 50% 50%, rgba(201,145,46,.15), transparent 65%),
+    radial-gradient(900px  700px  at 50% 110%, rgba(140,40,32,.08), transparent 70%);
+}
+.nv .nv-close-wrap {
+  display: flex; flex-direction: column; align-items: center;
+}
+
+/* logo leads the close — sits as a signature mark above the headline */
+.nv .nv-close-logo {
+  margin-bottom: 72px;
+}
+
+.nv .nv-close-h {
+  font-family: var(--font-editorial), 'Fraunces', serif;
+  font-variation-settings: "opsz" 144, "SOFT" 0;
+  font-weight: 500;
+  font-size: clamp(34px, 4.4vw, 64px);
+  line-height: 1.08;
+  letter-spacing: -0.024em;
+  color: var(--ink);
+  max-width: 22ch;
+  margin: 0 0 60px;
+  display: grid;
+  gap: 4px;
+}
+.nv .nv-close-h em {
+  color: var(--accent);
+  font-variation-settings: "opsz" 144, "SOFT" 60;
+  font-style: italic;
+}
+.nv .nv-close-dash {
+  color: var(--accent);
+  font-style: normal;
+  display: inline-block;
+  margin-left: 12px;
+}
+.nv .nv-close-h > span {
+  display: block;
+}
+
+.nv .nv-close-actions {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 22px;
+}
+.nv .nv-close-cta {
+  display: inline-flex; align-items: center; gap: 14px;
+  padding: 20px 40px;
+  border: 1px solid var(--accent);
+  background: linear-gradient(180deg, rgba(201,145,46,.14), rgba(201,145,46,.05));
+  color: var(--accent);
+  font-family: var(--font-reader), serif;
+  font-style: italic;
+  font-weight: 500;
+  font-size: 18px;
+  transition: background .25s ease, color .25s ease, transform .25s ease, box-shadow .25s ease;
+  box-shadow: 0 24px 60px -30px rgba(201,145,46,.4);
+}
+.nv .nv-close-cta:hover {
+  background: var(--accent);
+  color: var(--bg);
+  transform: translateY(-2px);
+  box-shadow: 0 30px 70px -28px rgba(201,145,46,.55);
+}
+.nv .nv-close-cta svg { transition: transform .25s ease; }
+.nv .nv-close-cta:hover svg { transform: translateX(4px); }
+.nv .nv-close-mail {
+  font-family: var(--font-reader), serif;
+  font-style: italic;
+  font-size: 15px;
+  color: var(--ink-3);
+  border-bottom: 1px solid transparent;
+  transition: color .2s ease, border-color .2s ease;
+}
+.nv .nv-close-mail:hover { color: var(--accent); border-bottom-color: var(--accent-deep); }
+
+/* ─── COLOPHON — page foot ─────────────────────────────────────────────── */
+.nv .nv-colo {
+  border-top: 1px solid var(--rule);
+  padding: 28px 0 32px;
+  background: var(--bg-2);
+  position: relative;
+}
+.nv .nv-colo-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 28px;
+}
+.nv .nv-colo-l {
+  display: flex; align-items: center; gap: 18px;
+  font-family: var(--font-reader), serif;
+  font-size: 13px;
+  color: var(--ink-3);
+}
+.nv .nv-colo-tag {
+  font-family: var(--font-reader), serif;
+  font-style: italic;
+  font-size: 13px;
+  color: var(--ink-3);
+}
+.nv .nv-colo-sign {
+  font-family: var(--font-reader), serif;
+  font-size: 13px;
+  color: var(--ink-3);
+  border-bottom: 1px solid transparent;
+  transition: color .2s, border-color .2s;
+  white-space: nowrap;
+}
+.nv .nv-colo-sign:hover { color: var(--accent); border-bottom-color: var(--accent-deep); }
+
+/* ─── DIVERGENCE + INTERVENTIONS — viewport 05, slim ─────────────────── */
+.nv .nv-case { padding: 112px 0 112px; }
+
+/* divergence — market vs NIVRIA */
+.nv .nv-div {
+  margin: 0 0 56px;
+}
+.nv .nv-div-grid {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 32px;
+  align-items: stretch;
+}
+.nv .nv-div-col {
+  padding: 28px 30px;
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  border: 1px solid var(--rule);
+  position: relative;
+}
+.nv .nv-div-them { background: rgba(255,255,255,.01); }
+.nv .nv-div-us {
+  background: linear-gradient(180deg, rgba(201,145,46,.08), transparent 80%);
+  border-color: var(--accent-deep);
+}
+.nv .nv-div-us::before {
+  content: ''; position: absolute; top: -1px; left: 0; right: 0; height: 2px;
+  background: var(--accent);
+}
+.nv .nv-div-vs {
+  font-family: var(--font-editorial), serif;
+  font-size: 32px;
+  color: var(--accent);
+  align-self: center;
+  opacity: 0.75;
+}
+.nv .nv-div-label {
+  font-family: var(--font-label), sans-serif;
+  font-size: 11px; font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+.nv .nv-div-them .nv-div-label { color: var(--ink-3); }
+.nv .nv-div-us .nv-div-label { color: var(--accent); }
+.nv .nv-div-quote {
+  font-family: var(--font-editorial), serif;
+  font-variation-settings: "opsz" 36, "SOFT" 14;
+  font-style: italic;
+  font-weight: 500;
+  font-size: 22px;
+  line-height: 1.36;
+  letter-spacing: -0.008em;
+  margin: 0 0 18px;
+}
+.nv .nv-div-them .nv-div-quote { color: var(--ink-3); }
+.nv .nv-div-us .nv-div-quote { color: var(--ink); }
+.nv .nv-div-src {
+  font-family: var(--font-reader), serif;
+  font-style: italic;
+  font-size: 13px;
+  color: var(--ink-3);
+  padding-top: 14px;
+  border-top: 1px dotted var(--rule);
+}
+
+/* three moves — active-help section */
+.nv .nv-int {
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  border: 1px solid var(--rule);
+  position: relative;
+}
+.nv .nv-int::before {
+  content: ''; position: absolute; top: -1px; left: 0; right: 0; height: 2px;
+  background: var(--accent);
+}
+.nv .nv-int-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 20px 32px;
+  border-bottom: 1px solid var(--rule-soft);
+  gap: 16px;
+}
+.nv .nv-int-k {
+  font-family: var(--font-label), sans-serif;
+  font-size: 12px; font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.nv .nv-int-meta {
+  font-family: var(--font-reader), serif;
+  font-style: italic;
+  font-size: 13.5px;
+  color: var(--ink-3);
+}
+.nv .nv-int-list {
+  list-style: none; padding: 0; margin: 0;
+}
+.nv .nv-int-row {
+  display: grid;
+  grid-template-columns: 56px 1fr 120px;
+  gap: 28px;
+  align-items: start;
+  padding: 28px 32px;
+  border-bottom: 1px solid var(--rule-soft);
+}
+.nv .nv-int-row:last-child { border-bottom: none; }
+.nv .nv-int-num {
+  font-family: var(--font-mono), monospace;
+  font-size: 13px; letter-spacing: 0.06em;
+  color: var(--accent);
+  padding-top: 8px;
+}
+.nv .nv-int-title {
+  font-family: var(--font-editorial), 'Fraunces', serif;
+  font-variation-settings: "opsz" 60, "SOFT" 0;
+  font-weight: 600;
+  font-size: 22px;
+  line-height: 1.2;
+  letter-spacing: -0.012em;
+  color: var(--ink);
+  margin: 0 0 10px;
+}
+.nv .nv-int-body p {
+  font-family: var(--font-reader), serif;
+  font-size: 16px; line-height: 1.6;
+  color: var(--ink-2);
+  margin: 0;
+  max-width: 64ch;
+}
+.nv .nv-int-impact {
+  display: flex; flex-direction: column; align-items: flex-end;
+  gap: 4px;
+  padding-top: 6px;
+}
+.nv .nv-int-impact-v {
+  font-family: var(--font-editorial), 'Fraunces', serif;
+  font-variation-settings: "opsz" 60, "SOFT" 0;
+  font-weight: 700;
+  font-size: 32px;
+  line-height: 1;
+  color: var(--forest);
+  letter-spacing: -0.02em;
+}
+.nv .nv-int-impact-on {
+  font-family: var(--font-label), sans-serif;
+  font-size: 10px; font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.nv .nv-int-foot {
+  padding: 18px 32px;
+  border-top: 1px solid var(--rule-soft);
+  background: rgba(0,0,0,.12);
+  font-family: var(--font-reader), serif;
+  font-style: italic;
+  font-size: 13.5px;
+  color: var(--ink-3);
+}
+.nv .nv-int-foot em { color: var(--accent); font-style: italic; }
+
+.nv .nv-doc {
+  margin: 0;
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  border: 1px solid var(--rule);
+  position: relative;
+  box-shadow:
+    inset 0 1px 0 rgba(244,236,217,.03),
+    0 60px 140px -60px rgba(0,0,0,.95);
+}
+.nv .nv-doc::before {
+  content: ''; position: absolute; top: -1px; left: 0; right: 0; height: 2px;
+  background: var(--accent);
+}
+
+/* doc header — subject + status + date row */
+.nv .nv-doc-head {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 32px;
+  padding: 32px 40px 28px;
+  border-bottom: 1px solid var(--rule-soft);
+  align-items: start;
+}
+.nv .nv-doc-class {
+  font-family: var(--font-label), sans-serif;
+  font-size: 11px; font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+.nv .nv-doc-subject {
+  font-family: var(--font-editorial), 'Fraunces', serif;
+  font-variation-settings: "opsz" 144, "SOFT" 0;
+  font-weight: 700;
+  font-size: clamp(28px, 3.2vw, 40px);
+  line-height: 1;
+  letter-spacing: -0.022em;
+  color: var(--ink);
+  margin: 0 0 10px;
+}
+.nv .nv-doc-subject span {
+  font-family: var(--font-reader), serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 0.6em;
+  color: var(--ink-3);
+}
+.nv .nv-doc-meta {
+  font-family: var(--font-reader), serif;
+  font-style: italic;
+  font-size: 13.5px;
+  color: var(--ink-3);
+}
+.nv .nv-doc-head-r {
+  display: flex; flex-direction: column; gap: 14px;
+  align-items: flex-end;
+}
+.nv .nv-doc-score {
+  display: flex; flex-direction: column; align-items: flex-end;
+  border-left: 2px solid var(--accent);
+  padding-left: 18px;
+}
+.nv .nv-doc-score-k {
+  font-family: var(--font-label), sans-serif;
+  font-size: 11px; font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+.nv .nv-doc-score-line {
+  display: flex; align-items: baseline; gap: 6px;
+}
+.nv .nv-doc-score-big {
+  font-family: var(--font-editorial), 'Fraunces', serif;
+  font-variation-settings: "opsz" 144, "SOFT" 0;
+  font-weight: 700;
+  font-size: 64px;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+}
+.nv .nv-doc-score-of {
+  font-family: var(--font-mono), monospace;
+  font-size: 14px;
+  color: var(--ink-3);
+  letter-spacing: 0.04em;
+}
+.nv .nv-doc-score-state {
+  font-family: var(--font-reader), serif;
+  font-style: italic;
+  font-size: 15px;
+  color: var(--accent);
+  margin-top: 2px;
+}
+.nv .nv-doc-spark {
+  display: flex; align-items: center; gap: 12px;
+}
+.nv .nv-doc-spark .nv-spark {
+  width: 140px; height: 32px;
+}
+.nv .nv-doc-spark-meta {
+  display: flex; flex-direction: column; align-items: flex-end;
+  font-family: var(--font-label), sans-serif;
+  font-size: 10px; letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  gap: 2px;
+}
+.nv .nv-doc-spark-delta {
+  font-family: var(--font-mono), monospace;
+  color: var(--iron);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+/* sections inside the doc */
+.nv .nv-doc-sect {
+  padding: 32px 40px;
+  border-bottom: 1px solid var(--rule-soft);
+}
+.nv .nv-doc-sect-k {
+  font-family: var(--font-label), sans-serif;
+  font-size: 11px; font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 22px;
+}
+.nv .nv-doc-sect-k span {
+  color: var(--ink-3);
+  font-family: var(--font-reader), serif;
+  font-style: italic;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0.01em;
+  font-size: 13px;
+  margin-left: 4px;
+}
+
+/* divergence — market vs NIVRIA */
+.nv .nv-doc-div-grid {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 28px;
+  align-items: stretch;
+}
+.nv .nv-doc-div-col {
+  padding: 22px 24px;
+  border: 1px solid var(--rule);
+}
+.nv .nv-doc-div-them {
+  background: rgba(255,255,255,.01);
+}
+.nv .nv-doc-div-us {
+  background: linear-gradient(180deg, rgba(201,145,46,.06), transparent 80%);
+  border-color: var(--accent-deep);
+}
+.nv .nv-doc-div-vs {
+  font-family: var(--font-editorial), serif;
+  font-size: 28px;
+  color: var(--accent);
+  align-self: center;
+  opacity: 0.75;
+}
+.nv .nv-doc-div-label {
+  font-family: var(--font-label), sans-serif;
+  font-size: 11px; font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+.nv .nv-doc-div-them .nv-doc-div-label { color: var(--ink-3); }
+.nv .nv-doc-div-us .nv-doc-div-label { color: var(--accent); }
+.nv .nv-doc-div-quote {
+  font-family: var(--font-editorial), serif;
+  font-variation-settings: "opsz" 28, "SOFT" 14;
+  font-style: italic;
+  font-weight: 500;
+  font-size: 18px;
+  line-height: 1.4;
+  letter-spacing: -0.005em;
+  margin: 0 0 14px;
+}
+.nv .nv-doc-div-them .nv-doc-div-quote { color: var(--ink-3); }
+.nv .nv-doc-div-us .nv-doc-div-quote { color: var(--ink); }
+.nv .nv-doc-div-src {
+  font-family: var(--font-reader), serif;
+  font-style: italic;
+  font-size: 12.5px;
+  color: var(--ink-3);
+  padding-top: 12px;
+  border-top: 1px dotted var(--rule);
+}
+
+/* drivers — score decomposition */
+.nv .nv-doc-drv {
+  display: grid;
+  margin: 0;
+}
+.nv .nv-doc-drv-row {
+  display: grid;
+  grid-template-columns: 200px 60px 140px 1fr;
+  gap: 22px;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px dotted var(--rule-soft);
+}
+.nv .nv-doc-drv-row:last-child { border-bottom: none; }
+.nv .nv-doc-drv-row dt {
+  font-family: var(--font-editorial), serif;
+  font-variation-settings: "opsz" 28, "SOFT" 0;
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--ink);
+  margin: 0;
+  letter-spacing: -0.005em;
+}
+.nv .nv-doc-drv-v {
+  font-family: var(--font-mono), monospace;
+  font-size: 16px;
+  color: var(--ink);
+  letter-spacing: 0.04em;
+  margin: 0;
+}
+.nv .nv-doc-drv-bar {
+  margin: 0;
+  height: 2px;
+  background: var(--rule-soft);
+  position: relative;
+}
+.nv .nv-doc-drv-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  opacity: 0.75;
+}
+.nv .nv-doc-drv-note {
+  font-family: var(--font-reader), serif;
+  font-style: italic;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-3);
+  margin: 0;
+}
+
+/* interventions — active help moves */
+.nv .nv-doc-sect-int {
+  background: linear-gradient(180deg, rgba(201,145,46,.04), transparent 60%);
+}
+.nv .nv-doc-int {
+  list-style: none; padding: 0; margin: 0;
+  display: grid;
+}
+.nv .nv-doc-int-row {
+  display: grid;
+  grid-template-columns: 56px 1fr 110px;
+  gap: 24px;
+  align-items: start;
+  padding: 22px 0;
+  border-bottom: 1px solid var(--rule-soft);
+}
+.nv .nv-doc-int-row:last-child { border-bottom: none; }
+.nv .nv-doc-int-num {
+  font-family: var(--font-mono), monospace;
+  font-size: 13px; letter-spacing: 0.06em;
+  color: var(--accent);
+  padding-top: 6px;
+}
+.nv .nv-doc-int-title {
+  font-family: var(--font-editorial), 'Fraunces', serif;
+  font-variation-settings: "opsz" 28, "SOFT" 0;
+  font-weight: 600;
+  font-size: 19px;
+  line-height: 1.25;
+  letter-spacing: -0.008em;
+  color: var(--ink);
+  margin: 0 0 8px;
+}
+.nv .nv-doc-int-body p {
+  font-family: var(--font-reader), serif;
+  font-size: 15.5px; line-height: 1.55;
+  color: var(--ink-2);
+  margin: 0;
+  max-width: 64ch;
+}
+.nv .nv-doc-int-impact {
+  display: flex; flex-direction: column; align-items: flex-end;
+  gap: 2px;
+  padding-top: 6px;
+}
+.nv .nv-doc-int-impact-v {
+  font-family: var(--font-editorial), 'Fraunces', serif;
+  font-variation-settings: "opsz" 60, "SOFT" 0;
+  font-weight: 700;
+  font-size: 28px;
+  line-height: 1;
+  color: var(--forest);
+  letter-spacing: -0.02em;
+}
+.nv .nv-doc-int-impact-on {
+  font-family: var(--font-label), sans-serif;
+  font-size: 10px; font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* recent activity */
+.nv .nv-doc-act {
+  list-style: none; padding: 0; margin: 0;
+  display: grid; gap: 4px;
+}
+.nv .nv-doc-act-row {
+  display: grid;
+  grid-template-columns: 60px 1fr auto;
+  gap: 18px;
+  align-items: baseline;
+  padding: 10px 0;
+  border-bottom: 1px dotted var(--rule-soft);
+}
+.nv .nv-doc-act-row:last-child { border-bottom: none; }
+.nv .nv-doc-act-date {
+  font-family: var(--font-mono), monospace;
+  font-size: 12px; letter-spacing: 0.06em;
+  color: var(--ink-3);
+}
+.nv .nv-doc-act-text {
+  font-family: var(--font-reader), serif;
+  font-size: 14.5px; line-height: 1.45;
+  color: var(--ink-2);
+}
+.nv .nv-doc-act-impact {
+  font-family: var(--font-label), sans-serif;
+  font-size: 10.5px; font-weight: 500;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--iron);
+  white-space: nowrap;
+}
+
+/* foot — methodology / backing / disclaimer */
+.nv .nv-doc-foot {
+  padding: 28px 40px 30px;
+  background: rgba(0,0,0,.18);
+  display: grid; gap: 14px;
+}
+.nv .nv-doc-foot-row {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 20px;
+  align-items: baseline;
+}
+.nv .nv-doc-foot-k {
+  font-family: var(--font-label), sans-serif;
+  font-size: 11px; font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.nv .nv-doc-foot-row > div:last-child {
+  font-family: var(--font-reader), serif;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--ink-3);
+}
+
+/* ─── LIFECYCLE — viewport 04, vertical timeline ──────────────────────── */
+.nv .nv-life { padding: 112px 0 112px; }
+
+.nv .nv-life-panel {
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  border: 1px solid var(--rule);
+  position: relative;
+}
+.nv .nv-life-panel::before {
+  content: ''; position: absolute; top: -1px; left: 0; right: 0; height: 2px;
+  background: var(--accent);
+}
+.nv .nv-life-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 22px 32px;
+  border-bottom: 1px solid var(--rule-soft);
+}
+.nv .nv-life-k {
+  font-family: var(--font-label), sans-serif;
+  font-size: 12px; font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.nv .nv-life-meta {
+  font-family: var(--font-reader), serif; font-style: italic;
+  font-size: 13.5px; color: var(--ink-3);
+}
+
+.nv .nv-life-list {
+  list-style: none; padding: 0; margin: 0;
+  position: relative;
+}
+/* timeline connector — a faint gold line linking the phase numbers */
+.nv .nv-life-list::before {
+  content: '';
+  position: absolute;
+  left: 75px;
+  top: 60px;
+  bottom: 60px;
+  width: 1px;
+  background: linear-gradient(180deg, transparent 0%, var(--accent-deep) 10%, var(--accent-deep) 90%, transparent 100%);
+  opacity: 0.5;
+  pointer-events: none;
+}
+.nv .nv-life-stage {
+  display: grid;
+  grid-template-columns: 110px 230px 1fr;
+  gap: 32px;
+  padding: 36px 32px;
+  border-bottom: 1px solid var(--rule-soft);
+  position: relative;
+  align-items: start;
+}
+.nv .nv-life-stage:last-child { border-bottom: none; }
+.nv .nv-life-stage-pivot {
+  background: linear-gradient(90deg, rgba(201,145,46,.06), transparent 70%);
+}
+
+.nv .nv-life-num-wrap {
+  position: relative;
+  z-index: 1;
+}
+.nv .nv-life-num {
+  font-family: var(--font-editorial), 'Fraunces', serif;
+  font-variation-settings: "opsz" 144, "SOFT" 0;
+  font-weight: 700;
+  font-size: 48px;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  width: 86px; height: 86px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  margin-left: -8px;
+}
+.nv .nv-life-stage-pivot .nv-life-num {
+  color: var(--accent);
+  border-color: var(--accent-deep);
+  background: linear-gradient(180deg, rgba(201,145,46,.10), var(--panel));
+}
+.nv .nv-life-pin {
+  position: absolute;
+  top: -4px; right: -10px;
+  color: var(--accent);
+  font-size: 16px;
+  background: var(--panel);
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  border: 1px solid var(--accent-deep);
+  display: flex; align-items: center; justify-content: center;
+  line-height: 1;
+}
+
+.nv .nv-life-meta-col { padding-top: 10px; }
+.nv .nv-life-name {
+  font-family: var(--font-editorial), 'Fraunces', serif;
+  font-variation-settings: "opsz" 60, "SOFT" 0;
+  font-weight: 600;
+  font-size: 28px;
+  line-height: 1.05;
+  letter-spacing: -0.018em;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+.nv .nv-life-sub {
+  font-family: var(--font-reader), serif; font-style: italic;
+  font-size: 17px;
+  color: var(--ink-3);
+  margin-bottom: 16px;
+}
+.nv .nv-life-fee {
+  font-family: var(--font-label), sans-serif;
+  font-size: 11px; font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+  padding: 4px 10px;
+  border: 1px solid var(--rule);
+  display: inline-block;
+}
+.nv .nv-life-stage-pivot .nv-life-fee {
+  color: var(--accent);
+  border-color: var(--accent-deep);
+}
+
+.nv .nv-life-body { padding-top: 10px; min-width: 0; max-width: 62ch; }
+.nv .nv-life-body p {
+  font-family: var(--font-reader), serif;
+  font-size: 18.5px;
+  line-height: 1.6;
+  color: var(--ink-2);
+  margin: 0;
+}
+.nv .nv-life-callout {
+  margin-top: 18px;
+  padding: 16px 20px;
+  border-left: 2px solid var(--accent);
+  background: rgba(201,145,46,.05);
+}
+.nv .nv-life-callout-k {
+  font-family: var(--font-label), sans-serif;
+  font-size: 11px; font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+.nv .nv-life-callout p {
+  font-family: var(--font-editorial), serif;
+  font-variation-settings: "opsz" 28, "SOFT" 14;
+  font-style: italic;
+  font-size: 17.5px;
+  line-height: 1.5;
+  color: var(--ink);
+  margin: 0;
+}
+
+.nv .nv-life-foot {
+  display: flex; align-items: baseline; gap: 22px;
+  padding: 22px 32px;
+  border-top: 1px solid var(--rule-soft);
+  background: rgba(0,0,0,.12);
+}
+.nv .nv-life-foot-k {
+  font-family: var(--font-label), sans-serif;
+  font-size: 12px; font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+  white-space: nowrap;
+}
+.nv .nv-life-foot-v {
+  font-family: var(--font-reader), serif; font-style: italic;
+  font-size: 14.5px;
+  color: var(--ink-2);
+}
+.nv .nv-life-foot-v strong {
+  color: var(--ink); font-style: normal; font-weight: 600;
+  font-family: var(--font-editorial), serif;
+}
+
+/* ─── INSTRUMENT — viewport 02, two columns ────────────────────────────── */
+.nv .nv-inst-pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(320px, 1fr);
+  gap: 56px;
+  align-items: start;
+}
+.nv .nv-inst-col {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.nv .nv-inst-h {
+  font-family: var(--font-editorial), 'Fraunces', serif;
+  font-variation-settings: "opsz" 144, "SOFT" 0;
+  font-weight: 600;
+  font-size: clamp(28px, 3vw, 40px);
+  line-height: 1.05;
+  letter-spacing: -0.022em;
+  color: var(--ink);
+  margin: 0 0 18px;
+}
+.nv .nv-inst-h em {
+  color: var(--accent);
+  font-variation-settings: "opsz" 144, "SOFT" 60;
+}
+.nv .nv-inst-p {
+  font-family: var(--font-reader), serif;
+  font-size: 18.5px;
+  line-height: 1.6;
+  color: var(--ink-2);
+  margin: 0 0 28px;
+  max-width: 60ch;
+}
+.nv .nv-inst-p em { font-style: italic; color: var(--accent); }
+.nv .nv-inst-p strong { color: var(--ink); font-weight: 600; }
+/* the column-owned figures fill the column width */
+.nv .nv-inst-col .nv-conn,
+.nv .nv-inst-col .nv-read { flex: 0 0 auto; }
+
+/* ─── responsive ──────────────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .nv .nv-hero-split { grid-template-columns: 1fr; gap: 40px; }
+  .nv .nv-sect-head { grid-template-columns: 1fr; gap: 24px; }
+  .nv .nv-inst-pair { grid-template-columns: 1fr; gap: 48px; }
+  .nv .nv-hire-grid { grid-template-columns: 1fr; }
+  .nv .nv-hire-cell { border-right: none !important; border-bottom: 1px solid var(--rule-soft); }
+  .nv .nv-hire-cell:last-child { border-bottom: none; }
+  .nv .nv-cap-grid { grid-template-columns: 1fr; gap: 14px; }
+  .nv .nv-snf-grid { grid-template-columns: 1fr; gap: 16px; }
+}
+  .nv .nv-div-grid { grid-template-columns: 1fr; gap: 16px; }
+  .nv .nv-div-vs { display: none; }
+  .nv .nv-colo-row { grid-template-columns: 1fr; gap: 14px; text-align: center; }
+  .nv .nv-colo-l { flex-direction: column; gap: 4px; align-items: center; }
+  .nv .nv-close { padding: 80px 0 100px; }
+  /* keep people grid 2×2 even on narrower desktops */
+  .nv .nv-int-head { flex-direction: column; align-items: flex-start; gap: 6px; padding: 18px 22px; }
+  .nv .nv-int-row { grid-template-columns: 40px 1fr; gap: 16px; padding: 22px 22px; }
+  .nv .nv-int-impact { grid-column: 1 / -1; flex-direction: row; align-items: baseline; gap: 10px; padding-top: 0; }
+  .nv .nv-int-foot { padding: 16px 22px; }
+}
+@media (max-width: 600px) {
+  .nv .nv-ppl-grid { grid-template-columns: 1fr !important; }
+  .nv .nv-ppl-cell { border-right: none !important; padding: 32px 22px; }
+}
+@media (min-width: 721px) and (max-width: 1100px) {
+  .nv .nv-cap-grid { grid-template-columns: 1fr 1fr; gap: 14px; }
+  .nv .nv-life-stage { grid-template-columns: 80px 1fr; gap: 20px; padding: 24px 20px; }
+  .nv .nv-life-meta-col { grid-column: 2; padding-top: 0; }
+  .nv .nv-life-body { grid-column: 1 / -1; padding-top: 0; }
+  .nv .nv-life-list::before { display: none; }
+  .nv .nv-life-num { width: 70px; height: 70px; font-size: 38px; }
+  .nv .nv-life-head, .nv .nv-life-foot { padding: 18px 22px; flex-direction: column; align-items: flex-start; gap: 8px; }
+}
+@media (max-width: 720px) {
+  .nv .nv-wrap { padding: 0 22px; }
+  .nv .nv-hero { padding: 40px 0 60px; }
+  .nv .nv-h1 { font-size: clamp(38px, 9vw, 56px); }
+  .nv .nv-desc p { font-size: 16.5px; }
+  .nv .nv-held-grid { grid-template-columns: 1fr; }
+  .nv .nv-held-cap { flex-direction: column; align-items: flex-start; gap: 10px; }
+}
+.nv :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+`

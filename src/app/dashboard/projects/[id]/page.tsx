@@ -22,6 +22,7 @@ import {
   Zap,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
+import CrisisAIAssistant from '@/components/crisis/CrisisAIAssistant'
 
 // =============================================================================
 // TYPES
@@ -52,9 +53,22 @@ interface Strategy {
   model?: string
 }
 
+interface EntityData {
+  position: 'against' | 'neutral' | 'in_favor' | null
+  current_situation: string | null
+  likely_next_move: string | null
+  category: string | null
+  influence_label: string | null   // very_high | high | medium | low
+  role: string | null
+  voice: any
+  network: any
+  position_history: any
+}
+
 interface Stakeholder {
   id: string
   asset_id: string
+  entity_profile_id: string | null
   stakeholder_name: string
   stakeholder_type: StakeholderType | null
   stakeholder_role: string | null
@@ -68,6 +82,7 @@ interface Stakeholder {
   strategy: Strategy | null
   strategy_updated_at: string | null
   updated_at: string
+  entity?: EntityData | null
 }
 
 type ProjectTab = 'overview' | 'stakeholders' | 'strategy'
@@ -118,20 +133,41 @@ export default function ProjectPage() {
   const [lastEvalAt, setLastEvalAt] = useState<string | null>(null)
   const [tab, setTab] = useState<ProjectTab>('overview')
   const [draftingStrategyId, setDraftingStrategyId] = useState<string | null>(null)
+  // Per-move comms drafting (niv-content-intelligent-v2)
+  const [commsCtx, setCommsCtx] = useState<{ stakeholder: Stakeholder; move: StrategyMove } | null>(null)
 
   useEffect(() => { load() }, [id])
 
   async function load() {
     setLoading(true)
-    const [{ data: a }, { data: s }, { data: c }] = await Promise.all([
+    const [{ data: a }, { data: s }, { data: c }, { data: ents }] = await Promise.all([
       supabase.from('lp_scenarios').select('*').eq('id', id).single(),
       supabase.from('stakeholder_equilibrium').select('*').eq('asset_id', id).order('influence_weight', { ascending: false }),
       supabase.from('lp_watch_conditions').select('id, condition_text, target_entity, status, confidence, impact_level, triggered_at').eq('scenario_id', id),
+      supabase.from('lp_entity_profiles').select('id, entity_name, category, position, influence_weight, current_situation, likely_next_move, profile, network, position_history').eq('scenario_id', id),
     ])
+    const eMap = new Map<string, any>((ents || []).map((e: any) => [e.id, e]))
+    const merged: Stakeholder[] = (s || []).map((st: any) => {
+      const e = st.entity_profile_id ? eMap.get(st.entity_profile_id) : null
+      return {
+        ...st,
+        entity: e ? {
+          position: e.position ?? null,
+          current_situation: e.current_situation ?? null,
+          likely_next_move: e.likely_next_move ?? null,
+          category: e.category ?? null,
+          influence_label: e.influence_weight ?? null,   // entity stores it as a string (very_high/high/...)
+          role: e?.profile?.identity?.role ?? null,
+          voice: e?.profile?.voice ?? null,
+          network: e?.profile?.identity?.relationships ?? e?.network ?? null,
+          position_history: e.position_history ?? null,
+        } : null,
+      }
+    })
     setAsset(a)
-    setStakeholders(s || [])
+    setStakeholders(merged)
     setConditions(c || [])
-    const latest = (s || []).reduce((max: string | null, x: Stakeholder) => {
+    const latest = merged.reduce<string | null>((max, x) => {
       if (!x.current_level_updated_at) return max
       return !max || x.current_level_updated_at > max ? x.current_level_updated_at : max
     }, null)
@@ -357,43 +393,17 @@ export default function ProjectPage() {
           onOpenStakeholder={setSelected}
           onGoStrategy={() => setTab('strategy')}
           onGoStakeholders={() => setTab('stakeholders')}
+          onRefresh={load}
         />
       )}
 
-      {/* STAKEHOLDERS */}
+      {/* STAKEHOLDERS — atlas: filter + position×influence map + comprehensive cards */}
       {tab === 'stakeholders' && (
-        <div className="px-8 py-6 pb-12">
-          {stakeholders.length === 0 ? (
-            <div className="p-12 bg-gray-900/30 border border-gray-800 rounded-xl text-center">
-              <Shield className="w-12 h-12 mx-auto mb-3 text-gray-700" />
-              <p className="text-gray-400 mb-1">No stakeholders modeled yet.</p>
-              <p className="text-sm text-gray-600 mb-4">Add stakeholders to start mapping equilibrium and tracking drift.</p>
-              <button
-                onClick={() => setShowAddModal(true)}
-                className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 inline-flex items-center gap-2"
-              >
-                <Plus className="w-4 h-4" /> Add first stakeholder
-              </button>
-            </div>
-          ) : (
-            grouped.map(([type, list]) => (
-              <div key={type} className="mb-8">
-                <div className={`text-xs font-semibold uppercase tracking-wider mb-3 ${TYPE_META[type]?.color || 'text-gray-400'}`}>
-                  {TYPE_META[type]?.label || type} · {list.length}
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {list.map(s => (
-                    <StakeholderCard
-                      key={s.id}
-                      stakeholder={s}
-                      onClick={() => setSelected(s)}
-                    />
-                  ))}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
+        <StakeholderAtlas
+          stakeholders={stakeholders}
+          onOpenStakeholder={setSelected}
+          onAdd={() => setShowAddModal(true)}
+        />
       )}
 
       {/* STRATEGY */}
@@ -404,6 +414,17 @@ export default function ProjectPage() {
           onDraft={handleDraftStrategy}
           draftingId={draftingStrategyId}
           onOpenStakeholder={setSelected}
+          onDraftComm={(stakeholder, move) => setCommsCtx({ stakeholder, move })}
+        />
+      )}
+
+      {/* Per-move comms drafter modal */}
+      {commsCtx && asset && (
+        <CommsDrafterModal
+          asset={asset}
+          stakeholder={commsCtx.stakeholder}
+          move={commsCtx.move}
+          onClose={() => setCommsCtx(null)}
         />
       )}
 
@@ -891,7 +912,7 @@ const DECISION_DEADLINE = Date.parse('2026-06-01T00:00:00Z')
 const pad2 = (n: number) => String(Math.max(0, n)).padStart(2, '0')
 
 function OverviewTab({
-  asset, stakeholders, priorities, triggeredConditions, conditionsCount, healthScore, healthLabel, healthColor, onOpenStakeholder, onGoStrategy, onGoStakeholders,
+  asset, stakeholders, priorities, triggeredConditions, conditionsCount, healthScore, healthLabel, healthColor, onOpenStakeholder, onGoStrategy, onGoStakeholders, onRefresh,
 }: {
   asset: any
   stakeholders: Stakeholder[]
@@ -904,6 +925,7 @@ function OverviewTab({
   onOpenStakeholder: (s: Stakeholder) => void
   onGoStrategy: () => void
   onGoStakeholders: () => void
+  onRefresh: () => void
 }) {
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => { const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t) }, [])
@@ -935,6 +957,46 @@ function OverviewTab({
     .slice(0, 6), [priorities])
 
   const withStrategy = priorities.filter(s => s.strategy).length
+
+  // Project shape niv-crisis-consultant expects. The agent reads crisis_type /
+  // title / severity / status / started_at / trigger_source / counts; we pipe
+  // the project-specific stakeholder + intel detail through `extra_context`
+  // (a string the patched edge fn appends to the system prompt verbatim).
+  const projectAsCrisis = useMemo(() => {
+    if (!asset) return null
+    const sevWord = healthScore <= 0.35 ? 'critical' : healthScore <= 0.55 ? 'high' : healthScore <= 0.70 ? 'medium' : 'low'
+    const topEvents = events.slice(0, 6)
+    const topGaps = priorities.slice(0, 10)
+    const xc = [
+      `PROJECT THESIS: ${asset?.scenario_data?.founding_summary || asset?.topic || ''}`,
+      ``,
+      `EQUILIBRIUM HEALTH: ${Math.round(healthScore * 100)}% (${healthLabel}).`,
+      `${stakeholders.length} stakeholders tracked. ${priorities.length} drifted (L1+). ${withStrategy} strategies drafted.`,
+      ``,
+      `TOP STAKEHOLDER GAPS (influence × drift):`,
+      ...topGaps.map((s, i) =>
+        `  ${i + 1}. ${s.stakeholder_name} — L${s.current_level} ${LEVEL_META[s.current_level].label}, influence ${s.influence_weight}/10. ${s.current_level_reasoning ? `Read: ${String(s.current_level_reasoning).slice(0, 200)}` : ''}${s.strategy ? `  Objective: ${s.strategy.objective}` : '  (no strategy yet)'}`
+      ),
+      ``,
+      `RECENT GROUND INTEL:`,
+      ...topEvents.map((ev: any, i) => `  ${i + 1}. ${ev.ts ? new Date(ev.ts).toISOString().slice(0, 10) : ''} ${ev.source || ''}: ${String(ev.summary || '').slice(0, 240)}`),
+      ``,
+      `OPEN WATCH CONDITIONS: ${conditionsCount} (${triggeredConditions.length} triggered).`,
+      `Answer with concrete moves grounded in the equilibrium target, the stakeholder's ladder rung, and the strategies above. Cite stakeholders by name. Keep responses 3–6 sentences unless asked for more.`,
+    ].join('\n')
+    return {
+      id: asset.id, // not 'preview' — unlocks the context block
+      crisis_type: asset.issue_area || 'project',
+      title: asset.topic,
+      severity: sevWord,
+      status: 'active',
+      started_at: '2023-11-28T00:00:00Z',
+      trigger_source: 'Supreme Court ruling — Cobre Panamá concession declared unconstitutional',
+      timeline: events,
+      tasks: priorities.map(s => ({ status: s.strategy ? 'in_progress' : 'pending' })),
+      extra_context: xc,
+    }
+  }, [asset, stakeholders, priorities, events, healthScore, healthLabel, withStrategy, conditionsCount, triggeredConditions])
 
   // Threat level derives from the SAME equilibrium health shown in the top bar,
   // so the banner and the health readout never contradict each other.
@@ -1019,7 +1081,10 @@ function OverviewTab({
               <span className="w-2 h-2 rounded-full bg-amber-500" style={{ animation: 'wr-pulse 1.4s infinite' }} />
               <span className="text-xs font-bold tracking-[0.2em] text-amber-400">LIVE GROUND INTEL</span>
             </div>
-            <span className="text-[0.65rem] text-gray-600">{events.length} signals</span>
+            <div className="flex items-center gap-3">
+              <span className="text-[0.65rem] text-gray-600">{events.length} signals</span>
+              <IntelRefreshButton scenarioId={asset?.id} onRefreshed={onRefresh} />
+            </div>
           </div>
           <div className="relative max-h-[460px] overflow-y-auto divide-y divide-gray-800/50">
             {events.length === 0 ? (
@@ -1092,6 +1157,12 @@ function OverviewTab({
               </div>
             </div>
           )}
+
+          {/* WAR-ROOM ADVISOR — niv-crisis-consultant chat, project-aware */}
+          <CrisisAIAssistant
+            crisis={projectAsCrisis}
+            onUpdate={() => { /* chat-only, nothing to refetch */ }}
+          />
         </div>
       </div>
 
@@ -1152,13 +1223,14 @@ function StakeTile({ label, value, sub, tone, valueClass }: { label: string; val
 // STRATEGY TAB — the play to close each gap, drifted stakeholders first
 // =============================================================================
 function StrategyTab({
-  priorities, totalTracked, onDraft, draftingId, onOpenStakeholder,
+  priorities, totalTracked, onDraft, draftingId, onOpenStakeholder, onDraftComm,
 }: {
   priorities: Stakeholder[]
   totalTracked: number
   onDraft: (id: string) => void
   draftingId: string | null
   onOpenStakeholder: (s: Stakeholder) => void
+  onDraftComm: (stakeholder: Stakeholder, move: StrategyMove) => void
 }) {
   return (
     <div className="px-8 py-6 pb-12">
@@ -1218,7 +1290,16 @@ function StrategyTab({
                             <div className="flex items-start gap-2">
                               <span className="shrink-0 w-5 h-5 rounded bg-amber-600/30 text-amber-200 text-xs font-bold flex items-center justify-center mt-0.5">{m.priority}</span>
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm text-gray-100">{m.action}</p>
+                                <div className="flex items-start justify-between gap-2">
+                                  <p className="text-sm text-gray-100 flex-1">{m.action}</p>
+                                  <button
+                                    onClick={() => onDraftComm(s, m)}
+                                    className="shrink-0 text-[0.7rem] px-2 py-0.5 rounded bg-amber-600/15 border border-amber-500/30 text-amber-300 hover:bg-amber-600/30 flex items-center gap-1"
+                                    title="Draft comms for this move"
+                                  >
+                                    <Sparkles className="w-3 h-3" /> Draft comms
+                                  </button>
+                                </div>
                                 {m.rationale && <p className="text-xs text-gray-500 mt-1">{m.rationale}</p>}
                                 <div className="flex flex-wrap gap-1.5 mt-2">
                                   {m.timeframe && <span className="text-[0.65rem] px-1.5 py-0.5 rounded bg-gray-800 text-gray-400 border border-gray-700">{m.timeframe}</span>}
@@ -1245,6 +1326,543 @@ function StrategyTab({
           })}
         </div>
       )}
+    </div>
+  )
+}
+
+// =============================================================================
+// STAKEHOLDER ATLAS — comprehensive map: filter bar + position×influence
+// landscape + dense per-stakeholder cards showing EVERY dimension at once.
+// =============================================================================
+const POSITION_META: Record<string, { label: string; cls: string; xVal: number }> = {
+  in_favor: { label: 'In favor', cls: 'text-emerald-300 bg-emerald-950/40 border-emerald-800/40', xVal: 1 },
+  neutral: { label: 'Neutral', cls: 'text-gray-300 bg-gray-900/60 border-gray-800', xVal: 0 },
+  against: { label: 'Against', cls: 'text-rose-300 bg-rose-950/40 border-rose-800/40', xVal: -1 },
+}
+const CATEGORY_LABEL: Record<string, string> = {
+  regulator: 'Regulator',
+  legislative: 'Legislative',
+  executive: 'Executive',
+  judicial: 'Judicial',
+  private: 'Private sector',
+  civil: 'Civil society',
+  press: 'Media',
+}
+const LEVEL_HEX = ['#22c55e', '#eab308', '#f97316', '#ef4444', '#dc2626']
+
+function StakeholderAtlas({
+  stakeholders, onOpenStakeholder, onAdd,
+}: {
+  stakeholders: Stakeholder[]
+  onOpenStakeholder: (s: Stakeholder) => void
+  onAdd: () => void
+}) {
+  const [search, setSearch] = useState('')
+  const [filterCats, setFilterCats] = useState<Set<string>>(new Set())
+  const [filterPos, setFilterPos] = useState<Set<string>>(new Set())
+  const [filterLvl, setFilterLvl] = useState<Set<number>>(new Set())
+  const [hoverId, setHoverId] = useState<string | null>(null)
+
+  const toggle = <T,>(set: Set<T>, v: T, setter: (s: Set<T>) => void) => {
+    const n = new Set(set); n.has(v) ? n.delete(v) : n.add(v); setter(n)
+  }
+
+  const filtered = useMemo(() => stakeholders.filter(s => {
+    if (filterCats.size && !filterCats.has(s.entity?.category || 'other')) return false
+    if (filterPos.size && !filterPos.has(s.entity?.position || 'unknown')) return false
+    if (filterLvl.size && !filterLvl.has(s.current_level)) return false
+    if (search && !s.stakeholder_name.toLowerCase().includes(search.toLowerCase())
+        && !(s.stakeholder_role || '').toLowerCase().includes(search.toLowerCase())) return false
+    return true
+  }), [stakeholders, search, filterCats, filterPos, filterLvl])
+
+  const categories = useMemo(() => {
+    const set = new Set<string>()
+    for (const s of stakeholders) if (s.entity?.category) set.add(s.entity.category)
+    return Array.from(set).sort()
+  }, [stakeholders])
+
+  if (stakeholders.length === 0) {
+    return (
+      <div className="px-8 py-6 pb-12">
+        <div className="p-12 bg-gray-900/30 border border-gray-800 rounded-xl text-center">
+          <Shield className="w-12 h-12 mx-auto mb-3 text-gray-700" />
+          <p className="text-gray-400 mb-1">No stakeholders modeled yet.</p>
+          <p className="text-sm text-gray-600 mb-4">Add stakeholders to start mapping equilibrium and tracking drift.</p>
+          <button onClick={onAdd} className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 inline-flex items-center gap-2">
+            <Plus className="w-4 h-4" /> Add first stakeholder
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="px-8 py-6 pb-12 space-y-5">
+      {/* FILTER BAR */}
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search name or role…"
+            className="flex-1 min-w-[200px] bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-amber-700/60"
+          />
+          <span className="text-xs text-gray-500">{filtered.length} of {stakeholders.length}</span>
+          {(filterCats.size || filterPos.size || filterLvl.size || search) ? (
+            <button onClick={() => { setSearch(''); setFilterCats(new Set()); setFilterPos(new Set()); setFilterLvl(new Set()) }} className="text-xs text-gray-500 hover:text-white px-2 py-1">Clear</button>
+          ) : null}
+        </div>
+        <div className="flex flex-wrap gap-1.5 items-center">
+          <span className="text-[0.6rem] uppercase tracking-widest text-gray-600 mr-1">Position</span>
+          {(['against', 'neutral', 'in_favor'] as const).map(p => {
+            const meta = POSITION_META[p]
+            const on = filterPos.has(p)
+            return (
+              <button key={p} onClick={() => toggle(filterPos, p, setFilterPos)}
+                className={`text-[0.7rem] px-2 py-1 rounded border ${on ? meta.cls : 'text-gray-500 bg-gray-900/40 border-gray-800'}`}>
+                {meta.label}
+              </button>
+            )
+          })}
+          <span className="text-[0.6rem] uppercase tracking-widest text-gray-600 mx-1 ml-3">Drift</span>
+          {[0, 1, 2, 3, 4].map(lvl => {
+            const meta = LEVEL_META[lvl]
+            const on = filterLvl.has(lvl)
+            return (
+              <button key={lvl} onClick={() => toggle(filterLvl, lvl, setFilterLvl)}
+                className={`text-[0.7rem] px-2 py-1 rounded border ${on ? `${meta.bg} ${meta.text} border-current` : 'text-gray-500 bg-gray-900/40 border-gray-800'}`}>
+                L{lvl}
+              </button>
+            )
+          })}
+          <span className="text-[0.6rem] uppercase tracking-widest text-gray-600 mx-1 ml-3">Category</span>
+          {categories.map(c => {
+            const on = filterCats.has(c)
+            return (
+              <button key={c} onClick={() => toggle(filterCats, c, setFilterCats)}
+                className={`text-[0.7rem] px-2 py-1 rounded border ${on ? 'text-amber-300 bg-amber-950/30 border-amber-800/50' : 'text-gray-500 bg-gray-900/40 border-gray-800'}`}>
+                {CATEGORY_LABEL[c] || c}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* POSITION × INFLUENCE MAP */}
+      <PositionInfluenceMap stakeholders={filtered} hoverId={hoverId} setHoverId={setHoverId} onOpen={onOpenStakeholder} />
+
+      {/* COMPREHENSIVE CARDS */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        {filtered.map(s => (
+          <ComprehensiveStakeholderCard
+            key={s.id}
+            stakeholder={s}
+            highlighted={hoverId === s.id}
+            onMouseEnter={() => setHoverId(s.id)}
+            onMouseLeave={() => setHoverId(null)}
+            onClick={() => onOpenStakeholder(s)}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function PositionInfluenceMap({
+  stakeholders, hoverId, setHoverId, onOpen,
+}: {
+  stakeholders: Stakeholder[]
+  hoverId: string | null
+  setHoverId: (id: string | null) => void
+  onOpen: (s: Stakeholder) => void
+}) {
+  const W = 960, H = 340, padX = 70, padY = 30
+  const innerW = W - padX * 2, innerH = H - padY * 2
+  // Slight deterministic jitter so dots don't overlap exactly.
+  const hash = (s: string) => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return h }
+  const points = stakeholders.map(s => {
+    const pos = POSITION_META[s.entity?.position || 'neutral']?.xVal ?? 0
+    const jitterX = ((hash(s.id) % 23) - 11) / 90    // ~±0.12
+    const jitterY = ((hash(s.id + 'y') % 17) - 8) / 60  // ~±0.13
+    const xNorm = Math.max(0, Math.min(1, (pos + 1) / 2 + jitterX))
+    const yNorm = Math.max(0, Math.min(1, (10 - s.influence_weight) / 10 + jitterY))
+    return {
+      s,
+      x: padX + xNorm * innerW,
+      y: padY + yNorm * innerH,
+      r: 4.5 + s.influence_weight * 0.55,
+      fill: LEVEL_HEX[s.current_level] || LEVEL_HEX[0],
+    }
+  })
+
+  return (
+    <div className="relative rounded-2xl border border-gray-800/70 bg-[#0c0c0c] overflow-hidden">
+      <div className="px-5 py-3 border-b border-gray-800/70 flex items-center justify-between">
+        <span className="text-xs font-bold tracking-[0.2em] text-gray-300">POSITION × INFLUENCE</span>
+        <span className="text-[0.65rem] text-gray-600">x: stance · y: influence · color: drift</span>
+      </div>
+      <div className="relative" style={{ width: '100%' }}>
+        <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto block">
+          {/* grid */}
+          <defs>
+            <linearGradient id="bg-fade" x1="0" x2="1">
+              <stop offset="0" stopColor="#7f1d1d" stopOpacity="0.06" />
+              <stop offset="0.5" stopColor="#374151" stopOpacity="0.04" />
+              <stop offset="1" stopColor="#064e3b" stopOpacity="0.06" />
+            </linearGradient>
+          </defs>
+          <rect x={padX} y={padY} width={innerW} height={innerH} fill="url(#bg-fade)" />
+          {/* vertical guide at neutral */}
+          <line x1={padX + innerW / 2} y1={padY} x2={padX + innerW / 2} y2={padY + innerH} stroke="#1f2937" strokeDasharray="3 5" />
+          {/* horizontal influence ticks */}
+          {[0, 0.25, 0.5, 0.75, 1].map(t => (
+            <line key={t} x1={padX} y1={padY + t * innerH} x2={padX + innerW} y2={padY + t * innerH} stroke="#1f2937" strokeOpacity={t === 0.5 ? 0.6 : 0.3} />
+          ))}
+          {/* axis labels */}
+          <text x={padX} y={padY - 10} fill="#dc2626" fontSize="10" fontWeight="bold" letterSpacing="2">AGAINST</text>
+          <text x={padX + innerW / 2} y={padY - 10} fill="#6b7280" fontSize="10" textAnchor="middle" letterSpacing="2">NEUTRAL</text>
+          <text x={padX + innerW} y={padY - 10} fill="#10b981" fontSize="10" fontWeight="bold" textAnchor="end" letterSpacing="2">IN FAVOR</text>
+          <text x={padX - 10} y={padY + 10} fill="#6b7280" fontSize="9" textAnchor="end" letterSpacing="1.5">HIGH</text>
+          <text x={padX - 10} y={padY + innerH} fill="#6b7280" fontSize="9" textAnchor="end" letterSpacing="1.5">LOW</text>
+          <text x={padX - 28} y={padY + innerH / 2} fill="#6b7280" fontSize="9" letterSpacing="2" textAnchor="middle" transform={`rotate(-90 ${padX - 28} ${padY + innerH / 2})`}>INFLUENCE</text>
+
+          {/* points */}
+          {points.map(({ s, x, y, r, fill }) => {
+            const active = hoverId === s.id
+            return (
+              <g key={s.id}
+                onMouseEnter={() => setHoverId(s.id)}
+                onMouseLeave={() => setHoverId(null)}
+                onClick={() => onOpen(s)}
+                style={{ cursor: 'pointer' }}>
+                <circle cx={x} cy={y} r={r + (active ? 4 : 0)} fill={fill} fillOpacity={active ? 0.25 : 0.0} />
+                <circle cx={x} cy={y} r={r} fill={fill} stroke={active ? '#fff' : '#0a0a0a'} strokeWidth={active ? 1.5 : 1} />
+                {active && (
+                  <g>
+                    <rect x={x + r + 6} y={y - 16} width={Math.min(360, s.stakeholder_name.length * 7 + 70)} height={32} rx={4} fill="#0a0a0a" stroke="#374151" />
+                    <text x={x + r + 12} y={y - 3} fill="#fff" fontSize="11" fontWeight="bold">{s.stakeholder_name}</text>
+                    <text x={x + r + 12} y={y + 11} fill="#9ca3af" fontSize="9">L{s.current_level} · inf {s.influence_weight} · {POSITION_META[s.entity?.position || 'neutral']?.label || 'unknown'}</text>
+                  </g>
+                )}
+                <title>{`${s.stakeholder_name} — L${s.current_level}, influence ${s.influence_weight}/10, ${POSITION_META[s.entity?.position || 'neutral']?.label || 'unknown'}`}</title>
+              </g>
+            )
+          })}
+        </svg>
+      </div>
+    </div>
+  )
+}
+
+function ComprehensiveStakeholderCard({
+  stakeholder, highlighted, onClick, onMouseEnter, onMouseLeave,
+}: {
+  stakeholder: Stakeholder
+  highlighted: boolean
+  onClick: () => void
+  onMouseEnter: () => void
+  onMouseLeave: () => void
+}) {
+  const s = stakeholder
+  const meta = LEVEL_META[s.current_level] || LEVEL_META[0]
+  const pos = POSITION_META[s.entity?.position || ''] || POSITION_META.neutral
+  const rung = (s.ladder || []).find(r => r.level === s.current_level)
+  const stars = '★'.repeat(Math.max(1, Math.ceil(s.influence_weight / 2)))
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      className={`text-left bg-gray-900/40 border rounded-xl p-4 transition-all ring-1 ${meta.ring} ${highlighted ? 'border-amber-500/60' : 'border-gray-800/60 hover:border-gray-700'}`}
+    >
+      {/* HEADER */}
+      <div className="flex items-start justify-between gap-3 mb-2">
+        <div className="min-w-0">
+          <div className="font-semibold text-white truncate">{s.stakeholder_name}</div>
+          <div className="text-xs text-gray-500 truncate">{s.entity?.role || s.stakeholder_role || TYPE_META[s.stakeholder_type || '']?.label || 'stakeholder'}</div>
+        </div>
+        <div className={`shrink-0 w-9 h-9 rounded-lg ${meta.bg} ${meta.text} flex items-center justify-center text-xs font-bold`}>L{s.current_level}</div>
+      </div>
+
+      {/* CHIP ROW */}
+      <div className="flex flex-wrap items-center gap-1.5 mb-3">
+        {s.stakeholder_type && (
+          <span className="text-[0.65rem] px-1.5 py-0.5 rounded bg-gray-900 border border-gray-800 text-gray-400">
+            {TYPE_META[s.stakeholder_type]?.label || s.stakeholder_type}
+          </span>
+        )}
+        <span className={`text-[0.65rem] px-1.5 py-0.5 rounded border ${pos.cls}`}>{pos.label}</span>
+        <span className={`text-[0.65rem] px-1.5 py-0.5 rounded ${meta.bg} ${meta.text}`}>{meta.label}</span>
+        <span className="text-[0.65rem] text-amber-500/80 ml-auto" title={`influence ${s.influence_weight}/10`}>{stars} <span className="text-gray-600">({s.influence_weight})</span></span>
+      </div>
+
+      {/* SITUATION */}
+      <AtlasField label="Situation" value={s.entity?.current_situation} clamp={3} />
+      {/* LIKELY NEXT MOVE */}
+      <AtlasField label="Likely next move" value={s.entity?.likely_next_move} clamp={2} />
+      {/* CURRENT RUNG */}
+      {rung && (
+        <div className="mt-2">
+          <div className="text-[0.6rem] uppercase tracking-widest text-gray-500 mb-0.5">Current rung</div>
+          <div className={`text-xs ${meta.text}`}>
+            <span className="font-semibold">{rung.label}</span>
+            {rung.description ? <span className="text-gray-400"> — {rung.description}</span> : null}
+            {rung.typical_response && <span className="text-gray-600 italic"> → {rung.typical_response}</span>}
+          </div>
+        </div>
+      )}
+      {/* EQUILIBRIUM TARGET */}
+      <AtlasField label="Equilibrium target" value={s.equilibrium_state} clamp={3} muted />
+      {/* STRATEGY */}
+      <div className="mt-3 pt-2 border-t border-gray-800/60">
+        {s.strategy ? (
+          <>
+            <div className="flex items-center gap-1.5 mb-1">
+              <Zap className="w-3 h-3 text-amber-400" />
+              <span className="text-[0.6rem] uppercase tracking-widest text-amber-300 font-semibold">Strategy</span>
+              <span className="text-[0.6rem] text-gray-500 ml-auto">{s.strategy.moves?.length || 0} moves</span>
+            </div>
+            <p className="text-xs text-gray-300 line-clamp-2 mb-1">{s.strategy.objective}</p>
+            {s.strategy.moves?.[0] && (
+              <p className="text-[0.7rem] text-gray-500 line-clamp-1">→ {s.strategy.moves[0].action}</p>
+            )}
+          </>
+        ) : (
+          <div className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-gray-700" />
+            <span className="text-[0.7rem] text-gray-500">No strategy drafted</span>
+            {s.current_level >= 1 && <span className="text-[0.7rem] text-amber-500/70 ml-auto">— drift unaddressed</span>}
+          </div>
+        )}
+      </div>
+    </button>
+  )
+}
+
+// =============================================================================
+// LIVE INTEL — calls ingest-scenario-intel to pull recent target_article_matches
+// for this scenario's org and append them to events_feed.
+// =============================================================================
+function IntelRefreshButton({ scenarioId, onRefreshed }: { scenarioId: string | undefined; onRefreshed: () => void }) {
+  const [busy, setBusy] = useState(false)
+  const [result, setResult] = useState<{ kind: 'ok' | 'err'; msg: string } | null>(null)
+  async function run() {
+    if (!scenarioId || busy) return
+    setBusy(true); setResult(null)
+    try {
+      const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/ingest-scenario-intel`
+      const r = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}` },
+        body: JSON.stringify({ scenario_id: scenarioId, lookback_hours: 96 }),
+      })
+      if (!r.ok) throw new Error((await r.text()).slice(0, 200))
+      const j = await r.json()
+      const n = j.ingested ?? 0
+      setResult({ kind: 'ok', msg: n > 0 ? `+${n} new` : 'no new intel' })
+      if (n > 0) onRefreshed()
+    } catch (e: any) {
+      setResult({ kind: 'err', msg: e.message?.slice(0, 80) || 'failed' })
+    } finally {
+      setBusy(false)
+      setTimeout(() => setResult(null), 4000)
+    }
+  }
+  return (
+    <button
+      onClick={run}
+      disabled={busy}
+      className="text-[0.65rem] px-2 py-0.5 rounded border border-amber-700/40 text-amber-300 hover:bg-amber-600/15 disabled:opacity-50 flex items-center gap-1"
+      title="Pull recent matched articles into the feed"
+    >
+      {busy
+        ? <><Loader2 className="w-3 h-3 animate-spin" /> pulling…</>
+        : result?.kind === 'ok' ? <>✓ {result.msg}</>
+        : result?.kind === 'err' ? <span className="text-red-300">⚠ {result.msg}</span>
+        : <><RefreshCw className="w-3 h-3" /> refresh</>}
+    </button>
+  )
+}
+
+function AtlasField({ label, value, clamp = 2, muted }: { label: string; value: string | null | undefined; clamp?: number; muted?: boolean }) {
+  if (!value || !String(value).trim()) return null
+  return (
+    <div className="mt-2">
+      <div className="text-[0.6rem] uppercase tracking-widest text-gray-500 mb-0.5">{label}</div>
+      <p className={`text-xs leading-snug ${muted ? 'text-gray-400' : 'text-gray-200'}`} style={{ display: '-webkit-box', WebkitLineClamp: clamp, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+        {value}
+      </p>
+    </div>
+  )
+}
+
+// =============================================================================
+// PER-MOVE COMMS DRAFTER — calls niv-content-intelligent-v2 with a single
+// content requirement shaped from the move + stakeholder.
+// =============================================================================
+type CommType = 'talking_points' | 'briefing_memo' | 'statement' | 'press_release' | 'media_pitch' | 'op_ed' | 'social_post'
+const COMM_TYPES: { id: CommType; label: string; bucket: 'owned' | 'media' }[] = [
+  { id: 'talking_points', label: 'Talking points',   bucket: 'owned' },
+  { id: 'briefing_memo',  label: 'Briefing memo',    bucket: 'owned' },
+  { id: 'statement',      label: 'Statement',        bucket: 'owned' },
+  { id: 'op_ed',          label: 'Op-ed',            bucket: 'owned' },
+  { id: 'social_post',    label: 'Social post',      bucket: 'owned' },
+  { id: 'press_release',  label: 'Press release',    bucket: 'media' },
+  { id: 'media_pitch',    label: 'Media pitch',      bucket: 'media' },
+]
+
+function CommsDrafterModal({
+  asset, stakeholder, move, onClose,
+}: {
+  asset: Asset
+  stakeholder: Stakeholder
+  move: StrategyMove
+  onClose: () => void
+}) {
+  const [type, setType] = useState<CommType>('talking_points')
+  const [generating, setGenerating] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [generated, setGenerated] = useState<Array<{ title: string; type: string; content: any }> | null>(null)
+  const [copied, setCopied] = useState(false)
+
+  const folder = `Projects/${asset.topic.replace(/[^a-zA-Z0-9\s]/g, '').trim()}/${stakeholder.stakeholder_name}`
+
+  async function generate() {
+    setGenerating(true); setError(null); setGenerated(null)
+    try {
+      const meta = COMM_TYPES.find(t => t.id === type)!
+      const keyPoints = [
+        stakeholder.strategy?.objective,
+        move.rationale,
+        stakeholder.equilibrium_state ? `Equilibrium target: ${String(stakeholder.equilibrium_state).slice(0, 280)}` : '',
+        stakeholder.current_level_reasoning ? `Current read: ${String(stakeholder.current_level_reasoning).slice(0, 240)}` : '',
+      ].filter(Boolean) as string[]
+
+      const contentRequirements = {
+        owned: meta.bucket === 'owned' ? [{ type, stakeholder: stakeholder.stakeholder_name, purpose: move.action, keyPoints }] : [],
+        media: meta.bucket === 'media' ? [{ type, stakeholder: stakeholder.stakeholder_name, purpose: move.action, keyPoints }] : [],
+      }
+
+      const { data, error: callErr } = await supabase.functions.invoke('niv-content-intelligent-v2', {
+        body: {
+          message: `Draft ${meta.label.toLowerCase()} for ${stakeholder.stakeholder_name} — ${move.action}`,
+          conversationHistory: [],
+          organizationContext: {
+            conversationId: `proj-${asset.id}-${stakeholder.id}-${type}-${Date.now()}`,
+            organizationId: asset.organization_id,
+            organizationName: asset.topic,
+          },
+          stage: 'campaign_generation',
+          campaignContext: {
+            phase: 'execution',
+            phaseNumber: 1,
+            objective: stakeholder.strategy?.objective || move.action,
+            narrative: asset.scenario_data?.founding_summary || asset.topic,
+            keyMessages: keyPoints,
+            contentRequirements,
+            researchInsights: [
+              stakeholder.current_level_reasoning ? `Drift read: ${stakeholder.current_level_reasoning}` : '',
+              stakeholder.equilibrium_state ? `Equilibrium target: ${stakeholder.equilibrium_state}` : '',
+            ].filter(Boolean),
+            currentDate: new Date().toISOString().split('T')[0],
+            campaignFolder: folder,
+            blueprintId: stakeholder.id,
+            positioning: stakeholder.equilibrium_state || '',
+            targetStakeholders: [stakeholder.stakeholder_name],
+            campaignType: 'PROJECT_MOVE',
+            timeline: move.timeframe || 'immediate',
+          },
+        },
+      })
+      if (callErr) throw new Error(callErr.message)
+      const items = (data?.generatedContent || data?.content || []) as Array<{ title?: string; type?: string; content_type?: string; content: any }>
+      if (!items.length) throw new Error(data?.message || 'No content returned by orchestrator')
+      setGenerated(items.map(it => ({
+        title: it.title || `${COMM_TYPES.find(t => t.id === type)?.label} — ${stakeholder.stakeholder_name}`,
+        type: it.type || it.content_type || type,
+        content: it.content,
+      })))
+    } catch (e: any) {
+      setError(e.message || 'Generation failed')
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  function copyAll() {
+    if (!generated) return
+    const text = generated.map(g => `# ${g.title}\n\n${typeof g.content === 'string' ? g.content : JSON.stringify(g.content, null, 2)}`).join('\n\n---\n\n')
+    navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 1600)
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/70 z-50 flex items-start justify-center p-6 overflow-y-auto">
+      <div className="bg-[#0e0e0e] border border-gray-800 rounded-xl w-full max-w-3xl my-8">
+        <div className="px-6 py-4 border-b border-gray-800 flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <div className="text-xs uppercase tracking-wider text-amber-400 mb-0.5">Draft comms — {stakeholder.stakeholder_name}</div>
+            <div className="font-semibold text-white truncate">{move.action}</div>
+            <div className="text-xs text-gray-500 mt-1">
+              Saved to <span className="font-mono text-gray-400">{folder}</span> in Memory Vault.
+            </div>
+          </div>
+          <button onClick={onClose} className="text-gray-500 hover:text-white shrink-0"><X className="w-5 h-5" /></button>
+        </div>
+
+        {/* Type chooser */}
+        <div className="px-6 py-4 border-b border-gray-800">
+          <div className="text-[0.65rem] uppercase tracking-wider text-gray-500 mb-2">Content type</div>
+          <div className="flex flex-wrap gap-1.5">
+            {COMM_TYPES.map(t => (
+              <button
+                key={t.id}
+                onClick={() => setType(t.id)}
+                disabled={generating}
+                className={`text-xs px-2.5 py-1 rounded border ${type === t.id ? 'bg-amber-600/30 text-amber-200 border-amber-500/50' : 'bg-gray-900 text-gray-400 border-gray-800 hover:border-gray-700'}`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-2 mt-4">
+            <button
+              onClick={generate}
+              disabled={generating}
+              className="px-4 py-2 text-sm bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50 flex items-center gap-2"
+            >
+              {generating ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating…</> : <><Sparkles className="w-4 h-4" /> {generated ? 'Re-generate' : 'Generate'}</>}
+            </button>
+            {generated && (
+              <button onClick={copyAll} className="px-3 py-2 text-sm border border-gray-700 rounded-lg hover:bg-gray-800 text-gray-200 flex items-center gap-1.5">
+                {copied ? <>✓ Copied</> : <>Copy all</>}
+              </button>
+            )}
+          </div>
+          {error && <p className="text-sm text-red-400 mt-3">{error}</p>}
+        </div>
+
+        {/* Result */}
+        <div className="px-6 py-5 max-h-[60vh] overflow-y-auto">
+          {generating && !generated && (
+            <div className="text-sm text-gray-500 italic">Calling niv-content-intelligent-v2 with the move + stakeholder context. Content is saved to Memory Vault as it lands.</div>
+          )}
+          {generated?.map((g, i) => (
+            <div key={i} className={`${i > 0 ? 'mt-6 pt-6 border-t border-gray-800/60' : ''}`}>
+              <div className="text-[0.65rem] uppercase tracking-wider text-amber-400 mb-1">{g.type.replace(/_/g, ' ')}</div>
+              <h3 className="font-semibold text-white mb-3">{g.title}</h3>
+              <div className="prose prose-invert max-w-none text-sm">
+                <pre className="whitespace-pre-wrap font-sans text-gray-200 leading-relaxed">
+                  {typeof g.content === 'string' ? g.content : JSON.stringify(g.content, null, 2)}
+                </pre>
+              </div>
+            </div>
+          ))}
+          {!generating && !generated && !error && (
+            <div className="text-sm text-gray-500">Pick a content type and hit Generate. The orchestrator will draft against the move's action, the strategy objective, and the stakeholder's equilibrium target.</div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }

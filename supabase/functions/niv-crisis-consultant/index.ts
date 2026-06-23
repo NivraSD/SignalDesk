@@ -62,6 +62,13 @@ Communications Sent: ${crisis.communications?.length || 0} communications
 Active Tasks: ${crisis.tasks?.filter((t: any) => t.status !== 'completed').length || 0} tasks
 
 Provide guidance specific to THIS active crisis situation.`
+
+      // Optional: caller can pass arbitrary additional context as a string.
+      // Used by the project command center to inject stakeholders, recent
+      // intel, drift levels, drafted strategies, etc.
+      if (crisis.extra_context && typeof crisis.extra_context === 'string') {
+        crisisContext += `\n\n${crisis.extra_context}`
+      }
     }
 
     // Build messages array with context

@@ -35,7 +35,7 @@ export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname
 
   // Public paths that don't require authentication
-  const publicPaths = ['/auth/login', '/auth/signup', '/auth/reset-password', '/auth/callback', '/auth/error', '/auth/update-password', '/platform', '/contact', '/thoughts', '/demo/palantir']
+  const publicPaths = ['/auth/login', '/auth/signup', '/auth/reset-password', '/auth/callback', '/auth/error', '/auth/update-password', '/platform', '/contact', '/thoughts', '/demo/palantir', '/founder']
   const isPublicPath = publicPaths.some(publicPath => path.startsWith(publicPath))
 
   // API routes handle their own authentication - don't redirect them
@@ -50,8 +50,8 @@ export async function middleware(request: NextRequest) {
   }
 
   // If user is signed in and trying to access auth pages, redirect to onboarding
-  // But allow access to /thoughts pages (blog) for everyone
-  if (user && isPublicPath && path !== '/auth/callback' && !path.startsWith('/thoughts')) {
+  // But allow access to /thoughts and /founder for everyone (signed-in or not)
+  if (user && isPublicPath && path !== '/auth/callback' && !path.startsWith('/thoughts') && !path.startsWith('/founder')) {
     const redirectUrl = request.nextUrl.clone()
     redirectUrl.pathname = '/onboarding'
     return NextResponse.redirect(redirectUrl)

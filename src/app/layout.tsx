@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Space_Grotesk, Inter, Playfair_Display } from "next/font/google";
+import { Space_Grotesk, Inter, Playfair_Display, JetBrains_Mono, Fraunces, Newsreader, IBM_Plex_Sans_Condensed, DM_Serif_Display } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 
@@ -22,15 +22,53 @@ const playfairDisplay = Playfair_Display({
   style: ["normal", "italic"],
 });
 
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-mono",
+  subsets: ["latin"],
+  weight: ["400", "500"],
+});
+
+// Editorial display + body for the homepage.
+// Fraunces is variable — axes (opsz, SOFT) require dropping explicit weight,
+// which means we get the full variable range.
+const fraunces = Fraunces({
+  variable: "--font-editorial",
+  subsets: ["latin"],
+  style: ["normal", "italic"],
+  axes: ["opsz", "SOFT"],
+});
+
+const newsreader = Newsreader({
+  variable: "--font-reader",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  style: ["normal", "italic"],
+});
+
+// Small-caps kicker labels. Narrow, institutional, non-code.
+const plexCondensed = IBM_Plex_Sans_Condensed({
+  variable: "--font-label",
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+});
+
+// Logo wordmark. High-contrast serif with character — distinct from body.
+const dmSerifDisplay = DM_Serif_Display({
+  variable: "--font-logo",
+  subsets: ["latin"],
+  weight: ["400"],
+  style: ["normal", "italic"],
+});
+
 export const metadata: Metadata = {
-  title: "NIV - The Influence Orchestration Operating System",
-  description: "Transform how organizations discover opportunities, generate strategies, and execute campaigns — with AI that learns and compounds over time.",
+  title: "nivria · A new standard for the evaluation and stewardship of complex ventures",
+  description: "We map the connectome — the web of relationships a venture actually runs on — and score its structural health in real time, backed by verifiable evidence, not reputation.",
   metadataBase: new URL('https://nivria.ai'),
   openGraph: {
-    title: 'NIV - The Influence Orchestration Operating System',
-    description: 'Transform how organizations discover opportunities, generate strategies, and execute campaigns — with AI that learns and compounds over time.',
+    title: 'nivria · A new standard for the evaluation and stewardship of complex ventures',
+    description: "Every complex effort has a connectome. We map it — and score whether it'll survive.",
     url: 'https://nivria.ai',
-    siteName: 'NIV by nivria',
+    siteName: 'nivria',
     locale: 'en_US',
     type: 'website',
     images: [
@@ -38,14 +76,14 @@ export const metadata: Metadata = {
         url: '/api/og',
         width: 1200,
         height: 630,
-        alt: 'NIV - The Influence Orchestration Operating System',
+        alt: 'nivria · A new standard for the evaluation and stewardship of complex ventures',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'NIV - The Influence Orchestration Operating System',
-    description: 'Transform how organizations discover opportunities, generate strategies, and execute campaigns — with AI that learns and compounds over time.',
+    title: 'nivria · A new standard for the evaluation and stewardship of complex ventures',
+    description: "Every complex effort has a connectome. We map it — and score whether it'll survive.",
     images: ['/api/og'],
   },
 };
@@ -58,7 +96,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full">
       <body
-        className={`${spaceGrotesk.variable} ${inter.variable} ${playfairDisplay.variable} antialiased h-full`}
+        className={`${spaceGrotesk.variable} ${inter.variable} ${playfairDisplay.variable} ${jetbrainsMono.variable} ${fraunces.variable} ${newsreader.variable} ${plexCondensed.variable} ${dmSerifDisplay.variable} antialiased h-full`}
         style={{
           background: 'var(--cream)',
           color: 'var(--charcoal)'

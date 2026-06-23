@@ -1,726 +1,707 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import {
-  Rocket,
-  CheckSquare,
-  Briefcase,
-  ChevronRight,
-  Loader2,
-  ChevronDown,
-  Circle,
-  CheckCircle2,
-  Clock,
-  AlertCircle
-} from 'lucide-react'
-import { supabase } from '@/lib/supabase/client'
-import { useAuth } from '@/components/auth/AuthProvider'
-import StudioModule from '@/components/modules/StudioModule'
+import Link from 'next/link'
+import { useEffect, useState } from 'react'
 
-type FounderView = 'today' | 'launch' | 'workspace'
-
-// Launch categories with checklist items
-const LAUNCH_CHECKLIST: Record<string, { label: string; icon: string; items: string[] }> = {
-  technical: {
-    label: 'Technical',
-    icon: '⚙️',
-    items: [
-      'Core product functionality complete',
-      'Error handling and edge cases covered',
-      'Performance optimization done',
-      'Security audit completed',
-      'Analytics and monitoring set up',
-      'Backup and recovery tested'
-    ]
-  },
-  testing: {
-    label: 'Testing',
-    icon: '🧪',
-    items: [
-      'Internal testing complete',
-      'Beta user feedback collected',
-      'Critical bugs fixed',
-      'Load testing done',
-      'Cross-browser/device testing',
-      'User acceptance testing passed'
-    ]
-  },
-  operational: {
-    label: 'Operational',
-    icon: '📋',
-    items: [
-      'Pricing finalized',
-      'Payment processing set up',
-      'Support system ready',
-      'Documentation written',
-      'Legal/Terms of Service done',
-      'Onboarding flow tested'
-    ]
-  },
-  outreach: {
-    label: 'Outreach',
-    icon: '📢',
-    items: [
-      'Launch announcement drafted',
-      'Press/media list prepared',
-      'Social media content ready',
-      'Email list segmented',
-      'Influencer/partner outreach done',
-      'Community channels notified'
-    ]
-  },
-  fundraising: {
-    label: 'Fundraising',
-    icon: '💰',
-    items: [
-      'Pitch deck finalized',
-      'Financial projections ready',
-      'Investor list compiled',
-      'Data room prepared',
-      'Demo/walkthrough polished',
-      'Term sheet templates reviewed'
-    ]
-  }
+// auto-hide header on scroll-down, reveal on scroll-up
+function useHeaderVisible() {
+  const [visible, setVisible] = useState(true)
+  useEffect(() => {
+    let lastY = window.scrollY
+    let ticking = false
+    const onScroll = () => {
+      if (ticking) return
+      ticking = true
+      requestAnimationFrame(() => {
+        const y = window.scrollY
+        if (y < 80) setVisible(true)
+        else if (y > lastY + 4) setVisible(false)
+        else if (y < lastY - 4) setVisible(true)
+        lastY = y
+        ticking = false
+      })
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+  return visible
 }
 
-interface ChecklistState {
-  [category: string]: {
-    [item: string]: boolean
-  }
-}
+const EXPERIENCE = [
+  {
+    title: 'Saudi Arabia — Public Investment Fund (PIF)',
+    body: 'Advised in connection with PIF during a defining period, around the Aramco IPO and Yasir Al-Rumayyan’s appointment as chairman. Work spanned the fund’s anchor positions in the SoftBank Vision Fund and Blackstone’s infrastructure fund.',
+  },
+  {
+    title: 'African LNG',
+    body: 'Conducted the initial on-the-ground assessment of a major LNG development after operations were disrupted by an insurgency. Helped secure U.S. development financing and designed a framework for ongoing, comprehensive ground monitoring of the security and stakeholder environment.',
+  },
+  {
+    title: 'Latin American critical minerals',
+    body: 'Monitored the status of a major critical-mineral mine on behalf of a prospective investor and competitor, tracking the political, community, and legal dynamics surrounding one of the region’s most consequential and contested resource projects.',
+  },
+  {
+    title: 'NEOM',
+    body: 'Participated in the launch of the NEOM Investment Fund, supporting one of the largest greenfield development initiatives in the world.',
+  },
+  {
+    title: 'Industrial environmental crisis',
+    body: 'Led the response to a major environmental crisis at a chemical facility, assembling and managing the full cross-country team — legal, communications, and government affairs — from Washington, D.C. to Los Angeles.',
+  },
+  {
+    title: 'Foundations',
+    body: 'Worked with high-profile global foundations to formulate and execute their missions and strategic priorities.',
+  },
+  {
+    title: 'Combatting terrorism & extremism',
+    body: 'Coordinated a global awareness campaign confronting a designated terrorist organization’s use of major civilian airport infrastructure; contributed to anti-radicalization and counter-extremism efforts in the Balkans; and worked on a program to assist the Kurds following the U.S. withdrawal from northern Syria.',
+  },
+  {
+    title: 'Grain export labor dispute',
+    body: 'Helped resolve a labor dispute that had shut down grain shipments out of Washington State, restoring the flow of a critical export.',
+  },
+  {
+    title: 'Global cultural events',
+    body: 'Worked at Live Nation and on the production and positioning of some of the world’s largest live events, including major international music festivals operating at national scale.',
+  },
+  {
+    title: 'Global convenings',
+    body: 'Engaged across the producer, sponsor, and participant sides of major global gatherings, including the Future Investment Initiative (FII), the Milken Institute Global Conference, and Davos.',
+  },
+]
 
-interface FounderContextData {
-  company_name?: string
-  company_description?: string
-  industry?: string
-  launch_date?: string
-  current_focus?: string
-  goals?: string[]
-  challenges?: string[]
-}
+// Full canopy logo — built inline so this page is self-contained.
+function FullLogo() {
+  const TRUNK_LX = 100
+  const TRUNK_RX = 140
+  const TRUNK_TOP = 38
 
-// Default founder context for NIV Platform
-const DEFAULT_FOUNDER_CONTEXT: FounderContextData = {
-  company_name: 'NIV Platform',
-  company_description: 'AI-powered strategic communications and PR platform that helps organizations manage narrative, influence, and visibility through intelligent automation',
-  industry: 'SaaS / AI / Communications',
-  current_focus: 'Product launch and beta customer acquisition',
-  goals: [
-    'Launch beta version',
-    'Acquire 10 pilot customers',
-    'Build compelling case studies',
-    'Secure seed funding'
-  ],
-  challenges: [
-    'Solo founder bandwidth',
-    'Market education on AI-powered PR',
-    'Building credibility without team'
+  const CANOPY = [
+    { x: 66,  y: 14, c: 'l' as const }, { x: 76, y: 12, c: 'l' as const }, { x: 84,  y: 14, c: 'l' as const },
+    { x: 72,  y: 24, c: 'l' as const }, { x: 80, y: 26, c: 'l' as const },
+    { x: 96,  y: 14, c: 'c' as const }, { x: 108, y: 6,  c: 'c' as const }, { x: 120, y: 2,  c: 'c' as const },
+    { x: 132, y: 6,  c: 'c' as const }, { x: 144, y: 14, c: 'c' as const }, { x: 102, y: 22, c: 'c' as const },
+    { x: 120, y: 18, c: 'c' as const }, { x: 138, y: 22, c: 'c' as const }, { x: 120, y: 30, c: 'c' as const },
+    { x: 156, y: 14, c: 'r' as const }, { x: 164, y: 12, c: 'r' as const }, { x: 174, y: 14, c: 'r' as const },
+    { x: 160, y: 26, c: 'r' as const }, { x: 168, y: 24, c: 'r' as const },
   ]
+
+  type Line = { x1: number; y1: number; x2: number; y2: number; w: number; o: number; d?: string }
+  const branches: Line[] = []
+  CANOPY.forEach(p => {
+    if (p.c === 'l' || p.c === 'c') {
+      branches.push({ x1: TRUNK_LX, y1: TRUNK_TOP, x2: p.x, y2: p.y,
+        w: p.c === 'l' ? 0.7 : 0.5, o: p.c === 'l' ? 0.55 : 0.30,
+        d: p.c === 'c' ? '2 3' : undefined })
+    }
+    if (p.c === 'r' || p.c === 'c') {
+      branches.push({ x1: TRUNK_RX, y1: TRUNK_TOP, x2: p.x, y2: p.y,
+        w: p.c === 'r' ? 0.7 : 0.5, o: p.c === 'r' ? 0.55 : 0.30,
+        d: p.c === 'c' ? '2 3' : undefined })
+    }
+  })
+
+  const lace: Line[] = [
+    { x1: 76,  y1: 12, x2: 108, y2: 6,  w: 0.5, o: 0.25 },
+    { x1: 108, y1: 6,  x2: 120, y2: 2,  w: 0.5, o: 0.32 },
+    { x1: 120, y1: 2,  x2: 132, y2: 6,  w: 0.5, o: 0.32 },
+    { x1: 132, y1: 6,  x2: 164, y2: 12, w: 0.5, o: 0.25 },
+    { x1: 96,  y1: 14, x2: 108, y2: 6,  w: 0.5, o: 0.30 },
+    { x1: 96,  y1: 14, x2: 120, y2: 2,  w: 0.5, o: 0.22, d: '2 3' },
+    { x1: 144, y1: 14, x2: 132, y2: 6,  w: 0.5, o: 0.30 },
+    { x1: 144, y1: 14, x2: 120, y2: 2,  w: 0.5, o: 0.22, d: '2 3' },
+    { x1: 96,  y1: 14, x2: 144, y2: 14, w: 0.5, o: 0.20, d: '2 3' },
+    { x1: 84,  y1: 14, x2: 96,  y2: 14, w: 0.5, o: 0.30 },
+    { x1: 144, y1: 14, x2: 156, y2: 14, w: 0.5, o: 0.30 },
+    { x1: 102, y1: 22, x2: 120, y2: 18, w: 0.5, o: 0.30 },
+    { x1: 138, y1: 22, x2: 120, y2: 18, w: 0.5, o: 0.30 },
+    { x1: 102, y1: 22, x2: 138, y2: 22, w: 0.5, o: 0.20, d: '2 3' },
+    { x1: 96,  y1: 14, x2: 102, y2: 22, w: 0.5, o: 0.25 },
+    { x1: 144, y1: 14, x2: 138, y2: 22, w: 0.5, o: 0.25 },
+    { x1: 66,  y1: 14, x2: 76,  y2: 12, w: 0.5, o: 0.25 },
+    { x1: 66,  y1: 14, x2: 72,  y2: 24, w: 0.5, o: 0.22, d: '2 3' },
+    { x1: 76,  y1: 12, x2: 84,  y2: 14, w: 0.5, o: 0.25 },
+    { x1: 174, y1: 14, x2: 164, y2: 12, w: 0.5, o: 0.25 },
+    { x1: 174, y1: 14, x2: 168, y2: 24, w: 0.5, o: 0.22, d: '2 3' },
+    { x1: 164, y1: 12, x2: 156, y2: 14, w: 0.5, o: 0.25 },
+    { x1: 72,  y1: 24, x2: 80,  y2: 26, w: 0.5, o: 0.30 },
+    { x1: 160, y1: 26, x2: 168, y2: 24, w: 0.5, o: 0.30 },
+    { x1: 80,  y1: 26, x2: 120, y2: 30, w: 0.5, o: 0.22 },
+    { x1: 120, y1: 30, x2: 160, y2: 26, w: 0.5, o: 0.22 },
+  ]
+
+  const trunkLines: Line[] = []
+  const TRUNK_SCATTER: { x: number; y: number }[] = []
+
+  const HANGS = [
+    { from: { x: 66,  y: 14 }, to: { x: 64,  y: 22 } },
+    { from: { x: 76,  y: 12 }, to: { x: 74,  y: 20 } },
+    { from: { x: 84,  y: 14 }, to: { x: 82,  y: 24 } },
+    { from: { x: 72,  y: 24 }, to: { x: 70,  y: 32 } },
+    { from: { x: 80,  y: 26 }, to: { x: 82,  y: 34 } },
+    { from: { x: 108, y: 6  }, to: { x: 106, y: 14 } },
+    { from: { x: 132, y: 6  }, to: { x: 134, y: 14 } },
+    { from: { x: 120, y: 18 }, to: { x: 120, y: 28 } },
+    { from: { x: 120, y: 30 }, to: { x: 120, y: 37 } },
+    { from: { x: 156, y: 14 }, to: { x: 158, y: 24 } },
+    { from: { x: 164, y: 12 }, to: { x: 162, y: 20 } },
+    { from: { x: 174, y: 14 }, to: { x: 172, y: 22 } },
+    { from: { x: 160, y: 26 }, to: { x: 158, y: 34 } },
+    { from: { x: 168, y: 24 }, to: { x: 170, y: 32 } },
+  ]
+
+  return (
+    <Link href="/" className="nv-fnd-fulllogo" aria-label="nivria — home">
+      <span className="nv-fulllogo-chart" aria-hidden="true">
+        <svg viewBox="0 0 240 38" preserveAspectRatio="none">
+          {lace.map((l, i) => (
+            <line key={`la${i}`} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2}
+              stroke="currentColor" strokeWidth={l.w} strokeOpacity={l.o}
+              strokeDasharray={l.d} strokeLinecap="round" />
+          ))}
+          {branches.map((l, i) => (
+            <line key={`br${i}`} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2}
+              stroke="currentColor" strokeWidth={l.w} strokeOpacity={l.o}
+              strokeDasharray={l.d} strokeLinecap="round" />
+          ))}
+          {CANOPY.map((p, i) => (
+            <circle key={`c${i}`} cx={p.x} cy={p.y} r="1.0" fill="currentColor" />
+          ))}
+          {trunkLines.map((l, i) => (
+            <line key={`tl${i}`} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2}
+              stroke="currentColor" strokeWidth={l.w} strokeOpacity={l.o}
+              strokeDasharray={l.d} strokeLinecap="round" />
+          ))}
+          {TRUNK_SCATTER.map((p, i) => (
+            <circle key={`ts${i}`} cx={p.x} cy={p.y} r="0.9" fill="currentColor" />
+          ))}
+          {HANGS.map((h, i) => (
+            <g key={`h${i}`}>
+              <line x1={h.from.x} y1={h.from.y} x2={h.to.x} y2={h.to.y}
+                stroke="currentColor" strokeWidth="0.5" strokeOpacity="0.42" strokeLinecap="round" />
+              <circle cx={h.to.x} cy={h.to.y} r="0.8" fill="currentColor" />
+            </g>
+          ))}
+        </svg>
+      </span>
+      <span className="nv-fulllogo-text">
+        n
+        <span className="nv-logo-i" role="img" aria-label="i">
+          <span className="nv-logo-i-line" aria-hidden="true" />
+          <span className="nv-logo-i-top" aria-hidden="true" />
+          <svg className="nv-logo-i-roots" viewBox="0 0 20 10" aria-hidden="true"><line x1="10" y1="0" x2="2" y2="9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /><line x1="10" y1="0" x2="18" y2="9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /><circle cx="2" cy="9" r="1.7" fill="currentColor" /><circle cx="18" cy="9" r="1.7" fill="currentColor" /></svg>
+        </span>
+        vr
+        <span className="nv-logo-i" role="img" aria-label="i">
+          <span className="nv-logo-i-line" aria-hidden="true" />
+          <span className="nv-logo-i-top" aria-hidden="true" />
+          <svg className="nv-logo-i-roots" viewBox="0 0 20 10" aria-hidden="true"><line x1="10" y1="0" x2="2" y2="9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /><line x1="10" y1="0" x2="18" y2="9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /><circle cx="2" cy="9" r="1.7" fill="currentColor" /><circle cx="18" cy="9" r="1.7" fill="currentColor" /></svg>
+        </span>
+        a
+      </span>
+    </Link>
+  )
 }
 
 export default function FounderPage() {
-  const router = useRouter()
-  const { user, loading: authLoading } = useAuth()
-  const [activeView, setActiveView] = useState<FounderView>('today')
-  const [checklistState, setChecklistState] = useState<ChecklistState>({})
-  const [founderContext, setFounderContext] = useState<FounderContextData>(DEFAULT_FOUNDER_CONTEXT)
-  const [loading, setLoading] = useState(true)
-
-  // Load checklist state and founder context from database
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/login')
-      return
-    }
-
-    if (user) {
-      loadChecklistState()
-      loadFounderContext()
-    }
-  }, [user, authLoading])
-
-  const loadChecklistState = async () => {
-    setLoading(true)
-    try {
-      const { data } = await supabase
-        .from('founder_checklist')
-        .select('*')
-        .single()
-
-      if (data?.state) {
-        setChecklistState(data.state)
-      } else {
-        // Initialize empty state
-        const initialState: ChecklistState = {}
-        Object.keys(LAUNCH_CHECKLIST).forEach(cat => {
-          initialState[cat] = {}
-          LAUNCH_CHECKLIST[cat].items.forEach(item => {
-            initialState[cat][item] = false
-          })
-        })
-        setChecklistState(initialState)
-      }
-    } catch (error) {
-      console.error('Error loading checklist:', error)
-      // Initialize with empty state
-      const initialState: ChecklistState = {}
-      Object.keys(LAUNCH_CHECKLIST).forEach(cat => {
-        initialState[cat] = {}
-        LAUNCH_CHECKLIST[cat].items.forEach(item => {
-          initialState[cat][item] = false
-        })
-      })
-      setChecklistState(initialState)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const loadFounderContext = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('founder_context')
-        .select('*')
-        .single()
-
-      if (data) {
-        setFounderContext({
-          company_name: data.company_name || DEFAULT_FOUNDER_CONTEXT.company_name,
-          company_description: data.company_description || DEFAULT_FOUNDER_CONTEXT.company_description,
-          industry: data.industry || DEFAULT_FOUNDER_CONTEXT.industry,
-          launch_date: data.launch_date,
-          current_focus: data.current_focus || DEFAULT_FOUNDER_CONTEXT.current_focus,
-          goals: data.goals || DEFAULT_FOUNDER_CONTEXT.goals,
-          challenges: data.challenges || DEFAULT_FOUNDER_CONTEXT.challenges
-        })
-      } else if (error?.code === 'PGRST116') {
-        // No row found - create default context
-        const { error: insertError } = await supabase
-          .from('founder_context')
-          .insert({
-            user_id: user?.id,
-            ...DEFAULT_FOUNDER_CONTEXT
-          })
-
-        if (insertError) {
-          console.error('Error creating founder context:', insertError)
-        }
-      }
-    } catch (error) {
-      console.error('Error loading founder context:', error)
-      // Use defaults
-    }
-  }
-
-  const toggleChecklistItem = async (category: string, item: string) => {
-    const newState = {
-      ...checklistState,
-      [category]: {
-        ...checklistState[category],
-        [item]: !checklistState[category]?.[item]
-      }
-    }
-    setChecklistState(newState)
-
-    // Persist to database
-    await supabase
-      .from('founder_checklist')
-      .upsert({
-        user_id: user?.id,
-        state: newState,
-        updated_at: new Date().toISOString()
-      })
-  }
-
-  const getCategoryProgress = (category: string) => {
-    const items = LAUNCH_CHECKLIST[category].items
-    const completed = items.filter(item => checklistState[category]?.[item]).length
-    return { completed, total: items.length, percent: Math.round((completed / items.length) * 100) }
-  }
-
-  const getOverallProgress = () => {
-    let completed = 0
-    let total = 0
-    Object.keys(LAUNCH_CHECKLIST).forEach(cat => {
-      const progress = getCategoryProgress(cat)
-      completed += progress.completed
-      total += progress.total
-    })
-    return { completed, total, percent: total > 0 ? Math.round((completed / total) * 100) : 0 }
-  }
-
-  // Navigation items
-  const navItems: { id: FounderView; label: string; icon: React.ReactNode }[] = [
-    { id: 'today', label: 'Today', icon: <Clock className="w-5 h-5" /> },
-    { id: 'launch', label: 'Launch', icon: <Rocket className="w-5 h-5" /> },
-    { id: 'workspace', label: 'Workspace', icon: <Briefcase className="w-5 h-5" /> },
-  ]
-
-  if (authLoading || loading) {
-    return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
-      </div>
-    )
-  }
-
+  const visible = useHeaderVisible()
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white flex">
-      {/* Left Sidebar - Compact Navigation */}
-      <div className="w-16 border-r border-gray-800/50 flex flex-col items-center py-4 bg-[#0f0f0f]">
-        {/* Logo */}
-        <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-pink-600 rounded-xl flex items-center justify-center mb-8">
-          <Rocket className="w-5 h-5" />
+    <div className="nv-fnd">
+      <style>{CSS}</style>
+
+      <header className={`nv-fnd-hdr${visible ? '' : ' nv-fnd-hdr-hidden'}`}>
+        <div className="nv-fnd-wrap nv-fnd-hdr-row">
+          <FullLogo />
+          <nav className="nv-fnd-nav">
+            <a href="mailto:briefing@nivria.ai?subject=Briefing%20request" className="nv-fnd-nav-cta">Request a briefing</a>
+            <Link href="/auth/login" className="nv-fnd-nav-link">Sign in</Link>
+          </nav>
         </div>
+      </header>
 
-        {/* Nav Icons */}
-        <nav className="flex-1 flex flex-col gap-2">
-          {navItems.map(item => (
-            <button
-              key={item.id}
-              onClick={() => setActiveView(item.id)}
-              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all
-                ${activeView === item.id
-                  ? 'bg-purple-600 text-white'
-                  : 'text-gray-500 hover:text-white hover:bg-gray-800'}`}
-              title={item.label}
-            >
-              {item.icon}
-            </button>
-          ))}
-        </nav>
-
-        {/* Back to Platform */}
-        <button
-          onClick={() => router.push('/platform')}
-          className="w-10 h-10 rounded-xl flex items-center justify-center text-gray-600 hover:text-white hover:bg-gray-800 transition-all"
-          title="Back to Platform"
-        >
-          <ChevronRight className="w-5 h-5 rotate-180" />
-        </button>
-      </div>
-
-      {/* Main Content */}
-      <div className="flex-1 overflow-hidden">
-        {activeView === 'today' && (
-          <TodayView
-            checklistState={checklistState}
-            founderContext={founderContext}
-            onOpenLaunch={() => setActiveView('launch')}
-            onOpenWorkspace={() => setActiveView('workspace')}
-          />
-        )}
-        {activeView === 'launch' && (
-          <LaunchView
-            checklistState={checklistState}
-            onToggleItem={toggleChecklistItem}
-            getCategoryProgress={getCategoryProgress}
-            getOverallProgress={getOverallProgress}
-          />
-        )}
-        {activeView === 'workspace' && (
-          <div className="h-full">
-            <StudioModule />
+      <main>
+        <section className="nv-fnd-hero">
+          <div className="nv-fnd-wrap">
+            <div className="nv-fnd-mark">Founder · nivria</div>
+            <h1 className="nv-fnd-h1">
+              Jonathan <em>Leibowitz.</em>
+            </h1>
+            <p className="nv-fnd-bio">
+              Jonathan is the founder of nivria. Over nearly fifteen years at <strong>KARV</strong>, where he was the second employee, he built a global practice in strategic communications and geopolitical intelligence spanning <em>more than sixty countries.</em> He has worked at the centre of high-stakes, multi-stakeholder situations — sovereign wealth funds, global trading houses, complex cross-border ventures — where the hardest task is <em>getting the truth to land before a louder fiction takes hold,</em> and where misunderstandings, left unmanaged, become catastrophes.
+            </p>
           </div>
-        )}
-      </div>
+        </section>
+
+        <section className="nv-fnd-exp">
+          <div className="nv-fnd-wrap">
+            <header className="nv-fnd-exp-head">
+              <h2 className="nv-fnd-h2"><em>Experience.</em></h2>
+              <div className="nv-fnd-exp-meta">Sample engagements across sectors and continents</div>
+            </header>
+
+            <ol className="nv-fnd-grid">
+              {EXPERIENCE.map((e, i) => (
+                <li key={i} className="nv-fnd-cell">
+                  <div className="nv-fnd-cell-n">{String(i + 1).padStart(2, '0')}</div>
+                  <h3 className="nv-fnd-cell-h">{e.title}</h3>
+                  <p className="nv-fnd-cell-body">{e.body}</p>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
+
+        <section className="nv-fnd-close">
+          <div className="nv-fnd-wrap nv-fnd-close-wrap">
+            <p className="nv-fnd-close-line">
+              For the initiatives that <em>matter most.</em>
+            </p>
+            <a href="mailto:briefing@nivria.ai?subject=Briefing%20request" className="nv-fnd-cta">
+              Request a briefing
+              <svg width="20" height="12" viewBox="0 0 20 12" fill="none" aria-hidden="true">
+                <path d="M0 6h18.5M14 1l5 5-5 5" stroke="currentColor" strokeWidth="1.4" />
+              </svg>
+            </a>
+            <a href="mailto:briefing@nivria.ai" className="nv-fnd-mail">briefing@nivria.ai</a>
+          </div>
+        </section>
+      </main>
+
+      <footer className="nv-fnd-foot">
+        <div className="nv-fnd-wrap nv-fnd-foot-row">
+          <Link href="/" className="nv-fnd-foot-logo">
+            <span className="nv-inline-wordmark nv-inline-wordmark-sm">
+              n
+              <span className="nv-logo-i" role="img" aria-label="i">
+                <span className="nv-logo-i-line" aria-hidden="true" />
+                <span className="nv-logo-i-top" aria-hidden="true" />
+                <svg className="nv-logo-i-roots" viewBox="0 0 20 10" aria-hidden="true"><line x1="10" y1="0" x2="2" y2="9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /><line x1="10" y1="0" x2="18" y2="9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /><circle cx="2" cy="9" r="1.7" fill="currentColor" /><circle cx="18" cy="9" r="1.7" fill="currentColor" /></svg>
+              </span>
+              vr
+              <span className="nv-logo-i" role="img" aria-label="i">
+                <span className="nv-logo-i-line" aria-hidden="true" />
+                <span className="nv-logo-i-top" aria-hidden="true" />
+                <svg className="nv-logo-i-roots" viewBox="0 0 20 10" aria-hidden="true"><line x1="10" y1="0" x2="2" y2="9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /><line x1="10" y1="0" x2="18" y2="9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /><circle cx="2" cy="9" r="1.7" fill="currentColor" /><circle cx="18" cy="9" r="1.7" fill="currentColor" /></svg>
+              </span>
+              a
+            </span>
+          </Link>
+          <span className="nv-fnd-foot-tag">For the evaluation and stewardship of complex ventures.</span>
+          <Link href="/auth/login" className="nv-fnd-foot-sign">Sign in</Link>
+        </div>
+      </footer>
     </div>
   )
 }
 
-// =============================================================================
-// TODAY VIEW - NIV-centric, what to do today
-// =============================================================================
-function TodayView({
-  checklistState,
-  founderContext,
-  onOpenLaunch,
-  onOpenWorkspace
-}: {
-  checklistState: ChecklistState
-  founderContext: FounderContextData
-  onOpenLaunch: () => void
-  onOpenWorkspace: () => void
-}) {
-  const [chatInput, setChatInput] = useState('')
-  const [chatMessages, setChatMessages] = useState<Array<{role: 'user' | 'assistant', content: string}>>([])
-  const [chatLoading, setChatLoading] = useState(false)
+const CSS = `
+.nv-fnd {
+  --bg: #0D0B08;
+  --bg-2: #110F0B;
+  --panel: #15130F;
+  --panel-2: #1A1813;
+  --ink: #F4ECD9;
+  --ink-2: #D9CFB7;
+  --ink-3: #A89E86;
+  --ink-4: #6E6651;
+  --rule: #2F2A20;
+  --rule-soft: #211D16;
+  --accent: #C9912E;
+  --accent-deep: #8A6420;
 
-  // Get incomplete high-priority items across categories
-  const getTodayFocus = () => {
-    const focus: Array<{ category: string; item: string }> = []
+  min-height: 100vh;
+  color: var(--ink);
+  font-family: var(--font-reader), 'Newsreader', Georgia, serif;
+  font-feature-settings: "kern" 1, "liga" 1, "calt" 1, "onum" 1;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
+  font-size: 17px;
+  line-height: 1.6;
+  position: relative;
+  isolation: isolate;
 
-    // Priority order for categories
-    const priorityOrder = ['technical', 'testing', 'operational', 'outreach', 'fundraising']
+  /* same spotlight bed as the homepage — five warm sources fixed to
+     the viewport so they stay anchored while content scrolls past */
+  background:
+    radial-gradient(1600px 1000px at 8% 4%,    rgba(201,145,46,.20), transparent 60%),
+    radial-gradient(1100px 760px  at 92% 32%,  rgba(201,145,46,.12), transparent 62%),
+    radial-gradient(1100px 880px  at 14% 82%,  rgba(140,40,32,.10),  transparent 65%),
+    radial-gradient(900px  720px  at 96% 96%,  rgba(201,145,46,.10), transparent 68%),
+    radial-gradient(1200px 1000px at 50% 50%,  rgba(201,145,46,.04), transparent 70%),
+    var(--bg);
+  background-attachment: fixed;
+}
+.nv-fnd *, .nv-fnd *::before, .nv-fnd *::after { box-sizing: border-box; }
+.nv-fnd ::selection { background: rgba(201,145,46,.32); color: var(--ink); }
+.nv-fnd a { color: inherit; text-decoration: none; }
+.nv-fnd em { font-style: italic; color: var(--accent); }
+.nv-fnd strong { font-weight: 600; color: var(--ink); }
 
-    for (const cat of priorityOrder) {
-      const items = LAUNCH_CHECKLIST[cat].items
-      for (const item of items) {
-        if (!checklistState[cat]?.[item]) {
-          focus.push({ category: cat, item })
-          if (focus.length >= 3) break
-        }
-      }
-      if (focus.length >= 3) break
-    }
-
-    return focus
-  }
-
-  const handleChatSubmit = async () => {
-    if (!chatInput.trim() || chatLoading) return
-
-    const userMessage = chatInput
-    setChatInput('')
-    setChatMessages(prev => [...prev, { role: 'user', content: userMessage }])
-    setChatLoading(true)
-
-    try {
-      const response = await fetch('/api/niv/founder-chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: userMessage,
-          context: {
-            tasks: [],
-            milestones: [],
-            founderContext,
-            checklistState,
-            mode: 'founder'
-          },
-          history: chatMessages.slice(-10)
-        })
-      })
-
-      const data = await response.json()
-      setChatMessages(prev => [...prev, {
-        role: 'assistant',
-        content: data.response || data.message
-      }])
-    } catch (error) {
-      console.error('Chat error:', error)
-      setChatMessages(prev => [...prev, {
-        role: 'assistant',
-        content: 'Sorry, I encountered an error. Please try again.'
-      }])
-    } finally {
-      setChatLoading(false)
-    }
-  }
-
-  const todayFocus = getTodayFocus()
-  const today = new Date()
-
-  return (
-    <div className="h-full flex">
-      {/* Left side - Today's Focus */}
-      <div className="w-1/2 border-r border-gray-800/50 p-8 overflow-auto">
-        <div className="max-w-lg">
-          {/* Header */}
-          <h1 className="text-3xl font-bold text-white mb-1">
-            Good {getTimeOfDay()}
-          </h1>
-          <p className="text-gray-500 mb-8">
-            {today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-          </p>
-
-          {/* Today's Focus */}
-          <div className="mb-8">
-            <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-orange-400" />
-              Focus Today
-            </h2>
-            <div className="space-y-3">
-              {todayFocus.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <CheckCircle2 className="w-12 h-12 mx-auto mb-3 text-green-500" />
-                  <p className="font-medium text-white">All caught up!</p>
-                  <p className="text-sm">Your launch checklist is complete.</p>
-                </div>
-              ) : (
-                todayFocus.map((item, i) => (
-                  <div
-                    key={i}
-                    className="p-4 bg-gray-900/50 border border-gray-800/50 rounded-xl"
-                  >
-                    <div className="flex items-start gap-3">
-                      <span className="text-xl">{LAUNCH_CHECKLIST[item.category].icon}</span>
-                      <div>
-                        <p className="font-medium text-white">{item.item}</p>
-                        <p className="text-sm text-gray-500">{LAUNCH_CHECKLIST[item.category].label}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* Quick Actions */}
-          <div className="space-y-3">
-            <button
-              onClick={onOpenLaunch}
-              className="w-full p-4 bg-purple-600/20 border border-purple-500/30 rounded-xl text-left hover:bg-purple-600/30 transition-all"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Rocket className="w-5 h-5 text-purple-400" />
-                  <span className="font-medium text-white">View Launch Checklist</span>
-                </div>
-                <ChevronRight className="w-5 h-5 text-gray-500" />
-              </div>
-            </button>
-            <button
-              onClick={onOpenWorkspace}
-              className="w-full p-4 bg-gray-800/50 border border-gray-700/50 rounded-xl text-left hover:bg-gray-800 transition-all"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Briefcase className="w-5 h-5 text-gray-400" />
-                  <span className="font-medium text-white">Open Workspace</span>
-                </div>
-                <ChevronRight className="w-5 h-5 text-gray-500" />
-              </div>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Right side - NIV Chat */}
-      <div className="w-1/2 flex flex-col bg-[#0f0f0f]">
-        {/* Header */}
-        <div className="p-6 border-b border-gray-800/50">
-          <h2 className="text-xl font-semibold text-white">NIV</h2>
-          <p className="text-sm text-gray-500">What do you need help with?</p>
-        </div>
-
-        {/* Messages */}
-        <div className="flex-1 overflow-auto p-4 space-y-4">
-          {chatMessages.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center px-6">
-              <p className="text-gray-500 mb-6">
-                I can help with content, research, planning, or anything else you need for launch.
-              </p>
-              <div className="space-y-2 w-full max-w-sm">
-                <QuickPrompt
-                  text="Draft an investor update email"
-                  onClick={() => setChatInput('Draft an investor update email')}
-                />
-                <QuickPrompt
-                  text="Help me prioritize this week"
-                  onClick={() => setChatInput('Help me prioritize this week')}
-                />
-                <QuickPrompt
-                  text="Create a launch announcement"
-                  onClick={() => setChatInput('Create a launch announcement for social media')}
-                />
-              </div>
-            </div>
-          ) : (
-            chatMessages.map((msg, i) => (
-              <div
-                key={i}
-                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                <div className={`max-w-[85%] rounded-2xl px-4 py-3 ${
-                  msg.role === 'user'
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-gray-800 text-gray-100'
-                }`}>
-                  <div className="text-sm whitespace-pre-wrap">{msg.content}</div>
-                </div>
-              </div>
-            ))
-          )}
-          {chatLoading && (
-            <div className="flex justify-start">
-              <div className="bg-gray-800 rounded-2xl px-4 py-3">
-                <Loader2 className="w-4 h-4 animate-spin text-purple-400" />
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Input */}
-        <div className="p-4 border-t border-gray-800/50">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={chatInput}
-              onChange={(e) => setChatInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleChatSubmit()}
-              placeholder="Ask NIV anything..."
-              className="flex-1 bg-gray-800/50 border border-gray-700 rounded-xl px-4 py-3 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-purple-500"
-            />
-            <button
-              onClick={handleChatSubmit}
-              disabled={chatLoading || !chatInput.trim()}
-              className="px-4 py-3 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 rounded-xl transition-colors"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
+/* paper grain — fixed under content */
+.nv-fnd::before {
+  content: '';
+  position: fixed; inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 240 240' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='nvbg'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 0.95  0 0 0 0 0.88  0 0 0 0.045 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23nvbg)'/%3E%3C/svg%3E");
+  opacity: 0.45;
+  mix-blend-mode: overlay;
+}
+/* soft vignette so edges feel deeper than centre */
+.nv-fnd::after {
+  content: '';
+  position: fixed; inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background: radial-gradient(1400px 900px at 50% 40%, transparent 0%, transparent 55%, rgba(0,0,0,0.45) 100%);
 }
 
-// =============================================================================
-// LAUNCH VIEW - Unified checklist by category
-// =============================================================================
-function LaunchView({
-  checklistState,
-  onToggleItem,
-  getCategoryProgress,
-  getOverallProgress
-}: {
-  checklistState: ChecklistState
-  onToggleItem: (category: string, item: string) => void
-  getCategoryProgress: (category: string) => { completed: number; total: number; percent: number }
-  getOverallProgress: () => { completed: number; total: number; percent: number }
-}) {
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
-    new Set(Object.keys(LAUNCH_CHECKLIST))
-  )
-
-  const toggleCategory = (category: string) => {
-    const newExpanded = new Set(expandedCategories)
-    if (newExpanded.has(category)) {
-      newExpanded.delete(category)
-    } else {
-      newExpanded.add(category)
-    }
-    setExpandedCategories(newExpanded)
-  }
-
-  const overall = getOverallProgress()
-
-  return (
-    <div className="h-full overflow-auto">
-      <div className="max-w-3xl mx-auto p-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Launch Checklist</h1>
-          <p className="text-gray-500">Track your progress across all launch categories</p>
-        </div>
-
-        {/* Overall Progress */}
-        <div className="mb-8 p-6 bg-gradient-to-r from-purple-900/30 to-pink-900/30 border border-purple-500/20 rounded-2xl">
-          <div className="flex items-center justify-between mb-3">
-            <span className="font-medium text-white">Overall Progress</span>
-            <span className="text-2xl font-bold text-white">{overall.percent}%</span>
-          </div>
-          <div className="h-3 bg-gray-800 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-500"
-              style={{ width: `${overall.percent}%` }}
-            />
-          </div>
-          <p className="text-sm text-gray-400 mt-2">
-            {overall.completed} of {overall.total} items complete
-          </p>
-        </div>
-
-        {/* Categories */}
-        <div className="space-y-4">
-          {Object.entries(LAUNCH_CHECKLIST).map(([categoryId, category]) => {
-            const progress = getCategoryProgress(categoryId)
-            const isExpanded = expandedCategories.has(categoryId)
-
-            return (
-              <div
-                key={categoryId}
-                className="bg-gray-900/50 border border-gray-800/50 rounded-xl overflow-hidden"
-              >
-                {/* Category Header */}
-                <button
-                  onClick={() => toggleCategory(categoryId)}
-                  className="w-full p-4 flex items-center justify-between hover:bg-gray-800/50 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">{category.icon}</span>
-                    <div className="text-left">
-                      <h3 className="font-semibold text-white">{category.label}</h3>
-                      <p className="text-sm text-gray-500">
-                        {progress.completed}/{progress.total} complete
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    {/* Mini progress bar */}
-                    <div className="w-24 h-2 bg-gray-800 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-purple-500 rounded-full transition-all"
-                        style={{ width: `${progress.percent}%` }}
-                      />
-                    </div>
-                    <ChevronDown
-                      className={`w-5 h-5 text-gray-500 transition-transform ${
-                        isExpanded ? 'rotate-180' : ''
-                      }`}
-                    />
-                  </div>
-                </button>
-
-                {/* Category Items */}
-                {isExpanded && (
-                  <div className="px-4 pb-4 space-y-2">
-                    {category.items.map((item, i) => {
-                      const isChecked = checklistState[categoryId]?.[item] || false
-                      return (
-                        <button
-                          key={i}
-                          onClick={() => onToggleItem(categoryId, item)}
-                          className={`w-full p-3 rounded-lg flex items-center gap-3 transition-all ${
-                            isChecked
-                              ? 'bg-green-500/10 border border-green-500/20'
-                              : 'bg-gray-800/30 border border-transparent hover:border-gray-700'
-                          }`}
-                        >
-                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
-                            isChecked
-                              ? 'bg-green-500 border-green-500'
-                              : 'border-gray-600'
-                          }`}>
-                            {isChecked && <CheckCircle2 className="w-3 h-3 text-white" />}
-                          </div>
-                          <span className={`text-sm ${isChecked ? 'text-gray-400 line-through' : 'text-white'}`}>
-                            {item}
-                          </span>
-                        </button>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      </div>
-    </div>
-  )
+/* per-section gradient caps so sections have their own lighting cast */
+.nv-fnd main > section:nth-of-type(odd) {
+  background:
+    radial-gradient(1000px 380px at 30% 0%, rgba(201,145,46,.08), transparent 70%),
+    radial-gradient(800px 320px at 80% 100%, rgba(140,40,32,.04), transparent 70%);
+}
+.nv-fnd main > section:nth-of-type(even) {
+  background:
+    radial-gradient(1000px 380px at 70% 0%, rgba(201,145,46,.05), transparent 70%),
+    radial-gradient(800px 320px at 20% 100%, rgba(201,145,46,.06), transparent 70%);
 }
 
-// =============================================================================
-// HELPER COMPONENTS
-// =============================================================================
+.nv-fnd-wrap { max-width: 1240px; margin: 0 auto; padding: 0 48px; }
 
-function QuickPrompt({ text, onClick }: { text: string; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      className="w-full text-left px-4 py-3 bg-gray-800/50 hover:bg-gray-800 border border-gray-700/50 hover:border-purple-500/50 rounded-xl text-sm text-gray-300 hover:text-white transition-all"
-    >
-      {text}
-    </button>
-  )
+/* ── HEADER ──────────────────────────────────────────────────────────── */
+.nv-fnd-hdr {
+  padding: 18px 0;
+  border-bottom: 1px solid var(--rule-soft);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(13, 11, 8, 0.75);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transform: translateY(0);
+  transition: transform .35s cubic-bezier(.4, 0, .2, 1);
+  will-change: transform;
+}
+.nv-fnd-hdr.nv-fnd-hdr-hidden { transform: translateY(-110%); }
+.nv-fnd-hdr-row {
+  display: flex; align-items: center; justify-content: space-between;
+}
+.nv-fnd-logo { display: inline-block; transition: opacity .2s; }
+.nv-fnd-logo:hover { opacity: 0.85; }
+
+/* full logo — wordmark beneath canopy chart + trunks (matches homepage md size) */
+.nv-fnd-fulllogo {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  text-decoration: none;
+  color: var(--accent);
+  transition: opacity .2s ease;
+  line-height: 1;
+  width: 240px;
+}
+.nv-fnd-fulllogo:hover { opacity: 0.92; }
+.nv-fulllogo-chart {
+  display: block;
+  width: 100%;
+  height: 34px;
+  margin-bottom: -2px;
+  color: var(--accent);
+  pointer-events: none;
+}
+.nv-fulllogo-chart svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.nv-fulllogo-text {
+  font-family: var(--font-logo), 'DM Serif Display', serif;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  font-size: 24px;
+  display: inline-flex;
+  align-items: baseline;
+  border-bottom: 0.04em solid var(--accent);
+  padding-bottom: 0.02em;
+}
+/* trunk (vertical line above each i) + trunktop (dot where trunk meets canopy) */
+.nv-logo-i-trunk {
+  position: absolute;
+  left: 50%;
+  bottom: -0.20em;
+  width: 1.2px;
+  height: 1.55em;
+  background: var(--accent);
+  transform: translateX(-50%);
+}
+.nv-logo-i-trunktop {
+  position: absolute;
+  left: 50%;
+  bottom: 1.30em;
+  width: 0.11em;
+  height: 0.11em;
+  background: var(--accent);
+  border-radius: 50%;
+  transform: translate(calc(-50% - 0.6px), 0);
+}
+.nv-inline-wordmark {
+  font-family: var(--font-logo), 'DM Serif Display', serif;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  font-size: 22px;
+  display: inline-flex;
+  align-items: baseline;
+  border-bottom: 0.04em solid var(--accent);
+  padding-bottom: 0.02em;
+}
+.nv-inline-wordmark-sm { font-size: 16px; }
+.nv-logo-i {
+  display: inline-block;
+  position: relative;
+  width: 0.22em;
+  height: 0.70em;
+  vertical-align: baseline;
+  margin: 0 0.04em;
+  top: 0.08em;
+}
+.nv-logo-i-line {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: -0.05em;
+  width: 3px;
+  background: var(--accent);
+  transform: translateX(-50%);
+}
+.nv-logo-i-top {
+  position: absolute;
+  left: 50%; top: -0.15em;
+  width: 0.17em; height: 0.17em;
+  background: var(--accent);
+  border-radius: 50%;
+  transform: translateX(-50%);
+}
+/* roots sit BELOW the gold ground line — the line is the surface, V is underneath */
+.nv-logo-i-roots {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 0.55em;
+  height: 0.28em;
+  color: var(--accent);
+  transform: translate(-50%, 0.02em);
+  overflow: visible;
+  display: block;
+  pointer-events: none;
 }
 
-function getTimeOfDay() {
-  const hour = new Date().getHours()
-  if (hour < 12) return 'morning'
-  if (hour < 17) return 'afternoon'
-  return 'evening'
+.nv-fnd-nav { display: flex; align-items: center; gap: 28px; }
+.nv-fnd-nav-cta {
+  font-family: var(--font-reader), serif; font-style: italic;
+  font-size: 17px; color: var(--accent);
+  border-bottom: 1px solid var(--accent-deep);
+  padding-bottom: 2px;
+  transition: color .2s, border-color .2s;
 }
+.nv-fnd-nav-cta:hover { color: var(--accent); border-color: var(--accent); }
+.nv-fnd-nav-link {
+  font-family: var(--font-reader), serif;
+  font-size: 16.5px; color: var(--ink-3);
+  transition: color .2s;
+}
+.nv-fnd-nav-link:hover { color: var(--ink); }
+
+/* ── HERO ────────────────────────────────────────────────────────────── */
+.nv-fnd-hero { padding: 88px 0 72px; }
+.nv-fnd-mark {
+  font-family: var(--font-label), sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 24px;
+}
+.nv-fnd-h1 {
+  font-family: var(--font-reader), 'Newsreader', serif;
+  font-weight: 600;
+  font-size: clamp(40px, 5vw, 72px);
+  line-height: 1.05;
+  letter-spacing: -0.020em;
+  color: var(--ink);
+  margin: 0 0 32px;
+}
+.nv-fnd-h1 em {
+  color: var(--accent);
+  font-style: normal;
+  font-weight: inherit;
+}
+.nv-fnd-bio {
+  font-family: var(--font-reader), serif;
+  font-size: 20.5px;
+  line-height: 1.6;
+  color: var(--ink-2);
+  margin: 0;
+  max-width: 78ch;
+}
+.nv-fnd-bio em { font-style: italic; color: var(--accent); font-weight: 600; }
+.nv-fnd-bio strong { color: var(--ink); font-weight: 600; }
+
+/* ── EXPERIENCE GRID ────────────────────────────────────────────────── */
+.nv-fnd-exp {
+  padding: 88px 0 96px;
+  position: relative;
+  border-top: 1px solid var(--rule-soft);
+}
+.nv-fnd-exp-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 56px;
+  gap: 24px; flex-wrap: wrap;
+}
+.nv-fnd-h2 {
+  font-family: var(--font-editorial), 'Fraunces', serif;
+  font-variation-settings: "opsz" 144, "SOFT" 0;
+  font-weight: 600;
+  font-size: clamp(36px, 4.4vw, 60px);
+  line-height: 1.05;
+  letter-spacing: -0.022em;
+  color: var(--ink);
+  margin: 0;
+}
+.nv-fnd-h2 em {
+  color: var(--accent);
+  font-variation-settings: "opsz" 144, "SOFT" 60;
+  font-style: italic;
+}
+.nv-fnd-exp-meta {
+  font-family: var(--font-reader), serif; font-style: italic;
+  font-size: 15px; color: var(--ink-3);
+}
+
+.nv-fnd-grid {
+  list-style: none; padding: 0; margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-top: 1px solid var(--rule-soft);
+  border-left: 1px solid var(--rule-soft);
+}
+.nv-fnd-cell {
+  padding: 32px 36px 36px;
+  border-right: 1px solid var(--rule-soft);
+  border-bottom: 1px solid var(--rule-soft);
+  position: relative;
+  transition: background .25s ease;
+}
+.nv-fnd-cell:hover { background: rgba(201,145,46,.03); }
+.nv-fnd-cell-n {
+  font-family: var(--font-mono), monospace;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+  margin-bottom: 14px;
+}
+.nv-fnd-cell-h {
+  font-family: var(--font-editorial), 'Fraunces', serif;
+  font-variation-settings: "opsz" 60, "SOFT" 0;
+  font-weight: 600;
+  font-size: clamp(20px, 1.8vw, 24px);
+  line-height: 1.18;
+  letter-spacing: -0.012em;
+  color: var(--ink);
+  margin: 0 0 14px;
+}
+.nv-fnd-cell-body {
+  font-family: var(--font-reader), serif;
+  font-size: 16.5px;
+  line-height: 1.6;
+  color: var(--ink-2);
+  margin: 0;
+}
+
+/* ── CLOSE ──────────────────────────────────────────────────────────── */
+.nv-fnd-close {
+  padding: 96px 0 120px;
+  text-align: center;
+  position: relative;
+  background:
+    radial-gradient(1200px 760px at 50% 50%, rgba(201,145,46,.12), transparent 65%);
+}
+.nv-fnd-close-wrap {
+  display: flex; flex-direction: column; align-items: center; gap: 32px;
+}
+.nv-fnd-close-line {
+  font-family: var(--font-editorial), 'Fraunces', serif;
+  font-variation-settings: "opsz" 144, "SOFT" 0;
+  font-weight: 500;
+  font-size: clamp(28px, 3.6vw, 48px);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin: 0;
+}
+.nv-fnd-close-line em {
+  color: var(--accent);
+  font-variation-settings: "opsz" 144, "SOFT" 60;
+  font-style: italic;
+}
+.nv-fnd-cta {
+  display: inline-flex; align-items: center; gap: 14px;
+  padding: 18px 36px;
+  border: 1px solid var(--accent);
+  background: linear-gradient(180deg, rgba(201,145,46,.14), rgba(201,145,46,.05));
+  color: var(--accent);
+  font-family: var(--font-reader), serif;
+  font-style: italic;
+  font-weight: 500;
+  font-size: 17px;
+  transition: background .25s ease, color .25s ease, transform .25s ease;
+  box-shadow: 0 24px 60px -30px rgba(201,145,46,.45);
+}
+.nv-fnd-cta:hover { background: var(--accent); color: var(--bg); transform: translateY(-2px); }
+.nv-fnd-cta svg { transition: transform .2s; }
+.nv-fnd-cta:hover svg { transform: translateX(4px); }
+.nv-fnd-mail {
+  font-family: var(--font-reader), serif; font-style: italic;
+  font-size: 15px; color: var(--ink-3);
+  border-bottom: 1px solid transparent;
+  transition: color .2s, border-color .2s;
+}
+.nv-fnd-mail:hover { color: var(--accent); border-bottom-color: var(--accent-deep); }
+
+/* ── FOOTER ─────────────────────────────────────────────────────────── */
+.nv-fnd-foot {
+  border-top: 1px solid var(--rule);
+  padding: 28px 0 32px;
+  background: var(--bg-2);
+}
+.nv-fnd-foot-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 28px;
+}
+.nv-fnd-foot-tag {
+  font-family: var(--font-reader), serif; font-style: italic;
+  font-size: 13px; color: var(--ink-3);
+}
+.nv-fnd-foot-sign {
+  font-family: var(--font-reader), serif;
+  font-size: 13px; color: var(--ink-3);
+  border-bottom: 1px solid transparent;
+  transition: color .2s, border-color .2s;
+}
+.nv-fnd-foot-sign:hover { color: var(--accent); border-bottom-color: var(--accent-deep); }
+
+.nv-fnd :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+@media (max-width: 820px) {
+  .nv-fnd-wrap { padding: 0 22px; }
+  .nv-fnd-grid { grid-template-columns: 1fr; }
+  .nv-fnd-cell { padding: 26px 22px 30px; border-right: none !important; }
+  .nv-fnd-hero { padding: 56px 0 48px; }
+  .nv-fnd-exp { padding: 64px 0 72px; }
+  .nv-fnd-foot-row { flex-direction: column; gap: 12px; text-align: center; }
+}
+`
