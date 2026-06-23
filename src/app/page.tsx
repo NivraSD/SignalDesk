@@ -1515,6 +1515,12 @@ const CSS = `
   color: var(--accent);
   transition: opacity .2s ease;
   line-height: 1;
+  /* container width proportional to --logo-font-size — same ratio used
+     to calibrate the canopy SVG's x-coordinates (which assume container
+     width ≈ font-size × 7.37). This keeps the SVG's convergence x-coords
+     landing on the i-stems at any size. max-width as overflow guard. */
+  width: calc(var(--logo-font-size, 30px) * 7.37);
+  max-width: 100%;
 }
 .nv .nv-logo:hover { opacity: 0.92; }
 
@@ -1681,15 +1687,15 @@ const CSS = `
   margin-top: calc(var(--logo-font-size, 30px) * -0.184);
 }
 
-/* sizes — variant only sets font-size + container width (+ small text
-   tweaks where letter-spacing benefits from per-size attention). */
-.nv .nv-logo-lg { --logo-font-size: 76px; width: 560px; }
+/* sizes — variant only sets --logo-font-size. Width auto-scales via
+   the calc on .nv-logo. Add per-size letter-spacing where it benefits. */
+.nv .nv-logo-lg { --logo-font-size: 76px; }
 .nv .nv-logo-lg .nv-logo-text { letter-spacing: 0.05em; }
 
-.nv .nv-logo-md { --logo-font-size: 30px; width: 220px; }
+.nv .nv-logo-md { --logo-font-size: 30px; }
 .nv .nv-logo-md .nv-logo-i-line { width: 1.5px; }
 
-.nv .nv-logo-sm { --logo-font-size: 20px; width: 150px; }
+.nv .nv-logo-sm { --logo-font-size: 20px; }
 .nv .nv-logo-sm .nv-logo-text { letter-spacing: 0.03em; }
 .nv .nv-logo-sm .nv-logo-i-line { width: 1.5px; }
 .nv .nv-nav { display: flex; align-items: center; gap: 28px; }
@@ -3524,7 +3530,7 @@ const CSS = `
      close enough to the boundary that the logo doesn't float awkwardly. */
   .nv .nv-hdr .nv-wrap { padding-left: 4px; padding-right: 14px; }
   .nv .nv-hdr-row { gap: 10px; }
-  .nv .nv-logo-md { --logo-font-size: 21px; width: 150px; }
+  .nv .nv-logo-md { --logo-font-size: 21px; }
   .nv .nv-nav { gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
   .nv .nv-nav-cta { font-size: 13px; padding-bottom: 1px; }
   .nv .nv-nav-founder { font-size: 13px; }
@@ -3560,14 +3566,10 @@ const CSS = `
   .nv .nv-life-callout { padding: 14px; margin-top: 14px; }
 
   /* ── CLOSE-SECTION lockup: lg shrinks to fit narrow viewports.
-        Use intrinsic width (auto) so the container = wordmark width.
-        The canopy SVG (width: 100% of container) then matches the
-        wordmark width, keeping the SVG's convergence coordinates
-        (calibrated to the i positions) aligned with the actual
-        i-stems beneath them. Don't set width: 100% here — that would
-        stretch the canopy wider than the wordmark and the bot canopy
-        would visibly extend toward v / r instead of meeting the i's. */
-  .nv .nv-logo-lg { --logo-font-size: clamp(40px, 13vw, 64px); width: auto; max-width: 100%; }
+        With the proportional system, just clamp --logo-font-size and
+        width auto-recalculates via the calc on .nv-logo. Clamp is set
+        so font × 7.37 stays within the available viewport on 320px+. */
+  .nv .nv-logo-lg { --logo-font-size: clamp(34px, 11vw, 56px); }
   .nv .nv-logo-lg .nv-logo-text { letter-spacing: 0.04em; }
   .nv .nv-close-logo { margin-bottom: 48px; }
 

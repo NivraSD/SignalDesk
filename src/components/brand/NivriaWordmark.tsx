@@ -217,6 +217,10 @@ const CSS = `
   color: var(--nivria-accent);
   line-height: 1;
   transition: opacity .2s ease;
+  /* container width proportional to --logo-font-size (ratio 7.37) so
+     the canopy SVG's x-coords land on the i-stems at any size. */
+  width: calc(var(--logo-font-size, 30px) * 7.37);
+  max-width: 100%;
 }
 .nivria-logo:hover { opacity: 0.92; }
 
@@ -323,14 +327,15 @@ const CSS = `
   margin-top: calc(var(--logo-font-size, 30px) * -0.184);
 }
 
-/* sizes — each variant only sets font-size + container width */
-.nivria-logo--lg { --logo-font-size: 76px; width: 560px; }
+/* sizes — each variant only sets --logo-font-size. Width auto-scales
+   via the calc on .nivria-logo. */
+.nivria-logo--lg { --logo-font-size: 76px; }
 .nivria-logo--lg .nivria-logo-text { letter-spacing: 0.05em; }
 
-.nivria-logo--md { --logo-font-size: 30px; width: 220px; }
+.nivria-logo--md { --logo-font-size: 30px; }
 .nivria-logo--md .nivria-logo-i-line { width: 1.5px; }
 
-.nivria-logo--sm { --logo-font-size: 20px; width: 150px; }
+.nivria-logo--sm { --logo-font-size: 20px; }
 .nivria-logo--sm .nivria-logo-text { letter-spacing: 0.03em; }
 .nivria-logo--sm .nivria-logo-i-line { width: 1.5px; }
 
