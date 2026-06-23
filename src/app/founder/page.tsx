@@ -186,16 +186,16 @@ function FullLogo() {
       </span>
       <span className="nv-fulllogo-text">
         n
-        <span className="nv-logo-i" role="img" aria-label="i">
+        <span className="nv-logo-i">
+          <span className="nv-logo-i-text">i</span>
           <span className="nv-logo-i-line" aria-hidden="true" />
           <span className="nv-logo-i-top" aria-hidden="true" />
-          <svg className="nv-logo-i-roots" viewBox="0 0 20 10" aria-hidden="true"><line x1="10" y1="0" x2="2" y2="9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /><line x1="10" y1="0" x2="18" y2="9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /><circle cx="2" cy="9" r="1.7" fill="currentColor" /><circle cx="18" cy="9" r="1.7" fill="currentColor" /></svg>
         </span>
         vr
-        <span className="nv-logo-i" role="img" aria-label="i">
+        <span className="nv-logo-i">
+          <span className="nv-logo-i-text">i</span>
           <span className="nv-logo-i-line" aria-hidden="true" />
           <span className="nv-logo-i-top" aria-hidden="true" />
-          <svg className="nv-logo-i-roots" viewBox="0 0 20 10" aria-hidden="true"><line x1="10" y1="0" x2="2" y2="9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /><line x1="10" y1="0" x2="18" y2="9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /><circle cx="2" cy="9" r="1.7" fill="currentColor" /><circle cx="18" cy="9" r="1.7" fill="currentColor" /></svg>
         </span>
         a
       </span>
@@ -272,16 +272,16 @@ export default function FounderPage() {
           <Link href="/" className="nv-fnd-foot-logo">
             <span className="nv-inline-wordmark nv-inline-wordmark-sm">
               n
-              <span className="nv-logo-i" role="img" aria-label="i">
+              <span className="nv-logo-i">
+                <span className="nv-logo-i-text">i</span>
                 <span className="nv-logo-i-line" aria-hidden="true" />
                 <span className="nv-logo-i-top" aria-hidden="true" />
-                <svg className="nv-logo-i-roots" viewBox="0 0 20 10" aria-hidden="true"><line x1="10" y1="0" x2="2" y2="9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /><line x1="10" y1="0" x2="18" y2="9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /><circle cx="2" cy="9" r="1.7" fill="currentColor" /><circle cx="18" cy="9" r="1.7" fill="currentColor" /></svg>
               </span>
               vr
-              <span className="nv-logo-i" role="img" aria-label="i">
+              <span className="nv-logo-i">
+                <span className="nv-logo-i-text">i</span>
                 <span className="nv-logo-i-line" aria-hidden="true" />
                 <span className="nv-logo-i-top" aria-hidden="true" />
-                <svg className="nv-logo-i-roots" viewBox="0 0 20 10" aria-hidden="true"><line x1="10" y1="0" x2="2" y2="9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /><line x1="10" y1="0" x2="18" y2="9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /><circle cx="2" cy="9" r="1.7" fill="currentColor" /><circle cx="18" cy="9" r="1.7" fill="currentColor" /></svg>
               </span>
               a
             </span>
@@ -477,6 +477,19 @@ const CSS = `
   width: 3px;
   background: var(--accent);
   transform: translateX(-50%);
+}
+/* literal "i" — kept in DOM so the wordmark reads "nivria" (copy-paste,
+   SEO, screen readers, CSS-disabled). Visually hidden via sr-only. */
+.nv-logo-i-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }
 .nv-logo-i-top {
   position: absolute;

@@ -434,12 +434,14 @@ function NivriaLogo({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
       </span>
       <span className="nv-logo-text">
         n
-        <span className="nv-logo-i" role="img" aria-label="i">
+        <span className="nv-logo-i">
+          <span className="nv-logo-i-text">i</span>
           <span className="nv-logo-i-line" aria-hidden="true" />
           <span className="nv-logo-i-top" aria-hidden="true" />
         </span>
         vr
-        <span className="nv-logo-i" role="img" aria-label="i">
+        <span className="nv-logo-i">
+          <span className="nv-logo-i-text">i</span>
           <span className="nv-logo-i-line" aria-hidden="true" />
           <span className="nv-logo-i-top" aria-hidden="true" />
         </span>
@@ -494,7 +496,7 @@ function Hero() {
               Every complex venture runs on <em>millions of nodes</em> — decisions, incentives, relationships, dependencies. We get <em>beneath the surface</em> to find what is actually true, score the integrity of the whole, and build the accurate picture from which strategy can be developed — and then <em>stay on</em> to actively help you put it in motion.
             </p>
             <p>
-              Where finance and legal stop, <span className="nv-inline-wordmark">n<span className="nv-logo-i" role="img" aria-label="i"><span className="nv-logo-i-line" aria-hidden="true" /><span className="nv-logo-i-top" aria-hidden="true" /><svg className="nv-logo-i-roots" viewBox="0 0 20 10" aria-hidden="true"><line x1="10" y1="0" x2="2" y2="9" stroke="currentColor" strokeWidth="1.0" strokeLinecap="round" /><line x1="10" y1="0" x2="18" y2="9" stroke="currentColor" strokeWidth="1.0" strokeLinecap="round" /><circle cx="2" cy="9" r="1.3" fill="currentColor" /><circle cx="18" cy="9" r="1.3" fill="currentColor" /></svg></span>vr<span className="nv-logo-i" role="img" aria-label="i"><span className="nv-logo-i-line" aria-hidden="true" /><span className="nv-logo-i-top" aria-hidden="true" /><svg className="nv-logo-i-roots" viewBox="0 0 20 10" aria-hidden="true"><line x1="10" y1="0" x2="2" y2="9" stroke="currentColor" strokeWidth="1.0" strokeLinecap="round" /><line x1="10" y1="0" x2="18" y2="9" stroke="currentColor" strokeWidth="1.0" strokeLinecap="round" /><circle cx="2" cy="9" r="1.3" fill="currentColor" /><circle cx="18" cy="9" r="1.3" fill="currentColor" /></svg></span>a</span> begins.
+              Where finance and legal stop, <span className="nv-inline-wordmark">n<span className="nv-logo-i"><span className="nv-logo-i-text">i</span><span className="nv-logo-i-line" aria-hidden="true" /><span className="nv-logo-i-top" aria-hidden="true" /></span>vr<span className="nv-logo-i"><span className="nv-logo-i-text">i</span><span className="nv-logo-i-line" aria-hidden="true" /><span className="nv-logo-i-top" aria-hidden="true" /></span>a</span> begins.
             </p>
             <a href="mailto:briefing@nivria.ai?subject=Briefing%20request" className="nv-cta">
               Request a briefing
@@ -1579,6 +1581,21 @@ const CSS = `
   width: 2px;
   background: var(--accent);
   transform: translateX(-50%);
+}
+/* The literal "i" character — kept in the DOM so the wordmark text reads
+   "nivria" (for copy-paste, SEO, screen readers, and CSS-disabled
+   fallback). Visually hidden via the standard sr-only pattern; the gold
+   stem + dot above are decoration drawn on top of where it would render. */
+.nv .nv-logo-i-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }
 .nv .nv-logo-i-trunk {
   position: absolute;
@@ -3543,9 +3560,14 @@ const CSS = `
   .nv .nv-life-callout { padding: 14px; margin-top: 14px; }
 
   /* ── CLOSE-SECTION lockup: lg shrinks to fit narrow viewports.
-        With the proportional system, just clamp --logo-font-size and
-        the canopy heights + overlaps recalculate automatically. */
-  .nv .nv-logo-lg { --logo-font-size: clamp(40px, 13vw, 64px); width: 100%; max-width: 480px; }
+        Use intrinsic width (auto) so the container = wordmark width.
+        The canopy SVG (width: 100% of container) then matches the
+        wordmark width, keeping the SVG's convergence coordinates
+        (calibrated to the i positions) aligned with the actual
+        i-stems beneath them. Don't set width: 100% here — that would
+        stretch the canopy wider than the wordmark and the bot canopy
+        would visibly extend toward v / r instead of meeting the i's. */
+  .nv .nv-logo-lg { --logo-font-size: clamp(40px, 13vw, 64px); width: auto; max-width: 100%; }
   .nv .nv-logo-lg .nv-logo-text { letter-spacing: 0.04em; }
   .nv .nv-close-logo { margin-bottom: 48px; }
 

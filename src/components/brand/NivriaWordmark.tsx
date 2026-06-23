@@ -119,7 +119,8 @@ const HANGS = [
 
 function I() {
   return (
-    <span className="nivria-logo-i" role="img" aria-label="i">
+    <span className="nivria-logo-i">
+      <span className="nivria-logo-i-text">i</span>
       <span className="nivria-logo-i-line" aria-hidden="true" />
       <span className="nivria-logo-i-top" aria-hidden="true" />
     </span>
@@ -276,6 +277,20 @@ const CSS = `
   width: 2px;
   background: var(--nivria-accent);
   transform: translateX(-50%);
+}
+/* Literal "i" — kept in DOM so the wordmark reads "nivria" (copy-paste,
+   SEO, screen readers, CSS-disabled fallback). Visually hidden via the
+   standard sr-only pattern; the gold stem/dot above are decoration. */
+.nivria-logo-i-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }
 .nivria-logo-i-top {
   position: absolute;
