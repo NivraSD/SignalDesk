@@ -21,7 +21,11 @@ type Size = 'sm' | 'md' | 'lg'
 
 const TRUNK_LX = 97    // aligns with first i in "nivria"
 const TRUNK_RX = 143   // aligns with second i
-const TRUNK_TOP = 38   // bottom of SVG — branches converge directly at the i-top
+const TRUNK_TOP = 36   // branches converge AT the i-top dot center (was 38 = SVG bottom; that landed below the dots, leaving the canopy floating)
+// Bot-canopy junction dots — inboard so the dot bodies don't overshoot
+// the i-stems on either side.
+const TRUNK_LX_BOT = 99
+const TRUNK_RX_BOT = 141
 
 // CANOPY — bounded within wordmark width, with a curved dome ridge
 // (outer top dots lowered, peak raised) so it reads more tree-like.
@@ -118,12 +122,6 @@ function I() {
     <span className="nivria-logo-i" role="img" aria-label="i">
       <span className="nivria-logo-i-line" aria-hidden="true" />
       <span className="nivria-logo-i-top" aria-hidden="true" />
-      <svg className="nivria-logo-i-roots" viewBox="0 0 20 10" aria-hidden="true">
-        <line x1="10" y1="0" x2="2"  y2="9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-        <line x1="10" y1="0" x2="18" y2="9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-        <circle cx="2"  cy="9" r="1.7" fill="currentColor" />
-        <circle cx="18" cy="9" r="1.7" fill="currentColor" />
-      </svg>
     </span>
   )
 }
@@ -165,6 +163,27 @@ export function NivriaLogo({ size = 'md', href = '/', className = '' }: LogoProp
       </span>
       <span className="nivria-logo-text">
         n<I />vr<I />a
+      </span>
+      {/* Bottom roots — mirrored canopy via scaleY(-1) + junction dots.
+          See homepage NivriaLogo for the design rationale. */}
+      <span className="nivria-logo-chart-bot" aria-hidden="true">
+        <svg viewBox="0 0 240 38" preserveAspectRatio="none">
+          {lace.map((l, i) => (
+            <line key={`bla${i}`} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2}
+              stroke="currentColor" strokeWidth={l.w} strokeOpacity={l.o}
+              strokeDasharray={l.d} strokeLinecap="round" />
+          ))}
+          {branches.map((l, i) => (
+            <line key={`bbr${i}`} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2}
+              stroke="currentColor" strokeWidth={l.w} strokeOpacity={l.o}
+              strokeDasharray={l.d} strokeLinecap="round" />
+          ))}
+          {CANOPY.map((p, i) => (
+            <circle key={`bc${i}`} cx={p.x} cy={p.y} r="1.0" fill="currentColor" />
+          ))}
+          <circle cx={TRUNK_LX_BOT} cy={TRUNK_TOP} r="1.6" fill="currentColor" />
+          <circle cx={TRUNK_RX_BOT} cy={TRUNK_TOP} r="1.6" fill="currentColor" />
+        </svg>
       </span>
     </a>
   )
@@ -218,8 +237,23 @@ const CSS = `
   font-weight: 400;
   letter-spacing: 0.04em;
   color: var(--nivria-ink);
-  border-bottom: 0.04em solid var(--nivria-accent);
-  padding-bottom: 0.02em;
+}
+
+/* Bottom canopy — mirrored canopy via scaleY(-1). Same lace + branches
+   + scatter dots as the top, just flipped. Sits below the wordmark
+   with negative margin-top to overlap on the i-bottoms. */
+.nivria-logo-chart-bot {
+  display: block;
+  width: 100%;
+  color: var(--nivria-accent);
+  pointer-events: none;
+}
+.nivria-logo-chart-bot svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  transform: scaleY(-1);
 }
 
 .nivria-logo-i {
@@ -235,57 +269,46 @@ const CSS = `
   position: absolute;
   left: 50%;
   top: 0;
-  bottom: -0.05em;
-  width: 3px;
+  /* end at the wordmark's baseline so the i-stems match the bottom of
+     n/v/r/a. i element bottom is at baseline + 0.08em due to the i
+     top offset, so we pull the line up from i element bottom by 0.08em. */
+  bottom: 0.08em;
+  width: 2px;
   background: var(--nivria-accent);
   transform: translateX(-50%);
 }
 .nivria-logo-i-top {
   position: absolute;
   left: 50%;
-  top: -0.15em;
-  width: 0.17em;
-  height: 0.17em;
+  top: -0.13em;
+  width: 0.13em;
+  height: 0.13em;
   background: var(--nivria-accent);
   border-radius: 50%;
   transform: translateX(-50%);
 }
-.nivria-logo-i-roots {
-  position: absolute;
-  left: 50%;
-  top: 100%;
-  width: 0.55em;
-  height: 0.28em;
-  color: var(--nivria-accent);
-  transform: translate(-50%, 0.02em);
-  overflow: visible;
-  display: block;
-  pointer-events: none;
-}
-
 /* sizes — match homepage .nv-logo-{lg,md,sm} exactly */
 .nivria-logo--lg { width: 560px; }
 .nivria-logo--lg .nivria-logo-text { font-size: 76px; letter-spacing: 0.05em; }
-.nivria-logo--lg .nivria-logo-chart { height: 92px; margin-bottom: -6px; }
+.nivria-logo--lg .nivria-logo-chart { height: 92px; margin-bottom: -14px; }
+.nivria-logo--lg .nivria-logo-chart-bot { height: 28px; margin-top: -24px; }
 
 .nivria-logo--md { width: 220px; }
 .nivria-logo--md .nivria-logo-text { font-size: 30px; }
-.nivria-logo--md .nivria-logo-chart { height: 34px; margin-bottom: -2px; }
+.nivria-logo--md .nivria-logo-chart { height: 34px; margin-bottom: -5px; }
+.nivria-logo--md .nivria-logo-chart-bot { height: 10px; margin-top: -10px; }
 .nivria-logo--md .nivria-logo-i-line { width: 1.5px; }
 
 .nivria-logo--sm { width: 150px; }
 .nivria-logo--sm .nivria-logo-text { font-size: 20px; letter-spacing: 0.03em; }
-.nivria-logo--sm .nivria-logo-chart { height: 22px; margin-bottom: -2px; }
+.nivria-logo--sm .nivria-logo-chart { height: 22px; margin-bottom: -3px; }
+.nivria-logo--sm .nivria-logo-chart-bot { height: 7px; margin-top: -7px; }
 .nivria-logo--sm .nivria-logo-i-line { width: 1.5px; }
 
-/* in-prose: drop the canopy + ground line + roots, bump the i-dot, slim the stem */
+/* in-prose: drop both canopies, bump the i-dot, slim the stem */
 .nivria-logo--in-prose { display: inline; width: auto; }
-.nivria-logo--in-prose .nivria-logo-chart { display: none; }
-.nivria-logo--in-prose .nivria-logo-text {
-  border-bottom: none;
-  padding-bottom: 0;
-}
-.nivria-logo--in-prose .nivria-logo-i-roots { display: none; }
+.nivria-logo--in-prose .nivria-logo-chart,
+.nivria-logo--in-prose .nivria-logo-chart-bot { display: none; }
 .nivria-logo--in-prose .nivria-logo-i-top {
   width: 0.24em;
   height: 0.24em;

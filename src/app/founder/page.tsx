@@ -30,7 +30,7 @@ function useHeaderVisible() {
 const EXPERIENCE = [
   {
     title: 'Saudi Arabia — Public Investment Fund (PIF)',
-    body: 'Advised in connection with PIF during a defining period, around the Aramco IPO and Yasir Al-Rumayyan’s appointment as chairman. Work spanned the fund’s anchor positions in the SoftBank Vision Fund and Blackstone’s infrastructure fund.',
+    body: 'Advised in connection with PIF during a defining period, around the Aramco IPO and H.E. Yasir Rumayyan’s tenure as Governor of PIF. Work spanned the fund’s anchor positions in the SoftBank Vision Fund and Blackstone’s infrastructure fund.',
   },
   {
     title: 'African LNG',
@@ -42,7 +42,7 @@ const EXPERIENCE = [
   },
   {
     title: 'NEOM',
-    body: 'Participated in the launch of the NEOM Investment Fund, supporting one of the largest greenfield development initiatives in the world.',
+    body: 'Worked across all sectors and regions of NEOM — including the Discover NEOM global road show, and the launch of the NEOM Investment Fund (NIF).',
   },
   {
     title: 'Industrial environmental crisis',

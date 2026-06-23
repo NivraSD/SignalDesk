@@ -281,7 +281,12 @@ function Header() {
 function NivriaLogo({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
   const TRUNK_LX = 97    // aligns with first i in "nivria"
   const TRUNK_RX = 143   // aligns with second i
-  const TRUNK_TOP = 38   // bottom of SVG — branches converge directly at the i-top
+  const TRUNK_TOP = 36   // branches converge AT the i-top dot center (was 38 = SVG bottom; that landed below the dots, leaving the canopy floating)
+  // Bot-canopy junction dots — drawn 2 SVG units inboard from the trunk
+  // x-positions so the dot bodies (r=1.6) don't visually overshoot the
+  // i-stems on either side.
+  const TRUNK_LX_BOT = 99
+  const TRUNK_RX_BOT = 141
 
   // CANOPY — bounded within wordmark width, with a curved dome ridge
   // (outer top dots lowered, peak raised) so it reads more tree-like.
@@ -432,15 +437,37 @@ function NivriaLogo({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
         <span className="nv-logo-i" role="img" aria-label="i">
           <span className="nv-logo-i-line" aria-hidden="true" />
           <span className="nv-logo-i-top" aria-hidden="true" />
-          <svg className="nv-logo-i-roots" viewBox="0 0 20 10" aria-hidden="true"><line x1="10" y1="0" x2="2" y2="9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /><line x1="10" y1="0" x2="18" y2="9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /><circle cx="2" cy="9" r="1.7" fill="currentColor" /><circle cx="18" cy="9" r="1.7" fill="currentColor" /></svg>
         </span>
         vr
         <span className="nv-logo-i" role="img" aria-label="i">
           <span className="nv-logo-i-line" aria-hidden="true" />
           <span className="nv-logo-i-top" aria-hidden="true" />
-          <svg className="nv-logo-i-roots" viewBox="0 0 20 10" aria-hidden="true"><line x1="10" y1="0" x2="2" y2="9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /><line x1="10" y1="0" x2="18" y2="9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /><circle cx="2" cy="9" r="1.7" fill="currentColor" /><circle cx="18" cy="9" r="1.7" fill="currentColor" /></svg>
         </span>
         a
+      </span>
+      {/* Bottom roots — mirrored canopy via CSS scaleY(-1).
+          Junction dots at TRUNK_LX/RX, TRUNK_TOP make the i-line bottoms
+          terminate at a visible node, with branches emerging from it. */}
+      <span className="nv-logo-chart-bot" aria-hidden="true">
+        <svg viewBox="0 0 240 38" preserveAspectRatio="none">
+          {lace.map((l, i) => (
+            <line key={`bla${i}`} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2}
+              stroke="currentColor" strokeWidth={l.w} strokeOpacity={l.o}
+              strokeDasharray={l.d} strokeLinecap="round" />
+          ))}
+          {branches.map((l, i) => (
+            <line key={`bbr${i}`} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2}
+              stroke="currentColor" strokeWidth={l.w} strokeOpacity={l.o}
+              strokeDasharray={l.d} strokeLinecap="round" />
+          ))}
+          {CANOPY.map((p, i) => (
+            <circle key={`bc${i}`} cx={p.x} cy={p.y} r="1.0" fill="currentColor" />
+          ))}
+          {/* junction dots — make the i-line→root transition explicit.
+              Inboard from the trunk x-positions; see TRUNK_*_BOT above. */}
+          <circle cx={TRUNK_LX_BOT} cy={TRUNK_TOP} r="1.6" fill="currentColor" />
+          <circle cx={TRUNK_RX_BOT} cy={TRUNK_TOP} r="1.6" fill="currentColor" />
+        </svg>
       </span>
     </a>
   )
@@ -467,7 +494,7 @@ function Hero() {
               Every complex venture runs on <em>millions of nodes</em> — decisions, incentives, relationships, dependencies. We get <em>beneath the surface</em> to find what is actually true, score the integrity of the whole, and build the accurate picture from which strategy can be developed — and then <em>stay on</em> to actively help you put it in motion.
             </p>
             <p>
-              Where finance and legal stop, <span className="nv-inline-wordmark">n<span className="nv-logo-i" role="img" aria-label="i"><span className="nv-logo-i-line" aria-hidden="true" /><span className="nv-logo-i-top" aria-hidden="true" /><svg className="nv-logo-i-roots" viewBox="0 0 20 10" aria-hidden="true"><line x1="10" y1="0" x2="2" y2="9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /><line x1="10" y1="0" x2="18" y2="9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /><circle cx="2" cy="9" r="1.7" fill="currentColor" /><circle cx="18" cy="9" r="1.7" fill="currentColor" /></svg></span>vr<span className="nv-logo-i" role="img" aria-label="i"><span className="nv-logo-i-line" aria-hidden="true" /><span className="nv-logo-i-top" aria-hidden="true" /><svg className="nv-logo-i-roots" viewBox="0 0 20 10" aria-hidden="true"><line x1="10" y1="0" x2="2" y2="9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /><line x1="10" y1="0" x2="18" y2="9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /><circle cx="2" cy="9" r="1.7" fill="currentColor" /><circle cx="18" cy="9" r="1.7" fill="currentColor" /></svg></span>a</span> begins.
+              Where finance and legal stop, <span className="nv-inline-wordmark">n<span className="nv-logo-i" role="img" aria-label="i"><span className="nv-logo-i-line" aria-hidden="true" /><span className="nv-logo-i-top" aria-hidden="true" /><svg className="nv-logo-i-roots" viewBox="0 0 20 10" aria-hidden="true"><line x1="10" y1="0" x2="2" y2="9" stroke="currentColor" strokeWidth="1.0" strokeLinecap="round" /><line x1="10" y1="0" x2="18" y2="9" stroke="currentColor" strokeWidth="1.0" strokeLinecap="round" /><circle cx="2" cy="9" r="1.3" fill="currentColor" /><circle cx="18" cy="9" r="1.3" fill="currentColor" /></svg></span>vr<span className="nv-logo-i" role="img" aria-label="i"><span className="nv-logo-i-line" aria-hidden="true" /><span className="nv-logo-i-top" aria-hidden="true" /><svg className="nv-logo-i-roots" viewBox="0 0 20 10" aria-hidden="true"><line x1="10" y1="0" x2="2" y2="9" stroke="currentColor" strokeWidth="1.0" strokeLinecap="round" /><line x1="10" y1="0" x2="18" y2="9" stroke="currentColor" strokeWidth="1.0" strokeLinecap="round" /><circle cx="2" cy="9" r="1.3" fill="currentColor" /><circle cx="18" cy="9" r="1.3" fill="currentColor" /></svg></span>a</span> begins.
             </p>
             <a href="mailto:briefing@nivria.ai?subject=Briefing%20request" className="nv-cta">
               Request a briefing
@@ -1508,8 +1535,25 @@ const CSS = `
   font-weight: 400;
   letter-spacing: 0.04em;
   color: var(--ink);
-  border-bottom: 0.04em solid var(--accent);
-  padding-bottom: 0.02em;
+}
+
+/* Bottom canopy — mirrored above-canopy treatment, applied as roots.
+   Same SVG content as .nv-logo-chart (lace + branches + dots),
+   flipped via scaleY(-1) so the convergence sits at the top of this
+   element (where the i-bottoms are) and the spread fans downward.
+   Negative margin-top pulls it up to overlap with the wordmark base. */
+.nv .nv-logo-chart-bot {
+  display: block;
+  width: 100%;
+  color: var(--accent);
+  pointer-events: none;
+}
+.nv .nv-logo-chart-bot svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  transform: scaleY(-1);
 }
 /* the i is REPLACED with a custom data column. Line + top dot + bot dot
    are all child elements using the SAME centering technique (left:50% +
@@ -1527,8 +1571,12 @@ const CSS = `
   position: absolute;
   left: 50%;
   top: 0;
-  bottom: -0.05em;
-  width: 3px;
+  /* end the line at the wordmark's baseline so the i-stems match the
+     bottom of n/v/r/a (which sit on the baseline). i element bottom is
+     at baseline + 0.08em due to .nv-logo-i top offset, so we pull the
+     line UP from i element bottom by 0.08em to land exactly on baseline. */
+  bottom: 0.08em;
+  width: 2px;
   background: var(--accent);
   transform: translateX(-50%);
 }
@@ -1544,9 +1592,9 @@ const CSS = `
 .nv .nv-logo-i-top {
   position: absolute;
   left: 50%;
-  top: -0.15em;
-  width: 0.17em;
-  height: 0.17em;
+  top: -0.13em;
+  width: 0.13em;
+  height: 0.13em;
   background: var(--accent);
   border-radius: 50%;
   transform: translateX(-50%);
@@ -1600,15 +1648,18 @@ const CSS = `
 /* sizes */
 .nv .nv-logo-lg { width: 560px; }
 .nv .nv-logo-lg .nv-logo-text { font-size: 76px; letter-spacing: 0.05em; }
-.nv .nv-logo-lg .nv-logo-chart { height: 92px; margin-bottom: -6px; }
+.nv .nv-logo-lg .nv-logo-chart { height: 92px; margin-bottom: -14px; }
+.nv .nv-logo-lg .nv-logo-chart-bot { height: 28px; margin-top: -24px; }
 
 .nv .nv-logo-md { width: 220px; }
 .nv .nv-logo-md .nv-logo-text { font-size: 30px; }
-.nv .nv-logo-md .nv-logo-chart { height: 34px; margin-bottom: -2px; }
+.nv .nv-logo-md .nv-logo-chart { height: 34px; margin-bottom: -5px; }
+.nv .nv-logo-md .nv-logo-chart-bot { height: 10px; margin-top: -10px; }
 
 .nv .nv-logo-sm { width: 150px; }
 .nv .nv-logo-sm .nv-logo-text { font-size: 20px; letter-spacing: 0.03em; }
-.nv .nv-logo-sm .nv-logo-chart { height: 22px; margin-bottom: -2px; }
+.nv .nv-logo-sm .nv-logo-chart { height: 22px; margin-bottom: -3px; }
+.nv .nv-logo-sm .nv-logo-chart-bot { height: 7px; margin-top: -7px; }
 .nv .nv-nav { display: flex; align-items: center; gap: 28px; }
 .nv .nv-nav-cta {
   font-family: var(--font-reader), serif; font-style: italic;
@@ -3432,17 +3483,20 @@ const CSS = `
   .nv .nv-held-grid { grid-template-columns: 1fr; }
   .nv .nv-held-cap { flex-direction: column; align-items: flex-start; gap: 10px; }
 
-  /* ── HEADER: shrink the logo, tighten the nav, drop the secondary
-        "Founder" link so the 3-item row stops squishing. */
+  /* ── HEADER: shrink the logo, push it hard left, tighten the nav.
+        The header's nv-wrap loses its left padding so the logo nudges
+        to the edge — buying enough space to keep all three nav items
+        (Request a briefing · Founder · Sign in) visible without squish. */
   .nv .nv-hdr { padding: 12px 0; }
-  .nv .nv-hdr-row { gap: 12px; }
-  .nv .nv-logo-md { width: 160px; }
-  .nv .nv-logo-md .nv-logo-text { font-size: 22px; }
-  .nv .nv-logo-md .nv-logo-chart { height: 26px; margin-bottom: -2px; }
-  .nv .nv-nav { gap: 14px; flex-wrap: wrap; justify-content: flex-end; }
-  .nv .nv-nav-cta { font-size: 14px; padding-bottom: 1px; }
-  .nv .nv-nav-founder { display: none; }
-  .nv .nv-nav-link { font-size: 14px; }
+  .nv .nv-hdr .nv-wrap { padding-left: 10px; padding-right: 14px; }
+  .nv .nv-hdr-row { gap: 10px; }
+  .nv .nv-logo-md { width: 150px; }
+  .nv .nv-logo-md .nv-logo-text { font-size: 21px; }
+  .nv .nv-logo-md .nv-logo-chart { height: 24px; margin-bottom: -2px; }
+  .nv .nv-nav { gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
+  .nv .nv-nav-cta { font-size: 13px; padding-bottom: 1px; }
+  .nv .nv-nav-founder { font-size: 13px; }
+  .nv .nv-nav-link { font-size: 13px; }
 
   /* ── LIFECYCLE phases: tablet collapsed to a 2-col grid; mobile
         collapses fully to a stack so the section is actually visible
@@ -3477,7 +3531,8 @@ const CSS = `
         proportionally on narrow viewports so the canopy + wordmark fit. */
   .nv .nv-logo-lg { width: 100%; max-width: 480px; }
   .nv .nv-logo-lg .nv-logo-text { font-size: clamp(40px, 13vw, 64px); letter-spacing: 0.04em; }
-  .nv .nv-logo-lg .nv-logo-chart { height: clamp(50px, 16vw, 80px); margin-bottom: -4px; }
+  .nv .nv-logo-lg .nv-logo-chart { height: clamp(50px, 16vw, 80px); margin-bottom: clamp(-12px, -2.2vw, -7px); }
+  .nv .nv-logo-lg .nv-logo-chart-bot { height: clamp(16px, 5vw, 26px); margin-top: clamp(-21px, -3.9vw, -13px); }
   .nv .nv-close-logo { margin-bottom: 48px; }
 
   /* ── SECTION HEADS: the centered h2 with clamp(48px, 6vw, 84px)

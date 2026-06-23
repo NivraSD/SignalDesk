@@ -1,6 +1,41 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { corsHeaders } from '../_shared/cors.ts'
 
+// === fetchWithRetry: exponential backoff with jitter ===
+// Anthropic returns 529 (overloaded) under capacity pressure; 429 (rate
+// limit) and 5xx are also transient. Retry those, fail fast on everything
+// else. Pattern lifted from lp-entity-simulation so behaviour matches the
+// rest of the edge-function fleet.
+const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 529])
+
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+  maxRetries = 3
+): Promise<Response> {
+  let lastError: Error | null = null
+  let lastStatus: number | null = null
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch(url, options)
+      if (response.ok || !RETRYABLE_STATUSES.has(response.status)) {
+        return response
+      }
+      lastStatus = response.status
+      lastError = new Error(`HTTP ${response.status}`)
+      console.warn(`[pa-intel-stage1 retry] Attempt ${attempt + 1}/${maxRetries + 1} got ${response.status}`)
+    } catch (err: any) {
+      lastError = err
+      console.warn(`[pa-intel-stage1 retry] Attempt ${attempt + 1}/${maxRetries + 1} threw: ${err.message}`)
+    }
+    if (attempt < maxRetries) {
+      const delay = Math.min(1000 * Math.pow(2, attempt), 8000) + Math.random() * 1000
+      await new Promise(r => setTimeout(r, delay))
+    }
+  }
+  throw lastError || new Error(`fetchWithRetry exhausted (last status: ${lastStatus})`)
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -115,7 +150,7 @@ IMPORTANT: First, classify this event into one of these types based on its natur
 
 Return ONLY valid JSON. No markdown fencing, no preamble, no explanation.`
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetchWithRetry('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

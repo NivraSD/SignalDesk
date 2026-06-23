@@ -27,6 +27,43 @@ function fetchWithTimeout(url: string, options: RequestInit, ms: number): Promis
   return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timer))
 }
 
+// Transient upstream signals — Firecrawl returns these under load.
+const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 529])
+
+// Retry on quick 5xx responses while preserving the per-attempt timeout.
+// Does NOT retry on AbortError: if the timeout fires, the per-call budget
+// is already spent and another attempt would just compound the delay.
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+  timeoutMs: number,
+  maxRetries = 2
+): Promise<Response> {
+  let lastError: Error | null = null
+  let lastStatus: number | null = null
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetchWithTimeout(url, options, timeoutMs)
+      if (response.ok || !RETRYABLE_STATUSES.has(response.status)) {
+        return response
+      }
+      lastStatus = response.status
+      lastError = new Error(`HTTP ${response.status}`)
+      console.warn(`[fireplexity retry] Attempt ${attempt + 1}/${maxRetries + 1} got ${response.status}`)
+    } catch (err: any) {
+      // Don't retry on timeout — the budget is already spent.
+      if (err?.name === 'AbortError') throw err
+      lastError = err
+      console.warn(`[fireplexity retry] Attempt ${attempt + 1}/${maxRetries + 1} threw: ${err.message}`)
+    }
+    if (attempt < maxRetries) {
+      const delay = Math.min(500 * Math.pow(2, attempt), 4000) + Math.random() * 500
+      await new Promise(r => setTimeout(r, delay))
+    }
+  }
+  throw lastError || new Error(`fetchWithRetry exhausted (last status: ${lastStatus})`)
+}
+
 serve(async (req) => {
   // Handle CORS
   if (req.method === 'OPTIONS') {
@@ -221,14 +258,14 @@ async function performIntelligentSearch(
         }
       }
 
-      const searchResponse = await fetchWithTimeout(`${FIRECRAWL_BASE_URL}/search`, {
+      const searchResponse = await fetchWithRetry(`${FIRECRAWL_BASE_URL}/search`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${firecrawlKey}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(searchBody)
-      }, 45_000) // 45s per search query
+      }, 45_000) // 45s per search query (retries 503/5xx within budget)
 
       if (!searchResponse.ok) {
         const errorText = await searchResponse.text()
@@ -428,7 +465,7 @@ async function enrichTopResults(results: any[], firecrawlKey: string): Promise<a
       }
 
       // Scrape the URL for full content
-      const scrapeResponse = await fetchWithTimeout(`${FIRECRAWL_BASE_URL}/scrape`, {
+      const scrapeResponse = await fetchWithRetry(`${FIRECRAWL_BASE_URL}/scrape`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${firecrawlKey}`,
@@ -439,7 +476,7 @@ async function enrichTopResults(results: any[], firecrawlKey: string): Promise<a
           formats: ['markdown'],
           onlyMainContent: true  // This is correct for scrape endpoint
         })
-      }, 30_000) // 30s per scrape
+      }, 30_000) // 30s per scrape (retries 503/5xx within budget)
 
       if (scrapeResponse.ok) {
         const scrapeData = await scrapeResponse.json()
