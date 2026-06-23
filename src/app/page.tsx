@@ -4,9 +4,9 @@ import { useEffect, useState } from 'react'
 
 // section nav data — used by the side dots
 const SECTIONS = [
+  { id: 'sec-how',        label: 'How it works' },
   { id: 'sec-instrument', label: 'The standard' },
   { id: 'sec-who',        label: 'Who this is for' },
-  { id: 'sec-how',        label: 'How it works' },
   { id: 'sec-lifecycle',  label: 'Lifecycle' },
   { id: 'sec-people',     label: 'People' },
   { id: 'briefing',       label: 'Briefing' },
@@ -159,9 +159,9 @@ export default function Home() {
       <Header />
       <main>
         <Hero />
+        <HowItWorks />
         <Instrument />
         <WhoIsThisFor />
-        <HowItWorks />
         <Lifecycle />
         <People />
         <Close />
