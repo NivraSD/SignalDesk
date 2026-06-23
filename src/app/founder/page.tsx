@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import { NivriaLogo } from '@/components/brand/NivriaWordmark'
 
 // auto-hide header on scroll-down, reveal on scroll-up
 function useHeaderVisible() {
@@ -30,7 +31,7 @@ function useHeaderVisible() {
 const EXPERIENCE = [
   {
     title: 'Saudi Arabia — Public Investment Fund (PIF)',
-    body: 'Advised in connection with PIF during a defining period, around the Aramco IPO and H.E. Yasir Rumayyan’s tenure as Governor of PIF. Work spanned the fund’s anchor positions in the SoftBank Vision Fund and Blackstone’s infrastructure fund.',
+    body: 'Advised in connection with PIF during a defining period, around the Aramco IPO and H.E. Yasir Al-Rumayyan’s tenure as Governor of PIF. Work spanned the fund’s anchor positions in the SoftBank Vision Fund and Blackstone’s infrastructure fund.',
   },
   {
     title: 'African LNG',
@@ -70,138 +71,6 @@ const EXPERIENCE = [
   },
 ]
 
-// Full canopy logo — built inline so this page is self-contained.
-function FullLogo() {
-  const TRUNK_LX = 100
-  const TRUNK_RX = 140
-  const TRUNK_TOP = 38
-
-  const CANOPY = [
-    { x: 66,  y: 14, c: 'l' as const }, { x: 76, y: 12, c: 'l' as const }, { x: 84,  y: 14, c: 'l' as const },
-    { x: 72,  y: 24, c: 'l' as const }, { x: 80, y: 26, c: 'l' as const },
-    { x: 96,  y: 14, c: 'c' as const }, { x: 108, y: 6,  c: 'c' as const }, { x: 120, y: 2,  c: 'c' as const },
-    { x: 132, y: 6,  c: 'c' as const }, { x: 144, y: 14, c: 'c' as const }, { x: 102, y: 22, c: 'c' as const },
-    { x: 120, y: 18, c: 'c' as const }, { x: 138, y: 22, c: 'c' as const }, { x: 120, y: 30, c: 'c' as const },
-    { x: 156, y: 14, c: 'r' as const }, { x: 164, y: 12, c: 'r' as const }, { x: 174, y: 14, c: 'r' as const },
-    { x: 160, y: 26, c: 'r' as const }, { x: 168, y: 24, c: 'r' as const },
-  ]
-
-  type Line = { x1: number; y1: number; x2: number; y2: number; w: number; o: number; d?: string }
-  const branches: Line[] = []
-  CANOPY.forEach(p => {
-    if (p.c === 'l' || p.c === 'c') {
-      branches.push({ x1: TRUNK_LX, y1: TRUNK_TOP, x2: p.x, y2: p.y,
-        w: p.c === 'l' ? 0.7 : 0.5, o: p.c === 'l' ? 0.55 : 0.30,
-        d: p.c === 'c' ? '2 3' : undefined })
-    }
-    if (p.c === 'r' || p.c === 'c') {
-      branches.push({ x1: TRUNK_RX, y1: TRUNK_TOP, x2: p.x, y2: p.y,
-        w: p.c === 'r' ? 0.7 : 0.5, o: p.c === 'r' ? 0.55 : 0.30,
-        d: p.c === 'c' ? '2 3' : undefined })
-    }
-  })
-
-  const lace: Line[] = [
-    { x1: 76,  y1: 12, x2: 108, y2: 6,  w: 0.5, o: 0.25 },
-    { x1: 108, y1: 6,  x2: 120, y2: 2,  w: 0.5, o: 0.32 },
-    { x1: 120, y1: 2,  x2: 132, y2: 6,  w: 0.5, o: 0.32 },
-    { x1: 132, y1: 6,  x2: 164, y2: 12, w: 0.5, o: 0.25 },
-    { x1: 96,  y1: 14, x2: 108, y2: 6,  w: 0.5, o: 0.30 },
-    { x1: 96,  y1: 14, x2: 120, y2: 2,  w: 0.5, o: 0.22, d: '2 3' },
-    { x1: 144, y1: 14, x2: 132, y2: 6,  w: 0.5, o: 0.30 },
-    { x1: 144, y1: 14, x2: 120, y2: 2,  w: 0.5, o: 0.22, d: '2 3' },
-    { x1: 96,  y1: 14, x2: 144, y2: 14, w: 0.5, o: 0.20, d: '2 3' },
-    { x1: 84,  y1: 14, x2: 96,  y2: 14, w: 0.5, o: 0.30 },
-    { x1: 144, y1: 14, x2: 156, y2: 14, w: 0.5, o: 0.30 },
-    { x1: 102, y1: 22, x2: 120, y2: 18, w: 0.5, o: 0.30 },
-    { x1: 138, y1: 22, x2: 120, y2: 18, w: 0.5, o: 0.30 },
-    { x1: 102, y1: 22, x2: 138, y2: 22, w: 0.5, o: 0.20, d: '2 3' },
-    { x1: 96,  y1: 14, x2: 102, y2: 22, w: 0.5, o: 0.25 },
-    { x1: 144, y1: 14, x2: 138, y2: 22, w: 0.5, o: 0.25 },
-    { x1: 66,  y1: 14, x2: 76,  y2: 12, w: 0.5, o: 0.25 },
-    { x1: 66,  y1: 14, x2: 72,  y2: 24, w: 0.5, o: 0.22, d: '2 3' },
-    { x1: 76,  y1: 12, x2: 84,  y2: 14, w: 0.5, o: 0.25 },
-    { x1: 174, y1: 14, x2: 164, y2: 12, w: 0.5, o: 0.25 },
-    { x1: 174, y1: 14, x2: 168, y2: 24, w: 0.5, o: 0.22, d: '2 3' },
-    { x1: 164, y1: 12, x2: 156, y2: 14, w: 0.5, o: 0.25 },
-    { x1: 72,  y1: 24, x2: 80,  y2: 26, w: 0.5, o: 0.30 },
-    { x1: 160, y1: 26, x2: 168, y2: 24, w: 0.5, o: 0.30 },
-    { x1: 80,  y1: 26, x2: 120, y2: 30, w: 0.5, o: 0.22 },
-    { x1: 120, y1: 30, x2: 160, y2: 26, w: 0.5, o: 0.22 },
-  ]
-
-  const trunkLines: Line[] = []
-  const TRUNK_SCATTER: { x: number; y: number }[] = []
-
-  const HANGS = [
-    { from: { x: 66,  y: 14 }, to: { x: 64,  y: 22 } },
-    { from: { x: 76,  y: 12 }, to: { x: 74,  y: 20 } },
-    { from: { x: 84,  y: 14 }, to: { x: 82,  y: 24 } },
-    { from: { x: 72,  y: 24 }, to: { x: 70,  y: 32 } },
-    { from: { x: 80,  y: 26 }, to: { x: 82,  y: 34 } },
-    { from: { x: 108, y: 6  }, to: { x: 106, y: 14 } },
-    { from: { x: 132, y: 6  }, to: { x: 134, y: 14 } },
-    { from: { x: 120, y: 18 }, to: { x: 120, y: 28 } },
-    { from: { x: 120, y: 30 }, to: { x: 120, y: 37 } },
-    { from: { x: 156, y: 14 }, to: { x: 158, y: 24 } },
-    { from: { x: 164, y: 12 }, to: { x: 162, y: 20 } },
-    { from: { x: 174, y: 14 }, to: { x: 172, y: 22 } },
-    { from: { x: 160, y: 26 }, to: { x: 158, y: 34 } },
-    { from: { x: 168, y: 24 }, to: { x: 170, y: 32 } },
-  ]
-
-  return (
-    <Link href="/" className="nv-fnd-fulllogo" aria-label="nivria — home">
-      <span className="nv-fulllogo-chart" aria-hidden="true">
-        <svg viewBox="0 0 240 38" preserveAspectRatio="none">
-          {lace.map((l, i) => (
-            <line key={`la${i}`} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2}
-              stroke="currentColor" strokeWidth={l.w} strokeOpacity={l.o}
-              strokeDasharray={l.d} strokeLinecap="round" />
-          ))}
-          {branches.map((l, i) => (
-            <line key={`br${i}`} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2}
-              stroke="currentColor" strokeWidth={l.w} strokeOpacity={l.o}
-              strokeDasharray={l.d} strokeLinecap="round" />
-          ))}
-          {CANOPY.map((p, i) => (
-            <circle key={`c${i}`} cx={p.x} cy={p.y} r="1.0" fill="currentColor" />
-          ))}
-          {trunkLines.map((l, i) => (
-            <line key={`tl${i}`} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2}
-              stroke="currentColor" strokeWidth={l.w} strokeOpacity={l.o}
-              strokeDasharray={l.d} strokeLinecap="round" />
-          ))}
-          {TRUNK_SCATTER.map((p, i) => (
-            <circle key={`ts${i}`} cx={p.x} cy={p.y} r="0.9" fill="currentColor" />
-          ))}
-          {HANGS.map((h, i) => (
-            <g key={`h${i}`}>
-              <line x1={h.from.x} y1={h.from.y} x2={h.to.x} y2={h.to.y}
-                stroke="currentColor" strokeWidth="0.5" strokeOpacity="0.42" strokeLinecap="round" />
-              <circle cx={h.to.x} cy={h.to.y} r="0.8" fill="currentColor" />
-            </g>
-          ))}
-        </svg>
-      </span>
-      <span className="nv-fulllogo-text">
-        n
-        <span className="nv-logo-i">
-          <span className="nv-logo-i-text">i</span>
-          <span className="nv-logo-i-line" aria-hidden="true" />
-          <span className="nv-logo-i-top" aria-hidden="true" />
-        </span>
-        vr
-        <span className="nv-logo-i">
-          <span className="nv-logo-i-text">i</span>
-          <span className="nv-logo-i-line" aria-hidden="true" />
-          <span className="nv-logo-i-top" aria-hidden="true" />
-        </span>
-        a
-      </span>
-    </Link>
-  )
-}
 
 export default function FounderPage() {
   const visible = useHeaderVisible()
@@ -211,7 +80,7 @@ export default function FounderPage() {
 
       <header className={`nv-fnd-hdr${visible ? '' : ' nv-fnd-hdr-hidden'}`}>
         <div className="nv-fnd-wrap nv-fnd-hdr-row">
-          <FullLogo />
+          <NivriaLogo size="md" href="/" />
           <nav className="nv-fnd-nav">
             <a href="mailto:briefing@nivria.ai?subject=Briefing%20request" className="nv-fnd-nav-cta">Request a briefing</a>
             <Link href="/auth/login" className="nv-fnd-nav-link">Sign in</Link>
@@ -269,23 +138,7 @@ export default function FounderPage() {
 
       <footer className="nv-fnd-foot">
         <div className="nv-fnd-wrap nv-fnd-foot-row">
-          <Link href="/" className="nv-fnd-foot-logo">
-            <span className="nv-inline-wordmark nv-inline-wordmark-sm">
-              n
-              <span className="nv-logo-i">
-                <span className="nv-logo-i-text">i</span>
-                <span className="nv-logo-i-line" aria-hidden="true" />
-                <span className="nv-logo-i-top" aria-hidden="true" />
-              </span>
-              vr
-              <span className="nv-logo-i">
-                <span className="nv-logo-i-text">i</span>
-                <span className="nv-logo-i-line" aria-hidden="true" />
-                <span className="nv-logo-i-top" aria-hidden="true" />
-              </span>
-              a
-            </span>
-          </Link>
+          <NivriaLogo size="sm" href="/" />
           <span className="nv-fnd-foot-tag">For the evaluation and stewardship of complex ventures.</span>
           <Link href="/auth/login" className="nv-fnd-foot-sign">Sign in</Link>
         </div>
