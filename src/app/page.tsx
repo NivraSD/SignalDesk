@@ -1039,6 +1039,9 @@ function Instrument() {
       <div className="nv-wrap">
         <header className="nv-sect-head nv-sect-head-center">
           <h2 className="nv-h2"><span>The <em>new standard.</em></span></h2>
+          <div className="nv-sect-desc">
+            <p>The most consequential decisions require seeing not just what is <em>above the surface,</em> but what lies <em>beneath.</em></p>
+          </div>
         </header>
 
         <div className="nv-inst-pair">

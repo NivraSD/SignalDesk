@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createAuthClient } from '@/lib/supabase/auth-client'
+import { NivriaLogo } from '@/components/brand/NivriaWordmark'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -39,23 +40,9 @@ export default function LoginPage() {
       <style>{CSS}</style>
       <main className="nv-auth-main">
         <div className="nv-auth-card">
-          <Link href="/" className="nv-auth-logo" aria-label="nivria — home">
-            <span className="nv-inline-wordmark">
-              n
-              <span className="nv-logo-i" role="img" aria-label="i">
-                <span className="nv-logo-i-line" aria-hidden="true" />
-                <span className="nv-logo-i-top" aria-hidden="true" />
-                <svg className="nv-logo-i-roots" viewBox="0 0 20 10" aria-hidden="true"><line x1="10" y1="0" x2="2" y2="9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /><line x1="10" y1="0" x2="18" y2="9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /><circle cx="2" cy="9" r="1.7" fill="currentColor" /><circle cx="18" cy="9" r="1.7" fill="currentColor" /></svg>
-              </span>
-              vr
-              <span className="nv-logo-i" role="img" aria-label="i">
-                <span className="nv-logo-i-line" aria-hidden="true" />
-                <span className="nv-logo-i-top" aria-hidden="true" />
-                <svg className="nv-logo-i-roots" viewBox="0 0 20 10" aria-hidden="true"><line x1="10" y1="0" x2="2" y2="9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /><line x1="10" y1="0" x2="18" y2="9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /><circle cx="2" cy="9" r="1.7" fill="currentColor" /><circle cx="18" cy="9" r="1.7" fill="currentColor" /></svg>
-              </span>
-              a
-            </span>
-          </Link>
+          <div className="nv-auth-logo">
+            <NivriaLogo size="md" href="/" />
+          </div>
 
           <header className="nv-auth-head">
             <h1 className="nv-auth-h">Welcome <em>back.</em></h1>
@@ -186,65 +173,13 @@ const CSS = `
   align-items: center;
 }
 
-/* Logo */
+/* Logo — wordmark itself is the shared <NivriaWordmark/> component */
 .nv-auth-logo {
   margin-bottom: 56px;
   display: inline-block;
   transition: opacity .2s ease;
 }
 .nv-auth-logo:hover { opacity: 0.85; }
-.nv-inline-wordmark {
-  font-family: var(--font-logo), 'DM Serif Display', serif;
-  font-weight: 400;
-  letter-spacing: 0.04em;
-  color: var(--ink);
-  font-size: 36px;
-  display: inline-flex;
-  align-items: baseline;
-  border-bottom: 0.04em solid var(--accent);
-  padding-bottom: 0.02em;
-}
-.nv-logo-i {
-  display: inline-block;
-  position: relative;
-  width: 0.22em;
-  height: 0.70em;
-  vertical-align: baseline;
-  margin: 0 0.04em;
-  top: 0.08em;
-}
-.nv-logo-i-line {
-  position: absolute;
-  left: 50%;
-  top: 0;
-  bottom: -0.05em;
-  width: 3px;
-  background: var(--accent);
-  transform: translateX(-50%);
-}
-.nv-logo-i-top {
-  position: absolute;
-  left: 50%;
-  top: -0.15em;
-  width: 0.17em;
-  height: 0.17em;
-  background: var(--accent);
-  border-radius: 50%;
-  transform: translateX(-50%);
-}
-/* roots sit BELOW the gold ground line — line is the surface, V is underneath */
-.nv-logo-i-roots {
-  position: absolute;
-  left: 50%;
-  top: 100%;
-  width: 0.55em;
-  height: 0.28em;
-  color: var(--accent);
-  transform: translate(-50%, 0.02em);
-  overflow: visible;
-  display: block;
-  pointer-events: none;
-}
 
 /* Header */
 .nv-auth-head {
@@ -407,7 +342,7 @@ const CSS = `
 @media (max-width: 520px) {
   .nv-auth-main { padding: 32px 18px; }
   .nv-auth-logo { margin-bottom: 36px; }
-  .nv-inline-wordmark { font-size: 30px; }
+  .nv-auth-logo .nivria-wm { font-size: 30px; }
   .nv-auth-head { margin-bottom: 28px; }
 }
 `
