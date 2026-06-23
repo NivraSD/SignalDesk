@@ -1281,6 +1281,10 @@ const CSS = `
   --forest: #5A6F4F;
 
   min-height: 100vh;
+  /* horizontal-scroll safety net: nothing should ever push the viewport
+     wider than itself; if a child has a small overshoot, clip it here
+     rather than turn the whole page into a left-right scroller. */
+  overflow-x: clip;
   color: var(--ink);
   font-family: var(--font-reader), 'Newsreader', Georgia, serif;
   font-feature-settings: "kern" 1, "liga" 1, "calt" 1, "onum" 1;
@@ -3397,13 +3401,11 @@ const CSS = `
   .nv .nv-hire-cell:last-child { border-bottom: none; }
   .nv .nv-cap-grid { grid-template-columns: 1fr; gap: 14px; }
   .nv .nv-snf-grid { grid-template-columns: 1fr; gap: 16px; }
-}
   .nv .nv-div-grid { grid-template-columns: 1fr; gap: 16px; }
   .nv .nv-div-vs { display: none; }
   .nv .nv-colo-row { grid-template-columns: 1fr; gap: 14px; text-align: center; }
   .nv .nv-colo-l { flex-direction: column; gap: 4px; align-items: center; }
   .nv .nv-close { padding: 80px 0 100px; }
-  /* keep people grid 2×2 even on narrower desktops */
   .nv .nv-int-head { flex-direction: column; align-items: flex-start; gap: 6px; padding: 18px 22px; }
   .nv .nv-int-row { grid-template-columns: 40px 1fr; gap: 16px; padding: 22px 22px; }
   .nv .nv-int-impact { grid-column: 1 / -1; flex-direction: row; align-items: baseline; gap: 10px; padding-top: 0; }
@@ -3429,6 +3431,60 @@ const CSS = `
   .nv .nv-desc p { font-size: 16.5px; }
   .nv .nv-held-grid { grid-template-columns: 1fr; }
   .nv .nv-held-cap { flex-direction: column; align-items: flex-start; gap: 10px; }
+
+  /* ── HEADER: shrink the logo, tighten the nav, drop the secondary
+        "Founder" link so the 3-item row stops squishing. */
+  .nv .nv-hdr { padding: 12px 0; }
+  .nv .nv-hdr-row { gap: 12px; }
+  .nv .nv-logo-md { width: 160px; }
+  .nv .nv-logo-md .nv-logo-text { font-size: 22px; }
+  .nv .nv-logo-md .nv-logo-chart { height: 26px; margin-bottom: -2px; }
+  .nv .nv-nav { gap: 14px; flex-wrap: wrap; justify-content: flex-end; }
+  .nv .nv-nav-cta { font-size: 14px; padding-bottom: 1px; }
+  .nv .nv-nav-founder { display: none; }
+  .nv .nv-nav-link { font-size: 14px; }
+
+  /* ── LIFECYCLE phases: tablet collapsed to a 2-col grid; mobile
+        collapses fully to a stack so the section is actually visible
+        instead of overflowing off-screen. */
+  .nv .nv-life-head, .nv .nv-life-foot {
+    padding: 16px 18px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .nv .nv-life-stage {
+    display: block;
+    padding: 24px 18px;
+  }
+  .nv .nv-life-num-wrap {
+    margin-bottom: 14px;
+  }
+  .nv .nv-life-num {
+    width: 64px; height: 64px;
+    font-size: 32px;
+    margin-left: 0;
+  }
+  .nv .nv-life-meta-col { padding-top: 0; margin-bottom: 14px; }
+  .nv .nv-life-name { font-size: 24px; }
+  .nv .nv-life-sub { font-size: 16px; }
+  .nv .nv-life-body { padding-top: 0; max-width: 100%; }
+  .nv .nv-life-body p { font-size: 16.5px; line-height: 1.55; }
+  .nv .nv-life-list::before { display: none; }
+  .nv .nv-life-callout { padding: 14px; margin-top: 14px; }
+
+  /* ── CLOSE-SECTION lockup: the lg logo is 560px wide. Scale it down
+        proportionally on narrow viewports so the canopy + wordmark fit. */
+  .nv .nv-logo-lg { width: 100%; max-width: 480px; }
+  .nv .nv-logo-lg .nv-logo-text { font-size: clamp(40px, 13vw, 64px); letter-spacing: 0.04em; }
+  .nv .nv-logo-lg .nv-logo-chart { height: clamp(50px, 16vw, 80px); margin-bottom: -4px; }
+  .nv .nv-close-logo { margin-bottom: 48px; }
+
+  /* ── SECTION HEADS: the centered h2 with clamp(48px, 6vw, 84px)
+        can still feel cramped on the narrowest devices; pull it tighter. */
+  .nv .nv-sect-head-center { margin-bottom: 48px; gap: 20px; }
+  .nv .nv-sect-head-center .nv-h2 { font-size: clamp(36px, 9vw, 56px); }
+  .nv .nv-sect-head-center .nv-sect-desc p { font-size: clamp(18px, 4.5vw, 24px); }
 }
 .nv :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 `
