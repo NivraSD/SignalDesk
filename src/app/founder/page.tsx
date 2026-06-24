@@ -31,7 +31,7 @@ function useHeaderVisible() {
 const EXPERIENCE = [
   {
     title: 'Saudi Arabia — Public Investment Fund (PIF)',
-    body: 'Provided support in connection with PIF during a defining period, around the Aramco IPO and H.E. Yasir Al-Rumayyan’s tenure as Governor of PIF. Work spanned the fund’s anchor positions in the SoftBank Vision Fund and Blackstone’s infrastructure fund.',
+    body: 'Worked directly with PIF in the period following a high-profile geopolitical incident, through the fund’s significant expansion. Engagements spanned anchor positions in the SoftBank Vision Fund and Blackstone’s infrastructure fund, and the Newcastle United acquisition.',
   },
   {
     title: 'African LNG',
@@ -67,7 +67,7 @@ const EXPERIENCE = [
   },
   {
     title: 'Global convenings',
-    body: 'Engaged across the producer, sponsor, and participant sides of major global gatherings, including the Future Investment Initiative (FII), the Milken Institute Global Conference, and Davos.',
+    body: 'Engaged across the producer, sponsor, and participant sides of major global gatherings, including the Future Investment Initiative (FII), the Milken Institute Global Conference, and the World Economic Forum (WEF).',
   },
 ]
 
