@@ -487,7 +487,7 @@ Return ONLY valid JSON matching this schema:
 }`
 
   const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-4-6',
     max_tokens: 4000,
     messages: [{ role: 'user', content: prompt }]
   })
@@ -1931,7 +1931,7 @@ Respond with JSON only:
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 300,
         messages: [{ role: 'user', content: analysisPrompt }]
       }),
@@ -2669,7 +2669,7 @@ Return ONLY the JSON object, no other text.`
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 4000,
         messages: [{
           role: 'user',
@@ -5192,7 +5192,7 @@ Respond with JSON only:
             'content-type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'claude-sonnet-4-20250514',
+            model: 'claude-sonnet-4-6',
             max_tokens: 500,
             messages: [{ role: 'user', content: understandingPrompt }]
           }),
@@ -5741,7 +5741,7 @@ Remember to maintain natural conversation flow while bringing this perspective t
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 2000,
         system: moduleEnhancedPrompt,
         messages: [

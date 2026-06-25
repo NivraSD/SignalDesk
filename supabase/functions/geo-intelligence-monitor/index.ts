@@ -544,7 +544,7 @@ async function testClaudeMetaAnalysis(
     const prompt = buildMetaAnalysisPrompt(organizationName, industry, website, queries)
 
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       max_tokens: 4096,
       temperature: 0.3,
       messages: [{
@@ -864,7 +864,7 @@ async function testClaudeVisibility(
   for (const q of queries.slice(0, 10)) {
     try {
       const message = await anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 1024,
         messages: [{
           role: 'user',

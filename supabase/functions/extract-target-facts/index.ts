@@ -51,7 +51,7 @@ async function callAI(prompt: string, maxTokens = 4000): Promise<string> {
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: maxTokens,
         messages: [{ role: 'user', content: prompt }]
       }),

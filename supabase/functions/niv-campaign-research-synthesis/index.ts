@@ -37,7 +37,7 @@ async function callAI(prompt: string, opts: { maxTokens?: number, temperature?: 
           'anthropic-version': '2023-06-01'
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
+          model: 'claude-sonnet-4-6',
           max_tokens: maxTokens,
           temperature,
           ...(systemPrompt ? { system: systemPrompt } : {}),

@@ -157,7 +157,7 @@ Output valid JSON.`
         console.log(`Attempt ${attempts}/${maxAttempts} to select pattern...`)
 
         const message = await anthropic.messages.create({
-          model: 'claude-sonnet-4-20250514',
+          model: 'claude-sonnet-4-6',
           max_tokens: 1500,
           temperature: 0.5, // Lower temperature for more consistent selection
           system: systemPrompt,

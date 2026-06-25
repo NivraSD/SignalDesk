@@ -288,7 +288,7 @@ async function processOrganization(
       },
       business_implication: connection.business_implication,
       source_pipeline: 'detect-cross-target-connections',
-      model_version: 'claude-sonnet-4',
+      model_version: 'claude-sonnet-4-6',
       status: 'active'
     };
 
@@ -507,7 +507,7 @@ Return ONLY the JSON array.`;
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 2500,
         messages: [{
           role: 'user',

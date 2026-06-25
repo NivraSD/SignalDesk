@@ -252,7 +252,7 @@ async function detectOpportunitiesWithClaude(
   }
 
   console.log(`🤖 Calling Claude with ${topEvents.length} events for opportunity detection`);
-  console.log('Using model:', 'claude-sonnet-4-20250514');
+  console.log('Using model:', 'claude-sonnet-4-6');
   console.log('API Key present:', !!ANTHROPIC_API_KEY);
   console.log('API Key length:', ANTHROPIC_API_KEY?.length || 0);
   console.log('API Key prefix:', ANTHROPIC_API_KEY?.substring(0, 10) || 'N/A');
@@ -432,7 +432,7 @@ Start your response with [ and end with ] - nothing else.`;
         'anthropic-dangerous-direct-browser-access': 'true'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 4000,  // Reduced from 6000 to prevent truncation/malformed JSON
         temperature: 0.7,
         system: `You are a PR opportunity detection system analyzing real-time intelligence data.
@@ -636,7 +636,7 @@ async function detectOpportunitiesV2(
         'anthropic-dangerous-direct-browser-access': 'true'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-5-20250929',  // Back to Sonnet with simplified prompt
+        model: 'claude-sonnet-4-6',  // Back to Sonnet with simplified prompt
         max_tokens: 12000,
         temperature: 0.7,
         system: OPPORTUNITY_SYSTEM_PROMPT_V2,
@@ -1196,7 +1196,7 @@ serve(async (req) => {
             sum + opp.execution_plan.stakeholder_campaigns
               .reduce((s, c) => s + c.content_items.length, 0), 0
           ),
-          detection_method: 'claude-sonnet-4-20250514',
+          detection_method: 'claude-sonnet-4-6',
           detection_version: '2.0',
           timestamp: new Date().toISOString()
         }

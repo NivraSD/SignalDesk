@@ -4,8 +4,43 @@ import { corsHeaders, handleCors, jsonResponse, errorResponse } from '../_shared
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent'
 const CLAUDE_URL = 'https://api.anthropic.com/v1/messages'
 
+// === fetchWithRetry: exponential backoff with jitter ===
+// Same pattern as pa-intel-stage1 / lp-entity-simulation. Anthropic
+// returns 529 (overloaded) under capacity pressure; 429 (rate limit)
+// and 5xx are also transient. Retry those; fail fast on everything else
+// (including 4xx like the 404 we got from an invalid model id).
+const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 529])
+
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+  maxRetries = 3
+): Promise<Response> {
+  let lastError: Error | null = null
+  let lastStatus: number | null = null
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch(url, options)
+      if (response.ok || !RETRYABLE_STATUSES.has(response.status)) {
+        return response
+      }
+      lastStatus = response.status
+      lastError = new Error(`HTTP ${response.status}`)
+      console.warn(`[pa-one-pager retry] Attempt ${attempt + 1}/${maxRetries + 1} got ${response.status}`)
+    } catch (err: any) {
+      lastError = err
+      console.warn(`[pa-one-pager retry] Attempt ${attempt + 1}/${maxRetries + 1} threw: ${err.message}`)
+    }
+    if (attempt < maxRetries) {
+      const delay = Math.min(1000 * Math.pow(2, attempt), 8000) + Math.random() * 1000
+      await new Promise(r => setTimeout(r, delay))
+    }
+  }
+  throw lastError || new Error(`fetchWithRetry exhausted (last status: ${lastStatus})`)
+}
+
 async function callGemini(prompt: string, apiKey: string): Promise<string> {
-  const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
+  const res = await fetchWithRetry(`${GEMINI_URL}?key=${apiKey}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -20,7 +55,7 @@ async function callGemini(prompt: string, apiKey: string): Promise<string> {
 }
 
 async function callClaude(prompt: string, apiKey: string): Promise<string> {
-  const res = await fetch(CLAUDE_URL, {
+  const res = await fetchWithRetry(CLAUDE_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -28,7 +63,7 @@ async function callClaude(prompt: string, apiKey: string): Promise<string> {
       'anthropic-version': '2023-06-01'
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       max_tokens: 4000,
       temperature: 0.3,
       messages: [{ role: 'user', content: prompt }]

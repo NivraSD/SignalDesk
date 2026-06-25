@@ -229,7 +229,7 @@ async function monitorSocialMentions(args: any) {
   Return as JSON.`;
   
   const completion = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-4-6',
     max_tokens: 1000,
     temperature: 0.7,
     messages: [{ role: 'user', content: prompt }]
@@ -270,7 +270,7 @@ async function analyzeSocialTrends(args: any) {
   Return as JSON.`;
   
   const completion = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-4-6',
     max_tokens: 800,
     temperature: 0.7,
     messages: [{ role: 'user', content: prompt }]
@@ -344,7 +344,7 @@ Return as JSON array.`;
 
   try {
     const completion = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       max_tokens: 1000,
       temperature: 0.3, // Lower temp for more accurate/factual responses
       messages: [{ role: 'user', content: prompt }]
@@ -1086,7 +1086,7 @@ ${platform === 'threads' ? 'THREADS SPECIFIC: Casual, conversational. Less aggre
 Generate the content now. Be creative, strategic, and platform-native.`;
 
     const completion = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       max_tokens: platform === 'linkedin' ? 1000 : platform === 'instagram' ? 1200 : platform === 'youtube' ? 1500 : 600,
       temperature: 0.8,
       messages: [{ role: 'user', content: prompt }]

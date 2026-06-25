@@ -46,7 +46,7 @@ async function callAI(prompt: string, maxTokens = 1500): Promise<{ text: string;
       method: 'POST',
       headers: { 'x-api-key': ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: maxTokens,
         messages: [{ role: 'user', content: prompt }],
       }),
@@ -55,7 +55,7 @@ async function callAI(prompt: string, maxTokens = 1500): Promise<{ text: string;
     if (resp.ok) {
       const data = await resp.json();
       const text = data.content?.[0]?.text || '';
-      return { text, model: 'claude-sonnet-4' };
+      return { text, model: 'claude-sonnet-4-6' };
     }
   }
   throw new Error('No AI model available');

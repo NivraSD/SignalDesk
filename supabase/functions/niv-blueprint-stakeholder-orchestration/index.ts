@@ -164,7 +164,7 @@ serve(async (req) => {
     console.log('📡 Calling Claude for orchestration generation...')
 
     // Try with primary model, fallback to Sonnet 4.5 if needed
-    const models = ['claude-haiku-4-5-20251001', 'claude-sonnet-4-5-20250929']
+    const models = ['claude-haiku-4-5-20251001', 'claude-sonnet-4-6']
     let response
     let lastError
 

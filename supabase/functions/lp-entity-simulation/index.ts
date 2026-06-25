@@ -234,7 +234,7 @@ serve(async (req) => {
               'content-type': 'application/json',
             },
             body: JSON.stringify({
-              model: 'claude-sonnet-4-20250514',
+              model: 'claude-sonnet-4-6',
               max_tokens: 4000,
               temperature: 0.7,
               messages: [{ role: 'user', content: prompt }]
@@ -249,7 +249,7 @@ serve(async (req) => {
 
         const claudeData = await claudeResp.json()
         responseText = claudeData.content?.[0]?.text || ''
-        modelUsed = 'claude-sonnet-4'
+        modelUsed = 'claude-sonnet-4-6'
       } catch (claudeErr: any) {
         console.error(`❌ Claude also failed for ${body.entity_name}: ${claudeErr.message}`)
       }

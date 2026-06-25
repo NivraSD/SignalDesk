@@ -168,7 +168,7 @@ Remember: You're analyzing TODAY's media landscape based on REAL NEWS, not provi
   while (retryCount < maxRetries) {
     try {
       const message = await anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 4000,
         temperature: 0.3,
         messages: [{

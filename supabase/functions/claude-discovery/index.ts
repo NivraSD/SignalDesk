@@ -72,7 +72,7 @@ Be as specific and accurate as possible. Use your knowledge to provide real, fac
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 1000,
         temperature: 0.2,
         messages: [{

@@ -38,7 +38,7 @@ serve(async (req) => {
               has_executive_summary: !!claude_analysis?.executive_summary,
               has_opportunities: !!claude_analysis?.opportunities,
               has_insights: !!claude_analysis?.insights,
-              model_used: claude_analysis?.metadata?.model || 'claude-sonnet-4',
+              model_used: claude_analysis?.metadata?.model || 'claude-sonnet-4-6',
               analysis_duration: claude_analysis?.metadata?.duration || 0
             }
           }, {

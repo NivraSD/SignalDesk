@@ -3056,7 +3056,7 @@ ${campaignContext.timeline || 'Not specified'}
               'x-api-key': ANTHROPIC_API_KEY
             },
             body: JSON.stringify({
-              model: 'claude-sonnet-4-20250514',
+              model: 'claude-sonnet-4-6',
               max_tokens: 4096,
               messages: continuedMessages,
               system: conversationContext // Keep same system context
@@ -5255,7 +5255,7 @@ ${outline.next_steps ? outline.next_steps.map((s, i) => `${i + 1}. ${s}`).join('
                 'x-api-key': ANTHROPIC_API_KEY
               },
               body: JSON.stringify({
-                model: 'claude-sonnet-4-20250514',
+                model: 'claude-sonnet-4-6',
                 max_tokens: 4096,
                 messages: [{
                   role: 'user',
@@ -5331,7 +5331,7 @@ Return ONLY valid JSON, no other text.`
               'x-api-key': ANTHROPIC_API_KEY
             },
             body: JSON.stringify({
-              model: 'claude-sonnet-4-20250514',
+              model: 'claude-sonnet-4-6',
               max_tokens: 4096,
               tools: CONTENT_GENERATION_TOOLS,
               messages: continuedMessages,
@@ -5396,7 +5396,7 @@ Return ONLY valid JSON, no other text.`
                     'x-api-key': ANTHROPIC_API_KEY
                   },
                   body: JSON.stringify({
-                    model: 'claude-sonnet-4-20250514',
+                    model: 'claude-sonnet-4-6',
                     max_tokens: 4096,
                     tools: CONTENT_GENERATION_TOOLS,
                     messages: furtherMessages,
@@ -5643,7 +5643,7 @@ Return ONLY valid JSON, no other text.`
               'x-api-key': ANTHROPIC_API_KEY
             },
             body: JSON.stringify({
-              model: 'claude-sonnet-4-20250514',
+              model: 'claude-sonnet-4-6',
               max_tokens: 4096,
               tools: CONTENT_GENERATION_TOOLS,
               messages: continuedMessages,
@@ -5862,7 +5862,7 @@ Return ONLY valid JSON, no other text.`
               'x-api-key': ANTHROPIC_API_KEY
             },
             body: JSON.stringify({
-              model: 'claude-sonnet-4-20250514',
+              model: 'claude-sonnet-4-6',
               max_tokens: 4096,
               tools: CONTENT_GENERATION_TOOLS,
               messages: continuedMessages,
@@ -5962,7 +5962,7 @@ Return ONLY valid JSON, no other text.`
               'x-api-key': ANTHROPIC_API_KEY
             },
             body: JSON.stringify({
-              model: 'claude-sonnet-4-20250514',
+              model: 'claude-sonnet-4-6',
               max_tokens: 4096,
               tools: CONTENT_GENERATION_TOOLS,
               messages: continuedMessages,
@@ -6148,7 +6148,7 @@ Respond with JSON only:
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-5-20250929',
+        model: 'claude-sonnet-4-6',
         max_tokens: 500,
         messages: [
           {
@@ -6694,7 +6694,7 @@ ${context}`;
   // Use Sonnet for strategy/research phases (like NIV Advisor), Haiku for simple generation
   // Strategy phases: presenting research, discussing approaches, choosing angles
   // Simple generation: creating single content pieces after decisions are made
-  const model = useStrategyModel ? 'claude-sonnet-4-20250514' : 'claude-haiku-4-5-20251001';
+  const model = useStrategyModel ? 'claude-sonnet-4-6' : 'claude-haiku-4-5-20251001';
   console.log('📤 Sending to Claude:', {
     model: model,
     messageCount: messages.length,
@@ -7338,7 +7338,7 @@ Write ONLY the brief, nothing else. Make it compelling and strategic.`;
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-5-20250929',
+        model: 'claude-sonnet-4-6',
         max_tokens: 300,
         temperature: 0.7,
         messages: [
@@ -7819,7 +7819,7 @@ Write ONLY the thought leadership content.`
       },
       signal: controller.signal,
       body: JSON.stringify({
-        model: 'claude-sonnet-4-5-20250929',
+        model: 'claude-sonnet-4-6',
         max_tokens: 16000,
         temperature: 0.7,
         messages: [

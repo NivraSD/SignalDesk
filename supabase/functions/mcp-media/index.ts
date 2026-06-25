@@ -211,7 +211,7 @@ Remember: You're decoding TODAY's power dynamics from REAL NEWS, not providing s
 
   try {
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       max_tokens: 4000,
       temperature: 0.3,
       messages: [{

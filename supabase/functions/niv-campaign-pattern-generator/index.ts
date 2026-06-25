@@ -261,7 +261,7 @@ Create detailed guidance for executing the ${pattern} pattern:
 Generate comprehensive pattern guidance for ${pattern}.`
 
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       max_tokens: 5000,
       temperature: 0.7,
       system: systemPrompt,

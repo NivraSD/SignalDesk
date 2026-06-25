@@ -45,7 +45,7 @@ async function callAI(prompt: string, maxTokens = 2000): Promise<string> {
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'x-api-key': ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: maxTokens, messages: [{ role: 'user', content: prompt }] }),
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: maxTokens, messages: [{ role: 'user', content: prompt }] }),
       signal: AbortSignal.timeout(60000)
     });
     if (resp.ok) {
@@ -337,7 +337,7 @@ serve(async (req) => {
                   business_implication: pattern.business_implication,
                   suggested_action: pattern.recommended_action || null,
                   source_pipeline: 'analyze-target-patterns',
-                  model_version: 'claude-sonnet-4',
+                  model_version: 'claude-sonnet-4-6',
                   detection_count: 1,
                   last_detected_at: new Date().toISOString(),
                   status: 'active'

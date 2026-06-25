@@ -162,7 +162,7 @@ Create parts 1-2 plus message architecture:
 Generate comprehensive foundation with deep psychological insight and message architecture.`
 
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       max_tokens: 6000,
       temperature: 0.7,
       system: systemPrompt,

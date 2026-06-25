@@ -167,7 +167,7 @@ Output valid JSON with 3-5 complete scenarios.`
         console.log(`Attempt ${attempts}/${maxAttempts} to generate scenarios...`)
 
         const message = await anthropic.messages.create({
-          model: 'claude-sonnet-4-20250514',
+          model: 'claude-sonnet-4-6',
           max_tokens: 3500,
           temperature: 0.7,
           system: systemPrompt,

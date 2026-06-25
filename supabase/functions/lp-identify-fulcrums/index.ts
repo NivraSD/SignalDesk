@@ -143,7 +143,7 @@ async function callAI(prompt: string): Promise<{ text: string; model: string }> 
             'content-type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'claude-sonnet-4-20250514',
+            model: 'claude-sonnet-4-6',
             max_tokens: 8000,
             temperature: 0.5,
             messages: [{ role: 'user', content: prompt }]
@@ -155,7 +155,7 @@ async function callAI(prompt: string): Promise<{ text: string; model: string }> 
       if (resp.ok) {
         const data = await resp.json()
         const text = data.content?.[0]?.text || ''
-        if (text) return { text, model: 'claude-sonnet-4' }
+        if (text) return { text, model: 'claude-sonnet-4-6' }
       }
     } catch (err: any) {
       console.warn(`Claude failed after ${((Date.now() - startTime) / 1000).toFixed(1)}s:`, err.message)

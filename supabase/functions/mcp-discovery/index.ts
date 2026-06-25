@@ -22,7 +22,7 @@ const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY') || Deno.env.get('CLA
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
 // Helper function to call Anthropic API directly (matching working edge functions)
-async function callAnthropic(messages: any[], maxTokens: number = 4000, model: string = 'claude-sonnet-4-20250514') {
+async function callAnthropic(messages: any[], maxTokens: number = 4000, model: string = 'claude-sonnet-4-6') {
   // Check API key when actually making the call
   const apiKey = ANTHROPIC_API_KEY || Deno.env.get('ANTHROPIC_API_KEY') || Deno.env.get('CLAUDE_API_KEY');
 
@@ -796,7 +796,7 @@ Return a monitoring configuration in this JSON format:
     const response = await callAnthropic([{
       role: 'user',
       content: gapPrompt
-    }], 2000, 'claude-sonnet-4-20250514');
+    }], 2000, 'claude-sonnet-4-6');
 
     const claudeResponse = response.content[0];
     if (claudeResponse.type !== 'text') {
@@ -1354,7 +1354,7 @@ REMEMBER:
   const message = await callAnthropic([{
     role: 'user',
     content: analysisPrompt
-  }], 8000, 'claude-sonnet-4-20250514'); // Increased from 4000 - need space for full profile with 10-15 competitors + stakeholders
+  }], 8000, 'claude-sonnet-4-6'); // Increased from 4000 - need space for full profile with 10-15 competitors + stakeholders
 
   const claudeResponse = message.content[0];
   if (claudeResponse.type !== 'text') {

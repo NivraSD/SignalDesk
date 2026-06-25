@@ -1119,7 +1119,7 @@ Create a campaign summary with the following structure (return ONLY valid JSON):
           'anthropic-version': '2023-06-01'
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
+          model: 'claude-sonnet-4-6',
           max_tokens: 2000,
           temperature: 0.7,
           messages: [{ role: 'user', content: summaryPrompt }]

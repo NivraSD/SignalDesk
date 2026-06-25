@@ -177,7 +177,7 @@ Severity: "critical", "high", "medium"
 Generate 6-7 scenarios that cover all 4 categories. Use the organization's actual intelligence targets to make scenarios realistic and specific.`
 
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       max_tokens: 4000,
       temperature: 0.8,
       system: systemPrompt,
