@@ -47,7 +47,7 @@ const EXPERIENCE = [
   },
   {
     title: 'Industrial environmental crisis',
-    body: 'Led the response to a major environmental crisis at a chemical facility, assembling and managing the full cross-country team — legal, communications, and government affairs — from Washington, D.C. to Los Angeles.',
+    body: 'Led the response to a major environmental crisis at a chemical facility, assembling and managing the full cross-country team — legal, communications, and government affairs — from Washington, D.C. to Louisiana.',
   },
   {
     title: 'Foundations',

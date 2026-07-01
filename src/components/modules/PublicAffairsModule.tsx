@@ -1018,59 +1018,16 @@ function ReportDetailView({
                     </div>
                   </div>
                 )}
-                {report.research_data.situation_assessment.key_actors?.length > 0 && (
-                  <div>
-                    <SubHeading>Key Actors</SubHeading>
-                    <div className="grid gap-2">
-                      {report.research_data.situation_assessment.key_actors.map((a: any, i: number) => (
-                        <div key={i} className="p-3 rounded-lg" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-sm font-medium" style={{ color: '#e4e4e7' }}>{a.name}</span>
-                            <span className="text-xs" style={{ color: '#71717a' }}>{a.role}</span>
-                            <span className={`text-xs px-2 py-0.5 rounded ml-auto ${
-                              a.influence_level === 'high' ? 'bg-red-500/20 text-red-400' :
-                              a.influence_level === 'medium' ? 'bg-amber-500/20 text-amber-400' :
-                              'bg-slate-500/20 text-slate-400'
-                            }`}>{a.influence_level}</span>
-                          </div>
-                          <p className="text-xs" style={{ color: '#a1a1aa', lineHeight: '1.5' }}>{a.position}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                {/* Key Actors sub-section removed — subsumed by the dedicated
+                    "Stakeholder Analysis" section below (they were redundant
+                    with each other; Stakeholder Analysis is richer). */}
               </div>
             </MemoSection>
           )}
 
-          {/* Contextual Analysis — adaptive section titles based on event type */}
-          {(() => {
-            const ctx = report.research_data?.contextual_analysis || report.research_data?.geopolitical_context
-            if (!ctx) return null
-            const et = report.research_data?.event_type || 'geopolitical'
-            const labels: Record<string, { title: string, sub1: string, sub2: string, sub3: string }> = {
-              geopolitical: { title: 'Geopolitical Context', sub1: 'Regional Dynamics', sub2: 'International Implications', sub3: 'Power Balance Analysis' },
-              corporate: { title: 'Industry & Competitive Analysis', sub1: 'Competitive Landscape', sub2: 'Governance & Talent Implications', sub3: 'Regulatory Exposure' },
-              regulatory: { title: 'Regulatory & Policy Analysis', sub1: 'Regulatory Landscape', sub2: 'Industry Response', sub3: 'Political Dynamics' },
-              economic: { title: 'Market & Economic Analysis', sub1: 'Market Dynamics', sub2: 'Supply Chain & Trade Implications', sub3: 'Policy Responses' },
-            }
-            const l = labels[et] || labels.geopolitical
-            // Support both old field names (regional_dynamics etc) and new (primary_analysis etc)
-            const f1 = ctx.primary_analysis || ctx.regional_dynamics
-            const f2 = ctx.secondary_analysis || ctx.international_implications
-            const f3 = ctx.power_dynamics || ctx.power_balance_analysis
-            return (
-              <MemoSection title={l.title} icon={Globe}>
-                <div className="space-y-5">
-                  {f1 && <div><SubHeading>{l.sub1}</SubHeading><ProseBlock text={f1} /></div>}
-                  {f2 && <div><SubHeading>{l.sub2}</SubHeading><ProseBlock text={f2} /></div>}
-                  {f3 && <div><SubHeading>{l.sub3}</SubHeading><ProseBlock text={f3} /></div>}
-                </div>
-              </MemoSection>
-            )
-          })()}
-
-          {/* Stakeholder Analysis */}
+          {/* Stakeholder Analysis — moved above Contextual/Geopolitical
+              Context so the reader gets the actor landscape before the
+              regional/industry backdrop. */}
           {report.research_data?.stakeholder_analysis && (
             <MemoSection title="Stakeholder Analysis" icon={Users}>
               <div className="space-y-4">
@@ -1110,6 +1067,33 @@ function ReportDetailView({
               </div>
             </MemoSection>
           )}
+
+          {/* Contextual Analysis — adaptive section titles based on event type */}
+          {(() => {
+            const ctx = report.research_data?.contextual_analysis || report.research_data?.geopolitical_context
+            if (!ctx) return null
+            const et = report.research_data?.event_type || 'geopolitical'
+            const labels: Record<string, { title: string, sub1: string, sub2: string, sub3: string }> = {
+              geopolitical: { title: 'Geopolitical Context', sub1: 'Regional Dynamics', sub2: 'International Implications', sub3: 'Power Balance Analysis' },
+              corporate: { title: 'Industry & Competitive Analysis', sub1: 'Competitive Landscape', sub2: 'Governance & Talent Implications', sub3: 'Regulatory Exposure' },
+              regulatory: { title: 'Regulatory & Policy Analysis', sub1: 'Regulatory Landscape', sub2: 'Industry Response', sub3: 'Political Dynamics' },
+              economic: { title: 'Market & Economic Analysis', sub1: 'Market Dynamics', sub2: 'Supply Chain & Trade Implications', sub3: 'Policy Responses' },
+            }
+            const l = labels[et] || labels.geopolitical
+            // Support both old field names (regional_dynamics etc) and new (primary_analysis etc)
+            const f1 = ctx.primary_analysis || ctx.regional_dynamics
+            const f2 = ctx.secondary_analysis || ctx.international_implications
+            const f3 = ctx.power_dynamics || ctx.power_balance_analysis
+            return (
+              <MemoSection title={l.title} icon={Globe}>
+                <div className="space-y-5">
+                  {f1 && <div><SubHeading>{l.sub1}</SubHeading><ProseBlock text={f1} /></div>}
+                  {f2 && <div><SubHeading>{l.sub2}</SubHeading><ProseBlock text={f2} /></div>}
+                  {f3 && <div><SubHeading>{l.sub3}</SubHeading><ProseBlock text={f3} /></div>}
+                </div>
+              </MemoSection>
+            )
+          })()}
 
           {/* Scenario Analysis with likelihood bars */}
           {report.research_data?.scenario_analysis && (
