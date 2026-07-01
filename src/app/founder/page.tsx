@@ -55,11 +55,7 @@ const EXPERIENCE = [
   },
   {
     title: 'Combatting terrorism & extremism',
-    body: [
-      'Helped coordinate a multi-country awareness campaign — spanning the U.S., France, and Lebanon — confronting a designated terrorist organization’s use of civilian airport infrastructure.',
-      'Participated in an international roundtable on confronting extremism in the Balkans.',
-      'Developed a strategic communications plan, at the request of a foreign-policy expert, to support Kurdish information efforts following the U.S. withdrawal from northern Syria.',
-    ],
+    body: 'Participated in campaigns and efforts to combat extremism — raising awareness of a designated terror group’s use of civilian airport infrastructure across multiple countries; joining international roundtable discussions on confronting extremism in the Balkans; and developing communications strategy at the request of foreign-policy experts to support Kurdish information flow following the U.S. withdrawal from northern Syria.',
   },
   {
     title: 'Grain export labor dispute',
