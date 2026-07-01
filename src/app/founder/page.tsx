@@ -104,8 +104,7 @@ export default function FounderPage() {
         <section className="nv-fnd-exp">
           <div className="nv-fnd-wrap">
             <header className="nv-fnd-exp-head">
-              <h2 className="nv-fnd-h2"><em>Experience.</em></h2>
-              <div className="nv-fnd-exp-meta">Selected engagements from a career spanning strategic advisory and communications firms, government and NGO initiatives, and independent work. Roles varied by engagement — from direct leadership to advisory and team contributions.</div>
+              <h2 className="nv-fnd-h2"><em>Experience.</em><sup className="nv-fnd-exp-star">*</sup></h2>
             </header>
 
             <ol className="nv-fnd-grid">
@@ -119,6 +118,10 @@ export default function FounderPage() {
                 </li>
               ))}
             </ol>
+
+            <p className="nv-fnd-exp-note">
+              <span aria-hidden="true">*</span> Selected engagements from a career spanning strategic advisory and communications firms, government and NGO initiatives, and independent work. Roles varied by engagement — from direct leadership to advisory and team contributions.
+            </p>
           </div>
         </section>
 
@@ -446,10 +449,27 @@ const CSS = `
   font-variation-settings: "opsz" 144, "SOFT" 60;
   font-style: italic;
 }
-.nv-fnd-exp-meta {
+.nv-fnd-exp-star {
+  font-family: var(--font-reader), serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 0.35em;   /* small relative to the h2 */
+  color: var(--accent);
+  vertical-align: super;
+  margin-left: 0.15em;
+}
+.nv-fnd-exp-note {
+  margin: 48px 0 0;
+  padding-top: 20px;
+  border-top: 1px solid var(--rule-soft);
   font-family: var(--font-reader), serif; font-style: italic;
-  font-size: 15px; color: var(--ink-3);
+  font-size: 14px; color: var(--ink-3);
   max-width: 68ch; line-height: 1.55;
+}
+.nv-fnd-exp-note span[aria-hidden] {
+  color: var(--accent);
+  font-style: normal;
+  margin-right: 2px;
 }
 
 .nv-fnd-grid {
