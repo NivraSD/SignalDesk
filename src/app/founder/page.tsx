@@ -55,7 +55,11 @@ const EXPERIENCE = [
   },
   {
     title: 'Combatting terrorism & extremism',
-    body: 'Coordinated a global awareness campaign confronting a designated terrorist organization’s use of major civilian airport infrastructure; contributed to anti-radicalization and counter-extremism efforts in the Balkans; and worked on a program to assist the Kurds following the U.S. withdrawal from northern Syria.',
+    body: [
+      'Helped coordinate a multi-country awareness campaign — spanning the U.S., France, and Lebanon — confronting a designated terrorist organization’s use of civilian airport infrastructure.',
+      'Participated in an international roundtable on confronting extremism in the Balkans.',
+      'Developed a strategic communications plan, at the request of a foreign-policy expert, to support Kurdish information efforts following the U.S. withdrawal from northern Syria.',
+    ],
   },
   {
     title: 'Grain export labor dispute',
@@ -105,7 +109,7 @@ export default function FounderPage() {
           <div className="nv-fnd-wrap">
             <header className="nv-fnd-exp-head">
               <h2 className="nv-fnd-h2"><em>Experience.</em></h2>
-              <div className="nv-fnd-exp-meta">Sample engagements across sectors and continents</div>
+              <div className="nv-fnd-exp-meta">Selected engagements from a career spanning strategic advisory and communications firms, government and NGO initiatives, and independent work. Roles varied by engagement — from direct leadership to advisory and team contributions.</div>
             </header>
 
             <ol className="nv-fnd-grid">
@@ -113,7 +117,9 @@ export default function FounderPage() {
                 <li key={i} className="nv-fnd-cell">
                   <div className="nv-fnd-cell-n">{String(i + 1).padStart(2, '0')}</div>
                   <h3 className="nv-fnd-cell-h">{e.title}</h3>
-                  <p className="nv-fnd-cell-body">{e.body}</p>
+                  {Array.isArray(e.body)
+                    ? e.body.map((p, j) => <p key={j} className="nv-fnd-cell-body">{p}</p>)
+                    : <p className="nv-fnd-cell-body">{e.body}</p>}
                 </li>
               ))}
             </ol>
@@ -447,6 +453,7 @@ const CSS = `
 .nv-fnd-exp-meta {
   font-family: var(--font-reader), serif; font-style: italic;
   font-size: 15px; color: var(--ink-3);
+  max-width: 68ch; line-height: 1.55;
 }
 
 .nv-fnd-grid {
