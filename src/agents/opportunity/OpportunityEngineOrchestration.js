@@ -69,7 +69,7 @@ class OpportunityEngineOrchestrator {
     `;
     
     const response = await claudeService.sendMessage(prompt, {
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       agentType: this.agents.optimizer
     });
     
@@ -713,15 +713,15 @@ class OpportunityEngineOrchestrator {
   getModelForAgent(agentType) {
     // Return appropriate model for each agent type
     const modelMap = {
-      'research-optimizer': 'claude-sonnet-4-20250514',
-      'data-analyst': 'claude-sonnet-4-20250514',
-      'search-specialist': 'claude-sonnet-4-20250514',
-      'query-clarifier': 'claude-sonnet-4-20250514',
-      'task-decomposition-expert': 'claude-sonnet-4-20250514',
-      'report-generator': 'claude-sonnet-4-20250514'
+      'research-optimizer': 'claude-sonnet-4-6',
+      'data-analyst': 'claude-sonnet-4-6',
+      'search-specialist': 'claude-sonnet-4-6',
+      'query-clarifier': 'claude-sonnet-4-6',
+      'task-decomposition-expert': 'claude-sonnet-4-6',
+      'report-generator': 'claude-sonnet-4-6'
     };
     
-    return modelMap[agentType] || 'claude-sonnet-4-20250514';
+    return modelMap[agentType] || 'claude-sonnet-4-6';
   }
   
   // Extraction helper methods (simplified versions)

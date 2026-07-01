@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
 
     // Fast, direct Claude API call for conversational responses
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514', // Using Claude Sonnet 4
+      model: 'claude-sonnet-4-6', // Using Claude Sonnet 4
       system: system,
       messages: userMessages,
       max_tokens: max_tokens,
