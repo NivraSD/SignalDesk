@@ -35,7 +35,7 @@ const EXPERIENCE = [
   },
   {
     title: 'African LNG',
-    body: 'Conducted the initial on-the-ground assessment of a major LNG development after operations were disrupted by an insurgency. Helped secure U.S. development financing and designed a framework for ongoing, comprehensive ground monitoring of the security and stakeholder environment.',
+    body: 'Worked with various sources and teams to conduct the initial on-the-ground assessment of a major LNG development after operations were disrupted by an insurgency. Helped secure U.S. development financing and designed a framework for ongoing, comprehensive ground monitoring of the security and stakeholder environment.',
   },
   {
     title: 'Latin American critical minerals',
