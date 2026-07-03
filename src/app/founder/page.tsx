@@ -31,43 +31,43 @@ function useHeaderVisible() {
 const EXPERIENCE = [
   {
     title: 'Saudi Arabia — Public Investment Fund (PIF)',
-    body: 'Worked directly with PIF in the period following a high-profile geopolitical incident, through the fund’s significant expansion. Engagements spanned anchor positions in the SoftBank Vision Fund and Blackstone’s infrastructure fund, and the Newcastle United acquisition.',
+    body: 'A strategic-communications mandate for one of the world’s largest sovereign wealth funds, through a period of intense global scrutiny and rapid expansion, spanning the fund’s anchor positions in the SoftBank Vision Fund and Blackstone’s infrastructure fund.',
   },
   {
     title: 'African LNG',
-    body: 'Worked with various sources and teams to conduct the initial on-the-ground assessment of a major LNG development after operations were disrupted by an insurgency. Helped secure U.S. development financing and designed a framework for ongoing, comprehensive ground monitoring of the security and stakeholder environment.',
+    body: 'A mandate to assess a major energy development after insurgent activity disrupted operations: ground-level evaluation in a volatile security environment, engagement around U.S. development financing, and the design of a sustained security- and stakeholder-monitoring framework.',
   },
   {
     title: 'Latin American critical minerals',
-    body: 'Monitored the status of a major critical-mineral mine on behalf of a prospective investor and competitor, tracking the political, community, and legal dynamics surrounding one of the region’s most consequential and contested resource projects.',
+    body: 'A mandate to examine one of Latin America’s most consequential and contested critical-mineral projects on behalf of a prospective investor, assessing the political, community, and legal dynamics that would determine its future.',
   },
   {
     title: 'NEOM',
-    body: 'Worked across all sectors and regions of NEOM — including the Discover NEOM global road show, and the launch of the NEOM Investment Fund (NIF).',
+    body: 'A mandate spanning sectors and regions of NEOM, one of the largest greenfield development initiatives in the world, including the Discover NEOM global roadshow and the launch of the NEOM Investment Fund (NIF).',
   },
   {
     title: 'Industrial environmental crisis',
-    body: 'Led the response to a major environmental crisis at a chemical facility, assembling and managing the full cross-country team — legal, communications, and government affairs — from Washington, D.C. to Louisiana.',
+    body: 'A high-profile environmental crisis at an industrial facility: a mandate requiring tightly coordinated strategy across legal, communications, and government-affairs tracks, and engagement spanning state, local, and federal levels, from Washington, D.C. to Louisiana.',
   },
   {
     title: 'Foundations',
-    body: 'Worked with high-profile global foundations to formulate and execute their missions and strategic priorities.',
+    body: 'Mandates with high-profile global foundations, formulating and executing mission and strategic priorities amid competing stakeholder interests and public profile.',
   },
   {
     title: 'Combatting terrorism & extremism',
-    body: 'Participated in campaigns and efforts to combat extremism — raising awareness of a designated terror group’s use of civilian airport infrastructure across multiple countries; joining international roundtable discussions on confronting extremism in the Balkans; and developing communications strategy at the request of foreign-policy experts to support Kurdish information flow following the U.S. withdrawal from northern Syria.',
+    body: 'Work confronting terrorism and extremism: a multi-country awareness campaign on a designated terror group’s exploitation of civilian airport infrastructure; international roundtables on extremism in the Balkans; and a communications strategy, developed at the request of foreign-policy experts, to support Kurdish information flow after the U.S. withdrawal from northern Syria.',
   },
   {
     title: 'Grain export labor dispute',
-    body: 'Helped resolve a labor dispute that had shut down grain shipments out of Washington State, restoring the flow of a critical export.',
+    body: 'A labor dispute that shut down grain shipments out of Washington State, a stoppage in a critical national export corridor, worked through to resolution and restored to flow.',
   },
   {
     title: 'Global cultural events',
-    body: 'Worked at Live Nation and on the production and positioning of some of the world’s largest live events, including major international music festivals operating at national scale.',
+    body: 'Production and positioning of some of the world’s largest live events, including major international music festivals operating at national scale. (Live Nation.)',
   },
   {
     title: 'Global convenings',
-    body: 'Engaged across the producer, sponsor, and participant sides of major global gatherings, including the Future Investment Initiative (FII), the Milken Institute Global Conference, and the World Economic Forum (WEF).',
+    body: 'Engagement across major global gatherings, on the producer, sponsor, and participant sides, including the Future Investment Initiative (FII), the Milken Institute Global Conference, and the World Economic Forum (WEF).',
   },
 ]
 
@@ -95,9 +95,14 @@ export default function FounderPage() {
             <h1 className="nv-fnd-h1">
               Jonathan <em>Leibowitz.</em>
             </h1>
-            <p className="nv-fnd-bio">
-              Jonathan is the founder of nivria. Over nearly fifteen years at <strong>KARV</strong>, where he was the second employee, he helped build a global practice in strategic communications and geopolitical intelligence spanning <em>more than sixty countries.</em> He has worked at the centre of high-stakes, multi-stakeholder situations — sovereign wealth funds, global trading houses, complex cross-border ventures — where the hardest task is <em>getting the truth to land before a louder fiction takes hold,</em> and where misunderstandings, left unmanaged, become catastrophes.
-            </p>
+            <div className="nv-fnd-bio">
+              <p>
+                Jonathan founded nivria after departing his nearly fifteen-year career at <strong>KARV</strong>, a boutique strategic advisory and communications firm that manages high-stakes and specialized matters for clients such as sovereign wealth funds, multinational corporations, and governments. He was among the firm’s earliest employees, helping build a global practice in strategic communications and geopolitical intelligence spanning <em>more than sixty countries.</em>
+              </p>
+              <p>
+                Over the course of his career, Jonathan saw firsthand the <em>fragility of complex ventures,</em> particularly in geopolitically contentious times. nivria exists to help those working on important, complex initiatives make better decisions and manage the <em>growing list of stakeholders</em> that matter.
+              </p>
+            </div>
           </div>
         </section>
 
@@ -120,7 +125,7 @@ export default function FounderPage() {
             </ol>
 
             <p className="nv-fnd-exp-note">
-              <span aria-hidden="true">*</span> Selected engagements from a career spanning strategic advisory and communications firms, government and NGO initiatives, and independent work. Roles varied by engagement — from direct leadership to advisory and team contributions.
+              <span aria-hidden="true">*</span> A sampling from a career spanning strategic advisory, communications, live entertainment, marketing, and private charitable work, across advisory and communications firms, government and NGO initiatives, and independent work. Involvement varied by engagement.
             </p>
           </div>
         </section>
@@ -417,9 +422,10 @@ const CSS = `
   font-size: 20.5px;
   line-height: 1.6;
   color: var(--ink-2);
-  margin: 0;
   max-width: 78ch;
 }
+.nv-fnd-bio p { margin: 0 0 22px; }
+.nv-fnd-bio p:last-child { margin-bottom: 0; }
 .nv-fnd-bio em { font-style: italic; color: var(--accent); font-weight: 600; }
 .nv-fnd-bio strong { color: var(--ink); font-weight: 600; }
 
