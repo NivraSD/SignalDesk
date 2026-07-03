@@ -125,7 +125,7 @@ export default function FounderPage() {
             </ol>
 
             <p className="nv-fnd-exp-note">
-              <span aria-hidden="true">*</span> A sampling from a career spanning strategic advisory, communications, live entertainment, marketing, and private charitable work, across advisory and communications firms, government and NGO initiatives, and independent work. Involvement varied by engagement.
+              <span aria-hidden="true">*</span> A sampling from a career spanning strategic advisory, communications, live entertainment, marketing, and private charitable work. Involvement varied by engagement.
             </p>
           </div>
         </section>
