@@ -38,16 +38,16 @@ const EXPERIENCE = [
     body: 'A foreign-owned industrial company facing simultaneous pressure from class-action litigation, federal and state regulators, national media, and community opposition — a mandate requiring coordinated strategy across legal, public affairs, and communications tracks, from the local level to the federal.',
   },
   {
-    title: 'Latin American critical minerals',
-    body: 'Examination of one of Latin America’s most consequential and contested critical-mineral projects on behalf of an interested party, assessing the political, community, and legal dynamics that would determine its future.',
+    title: 'African LNG',
+    body: 'Assessment of a major energy development after insurgent activity disrupted operations — ground-level evaluation in a volatile security environment, engagement around U.S. development financing, and the design of a sustained security- and stakeholder-monitoring framework.',
   },
   {
     title: 'NEOM',
     body: 'Engagement spanning sectors and regions of one of the largest greenfield development initiatives in the world — including the Discover NEOM global roadshow and the launch of the NEOM Investment Fund (NIF).',
   },
   {
-    title: 'African LNG',
-    body: 'Assessment of a major energy development after insurgent activity disrupted operations — ground-level evaluation in a volatile security environment, engagement around U.S. development financing, and the design of a sustained security- and stakeholder-monitoring framework.',
+    title: 'Grain export labor dispute',
+    body: 'A labor dispute that shut down grain shipments out of Washington State, a stoppage in a critical national export corridor, worked through to resolution and restored to flow.',
   },
   {
     title: 'Foundations',
@@ -58,8 +58,8 @@ const EXPERIENCE = [
     body: 'Work confronting terrorism and extremism: a multi-country awareness campaign on a designated terror group’s exploitation of civilian airport infrastructure; international roundtables on extremism in the Balkans; and a communications strategy, developed at the request of foreign-policy experts, to support Kurdish information flow after the U.S. withdrawal from northern Syria.',
   },
   {
-    title: 'Grain export labor dispute',
-    body: 'A labor dispute that shut down grain shipments out of Washington State, a stoppage in a critical national export corridor, worked through to resolution and restored to flow.',
+    title: 'Latin American critical minerals',
+    body: 'Examination of one of Latin America’s most consequential and contested critical-mineral projects on behalf of an interested party, assessing the political, community, and legal dynamics that would determine its future.',
   },
   {
     title: 'Global cultural events',
