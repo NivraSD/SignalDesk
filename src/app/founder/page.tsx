@@ -31,27 +31,27 @@ function useHeaderVisible() {
 const EXPERIENCE = [
   {
     title: 'Saudi Arabia — Public Investment Fund (PIF)',
-    body: 'A strategic-communications mandate for one of the world’s largest sovereign wealth funds, through a period of intense global scrutiny and rapid expansion, spanning the fund’s anchor positions in the SoftBank Vision Fund and Blackstone’s infrastructure fund.',
+    body: 'Strategic communications for one of the world’s largest sovereign wealth funds through a period of intense global scrutiny and rapid expansion — spanning the fund’s anchor positions in the SoftBank Vision Fund and Blackstone’s infrastructure fund.',
   },
   {
     title: 'African LNG',
-    body: 'A mandate to assess a major energy development after insurgent activity disrupted operations: ground-level evaluation in a volatile security environment, engagement around U.S. development financing, and the design of a sustained security- and stakeholder-monitoring framework.',
+    body: 'Assessment of a major energy development after insurgent activity disrupted operations — ground-level evaluation in a volatile security environment, engagement around U.S. development financing, and the design of a sustained security- and stakeholder-monitoring framework.',
   },
   {
     title: 'Latin American critical minerals',
-    body: 'A mandate to examine one of Latin America’s most consequential and contested critical-mineral projects on behalf of a prospective investor, assessing the political, community, and legal dynamics that would determine its future.',
+    body: 'Examination of one of Latin America’s most consequential and contested critical-mineral projects on behalf of an interested party, assessing the political, community, and legal dynamics that would determine its future.',
   },
   {
     title: 'NEOM',
-    body: 'A mandate spanning sectors and regions of NEOM, one of the largest greenfield development initiatives in the world, including the Discover NEOM global roadshow and the launch of the NEOM Investment Fund (NIF).',
+    body: 'Engagement spanning sectors and regions of one of the largest greenfield development initiatives in the world — including the Discover NEOM global roadshow and the launch of the NEOM Investment Fund (NIF).',
   },
   {
     title: 'Industrial environmental crisis',
-    body: 'A high-profile environmental crisis at an industrial facility: a mandate requiring tightly coordinated strategy across legal, communications, and government-affairs tracks, and engagement spanning state, local, and federal levels, from Washington, D.C. to Louisiana.',
+    body: 'Tightly coordinated strategy across legal, communications, and government-affairs tracks — engagement spanning state, local, and federal levels, from Washington, D.C. to Louisiana.',
   },
   {
     title: 'Foundations',
-    body: 'Mandates with high-profile global foundations, formulating and executing mission and strategic priorities amid competing stakeholder interests and public profile.',
+    body: 'Work with high-profile global foundations formulating and executing mission and strategic priorities amid competing stakeholder interests and public profile.',
   },
   {
     title: 'Combatting terrorism & extremism',
