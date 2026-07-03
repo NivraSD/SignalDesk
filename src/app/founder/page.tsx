@@ -34,8 +34,8 @@ const EXPERIENCE = [
     body: 'Strategic communications for one of the world’s largest sovereign wealth funds through a period of intense global scrutiny and rapid expansion — spanning the fund’s anchor positions in the SoftBank Vision Fund and Blackstone’s infrastructure fund.',
   },
   {
-    title: 'African LNG',
-    body: 'Assessment of a major energy development after insurgent activity disrupted operations — ground-level evaluation in a volatile security environment, engagement around U.S. development financing, and the design of a sustained security- and stakeholder-monitoring framework.',
+    title: 'Industrial environmental crisis',
+    body: 'A foreign-owned industrial company facing simultaneous pressure from class-action litigation, federal and state regulators, national media, and community opposition — a mandate requiring coordinated strategy across legal, public affairs, and communications tracks, from the local level to the federal.',
   },
   {
     title: 'Latin American critical minerals',
@@ -46,8 +46,8 @@ const EXPERIENCE = [
     body: 'Engagement spanning sectors and regions of one of the largest greenfield development initiatives in the world — including the Discover NEOM global roadshow and the launch of the NEOM Investment Fund (NIF).',
   },
   {
-    title: 'Industrial environmental crisis',
-    body: 'Tightly coordinated strategy across legal, communications, and government-affairs tracks — engagement spanning state, local, and federal levels, from Washington, D.C. to Louisiana.',
+    title: 'African LNG',
+    body: 'Assessment of a major energy development after insurgent activity disrupted operations — ground-level evaluation in a volatile security environment, engagement around U.S. development financing, and the design of a sustained security- and stakeholder-monitoring framework.',
   },
   {
     title: 'Foundations',
