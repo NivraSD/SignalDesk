@@ -1,12 +1,15 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { NivriaLogo } from '@/components/brand/NivriaWordmark'
 
-// auto-hide header on scroll-down, reveal on scroll-up
+// auto-hide header on scroll-down, reveal on scroll-up. Paused while
+// the user is hovering the header so a stray trackpad tick doesn't
+// slide the header away mid-interaction.
 function useHeaderVisible() {
   const [visible, setVisible] = useState(true)
+  const hoveredRef = useRef(false)
   useEffect(() => {
     let lastY = window.scrollY
     let ticking = false
@@ -15,6 +18,11 @@ function useHeaderVisible() {
       ticking = true
       requestAnimationFrame(() => {
         const y = window.scrollY
+        if (hoveredRef.current) {
+          lastY = y
+          ticking = false
+          return
+        }
         if (y < 80) setVisible(true)
         else if (y > lastY + 4) setVisible(false)
         else if (y < lastY - 4) setVisible(true)
@@ -25,7 +33,33 @@ function useHeaderVisible() {
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
-  return visible
+  return {
+    visible,
+    onMouseEnter: () => { hoveredRef.current = true },
+    onMouseLeave: () => { hoveredRef.current = false },
+  }
+}
+
+// Back-to-top pill — appears after scrolling down past 600px.
+function BackToTop() {
+  const [visible, setVisible] = useState(false)
+  useEffect(() => {
+    const onScroll = () => setVisible(window.scrollY > 600)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+  return (
+    <button
+      type="button"
+      className={`nv-fnd-top${visible ? ' nv-fnd-top-visible' : ''}`}
+      onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+      aria-label="Back to top"
+    >
+      <svg width="16" height="14" viewBox="0 0 16 14" fill="none" aria-hidden="true">
+        <path d="M8 13V2M2 7l6-6 6 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </button>
+  )
 }
 
 const EXPERIENCE = [
@@ -73,12 +107,16 @@ const EXPERIENCE = [
 
 
 export default function FounderPage() {
-  const visible = useHeaderVisible()
+  const { visible, onMouseEnter, onMouseLeave } = useHeaderVisible()
   return (
     <div className="nv-fnd">
       <style>{CSS}</style>
 
-      <header className={`nv-fnd-hdr${visible ? '' : ' nv-fnd-hdr-hidden'}`}>
+      <header
+        className={`nv-fnd-hdr${visible ? '' : ' nv-fnd-hdr-hidden'}`}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+      >
         <div className="nv-fnd-wrap nv-fnd-hdr-row">
           <NivriaLogo size="md" href="/" />
           <nav className="nv-fnd-nav">
@@ -153,6 +191,8 @@ export default function FounderPage() {
           <Link href="/auth/login" className="nv-fnd-foot-sign">Sign in</Link>
         </div>
       </footer>
+
+      <BackToTop />
     </div>
   )
 }
@@ -248,6 +288,42 @@ const CSS = `
   will-change: transform;
 }
 .nv-fnd-hdr.nv-fnd-hdr-hidden { transform: translateY(-110%); }
+
+/* Back-to-top pill — matches the homepage nv-top treatment. */
+.nv-fnd-top {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  z-index: 30;
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--accent-deep);
+  background: rgba(13,11,8,.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(10px);
+  transition: opacity .3s, transform .3s, background .25s, border-color .25s;
+}
+.nv-fnd-top.nv-fnd-top-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+.nv-fnd-top:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg);
+}
+@media (max-width: 720px) {
+  .nv-fnd-top { right: 14px; bottom: 14px; width: 40px; height: 40px; }
+}
 .nv-fnd-hdr-row {
   display: flex; align-items: center; justify-content: space-between;
 }

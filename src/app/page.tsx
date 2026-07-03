@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 // section nav data — used by the side dots
 const SECTIONS = [
@@ -16,6 +16,12 @@ const SECTIONS = [
 // always shown near the top of the page
 function useHeaderVisible() {
   const [visible, setVisible] = useState(true)
+  // Track whether the user is actively hovering the header. When they
+  // are, the scroll-driven auto-hide is suspended — otherwise trackpad
+  // momentum or a tiny mousewheel tick slides the header away mid-
+  // interaction, so a hover would appear to only "light up for a
+  // second" before disappearing.
+  const hoveredRef = useRef(false)
   useEffect(() => {
     let lastY = window.scrollY
     let ticking = false
@@ -24,6 +30,11 @@ function useHeaderVisible() {
       ticking = true
       requestAnimationFrame(() => {
         const y = window.scrollY
+        if (hoveredRef.current) {
+          lastY = y
+          ticking = false
+          return
+        }
         if (y < 80) setVisible(true)
         else if (y > lastY + 4) setVisible(false)
         else if (y < lastY - 4) setVisible(true)
@@ -34,7 +45,11 @@ function useHeaderVisible() {
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
-  return visible
+  return {
+    visible,
+    onMouseEnter: () => { hoveredRef.current = true },
+    onMouseLeave: () => { hoveredRef.current = false },
+  }
 }
 
 // ============================================================================
@@ -254,9 +269,13 @@ function BackToTop() {
 
 // ─── HEADER ──────────────────────────────────────────────────────────────
 function Header() {
-  const visible = useHeaderVisible()
+  const { visible, onMouseEnter, onMouseLeave } = useHeaderVisible()
   return (
-    <header className={`nv-hdr${visible ? '' : ' nv-hdr-hidden'}`}>
+    <header
+      className={`nv-hdr${visible ? '' : ' nv-hdr-hidden'}`}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+    >
       <div className="nv-wrap nv-hdr-row">
         <NivriaLogo />
         <nav className="nv-nav">
