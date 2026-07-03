@@ -1,0 +1,9 @@
+<!-- nivria favicon — the distinctive gold i-stem + dot from the wordmark,
+     isolated as a monogram on the site's warm-dark background. Reads at
+     16×16 through 512×512. Next.js serves this as the favicon via the
+     App Router icon convention. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <rect width="64" height="64" fill="#0D0B08"/>
+  <circle cx="32" cy="18" r="5" fill="#C9912E"/>
+  <line x1="32" y1="24" x2="32" y2="50" stroke="#C9912E" stroke-width="4" stroke-linecap="round"/>
+</svg>

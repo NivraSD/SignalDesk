@@ -5,10 +5,12 @@ import { useEffect, useRef, useState } from 'react'
 import { NivriaLogo } from '@/components/brand/NivriaWordmark'
 
 // auto-hide header on scroll-down, reveal on scroll-up. Paused while
-// the user is hovering the header so a stray trackpad tick doesn't
-// slide the header away mid-interaction.
+// the mouse is inside the top HOVER_ZONE_PX of the viewport — a
+// forgiveness zone, not a pixel-perfect header hit-test — so a stray
+// trackpad tick can't slide the header away mid-interaction.
 function useHeaderVisible() {
   const [visible, setVisible] = useState(true)
+  const HOVER_ZONE_PX = 120
   const hoveredRef = useRef(false)
   useEffect(() => {
     let lastY = window.scrollY
@@ -30,14 +32,19 @@ function useHeaderVisible() {
         ticking = false
       })
     }
+    const onMouseMove = (e: MouseEvent) => {
+      const inZone = e.clientY < HOVER_ZONE_PX
+      hoveredRef.current = inZone
+      if (inZone) setVisible(true)
+    }
     window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
+    window.addEventListener('mousemove', onMouseMove, { passive: true })
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('mousemove', onMouseMove)
+    }
   }, [])
-  return {
-    visible,
-    onMouseEnter: () => { hoveredRef.current = true },
-    onMouseLeave: () => { hoveredRef.current = false },
-  }
+  return visible
 }
 
 // Back-to-top pill — appears after scrolling down past 600px.
@@ -107,16 +114,12 @@ const EXPERIENCE = [
 
 
 export default function FounderPage() {
-  const { visible, onMouseEnter, onMouseLeave } = useHeaderVisible()
+  const visible = useHeaderVisible()
   return (
     <div className="nv-fnd">
       <style>{CSS}</style>
 
-      <header
-        className={`nv-fnd-hdr${visible ? '' : ' nv-fnd-hdr-hidden'}`}
-        onMouseEnter={onMouseEnter}
-        onMouseLeave={onMouseLeave}
-      >
+      <header className={`nv-fnd-hdr${visible ? '' : ' nv-fnd-hdr-hidden'}`}>
         <div className="nv-fnd-wrap nv-fnd-hdr-row">
           <NivriaLogo size="md" href="/" />
           <nav className="nv-fnd-nav">

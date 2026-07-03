@@ -16,11 +16,12 @@ const SECTIONS = [
 // always shown near the top of the page
 function useHeaderVisible() {
   const [visible, setVisible] = useState(true)
-  // Track whether the user is actively hovering the header. When they
-  // are, the scroll-driven auto-hide is suspended — otherwise trackpad
-  // momentum or a tiny mousewheel tick slides the header away mid-
-  // interaction, so a hover would appear to only "light up for a
-  // second" before disappearing.
+  // "Hovered" is any mouse position within the top HOVER_ZONE_PX of the
+  // viewport — a forgiveness zone, not a pixel-perfect header hit-test.
+  // While the mouse is in the zone, the scroll auto-hide is suspended,
+  // so trackpad momentum or a tiny mousewheel tick can't slide the
+  // header out from under a user who's trying to interact with it.
+  const HOVER_ZONE_PX = 120
   const hoveredRef = useRef(false)
   useEffect(() => {
     let lastY = window.scrollY
@@ -42,14 +43,22 @@ function useHeaderVisible() {
         ticking = false
       })
     }
+    const onMouseMove = (e: MouseEvent) => {
+      const inZone = e.clientY < HOVER_ZONE_PX
+      hoveredRef.current = inZone
+      // If we're in-zone right now, make sure the header IS visible —
+      // covers the case where the user's cursor is already at the top
+      // when they scroll into a hidden state.
+      if (inZone) setVisible(true)
+    }
     window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
+    window.addEventListener('mousemove', onMouseMove, { passive: true })
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('mousemove', onMouseMove)
+    }
   }, [])
-  return {
-    visible,
-    onMouseEnter: () => { hoveredRef.current = true },
-    onMouseLeave: () => { hoveredRef.current = false },
-  }
+  return visible
 }
 
 // ============================================================================
@@ -269,13 +278,9 @@ function BackToTop() {
 
 // ─── HEADER ──────────────────────────────────────────────────────────────
 function Header() {
-  const { visible, onMouseEnter, onMouseLeave } = useHeaderVisible()
+  const visible = useHeaderVisible()
   return (
-    <header
-      className={`nv-hdr${visible ? '' : ' nv-hdr-hidden'}`}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
-    >
+    <header className={`nv-hdr${visible ? '' : ' nv-hdr-hidden'}`}>
       <div className="nv-wrap nv-hdr-row">
         <NivriaLogo />
         <nav className="nv-nav">
