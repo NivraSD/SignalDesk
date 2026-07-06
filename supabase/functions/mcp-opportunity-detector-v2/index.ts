@@ -10,6 +10,10 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 // Try both API key names like NIV does
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY') || Deno.env.get('CLAUDE_API_KEY');
+// Gemini fallback — used when Sonnet times out or hits a 5xx (typically
+// during Anthropic throttling events). Same GOOGLE_API_KEY the rest of
+// the fleet uses.
+const GOOGLE_API_KEY = Deno.env.get('GOOGLE_API_KEY');
 
 console.log('🔑 Environment check:', {
   has_url: !!SUPABASE_URL,
@@ -618,14 +622,55 @@ async function detectOpportunitiesV2(
     organizationProfile: extractedData.organizationProfile
   })
 
-  console.log('Calling Claude Sonnet 4.6 for V2 opportunity generation...')
   console.log('Prompt length:', prompt.length, 'characters')
 
+  // ── Try Sonnet first; fall back to Gemini only if the API CALL itself
+  //    fails (timeout / 5xx). Parse errors don't trigger fallback — they
+  //    indicate a real bug, not throttling.
+  let content = ''
   try {
-    // Add 150s timeout to fail gracefully before Supabase kills us at ~200s
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 150000)
+    content = await callSonnetForOpportunities(prompt)
+  } catch (sonnetErr: any) {
+    if (sonnetErr.name === 'AbortError') {
+      console.error('❌ Sonnet timed out after 150 seconds — API may be slow/degraded')
+    } else {
+      console.error('❌ Sonnet call failed:', sonnetErr.message)
+    }
 
+    if (!GOOGLE_API_KEY) {
+      console.error('No GOOGLE_API_KEY configured — cannot fall back to Gemini')
+      return []
+    }
+
+    try {
+      console.log('🔄 Falling back to Gemini 2.5 Flash...')
+      content = await callGeminiForOpportunities(prompt)
+      console.log('✅ Gemini fallback succeeded, length:', content.length)
+    } catch (geminiErr: any) {
+      if (geminiErr.name === 'AbortError') {
+        console.error('❌ Gemini fallback also timed out after 150 seconds')
+      } else {
+        console.error('❌ Gemini fallback failed:', geminiErr.message)
+      }
+      return []
+    }
+  }
+
+  // ── Parse + validate. Same logic runs on whichever LLM's content we got.
+  return parseAndValidateOpportunitiesV2(content)
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// LLM callers — return raw text content, throw on API failure
+// ─────────────────────────────────────────────────────────────────────────
+
+async function callSonnetForOpportunities(prompt: string): Promise<string> {
+  console.log('Calling Claude Sonnet 4.6 for V2 opportunity generation...')
+  // 150s abort — Supabase kills the function around 200s, so we want to
+  // fail gracefully first with time left over to fall back to Gemini.
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 150000)
+  try {
     const response = await fetchWithRetry('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       signal: controller.signal,
@@ -636,165 +681,182 @@ async function detectOpportunitiesV2(
         'anthropic-dangerous-direct-browser-access': 'true'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',  // Back to Sonnet with simplified prompt
+        model: 'claude-sonnet-4-6',
         max_tokens: 12000,
         temperature: 0.7,
         system: OPPORTUNITY_SYSTEM_PROMPT_V2,
-        messages: [{
-          role: 'user',
-          content: prompt
-        }]
+        messages: [{ role: 'user', content: prompt }]
       })
     })
-
-    clearTimeout(timeoutId)
-
     if (!response.ok) {
-      console.error('Claude API error:', response.status, response.statusText)
       const errorText = await response.text()
-      console.error('Error details:', errorText)
+      console.error('Claude API error:', response.status, response.statusText, '—', errorText.substring(0, 200))
       throw new Error(`Claude API error: ${response.status}`)
     }
-
     const data = await response.json()
-    const content = data.content?.[0]?.text || ''
+    const text = data.content?.[0]?.text || ''
+    console.log('✅ Sonnet response received, length:', text.length)
+    return text
+  } finally {
+    clearTimeout(timeoutId)
+  }
+}
 
-    console.log('✅ Claude V2 response received, length:', content.length)
+async function callGeminiForOpportunities(prompt: string): Promise<string> {
+  // Same 150s abort budget. Gemini generally answers faster than Sonnet
+  // under the same load, but we don't want a slow Gemini to also kill
+  // the function.
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 150000)
+  try {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GOOGLE_API_KEY}`
+    const response = await fetch(url, {
+      method: 'POST',
+      signal: controller.signal,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: OPPORTUNITY_SYSTEM_PROMPT_V2 }] },
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 12000,
+          responseMimeType: 'application/json',
+        }
+      })
+    })
+    if (!response.ok) {
+      const errText = await response.text()
+      console.error('Gemini API error:', response.status, '—', errText.substring(0, 200))
+      throw new Error(`Gemini API error: ${response.status}`)
+    }
+    const data = await response.json()
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
+    if (!text) throw new Error('Gemini returned empty content')
+    return text
+  } finally {
+    clearTimeout(timeoutId)
+  }
+}
 
-    // Parse V2 opportunities
-    let opportunities: OpportunityV2[] = []
+// ─────────────────────────────────────────────────────────────────────────
+// Parse + validate. Model-agnostic — operates on the raw content string
+// so it works for Sonnet and Gemini alike (both may wrap JSON in ```json
+// fences, include preamble text, or truncate).
+// ─────────────────────────────────────────────────────────────────────────
+function parseAndValidateOpportunitiesV2(content: string): OpportunityV2[] {
+  let opportunities: OpportunityV2[] = []
 
-    try {
-      let cleanContent = content.trim()
+  try {
+    let cleanContent = content.trim()
 
-      // Remove markdown code fences
-      if (cleanContent.includes('```json')) {
-        const match = cleanContent.match(/```json\s*([\s\S]*?)```/)
-        if (match) cleanContent = match[1].trim()
-      } else if (cleanContent.includes('```')) {
-        const match = cleanContent.match(/```\s*([\s\S]*?)```/)
-        if (match) cleanContent = match[1].trim()
-      }
+    // Remove markdown code fences
+    if (cleanContent.includes('```json')) {
+      const match = cleanContent.match(/```json\s*([\s\S]*?)```/)
+      if (match) cleanContent = match[1].trim()
+    } else if (cleanContent.includes('```')) {
+      const match = cleanContent.match(/```\s*([\s\S]*?)```/)
+      if (match) cleanContent = match[1].trim()
+    }
 
-      // Remove any stray backticks
-      cleanContent = cleanContent.replace(/^`+\s*(?:json)?\s*\n?/, '').replace(/`+\s*$/, '').trim()
+    // Remove any stray backticks
+    cleanContent = cleanContent.replace(/^`+\s*(?:json)?\s*\n?/, '').replace(/`+\s*$/, '').trim()
 
-      opportunities = JSON.parse(cleanContent)
-      console.log('✅ Parsed V2 opportunities:', opportunities.length)
+    opportunities = JSON.parse(cleanContent)
+    console.log('✅ Parsed V2 opportunities:', opportunities.length)
 
-    } catch (e) {
-      console.error('Parse failed:', e.message)
+  } catch (e: any) {
+    console.error('Parse failed:', e.message)
 
-      // Fallback 1: Try to extract JSON array between brackets
-      const firstBracket = content.indexOf('[')
-      const lastBracket = content.lastIndexOf(']')
+    // Fallback 1: Try to extract JSON array between brackets
+    const firstBracket = content.indexOf('[')
+    const lastBracket = content.lastIndexOf(']')
 
-      if (firstBracket >= 0 && lastBracket > firstBracket) {
-        const extracted = content.substring(firstBracket, lastBracket + 1)
+    if (firstBracket >= 0 && lastBracket > firstBracket) {
+      const extracted = content.substring(firstBracket, lastBracket + 1)
+      try {
+        opportunities = JSON.parse(extracted)
+        console.log('✅ Extracted V2 opportunities:', opportunities.length)
+      } catch (e2: any) {
+        console.error('Fallback 1 parse failed:', e2.message)
+
+        // Fallback 2: Salvage complete opportunity objects from truncated JSON.
+        // Handles cases where the model's response was cut off mid-opportunity.
+        console.log('🔧 Attempting JSON repair for truncated response...')
+
         try {
-          opportunities = JSON.parse(extracted)
-          console.log('✅ Extracted V2 opportunities:', opportunities.length)
-        } catch (e2) {
-          console.error('Fallback 1 parse failed:', e2.message)
+          const arrayContent = content.substring(firstBracket + 1)
+          const salvaged: any[] = []
 
-          // Fallback 2: Try to salvage complete opportunity objects from truncated JSON
-          // This handles cases where Claude's response was cut off mid-opportunity
-          console.log('🔧 Attempting JSON repair for truncated response...')
+          // Split by object boundaries — inserts back into individual blocks
+          const opportunityBlocks = arrayContent.split(/\}\s*,\s*\{/)
 
-          try {
-            // Find all complete opportunity objects by looking for the pattern
-            // that ends each opportunity: "auto_executable": true/false, "detection_metadata": {...}}
-            const arrayContent = content.substring(firstBracket + 1)
-            const salvaged: any[] = []
-
-            // Split by the detection_metadata pattern which marks the end of each opportunity
-            const opportunityBlocks = arrayContent.split(/\}\s*,\s*\{/)
-
-            for (let i = 0; i < opportunityBlocks.length; i++) {
-              let block = opportunityBlocks[i]
-
-              // Add back the braces that split removed
-              if (i > 0) block = '{' + block
-              if (i < opportunityBlocks.length - 1) block = block + '}'
-              else {
-                // Last block - try to close it properly if truncated
-                if (!block.trim().endsWith('}')) {
-                  // Find the last complete field and close the object
-                  const lastCompleteField = block.lastIndexOf('",')
-                  if (lastCompleteField > 0) {
-                    block = block.substring(0, lastCompleteField + 1) + '}'
-                  }
+          for (let i = 0; i < opportunityBlocks.length; i++) {
+            let block = opportunityBlocks[i]
+            if (i > 0) block = '{' + block
+            if (i < opportunityBlocks.length - 1) block = block + '}'
+            else {
+              // Last block — close it if truncated mid-field
+              if (!block.trim().endsWith('}')) {
+                const lastCompleteField = block.lastIndexOf('",')
+                if (lastCompleteField > 0) {
+                  block = block.substring(0, lastCompleteField + 1) + '}'
                 }
-              }
-
-              try {
-                const parsed = JSON.parse(block)
-                if (parsed.title && parsed.execution_plan) {
-                  salvaged.push(parsed)
-                  console.log(`  ✅ Salvaged opportunity: "${parsed.title}"`)
-                }
-              } catch {
-                // This block couldn't be parsed, skip it
               }
             }
 
-            if (salvaged.length > 0) {
-              opportunities = salvaged
-              console.log(`🔧 Salvaged ${salvaged.length} opportunities from truncated response`)
-            } else {
-              console.error('Could not salvage any opportunities from truncated JSON')
-              return []
+            try {
+              const parsed = JSON.parse(block)
+              if (parsed.title && parsed.execution_plan) {
+                salvaged.push(parsed)
+                console.log(`  ✅ Salvaged opportunity: "${parsed.title}"`)
+              }
+            } catch {
+              // Block couldn't be parsed — skip
             }
-          } catch (e3) {
-            console.error('JSON repair failed:', e3.message)
+          }
+
+          if (salvaged.length > 0) {
+            opportunities = salvaged
+            console.log(`🔧 Salvaged ${salvaged.length} opportunities from truncated response`)
+          } else {
+            console.error('Could not salvage any opportunities from truncated JSON')
             return []
           }
+        } catch (e3: any) {
+          console.error('JSON repair failed:', e3.message)
+          return []
         }
-      } else {
-        console.error('Could not find JSON array in response')
-        return []
       }
-    }
-
-    // Validate V2 format
-    const validOpportunities = opportunities.filter(opp => {
-      const hasRequiredFields =
-        opp.title &&
-        opp.strategic_context &&
-        opp.execution_plan &&
-        opp.execution_plan.stakeholder_campaigns?.length > 0
-
-      if (!hasRequiredFields) {
-        console.warn(`⚠️ Filtering out invalid V2 opportunity: "${opp.title}"`)
-      }
-
-      return hasRequiredFields
-    })
-
-    console.log(`✅ Validated ${validOpportunities.length}/${opportunities.length} V2 opportunities`)
-
-    // Count total content items
-    validOpportunities.forEach(opp => {
-      const totalItems = opp.execution_plan.stakeholder_campaigns
-        .reduce((sum, campaign) => sum + campaign.content_items.length, 0)
-      console.log(`  - "${opp.title}": ${totalItems} content items across ${opp.execution_plan.stakeholder_campaigns.length} stakeholder campaigns`)
-    })
-
-    return validOpportunities
-
-  } catch (error: any) {
-    if (error.name === 'AbortError') {
-      console.error('❌ Claude API request timed out after 150 seconds - API may be slow/degraded')
     } else {
-      console.error('❌ Error in V2 opportunity detection:', error)
+      console.error('Could not find JSON array in response')
+      return []
     }
-    console.error('Error details:', {
-      message: error.message,
-      name: error.name,
-      stack: error.stack
-    })
-    return []
   }
+
+  // Validate V2 format
+  const validOpportunities = opportunities.filter(opp => {
+    const hasRequiredFields =
+      opp.title &&
+      opp.strategic_context &&
+      opp.execution_plan &&
+      opp.execution_plan.stakeholder_campaigns?.length > 0
+
+    if (!hasRequiredFields) {
+      console.warn(`⚠️ Filtering out invalid V2 opportunity: "${opp.title}"`)
+    }
+
+    return hasRequiredFields
+  })
+
+  console.log(`✅ Validated ${validOpportunities.length}/${opportunities.length} V2 opportunities`)
+
+  validOpportunities.forEach(opp => {
+    const totalItems = opp.execution_plan.stakeholder_campaigns
+      .reduce((sum, campaign) => sum + campaign.content_items.length, 0)
+    console.log(`  - "${opp.title}": ${totalItems} content items across ${opp.execution_plan.stakeholder_campaigns.length} stakeholder campaigns`)
+  })
+
+  return validOpportunities
 }
 
 /**
