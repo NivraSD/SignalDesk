@@ -618,7 +618,7 @@ async function detectOpportunitiesV2(
     organizationProfile: extractedData.organizationProfile
   })
 
-  console.log('Calling Claude Sonnet 4.5 for V2 opportunity generation...')
+  console.log('Calling Claude Sonnet 4.6 for V2 opportunity generation...')
   console.log('Prompt length:', prompt.length, 'characters')
 
   try {
