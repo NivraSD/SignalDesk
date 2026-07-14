@@ -11,28 +11,101 @@ const GEMINI_IMAGE = 'gemini-2.5-flash-image'
 
 // ── Step 1: Conceive the piece — title, emotion, and visual direction as one ──
 
-const SEEDS = [
-  'the tension of something about to begin',
-  'the relief of finally letting go of control',
-  'restlessness that wants to become movement',
-  'the ache of a project left half-finished',
-  'clarity arriving uninvited',
-  'the heaviness right before a breakthrough',
-  'wanting to create but not knowing what',
-  'the strange peace of accepting imperfection',
-  'momentum building from nothing',
-  'returning to something you abandoned',
-  'the courage it takes to start ugly',
-  'sitting with discomfort instead of escaping it',
-  'the difference between stalling and preparing',
-  'feeling ready but not starting',
-  'the pull of something unresolved',
-  'choosing difficulty over comfort',
-  'a door you keep walking past',
-  'the energy just after a decision',
-  'holding two contradictions at once',
-  'the silence before honest work begins',
-]
+// SEEDS_BY_REGISTER — feelings grouped by the emotional *territory* they
+// occupy. The generator picks a register first, then a seed within it,
+// then tells Gemini which register to stay in — otherwise every title
+// drifts back to the "motion / on-the-verge" default that dominated the
+// original single flat SEEDS array.
+const SEEDS_BY_REGISTER: Record<string, string[]> = {
+  // Becoming / threshold / on-the-verge — the original register.
+  motion: [
+    'the tension of something about to begin',
+    'the relief of finally letting go of control',
+    'restlessness that wants to become movement',
+    'the ache of a project left half-finished',
+    'the heaviness right before a breakthrough',
+    'momentum building from nothing',
+    'returning to something you abandoned',
+    'the courage it takes to start ugly',
+    'the pull of something unresolved',
+    'the energy just after a decision',
+    'a door you keep walking past',
+    'the silence before honest work begins',
+  ],
+  // States that are, not states that are becoming.
+  stillness: [
+    'a room the light always finds',
+    'weight settling into a chair',
+    'stillness that isn\'t waiting for anything',
+    'the shape a habit leaves behind',
+    'a garden nobody asked for',
+    'ordinary hours doing nothing in particular',
+    'the quiet of enough',
+    'something at rest actually resting',
+    'the strange peace of accepting imperfection',
+  ],
+  // What lingers when something is gone, or almost gone.
+  absence: [
+    'a name you almost remember',
+    'the room after everyone has left',
+    'objects that outlived their purpose',
+    'a sound that used to mean home',
+    'furniture from a house you don\'t own anymore',
+    'the space someone used to occupy',
+    'a smell that returns you somewhere',
+    'the outline of what isn\'t there',
+  ],
+  // Weather, time, light — the ambient conditions we live inside.
+  atmosphere: [
+    'the first cold morning of autumn',
+    'long light at the end of the day',
+    'the hour when weather turns',
+    'a summer that lasted too long',
+    'winter thinking about spring',
+    'grey days running into one another',
+    'light through a window in the afternoon',
+    'the specific quality of a saturday morning',
+    'the pressure right before rain',
+  ],
+  // Embodied, tactile, physical.
+  sensation: [
+    'warm water on tired hands',
+    'the weight of an old book',
+    'cold air on skin used to warmth',
+    'wet earth after rain',
+    'the give of an old chair',
+    'a stone kept warm by the sun',
+    'the sharp edge of clean sheets',
+  ],
+  // Noticing, missing, mistaking, seeing.
+  perception: [
+    'noticing what you\'d walked past for years',
+    'looking up at exactly the wrong moment',
+    'a detail you weren\'t supposed to see',
+    'catching your own reflection unaware',
+    'seeing a familiar thing at a strange angle',
+    'the second before you understand',
+    'realizing you\'ve been listening to the wrong voice',
+  ],
+  // Scale, ordinariness, being-in-time.
+  existential: [
+    'being small under a very large sky',
+    'the strangeness of being here at all',
+    'ordinary time passing extraordinarily',
+    'briefly aware of your whole life',
+    'the size of a single moment',
+    'holding two contradictions at once',
+    'wanting to create but not knowing what',
+  ],
+}
+
+function pickSeed(): { seed: string; register: string } {
+  const registers = Object.keys(SEEDS_BY_REGISTER)
+  const register = registers[Math.floor(Math.random() * registers.length)]
+  const bank = SEEDS_BY_REGISTER[register]
+  const seed = bank[Math.floor(Math.random() * bank.length)]
+  return { seed, register }
+}
 
 // APPROACHES — the *visual medium* is chosen up front rather than always
 // defaulting to abstract painting. Each entry gives Gemini a distinctive
@@ -123,30 +196,61 @@ function pickApproach() {
 interface ArtConcept {
   title: string
   emotion: string
+  register: string
   medium: string
   style: string
   palette: string
   composition: string
 }
 
+// Short guidance for each register — tells Gemini how to stay in the
+// intended emotional territory. Without this, titles drift toward
+// motion/threshold defaults regardless of which seed was picked.
+const REGISTER_GUIDANCE: Record<string, string> = {
+  motion: 'a becoming, a threshold, something on the verge — verbs of transition are natural here',
+  stillness: 'a state that IS, not a state becoming — resist verbs of motion, resist "about to"',
+  absence: 'what remains after something is gone — traces, echoes, empty spaces',
+  atmosphere: 'ambient conditions — weather, time of day, the quality of a season or an hour',
+  sensation: 'physical, embodied, tactile — what a body notices, not what a mind thinks',
+  perception: 'the act of seeing / missing / noticing — cognitive shift, not motion',
+  existential: 'scale, ordinariness, being-in-time — the strangeness of being here at all',
+}
+
+const TITLE_EXAMPLES_BY_REGISTER: Record<string, string[]> = {
+  motion: ['closer than it feels', 'the door not opened', 'what hasn\'t been built yet'],
+  stillness: ['a room the light always finds', 'the quiet of enough', 'weight settled in a chair'],
+  absence: ['the space someone used to occupy', 'a name almost remembered', 'furniture from before'],
+  atmosphere: ['saturday morning quality', 'the hour when weather turns', 'long light at the end'],
+  sensation: ['warm water on tired hands', 'the give of an old chair', 'stone kept warm by sun'],
+  perception: ['seeing at a strange angle', 'the second before understanding', 'walked past for years'],
+  existential: ['being small under a large sky', 'the size of a single moment', 'briefly aware of everything'],
+}
+
 async function conceiveArt(recentTitles: string[]): Promise<ArtConcept> {
-  const seed = SEEDS[Math.floor(Math.random() * SEEDS.length)]
+  const { seed, register } = pickSeed()
   const approach = pickApproach()
+  const guidance = REGISTER_GUIDANCE[register] || ''
+  const titleExamples = (TITLE_EXAMPLES_BY_REGISTER[register] || [])
+    .map(t => `"${t}"`)
+    .join(', ')
 
   const avoidList = recentTitles.length > 0
     ? `\nDo NOT use or closely resemble these recent titles: ${recentTitles.join(', ')}`
     : ''
 
-  const prompt = `Create a concept for a visual piece. The feeling to evoke is: "${seed}"
+  const prompt = `Create a concept for a visual piece.
+
+The REGISTER for this piece: ${register} — ${guidance}.
+The STARTING FEELING: "${seed}"
 
 The MEDIUM has already been chosen: a ${approach.medium}.
 The STYLE for that medium: ${approach.style}
 The PALETTE bias: ${approach.palette_hint}
 
-Your job: give the piece a title, name its emotional tone, refine the palette, and describe composition. The piece is NOT a painting unless the medium above says so — respect the medium.
+Your job: give the piece a title, name its emotional tone, refine the palette, and describe composition. Stay firmly in the "${register}" register — resist drifting to becoming/motion language if that isn't the register. The piece is NOT a painting unless the medium above says so — respect the medium.
 
 Respond with EXACTLY 4 lines, no labels, no extra text:
-Line 1: An evocative 3-5 word phrase (lowercase, no punctuation) that creates emotional tension — like "what hasn't been built yet" or "closer than it feels" or "the door not opened"${avoidList}
+Line 1: An evocative 3-5 word phrase (lowercase, no punctuation) in the ${register} register — examples in this register: ${titleExamples}${avoidList}
 Line 2: The specific emotion the piece should evoke (one sentence)
 Line 3: Refined colour palette (build on the palette bias, be specific with 3-5 colours or tonal moves)
 Line 4: Composition — where the visual weight sits, what the eye finds first, what's held back
@@ -202,6 +306,7 @@ ONLY these 4 lines. Nothing else.`
   const concept: ArtConcept = {
     title,
     emotion: lines[1]?.replace(/^\d+[.:)\s]*/g, '').replace(/^(emotion|line\s*2)[:\s]*/i, '').trim() || seed,
+    register,
     medium: approach.medium,
     style: approach.style,
     palette: lines[2]?.replace(/^\d+[.:)\s]*/g, '').replace(/^(palette|colors?|line\s*3)[:\s]*/i, '').trim() || approach.palette_hint,
