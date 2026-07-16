@@ -593,7 +593,9 @@ Return opportunities as a valid JSON array with proper structure.`,
 async function detectOpportunitiesV2(
   extractedData: any,
   organizationName: string,
-  organizationId: string
+  organizationId: string,
+  deadline: number,
+  detection: { model: string }
 ): Promise<OpportunityV2[]> {
 
   console.log('🚀 V2 Opportunity Detection - Building execution-ready opportunities...')
@@ -624,33 +626,47 @@ async function detectOpportunitiesV2(
 
   console.log('Prompt length:', prompt.length, 'characters')
 
-  // ── Try Sonnet first; fall back to Gemini only if the API CALL itself
-  //    fails (timeout / 5xx). Parse errors don't trigger fallback — they
-  //    indicate a real bug, not throttling.
+  // ── Gemini Flash is primary: Sonnet emits this prompt's ~12k tokens at a
+  //    rate that doesn't reliably fit the gateway window, which is what made
+  //    this endpoint 504. Flash clears it with room to spare. Sonnet stays on
+  //    as fallback for its stronger execution plans, funded by whatever budget
+  //    Gemini leaves. Fallback fires only when the API CALL fails (timeout /
+  //    5xx) — a parse error is a real bug, and retrying it on another model
+  //    would mask it.
   let content = ''
+  if (!GOOGLE_API_KEY) {
+    console.error('No GOOGLE_API_KEY configured — cannot call Gemini')
+    return []
+  }
+
   try {
-    content = await callSonnetForOpportunities(prompt)
-  } catch (sonnetErr: any) {
-    if (sonnetErr.name === 'AbortError') {
-      console.error('❌ Sonnet timed out after 150 seconds — API may be slow/degraded')
+    content = await callGeminiForOpportunities(prompt, Math.min(GEMINI_MAX_MS, msLeft(deadline)))
+    detection.model = 'gemini-2.5-flash'
+    console.log('✅ Gemini response received, length:', content.length)
+  } catch (geminiErr: any) {
+    if (geminiErr.name === 'AbortError') {
+      console.error('❌ Gemini timed out — API may be slow/degraded')
     } else {
-      console.error('❌ Sonnet call failed:', sonnetErr.message)
+      console.error('❌ Gemini call failed:', geminiErr.message)
     }
 
-    if (!GOOGLE_API_KEY) {
-      console.error('No GOOGLE_API_KEY configured — cannot fall back to Gemini')
+    // Only worth waking Sonnet if enough of the window survives to finish.
+    const remaining = msLeft(deadline)
+    if (remaining < 20000) {
+      console.error(`❌ Only ${Math.round(remaining/1000)}s left — too little for a Sonnet fallback, returning []`)
       return []
     }
 
     try {
-      console.log('🔄 Falling back to Gemini 2.5 Flash...')
-      content = await callGeminiForOpportunities(prompt)
-      console.log('✅ Gemini fallback succeeded, length:', content.length)
-    } catch (geminiErr: any) {
-      if (geminiErr.name === 'AbortError') {
-        console.error('❌ Gemini fallback also timed out after 150 seconds')
+      console.log('🔄 Falling back to Claude Sonnet 4.6...')
+      content = await callSonnetForOpportunities(prompt, remaining)
+      detection.model = 'claude-sonnet-4-6-fallback'
+      console.log('✅ Sonnet fallback succeeded, length:', content.length)
+    } catch (sonnetErr: any) {
+      if (sonnetErr.name === 'AbortError') {
+        console.error('❌ Sonnet fallback also timed out')
       } else {
-        console.error('❌ Gemini fallback failed:', geminiErr.message)
+        console.error('❌ Sonnet fallback failed:', sonnetErr.message)
       }
       return []
     }
@@ -664,12 +680,21 @@ async function detectOpportunitiesV2(
 // LLM callers — return raw text content, throw on API failure
 // ─────────────────────────────────────────────────────────────────────────
 
-async function callSonnetForOpportunities(prompt: string): Promise<string> {
-  console.log('Calling Claude Sonnet 4.6 for V2 opportunity generation...')
-  // 150s abort — Supabase kills the function around 200s, so we want to
-  // fail gracefully first with time left over to fall back to Gemini.
+// TIMEOUT BUDGET — the edge gateway hard-caps the request at ~150s and
+// kills the worker before it can flush logs, so an overrun surfaces as a
+// bare 504 with no trace of the run. Per-leg timeouts can't prevent that:
+// two legs with their own budgets sum past the cap. So every leg draws
+// from ONE deadline stamped at request start. However the legs fail, they
+// cannot collectively outlive the window.
+const REQUEST_BUDGET_MS = 135000  // ~15s headroom under the cap for parse + DB writes
+const GEMINI_MAX_MS = 75000       // Flash with thinking off lands well inside this
+
+const msLeft = (deadline: number) => deadline - Date.now()
+
+async function callSonnetForOpportunities(prompt: string, budgetMs: number): Promise<string> {
+  console.log(`Calling Claude Sonnet 4.6 for V2 opportunity generation (${Math.round(budgetMs/1000)}s budget)...`)
   const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), 150000)
+  const timeoutId = setTimeout(() => controller.abort(), budgetMs)
   try {
     const response = await fetchWithRetry('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -702,12 +727,10 @@ async function callSonnetForOpportunities(prompt: string): Promise<string> {
   }
 }
 
-async function callGeminiForOpportunities(prompt: string): Promise<string> {
-  // Same 150s abort budget. Gemini generally answers faster than Sonnet
-  // under the same load, but we don't want a slow Gemini to also kill
-  // the function.
+async function callGeminiForOpportunities(prompt: string, budgetMs: number): Promise<string> {
+  console.log(`Calling Gemini 2.5 Flash for V2 opportunity generation (${Math.round(budgetMs/1000)}s budget)...`)
   const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), 150000)
+  const timeoutId = setTimeout(() => controller.abort(), budgetMs)
   try {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GOOGLE_API_KEY}`
     const response = await fetch(url, {
@@ -721,6 +744,10 @@ async function callGeminiForOpportunities(prompt: string): Promise<string> {
           temperature: 0.7,
           maxOutputTokens: 12000,
           responseMimeType: 'application/json',
+          // 2.5 Flash thinks by default on a dynamic budget: it adds latency
+          // and its thinking tokens are charged against maxOutputTokens, which
+          // can starve a 12k-token execution plan. Off — this is the fast path.
+          thinkingConfig: { thinkingBudget: 0 },
         }
       })
     })
@@ -916,6 +943,12 @@ serve(async (req) => {
     return new Response(null, { status: 204, headers: corsHeaders });
   }
 
+  // Stamped before any work: extraction and embedding spend from the same
+  // window the LLM legs do, so the budget reflects the whole request.
+  const deadline = Date.now() + REQUEST_BUDGET_MS;
+  // Which model actually produced the opportunities — set by detectOpportunitiesV2.
+  const detection = { model: 'none' };
+
   try {
     let {
       organization_id,
@@ -999,7 +1032,9 @@ serve(async (req) => {
     let opportunitiesV2 = await detectOpportunitiesV2(
       extractedData,
       organization_name,
-      organization_id
+      organization_id,
+      deadline,
+      detection
     )
 
     console.log(`✅ V2 Detection Complete: Found ${opportunitiesV2.length} execution-ready opportunities`);
@@ -1258,7 +1293,7 @@ serve(async (req) => {
             sum + opp.execution_plan.stakeholder_campaigns
               .reduce((s, c) => s + c.content_items.length, 0), 0
           ),
-          detection_method: 'claude-sonnet-4-6',
+          detection_method: detection.model,
           detection_version: '2.0',
           timestamp: new Date().toISOString()
         }
