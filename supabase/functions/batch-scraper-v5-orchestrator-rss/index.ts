@@ -9,6 +9,19 @@ import { corsHeaders } from '../_shared/cors.ts';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
+// Every feed fetch is bounded: Deno's fetch has NO default timeout, so a
+// server that accepts the socket but never responds blocks the await forever.
+// With 169 sources this previously froze the whole run in 'running' — the row
+// never reached its completion update. See discoverViaRSS.
+const FETCH_TIMEOUT_MS = 12000;
+// Process sources concurrently: 169 sources fetched one-at-a-time can't finish
+// inside the edge gateway's wall-clock window even when none hang.
+const CONCURRENCY = 12;
+// Hard stop before the gateway kills the worker: past this, we stop starting
+// new sources and finalize the batch row with whatever we've got. Guarantees
+// the run always leaves 'running', even under a wave of slow feeds.
+const RUN_DEADLINE_MS = 110000;
+
 interface Source {
   id: string;
   source_name: string;
@@ -83,116 +96,140 @@ serve(async (req) => {
     let duplicateArticles = 0;
     let sourcesSuccessful = 0;
     let sourcesFailed = 0;
+    let sourcesSkipped = 0;
     const errors: any[] = [];
 
-    console.log('📡 Discovering articles via RSS...\n');
+    // 2-day age filter — tightened from 7 days to keep stale items out of the pipeline.
+    const maxAgeDays = 2;
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - maxAgeDays);
 
-    for (const source of sources || []) {
-      try {
-        const articles = await discoverViaRSS(source);
+    const deadline = startTime + RUN_DEADLINE_MS;
+    const queue = [...(sources || [])];
 
-        if (articles.length === 0) {
-          console.log(`   ⚠️  ${source.source_name}: No RSS feed found`);
-          sourcesFailed++;
-          errors.push({ source: source.source_name, error: 'No valid RSS feed' });
+    console.log(`📡 Discovering articles via RSS (${queue.length} sources, ${CONCURRENCY} at a time)...\n`);
+
+    // Process one source end-to-end: fetch feed → dedup → insert new → update metrics.
+    const processSource = async (source: Source) => {
+      const articles = await discoverViaRSS(source);
+
+      if (articles.length === 0) {
+        sourcesFailed++;
+        errors.push({ source: source.source_name, error: 'No valid RSS feed' });
+        console.log(`   ⚠️  ${source.source_name}: No RSS feed found`);
+        return;
+      }
+
+      totalArticles += articles.length;
+
+      const { data: existingUrls } = await supabase
+        .from('raw_articles')
+        .select('url')
+        .eq('source_id', source.id);
+      const existingUrlSet = new Set((existingUrls || []).map(r => r.url));
+
+      let sourceNewArticles = 0;
+      let skippedOldArticles = 0;
+
+      for (const article of articles) {
+        if (existingUrlSet.has(article.url)) {
+          duplicateArticles++;
           continue;
         }
-
-        totalArticles += articles.length;
-
-        // Check for duplicates
-        const { data: existingUrls } = await supabase
-          .from('raw_articles')
-          .select('url')
-          .eq('source_id', source.id);
-
-        const existingUrlSet = new Set((existingUrls || []).map(r => r.url));
-
-        // Insert new articles (filter out articles older than 2 days)
-        // Tightened from 7 days to prevent old articles polluting the pipeline
-        const maxAgeDays = 2;
-        const cutoffDate = new Date();
-        cutoffDate.setDate(cutoffDate.getDate() - maxAgeDays);
-
-        let sourceNewArticles = 0;
-        let skippedOldArticles = 0;
-
-        for (const article of articles) {
-          if (existingUrlSet.has(article.url)) {
-            duplicateArticles++;
+        if (article.published_at) {
+          const pubDate = new Date(article.published_at);
+          if (pubDate < cutoffDate) {
+            skippedOldArticles++;
             continue;
-          }
-
-          // Skip articles older than cutoff date
-          if (article.published_at) {
-            const pubDate = new Date(article.published_at);
-            if (pubDate < cutoffDate) {
-              skippedOldArticles++;
-              continue;
-            }
-          }
-
-          const { error: insertError } = await supabase
-            .from('raw_articles')
-            .insert({
-              source_id: source.id,
-              source_name: source.source_name,
-              url: article.url,
-              title: article.title,
-              description: article.description,
-              author: article.author,
-              published_at: article.published_at,
-              raw_metadata: { ...article.raw_metadata, discovery_method: 'rss' },
-              content_length: 0,
-              processed: false,
-              scrape_priority: source.tier,
-              scrape_status: 'pending',
-              scrape_attempts: 0
-            });
-
-          if (!insertError) {
-            newArticles++;
-            sourceNewArticles++;
-          } else if (insertError.code === '23505') {
-            duplicateArticles++;
           }
         }
 
-        // Update source metrics
-        await supabase
-          .from('source_registry')
-          .update({
-            last_successful_scrape: new Date().toISOString(),
-            consecutive_failures: 0
-          })
-          .eq('id', source.id);
+        const { error: insertError } = await supabase
+          .from('raw_articles')
+          .insert({
+            source_id: source.id,
+            source_name: source.source_name,
+            url: article.url,
+            title: article.title,
+            description: article.description,
+            author: article.author,
+            published_at: article.published_at,
+            raw_metadata: { ...article.raw_metadata, discovery_method: 'rss' },
+            content_length: 0,
+            processed: false,
+            scrape_priority: source.tier,
+            scrape_status: 'pending',
+            scrape_attempts: 0
+          });
 
-        sourcesSuccessful++;
-        const oldSkipMsg = skippedOldArticles > 0 ? ` (${skippedOldArticles} old skipped)` : '';
-        console.log(`   ✅ ${source.source_name}: ${sourceNewArticles} new / ${articles.length} total${oldSkipMsg}`);
-
-      } catch (error: any) {
-        sourcesFailed++;
-        errors.push({ source: source.source_name, error: error.message });
-        console.error(`   ❌ ${source.source_name}: ${error.message}`);
+        if (!insertError) {
+          newArticles++;
+          sourceNewArticles++;
+        } else if (insertError.code === '23505') {
+          duplicateArticles++;
+        }
       }
+
+      await supabase
+        .from('source_registry')
+        .update({
+          last_successful_scrape: new Date().toISOString(),
+          consecutive_failures: 0
+        })
+        .eq('id', source.id);
+
+      sourcesSuccessful++;
+      const oldSkipMsg = skippedOldArticles > 0 ? ` (${skippedOldArticles} old skipped)` : '';
+      console.log(`   ✅ ${source.source_name}: ${sourceNewArticles} new / ${articles.length} total${oldSkipMsg}`);
+    };
+
+    // Concurrency pool: CONCURRENCY workers pull from a shared queue until it's
+    // empty or the deadline passes. A single slow/hung source can no longer
+    // stall the run — it's bounded by FETCH_TIMEOUT_MS and only occupies one slot.
+    const worker = async () => {
+      while (queue.length > 0) {
+        if (Date.now() >= deadline) {
+          sourcesSkipped += queue.length;
+          queue.length = 0;
+          break;
+        }
+        const source = queue.shift();
+        if (!source) break;
+        try {
+          await processSource(source);
+        } catch (error: any) {
+          sourcesFailed++;
+          errors.push({ source: source.source_name, error: error.message });
+          console.error(`   ❌ ${source.source_name}: ${error.message}`);
+        }
+      }
+    };
+
+    await Promise.all(Array.from({ length: CONCURRENCY }, () => worker()));
+
+    if (sourcesSkipped > 0) {
+      console.warn(`⏱️  Hit ${RUN_DEADLINE_MS / 1000}s deadline — ${sourcesSkipped} sources skipped this run`);
     }
 
     const duration = Math.floor((Date.now() - startTime) / 1000);
 
     // Update batch run with results
+    const errorSummary = [...errors];
+    if (sourcesSkipped > 0) {
+      errorSummary.push({ source: '__run__', error: `deadline reached: ${sourcesSkipped} sources skipped` });
+    }
     await supabase
       .from('batch_scrape_runs')
       .update({
         completed_at: new Date().toISOString(),
-        status: sourcesFailed > 0 ? 'partial' : 'completed',
+        status: (sourcesFailed > 0 || sourcesSkipped > 0) ? 'partial' : 'completed',
         sources_targeted: sources?.length || 0,
         sources_successful: sourcesSuccessful,
         sources_failed: sourcesFailed,
         articles_discovered: totalArticles,
         articles_new: newArticles,
         duration_seconds: duration,
-        error_summary: errors.length > 0 ? errors : null
+        error_summary: errorSummary.length > 0 ? errorSummary : null
       })
       .eq('id', runId);
 
@@ -257,9 +294,12 @@ async function discoverViaRSS(source: Source): Promise<any[]> {
       console.log(`   🔍 Trying configured RSS URL: ${configuredUrl}`);
 
       // Use redirect: 'follow' to handle 301/302 redirects (e.g., FT redirects to /rss/home/uk)
+      // AbortSignal.timeout bounds both the connection AND the body read, so a
+      // dead feed fails fast instead of hanging the run.
       const response = await fetch(configuredUrl, {
         headers: { 'User-Agent': 'SignalDesk-Scraper/5.0' },
-        redirect: 'follow'
+        redirect: 'follow',
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS)
       });
 
       if (response.ok) {
@@ -290,7 +330,8 @@ async function discoverViaRSS(source: Source): Promise<any[]> {
   for (const rssUrl of rssUrls) {
     try {
       const response = await fetch(rssUrl, {
-        headers: { 'User-Agent': 'SignalDesk-Scraper/5.0' }
+        headers: { 'User-Agent': 'SignalDesk-Scraper/5.0' },
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS)
       });
 
       if (!response.ok) continue;
