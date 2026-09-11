@@ -19,7 +19,8 @@ import { corsHeaders } from '../_shared/cors.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')!;
+const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
+const GOOGLE_API_KEY = Deno.env.get('GOOGLE_AI_API_KEY') || Deno.env.get('GEMINI_API_KEY') || Deno.env.get('GOOGLE_API_KEY');
 
 const DEFAULT_HOURS_BACK = 24;
 
@@ -208,7 +209,53 @@ function buildIntelligenceContext(profile: any, orgName: string, industry: strin
   return parts.join('\n');
 }
 
-// Use Claude to score article relevance (from V4)
+// Shared AI caller: Gemini 2.5 Flash primary (JSON mode + thinking disabled),
+// Claude fallback. Mirrors generate-outcome-predictions. gemini-2.5-flash's
+// default thinking eats a small token budget and truncates output, so we set
+// thinkingConfig.thinkingBudget=0 and responseMimeType=application/json.
+async function callAI(prompt: string, maxTokens = 1500): Promise<string> {
+  if (GOOGLE_API_KEY) {
+    try {
+      const resp = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GOOGLE_API_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.3, maxOutputTokens: maxTokens, responseMimeType: 'application/json', thinkingConfig: { thinkingBudget: 0 } }
+          }),
+          signal: AbortSignal.timeout(55000)
+        }
+      );
+      if (resp.ok) {
+        const data = await resp.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        if (text) return text;
+      }
+      console.warn(`Gemini ${resp.status}, falling back to Claude`);
+    } catch (err: any) {
+      console.warn(`Gemini failed: ${err.message}, falling back to Claude`);
+    }
+  }
+  if (ANTHROPIC_API_KEY) {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'x-api-key': ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: maxTokens, messages: [{ role: 'user', content: prompt }] }),
+      signal: AbortSignal.timeout(60000)
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      const text = data.content?.[0]?.text || '';
+      if (text) return text;
+    }
+    throw new Error(`Claude API error: ${resp.status}`);
+  }
+  throw new Error('No AI API key configured');
+}
+
+// Score article relevance via callAI (Gemini primary, Claude fallback)
 async function scoreArticlesWithClaude(
   articles: Array<{ id: string; title: string; source: string; matched_targets: string[] }>,
   intelligenceContext: string,
@@ -249,27 +296,8 @@ ${articleList}
 Return ONLY a JSON array of ${articles.length} integers, nothing else:`;
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-3-5-haiku-20241022',
-        max_tokens: 1500,
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
-
-    if (!response.ok) {
-      console.error(`Claude API error: ${response.status}`);
-      return new Map();
-    }
-
-    const data = await response.json();
-    const content = data.content[0].text.trim();
+    // Gemini 2.5 Flash primary (JSON mode + thinking disabled), Claude fallback
+    const content = (await callAI(prompt, 1500)).trim();
 
     // Extract JSON array - find the FIRST complete array by matching brackets
     const bracketStart = content.indexOf('[');
