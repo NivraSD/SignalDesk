@@ -408,7 +408,12 @@ serve(async (req) => {
     console.log(`   Critical sources: ${criticalSources.size}, High: ${highPrioritySources.size}`);
     console.log(`   Blocked sources: ${blockedSources.size}`);
 
-    // Calculate sinceTime: either midnight UTC today or rolling hours_back
+    // Calculate sinceTime: window is anchored on the LAST REPORT (executive_synthesis),
+    // i.e. "everything new since we last produced a report" — capped so a long gap
+    // (an org that hasn't run in months) doesn't pull the entire backlog. Recency is
+    // judged on when an article entered our system (matched_at, enforced in STEP 1),
+    // NOT on the article's own published_at (which is often a day+ old for real news).
+    const MAX_LOOKBACK_DAYS = 3;
     let sinceTime: string;
     if (useToday) {
       // Get midnight UTC today
@@ -417,7 +422,18 @@ serve(async (req) => {
       sinceTime = today.toISOString();
       console.log(`   Using TODAY mode: since ${sinceTime}`);
     } else {
-      sinceTime = new Date(Date.now() - hoursBack * 60 * 60 * 1000).toISOString();
+      const capFloor = new Date(Date.now() - MAX_LOOKBACK_DAYS * 24 * 60 * 60 * 1000);
+      const { data: lastReport } = await supabase
+        .from('executive_synthesis')
+        .select('created_at')
+        .eq('organization_id', organizationId)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      const lastReportAt = lastReport?.[0]?.created_at ? new Date(lastReport[0].created_at) : null;
+      // Use the MORE RECENT of (last report time, the 3-day cap floor)
+      const anchor = (lastReportAt && lastReportAt > capFloor) ? lastReportAt : capFloor;
+      sinceTime = anchor.toISOString();
+      console.log(`   Window since last report: ${lastReportAt ? lastReportAt.toISOString() : 'none'} (capped ${MAX_LOOKBACK_DAYS}d) -> since ${sinceTime}`);
     }
 
     // Get intelligence targets
@@ -475,37 +491,26 @@ serve(async (req) => {
           continue;
         }
 
-        // Filter 3: Old articles - Two-tier date filtering
-        // - If published_at exists: use STRICT 2-day window (user wants recent articles)
-        // - If published_at is NULL: require published_at for certain sources known
-        //   to scrape old articles (BoF, etc.), otherwise use created_at fallback
-        // NOTE: 2-day window still let in stale articles - tightened to 1 day
-        const MAX_PUBLISHED_AGE_DAYS = 1;  // STRICT: Only articles from last 24 hours
-        const MAX_CREATED_AGE_HOURS = 24;  // 1-day window for created_at fallback
+        // Filter 3: Recency is anchored on the LAST REPORT (matched_at >= sinceTime,
+        // enforced in STEP 1's query). Here we only guard against bad/absurd publish dates:
+        //   - future dates (bad date extraction)
+        //   - true archive dumps (published far in the past, e.g. BoF scraping old articles)
+        // We deliberately do NOT drop articles just because published_at is >24h old —
+        // real news is routinely a day or two old, and the matched_at window already
+        // ensures the article is new to us since the last report.
+        const ARCHIVE_MAX_DAYS = 14;
 
         // Sources that often scrape old articles without extracting dates - REQUIRE published_at
         const REQUIRE_PUBLISHED_AT = ['business of fashion', 'bof'];
         const requiresDate = REQUIRE_PUBLISHED_AT.some(s => srcLower.includes(s));
 
         if (a.published_at) {
-          // Has published_at - use generous window
-          const maxAgeMs = MAX_PUBLISHED_AGE_DAYS * 24 * 60 * 60 * 1000;
-          const maxAgeDate = new Date(Date.now() - maxAgeMs);
           const now = new Date();
-          try {
-            const articleDate = new Date(a.published_at);
-            // Filter out FUTURE dates (bad date extraction) - allow 1 day tolerance
-            const oneDayFromNow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-            if (articleDate > oneDayFromNow) {
-              filteredOld++;
-              continue;
-            }
-            if (articleDate < maxAgeDate) {
-              filteredOld++;
-              continue;
-            }
-          } catch {
-            // Date parsing failed - skip to be safe
+          const oneDayFromNow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+          const archiveFloor = new Date(now.getTime() - ARCHIVE_MAX_DAYS * 24 * 60 * 60 * 1000);
+          const articleDate = new Date(a.published_at);
+          if (isNaN(articleDate.getTime()) || articleDate > oneDayFromNow || articleDate < archiveFloor) {
+            // Unparseable, future, or archive-old date
             filteredOld++;
             continue;
           }
@@ -514,25 +519,9 @@ serve(async (req) => {
           // (e.g., Business of Fashion often scrapes old articles without dates)
           filteredOld++;
           continue;
-        } else if (a.created_at) {
-          // No published_at - use STRICT window on created_at
-          const maxAgeMs = MAX_CREATED_AGE_HOURS * 60 * 60 * 1000;
-          const maxAgeDate = new Date(Date.now() - maxAgeMs);
-          try {
-            const createdDate = new Date(a.created_at);
-            if (createdDate < maxAgeDate) {
-              filteredOld++;
-              continue;
-            }
-          } catch {
-            filteredOld++;
-            continue;
-          }
-        } else {
-          // No date at all - skip
-          filteredOld++;
-          continue;
         }
+        // else: no published_at from a normal source — keep it; the matched_at window
+        // (STEP 1) already gates recency to "since the last report".
 
         // Filter 4 (Stage 2): Industry-irrelevant sources
         // Skip think tanks, policy orgs for marketing/advertising companies
