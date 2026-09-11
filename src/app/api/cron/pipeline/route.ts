@@ -17,6 +17,7 @@ const SCOPED_ORG_IDS = [
   'f1679f68-73c3-420d-a427-1bdbb325cdad', // Palantir
   '3a417215-a49f-4885-9a4b-08ac1f51ca31', // Mitsui & Co.
   '888a79a0-fa6e-4125-8c97-74a0c3ae9fa7', // nivria
+  '85a0ec25-9090-43ea-822b-ebcaae69f806', // Humain
 ]
 
 // Pipeline stages in order. Each stage calls a Supabase edge function.
