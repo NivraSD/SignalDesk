@@ -231,7 +231,7 @@ export async function callClaude(
   systemPrompt: string,
   messages: { role: string; content: string }[],
   maxTokens = 800,
-  model = 'claude-sonnet-4-6'
+  model = 'claude-sonnet-5'
 ) {
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -243,6 +243,9 @@ export async function callClaude(
     body: JSON.stringify({
       model,
       max_tokens: maxTokens,
+      // Sonnet 5 runs adaptive thinking when `thinking` is omitted, and
+      // max_tokens caps thinking + reply together — at 800 that truncates.
+      thinking: { type: 'disabled' },
       system: systemPrompt,
       messages,
     }),
