@@ -19,6 +19,8 @@ function escapeNewlinesInStrings(json: string): string {
   return out
 }
 
+let SA_PROBLEM = 'Google service account not configured'
+
 function parseServiceAccount(raw: string | undefined): any {
   if (!raw) return null
   const attempts = [
@@ -26,13 +28,19 @@ function parseServiceAccount(raw: string | undefined): any {
     () => JSON.parse(escapeNewlinesInStrings(raw)),
     () => JSON.parse(atob(raw.trim())),
   ]
+  const keysSeen: string[] = []
   for (const attempt of attempts) {
     try {
       const sa = attempt()
       if (sa?.client_email && sa?.private_key) return sa
+      if (sa && typeof sa === 'object') keysSeen.push(...Object.keys(sa))
     } catch { /* try the next format */ }
   }
-  console.error('Failed to parse GOOGLE_SERVICE_ACCOUNT: not JSON, newline-mangled JSON, or base64 JSON')
+  // Describe the shape (never the contents) so a bad secret can be fixed.
+  SA_PROBLEM = keysSeen.length
+    ? `GOOGLE_SERVICE_ACCOUNT is JSON but not a service-account key (fields: ${[...new Set(keysSeen)].join(', ')})`
+    : `GOOGLE_SERVICE_ACCOUNT is not JSON (${raw.length} chars, starts with ${JSON.stringify(raw.trim()[0] ?? '')})`
+  console.error(SA_PROBLEM)
   return null
 }
 
@@ -99,7 +107,7 @@ Deno.serve(async (req: Request) => {
 
   try {
     if (!GOOGLE_SERVICE_ACCOUNT) {
-      return errorResponse('Google service account not configured', 500)
+      return errorResponse(SA_PROBLEM, 500)
     }
 
     const { action, calendarId, event, timeMin, timeMax } = await req.json()
