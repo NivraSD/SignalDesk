@@ -6,6 +6,7 @@ import { useVisionBoard } from '@/hooks/useVisionBoard'
 import DailyQuote from './DailyQuote'
 import PyramidSection from './PyramidSection'
 import TodaySchedule from './TodaySchedule'
+import PillTracker from './PillTracker'
 
 
 export default function HomePage() {
@@ -78,6 +79,10 @@ export default function HomePage() {
 
       <div className="bg-white rounded-2xl p-3 shadow-sm">
         <PyramidSection />
+      </div>
+
+      <div className="bg-white rounded-2xl p-4 shadow-sm">
+        <PillTracker />
       </div>
 
       <div className="bg-white rounded-2xl p-4 shadow-sm">

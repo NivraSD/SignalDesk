@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { AREAS } from '@/lib/constants'
 import { useJournal } from '@/hooks/useJournal'
 import { useCalendar } from '@/hooks/useCalendar'
-import { getToday } from '@/lib/utils'
+import { getToday, getTomorrow } from '@/lib/utils'
 import type { TomorrowSchedule } from '@/types'
 
 // Unified item type for the merged list
@@ -66,7 +66,7 @@ export default function TodaySchedule({ todaySchedule, tomorrowSchedule }: Today
   const { entries, addEntry, updateEntry, deleteEntry, toggleComplete } = useJournal()
   const { createEvent } = useCalendar()
   const today = getToday()
-  const tomorrow = (() => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().split('T')[0] })()
+  const tomorrow = getTomorrow()
   const [calendarAdded, setCalendarAdded] = useState<Set<string>>(new Set())
   const [addingId, setAddingId] = useState<string | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)

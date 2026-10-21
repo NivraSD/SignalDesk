@@ -1,16 +1,24 @@
-import { DAILY_QUOTES, DAYS_OF_WEEK } from './constants'
+import { DAILY_QUOTES, DAYS_OF_WEEK, TIMEZONE } from './constants'
 import type { Area, CheckIn, Reminder } from '@/types'
 
-export const getToday = () => new Date().toISOString().split('T')[0]
+// All "what day is it" logic runs in TIMEZONE, not UTC — otherwise the date flips at 8pm Eastern.
+export const toDayISO = (d: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: TIMEZONE }).format(d)
 
-export const getYesterday = () => {
-  const d = new Date()
-  d.setDate(d.getDate() - 1)
-  return d.toISOString().split('T')[0]
+export const getToday = () => toDayISO(new Date())
+
+// Add n days to a YYYY-MM-DD string.
+export const shiftDay = (iso: string, n: number) => {
+  const d = new Date(iso + 'T00:00:00Z')
+  d.setUTCDate(d.getUTCDate() + n)
+  return d.toISOString().slice(0, 10)
 }
 
+export const getYesterday = () => shiftDay(getToday(), -1)
+
+export const getTomorrow = () => shiftDay(getToday(), 1)
+
 export const getGreeting = () => {
-  const hour = new Date().getHours()
+  const hour = Number(new Intl.DateTimeFormat('en-US', { timeZone: TIMEZONE, hour: 'numeric', hourCycle: 'h23' }).format(new Date()))
   if (hour < 12) return 'Good morning'
   if (hour < 17) return 'Good afternoon'
   return 'Good evening'
@@ -25,16 +33,10 @@ export const getDailyQuote = () => {
 }
 
 export const getWeekDates = (weekOffset = 0) => {
-  const today = new Date()
-  const startOfWeek = new Date(today)
-  startOfWeek.setDate(today.getDate() - today.getDay() + weekOffset * 7)
-  const dates: string[] = []
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(startOfWeek)
-    d.setDate(startOfWeek.getDate() + i)
-    dates.push(d.toISOString().split('T')[0])
-  }
-  return dates
+  const today = getToday()
+  const dayOfWeek = new Date(today + 'T00:00:00Z').getUTCDay()
+  const startOfWeek = shiftDay(today, -dayOfWeek + weekOffset * 7)
+  return Array.from({ length: 7 }, (_, i) => shiftDay(startOfWeek, i))
 }
 
 export const getFrequencyLabel = (reminder: Reminder) => {

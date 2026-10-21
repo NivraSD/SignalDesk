@@ -16,7 +16,16 @@ export const PYRAMID_LEVELS: PyramidLevel[] = [
   { text: 'Goals', width: '100%', bg: 'from-amber-300 to-amber-400' },
 ]
 
+export const TIMEZONE = 'America/New_York'
+
 export const TIME_OF_DAY = ['Morning', 'Afternoon', 'Evening', 'Night']
+
+export const PILL_SLOTS = [
+  { id: 'morning', label: 'Morning' },
+  { id: 'afternoon', label: 'Afternoon' },
+  { id: 'evening', label: 'Evening' },
+  { id: 'night', label: 'Night' },
+] as const
 export const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 export const FREQUENCY_OPTIONS: FrequencyOption[] = [

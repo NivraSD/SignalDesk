@@ -82,6 +82,10 @@ export interface Reminder {
   updated_at?: string
 }
 
+// Pill tracker: slot id -> ISO time taken (missing = not taken)
+export type PillSlot = 'morning' | 'afternoon' | 'evening' | 'night'
+export type PillChecks = Partial<Record<PillSlot, string>>
+
 // Activity bank item
 export interface Activity {
   id?: string
