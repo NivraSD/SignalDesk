@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getYesterday } from '@/lib/utils'
+import { AREAS } from '@/lib/constants'
 import { useCheckins } from '@/hooks/useCheckins'
 import { useVisionBoard } from '@/hooks/useVisionBoard'
 import { useMorningCheckin } from '@/hooks/useMorningCheckin'
@@ -42,9 +43,13 @@ export default function HomePage() {
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 space-y-0.5">
                 <p className="text-xs text-stone-400 uppercase tracking-wide">This morning</p>
-                <p className="text-sm text-stone-700">
-                  {[morning.body, morning.mind, morning.word].filter(Boolean).join(' · ') || 'Arrived'}
-                </p>
+                <div className="flex flex-wrap gap-x-3 gap-y-1">
+                  {AREAS.filter((a) => morning.areas?.[a.id]?.score).map((a) => (
+                    <span key={a.id} className="text-sm text-stone-700 tabular-nums" title={a.name}>
+                      <span style={{ color: a.color }}>{a.icon}</span> {morning.areas[a.id].score}
+                    </span>
+                  ))}
+                </div>
                 {morning.intention && <p className="text-sm text-stone-500 italic">Just for today: {morning.intention}</p>}
               </div>
               <button onClick={() => navigate('/morning')} className="flex-none text-xs text-stone-500">

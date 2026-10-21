@@ -53,13 +53,17 @@ export interface CheckIn {
   updated_at?: string
 }
 
-// Morning check-in: present-only arrival + which plan today follows
+// Morning check-in per area: how it feels right now (present tense, not a review)
+export interface MorningAreaData {
+  score?: number
+  note?: string
+}
+
+// Morning check-in: present-only, by area, + which plan today follows
 export interface MorningCheckIn {
   user_id?: string
   checkin_date: string
-  body?: string | null
-  mind?: string | null
-  word?: string | null
+  areas: Record<string, MorningAreaData>
   plan_choice: 'keep' | 'new'
   today_schedule?: TomorrowSchedule | null
   intention?: string | null
