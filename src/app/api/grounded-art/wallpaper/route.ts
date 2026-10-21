@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { compositeWallpaper, loadCaptionFont } from '@/lib/grounded-overlay'
 
 // Each run serves a different piece from the library (see grounded_pick_wallpaper).
 // GET /api/grounded-art/wallpaper?key=API_KEY — returns JSON {title, image_url}
 // GET /api/grounded-art/wallpaper?key=API_KEY&get=title — returns plain text title
 // GET /api/grounded-art/wallpaper?key=API_KEY&get=image — redirects to image
+// GET /api/grounded-art/wallpaper?key=API_KEY&get=captioned — JPEG with the title on black bars (one call)
 
-export const maxDuration = 10
+export const maxDuration = 30
 export const dynamic = 'force-dynamic'
 
 const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co'
@@ -41,6 +43,20 @@ export async function GET(req: NextRequest) {
     if (get === 'title') {
       return new Response(latest.title, {
         headers: { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' },
+      })
+    }
+
+    if (get === 'captioned') {
+      const [font, img] = await Promise.all([
+        loadCaptionFont(url.origin),
+        fetch(latest.image_url).then(async (r) => {
+          if (!r.ok) throw new Error(`image fetch ${r.status}`)
+          return Buffer.from(await r.arrayBuffer())
+        }),
+      ])
+      const jpeg = await compositeWallpaper(img, latest.title, font)
+      return new Response(new Uint8Array(jpeg), {
+        headers: { 'Content-Type': 'image/jpeg', 'Cache-Control': 'no-store' },
       })
     }
 
