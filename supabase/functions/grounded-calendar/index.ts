@@ -4,14 +4,39 @@
 import { corsHeaders, handleCors, jsonResponse, errorResponse } from '../_shared/cors.ts'
 
 const GOOGLE_SERVICE_ACCOUNT_JSON = Deno.env.get('GOOGLE_SERVICE_ACCOUNT')
-let GOOGLE_SERVICE_ACCOUNT: any = null
-try {
-  if (GOOGLE_SERVICE_ACCOUNT_JSON) {
-    GOOGLE_SERVICE_ACCOUNT = JSON.parse(GOOGLE_SERVICE_ACCOUNT_JSON)
+
+// The secret is service-account JSON, but it can arrive with the private key's "\n" escapes turned into real
+// newlines (set from a .env file) or base64-encoded. Accept all three instead of silently failing.
+function escapeNewlinesInStrings(json: string): string {
+  let out = '', inString = false, escaped = false
+  for (const ch of json) {
+    if (inString && (ch === '\n' || ch === '\r')) { if (ch === '\n') out += '\\n'; continue }
+    out += ch
+    if (escaped) escaped = false
+    else if (ch === '\\') escaped = true
+    else if (ch === '"') inString = !inString
   }
-} catch (e) {
-  console.error('Failed to parse GOOGLE_SERVICE_ACCOUNT:', e)
+  return out
 }
+
+function parseServiceAccount(raw: string | undefined): any {
+  if (!raw) return null
+  const attempts = [
+    () => JSON.parse(raw),
+    () => JSON.parse(escapeNewlinesInStrings(raw)),
+    () => JSON.parse(atob(raw.trim())),
+  ]
+  for (const attempt of attempts) {
+    try {
+      const sa = attempt()
+      if (sa?.client_email && sa?.private_key) return sa
+    } catch { /* try the next format */ }
+  }
+  console.error('Failed to parse GOOGLE_SERVICE_ACCOUNT: not JSON, newline-mangled JSON, or base64 JSON')
+  return null
+}
+
+const GOOGLE_SERVICE_ACCOUNT = parseServiceAccount(GOOGLE_SERVICE_ACCOUNT_JSON)
 
 // Get Google access token from service account (same approach as budget bot)
 async function getGoogleAccessToken(): Promise<string> {
