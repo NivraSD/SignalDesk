@@ -4,6 +4,7 @@ import AppShell from '@/components/shell/AppShell'
 import LoginPage from '@/components/auth/LoginPage'
 import HomePage from '@/components/home/HomePage'
 import CheckInFlow from '@/components/checkin/CheckInFlow'
+import MorningCheckIn from '@/components/checkin/MorningCheckIn'
 import ChatPage from '@/components/chat/ChatPage'
 import JournalPage from '@/components/journal/JournalPage'
 import HistoryPage from '@/components/history/HistoryPage'
@@ -54,6 +55,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <AppShell><CheckInFlow /></AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/morning"
+          element={
+            <ProtectedRoute>
+              <AppShell><MorningCheckIn /></AppShell>
             </ProtectedRoute>
           }
         />

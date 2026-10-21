@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { getYesterday } from '@/lib/utils'
 import { useCheckins } from '@/hooks/useCheckins'
 import { useVisionBoard } from '@/hooks/useVisionBoard'
+import { useMorningCheckin } from '@/hooks/useMorningCheckin'
 import DailyQuote from './DailyQuote'
 import PyramidSection from './PyramidSection'
 import TodaySchedule from './TodaySchedule'
@@ -13,11 +14,16 @@ export default function HomePage() {
   const navigate = useNavigate()
   const { checkIns, todayCheckIn } = useCheckins()
   const { items: visionItems, addImage, removeImage } = useVisionBoard()
+  const { morning, loading: morningLoading } = useMorningCheckin()
   const [isEditingVision, setIsEditingVision] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const yesterdayCheckIn = checkIns.find((c) => c.checkin_date === getYesterday())
-  const todaySchedule = yesterdayCheckIn?.tomorrow_schedule ?? null
+  // Today follows last night's plan unless the morning check-in made a new one.
+  const todaySchedule =
+    morning?.plan_choice === 'new' && morning.today_schedule
+      ? morning.today_schedule
+      : yesterdayCheckIn?.tomorrow_schedule ?? null
   const tomorrowSchedule = todayCheckIn?.tomorrow_schedule ?? null
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -29,6 +35,35 @@ export default function HomePage() {
   return (
     <div className="space-y-4">
       <DailyQuote />
+
+      {!morningLoading && (
+        <div className="bg-white rounded-2xl p-4 shadow-sm">
+          {morning ? (
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 space-y-0.5">
+                <p className="text-xs text-stone-400 uppercase tracking-wide">This morning</p>
+                <p className="text-sm text-stone-700">
+                  {[morning.body, morning.mind, morning.word].filter(Boolean).join(' · ') || 'Arrived'}
+                </p>
+                {morning.intention && <p className="text-sm text-stone-500 italic">Just for today: {morning.intention}</p>}
+              </div>
+              <button onClick={() => navigate('/morning')} className="flex-none text-xs text-stone-500">
+                Edit
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-stone-600">Good morning. How are you arriving today?</p>
+              <button
+                onClick={() => navigate('/morning')}
+                className="w-full py-2.5 bg-stone-700 text-white rounded-lg text-sm"
+              >
+                Begin Morning Check-In
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Vision Board */}
       <div className="space-y-2">
@@ -116,12 +151,12 @@ export default function HomePage() {
           </div>
         ) : (
           <div className="space-y-3">
-            <p className="text-stone-600">Ready for today&apos;s check-in?</p>
+            <p className="text-stone-600">Ready for tonight&apos;s check-in?</p>
             <button
               onClick={() => navigate('/checkin')}
               className="w-full py-2.5 bg-stone-700 text-white rounded-lg text-sm"
             >
-              Begin Check-In
+              Begin Evening Check-In
             </button>
           </div>
         )}

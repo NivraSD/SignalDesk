@@ -53,6 +53,20 @@ export interface CheckIn {
   updated_at?: string
 }
 
+// Morning check-in: present-only arrival + which plan today follows
+export interface MorningCheckIn {
+  user_id?: string
+  checkin_date: string
+  body?: string | null
+  mind?: string | null
+  word?: string | null
+  plan_choice: 'keep' | 'new'
+  today_schedule?: TomorrowSchedule | null
+  intention?: string | null
+  created_at?: string
+  updated_at?: string
+}
+
 // Journal entry
 export interface JournalEntry {
   id?: string
