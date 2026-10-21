@@ -15,7 +15,7 @@ const tabs = [
 
 export default function BottomNav({ active, onNavigate }: BottomNavProps) {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-sm border-t border-stone-200 z-50 pb-safe">
+    <nav className="bottom-nav fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-sm border-t border-stone-200 z-50 pb-safe">
       <div className="flex items-center justify-around max-w-lg mx-auto h-14">
         {tabs.map((tab) => {
           const Icon = tab.icon

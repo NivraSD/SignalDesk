@@ -55,7 +55,7 @@ export default function ActivityBankManager() {
         </button>
       </div>
 
-      <div className="space-y-2 max-h-96 overflow-y-auto">
+      <div className="space-y-2">
         {(activityBank[selectedArea] || []).map((activityName, idx) => {
           const dbActivity = activities.find(
             (a) => a.area_id === selectedArea && a.name === activityName

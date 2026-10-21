@@ -11,7 +11,7 @@ export default function AppShell({ children }: AppShellProps) {
   const navigate = useNavigate()
 
   return (
-    <div className="min-h-screen bg-stone-100">
+    <div className="min-h-[100dvh] bg-stone-100">
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-sm border-b border-stone-200 px-4 py-3 sticky top-0 z-40">
         <div className="flex items-center justify-between max-w-lg mx-auto">

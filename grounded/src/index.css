@@ -6,3 +6,31 @@
 .pb-safe {
   padding-bottom: env(safe-area-inset-bottom);
 }
+
+/* ── Mobile input/scroll stability ─────────────────────────────────────────── */
+
+/* Keep text at the size we set — no iOS inflation on rotate. */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* iOS Safari zooms the page when focusing a field under 16px and never zooms back,
+   which throws the whole layout off. Phones get 16px fields; desktop keeps the small text. */
+@media (pointer: coarse) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* While typing, hide the fixed bottom nav — otherwise iOS floats it above the keyboard over the field. */
+body:has(input:focus, textarea:focus, select:focus) .bottom-nav {
+  display: none;
+}
+
+/* Don't let a scroll that hits the end of the page bounce/jank the fixed bars. */
+body {
+  overscroll-behavior-y: none;
+}

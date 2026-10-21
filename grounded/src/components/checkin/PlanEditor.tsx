@@ -76,7 +76,7 @@ export default function PlanEditor({ when, schedule, onChange, suggestions }: Pl
         )}
       </div>
 
-      <div className="space-y-3 max-h-72 overflow-y-auto">
+      <div className="space-y-3">
         {AREAS.map((area) => {
           const areaSchedule = schedule.areas?.[area.id] || { activities: [] }
           const suggestion = suggestions?.[area.id]

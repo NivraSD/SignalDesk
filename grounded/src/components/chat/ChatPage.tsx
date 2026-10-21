@@ -43,7 +43,7 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)]">
+    <div className="flex flex-col h-[calc(100dvh-8rem)]">
       {/* Header */}
       <div className="flex items-center justify-between px-1 pb-3">
         <button onClick={() => navigate('/')} className="text-stone-500 text-sm">
