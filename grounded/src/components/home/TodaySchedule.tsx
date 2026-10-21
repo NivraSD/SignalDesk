@@ -196,7 +196,8 @@ export default function TodaySchedule({ todaySchedule, tomorrowSchedule }: Today
     } else if (result) {
       if (result.movedFrom) {
         const t = (iso: string) => new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-        setCalendarNote({ msg: `"${item.label}" moved to ${t(result.start.dateTime)} (${t(result.movedFrom)} was busy)` })
+        const why = result.movedBecause === 'past' ? 'had already passed' : 'was busy'
+        setCalendarNote({ msg: `"${item.label}" added at ${t(result.start.dateTime)} (${t(result.movedFrom)} ${why})` })
       }
       setCalendarAdded((prev) => new Set(prev).add(item.id))
       // Update journal entry if it has one

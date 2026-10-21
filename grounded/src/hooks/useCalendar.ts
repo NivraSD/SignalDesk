@@ -55,7 +55,7 @@ export function useCalendar() {
   }, []) // eslint-disable-line
 
   // Create a calendar event, moving it to the next free slot that day if the requested time is taken.
-  // Returns the created event plus `movedFrom` (original start ISO) when it had to shift.
+  // Returns the created event plus `movedFrom` (original start ISO) and `movedBecause` when it had to shift.
   const createEvent = async (eventData: {
     summary: string
     description?: string
@@ -84,10 +84,19 @@ export function useCalendar() {
       .map((e) => ({ start: new Date(e.start.dateTime!).getTime(), end: new Date(e.end.dateTime!).getTime() }))
       .sort((a, b) => a.start - b.start)
 
-    // Walk forward from the requested start, jumping past any overlapping event, until the slot is clear.
-    let start = requestedStart.getTime()
+    // Never schedule in the past: a "Morning" (7:00) item added at 9:30 goes in at the next quarter hour.
+    const QUARTER = 15 * 60 * 1000
+    const nextQuarter = Math.ceil(Date.now() / QUARTER) * QUARTER
+    let start = Math.max(requestedStart.getTime(), nextQuarter)
+    const wasPast = start !== requestedStart.getTime()
+
+    // Walk forward from there, jumping past any overlapping event, until the slot is clear.
+    let wasBusy = false
     for (const b of busy) {
-      if (b.start < start + duration && b.end > start) start = Math.max(start, b.end)
+      if (b.start < start + duration && b.end > start) {
+        start = Math.max(start, b.end)
+        wasBusy = true
+      }
     }
     const latestEnd = new Date(dayStart)
     latestEnd.setHours(23, 0, 0, 0)
@@ -105,7 +114,9 @@ export function useCalendar() {
       },
     })
     if (result.error) return result
-    return start !== requestedStart.getTime() ? { ...result, movedFrom: requestedStart.toISOString() } : result
+    if (start === requestedStart.getTime()) return result
+    // Why it moved, for the UI: the requested time had passed, or it was taken (busy wins if both).
+    return { ...result, movedFrom: requestedStart.toISOString(), movedBecause: wasBusy ? 'busy' : wasPast ? 'past' : 'busy' }
   }
 
   return {

@@ -53,7 +53,8 @@ export default function JournalPage() {
         entryData.added_to_calendar = true
         if (result.movedFrom) {
           const t = (iso: string) => new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-          setCalendarNote(`Added to calendar at ${t(result.start.dateTime)} (${t(result.movedFrom)} was busy)`)
+          const why = result.movedBecause === 'past' ? 'had already passed' : 'was busy'
+          setCalendarNote(`Added to calendar at ${t(result.start.dateTime)} (${t(result.movedFrom)} ${why})`)
         }
       }
     }
