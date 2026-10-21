@@ -13,6 +13,15 @@ const BATCH_SIZE = 10; // Reduced from 25 to avoid timeouts with slow sites (WSJ
 const MAX_ARTICLE_AGE_DAYS = 3; // Reject articles older than this
 const MAX_DRAIN_TIME_MS = 120 * 1000; // 120 seconds max when draining (Edge Function timeout is 150s)
 const DRAIN_BATCH_DELAY_MS = 500; // 0.5 seconds between batches when draining
+// Finalize before the ~150s gateway wall-clock kill. Past this we stop and
+// close out the run cleanly instead of being terminated mid-batch (which
+// leaves the run stuck 'running' and its articles orphaned in 'processing').
+const WORKER_DEADLINE_MS = 130 * 1000;
+// A batch's articles sit in 'processing' while being scraped. If a run is
+// killed before it can resolve them, they're stranded — the queue query only
+// picks up 'pending'/'failed', so nothing ever reclaims them. Any 'processing'
+// row older than this is treated as orphaned and reset to 'pending'.
+const PROCESSING_STALE_MS = 10 * 60 * 1000;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -34,6 +43,8 @@ serve(async (req) => {
   console.log(`   Batch size: ${batchSize}`);
   console.log(`   Drain queue: ${drainQueue}\n`);
 
+  const deadline = startTime + WORKER_DEADLINE_MS;
+
   // Create batch run record for tracking
   await supabase
     .from('batch_scrape_runs')
@@ -44,18 +55,38 @@ serve(async (req) => {
       triggered_by: req.headers.get('user-agent') || 'cron'
     });
 
+  // Self-heal: reclaim articles orphaned in 'processing' by a previously
+  // killed run. Runs every invocation, so leaks recover on their own.
+  {
+    const staleCutoff = new Date(Date.now() - PROCESSING_STALE_MS).toISOString();
+    const { count: reclaimed } = await supabase
+      .from('raw_articles')
+      .update({ scrape_status: 'pending' })
+      .eq('scrape_status', 'processing')
+      .lt('last_scrape_attempt', staleCutoff)
+      .select('id', { count: 'exact', head: true });
+    if (reclaimed && reclaimed > 0) {
+      console.log(`🔄 Reclaimed ${reclaimed} orphaned 'processing' articles from a prior killed run`);
+    }
+  }
+
   // Track totals across all batches when draining
   let totalProcessed = 0;
   let totalSuccessful = 0;
   let totalFailed = 0;
   let batchCount = 0;
+  // IDs of the batch currently in 'processing'. On error/abort we reset these
+  // to 'pending' so a killed run doesn't strand its own batch.
+  let inFlightIds: string[] = [];
 
   try {
     // Main processing loop - runs once normally, or until queue empty/timeout when draining
     while (true) {
-      // Check timeout when draining
-      if (drainQueue && (Date.now() - startTime) >= MAX_DRAIN_TIME_MS) {
-        console.log(`\n⏱️  Drain timeout reached (${MAX_DRAIN_TIME_MS / 1000}s) - stopping`);
+      // Stop before the gateway kills us mid-batch. In drain mode we may have
+      // already done useful work; either way we exit cleanly and finalize.
+      const drainStop = drainQueue && (Date.now() - startTime) >= MAX_DRAIN_TIME_MS;
+      if (drainStop || Date.now() >= deadline) {
+        console.log(`\n⏱️  ${drainStop ? 'Drain timeout' : 'Worker deadline'} reached - stopping`);
         break;
       }
 
@@ -122,6 +153,7 @@ serve(async (req) => {
 
       // Mark articles as processing
       const articleIds = queuedArticles.map(a => a.id);
+      inFlightIds = articleIds;
       await supabase
         .from('raw_articles')
         .update({
@@ -173,6 +205,16 @@ serve(async (req) => {
       let lastError = '';
 
       for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+        // Don't start (or retry) an mcp call we can't finish before the
+        // deadline — that's what previously ran the worker into the gateway
+        // kill. Bail out and let the batch's articles reset to pending.
+        const budgetMs = deadline - Date.now();
+        if (budgetMs < 5000) {
+          lastError = lastError || 'worker deadline reached before mcp-firecrawl could run';
+          console.log(`   ⏱️  Only ${Math.round(budgetMs / 1000)}s of budget left — not calling mcp-firecrawl`);
+          break;
+        }
+
         if (attempt > 0) {
           const delay = RETRY_DELAYS[attempt - 1] || 8000;
           console.log(`   ⏳ Retry ${attempt}/${MAX_RETRIES} after ${delay}ms delay...`);
@@ -180,13 +222,17 @@ serve(async (req) => {
         }
 
         try {
+          // AbortSignal bounds the call so a hung mcp-firecrawl / Firecrawl API
+          // can't block until the gateway kills the worker. No default timeout
+          // exists on fetch — this is the fix for the stuck-'running' runs.
           mcpResponse = await fetch(`${SUPABASE_URL}/functions/v1/mcp-firecrawl`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
               'Content-Type': 'application/json'
             },
-            body: JSON.stringify(mcpPayload)
+            body: JSON.stringify(mcpPayload),
+            signal: AbortSignal.timeout(deadline - Date.now())
           });
 
           if (mcpResponse.ok) {
@@ -381,6 +427,8 @@ serve(async (req) => {
       totalProcessed += queuedArticles.length;
       totalSuccessful += successCount;
       totalFailed += failedCount;
+      // This batch's rows are now resolved to completed/failed — no longer in flight.
+      inFlightIds = [];
 
       const batchDuration = Math.floor((Date.now() - startTime) / 1000);
 
@@ -397,19 +445,22 @@ serve(async (req) => {
         console.log('='.repeat(80));
 
         // Update batch run record
-        await supabase
+        // NOTE: only columns that exist on batch_scrape_runs. Referencing a
+        // missing column (previously articles_processed) makes PostgREST reject
+        // the whole UPDATE, which left every processing run stuck in 'running'.
+        const { error: finalizeError } = await supabase
           .from('batch_scrape_runs')
           .update({
             status: 'completed',
             completed_at: new Date().toISOString(),
             articles_discovered: queuedArticles.length,
             articles_new: successCount,
-            articles_processed: successCount,
             sources_successful: successCount,
             sources_failed: failedCount,
             duration_seconds: batchDuration
           })
           .eq('id', runId);
+        if (finalizeError) console.error(`   ⚠️  Failed to finalize run record: ${finalizeError.message}`);
 
         return new Response(JSON.stringify({
           success: true,
@@ -458,20 +509,20 @@ serve(async (req) => {
     console.log(`   Total failed: ${totalFailed}`);
     console.log('='.repeat(80));
 
-    // Update batch run record
-    await supabase
+    // Update batch run record (only existing columns — see note above)
+    const { error: finalizeError } = await supabase
       .from('batch_scrape_runs')
       .update({
         status: 'completed',
         completed_at: new Date().toISOString(),
         articles_discovered: totalProcessed,
         articles_new: totalSuccessful,
-        articles_processed: totalSuccessful,
         sources_successful: totalSuccessful,
         sources_failed: totalFailed,
         duration_seconds: totalDuration
       })
       .eq('id', runId);
+    if (finalizeError) console.error(`   ⚠️  Failed to finalize run record: ${finalizeError.message}`);
 
     return new Response(JSON.stringify({
       success: true,
@@ -489,15 +540,28 @@ serve(async (req) => {
     });
 
   } catch (error: any) {
-    console.error('❌ WORKER FAILED:', error.message);
+    const aborted = error.name === 'TimeoutError' || error.name === 'AbortError';
+    console.error(`❌ WORKER ${aborted ? 'ABORTED (deadline)' : 'FAILED'}:`, error.message);
 
-    // Update batch run record with failure
+    // Reset this run's in-flight batch back to 'pending' so the next run
+    // retries them instead of leaving them stranded in 'processing'.
+    if (inFlightIds.length > 0) {
+      await supabase
+        .from('raw_articles')
+        .update({ scrape_status: 'pending' })
+        .in('id', inFlightIds)
+        .eq('scrape_status', 'processing');
+      console.log(`🔄 Reset ${inFlightIds.length} in-flight articles back to pending`);
+    }
+
+    // Update batch run record with failure (error_summary, not error_message —
+    // the latter doesn't exist and made this UPDATE fail silently too).
     await supabase
       .from('batch_scrape_runs')
       .update({
-        status: 'failed',
+        status: aborted ? 'partial' : 'failed',
         completed_at: new Date().toISOString(),
-        error_message: error.message,
+        error_summary: [{ error: error.message }],
         duration_seconds: Math.floor((Date.now() - startTime) / 1000)
       })
       .eq('id', runId);

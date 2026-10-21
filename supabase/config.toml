@@ -140,6 +140,11 @@ vector_port = 54328
 # Configure one of the supported backends: `postgres`, `bigquery`.
 backend = "postgres"
 
+[functions.firecrawl-crawl-webhook]
+# Firecrawl posts crawl events here and cannot present a Supabase JWT.
+# Security is enforced by the X-Firecrawl-Signature HMAC inside the function.
+verify_jwt = false
+
 [functions.niv-chat]
 verify_jwt = false
 
