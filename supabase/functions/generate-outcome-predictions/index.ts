@@ -26,7 +26,10 @@ async function callAI(prompt: string, maxTokens = 2000): Promise<string> {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.3, maxOutputTokens: maxTokens }
+            // JSON mode + thinking disabled: gemini-2.5-flash's default thinking
+            // was eating the (tiny) token budget and truncating the response,
+            // so every signal fell through to "skip" and no predictions were made.
+            generationConfig: { temperature: 0.3, maxOutputTokens: maxTokens, responseMimeType: 'application/json', thinkingConfig: { thinkingBudget: 0 } }
           }),
           signal: AbortSignal.timeout(55000)
         }
@@ -718,7 +721,7 @@ If this signal is NOT suitable for prediction (e.g., just a mention, no actionab
 Return ONLY the JSON object.`;
 
   try {
-    const content = await callAI(prompt, 1000);
+    const content = await callAI(prompt, 3000);
 
     // Parse JSON from response
     const jsonMatch = content.match(/\{[\s\S]*\}/);
@@ -948,7 +951,7 @@ If the signals don't contain enough predictive content, return:
 Return ONLY the JSON object.`;
 
   try {
-    const content = await callAI(prompt, 2000);
+    const content = await callAI(prompt, 4000);
 
     // Parse JSON from response
     const jsonMatch = content.match(/\{[\s\S]*\}/);

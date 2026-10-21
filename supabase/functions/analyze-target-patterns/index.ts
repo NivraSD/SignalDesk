@@ -26,7 +26,15 @@ async function callAI(prompt: string, maxTokens = 2000): Promise<string> {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.3, maxOutputTokens: maxTokens }
+            // responseMimeType forces clean JSON (no ```json fences) and, with a
+            // sufficient token ceiling + a bounded prompt, lets the array finish
+            // (finishReason STOP) instead of truncating mid-JSON (MAX_TOKENS),
+            // which was silently zeroing out every target.
+            // thinkingBudget:0 disables gemini-2.5-flash's default "thinking",
+            // which (once Google enabled it by default) was consuming the output
+            // budget and truncating the JSON — the core cause of 0 patterns.
+            // Off = ~2s/call and the whole budget goes to the answer.
+            generationConfig: { temperature: 0.3, maxOutputTokens: maxTokens, responseMimeType: 'application/json', thinkingConfig: { thinkingBudget: 0 } }
           }),
           signal: AbortSignal.timeout(55000)
         }
@@ -557,7 +565,9 @@ CRITICAL - WRITE FOR STRATEGIC DECISION-MAKERS:
 Return ONLY the JSON array.`;
 
   try {
-    const content = await callAI(prompt, 2000);
+    // 8000 gives headroom so the bounded pattern array completes rather than
+    // truncating mid-JSON (which threw in JSON.parse and returned []).
+    const content = await callAI(prompt, 8000);
 
     // Parse JSON from response
     const jsonMatch = content.match(/\[[\s\S]*\]/);

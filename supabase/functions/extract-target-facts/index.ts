@@ -26,7 +26,10 @@ async function callAI(prompt: string, maxTokens = 4000): Promise<string> {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.3, maxOutputTokens: maxTokens }
+            // Same fix as the analyze/predict stages: disable gemini-2.5-flash's
+            // default thinking (which ate the token budget and truncated the fact
+            // JSON → 0 facts extracted) and force clean JSON output.
+            generationConfig: { temperature: 0.3, maxOutputTokens: maxTokens, responseMimeType: 'application/json', thinkingConfig: { thinkingBudget: 0 } }
           }),
           signal: AbortSignal.timeout(55000)
         }
@@ -820,8 +823,26 @@ async function updateAccumulatedContext(
 
   // Update metrics
   ctx.total_facts += newFacts.length;
-  ctx.facts_last_7d += newFacts.length;  // Will be recalculated on analysis
-  ctx.facts_last_30d += newFacts.length;
+
+  // Real rolling 7d/30d windows via a daily activity log. Previously these just
+  // accumulated forever (facts_last_7d === facts_last_30d === total_facts), which
+  // made the "elevated activity vs baseline" heuristic in analyze-target-patterns
+  // meaningless. The log self-heals to accurate windows within 30 days.
+  const nowMs = Date.now();
+  const dayMs = 24 * 60 * 60 * 1000;
+  const todayKey = new Date().toISOString().slice(0, 10);
+  if (!Array.isArray((ctx as any).activity_log)) (ctx as any).activity_log = [];
+  const log: { date: string; count: number }[] = (ctx as any).activity_log;
+  const todayEntry = log.find(e => e.date === todayKey);
+  if (todayEntry) todayEntry.count += newFacts.length;
+  else log.push({ date: todayKey, count: newFacts.length });
+  // prune to last 30 days
+  (ctx as any).activity_log = log.filter(e => (nowMs - new Date(e.date).getTime()) <= 30 * dayMs);
+  const sumWithin = (days: number) => (ctx as any).activity_log
+    .filter((e: any) => (nowMs - new Date(e.date).getTime()) <= days * dayMs)
+    .reduce((s: number, e: any) => s + e.count, 0);
+  ctx.facts_last_7d = sumWithin(7);
+  ctx.facts_last_30d = sumWithin(30);
   ctx.last_fact_at = new Date().toISOString();
 
   // Update fact type distribution
@@ -915,9 +936,19 @@ async function updateAccumulatedContext(
       significance: f.significance_score
     }));
 
+  // Keep the most RECENT significant highlights, not the highest-significance
+  // ones of all time. The old significance-only sort permanently pinned a few
+  // high-scoring items (e.g. from months ago) so "recent_highlights" never
+  // reflected new activity — starving analyze-target-patterns of fresh context.
+  // Sort by recency, drop anything older than 45 days, keep up to 8.
+  const highlightCutoff = Date.now() - 45 * 24 * 60 * 60 * 1000;
   ctx.recent_highlights = [...newHighlights, ...ctx.recent_highlights]
-    .sort((a, b) => b.significance - a.significance)
-    .slice(0, 5);
+    .filter(h => {
+      const t = new Date(h.date).getTime();
+      return isNaN(t) || t >= highlightCutoff; // keep undated (new) + recent
+    })
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 8);
 
   // Update insights
   const factTypes = Object.entries(ctx.fact_type_distribution);
