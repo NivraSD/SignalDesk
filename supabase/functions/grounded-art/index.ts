@@ -11,82 +11,251 @@ const GEMINI_IMAGE = 'gemini-2.5-flash-image'
 
 // ── Step 1: Conceive the piece — title, emotion, and visual direction as one ──
 
-const SEEDS = [
-  'the tension of something about to begin',
-  'the relief of finally letting go of control',
-  'restlessness that wants to become movement',
-  'the ache of a project left half-finished',
-  'clarity arriving uninvited',
-  'the heaviness right before a breakthrough',
-  'wanting to create but not knowing what',
-  'the strange peace of accepting imperfection',
-  'momentum building from nothing',
-  'returning to something you abandoned',
-  'the courage it takes to start ugly',
-  'sitting with discomfort instead of escaping it',
-  'the difference between stalling and preparing',
-  'feeling ready but not starting',
-  'the pull of something unresolved',
-  'choosing difficulty over comfort',
-  'a door you keep walking past',
-  'the energy just after a decision',
-  'holding two contradictions at once',
-  'the silence before honest work begins',
+// SEEDS_BY_REGISTER — feelings grouped by the emotional *territory* they
+// occupy. The generator picks a register first, then a seed within it,
+// then tells Gemini which register to stay in — otherwise every title
+// drifts back to the "motion / on-the-verge" default that dominated the
+// original single flat SEEDS array.
+const SEEDS_BY_REGISTER: Record<string, string[]> = {
+  // Becoming / threshold / on-the-verge — the original register.
+  motion: [
+    'the tension of something about to begin',
+    'the relief of finally letting go of control',
+    'restlessness that wants to become movement',
+    'the ache of a project left half-finished',
+    'the heaviness right before a breakthrough',
+    'momentum building from nothing',
+    'returning to something you abandoned',
+    'the courage it takes to start ugly',
+    'the pull of something unresolved',
+    'the energy just after a decision',
+    'a door you keep walking past',
+    'the silence before honest work begins',
+  ],
+  // States that are, not states that are becoming.
+  stillness: [
+    'a room the light always finds',
+    'weight settling into a chair',
+    'stillness that isn\'t waiting for anything',
+    'the shape a habit leaves behind',
+    'a garden nobody asked for',
+    'ordinary hours doing nothing in particular',
+    'the quiet of enough',
+    'something at rest actually resting',
+    'the strange peace of accepting imperfection',
+  ],
+  // What lingers when something is gone, or almost gone.
+  absence: [
+    'a name you almost remember',
+    'the room after everyone has left',
+    'objects that outlived their purpose',
+    'a sound that used to mean home',
+    'furniture from a house you don\'t own anymore',
+    'the space someone used to occupy',
+    'a smell that returns you somewhere',
+    'the outline of what isn\'t there',
+  ],
+  // Weather, time, light — the ambient conditions we live inside.
+  atmosphere: [
+    'the first cold morning of autumn',
+    'long light at the end of the day',
+    'the hour when weather turns',
+    'a summer that lasted too long',
+    'winter thinking about spring',
+    'grey days running into one another',
+    'light through a window in the afternoon',
+    'the specific quality of a saturday morning',
+    'the pressure right before rain',
+  ],
+  // Embodied, tactile, physical.
+  sensation: [
+    'warm water on tired hands',
+    'the weight of an old book',
+    'cold air on skin used to warmth',
+    'wet earth after rain',
+    'the give of an old chair',
+    'a stone kept warm by the sun',
+    'the sharp edge of clean sheets',
+  ],
+  // Noticing, missing, mistaking, seeing.
+  perception: [
+    'noticing what you\'d walked past for years',
+    'looking up at exactly the wrong moment',
+    'a detail you weren\'t supposed to see',
+    'catching your own reflection unaware',
+    'seeing a familiar thing at a strange angle',
+    'the second before you understand',
+    'realizing you\'ve been listening to the wrong voice',
+  ],
+  // Scale, ordinariness, being-in-time.
+  existential: [
+    'being small under a very large sky',
+    'the strangeness of being here at all',
+    'ordinary time passing extraordinarily',
+    'briefly aware of your whole life',
+    'the size of a single moment',
+    'holding two contradictions at once',
+    'wanting to create but not knowing what',
+  ],
+}
+
+function pickSeed(): { seed: string; register: string } {
+  const registers = Object.keys(SEEDS_BY_REGISTER)
+  const register = registers[Math.floor(Math.random() * registers.length)]
+  const bank = SEEDS_BY_REGISTER[register]
+  const seed = bank[Math.floor(Math.random() * bank.length)]
+  return { seed, register }
+}
+
+// APPROACHES — the *visual medium* is chosen up front rather than always
+// defaulting to abstract painting. Each entry gives Gemini a distinctive
+// starting posture (medium + technique + palette bias). This is the
+// primary lever for varying what pieces actually LOOK like.
+const APPROACHES = [
+  {
+    medium: 'expressionist oil painting',
+    style: 'thick impasto with palette knife scrapes, visible canvas weave, paint drips and buildup',
+    palette_hint: 'saturated oil pigments with luminous physical mixing on the surface',
+  },
+  {
+    medium: 'long-exposure photograph of moving fog',
+    style: 'silky atmospheric blur, no distinct horizon, layered depth suggested by tonal shifts',
+    palette_hint: 'restrained tonal range, mostly monochrome with one warm or cool bleed',
+  },
+  {
+    medium: 'macro photograph of weathered material',
+    style: 'sharp focus on oxidized copper, peeling paint, cracked plaster, or rusted iron — the surface treated as landscape',
+    palette_hint: 'earthy oxidation tones with unexpected verdigris or ultramarine seepage',
+  },
+  {
+    medium: 'silver gelatin darkroom print',
+    style: 'high-contrast black and white with visible film grain, deep shadow-well, luminous highlights',
+    palette_hint: 'true monochrome — luminance only, no colour',
+  },
+  {
+    medium: 'cyanotype on textured paper',
+    style: 'sun-exposed prussian blue with organic soft edges and fibrous paper texture visible',
+    palette_hint: 'monochromatic blue against pale paper cream',
+  },
+  {
+    medium: 'sumi ink on wet mulberry paper',
+    style: 'controlled bleed, single deliberate gesture, generous negative space, feathered edges',
+    palette_hint: 'ink black on translucent cream — nothing else',
+  },
+  {
+    medium: 'chiaroscuro shadow study',
+    style: 'a single volume of light against deep dark space, hard edge softened by atmospheric distance',
+    palette_hint: 'near-black with one warm light source, minimal transition',
+  },
+  {
+    medium: 'gouache and gesso on raw linen',
+    style: 'matte surface with layered erasures, drawn marks half-obscured, subtle underlying grid or scaffold',
+    palette_hint: 'muted earth tones with a single unexpected accent',
+  },
+  {
+    medium: 'photograph of moving water at dusk',
+    style: 'long exposure blur of a shore, river, or tidal edge — atmospheric perspective, no distinct horizon',
+    palette_hint: 'cool blues and greys with warm western sky bleed',
+  },
+  {
+    medium: 'analog 35mm film landscape at first light',
+    style: 'grainy film, muted colours, distant weather, no distinct subject',
+    palette_hint: 'faded film palette — sepias, washed blues, soft greens',
+  },
+  {
+    medium: 'watercolor bleed on cold-press paper',
+    style: 'controlled accidents, layered washes, salt marks, tide lines from the drying process',
+    palette_hint: 'transparent washes creating luminous depth through overlap',
+  },
+  {
+    medium: 'graphite and eraser on paper',
+    style: 'soft smudged marks, ghosted erasures, minimal composition with weight settled in one quadrant',
+    palette_hint: 'graphite greys and paper cream — nothing else',
+  },
+  {
+    medium: 'window at dusk seen from outside',
+    style: 'a single warm interior glow through blurred glass, cold exterior atmosphere, no visible occupants',
+    palette_hint: 'cool blue-grey exterior with amber warmth from within',
+  },
+  {
+    medium: 'cast shadow of an offscreen object',
+    style: 'a shadow at oblique angle on a textured surface — the thing casting it is not shown',
+    palette_hint: 'muted daylight with a single warm/cool tension',
+  },
+  {
+    medium: 'mixed media on found paper',
+    style: 'torn edges, tape residue, ink stains, stitched marks — a palimpsest of prior work showing through',
+    palette_hint: 'aged cream with layered muted tones, nothing bright',
+  },
 ]
 
-const FALLBACK_PALETTES = [
-  'burnt sienna, prussian blue, and raw umber — warm against cold',
-  'ivory black layered over cadmium orange with titanium white accents',
-  'payne\'s gray, cerulean, and naples yellow — coastal tension',
-  'mars violet, raw sienna, and zinc white — bruised warmth',
-  'viridian, burnt umber, and flake white — forest floor',
-]
-
-const FALLBACK_TEXTURES = [
-  'oil paint scraped with a palette knife, revealing underlayers',
-  'charcoal and gesso on raw linen, marks half-erased and redrawn',
-  'thick oil stick marks with visible hand pressure',
-  'sumi ink on wet paper, controlled accidents and feathered edges',
-  'thin glazes built up in layers, luminous depth through transparency',
-]
-
-const FALLBACK_COMPOSITIONS = [
-  'dense energy in the center fading to quiet edges',
-  'diagonal tension pulling from corner to corner',
-  'a single dominant form offset to one side, space breathing around it',
-  'horizon line in the lower third, weight settled at the bottom',
-  'layered veils of color with edges that never quite align',
-]
-
-function pickRandom<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)]
+function pickApproach() {
+  return APPROACHES[Math.floor(Math.random() * APPROACHES.length)]
 }
 
 interface ArtConcept {
   title: string
   emotion: string
+  register: string
+  medium: string
+  style: string
   palette: string
-  texture: string
   composition: string
 }
 
+// Short guidance for each register — tells Gemini how to stay in the
+// intended emotional territory. Without this, titles drift toward
+// motion/threshold defaults regardless of which seed was picked.
+const REGISTER_GUIDANCE: Record<string, string> = {
+  motion: 'a becoming, a threshold, something on the verge — verbs of transition are natural here',
+  stillness: 'a state that IS, not a state becoming — resist verbs of motion, resist "about to"',
+  absence: 'what remains after something is gone — traces, echoes, empty spaces',
+  atmosphere: 'ambient conditions — weather, time of day, the quality of a season or an hour',
+  sensation: 'physical, embodied, tactile — what a body notices, not what a mind thinks',
+  perception: 'the act of seeing / missing / noticing — cognitive shift, not motion',
+  existential: 'scale, ordinariness, being-in-time — the strangeness of being here at all',
+}
+
+const TITLE_EXAMPLES_BY_REGISTER: Record<string, string[]> = {
+  motion: ['closer than it feels', 'the door not opened', 'what hasn\'t been built yet'],
+  stillness: ['a room the light always finds', 'the quiet of enough', 'weight settled in a chair'],
+  absence: ['the space someone used to occupy', 'a name almost remembered', 'furniture from before'],
+  atmosphere: ['saturday morning quality', 'the hour when weather turns', 'long light at the end'],
+  sensation: ['warm water on tired hands', 'the give of an old chair', 'stone kept warm by sun'],
+  perception: ['seeing at a strange angle', 'the second before understanding', 'walked past for years'],
+  existential: ['being small under a large sky', 'the size of a single moment', 'briefly aware of everything'],
+}
+
 async function conceiveArt(recentTitles: string[]): Promise<ArtConcept> {
-  const seed = SEEDS[Math.floor(Math.random() * SEEDS.length)]
+  const { seed, register } = pickSeed()
+  const approach = pickApproach()
+  const guidance = REGISTER_GUIDANCE[register] || ''
+  const titleExamples = (TITLE_EXAMPLES_BY_REGISTER[register] || [])
+    .map(t => `"${t}"`)
+    .join(', ')
 
   const avoidList = recentTitles.length > 0
     ? `\nDo NOT use or closely resemble these recent titles: ${recentTitles.join(', ')}`
     : ''
 
-  const prompt = `Create a concept for an abstract painting. Starting feeling: "${seed}"
+  const prompt = `Create a concept for a visual piece.
 
-Respond with EXACTLY 5 lines, no labels, no extra text:
-Line 1: An evocative 3-5 word phrase (lowercase, no punctuation) that creates emotional tension — like "what hasn't been built yet" or "closer than it feels"${avoidList}
-Line 2: The specific emotion to evoke (one sentence)
-Line 3: Color palette using real pigment names (3-5 colors)
-Line 4: Paint texture and technique
-Line 5: Composition and where the visual energy sits
+The REGISTER for this piece: ${register} — ${guidance}.
+The STARTING FEELING: "${seed}"
 
-ONLY these 5 lines. Nothing else.`
+The MEDIUM has already been chosen: a ${approach.medium}.
+The STYLE for that medium: ${approach.style}
+The PALETTE bias: ${approach.palette_hint}
+
+Your job: give the piece a title, name its emotional tone, refine the palette, and describe composition. Stay firmly in the "${register}" register — resist drifting to becoming/motion language if that isn't the register. The piece is NOT a painting unless the medium above says so — respect the medium.
+
+Respond with EXACTLY 4 lines, no labels, no extra text:
+Line 1: An evocative 3-5 word phrase (lowercase, no punctuation) in the ${register} register — examples in this register: ${titleExamples}${avoidList}
+Line 2: The specific emotion the piece should evoke (one sentence)
+Line 3: Refined colour palette (build on the palette bias, be specific with 3-5 colours or tonal moves)
+Line 4: Composition — where the visual weight sits, what the eye finds first, what's held back
+
+ONLY these 4 lines. Nothing else.`
 
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_TEXT}:generateContent?key=${GOOGLE_API_KEY}`,
@@ -100,7 +269,14 @@ ONLY these 5 lines. Nothing else.`
     }
   )
 
-  if (!response.ok) throw new Error(`Concept generation failed: ${response.status}`)
+  if (!response.ok) {
+    // Keep Google's explanation (e.g. which billing/credit check failed); the key is in the URL, never the body.
+    const errText = await response.text()
+    console.error('Concept generation error:', response.status, errText.substring(0, 500))
+    let detail = ''
+    try { detail = JSON.parse(errText).error?.message ?? '' } catch { detail = errText.substring(0, 200) }
+    throw new Error(`Concept generation failed: ${response.status}${detail ? ` — ${detail}` : ''}`)
+  }
   const data = await response.json()
 
   // Gemini 2.5 Flash may have thinking parts — find the actual text part
@@ -137,9 +313,11 @@ ONLY these 5 lines. Nothing else.`
   const concept: ArtConcept = {
     title,
     emotion: lines[1]?.replace(/^\d+[.:)\s]*/g, '').replace(/^(emotion|line\s*2)[:\s]*/i, '').trim() || seed,
-    palette: lines[2]?.replace(/^\d+[.:)\s]*/g, '').replace(/^(palette|colors?|line\s*3)[:\s]*/i, '').trim() || pickRandom(FALLBACK_PALETTES),
-    texture: lines[3]?.replace(/^\d+[.:)\s]*/g, '').replace(/^(texture|technique|line\s*4)[:\s]*/i, '').trim() || pickRandom(FALLBACK_TEXTURES),
-    composition: lines[4]?.replace(/^\d+[.:)\s]*/g, '').replace(/^(composition|line\s*5)[:\s]*/i, '').trim() || pickRandom(FALLBACK_COMPOSITIONS),
+    register,
+    medium: approach.medium,
+    style: approach.style,
+    palette: lines[2]?.replace(/^\d+[.:)\s]*/g, '').replace(/^(palette|colors?|line\s*3)[:\s]*/i, '').trim() || approach.palette_hint,
+    composition: lines[3]?.replace(/^\d+[.:)\s]*/g, '').replace(/^(composition|line\s*4)[:\s]*/i, '').trim() || 'weight settled off-centre with quiet edges',
   }
 
   return concept
@@ -148,29 +326,24 @@ ONLY these 5 lines. Nothing else.`
 // ── Step 2: Generate art from the unified concept ────────────────────────────
 
 async function generateArt(concept: ArtConcept): Promise<{ imageBase64: string; mimeType: string }> {
-  const prompt = `Create an abstract painting. This is a single emotional experience — the image and the feeling are inseparable.
+  const prompt = `Create a ${concept.medium}. This is a single emotional experience — the image and the feeling are inseparable.
 
+THE MEDIUM: ${concept.medium}
+THE STYLE: ${concept.style}
 THE FEELING: ${concept.emotion}
-
 THE PALETTE: ${concept.palette}
-
-THE TEXTURE: ${concept.texture}
-
 THE COMPOSITION: ${concept.composition}
 
-This must look like a photograph of a REAL physical painting. Not digital art. Real paint on real canvas:
-- Visible brushstrokes, palette knife marks, scrapes
-- Paint buildup, drips, canvas grain showing through
-- The imperfection and materiality of a human hand
-- Color mixing that happened physically on the surface
+The piece should look genuinely like the medium above — respect its physical materiality (paper fibres, film grain, ink bleed, canvas weave, atmospheric depth, weathered surface — whichever applies). Not digital slickness. Not generic "abstract art." The specific medium, with all its inherent imperfections and marks.
 
-The painting should make the viewer FEEL something before they can name what it is. It should create the same emotional response as the phrase "${concept.title}" — not illustrate those words, but evoke the same inner state.
+It should make the viewer FEEL something before they can name what it is. Evoke the same inner state as the phrase "${concept.title}" — not illustrate those words, but let the feeling arrive first.
 
-ABSOLUTE RULES:
-- ZERO text, letters, words, numbers, symbols, signatures, or watermarks anywhere
-- Fill the ENTIRE canvas edge to edge — no margins, borders, or empty space
-- Portrait orientation (9:16)
-- Pure abstraction — no people, faces, objects, or recognizable forms`
+RULES:
+- ZERO text, letters, words, numbers, symbols, signatures, or watermarks anywhere.
+- Fill the ENTIRE frame edge to edge — no margins, borders, or empty space.
+- Portrait orientation (9:16).
+- No literal recognisable objects (no logos, no vehicles, no clocks, no faces, no readable places). Suggested or abstracted forms are welcome — a threshold, a horizon, a light source, a cast shadow, a body of water, a doorway — as long as they invite interpretation rather than describe.
+- Ambiguity over specificity: the viewer should wonder what they're looking at.`
 
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_IMAGE}:generateContent?key=${GOOGLE_API_KEY}`,
