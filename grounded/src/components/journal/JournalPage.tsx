@@ -18,10 +18,12 @@ export default function JournalPage() {
   }>({ type: 'thought', content: '', date: getToday(), time: '', addToCalendar: false })
   const [filter, setFilter] = useState('all')
   const [saving, setSaving] = useState(false)
+  const [calendarNote, setCalendarNote] = useState<string | null>(null)
 
   const handleAdd = async () => {
     if (!newEntry.content.trim()) return
     setSaving(true)
+    setCalendarNote(null)
 
     const entryData: Omit<JournalEntry, 'id' | 'user_id' | 'created_at'> = {
       entry_type: newEntry.type,
@@ -45,8 +47,14 @@ export default function JournalPage() {
         endTime: new Date(`${endTime}`).toISOString(),
       })
 
-      if (result && !result.error) {
+      if (result?.error) {
+        setCalendarNote(`Saved, but couldn't add to calendar: ${result.error}`)
+      } else if (result) {
         entryData.added_to_calendar = true
+        if (result.movedFrom) {
+          const t = (iso: string) => new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+          setCalendarNote(`Added to calendar at ${t(result.start.dateTime)} (${t(result.movedFrom)} was busy)`)
+        }
       }
     }
 
@@ -63,6 +71,12 @@ export default function JournalPage() {
         &larr; Back
       </button>
       <h2 className="text-xl font-light text-stone-700 text-center">Add Entry</h2>
+
+      {calendarNote && (
+        <button onClick={() => setCalendarNote(null)} className="w-full text-left text-xs px-3 py-2 rounded-lg bg-amber-50 text-amber-800">
+          {calendarNote}
+        </button>
+      )}
 
       {/* New entry form */}
       <div className="bg-white rounded-xl p-4 shadow-sm space-y-3">

@@ -69,6 +69,7 @@ export default function TodaySchedule({ todaySchedule, tomorrowSchedule }: Today
   const tomorrow = getTomorrow()
   const [calendarAdded, setCalendarAdded] = useState<Set<string>>(new Set())
   const [addingId, setAddingId] = useState<string | null>(null)
+  const [calendarNote, setCalendarNote] = useState<{ msg: string; err?: boolean } | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [dismissed, setDismissed] = useState<Set<string>>(getDismissed)
 
@@ -190,7 +191,13 @@ export default function TodaySchedule({ todaySchedule, tomorrowSchedule }: Today
       endTime: endTime.toISOString(),
     })
 
-    if (result && !result.error) {
+    if (result?.error) {
+      setCalendarNote({ msg: `Couldn't add "${item.label}": ${result.error}`, err: true })
+    } else if (result) {
+      if (result.movedFrom) {
+        const t = (iso: string) => new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+        setCalendarNote({ msg: `"${item.label}" moved to ${t(result.start.dateTime)} (${t(result.movedFrom)} was busy)` })
+      }
       setCalendarAdded((prev) => new Set(prev).add(item.id))
       // Update journal entry if it has one
       if (item.journalId) {
@@ -450,6 +457,14 @@ export default function TodaySchedule({ todaySchedule, tomorrowSchedule }: Today
 
   return (
     <div className="space-y-4">
+      {calendarNote && (
+        <button
+          onClick={() => setCalendarNote(null)}
+          className={`w-full text-left text-xs px-3 py-2 rounded-lg ${calendarNote.err ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-800'}`}
+        >
+          {calendarNote.msg}
+        </button>
+      )}
       {todayItems.length > 0 && (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
