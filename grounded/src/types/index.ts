@@ -81,6 +81,7 @@ export interface JournalEntry {
   entry_time?: string | null
   completed?: boolean
   added_to_calendar?: boolean
+  on_schedule?: boolean
   notes?: string | null
   completion_notes?: string | null
   created_at?: string

@@ -15,7 +15,8 @@ export default function JournalPage() {
     date: string
     time: string
     addToCalendar: boolean
-  }>({ type: 'thought', content: '', date: getToday(), time: '', addToCalendar: false })
+    onSchedule: boolean
+  }>({ type: 'thought', content: '', date: getToday(), time: '', addToCalendar: false, onSchedule: true })
   const [filter, setFilter] = useState('all')
   const [saving, setSaving] = useState(false)
   const [calendarNote, setCalendarNote] = useState<string | null>(null)
@@ -32,6 +33,7 @@ export default function JournalPage() {
       entry_time: newEntry.time || null,
       completed: false,
       added_to_calendar: false,
+      on_schedule: newEntry.type !== 'thought' && newEntry.onSchedule,
     }
 
     // Add to calendar if requested
@@ -51,16 +53,11 @@ export default function JournalPage() {
         setCalendarNote(`Saved, but couldn't add to calendar: ${result.error}`)
       } else if (result) {
         entryData.added_to_calendar = true
-        if (result.movedFrom) {
-          const t = (iso: string) => new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-          const why = result.movedBecause === 'past' ? 'had already passed' : 'was busy'
-          setCalendarNote(`Added to calendar at ${t(result.start.dateTime)} (${t(result.movedFrom)} ${why})`)
-        }
       }
     }
 
     await addEntry(entryData)
-    setNewEntry({ type: 'thought', content: '', date: getToday(), time: '', addToCalendar: false })
+    setNewEntry({ type: 'thought', content: '', date: getToday(), time: '', addToCalendar: false, onSchedule: true })
     setSaving(false)
   }
 
@@ -125,6 +122,16 @@ export default function JournalPage() {
                 placeholder="Time (optional)"
               />
             </div>
+
+            <label className="flex items-center gap-2 text-sm text-stone-600">
+              <input
+                type="checkbox"
+                checked={newEntry.onSchedule}
+                onChange={(e) => setNewEntry({ ...newEntry, onSchedule: e.target.checked })}
+                className="rounded border-stone-300"
+              />
+              Add to schedule
+            </label>
 
             {isCalendarConnected && newEntry.time && (
               <label className="flex items-center gap-2 text-sm text-stone-600">

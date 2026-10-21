@@ -146,9 +146,12 @@ export default function TodaySchedule({ todaySchedule, tomorrowSchedule }: Today
     }
   }
 
-  // Journal tasks/events for today
+  // Journal tasks/events put on the schedule, for today or tomorrow
   const todayEntries = entries.filter(
-    (e) => (e.entry_type === 'task' || e.entry_type === 'event') && e.entry_date === today
+    (e) =>
+      (e.entry_type === 'task' || e.entry_type === 'event') &&
+      e.on_schedule !== false &&
+      (e.entry_date === today || e.entry_date === tomorrow)
   )
   for (const entry of todayEntries) {
     items.push({
@@ -163,7 +166,7 @@ export default function TodaySchedule({ todaySchedule, tomorrowSchedule }: Today
       entryType: entry.entry_type as 'task' | 'event',
       notes: entry.notes,
       completionNotes: entry.completion_notes,
-      targetDate: today,
+      targetDate: entry.entry_date,
     })
   }
 
@@ -194,11 +197,6 @@ export default function TodaySchedule({ todaySchedule, tomorrowSchedule }: Today
     if (result?.error) {
       setCalendarNote({ msg: `Couldn't add "${item.label}": ${result.error}`, err: true })
     } else if (result) {
-      if (result.movedFrom) {
-        const t = (iso: string) => new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-        const why = result.movedBecause === 'past' ? 'had already passed' : 'was busy'
-        setCalendarNote({ msg: `"${item.label}" added at ${t(result.start.dateTime)} (${t(result.movedFrom)} ${why})` })
-      }
       setCalendarAdded((prev) => new Set(prev).add(item.id))
       // Update journal entry if it has one
       if (item.journalId) {

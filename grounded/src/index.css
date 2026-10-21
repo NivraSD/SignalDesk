@@ -7,6 +7,11 @@
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+/* Home-screen (standalone) mode draws under the status bar; keep the header below the clock/notch. */
+.pt-safe-header {
+  padding-top: calc(0.75rem + env(safe-area-inset-top));
+}
+
 /* ── Mobile input/scroll stability ─────────────────────────────────────────── */
 
 /* Keep text at the size we set — no iOS inflation on rotate. */
