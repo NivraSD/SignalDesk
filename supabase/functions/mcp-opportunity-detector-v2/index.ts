@@ -641,7 +641,7 @@ async function detectOpportunitiesV2(
 
   try {
     content = await callGeminiForOpportunities(prompt, Math.min(GEMINI_MAX_MS, msLeft(deadline)))
-    detection.model = 'gemini-2.5-flash'
+    detection.model = 'gemini-3.5-flash'
     console.log('✅ Gemini response received, length:', content.length)
   } catch (geminiErr: any) {
     if (geminiErr.name === 'AbortError') {
@@ -728,11 +728,11 @@ async function callSonnetForOpportunities(prompt: string, budgetMs: number): Pro
 }
 
 async function callGeminiForOpportunities(prompt: string, budgetMs: number): Promise<string> {
-  console.log(`Calling Gemini 2.5 Flash for V2 opportunity generation (${Math.round(budgetMs/1000)}s budget)...`)
+  console.log(`Calling Gemini 3.5 Flash for V2 opportunity generation (${Math.round(budgetMs/1000)}s budget)...`)
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), budgetMs)
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GOOGLE_API_KEY}`
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${GOOGLE_API_KEY}`
     const response = await fetch(url, {
       method: 'POST',
       signal: controller.signal,
@@ -741,13 +741,16 @@ async function callGeminiForOpportunities(prompt: string, budgetMs: number): Pro
         systemInstruction: { parts: [{ text: OPPORTUNITY_SYSTEM_PROMPT_V2 }] },
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: {
-          temperature: 0.7,
+          // No temperature/top_p/top_k: Gemini 3.x reasoning is tuned for the
+          // defaults and the docs advise against setting them. (The API does
+          // still accept them — this is a quality call, not a hard constraint.)
           maxOutputTokens: 12000,
           responseMimeType: 'application/json',
-          // 2.5 Flash thinks by default on a dynamic budget: it adds latency
-          // and its thinking tokens are charged against maxOutputTokens, which
-          // can starve a 12k-token execution plan. Off — this is the fast path.
-          thinkingConfig: { thinkingBudget: 0 },
+          // thinkingLevel must nest under thinkingConfig — flat is a 400. It
+          // supersedes the legacy numeric thinkingBudget; sending both is also
+          // a 400. 'low' buys reasoning for the execution plans while staying
+          // well inside GEMINI_MAX_MS; default 'medium' crowds it.
+          thinkingConfig: { thinkingLevel: 'low' },
         }
       })
     })
