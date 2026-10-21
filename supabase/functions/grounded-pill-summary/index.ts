@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
 
     const htmlRows = SLOTS.map((s) => `<tr>
       <td style="padding:8px 12px;border-bottom:1px solid #e7e5e4;font-weight:600">${label(s)}</td>
-      <td style="padding:8px 12px;border-bottom:1px solid #e7e5e4;color:${checks[s] ? '#16a34a' : '#b4432f'}">${checks[s] ? 'Taken' : 'Missed'}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #e7e5e4;color:${checks[s] ? '#16a34a' : '#b4432f'}">${checks[s] ? 'Taken' : 'No log'}</td>
       <td style="padding:8px 12px;border-bottom:1px solid #e7e5e4;color:#78716c">${when(s)}</td>
     </tr>`).join('')
 
@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
     </div>`
 
     const text = `${dayLabel}\n` + SLOTS.map((s) =>
-      `${label(s)}: ${checks[s] ? 'taken' + (when(s) ? ' at ' + when(s) : '') : 'missed'}`).join('\n')
+      `${label(s)}: ${checks[s] ? 'taken' + (when(s) ? ' at ' + when(s) : '') : 'no log'}`).join('\n')
 
     const r = await fetch('https://api.resend.com/emails', {
       method: 'POST',
