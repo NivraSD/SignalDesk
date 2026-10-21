@@ -6,8 +6,8 @@ const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const GOOGLE_API_KEY = Deno.env.get('GOOGLE_API_KEY')!
 const GROUNDED_API_KEY = Deno.env.get('GROUNDED_API_KEY')!
 
-const GEMINI_TEXT = 'gemini-2.5-flash'
-const GEMINI_IMAGE = 'gemini-2.5-flash-image'
+const GEMINI_TEXT = 'gemini-3.8-flash'
+const GEMINI_IMAGE = 'gemini-3.1-flash-image'
 
 // ── Step 1: Conceive the piece — title, emotion, and visual direction as one ──
 
@@ -264,7 +264,7 @@ ONLY these 4 lines. Nothing else.`
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.95, maxOutputTokens: 500 }
+        generationConfig: { temperature: 0.95, maxOutputTokens: 4000 }
       })
     }
   )
@@ -279,7 +279,7 @@ ONLY these 4 lines. Nothing else.`
   }
   const data = await response.json()
 
-  // Gemini 2.5 Flash may have thinking parts — find the actual text part
+  // Flash models may return thinking parts — find the actual text part
   const allParts = data.candidates?.[0]?.content?.parts || []
   console.log('Response parts:', allParts.length, allParts.map((p: any) => ({ hasText: !!p.text, thought: p.thought, len: p.text?.length })))
 
