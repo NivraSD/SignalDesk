@@ -64,6 +64,17 @@ export default function SettingsPage() {
   const [newRule, setNewRule] = useState('')
   const [loadingRules, setLoadingRules] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [clearState, setClearState] = useState<'idle' | 'confirm' | 'clearing' | 'done' | 'error'>('idle')
+
+  // Hides the conversation from the Chat screen only; messages stay stored and the companion keeps them.
+  const clearChat = async () => {
+    if (!userId) return
+    setClearState('clearing')
+    const { error } = await supabase
+      .from('grounded_user_settings')
+      .upsert({ user_id: userId, chat_cleared_at: new Date().toISOString() }, { onConflict: 'user_id' })
+    setClearState(error ? 'error' : 'done')
+  }
 
   // Load rules
   useEffect(() => {
@@ -208,6 +219,34 @@ export default function SettingsPage() {
         <p className="text-xs text-stone-400">
           Calendar events sync automatically via service account.
         </p>
+      </div>
+
+      {/* Chat */}
+      <div className="bg-white rounded-xl p-4 shadow-sm space-y-2">
+        <h3 className="text-sm font-medium text-stone-700">Chat</h3>
+        <p className="text-xs text-stone-500">
+          Clear the conversation from your screen. Nothing is deleted &mdash; Grounded still remembers it.
+        </p>
+        {clearState === 'confirm' ? (
+          <div className="flex gap-2">
+            <button onClick={clearChat} className="flex-1 py-2 bg-stone-700 text-white rounded-lg text-sm">
+              Clear chat
+            </button>
+            <button onClick={() => setClearState('idle')} className="flex-1 py-2 border border-stone-200 rounded-lg text-sm">
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setClearState('confirm')}
+            disabled={clearState === 'clearing'}
+            className="w-full py-2 border border-stone-200 rounded-lg text-sm text-stone-700 disabled:opacity-50"
+          >
+            {clearState === 'clearing' ? 'Clearing…' : 'Clear chat'}
+          </button>
+        )}
+        {clearState === 'done' && <p className="text-xs text-stone-500">Chat cleared.</p>}
+        {clearState === 'error' && <p className="text-xs text-red-600">Couldn&apos;t clear chat. Try again.</p>}
       </div>
 
       {/* iOS Shortcuts Setup */}
