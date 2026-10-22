@@ -17,10 +17,13 @@ const CENTER_Y = Math.round(OUTPUT_H * 0.7) // below the lock-screen clock, abov
 
 let fontPromise: Promise<opentype.Font> | null = null
 
-// The font ships in /public; fetch it from our own origin once per warm instance.
-export function loadCaptionFont(origin: string): Promise<opentype.Font> {
+// Inter SemiBold (OFL) from a pinned public CDN, once per warm instance. Our own /fonts path sits
+// behind the site's login middleware, so a server-side fetch of it gets the login page instead.
+const CAPTION_FONT_URL = 'https://cdn.jsdelivr.net/npm/@expo-google-fonts/inter@0.2.3/Inter_600SemiBold.ttf'
+
+export function loadCaptionFont(_origin?: string): Promise<opentype.Font> {
   if (!fontPromise) {
-    fontPromise = fetch(new URL('/fonts/Inter-SemiBold.ttf', origin))
+    fontPromise = fetch(CAPTION_FONT_URL)
       .then((r) => {
         if (!r.ok) throw new Error(`font fetch ${r.status}`)
         return r.arrayBuffer()
