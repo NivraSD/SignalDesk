@@ -120,6 +120,55 @@ Deno.serve(async (req: Request) => {
     const token = req.headers.get('Authorization')?.replace('Bearer ', '')
     const { data: { user } } = token ? await admin.auth.getUser(token) : { data: { user: null } }
     if (!user) return errorResponse('Not signed in', 401)
+    const body = await req.json()
+    const { action, event, timeMin, timeMax } = body
+
+    // ── Connect: link the calendar shared with Grounded's service account ──
+    // Only the calendar matching the person's own login email, and only if nobody else has it,
+    // because the service account can open every calendar shared with it.
+    if (action === 'connect') {
+      const email = (user.email || '').trim().toLowerCase()
+      const requested = String(body.calendarId || email).trim().toLowerCase()
+      if (!email || requested !== email) {
+        return errorResponse('You can connect the calendar for your Grounded login email only.', 403)
+      }
+      const { data: claimed } = await admin
+        .from('grounded_user_settings')
+        .select('user_id')
+        .eq('calendar_id', requested)
+        .neq('user_id', user.id)
+        .limit(1)
+      if (claimed?.length) return errorResponse('That calendar is already connected to another account.', 409)
+
+      const probeToken = await getGoogleAccessToken()
+      const probe = await fetch(
+        `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(requested)}/events?maxResults=1`,
+        { headers: { Authorization: `Bearer ${probeToken}` } }
+      )
+      if (!probe.ok) {
+        return errorResponse(
+          `Grounded can't see that calendar yet. Share it with ${GOOGLE_SERVICE_ACCOUNT.client_email} ("Make changes to events"), then try again.`,
+          400
+        )
+      }
+      const { error } = await admin
+        .from('grounded_user_settings')
+        .upsert({ user_id: user.id, calendar_id: requested }, { onConflict: 'user_id' })
+      if (error) return errorResponse(error.message, 500)
+      return jsonResponse({ connected: true, calendarId: requested })
+    }
+
+    if (action === 'disconnect') {
+      const { error } = await admin.from('grounded_user_settings').update({ calendar_id: null }).eq('user_id', user.id)
+      if (error) return errorResponse(error.message, 500)
+      return jsonResponse({ connected: false })
+    }
+
+    // The address to share with (for the setup screen); no calendar needed yet.
+    if (action === 'share-address') {
+      return jsonResponse({ serviceAccount: GOOGLE_SERVICE_ACCOUNT.client_email, email: user.email })
+    }
+
     const { data: settings } = await admin
       .from('grounded_user_settings')
       .select('calendar_id')
@@ -127,8 +176,6 @@ Deno.serve(async (req: Request) => {
       .maybeSingle()
     if (!settings?.calendar_id) return errorResponse('No calendar connected', 400)
     const targetCalendar = settings.calendar_id
-
-    const { action, event, timeMin, timeMax } = await req.json()
     const accessToken = await getGoogleAccessToken()
 
     // Get events
@@ -179,7 +226,7 @@ Deno.serve(async (req: Request) => {
 
     // Delete event
     if (action === 'delete-event') {
-      const { eventId } = await req.json().catch(() => ({}))
+      const { eventId } = body
       if (!event?.id && !eventId) return errorResponse('Missing event ID', 400)
 
       const id = eventId || event.id

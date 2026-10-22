@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 import LockScreenArt from './LockScreenArt'
+import CalendarConnect from './CalendarConnect'
 import { CONTRIBUTE_URL } from '@/lib/constants'
 import { useGroundedStore } from '@/stores/groundedStore'
 
@@ -116,6 +117,7 @@ export default function SettingsPage() {
           </span>
           <span className="text-stone-300">&rsaquo;</span>
         </button>
+        <CalendarConnect />
         <div className="w-full flex items-center justify-between p-4">
           <span>
             <span className="block text-sm font-medium text-stone-700">Pill tracker</span>
