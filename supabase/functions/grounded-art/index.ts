@@ -226,36 +226,29 @@ const TITLE_EXAMPLES_BY_REGISTER: Record<string, string[]> = {
   existential: ['being small under a large sky', 'the size of a single moment', 'briefly aware of everything'],
 }
 
-async function conceiveArt(recentTitles: string[]): Promise<ArtConcept> {
-  const { seed, register } = pickSeed()
+async function conceiveArt(title: string, register: string): Promise<ArtConcept> {
+  // The title comes from the Title Bank (grounded_next_art_title); the image is built from it.
+  const seed = title
   const approach = pickApproach()
   const guidance = REGISTER_GUIDANCE[register] || ''
-  const titleExamples = (TITLE_EXAMPLES_BY_REGISTER[register] || [])
-    .map(t => `"${t}"`)
-    .join(', ')
+  const prompt = `Create a concept for a visual piece whose title is "${title}".
 
-  const avoidList = recentTitles.length > 0
-    ? `\nDo NOT use or closely resemble these recent titles: ${recentTitles.join(', ')}`
-    : ''
-
-  const prompt = `Create a concept for a visual piece.
+The title is two words and stays ambiguous on purpose: the viewer reads it and connects it to the image themselves. So the image must EVOKE the title, never illustrate it — no literal depiction of the words (for "light leaving", not a sunset).
 
 The REGISTER for this piece: ${register} — ${guidance}.
-The STARTING FEELING: "${seed}"
 
 The MEDIUM has already been chosen: a ${approach.medium}.
 The STYLE for that medium: ${approach.style}
 The PALETTE bias: ${approach.palette_hint}
 
-Your job: give the piece a title, name its emotional tone, refine the palette, and describe composition. Stay firmly in the "${register}" register — resist drifting to becoming/motion language if that isn't the register. The piece is NOT a painting unless the medium above says so — respect the medium.
+Your job: name the piece's emotional tone, refine the palette, and describe the composition. Respect the medium.
 
-Respond with EXACTLY 4 lines, no labels, no extra text:
-Line 1: An evocative 3-5 word phrase (lowercase, no punctuation) in the ${register} register — examples in this register: ${titleExamples}${avoidList}
-Line 2: The specific emotion the piece should evoke (one sentence)
-Line 3: Refined colour palette (build on the palette bias, be specific with 3-5 colours or tonal moves)
-Line 4: Composition — where the visual weight sits, what the eye finds first, what's held back
+Respond with EXACTLY 3 lines, no labels, no extra text:
+Line 1: The specific emotion the piece should evoke (one sentence)
+Line 2: Refined colour palette (build on the palette bias, be specific with 3-5 colours or tonal moves)
+Line 3: Composition — where the visual weight sits, what the eye finds first, what's held back
 
-ONLY these 4 lines. Nothing else.`
+ONLY these 3 lines. Nothing else.`
 
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_TEXT}:generateContent?key=${GOOGLE_API_KEY}`,
@@ -296,28 +289,14 @@ ONLY these 4 lines. Nothing else.`
     throw new Error('Concept generation returned empty')
   }
 
-  // Clean title: remove any numbering, quotes, labels
-  let title = lines[0]
-    .replace(/^\d+[.:)\s]*/g, '')
-    .replace(/^(title|line\s*1)[:\s]*/i, '')
-    .replace(/^["']|["']$/g, '')
-    .replace(/[.!?,;:'"]/g, '')
-    .toLowerCase()
-    .trim()
-
-  // Enforce 3+ words
-  if (title.split(/\s+/).length < 3) {
-    title = 'not yet but almost'
-  }
-
   const concept: ArtConcept = {
     title,
-    emotion: lines[1]?.replace(/^\d+[.:)\s]*/g, '').replace(/^(emotion|line\s*2)[:\s]*/i, '').trim() || seed,
+    emotion: lines[0]?.replace(/^\d+[.:)\s]*/g, '').replace(/^(emotion|line\s*1)[:\s]*/i, '').trim() || seed,
     register,
     medium: approach.medium,
     style: approach.style,
-    palette: lines[2]?.replace(/^\d+[.:)\s]*/g, '').replace(/^(palette|colors?|line\s*3)[:\s]*/i, '').trim() || approach.palette_hint,
-    composition: lines[3]?.replace(/^\d+[.:)\s]*/g, '').replace(/^(composition|line\s*4)[:\s]*/i, '').trim() || 'weight settled off-centre with quiet edges',
+    palette: lines[1]?.replace(/^\d+[.:)\s]*/g, '').replace(/^(palette|colors?|line\s*2)[:\s]*/i, '').trim() || approach.palette_hint,
+    composition: lines[2]?.replace(/^\d+[.:)\s]*/g, '').replace(/^(composition|line\s*3)[:\s]*/i, '').trim() || 'weight settled off-centre with quiet edges',
   }
 
   return concept
@@ -472,18 +451,15 @@ Deno.serve(async (req: Request) => {
 
     // ── GENERATE ──────────────────────────────────────────────────────────
     if (action === 'generate') {
-      const { data: recentPieces } = await supabase
-        .from('grounded_art_pieces')
-        .select('title')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(20)
+      // Next title from the Title Bank (unused bank title first, then a remix of bank words)
+      const { data: nextTitle, error: titleError } = await supabase.rpc('grounded_next_art_title')
+      if (titleError) throw new Error(`Title pick failed: ${titleError.message}`)
+      const picked = (nextTitle as { title: string; register: string; source: string }[] | null)?.[0]
+      if (!picked) throw new Error('Title pick returned nothing')
+      console.log(`Title (${picked.source}): "${picked.title}" [${picked.register}]`)
 
-      const recentTitles = (recentPieces || []).map((p: { title: string }) => p.title)
-
-      // Single creative act: conceive the whole piece
       console.log('Conceiving art piece...')
-      const concept = await conceiveArt(recentTitles)
+      const concept = await conceiveArt(picked.title, picked.register)
       console.log('Concept:', JSON.stringify(concept))
 
       // Generate art driven by the unified concept
