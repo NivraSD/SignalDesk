@@ -37,39 +37,6 @@ export default function HomePage() {
     <div className="space-y-4">
       <DailyQuote />
 
-      {!morningLoading && (
-        <div className="bg-white rounded-2xl p-4 shadow-sm">
-          {morning ? (
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0 space-y-0.5">
-                <p className="text-xs text-stone-400 uppercase tracking-wide">This morning</p>
-                <div className="flex flex-wrap gap-x-3 gap-y-1">
-                  {AREAS.filter((a) => morning.areas?.[a.id]?.score).map((a) => (
-                    <span key={a.id} className="text-sm text-stone-700 tabular-nums" title={a.name}>
-                      <span style={{ color: a.color }}>{a.icon}</span> {morning.areas[a.id].score}
-                    </span>
-                  ))}
-                </div>
-                {morning.intention && <p className="text-sm text-stone-500 italic">Just for today: {morning.intention}</p>}
-              </div>
-              <button onClick={() => navigate('/morning')} className="flex-none text-xs text-stone-500">
-                Edit
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <p className="text-stone-600">Good morning. How are you arriving today?</p>
-              <button
-                onClick={() => navigate('/morning')}
-                className="w-full py-2.5 bg-stone-700 text-white rounded-lg text-sm"
-              >
-                Begin Morning Check-In
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Vision Board */}
       <div className="space-y-2">
         <div className="flex items-center justify-between px-1">
@@ -120,6 +87,39 @@ export default function HomePage() {
       <div className="bg-white rounded-2xl p-3 shadow-sm">
         <PyramidSection />
       </div>
+
+      {!morningLoading && (
+        <div className="bg-white rounded-2xl p-4 shadow-sm">
+          {morning ? (
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 space-y-0.5">
+                <p className="text-xs text-stone-400 uppercase tracking-wide">This morning</p>
+                <div className="flex flex-wrap gap-x-3 gap-y-1">
+                  {AREAS.filter((a) => morning.areas?.[a.id]?.score).map((a) => (
+                    <span key={a.id} className="text-sm text-stone-700 tabular-nums" title={a.name}>
+                      <span style={{ color: a.color }}>{a.icon}</span> {morning.areas[a.id].score}
+                    </span>
+                  ))}
+                </div>
+                {morning.intention && <p className="text-sm text-stone-500 italic">Just for today: {morning.intention}</p>}
+              </div>
+              <button onClick={() => navigate('/morning')} className="flex-none text-xs text-stone-500">
+                Edit
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-stone-600">Good morning. How are you arriving today?</p>
+              <button
+                onClick={() => navigate('/morning')}
+                className="w-full py-2.5 bg-stone-700 text-white rounded-lg text-sm"
+              >
+                Begin Morning Check-In
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="bg-white rounded-2xl p-4 shadow-sm">
         <PillTracker />
