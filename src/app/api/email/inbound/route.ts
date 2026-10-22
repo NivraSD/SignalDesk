@@ -19,6 +19,12 @@ export async function POST(req: NextRequest) {
 
     const { from, to, subject, html, text, attachments } = data
 
+    // The Resend account also receives for other domains (groundedproject.app has its own forwarder).
+    const recipients: string[] = Array.isArray(to) ? to : [to]
+    if (!recipients.some((r) => /@nivria\.ai>?$/i.test(String(r).trim()))) {
+      return NextResponse.json({ message: 'Not addressed to nivria.ai' }, { status: 200 })
+    }
+
     console.log(`📧 Inbound email received:`)
     console.log(`   From: ${from}`)
     console.log(`   To: ${to}`)
