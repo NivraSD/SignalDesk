@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 import LockScreenArt from './LockScreenArt'
+import { CONTRIBUTE_URL } from '@/lib/constants'
 import { useGroundedStore } from '@/stores/groundedStore'
 
 interface UserRule {
@@ -259,6 +260,19 @@ export default function SettingsPage() {
           Grounded is a personal wellness and recovery tracker with an AI companion
           that learns your patterns, preferences, and goals over time.
         </p>
+        {CONTRIBUTE_URL && (
+          <div className="mt-3 pt-3 border-t border-stone-100 flex items-center justify-between gap-3">
+            <p className="text-xs text-stone-500">Grounded is free. Modest contributions go a long way.</p>
+            <a
+              href={CONTRIBUTE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-none text-xs px-3 py-1.5 rounded-full bg-stone-700 text-white"
+            >
+              Contribute
+            </a>
+          </div>
+        )}
       </div>
     </div>
   )

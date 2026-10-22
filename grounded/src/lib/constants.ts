@@ -14,6 +14,9 @@ export const DEFAULT_AREAS: Area[] = [
 
 export const TIMEZONE = 'America/New_York'
 
+// Stripe Payment Link for contributions ("customer chooses what to pay"). Empty = the About section hides it.
+export const CONTRIBUTE_URL = ''
+
 export const TIME_OF_DAY = ['Morning', 'Afternoon', 'Evening', 'Night']
 
 export const PILL_SLOTS = [
