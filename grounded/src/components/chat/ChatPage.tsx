@@ -11,32 +11,48 @@ export default function ChatPage() {
   const lastIdRef = useRef<string | undefined>(undefined)
   const prependHeightRef = useRef<number | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
-  const [height, setHeight] = useState<number | null>(null)
+  // Layout: at rest, the chat fills the space under the header and above the nav. While typing,
+  // iOS slides the visible area down the page to make room for the keyboard (visualViewport.offsetTop)
+  // — scrolling the page back can't undo that — so the chat pins itself to exactly what's visible.
+  const [layout, setLayout] = useState<{ typing: boolean; top: number; height: number } | null>(null)
 
-  // Fit the chat to what's actually visible: above the keyboard while typing (iOS shrinks the
-  // visual viewport), above the bottom nav otherwise. A fixed 100dvh formula left a gap when the
-  // nav hid for typing and ignored the keyboard entirely.
   useEffect(() => {
+    // The page itself never scrolls on Chat; only the message list does.
+    const html = document.documentElement
+    const prev = { html: html.style.overflow, body: document.body.style.overflow }
+    html.style.overflow = 'hidden'
+    document.body.style.overflow = 'hidden'
+
     const vv = window.visualViewport
     const update = () =>
       requestAnimationFrame(() => {
         const el = containerRef.current
         if (!el) return
         const typing = document.activeElement === inputRef.current
-        const nav = document.querySelector('.bottom-nav') as HTMLElement | null
-        const navH = !typing && nav ? nav.getBoundingClientRect().height : 0
-        const top = el.getBoundingClientRect().top + window.scrollY
         const visible = vv?.height ?? window.innerHeight
-        setHeight(Math.max(200, Math.floor(visible - top - navH - 8)))
-        window.scrollTo(0, 0) // iOS scrolls the page up on focus; the chat already fits, so undo it
+        if (typing) {
+          setLayout({ typing: true, top: vv?.offsetTop ?? 0, height: visible })
+        } else {
+          window.scrollTo(0, 0)
+          const nav = document.querySelector('.bottom-nav') as HTMLElement | null
+          const navH = nav ? nav.getBoundingClientRect().height : 0
+          // Measure from the header, not this element: it may still be pinned from typing.
+          const header = document.querySelector('header')
+          const top = header ? header.getBoundingClientRect().bottom + 16 : el.getBoundingClientRect().top
+          setLayout({ typing: false, top, height: Math.max(200, Math.floor(visible - top - navH - 8)) })
+        }
       })
     update()
     vv?.addEventListener('resize', update)
+    vv?.addEventListener('scroll', update)
     window.addEventListener('focusin', update)
     window.addEventListener('focusout', update)
     window.addEventListener('resize', update)
     return () => {
+      html.style.overflow = prev.html
+      document.body.style.overflow = prev.body
       vv?.removeEventListener('resize', update)
+      vv?.removeEventListener('scroll', update)
       window.removeEventListener('focusin', update)
       window.removeEventListener('focusout', update)
       window.removeEventListener('resize', update)
@@ -89,11 +105,15 @@ export default function ChatPage() {
     const el = e.target
     el.style.height = 'auto'
     // Grow with the message; past half the visible chat it scrolls inside so the conversation stays in view.
-    el.style.height = Math.min(el.scrollHeight, Math.max(120, (height ?? 400) / 2)) + 'px'
+    el.style.height = Math.min(el.scrollHeight, Math.max(120, (layout?.height ?? 400) / 2)) + 'px'
   }
 
   return (
-    <div ref={containerRef} className="flex flex-col" style={{ height: height ?? undefined }}>
+    <div
+      ref={containerRef}
+      className={`flex flex-col ${layout?.typing ? 'fixed inset-x-0 z-40 bg-stone-100 px-4 pb-2 mx-auto max-w-lg' : ''}`}
+      style={layout ? (layout.typing ? { top: layout.top, height: layout.height } : { height: layout.height }) : undefined}
+    >
       {/* Header */}
       <div className="flex items-center justify-between px-1 pb-3">
         <button onClick={() => navigate('/')} className="text-stone-500 text-sm">
