@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Settings, Bell } from 'lucide-react'
+import { Settings, Bell, Info } from 'lucide-react'
 import BottomNav from './BottomNav'
 import { useEffect } from 'react'
 import { useUserSetup } from '@/hooks/useAreas'
@@ -32,6 +32,13 @@ export default function AppShell({ children }: AppShellProps) {
             Grounded
           </h1>
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate('/about')}
+              aria-label="How Grounded works"
+              className="text-stone-400 hover:text-stone-600"
+            >
+              <Info size={18} />
+            </button>
             <button
               onClick={() => navigate('/reminders')}
               className="text-stone-400 hover:text-stone-600"

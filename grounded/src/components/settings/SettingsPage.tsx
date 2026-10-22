@@ -250,6 +250,9 @@ export default function SettingsPage() {
           Grounded is a personal wellness and recovery tracker with an AI companion
           that learns your patterns, preferences, and goals over time.
         </p>
+        <button onClick={() => navigate('/about')} className="mt-2 text-xs text-stone-600 underline">
+          How Grounded works
+        </button>
         {new URLSearchParams(window.location.search).has('contributed') && (
           <p className="mt-3 text-xs text-stone-600">Thank you. It genuinely helps keep Grounded free.</p>
         )}

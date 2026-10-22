@@ -18,6 +18,7 @@ import OnOpenScreen from '@/components/open/OnOpenScreen'
 import ArtPage from '@/components/art/ArtPage'
 import WelcomePage from '@/components/welcome/WelcomePage'
 import AboutYouPage from '@/components/you/AboutYouPage'
+import AboutPage from '@/components/about/AboutPage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { loading, user } = useAuth()
@@ -151,6 +152,14 @@ export default function App() {
           }
         />
 
+        <Route
+          path="/about"
+          element={
+            <ProtectedRoute>
+              <AppShell><AboutPage /></AppShell>
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/you"
           element={

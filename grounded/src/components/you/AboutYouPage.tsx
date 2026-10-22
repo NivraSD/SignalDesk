@@ -2,20 +2,12 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useGroundedStore } from '@/stores/groundedStore'
+import { StoryFields, type StorySectionId } from './storySections'
 
 // "About you": what a person chooses to tell Grounded, in their own words, plus what Grounded has
 // learned from their check-ins and chats — visible and correctable. Every section is optional.
 
-const SECTIONS = [
-  { id: 'people', title: 'People', prompt: 'Names you’d like Grounded to know, and who they are. A partner, a sponsor, a friend, a dog.' },
-  { id: 'life', title: 'Life right now', prompt: 'Work or school, where you live, who you live with, what your days look like.' },
-  { id: 'working_with', title: 'What you’re working with', prompt: 'A diagnosis in your own words, if you want to share one. Or just how you’d describe it.' },
-  { id: 'hard', title: 'What’s hard', prompt: 'Triggers, patterns, things Grounded should be careful around.' },
-  { id: 'events', title: 'Key events', prompt: 'Anything from your past you want Grounded to keep in mind. Only what you choose.' },
-  { id: 'helps', title: 'What helps', prompt: 'People, practices, places, words. What brings you back.' },
-] as const
-
-type SectionId = (typeof SECTIONS)[number]['id']
+type SectionId = StorySectionId
 
 export default function AboutYouPage() {
   const navigate = useNavigate()
@@ -99,23 +91,12 @@ export default function AboutYouPage() {
         {error ? <span className="text-red-600">Couldn&apos;t save: {error}</span> : saved && <span className="text-stone-400">{saved}</span>}
       </div>
 
-      {SECTIONS.map((s) => (
-        <div key={s.id} className="bg-white rounded-xl p-4 shadow-sm space-y-2">
-          <label htmlFor={`story-${s.id}`} className="block text-sm font-medium text-stone-700">
-            {s.title}
-          </label>
-          <p className="text-xs text-stone-400">{s.prompt}</p>
-          <textarea
-            id={`story-${s.id}`}
-            value={story[s.id] ?? ''}
-            onChange={(e) => setStory((prev) => ({ ...prev, [s.id]: e.target.value }))}
-            onBlur={() => saveSection(s.id)}
-            disabled={!loaded}
-            rows={3}
-            className="w-full p-3 border border-stone-200 rounded-lg text-sm resize-y disabled:opacity-50"
-          />
-        </div>
-      ))}
+      <StoryFields
+        story={story}
+        onChange={(id, value) => setStory((prev) => ({ ...prev, [id]: value }))}
+        onBlur={saveSection}
+        disabled={!loaded}
+      />
 
       <div className="bg-white rounded-xl p-4 shadow-sm space-y-2">
         <label htmlFor="learned" className="block text-sm font-medium text-stone-700">
