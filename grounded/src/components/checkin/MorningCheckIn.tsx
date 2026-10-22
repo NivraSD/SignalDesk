@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
+import { useAreas } from '@/hooks/useAreas'
 import { useNavigate } from 'react-router-dom'
-import { AREAS } from '@/lib/constants'
 import { getYesterday } from '@/lib/utils'
 import { useCheckins } from '@/hooks/useCheckins'
 import { useMorningCheckin } from '@/hooks/useMorningCheckin'
@@ -15,6 +15,7 @@ const hasActivities = (s: TomorrowSchedule | null | undefined) =>
   !!s && Object.values(s.areas || {}).some((a) => a.activities?.length)
 
 export default function MorningCheckIn() {
+  const AREAS = useAreas()
   const navigate = useNavigate()
   const { checkIns } = useCheckins()
   const { morning, loading, saveMorning } = useMorningCheckin()

@@ -1,13 +1,12 @@
 import { useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { CalendarEvent } from '@/types'
+import { useGroundedStore } from '@/stores/groundedStore'
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 
-// Calendar ID to use - user's email (the calendar they shared with the service account)
-const CALENDAR_ID = 'jl@nivria.ai'
-
 export function useCalendar() {
+  const hasCalendar = useGroundedStore((s) => s.hasCalendar)
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -22,7 +21,7 @@ export function useCalendar() {
         Authorization: `Bearer ${session.access_token}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ calendarId: CALENDAR_ID, ...payload }),
+      body: JSON.stringify(payload), // the server uses the signed-in person's own calendar
     })
 
     return await response.json()
@@ -136,7 +135,7 @@ export function useCalendar() {
     events,
     loading,
     error,
-    isCalendarConnected: true, // Always "connected" with service account
+    isCalendarConnected: hasCalendar, // set per person in grounded_user_settings.calendar_id
     fetchTodayEvents,
     createEvent,
   }

@@ -1,6 +1,8 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Settings, Bell } from 'lucide-react'
 import BottomNav from './BottomNav'
+import { useEffect } from 'react'
+import { useUserSetup } from '@/hooks/useAreas'
 
 interface AppShellProps {
   children: React.ReactNode
@@ -9,6 +11,12 @@ interface AppShellProps {
 export default function AppShell({ children }: AppShellProps) {
   const location = useLocation()
   const navigate = useNavigate()
+  const { onboarded } = useUserSetup()
+
+  // Someone who hasn't done the first-run setup goes there first.
+  useEffect(() => {
+    if (onboarded === false) navigate('/welcome', { replace: true })
+  }, [onboarded, navigate])
 
   return (
     <div className="min-h-[100dvh] bg-stone-100">

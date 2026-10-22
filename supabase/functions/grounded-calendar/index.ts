@@ -1,7 +1,11 @@
 // Grounded Calendar - uses Google Service Account to read/write user's calendar
 // User must share their calendar with: signaldesk-api@nivria.iam.gserviceaccount.com
 
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders, handleCors, jsonResponse, errorResponse } from '../_shared/cors.ts'
+
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
+const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
 const GOOGLE_SERVICE_ACCOUNT_JSON = Deno.env.get('GOOGLE_SERVICE_ACCOUNT')
 
@@ -110,8 +114,21 @@ Deno.serve(async (req: Request) => {
       return errorResponse(SA_PROBLEM, 500)
     }
 
-    const { action, calendarId, event, timeMin, timeMax } = await req.json()
-    const targetCalendar = calendarId || 'primary'
+    // Signed-in people only, and only their own calendar (grounded_user_settings.calendar_id).
+    // Any calendarId in the request is ignored, so nobody can reach someone else's calendar.
+    const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+    const token = req.headers.get('Authorization')?.replace('Bearer ', '')
+    const { data: { user } } = token ? await admin.auth.getUser(token) : { data: { user: null } }
+    if (!user) return errorResponse('Not signed in', 401)
+    const { data: settings } = await admin
+      .from('grounded_user_settings')
+      .select('calendar_id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+    if (!settings?.calendar_id) return errorResponse('No calendar connected', 400)
+    const targetCalendar = settings.calendar_id
+
+    const { action, event, timeMin, timeMax } = await req.json()
     const accessToken = await getGoogleAccessToken()
 
     // Get events

@@ -1,12 +1,14 @@
 import type { Area, PyramidLevel, DailyQuote, FrequencyOption } from '@/types'
 
-export const AREAS: Area[] = [
-  { id: 'spiritual', name: 'Spiritual', icon: '\u2726', color: '#8B7355', description: 'Prayer, meditation, connection with God', isGrounding: true },
-  { id: 'mental_emotional', name: 'Mental/Emotional', icon: '\u25C8', color: '#6B8E8E', description: 'Therapy, CPTSD work, regulation, honesty' },
-  { id: 'physical', name: 'Physical', icon: '\u25CB', color: '#7A9B76', description: 'Gym, nutrition, movement' },
-  { id: 'recovery', name: 'Recovery', icon: '\u25B3', color: '#9B8AA6', description: 'NA meetings, sponsor, step work, readings' },
-  { id: 'nivria', name: 'NIVRIA', icon: '\u25C7', color: '#8B9EAB', description: '5 hours/day, consistent not frantic' },
-  { id: 'joy_connection', name: 'Joy/Connection', icon: '\u2600', color: '#C4A574', description: 'Fun, friends, new people', isWeekly: true },
+// Starting areas for someone new. Each person's own areas live in grounded_user_settings.areas
+// (renamed, turned off, reordered in the welcome). Ids are stable keys for check-in data.
+export const DEFAULT_AREAS: Area[] = [
+  { id: 'spiritual', name: 'Spiritual', icon: '\u2726', color: '#8B7355', description: 'Prayer, meditation, faith, connection to something larger', isGrounding: true },
+  { id: 'mental_emotional', name: 'Mental/Emotional', icon: '\u25C8', color: '#6B8E8E', description: 'Therapy, regulation, naming what you feel' },
+  { id: 'physical', name: 'Physical', icon: '\u25CB', color: '#7A9B76', description: 'Movement, food, sleep, your body' },
+  { id: 'recovery', name: 'Recovery', icon: '\u25B3', color: '#9B8AA6', description: 'Meetings, sponsor, program, staying sober' },
+  { id: 'work', name: 'Work/School', icon: '\u25C7', color: '#8B9EAB', description: "What you're building, studying, or showing up for" },
+  { id: 'joy_connection', name: 'Joy/Connection', icon: '\u2600', color: '#C4A574', description: 'Fun, friends, people who feel good to be around', isWeekly: true },
 ]
 
 export const PYRAMID_LEVELS: PyramidLevel[] = [
@@ -56,13 +58,14 @@ export const DAILY_QUOTES: DailyQuote[] = [
   { text: "Breathe. You're going to be okay.", source: "Grounding Wisdom" },
 ]
 
+// Starting activity ideas for someone new (each person's own list lives in grounded_activities).
 export const DEFAULT_ACTIVITY_BANK: Record<string, string[]> = {
-  spiritual: ['5 minutes of quiet/breathing', '10 minutes of prayer', '10 minutes of meditation', 'Morning prayer + evening gratitude', 'Read spiritual text', 'Gratitude journaling'],
-  mental_emotional: ["Name one emotion you're feeling", 'Journal for 10 minutes', 'Work through Pete Walker chapter', 'CPTSD workbook session', 'Grounding exercise', 'Process something in writing', 'Therapy session'],
-  physical: ['Stretch for 5 minutes', '30-minute walk with Rosie', 'Full gym session \u2014 kettlebells', 'Strength training', 'Prepare a healthy meal', 'Meal prep', 'Drink enough water'],
-  recovery: ['Read Just for Today', 'Call sponsor', 'Attend NA meeting', 'Step work session', 'Listen to speaker tape', 'Reach out to someone in program', 'Recovery reading'],
-  nivria: ['Review next steps doc', '2-3 hours focused work', '5-hour deep work session', 'Beta tester follow-up', 'Fundraising prep', 'CTO conversations', 'Email/outreach'],
-  joy_connection: ['Text a friend', 'Make plans with someone', 'Movie/dinner/event', 'Quality time with girlfriend', 'Meet someone new', 'Attend social event', 'Time with Rosie (full presence)'],
+  spiritual: ['5 minutes of quiet/breathing', '10 minutes of prayer', '10 minutes of meditation', 'Read something spiritual', 'Gratitude list'],
+  mental_emotional: ["Name one emotion you're feeling", 'Journal for 10 minutes', 'Grounding exercise', 'Process something in writing', 'Therapy session'],
+  physical: ['Stretch for 5 minutes', '20-minute walk', 'Workout', 'Cook a real meal', 'Drink enough water', 'Get to bed on time'],
+  recovery: ['Daily reading', 'Call your sponsor', 'Go to a meeting', 'Step work', 'Reach out to someone in the program'],
+  work: ['One focused hour', 'Clear one small task', 'Plan tomorrow', 'Ask for help with something', 'Study session'],
+  joy_connection: ['Text a friend', 'Make plans with someone', 'Do something just for fun', 'Time outside', 'Call family'],
 }
 
 export const DEFAULT_REMINDERS = [

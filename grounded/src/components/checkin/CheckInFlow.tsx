@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
+import { useAreas } from '@/hooks/useAreas'
 import { useNavigate } from 'react-router-dom'
-import { AREAS } from '@/lib/constants'
 import { getToday } from '@/lib/utils'
 import { useCheckins } from '@/hooks/useCheckins'
 import { useGroundedStore } from '@/stores/groundedStore'
@@ -9,6 +9,7 @@ import type { CheckIn, AreaCheckInData } from '@/types'
 import PlanEditor from './PlanEditor'
 
 export default function CheckInFlow() {
+  const AREAS = useAreas()
   const navigate = useNavigate()
   const { todayCheckIn, saveCheckIn } = useCheckins()
   const { activityBank } = useGroundedStore()

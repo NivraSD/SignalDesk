@@ -131,6 +131,24 @@ export default function SettingsPage() {
       </button>
       <h2 className="text-xl font-light text-stone-700 text-center">Settings</h2>
 
+      {/* You */}
+      <div className="bg-white rounded-xl shadow-sm divide-y divide-stone-100">
+        <button onClick={() => navigate('/you')} className="w-full flex items-center justify-between p-4 text-left">
+          <span>
+            <span className="block text-sm font-medium text-stone-700">About you</span>
+            <span className="block text-xs text-stone-400">Your story, in your words, and what Grounded has learned</span>
+          </span>
+          <span className="text-stone-300">&rsaquo;</span>
+        </button>
+        <button onClick={() => navigate('/welcome?areas')} className="w-full flex items-center justify-between p-4 text-left">
+          <span>
+            <span className="block text-sm font-medium text-stone-700">Your areas</span>
+            <span className="block text-xs text-stone-400">Rename or turn off the parts of life Grounded checks in on</span>
+          </span>
+          <span className="text-stone-300">&rsaquo;</span>
+        </button>
+      </div>
+
       {/* AI Rules & Guidance */}
       <div className="bg-white rounded-xl p-4 shadow-sm space-y-3">
         <h3 className="text-sm font-medium text-stone-700">AI Rules &amp; Guidance</h3>

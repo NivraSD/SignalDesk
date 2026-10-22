@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { AREAS } from '@/lib/constants'
+import { useAreas } from '@/hooks/useAreas'
 import { useJournal } from '@/hooks/useJournal'
 import { useCalendar } from '@/hooks/useCalendar'
 import { getToday, getTomorrow } from '@/lib/utils'
@@ -63,8 +63,9 @@ interface TodayScheduleProps {
 }
 
 export default function TodaySchedule({ todaySchedule, tomorrowSchedule }: TodayScheduleProps) {
+  const AREAS = useAreas()
   const { entries, addEntry, updateEntry, deleteEntry, toggleComplete } = useJournal()
-  const { createEvent } = useCalendar()
+  const { createEvent, isCalendarConnected } = useCalendar()
   const today = getToday()
   const tomorrow = getTomorrow()
   const [calendarAdded, setCalendarAdded] = useState<Set<string>>(new Set())
@@ -334,16 +335,18 @@ export default function TodaySchedule({ todaySchedule, tomorrowSchedule }: Today
           {/* Time */}
           <span className="text-xs text-stone-400 flex-shrink-0">{item.timeLabel}</span>
 
-          {/* Calendar button */}
-          <button
-            onClick={() => addToCalendar(item)}
-            disabled={isAdded || isAdding}
-            className={`text-[10px] flex-shrink-0 px-1.5 py-0.5 rounded ${
-              isAdded ? 'text-green-500' : 'text-blue-500 bg-blue-50'
-            }`}
-          >
-            {isAdded ? '\u2713' : isAdding ? '...' : '+cal'}
-          </button>
+          {/* Calendar button (only for people with a calendar connected) */}
+          {isCalendarConnected && (
+            <button
+              onClick={() => addToCalendar(item)}
+              disabled={isAdded || isAdding}
+              className={`text-[10px] flex-shrink-0 px-1.5 py-0.5 rounded ${
+                isAdded ? 'text-green-500' : 'text-blue-500 bg-blue-50'
+              }`}
+            >
+              {isAdded ? '\u2713' : isAdding ? '...' : '+cal'}
+            </button>
+          )}
 
           {/* Expand chevron */}
           <button
@@ -470,6 +473,7 @@ export default function TodaySchedule({ todaySchedule, tomorrowSchedule }: Today
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <h3 className="font-medium text-stone-700 text-sm">Today</h3>
+{isCalendarConnected && (
             <button
               onClick={async () => {
                 for (const item of todayItems) {
@@ -482,6 +486,7 @@ export default function TodaySchedule({ todaySchedule, tomorrowSchedule }: Today
             >
               + All to Calendar
             </button>
+            )}
           </div>
           <div className="space-y-1.5">
             {todayItems.map(renderItem)}
@@ -493,6 +498,7 @@ export default function TodaySchedule({ todaySchedule, tomorrowSchedule }: Today
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <h3 className="font-medium text-stone-700 text-sm">Tomorrow</h3>
+{isCalendarConnected && (
             <button
               onClick={async () => {
                 for (const item of tomorrowItems) {
@@ -505,6 +511,7 @@ export default function TodaySchedule({ todaySchedule, tomorrowSchedule }: Today
             >
               + All to Calendar
             </button>
+            )}
           </div>
           <div className="space-y-1.5">
             {tomorrowItems.map(renderItem)}

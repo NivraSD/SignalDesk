@@ -1,4 +1,5 @@
-import { AREAS, TIME_OF_DAY } from '@/lib/constants'
+import { TIME_OF_DAY } from '@/lib/constants'
+import { useAreas } from '@/hooks/useAreas'
 import { useGroundedStore } from '@/stores/groundedStore'
 import type { TomorrowSchedule } from '@/types'
 
@@ -12,6 +13,7 @@ interface PlanEditorProps {
 }
 
 export default function PlanEditor({ when, schedule, onChange, suggestions }: PlanEditorProps) {
+  const AREAS = useAreas()
   const { activityBank } = useGroundedStore()
 
   const updateArea = (areaId: string, field: string, value: unknown) => {

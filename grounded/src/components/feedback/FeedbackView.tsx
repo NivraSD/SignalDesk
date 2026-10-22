@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
+import { useAreas } from '@/hooks/useAreas'
 import { useNavigate } from 'react-router-dom'
-import { AREAS } from '@/lib/constants'
 import { useCheckins } from '@/hooks/useCheckins'
 import { useGroundedAI } from '@/hooks/useGroundedAI'
 
 export default function FeedbackView() {
+  const AREAS = useAreas()
   const navigate = useNavigate()
   const { todayCheckIn } = useCheckins()
   const { loading, getReflection } = useGroundedAI()

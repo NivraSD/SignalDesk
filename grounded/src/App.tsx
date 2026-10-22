@@ -16,6 +16,8 @@ import SettingsPage from '@/components/settings/SettingsPage'
 import FeedbackView from '@/components/feedback/FeedbackView'
 import OnOpenScreen from '@/components/open/OnOpenScreen'
 import ArtPage from '@/components/art/ArtPage'
+import WelcomePage from '@/components/welcome/WelcomePage'
+import AboutYouPage from '@/components/you/AboutYouPage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { loading, user } = useAuth()
@@ -34,6 +36,16 @@ export default function App() {
           element={
             <ProtectedRoute>
               <OnOpenScreen />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* First run — full-screen, no chrome */}
+        <Route
+          path="/welcome"
+          element={
+            <ProtectedRoute>
+              <WelcomePage />
             </ProtectedRoute>
           }
         />
@@ -135,6 +147,15 @@ export default function App() {
           element={
             <ProtectedRoute>
               <AppShell><FeedbackView /></AppShell>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/you"
+          element={
+            <ProtectedRoute>
+              <AppShell><AboutYouPage /></AppShell>
             </ProtectedRoute>
           }
         />

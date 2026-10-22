@@ -20,8 +20,8 @@ export function useActivities() {
 
     if (!error && data) {
       setActivities(data)
-      // Build activity bank grouped by area
-      const bank: Record<string, string[]> = { ...DEFAULT_ACTIVITY_BANK }
+      // The person's own activities; the starter set only until they have any saved.
+      const bank: Record<string, string[]> = data.length ? {} : { ...DEFAULT_ACTIVITY_BANK }
       data.forEach((a: Activity) => {
         if (!bank[a.area_id]) bank[a.area_id] = []
         if (!bank[a.area_id].includes(a.name)) {

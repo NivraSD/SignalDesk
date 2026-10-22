@@ -1,6 +1,6 @@
 import { useState } from 'react'
+import { useAreas } from '@/hooks/useAreas'
 import { useNavigate } from 'react-router-dom'
-import { AREAS } from '@/lib/constants'
 import { getWeekDates, getToday } from '@/lib/utils'
 import { useCheckins } from '@/hooks/useCheckins'
 import type { CheckIn } from '@/types'
@@ -12,6 +12,7 @@ function WeeklyReview({
   checkIns: CheckIn[]
   weekDates: string[]
 }) {
+  const AREAS = useAreas()
   const weekCheckIns = checkIns.filter((c) => weekDates.includes(c.checkin_date))
 
   if (weekCheckIns.length === 0) {
@@ -67,6 +68,7 @@ function WeeklyReview({
 }
 
 export default function HistoryPage() {
+  const AREAS = useAreas()
   const navigate = useNavigate()
   const { checkIns } = useCheckins()
   const [weekOffset, setWeekOffset] = useState(0)

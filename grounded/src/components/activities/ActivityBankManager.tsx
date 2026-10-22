@@ -1,9 +1,10 @@
 import { useState } from 'react'
+import { useAreas } from '@/hooks/useAreas'
 import { useNavigate } from 'react-router-dom'
-import { AREAS } from '@/lib/constants'
 import { useActivities } from '@/hooks/useActivities'
 
 export default function ActivityBankManager() {
+  const AREAS = useAreas()
   const navigate = useNavigate()
   const { activities, activityBank, addActivity, removeActivity } = useActivities()
   const [selectedArea, setSelectedArea] = useState(AREAS[0].id)

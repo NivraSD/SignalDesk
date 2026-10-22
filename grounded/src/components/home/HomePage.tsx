@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
+import { useAreas } from '@/hooks/useAreas'
 import { useNavigate } from 'react-router-dom'
 import { getYesterday } from '@/lib/utils'
-import { AREAS } from '@/lib/constants'
 import { useCheckins } from '@/hooks/useCheckins'
 import { useVisionBoard } from '@/hooks/useVisionBoard'
 import { useMorningCheckin } from '@/hooks/useMorningCheckin'
@@ -12,6 +12,7 @@ import PillTracker from './PillTracker'
 
 
 export default function HomePage() {
+  const AREAS = useAreas()
   const navigate = useNavigate()
   const { checkIns, todayCheckIn } = useCheckins()
   const { items: visionItems, addImage, removeImage } = useVisionBoard()
