@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { CONTRIBUTE_URL } from '@/lib/constants'
 
 // How Grounded works, section by section. Plain language; nothing here asks anything of the reader.
@@ -121,6 +121,10 @@ export default function AboutPage() {
           call <b>911</b>. Outside the US, contact your local emergency number.
         </p>
       </div>
+
+      <p className="text-center text-xs text-stone-400">
+        <Link to="/privacy" className="underline">Privacy Policy</Link> · <Link to="/terms" className="underline">Terms of Use</Link>
+      </p>
 
       {CONTRIBUTE_URL && (
         <div className="bg-white rounded-xl p-4 shadow-sm flex items-center justify-between gap-3">

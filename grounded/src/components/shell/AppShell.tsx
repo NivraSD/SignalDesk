@@ -4,6 +4,7 @@ import BottomNav from './BottomNav'
 import { useEffect } from 'react'
 import { useUserSetup } from '@/hooks/useAreas'
 import { useActivities } from '@/hooks/useActivities'
+import { useGroundedStore } from '@/stores/groundedStore'
 
 interface AppShellProps {
   children: React.ReactNode
@@ -13,12 +14,14 @@ export default function AppShell({ children }: AppShellProps) {
   const location = useLocation()
   const navigate = useNavigate()
   const { onboarded } = useUserSetup()
+  const consented = useGroundedStore((s) => s.consented)
   useActivities() // keeps the person's activity list (used by check-ins and plans) loaded
 
-  // Someone who hasn't done the first-run setup goes there first.
+  // Agreeing to the Terms and Privacy Policy comes first, then the first-run setup.
   useEffect(() => {
-    if (onboarded === false) navigate('/welcome', { replace: true })
-  }, [onboarded, navigate])
+    if (consented === false) navigate('/consent', { replace: true })
+    else if (consented && onboarded === false) navigate('/welcome', { replace: true })
+  }, [consented, onboarded, navigate])
 
   return (
     <div className="min-h-[100dvh] bg-stone-100">

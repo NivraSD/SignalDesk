@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 
 export default function LoginPage() {
@@ -84,6 +84,13 @@ export default function LoginPage() {
             {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
           </button>
         </form>
+
+        <p className="text-center text-xs text-stone-400 mt-6">
+          {isSignUp && 'By creating an account you agree to the '}
+          <Link to="/terms" className="underline">Terms</Link>{isSignUp ? ' and ' : ' · '}
+          <Link to="/privacy" className="underline">Privacy Policy</Link>
+          {isSignUp && '.'}
+        </p>
       </div>
     </div>
   )

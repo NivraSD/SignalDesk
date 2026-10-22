@@ -20,6 +20,9 @@ import WelcomePage from '@/components/welcome/WelcomePage'
 import AboutYouPage from '@/components/you/AboutYouPage'
 import AboutPage from '@/components/about/AboutPage'
 import LaughPage from '@/components/laugh/LaughPage'
+import LegalPage from '@/components/legal/LegalPage'
+import ConsentPage from '@/components/legal/ConsentPage'
+import GoogleCallback from '@/components/settings/GoogleCallback'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { loading, user } = useAuth()
@@ -54,6 +57,21 @@ export default function App() {
 
         {/* Auth */}
         <Route path="/login" element={<LoginPage />} />
+
+        {/* Public: Privacy Policy, Terms, and Google's sign-in return (works without a session) */}
+        <Route path="/privacy" element={<LegalPage doc="privacy" />} />
+        <Route path="/terms" element={<LegalPage doc="terms" />} />
+        <Route path="/oauth/google" element={<GoogleCallback />} />
+
+        {/* Agree to the Terms and Privacy Policy — full-screen, before anything else */}
+        <Route
+          path="/consent"
+          element={
+            <ProtectedRoute>
+              <ConsentPage />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Everything else inside AppShell */}
         <Route

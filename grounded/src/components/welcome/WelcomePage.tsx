@@ -1,3 +1,4 @@
+import { useUserSetup } from '@/hooks/useAreas'
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
@@ -26,6 +27,12 @@ export default function WelcomePage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [editing, setEditing] = useState(false)
+  const consented = useGroundedStore((s) => s.consented)
+  useUserSetup()
+
+  useEffect(() => {
+    if (consented === false) navigate('/consent', { replace: true })
+  }, [consented, navigate])
 
   // Start from what's saved (editing later, or resuming a half-finished setup).
   useEffect(() => {

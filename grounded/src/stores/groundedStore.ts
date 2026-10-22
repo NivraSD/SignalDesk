@@ -17,6 +17,9 @@ interface GroundedState {
   onboarded: boolean | null
   displayName: string | null
   hasCalendar: boolean
+  // Agreed to the current Terms and Privacy Policy (CONSENT_VERSION); null until loaded
+  consented: boolean | null
+  setConsented: (v: boolean) => void
   showPills: boolean
   setShowPills: (v: boolean) => void
   setSetup: (s: { areas: Area[] | null; onboarded: boolean; displayName: string | null; hasCalendar?: boolean }) => void
@@ -36,7 +39,7 @@ export const useGroundedStore = create<GroundedState>()(
         set((state) =>
           state.userId === id
             ? { userId: id, userEmail: email }
-            : { userId: id, userEmail: email, areas: null, onboarded: null, displayName: null, hasCalendar: false, showPills: true, activityBank: {}, todayCheckIn: null }
+            : { userId: id, userEmail: email, areas: null, onboarded: null, displayName: null, hasCalendar: false, consented: null, showPills: true, activityBank: {}, todayCheckIn: null }
         ),
 
       todayCheckIn: null,
@@ -46,6 +49,8 @@ export const useGroundedStore = create<GroundedState>()(
       onboarded: null,
       displayName: null,
       hasCalendar: false,
+      consented: null,
+      setConsented: (v) => set({ consented: v }),
       showPills: true,
       setShowPills: (v) => set({ showPills: v }),
       setSetup: ({ areas, onboarded, displayName, hasCalendar }) =>

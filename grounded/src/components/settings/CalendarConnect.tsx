@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useGroundedStore } from '@/stores/groundedStore'
 
-// Google Calendar, connected by sharing: the person shares their calendar with Grounded's service
-// account, then taps Connect. The server only allows the calendar matching their login email.
-// (A "Sign in with Google" option comes later, once Google verifies the app.)
+// Google Calendar. Two ways in:
+//  - Sign in with Google (OAuth), when it's set up on the server: one tap, their primary calendar.
+//  - Sharing: share the calendar with Grounded's service account, then tap Connect. The server only
+//    allows the calendar matching their login email.
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 
@@ -29,6 +30,8 @@ export default function CalendarConnect() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const [options, setOptions] = useState<{ google: boolean; sharing: boolean } | null>(null)
+  const [showSharing, setShowSharing] = useState(false)
 
   useEffect(() => {
     if (!userId) return
@@ -37,8 +40,46 @@ export default function CalendarConnect() {
   }, [userId, hasCalendar])
 
   useEffect(() => {
-    if (open && !share) call('share-address').then(setShare).catch((e) => setError(e.message))
-  }, [open, share])
+    if (open && !options) call('connect-options').then(setOptions).catch(() => setOptions({ google: false, sharing: true }))
+  }, [open, options])
+
+  const sharingVisible = !!options && (showSharing || !options.google)
+  useEffect(() => {
+    if (open && sharingVisible && !share) call('share-address').then(setShare).catch((e) => setError(e.message))
+  }, [open, sharingVisible, share])
+
+  // Coming back from Google's sign-in (it may have finished in a separate browser view): re-check.
+  useEffect(() => {
+    if (!userId || calendarId) return
+    const recheck = () => {
+      if (document.visibilityState !== 'visible') return
+      supabase.from('grounded_user_settings').select('calendar_id').eq('user_id', userId).maybeSingle()
+        .then(({ data }) => {
+          if (data?.calendar_id) {
+            setCalendarId(data.calendar_id)
+            setOpen(false)
+            useGroundedStore.setState({ hasCalendar: true })
+          }
+        })
+    }
+    document.addEventListener('visibilitychange', recheck)
+    return () => document.removeEventListener('visibilitychange', recheck)
+  }, [userId, calendarId])
+
+  const signInWithGoogle = async () => {
+    setBusy(true)
+    setError(null)
+    try {
+      const { url } = await call('oauth-start', {
+        redirectUri: `${window.location.origin}/oauth/google`,
+        returnTo: window.location.pathname + window.location.search,
+      })
+      window.location.href = url
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not start Google sign-in')
+      setBusy(false)
+    }
+  }
 
   const connect = async () => {
     setBusy(true)
@@ -97,7 +138,20 @@ export default function CalendarConnect() {
         )}
       </div>
 
-      {!calendarId && open && (
+      {!calendarId && open && options?.google && (
+        <div className="space-y-2">
+          <button onClick={signInWithGoogle} disabled={busy} className="w-full py-2.5 bg-stone-700 text-white rounded-lg text-sm disabled:opacity-50">
+            {busy ? '…' : 'Sign in with Google'}
+          </button>
+          {options.sharing && !showSharing && (
+            <button onClick={() => setShowSharing(true)} className="w-full text-xs text-stone-400">
+              Or share your calendar instead
+            </button>
+          )}
+        </div>
+      )}
+
+      {!calendarId && open && sharingVisible && (
         <div className="bg-stone-50 rounded-lg p-3 space-y-3 text-xs text-stone-600">
           <ol className="list-decimal pl-4 space-y-2">
             <li>

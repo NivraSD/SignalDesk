@@ -17,6 +17,10 @@ export const TIMEZONE = 'America/New_York'
 // Stripe Payment Link for contributions ("customer chooses what to pay"). Empty = the About section hides it.
 export const CONTRIBUTE_URL = '/api/contribute'
 
+// Bump when the Terms or Privacy Policy change in a way people should agree to again.
+export const CONSENT_VERSION = '2026-10-22'
+export const CONTACT_EMAIL = 'hello@groundedproject.app'
+
 export const TIME_OF_DAY = ['Morning', 'Afternoon', 'Evening', 'Night']
 
 export const PILL_SLOTS = [

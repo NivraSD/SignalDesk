@@ -8,6 +8,12 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
 const GOOGLE_SERVICE_ACCOUNT_JSON = Deno.env.get('GOOGLE_SERVICE_ACCOUNT')
+// "Sign in with Google" (OAuth). Unset = only the sharing method is offered.
+const OAUTH_CLIENT_ID = Deno.env.get('GOOGLE_OAUTH_CLIENT_ID')
+const OAUTH_CLIENT_SECRET = Deno.env.get('GOOGLE_OAUTH_CLIENT_SECRET')
+const OAUTH_SCOPES = 'openid email https://www.googleapis.com/auth/calendar.events'
+// Where Google may send people back to (must also be listed on the Google OAuth client).
+const OAUTH_REDIRECTS = ['https://www.groundedproject.app/oauth/google', 'https://grounded-sepia.vercel.app/oauth/google', 'http://localhost:5173/oauth/google']
 
 // The secret is service-account JSON, but it can arrive with the private key's "\n" escapes turned into real
 // newlines (set from a .env file) or base64-encoded. Accept all three instead of silently failing.
@@ -110,23 +116,99 @@ Deno.serve(async (req: Request) => {
   if (corsResponse) return corsResponse
 
   try {
-    if (!GOOGLE_SERVICE_ACCOUNT) {
-      return errorResponse(SA_PROBLEM, 500)
-    }
-
-    // Signed-in people only, and only their own calendar (grounded_user_settings.calendar_id).
-    // Any calendarId in the request is ignored, so nobody can reach someone else's calendar.
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
-    const token = req.headers.get('Authorization')?.replace('Bearer ', '')
-    const { data: { user } } = token ? await admin.auth.getUser(token) : { data: { user: null } }
-    if (!user) return errorResponse('Not signed in', 401)
     const body = await req.json()
     const { action, event, timeMin, timeMax } = body
 
-    // ── Connect: link the calendar shared with Grounded's service account ──
+    // ── Google sign-in, step 2: Google sent the person back with a code ──
+    // No Grounded session needed here: on an iPhone home-screen app, Google's page opens in a separate
+    // browser view that isn't signed in. The one-time `state` (made in step 1 for a signed-in person)
+    // says whose calendar this is.
+    if (action === 'oauth-exchange') {
+      if (!OAUTH_CLIENT_ID || !OAUTH_CLIENT_SECRET) return errorResponse('Google sign-in is not set up', 400)
+      const { code, state, redirectUri } = body
+      if (!code || !state || !OAUTH_REDIRECTS.includes(redirectUri)) return errorResponse('Bad request', 400)
+      const { data: st } = await admin.from('grounded_oauth_states').delete().eq('nonce', String(state)).select().maybeSingle()
+      if (!st || Date.now() - new Date(st.created_at).getTime() > 15 * 60 * 1000) {
+        return errorResponse('That sign-in link expired. Start again from Grounded.', 400)
+      }
+      const tr = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ code, client_id: OAUTH_CLIENT_ID, client_secret: OAUTH_CLIENT_SECRET, redirect_uri: redirectUri, grant_type: 'authorization_code' }),
+      })
+      const tokens = await tr.json()
+      if (tokens.error) return errorResponse(`Google: ${tokens.error_description || tokens.error}`, 400)
+      if (!String(tokens.scope || '').includes('calendar.events')) {
+        return errorResponse('Grounded needs permission to add events. Try again and leave the calendar box ticked.', 400)
+      }
+      // The id_token comes straight from Google over TLS, so its claims can be read without re-verifying.
+      let googleEmail: string | null = null
+      try {
+        googleEmail = JSON.parse(atob(tokens.id_token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).email ?? null
+      } catch { /* email is display-only */ }
+      const { data: prev } = await admin.from('grounded_google_tokens').select('refresh_token').eq('user_id', st.user_id).maybeSingle()
+      const refresh = tokens.refresh_token || prev?.refresh_token
+      if (!refresh) return errorResponse('Google did not grant offline access. Try again.', 400)
+      const { error: e1 } = await admin.from('grounded_google_tokens').upsert({
+        user_id: st.user_id,
+        access_token: tokens.access_token,
+        refresh_token: refresh,
+        expires_at: new Date(Date.now() + (tokens.expires_in - 60) * 1000).toISOString(),
+        scope: tokens.scope,
+        google_email: googleEmail,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id' })
+      if (e1) return errorResponse(e1.message, 500)
+      const { error: e2 } = await admin.from('grounded_user_settings')
+        .upsert({ user_id: st.user_id, calendar_id: googleEmail || 'primary' }, { onConflict: 'user_id' })
+      if (e2) return errorResponse(e2.message, 500)
+      return jsonResponse({ connected: true, calendarId: googleEmail, returnTo: st.return_to })
+    }
+
+    // Everything else: signed-in people only, and only their own calendar. Any calendarId in the
+    // request is ignored, so nobody can reach someone else's calendar.
+    const token = req.headers.get('Authorization')?.replace('Bearer ', '')
+    const { data: { user } } = token ? await admin.auth.getUser(token) : { data: { user: null } }
+    if (!user) return errorResponse('Not signed in', 401)
+
+    // What the connect screen can offer.
+    if (action === 'connect-options') {
+      return jsonResponse({ google: !!(OAUTH_CLIENT_ID && OAUTH_CLIENT_SECRET), sharing: !!GOOGLE_SERVICE_ACCOUNT })
+    }
+
+    // ── Google sign-in, step 1: a one-time state for this person, and the Google URL to open ──
+    if (action === 'oauth-start') {
+      if (!OAUTH_CLIENT_ID || !OAUTH_CLIENT_SECRET) return errorResponse('Google sign-in is not set up', 400)
+      const { redirectUri, returnTo } = body
+      if (!OAUTH_REDIRECTS.includes(redirectUri)) return errorResponse('Bad redirect', 400)
+      const nonce = crypto.randomUUID() + crypto.randomUUID().replace(/-/g, '')
+      await admin.from('grounded_oauth_states').delete().lt('created_at', new Date(Date.now() - 60 * 60 * 1000).toISOString())
+      const { error } = await admin.from('grounded_oauth_states').insert({
+        nonce,
+        user_id: user.id,
+        return_to: typeof returnTo === 'string' && returnTo.startsWith('/') ? returnTo : '/settings',
+      })
+      if (error) return errorResponse(error.message, 500)
+      const params = new URLSearchParams({
+        client_id: OAUTH_CLIENT_ID,
+        redirect_uri: redirectUri,
+        response_type: 'code',
+        scope: OAUTH_SCOPES,
+        access_type: 'offline',
+        prompt: 'consent',
+        include_granted_scopes: 'true',
+        state: nonce,
+        ...(user.email && { login_hint: user.email }),
+      })
+      return jsonResponse({ url: `https://accounts.google.com/o/oauth2/v2/auth?${params}` })
+    }
+
+    // ── Sharing method: link the calendar shared with Grounded's service account ──
     // Only the calendar matching the person's own login email, and only if nobody else has it,
     // because the service account can open every calendar shared with it.
     if (action === 'connect') {
+      if (!GOOGLE_SERVICE_ACCOUNT) return errorResponse(SA_PROBLEM, 500)
       const email = (user.email || '').trim().toLowerCase()
       const requested = String(body.calendarId || email).trim().toLowerCase()
       if (!email || requested !== email) {
@@ -151,6 +233,7 @@ Deno.serve(async (req: Request) => {
           400
         )
       }
+      await admin.from('grounded_google_tokens').delete().eq('user_id', user.id)
       const { error } = await admin
         .from('grounded_user_settings')
         .upsert({ user_id: user.id, calendar_id: requested }, { onConflict: 'user_id' })
@@ -159,6 +242,11 @@ Deno.serve(async (req: Request) => {
     }
 
     if (action === 'disconnect') {
+      const { data: tok } = await admin.from('grounded_google_tokens').select('refresh_token').eq('user_id', user.id).maybeSingle()
+      if (tok?.refresh_token) {
+        await fetch(`https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(tok.refresh_token)}`, { method: 'POST' }).catch(() => {})
+      }
+      await admin.from('grounded_google_tokens').delete().eq('user_id', user.id)
       const { error } = await admin.from('grounded_user_settings').update({ calendar_id: null }).eq('user_id', user.id)
       if (error) return errorResponse(error.message, 500)
       return jsonResponse({ connected: false })
@@ -166,6 +254,7 @@ Deno.serve(async (req: Request) => {
 
     // The address to share with (for the setup screen); no calendar needed yet.
     if (action === 'share-address') {
+      if (!GOOGLE_SERVICE_ACCOUNT) return errorResponse(SA_PROBLEM, 500)
       return jsonResponse({ serviceAccount: GOOGLE_SERVICE_ACCOUNT.client_email, email: user.email })
     }
 
@@ -175,8 +264,43 @@ Deno.serve(async (req: Request) => {
       .eq('user_id', user.id)
       .maybeSingle()
     if (!settings?.calendar_id) return errorResponse('No calendar connected', 400)
-    const targetCalendar = settings.calendar_id
-    const accessToken = await getGoogleAccessToken()
+
+    // Signed in with Google: their own token, their primary calendar. Otherwise the shared calendar
+    // through the service account.
+    let accessToken: string
+    let targetCalendar: string
+    const { data: tok } = await admin.from('grounded_google_tokens').select('*').eq('user_id', user.id).maybeSingle()
+    if (tok) {
+      targetCalendar = 'primary'
+      if (new Date(tok.expires_at).getTime() > Date.now()) {
+        accessToken = tok.access_token
+      } else {
+        const rr = await fetch('https://oauth2.googleapis.com/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({ refresh_token: tok.refresh_token, client_id: OAUTH_CLIENT_ID!, client_secret: OAUTH_CLIENT_SECRET!, grant_type: 'refresh_token' }),
+        })
+        const fresh = await rr.json()
+        if (fresh.error) {
+          // Access was revoked at Google (or expired): disconnect so the app offers Connect again.
+          if (fresh.error === 'invalid_grant') {
+            await admin.from('grounded_google_tokens').delete().eq('user_id', user.id)
+            await admin.from('grounded_user_settings').update({ calendar_id: null }).eq('user_id', user.id)
+          }
+          return errorResponse('Google Calendar needs reconnecting (Settings → Google Calendar).', 401)
+        }
+        accessToken = fresh.access_token
+        await admin.from('grounded_google_tokens').update({
+          access_token: fresh.access_token,
+          expires_at: new Date(Date.now() + (fresh.expires_in - 60) * 1000).toISOString(),
+          updated_at: new Date().toISOString(),
+        }).eq('user_id', user.id)
+      }
+    } else {
+      if (!GOOGLE_SERVICE_ACCOUNT) return errorResponse(SA_PROBLEM, 500)
+      targetCalendar = settings.calendar_id
+      accessToken = await getGoogleAccessToken()
+    }
 
     // Get events
     if (action === 'get-events') {
