@@ -2,7 +2,7 @@
 // The app is a setup machine: it builds a structure that leans somewhere; the person supplies
 // the word. Nothing here grades, corrects, encourages, or explains. See the comedy spec (Oct 22, 2026).
 //   POST { action: 'poem' }  -> { lines: string[] }            (blanks are "____")
-//   POST { action: 'joke' }  -> { line, comedian?, source? }   (classic credited, or an original)
+//   POST { action: 'joke' }  -> { line, comedian, source? }   (a credited classic)
 import Anthropic from 'npm:@anthropic-ai/sdk'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { handleCors, jsonResponse, errorResponse } from '../_shared/cors.ts'
@@ -43,12 +43,6 @@ I bought a spiralizer. / I had seen it on a video and thought, this is it, this 
 
 Return the poem as lines, with blanks written exactly as ${BLANK}.`
 
-const JOKE_RULES = `You write one original one-liner in the lineage of these styles (style is free to use; their actual jokes are not — never reuse or paraphrase a known joke):
-- Steven Wright: a premise taken literally, one step too far. Flat delivery; the logic is the joke.
-- Mitch Hedberg: a mundane object treated as a problem. A plain observation that turns out to be insane.
-- Rodney Dangerfield: a complaint where the speaker is the butt. Setup, then a self-inflicted wound.
-
-Aim it at the person's own world when you're given details (their dog, their city, their commute, today's calendar, the things they do); otherwise pick something everyday. One or two sentences. No explanation, no emoji, no quotation marks around it. Keep away from drugs, drinking, self-harm and death, and never joke about therapy, recovery, mental health, medication or wellness routines — this is not a wellness feature; pick everyday things. Never repeat anything in the "already used" list.`
 
 function textOf(msg: Anthropic.Beta.BetaMessage): string {
   for (const b of msg.content) if (b.type === 'text') return b.text
@@ -131,43 +125,24 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'joke') {
+      // Credited classics only (generated one-liners weren't good enough). Unseen lines first, at
+      // random; once every line has been shown, start over from the one shown longest ago.
       const { data: used } = await admin
         .from('grounded_laugh_history')
-        .select('content, classic_id')
+        .select('classic_id, created_at')
         .eq('user_id', user.id)
         .eq('kind', 'joke')
+        .not('classic_id', 'is', null)
         .order('created_at', { ascending: false })
-        .limit(200)
-      const usedIds = new Set((used || []).map((r: { classic_id: string | null }) => r.classic_id).filter(Boolean))
-      const unseen = CLASSICS.filter((c) => !usedIds.has(c.id))
-
-      // Roughly half classics, half originals, so the next one is never predictable.
-      if (unseen.length && Math.random() < 0.5) {
-        const c = unseen[Math.floor(Math.random() * unseen.length)]
-        await admin.from('grounded_laugh_history').insert({ user_id: user.id, kind: 'joke', content: c.line, classic_id: c.id })
-        return jsonResponse({ line: c.line, comedian: c.comedian, source: c.source ?? null })
-      }
-
-      const [settings, story, activities] = await Promise.all([
-        admin.from('grounded_user_settings').select('display_name').eq('user_id', user.id).maybeSingle(),
-        admin.from('grounded_user_story').select('section, content').eq('user_id', user.id).in('section', ['people', 'life']),
-        admin.from('grounded_activities').select('name').eq('user_id', user.id).limit(40),
-      ])
-      const world = [
-        ...(story.data || []).map((s: { content: string }) => s.content.slice(0, 300)),
-        activities.data?.length ? `Things they do: ${activities.data.map((a: { name: string }) => a.name).join(', ')}` : '',
-      ].filter(Boolean).join('\n')
-      const recent = (used || []).filter((r: { classic_id: string | null }) => !r.classic_id).slice(0, 40).map((r: { content: string }) => r.content).join('\n')
-      const style = ['Steven Wright', 'Mitch Hedberg', 'Rodney Dangerfield'][Math.floor(Math.random() * 3)]
-      const out = await generate(
-        JOKE_RULES,
-        `${world ? `Their world (optional):\n${world}\n\n` : ''}Already used:\n${recent || '(none yet)'}\n\nWrite one new one-liner in the ${style} shape.`,
-        { type: 'object', properties: { line: { type: 'string' } }, required: ['line'], additionalProperties: false }
-      )
-      const line = String(out.line || '').trim()
-      if (!line) return errorResponse('Nothing came to mind. Tap again.', 502)
-      await admin.from('grounded_laugh_history').insert({ user_id: user.id, kind: 'joke', content: line })
-      return jsonResponse({ line, comedian: null, source: null })
+        .limit(500)
+      const lastShown = new Map<string, string>()
+      for (const r of used || []) if (!lastShown.has(r.classic_id)) lastShown.set(r.classic_id, r.created_at)
+      const unseen = CLASSICS.filter((c) => !lastShown.has(c.id))
+      const c = unseen.length
+        ? unseen[Math.floor(Math.random() * unseen.length)]
+        : [...CLASSICS].sort((a, b) => (lastShown.get(a.id)! < lastShown.get(b.id)! ? -1 : 1))[0]
+      await admin.from('grounded_laugh_history').insert({ user_id: user.id, kind: 'joke', content: c.line, classic_id: c.id })
+      return jsonResponse({ line: c.line, comedian: c.comedian, source: c.source ?? null })
     }
 
     return errorResponse('Unknown action', 400)
