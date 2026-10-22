@@ -4,7 +4,7 @@ import { loadContext, callClaude, fetchCalendarEvents } from '../_shared/context
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-const GEMINI_API_KEY = Deno.env.get('GOOGLE_API_KEY')!
+const GEMINI_API_KEY = (Deno.env.get('GEMINI_API_KEY') ?? Deno.env.get('GOOGLE_API_KEY'))!
 const GROUNDED_API_KEY = Deno.env.get('GROUNDED_API_KEY')!
 
 // ── Auth: supports both API key and Bearer token ─────────────────────────────
