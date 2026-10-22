@@ -25,7 +25,7 @@ Already set to real values (no change needed):
 | success_url | `<site>/settings?contributed=1` (shows a thank-you) |
 | cancel_url | `<site>/settings` |
 
-**Status (2026-10-22):** test mode is wired end to end: Vercel has `STRIPE_SECRET_KEY` (test) and `STRIPE_CONTRIBUTION_PRICE_ID`, and the Contribute button is on (`CONTRIBUTE_URL = '/api/contribute'`). Going live = the two replacements above.
+**Status (2026-10-22): LIVE.** Production uses the live secret key and live Price `price_1UTPd3JAYGcueEzLEnkpMp2X` ("Donations for Grounded Project"). Preview deployments keep the test key and test Price `price_1UTO0SQvyjXbqyjm81qY1BcK`, so test builds never take real money. Vercel only reads these at build time: after changing a key, redeploy production.
 
 ## Configured Parameters
 
