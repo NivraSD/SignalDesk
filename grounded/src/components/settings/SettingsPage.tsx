@@ -212,18 +212,6 @@ export default function SettingsPage() {
         </button>
       </div>
 
-      {/* Google Calendar */}
-      <div className="bg-white rounded-xl p-4 shadow-sm space-y-3">
-        <h3 className="text-sm font-medium text-stone-700">Google Calendar</h3>
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 bg-green-500 rounded-full" />
-          <span className="text-sm text-stone-600">Connected</span>
-        </div>
-        <p className="text-xs text-stone-400">
-          Calendar events sync automatically via service account.
-        </p>
-      </div>
-
       {/* Chat */}
       <div className="bg-white rounded-xl p-4 shadow-sm space-y-2">
         <h3 className="text-sm font-medium text-stone-700">Chat</h3>
