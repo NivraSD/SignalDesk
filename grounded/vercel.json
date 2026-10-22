@@ -5,6 +5,9 @@
     },
     "api/wallpaper-link.ts": {
       "maxDuration": 10
+    },
+    "api/contribute.ts": {
+      "maxDuration": 10
     }
   },
   "rewrites": [

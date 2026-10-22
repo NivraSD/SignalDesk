@@ -260,6 +260,9 @@ export default function SettingsPage() {
           Grounded is a personal wellness and recovery tracker with an AI companion
           that learns your patterns, preferences, and goals over time.
         </p>
+        {new URLSearchParams(window.location.search).has('contributed') && (
+          <p className="mt-3 text-xs text-stone-600">Thank you. It genuinely helps keep Grounded free.</p>
+        )}
         {CONTRIBUTE_URL && (
           <div className="mt-3 pt-3 border-t border-stone-100 flex items-center justify-between gap-3">
             <p className="text-xs text-stone-500">Grounded is free. Modest contributions go a long way.</p>
