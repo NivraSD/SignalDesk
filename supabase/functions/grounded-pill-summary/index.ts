@@ -7,7 +7,8 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
 const TO_OVERRIDE = Deno.env.get('GROUNDED_PILL_TO_EMAIL')
-const FROM = 'Grounded <notifications@nivria.ai>'
+// Sender comes from the EMAIL_FROM secret once Grounded has its own verified Resend domain.
+const FROM = Deno.env.get('EMAIL_FROM') || 'Grounded <notifications@nivria.ai>'
 const TIMEZONE = 'America/New_York'
 
 const SLOTS = ['morning', 'afternoon', 'evening', 'night'] as const
