@@ -10,6 +10,38 @@ export default function ChatPage() {
   const scrollRef = useRef<HTMLDivElement>(null)
   const lastIdRef = useRef<string | undefined>(undefined)
   const prependHeightRef = useRef<number | null>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [height, setHeight] = useState<number | null>(null)
+
+  // Fit the chat to what's actually visible: above the keyboard while typing (iOS shrinks the
+  // visual viewport), above the bottom nav otherwise. A fixed 100dvh formula left a gap when the
+  // nav hid for typing and ignored the keyboard entirely.
+  useEffect(() => {
+    const vv = window.visualViewport
+    const update = () =>
+      requestAnimationFrame(() => {
+        const el = containerRef.current
+        if (!el) return
+        const typing = document.activeElement === inputRef.current
+        const nav = document.querySelector('.bottom-nav') as HTMLElement | null
+        const navH = !typing && nav ? nav.getBoundingClientRect().height : 0
+        const top = el.getBoundingClientRect().top + window.scrollY
+        const visible = vv?.height ?? window.innerHeight
+        setHeight(Math.max(200, Math.floor(visible - top - navH - 8)))
+        window.scrollTo(0, 0) // iOS scrolls the page up on focus; the chat already fits, so undo it
+      })
+    update()
+    vv?.addEventListener('resize', update)
+    window.addEventListener('focusin', update)
+    window.addEventListener('focusout', update)
+    window.addEventListener('resize', update)
+    return () => {
+      vv?.removeEventListener('resize', update)
+      window.removeEventListener('focusin', update)
+      window.removeEventListener('focusout', update)
+      window.removeEventListener('resize', update)
+    }
+  }, [])
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
@@ -56,11 +88,12 @@ export default function ChatPage() {
     setInput(e.target.value)
     const el = e.target
     el.style.height = 'auto'
-    el.style.height = Math.min(el.scrollHeight, 120) + 'px'
+    // Grow with the message; past half the visible chat it scrolls inside so the conversation stays in view.
+    el.style.height = Math.min(el.scrollHeight, Math.max(120, (height ?? 400) / 2)) + 'px'
   }
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-8rem)]">
+    <div ref={containerRef} className="flex flex-col" style={{ height: height ?? undefined }}>
       {/* Header */}
       <div className="flex items-center justify-between px-1 pb-3">
         <button onClick={() => navigate('/')} className="text-stone-500 text-sm">
@@ -151,7 +184,6 @@ export default function ChatPage() {
             placeholder="Share a thought, ask a question..."
             rows={1}
             className="flex-1 resize-none p-2.5 border border-stone-200 rounded-xl text-sm bg-white focus:outline-none focus:border-stone-400"
-            style={{ maxHeight: '120px' }}
           />
           <button
             onClick={handleSend}

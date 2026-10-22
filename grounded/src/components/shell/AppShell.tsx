@@ -39,7 +39,8 @@ export default function AppShell({ children }: AppShellProps) {
       </header>
 
       {/* Content */}
-      <main className="max-w-lg mx-auto p-4 pb-24">{children}</main>
+      {/* Chat sizes itself to the visible screen (it handles the nav/keyboard), so no reserved bottom space there. */}
+      <main className={`max-w-lg mx-auto p-4 ${location.pathname === '/chat' ? 'pb-0' : 'pb-24'}`}>{children}</main>
 
       {/* Bottom Nav */}
       <BottomNav active={location.pathname} onNavigate={navigate} />
