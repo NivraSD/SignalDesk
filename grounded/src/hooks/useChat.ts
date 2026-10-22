@@ -14,6 +14,8 @@ export function useChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [loading, setLoading] = useState(false)
   const [historyLoaded, setHistoryLoaded] = useState(false)
+  const [hasMore, setHasMore] = useState(false)
+  const [loadingEarlier, setLoadingEarlier] = useState(false)
 
   const callChat = async (action: string, payload: Record<string, unknown> = {}) => {
     const { data: { session } } = await supabase.auth.getSession()
@@ -31,14 +33,28 @@ export function useChat() {
     return await response.json()
   }
 
+  // Always fetch on open: the server returns the most recent page (oldest→newest).
   const loadHistory = useCallback(async () => {
-    if (historyLoaded) return
     const result = await callChat('get-history')
     if (result.messages) {
       setMessages(result.messages)
+      setHasMore(!!result.hasMore)
     }
     setHistoryLoaded(true)
-  }, [historyLoaded])
+  }, []) // eslint-disable-line
+
+  // Prepend the page before the oldest message on screen.
+  const loadEarlier = async () => {
+    const oldest = messages.find((m) => !m.id.startsWith('temp-'))
+    if (!oldest || loadingEarlier) return
+    setLoadingEarlier(true)
+    const result = await callChat('get-history', { before: oldest.created_at })
+    if (result.messages) {
+      setMessages((prev) => [...result.messages, ...prev])
+      setHasMore(!!result.hasMore)
+    }
+    setLoadingEarlier(false)
+  }
 
   const sendMessage = async (text: string) => {
     if (!text.trim()) return
@@ -100,5 +116,5 @@ export function useChat() {
     setHistoryLoaded(false)
   }
 
-  return { messages, loading, historyLoaded, loadHistory, sendMessage, clearHistory }
+  return { messages, loading, historyLoaded, hasMore, loadingEarlier, loadHistory, loadEarlier, sendMessage, clearHistory }
 }

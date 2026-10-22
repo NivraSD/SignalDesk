@@ -4,19 +4,36 @@ import { useChat } from '@/hooks/useChat'
 
 export default function ChatPage() {
   const navigate = useNavigate()
-  const { messages, loading, loadHistory, sendMessage } = useChat()
+  const { messages, loading, hasMore, loadingEarlier, loadHistory, loadEarlier, sendMessage } = useChat()
   const [input, setInput] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const lastIdRef = useRef<string | undefined>(undefined)
+  const prependHeightRef = useRef<number | null>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
     loadHistory()
   }, []) // eslint-disable-line
 
-  // Auto-scroll to bottom on new messages
+  // New message at the bottom → scroll down. Older page added on top → keep the view where it was.
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const el = scrollRef.current
+    if (el && prependHeightRef.current !== null) {
+      el.scrollTop += el.scrollHeight - prependHeightRef.current
+      prependHeightRef.current = null
+    }
+    const lastId = messages[messages.length - 1]?.id
+    if (lastId !== lastIdRef.current) {
+      bottomRef.current?.scrollIntoView({ behavior: lastIdRef.current ? 'smooth' : 'auto' })
+      lastIdRef.current = lastId
+    }
   }, [messages])
+
+  const handleLoadEarlier = async () => {
+    prependHeightRef.current = scrollRef.current?.scrollHeight ?? null
+    await loadEarlier()
+  }
 
   const handleSend = async () => {
     const text = input.trim()
@@ -59,7 +76,18 @@ export default function ChatPage() {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto space-y-3 pb-2">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-3 pb-2">
+        {hasMore && (
+          <div className="text-center">
+            <button
+              onClick={handleLoadEarlier}
+              disabled={loadingEarlier}
+              className="text-xs px-3 py-1.5 bg-stone-100 rounded-full text-stone-500 disabled:opacity-50"
+            >
+              {loadingEarlier ? 'Loading…' : 'Show earlier messages'}
+            </button>
+          </div>
+        )}
         {messages.length === 0 && !loading && (
           <div className="text-center py-12 space-y-3">
             <p className="text-stone-500 text-sm">What's on your mind?</p>
