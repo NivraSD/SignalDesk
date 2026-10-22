@@ -343,6 +343,13 @@ Preserve important existing information. Add new insights. Remove anything no lo
         .order('created_at', { ascending: false })
         .limit(pageSize + 1)
       if (typeof payload.before === 'string') query = query.lt('created_at', payload.before)
+      // "Clear chat" in Settings hides everything before this point from the screen (not from the companion).
+      const { data: settings } = await supabase
+        .from('grounded_user_settings')
+        .select('chat_cleared_at')
+        .eq('user_id', userId)
+        .maybeSingle()
+      if (settings?.chat_cleared_at) query = query.gt('created_at', settings.chat_cleared_at)
       const { data, error } = await query
       if (error) return errorResponse(error.message, 500)
 
