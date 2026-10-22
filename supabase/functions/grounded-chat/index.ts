@@ -9,7 +9,7 @@ const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
 const PERSONA = `You are the guide within Grounded — a thoughtful, spiritually-grounded companion who walks alongside the user in their daily life and recovery journey.
 
-Important context: The user lives with Complex PTSD (CPTSD). You understand what this means — the nervous system dysregulation, the windows of tolerance, the way trauma shows up in daily life. You hold this awareness naturally without making every conversation about it. You never pathologize, never use clinical language, and never treat them as fragile. You understand that recovery isn't linear and that some days the bravest thing is just showing up.
+Important context: Grounded is built for people doing hard recovery work — many live with developmental trauma, Complex PTSD, BPD, or addiction. You understand nervous system dysregulation, windows of tolerance, and the way trauma shows up in daily life. What THIS person has told you about themselves is under "About them" below: follow it, use their words, and never assume a diagnosis or history they haven't shared. You hold this awareness naturally without making every conversation about it. You never pathologize, never use clinical language, and never treat them as fragile. You understand that recovery isn't linear and that some days the bravest thing is just showing up.
 
 Your character:
 - Spiritual but not preachy — you draw from wisdom traditions, philosophy, and contemplative practice naturally
@@ -27,7 +27,7 @@ Your role:
 - Help with planning and prioritization when asked
 - You know their activity bank (activities they value in each life area) — use these when suggesting plans or activities
 
-You have access to the user's check-in history, journal entries, tasks, activity bank, and behavioral patterns. You remember past conversations. You know their goals, rules, and preferences. You track their progress across 6 life areas: Spiritual, Mental/Emotional, Physical, Recovery, NIVRIA, Joy/Connection.
+You have access to the user's check-in history, journal entries, tasks, activity bank, and behavioral patterns. You remember past conversations. You know their goals, rules, and preferences. You track their progress across their own life areas (listed under "Their life areas" below — use their names for them).
 
 Creating journal entries:
 When the user asks you to save something as a journal entry (a thought, task, or event), include this marker in your response:
@@ -192,10 +192,18 @@ Write in a natural, conversational voice. Keep it under 200 words.`
       tomorrowDate.setDate(tomorrowDate.getDate() + 1)
       const tomorrowStr = tomorrowDate.toISOString().split('T')[0]
 
-      const [context, calendarText] = await Promise.all([
+      const [context, calendarText, settingsRes] = await Promise.all([
         loadContext(supabase, userId),
-        fetchCalendarEvents(tomorrowStr),
+        fetchCalendarEvents(tomorrowStr, userId),
+        supabase.from('grounded_user_settings').select('areas').eq('user_id', userId).maybeSingle(),
       ])
+      // This person's own areas (ids are the check-in keys); the original six if they have none saved.
+      const DEFAULT_IDS = ['spiritual', 'mental_emotional', 'physical', 'recovery', 'work', 'joy_connection']
+      const areaIds: string[] =
+        ((settingsRes.data?.areas as { id: string; enabled?: boolean }[] | null) || [])
+          .filter((a) => a.enabled !== false)
+          .map((a) => a.id)
+      const planAreaIds = areaIds.length ? areaIds : DEFAULT_IDS
 
       const areasText = Object.entries(checkIn.areas || {})
         .map(([areaId, data]: [string, any]) => {
@@ -225,17 +233,12 @@ ${areasText}
 Their activity bank:
 ${bankText}${calendarSection}
 
-For each of the 6 areas (spiritual, mental_emotional, physical, recovery, nivria, joy_connection), suggest exactly ONE activity from their bank that would be most beneficial. If they scored low, suggest something gentle. If high, build on momentum. Suggest a specific time of day (Morning, Afternoon, Evening) that works around their calendar.
+For each of their ${planAreaIds.length} areas (${planAreaIds.join(', ')}), suggest exactly ONE activity from their bank that would be most beneficial. If they scored low, suggest something gentle. If high, build on momentum. Suggest a specific time of day (Morning, Afternoon, Evening) that works around their calendar.
 
 Respond in this exact JSON format (no markdown, just raw JSON):
 {
   "suggestions": {
-    "spiritual": { "activity": "...", "timeOfDay": "Morning", "reason": "one sentence" },
-    "mental_emotional": { "activity": "...", "timeOfDay": "...", "reason": "..." },
-    "physical": { "activity": "...", "timeOfDay": "...", "reason": "..." },
-    "recovery": { "activity": "...", "timeOfDay": "...", "reason": "..." },
-    "nivria": { "activity": "...", "timeOfDay": "...", "reason": "..." },
-    "joy_connection": { "activity": "...", "timeOfDay": "...", "reason": "..." }
+${planAreaIds.map((id) => `    "${id}": { "activity": "...", "timeOfDay": "Morning|Afternoon|Evening", "reason": "one sentence" }`).join(',\n')}
   }
 }`
 

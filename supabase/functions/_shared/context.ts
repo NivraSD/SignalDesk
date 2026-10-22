@@ -9,7 +9,6 @@ const GOOGLE_SERVICE_ACCOUNT_JSON = Deno.env.get('GOOGLE_SERVICE_ACCOUNT')
 let GOOGLE_SA: any = null
 try { if (GOOGLE_SERVICE_ACCOUNT_JSON) GOOGLE_SA = JSON.parse(GOOGLE_SERVICE_ACCOUNT_JSON) } catch {}
 
-const CALENDAR_ID = 'jl@nivria.ai'
 
 async function getGoogleAccessToken(): Promise<string | null> {
   if (!GOOGLE_SA) return null
@@ -43,8 +42,18 @@ async function getGoogleAccessToken(): Promise<string | null> {
   return tokenData.access_token || null
 }
 
-export async function fetchCalendarEvents(date: string): Promise<string> {
+// The person's own calendar (grounded_user_settings.calendar_id); nothing if they haven't connected one.
+export async function fetchCalendarEvents(date: string, userId: string): Promise<string> {
   try {
+    const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
+    const { data: settings } = await admin
+      .from('grounded_user_settings')
+      .select('calendar_id')
+      .eq('user_id', userId)
+      .maybeSingle()
+    const calendarId = settings?.calendar_id
+    if (!calendarId) return ''
+
     const accessToken = await getGoogleAccessToken()
     if (!accessToken) return ''
 
@@ -52,7 +61,7 @@ export async function fetchCalendarEvents(date: string): Promise<string> {
     const timeMax = `${date}T23:59:59Z`
     const params = new URLSearchParams({ singleEvents: 'true', orderBy: 'startTime', timeMin, timeMax })
     const response = await fetch(
-      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CALENDAR_ID)}/events?${params}`,
+      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?${params}`,
       { headers: { Authorization: `Bearer ${accessToken}` } }
     )
     const data = await response.json()
@@ -140,7 +149,7 @@ export async function loadContext(
   userId: string,
   queryText?: string
 ) {
-  const [profileRes, rulesRes, checkinsRes, journalRes, activitiesRes, similarRes] = await Promise.all([
+  const [profileRes, rulesRes, checkinsRes, journalRes, activitiesRes, similarRes, settingsRes, storyRes] = await Promise.all([
     supabase
       .from('grounded_user_profile')
       .select('profile_context, patterns')
@@ -168,9 +177,41 @@ export async function loadContext(
       .select('area_id, name')
       .eq('user_id', userId),
     queryText ? searchSimilar(supabase, userId, queryText, 5) : Promise.resolve([]),
+    supabase
+      .from('grounded_user_settings')
+      .select('display_name, areas')
+      .eq('user_id', userId)
+      .maybeSingle(),
+    supabase
+      .from('grounded_user_story')
+      .select('section, content')
+      .eq('user_id', userId),
   ])
 
   const parts: string[] = []
+
+  // Who they are, in their own words (About you). This outranks anything inferred below.
+  const STORY_TITLES: Record<string, string> = {
+    people: 'People in their life', life: 'Life right now', working_with: "What they're working with",
+    hard: "What's hard", events: 'Key events', helps: 'What helps',
+  }
+  const name = settingsRes.data?.display_name
+  const story = (storyRes.data || []).filter((s: { content: string }) => s.content?.trim())
+  if (name || story.length) {
+    parts.push(
+      `## About them (in their own words — trust this over anything inferred)
+` +
+        (name ? `Call them: ${name}\n` : '') +
+        story.map((s: { section: string; content: string }) => `### ${STORY_TITLES[s.section] || s.section}\n${s.content.trim()}`).join('\n\n')
+    )
+  }
+
+  const areas = (settingsRes.data?.areas as { id: string; name: string; description?: string; enabled?: boolean }[] | null)
+    ?.filter((a) => a.enabled !== false)
+  if (areas?.length) {
+    parts.push(`## Their life areas (check-ins are keyed by these ids)
+${areas.map((a) => `- ${a.id} = "${a.name}"${a.description ? `: ${a.description}` : ''}`).join('\n')}`)
+  }
 
   if (profileRes.data?.profile_context) {
     parts.push(`## User Profile\n${profileRes.data.profile_context}`)

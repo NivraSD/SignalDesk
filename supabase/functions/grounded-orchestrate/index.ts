@@ -202,7 +202,7 @@ Deno.serve(async (req: Request) => {
       const [context, domainScores, calendarText] = await Promise.all([
         loadContext(supabase, userId),
         computeDomainAverages(supabase, userId),
-        fetchCalendarEvents(todayStr),
+        fetchCalendarEvents(todayStr, userId),
       ])
 
       const domainScoresText = Object.entries(domainScores)
