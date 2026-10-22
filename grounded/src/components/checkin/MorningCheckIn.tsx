@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useAreas } from '@/hooks/useAreas'
 import { useNavigate } from 'react-router-dom'
-import { getYesterday } from '@/lib/utils'
+import { getToday, getYesterday } from '@/lib/utils'
+import { useCalendar } from '@/hooks/useCalendar'
+import { addPlanToCalendar } from '@/lib/planCalendar'
 import { useCheckins } from '@/hooks/useCheckins'
 import { useMorningCheckin } from '@/hooks/useMorningCheckin'
 import PlanEditor from './PlanEditor'
+import AddToCalendarToggle from './AddToCalendarToggle'
 import type { MorningAreaData, TomorrowSchedule } from '@/types'
 
 // Morning check-in: the same six areas as the evening, asked in the present tense
@@ -19,6 +22,8 @@ export default function MorningCheckIn() {
   const navigate = useNavigate()
   const { checkIns } = useCheckins()
   const { morning, loading, saveMorning } = useMorningCheckin()
+  const { isCalendarConnected, createEvent } = useCalendar()
+  const [addToCal, setAddToCal] = useState(true)
 
   const lastNightPlan = checkIns.find((c) => c.checkin_date === getYesterday())?.tomorrow_schedule ?? null
 
@@ -63,10 +68,16 @@ export default function MorningCheckIn() {
   const finish = async () => {
     setSaving(true)
     setError(null)
+    const planChoice = canKeep ? choice ?? 'keep' : 'new'
+    let todayPlan = plan
+    // A new plan goes on the calendar when it's finished (last night's was offered last night).
+    if (planChoice === 'new' && isCalendarConnected && addToCal) {
+      todayPlan = (await addPlanToCalendar(plan, getToday(), AREAS, createEvent)).plan
+    }
     const { error } = await saveMorning({
       areas,
-      plan_choice: canKeep ? choice ?? 'keep' : 'new',
-      today_schedule: plan,
+      plan_choice: planChoice,
+      today_schedule: todayPlan,
       intention: intention.trim() || null,
     })
     setSaving(false)
@@ -157,6 +168,7 @@ export default function MorningCheckIn() {
               </button>
             )}
             <PlanEditor when="today" schedule={plan} onChange={setPlan} />
+            {isCalendarConnected && <AddToCalendarToggle checked={addToCal} onChange={setAddToCal} />}
           </div>
         )}
 

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAreas } from '@/hooks/useAreas'
 import { useJournal } from '@/hooks/useJournal'
 import { useCalendar } from '@/hooks/useCalendar'
+import { TIME_TO_HOUR, timeToDisplayTime } from '@/lib/planCalendar'
 import { getToday, getTomorrow } from '@/lib/utils'
 import type { TomorrowSchedule } from '@/types'
 
@@ -23,10 +24,6 @@ interface UnifiedItem {
   targetDate: string
 }
 
-const TIME_TO_HOUR: Record<string, number> = {
-  'morning': 7, 'mid-morning': 9, 'afternoon': 13,
-  'evening': 18, 'night': 20, 'anytime': 10,
-}
 
 function timeToSortOrder(time: string): number {
   if (time.includes(':')) {
@@ -37,12 +34,6 @@ function timeToSortOrder(time: string): number {
   return hour * 60
 }
 
-function timeToDisplayTime(time: string): string {
-  if (time.includes(':')) return time
-  const hour = TIME_TO_HOUR[time.toLowerCase()]
-  if (hour !== undefined) return `${String(hour).padStart(2, '0')}:00`
-  return '10:00'
-}
 
 const DISMISSED_KEY = 'grounded-dismissed-plan-items'
 
@@ -117,7 +108,7 @@ export default function TodaySchedule({ todaySchedule, tomorrowSchedule }: Today
           timeLabel: activity.timeOfDay,
           sortOrder: timeToSortOrder(activity.timeOfDay),
           source: 'plan-today',
-          addedToCalendar: false,
+          addedToCalendar: !!activity.addedToCalendar,
           targetDate: today,
         })
       }
@@ -140,7 +131,7 @@ export default function TodaySchedule({ todaySchedule, tomorrowSchedule }: Today
           timeLabel: activity.timeOfDay,
           sortOrder: timeToSortOrder(activity.timeOfDay),
           source: 'plan-tomorrow',
-          addedToCalendar: false,
+          addedToCalendar: !!activity.addedToCalendar,
           targetDate: tomorrow,
         })
       }

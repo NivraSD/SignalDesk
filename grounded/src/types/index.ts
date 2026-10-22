@@ -24,6 +24,7 @@ export interface ScheduledActivity {
   name: string
   timeOfDay: string
   duration?: string
+  addedToCalendar?: boolean
 }
 
 // Area schedule for tomorrow

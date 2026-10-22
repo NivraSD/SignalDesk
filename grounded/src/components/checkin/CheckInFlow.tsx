@@ -1,17 +1,23 @@
 import { useState, useEffect } from 'react'
 import { useAreas } from '@/hooks/useAreas'
 import { useNavigate } from 'react-router-dom'
-import { getToday } from '@/lib/utils'
+import { getToday, getTomorrow } from '@/lib/utils'
+import { useCalendar } from '@/hooks/useCalendar'
+import { addPlanToCalendar } from '@/lib/planCalendar'
 import { useCheckins } from '@/hooks/useCheckins'
 import { useGroundedStore } from '@/stores/groundedStore'
 import { useGroundedAI } from '@/hooks/useGroundedAI'
 import type { CheckIn, AreaCheckInData } from '@/types'
 import PlanEditor from './PlanEditor'
+import AddToCalendarToggle from './AddToCalendarToggle'
 
 export default function CheckInFlow() {
   const AREAS = useAreas()
   const navigate = useNavigate()
   const { todayCheckIn, saveCheckIn } = useCheckins()
+  const { isCalendarConnected, createEvent } = useCalendar()
+  const [addToCal, setAddToCal] = useState(true)
+  const [completing, setCompleting] = useState(false)
   const { activityBank } = useGroundedStore()
   const { loading: aiLoading, getSuggestions } = useGroundedAI()
   const [aiSuggestions, setAiSuggestions] = useState<Record<string, { activity: string; timeOfDay: string; reason: string }> | null>(null)
@@ -45,7 +51,15 @@ export default function CheckInFlow() {
 
   const nextStep = async () => {
     if (isTomorrowStep) {
-      await saveCheckIn(data)
+      setCompleting(true)
+      let toSave = data
+      // Finishing the plan is when it goes on the calendar: same placement rules as Home.
+      if (isCalendarConnected && addToCal) {
+        const { plan } = await addPlanToCalendar(data.tomorrow_schedule, getTomorrow(), AREAS, createEvent)
+        toSave = { ...data, tomorrow_schedule: plan }
+      }
+      await saveCheckIn(toSave)
+      setCompleting(false)
       navigate('/feedback')
     } else {
       setStep((s) => s + 1)
@@ -124,12 +138,14 @@ export default function CheckInFlow() {
           suggestions={aiSuggestions}
         />
 
+        {isCalendarConnected && <AddToCalendarToggle checked={addToCal} onChange={setAddToCal} />}
+
         <div className="flex justify-between">
           <button onClick={prevStep} className="px-4 py-2 text-stone-500">
             Back
           </button>
-          <button onClick={nextStep} className="px-6 py-2 bg-stone-700 text-white rounded-lg">
-            Complete
+          <button onClick={nextStep} disabled={completing} className="px-6 py-2 bg-stone-700 text-white rounded-lg disabled:opacity-50">
+            {completing ? 'Saving…' : 'Complete'}
           </button>
         </div>
       </div>
