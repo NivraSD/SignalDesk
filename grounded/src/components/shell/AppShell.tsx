@@ -3,6 +3,7 @@ import { Settings, Bell } from 'lucide-react'
 import BottomNav from './BottomNav'
 import { useEffect } from 'react'
 import { useUserSetup } from '@/hooks/useAreas'
+import { useActivities } from '@/hooks/useActivities'
 
 interface AppShellProps {
   children: React.ReactNode
@@ -12,6 +13,7 @@ export default function AppShell({ children }: AppShellProps) {
   const location = useLocation()
   const navigate = useNavigate()
   const { onboarded } = useUserSetup()
+  useActivities() // keeps the person's activity list (used by check-ins and plans) loaded
 
   // Someone who hasn't done the first-run setup goes there first.
   useEffect(() => {

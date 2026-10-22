@@ -60,7 +60,8 @@ export default function WelcomePage() {
       return
     }
     setSetup({ areas: cleaned.filter((a) => a.enabled), onboarded: true, displayName: name.trim() || null })
-    navigate('/', { replace: true })
+    // New people go on to make the activity list their own; editing later just returns home.
+    navigate(editing ? '/' : '/activities?first', { replace: true })
   }
 
   return (

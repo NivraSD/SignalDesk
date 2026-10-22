@@ -52,14 +52,15 @@ export const DAILY_QUOTES: DailyQuote[] = [
   { text: "Breathe. You're going to be okay.", source: "Grounding Wisdom" },
 ]
 
-// Starting activity ideas for someone new (each person's own list lives in grounded_activities).
+// Starting activity ideas for someone new, saved to their own list when they start (so every one can
+// be removed). Each area runs from tiny to bigger, so there's always an easy way in.
 export const DEFAULT_ACTIVITY_BANK: Record<string, string[]> = {
-  spiritual: ['5 minutes of quiet/breathing', '10 minutes of prayer', '10 minutes of meditation', 'Read something spiritual', 'Gratitude list'],
-  mental_emotional: ["Name one emotion you're feeling", 'Journal for 10 minutes', 'Grounding exercise', 'Process something in writing', 'Therapy session'],
-  physical: ['Stretch for 5 minutes', '20-minute walk', 'Workout', 'Cook a real meal', 'Drink enough water', 'Get to bed on time'],
-  recovery: ['Daily reading', 'Call your sponsor', 'Go to a meeting', 'Step work', 'Reach out to someone in the program'],
-  work: ['One focused hour', 'Clear one small task', 'Plan tomorrow', 'Ask for help with something', 'Study session'],
-  joy_connection: ['Text a friend', 'Make plans with someone', 'Do something just for fun', 'Time outside', 'Call family'],
+  spiritual: ['One slow breath, on purpose', 'Two minutes of quiet', 'Name one thing you’re grateful for', 'Step outside and look up', 'Pray or meditate for 10 minutes', 'Read something that steadies you', 'Write a short gratitude list'],
+  mental_emotional: ['Name what you’re feeling', 'Five-senses grounding', 'Write for 5 minutes, no editing', 'Notice one thought without arguing with it', 'Tell someone how you’re really doing', 'Phone in another room for an hour', 'Therapy, or prep for your next session'],
+  physical: ['Drink a glass of water', 'Stretch for 2 minutes', 'Eat something real', 'Shower and get dressed', '10-minute walk', 'Get outside in daylight', 'Move however feels good for 20 minutes', 'Lights out at a set time'],
+  recovery: ['Read a daily meditation', 'Say the Serenity Prayer', 'Text someone in the program', 'Call your sponsor', 'Go to a meeting', 'Work a step for 20 minutes', 'Help someone else'],
+  work: ['Pick the one thing that matters today', 'Clear one small task', '25 focused minutes', 'Answer one message you’ve been putting off', 'Plan tomorrow in 5 minutes', 'Ask for help with something stuck', 'Study for 30 minutes'],
+  joy_connection: ['Listen to a song you love', 'Send a message to a friend', 'Spend time with an animal', 'Make plans for this week', 'Try something new and small', 'Call family', 'Do something just because it’s fun'],
 }
 
 export const DEFAULT_REMINDERS = [

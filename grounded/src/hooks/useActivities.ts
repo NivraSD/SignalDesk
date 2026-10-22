@@ -4,10 +4,14 @@ import { useGroundedStore } from '@/stores/groundedStore'
 import { DEFAULT_ACTIVITY_BANK } from '@/lib/constants'
 import type { Activity } from '@/types'
 
+// Starter ideas are saved at most once per person per session, even if two screens load at once.
+const seededFor = new Set<string>()
+
 export function useActivities() {
   const [activities, setActivities] = useState<Activity[]>([])
   const [loading, setLoading] = useState(true)
   const { userId, activityBank, setActivityBank } = useGroundedStore()
+  const savedAreas = useGroundedStore((st) => st.areas) // null until this person's setup loads
 
   const loadActivities = useCallback(async () => {
     if (!userId) return
@@ -19,21 +23,31 @@ export function useActivities() {
       .order('created_at', { ascending: true })
 
     if (!error && data) {
-      setActivities(data)
-      // The person's own activities; the starter set only until they have any saved.
-      const bank: Record<string, string[]> = data.length ? {} : { ...DEFAULT_ACTIVITY_BANK }
-      data.forEach((a: Activity) => {
+      let rows: Activity[] = data
+      // First time: save the starter ideas as their own, for the areas they use, so every one
+      // can be removed and adding their own never wipes the rest.
+      if (rows.length === 0 && savedAreas && !seededFor.has(userId)) {
+        seededFor.add(userId)
+        const starter = savedAreas.flatMap((area) =>
+          (DEFAULT_ACTIVITY_BANK[area.id] || []).map((name) => ({ user_id: userId, area_id: area.id, name, is_default: true }))
+        )
+        if (starter.length) {
+          const { data: seeded } = await supabase.from('grounded_activities').insert(starter).select()
+          rows = seeded ?? []
+        }
+      }
+      setActivities(rows)
+      const bank: Record<string, string[]> = {}
+      rows.forEach((a: Activity) => {
         if (!bank[a.area_id]) bank[a.area_id] = []
         if (!bank[a.area_id].includes(a.name)) {
           bank[a.area_id].push(a.name)
         }
       })
       setActivityBank(bank)
-    } else if (Object.keys(activityBank).length === 0) {
-      setActivityBank(DEFAULT_ACTIVITY_BANK)
     }
     setLoading(false)
-  }, [userId, setActivityBank, activityBank])
+  }, [userId, setActivityBank, savedAreas])
 
   useEffect(() => {
     loadActivities()
