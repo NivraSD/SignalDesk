@@ -6,7 +6,7 @@
 //   GET /api/wallpaper?key=KEY&get=image       -> redirect to the raw image
 //   GET /api/wallpaper?key=KEY&get=captioned   -> 1080x1920 JPEG, title on black bars (one call)
 import { createClient } from '@supabase/supabase-js'
-import { compositeWallpaper, loadCaptionFont } from './_lib/overlay'
+import { compositeWallpaper, loadCaptionFont } from './_lib/overlay.js'
 
 const OWNER_ID = 'aa40db0f-ec2f-45cc-840f-e227c830e175' // single-user wallpaper until art is per person
 
