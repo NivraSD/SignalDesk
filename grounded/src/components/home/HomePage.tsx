@@ -5,8 +5,8 @@ import { getYesterday } from '@/lib/utils'
 import { useCheckins } from '@/hooks/useCheckins'
 import { useVisionBoard } from '@/hooks/useVisionBoard'
 import { useMorningCheckin } from '@/hooks/useMorningCheckin'
+import { useGroundedStore } from '@/stores/groundedStore'
 import DailyQuote from './DailyQuote'
-import PyramidSection from './PyramidSection'
 import TodaySchedule from './TodaySchedule'
 import PillTracker from './PillTracker'
 
@@ -17,6 +17,7 @@ export default function HomePage() {
   const { checkIns, todayCheckIn } = useCheckins()
   const { items: visionItems, addImage, removeImage } = useVisionBoard()
   const { morning, loading: morningLoading } = useMorningCheckin()
+  const showPills = useGroundedStore((st) => st.showPills)
   const [isEditingVision, setIsEditingVision] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -85,9 +86,6 @@ export default function HomePage() {
         />
       </div>
 
-      <div className="bg-white rounded-2xl p-3 shadow-sm">
-        <PyramidSection />
-      </div>
 
       {!morningLoading && (
         <div className="bg-white rounded-2xl p-4 shadow-sm">
@@ -122,9 +120,11 @@ export default function HomePage() {
         </div>
       )}
 
-      <div className="bg-white rounded-2xl p-4 shadow-sm">
-        <PillTracker />
-      </div>
+      {showPills && (
+        <div className="bg-white rounded-2xl p-4 shadow-sm">
+          <PillTracker />
+        </div>
+      )}
 
       <div className="bg-white rounded-2xl p-4 shadow-sm">
         <TodaySchedule

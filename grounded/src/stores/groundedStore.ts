@@ -17,6 +17,8 @@ interface GroundedState {
   onboarded: boolean | null
   displayName: string | null
   hasCalendar: boolean
+  showPills: boolean
+  setShowPills: (v: boolean) => void
   setSetup: (s: { areas: Area[] | null; onboarded: boolean; displayName: string | null; hasCalendar?: boolean }) => void
 
   // Activity bank (local cache for quick access)
@@ -34,7 +36,7 @@ export const useGroundedStore = create<GroundedState>()(
         set((state) =>
           state.userId === id
             ? { userId: id, userEmail: email }
-            : { userId: id, userEmail: email, areas: null, onboarded: null, displayName: null, hasCalendar: false, activityBank: {}, todayCheckIn: null }
+            : { userId: id, userEmail: email, areas: null, onboarded: null, displayName: null, hasCalendar: false, showPills: true, activityBank: {}, todayCheckIn: null }
         ),
 
       todayCheckIn: null,
@@ -44,6 +46,8 @@ export const useGroundedStore = create<GroundedState>()(
       onboarded: null,
       displayName: null,
       hasCalendar: false,
+      showPills: true,
+      setShowPills: (v) => set({ showPills: v }),
       setSetup: ({ areas, onboarded, displayName, hasCalendar }) =>
         set((state) => ({ areas, onboarded, displayName, hasCalendar: hasCalendar ?? state.hasCalendar })),
 

@@ -1,4 +1,4 @@
-import type { Area, PyramidLevel, DailyQuote, FrequencyOption } from '@/types'
+import type { Area, DailyQuote, FrequencyOption } from '@/types'
 
 // Starting areas for someone new. Each person's own areas live in grounded_user_settings.areas
 // (renamed, turned off, reordered in the welcome). Ids are stable keys for check-in data.
@@ -11,12 +11,6 @@ export const DEFAULT_AREAS: Area[] = [
   { id: 'joy_connection', name: 'Joy/Connection', icon: '\u2600', color: '#C4A574', description: 'Fun, friends, people who feel good to be around', isWeekly: true },
 ]
 
-export const PYRAMID_LEVELS: PyramidLevel[] = [
-  { text: 'God, Humility, Gratitude', width: '55%', bg: 'from-amber-600 to-amber-700' },
-  { text: 'Prayer and Meditation', width: '70%', bg: 'from-amber-500 to-amber-600' },
-  { text: 'Discipline', width: '85%', bg: 'from-amber-400 to-amber-500' },
-  { text: 'Goals', width: '100%', bg: 'from-amber-300 to-amber-400' },
-]
 
 export const TIMEZONE = 'America/New_York'
 

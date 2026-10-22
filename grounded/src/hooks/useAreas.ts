@@ -16,13 +16,13 @@ export function useAreas(): Area[] {
 
 // Load the person's setup once per sign-in (mounted by the app shell and the welcome screen).
 export function useUserSetup() {
-  const { userId, onboarded, setSetup } = useGroundedStore()
+  const { userId, onboarded, setSetup, setShowPills } = useGroundedStore()
 
   const load = useCallback(async () => {
     if (!userId) return
     const { data } = await supabase
       .from('grounded_user_settings')
-      .select('areas, onboarded_at, display_name, calendar_id')
+      .select('areas, onboarded_at, display_name, calendar_id, show_pills')
       .eq('user_id', userId)
       .maybeSingle()
     const all = (data?.areas as AreaSetting[] | null) ?? null
@@ -32,7 +32,8 @@ export function useUserSetup() {
       displayName: data?.display_name ?? null,
       hasCalendar: !!data?.calendar_id,
     })
-  }, [userId, setSetup])
+    setShowPills(data?.show_pills ?? true)
+  }, [userId, setSetup, setShowPills])
 
   useEffect(() => {
     if (userId && onboarded === null) load()

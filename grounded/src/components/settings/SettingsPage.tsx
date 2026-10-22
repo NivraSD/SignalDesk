@@ -59,7 +59,18 @@ function ShortcutField({ label, value, copyable, secret }: {
 export default function SettingsPage() {
   const navigate = useNavigate()
   const { user, signOut } = useAuth()
-  const { userId } = useGroundedStore()
+  const { userId, showPills, setShowPills } = useGroundedStore()
+
+  // Optional pill tracker: saved per person; Home hides the card when off.
+  const togglePills = async () => {
+    if (!userId) return
+    const next = !showPills
+    setShowPills(next)
+    const { error } = await supabase
+      .from('grounded_user_settings')
+      .upsert({ user_id: userId, show_pills: next }, { onConflict: 'user_id' })
+    if (error) setShowPills(!next)
+  }
   const [rules, setRules] = useState<UserRule[]>([])
   const [newRule, setNewRule] = useState('')
   const [loadingRules, setLoadingRules] = useState(true)
@@ -147,6 +158,20 @@ export default function SettingsPage() {
           </span>
           <span className="text-stone-300">&rsaquo;</span>
         </button>
+        <div className="w-full flex items-center justify-between p-4">
+          <span>
+            <span className="block text-sm font-medium text-stone-700">Pill tracker</span>
+            <span className="block text-xs text-stone-400">Show the four daily pill checks on Home</span>
+          </span>
+          <button
+            onClick={togglePills}
+            aria-pressed={showPills}
+            aria-label="Show pill tracker on Home"
+            className={`flex-none w-11 h-6 rounded-full transition-colors ${showPills ? 'bg-stone-700' : 'bg-stone-200'}`}
+          >
+            <span className={`block w-5 h-5 rounded-full bg-white shadow transition-transform ${showPills ? 'translate-x-5' : 'translate-x-0.5'}`} />
+          </button>
+        </div>
       </div>
 
       {/* AI Rules & Guidance */}

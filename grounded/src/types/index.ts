@@ -159,12 +159,6 @@ export interface DailyQuote {
   source: string
 }
 
-// Pyramid level
-export interface PyramidLevel {
-  text: string
-  width: string
-  bg: string
-}
 
 // Frequency option
 export interface FrequencyOption {
