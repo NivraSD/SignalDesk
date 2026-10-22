@@ -14,8 +14,8 @@ The following values are placeholders and must be updated before going live.
 
 | Field | Current Value | What to Set |
 |-------|--------------|-------------|
-| line_items[].price | `process.env.STRIPE_CONTRIBUTION_PRICE_ID`, falling back to `price_...` | Create a **"Customer chooses what to pay"** Price in the Dashboard (Product catalog → Add product → Pricing: *Customer chooses price*; optionally set a suggested, minimum and maximum amount). Set its ID (`price_...`) as the `STRIPE_CONTRIBUTION_PRICE_ID` environment variable. |
-| `CONTRIBUTE_URL` (in `src/lib/constants.ts`) | `''` (button hidden) | Set to `'/api/contribute'` once the keys and Price are in place. The Contribute button only shows when this is set. |
+| line_items[].price | `STRIPE_CONTRIBUTION_PRICE_ID` = `price_1UTO0SQvyjXbqyjm81qY1BcK` (**test mode**, "Donations for Grounded Project") | Create a **"Customer chooses what to pay"** Price in the Dashboard (Product catalog → Add product → Pricing: *Customer chooses price*; optionally set a suggested, minimum and maximum amount). For going live: create the same Price in **live** mode and replace the variable. |
+| `STRIPE_SECRET_KEY` (Vercel) | test-mode key (`sk_test_...`) | For going live: replace with the live secret key (`sk_live_...`). |
 
 Already set to real values (no change needed):
 
@@ -24,6 +24,8 @@ Already set to real values (no change needed):
 | mode | `payment` (one-time contribution) |
 | success_url | `<site>/settings?contributed=1` (shows a thank-you) |
 | cancel_url | `<site>/settings` |
+
+**Status (2026-10-22):** test mode is wired end to end: Vercel has `STRIPE_SECRET_KEY` (test) and `STRIPE_CONTRIBUTION_PRICE_ID`, and the Contribute button is on (`CONTRIBUTE_URL = '/api/contribute'`). Going live = the two replacements above.
 
 ## Configured Parameters
 
