@@ -38,15 +38,15 @@ export default function JournalPage() {
 
     // Add to calendar if requested
     if (newEntry.addToCalendar && isCalendarConnected && newEntry.time) {
-      const startTime = `${newEntry.date}T${newEntry.time}:00`
-      const [h, m] = newEntry.time.split(':').map(Number)
-      const endH = h + 1
-      const endTime = `${newEntry.date}T${String(endH).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`
+      // One hour long; Date math so a late event (e.g. 23:30) rolls into the next day instead of "24:30".
+      const start = new Date(`${newEntry.date}T${newEntry.time}:00`)
+      const end = new Date(start.getTime() + 60 * 60 * 1000)
 
       const result = await createEvent({
         summary: newEntry.content,
-        startTime: new Date(`${startTime}`).toISOString(),
-        endTime: new Date(`${endTime}`).toISOString(),
+        startTime: start.toISOString(),
+        endTime: end.toISOString(),
+        exactTime: true,
       })
 
       if (result?.error) {

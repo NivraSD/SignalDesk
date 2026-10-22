@@ -54,15 +54,28 @@ export function useCalendar() {
     setLoading(false)
   }, []) // eslint-disable-line
 
-  // Create a calendar event, moving it to the next free slot that day if the requested time is taken.
+  // Create a calendar event. Vague plan times ("Morning" -> 7:00) are placed in the next free, not-yet-passed
+  // slot that day; an exact time the user typed (exactTime) is used as entered, even if it overlaps.
   // Returns the created event plus `movedFrom` (original start ISO) and `movedBecause` when it had to shift.
   const createEvent = async (eventData: {
     summary: string
     description?: string
     startTime: string
     endTime: string
+    exactTime?: boolean
   }) => {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
+    if (eventData.exactTime) {
+      return callCalendarAPI({
+        action: 'create-event',
+        event: {
+          summary: eventData.summary,
+          description: eventData.description,
+          start: { dateTime: eventData.startTime, timeZone: tz },
+          end: { dateTime: eventData.endTime, timeZone: tz },
+        },
+      })
+    }
     const requestedStart = new Date(eventData.startTime)
     const duration = new Date(eventData.endTime).getTime() - requestedStart.getTime()
 

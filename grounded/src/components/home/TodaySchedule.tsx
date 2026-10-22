@@ -192,6 +192,8 @@ export default function TodaySchedule({ todaySchedule, tomorrowSchedule }: Today
       summary: item.icon ? `${item.icon} ${item.label}` : item.label,
       startTime: startTime.toISOString(),
       endTime: endTime.toISOString(),
+      // An item with a real clock time (e.g. a journal event at 08:15) keeps it; "Morning" etc. get placed.
+      exactTime: item.timeLabel.includes(':'),
     })
 
     if (result?.error) {
