@@ -333,14 +333,22 @@ Preserve important existing information. Add new insights. Remove anything no lo
 
     // ── GET HISTORY ─────────────────────────────────────────────────────────
     if (action === 'get-history') {
-      const { data } = await supabase
+      // Newest page first (optionally older than `before`), returned oldest→newest for display.
+      // Was ascending + limit 100, which returned the FIRST 100 messages ever and hid everything newer.
+      const pageSize = Math.min(Math.max(Number(payload.limit) || 100, 1), 200)
+      let query = supabase
         .from('grounded_chat_messages')
         .select('id, role, content, created_at')
         .eq('user_id', userId)
-        .order('created_at', { ascending: true })
-        .limit(100)
+        .order('created_at', { ascending: false })
+        .limit(pageSize + 1)
+      if (typeof payload.before === 'string') query = query.lt('created_at', payload.before)
+      const { data, error } = await query
+      if (error) return errorResponse(error.message, 500)
 
-      return jsonResponse({ messages: data || [] })
+      const rows = data || []
+      const hasMore = rows.length > pageSize
+      return jsonResponse({ messages: rows.slice(0, pageSize).reverse(), hasMore })
     }
 
     // ── EMBED CONTENT ───────────────────────────────────────────────────────
