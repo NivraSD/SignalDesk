@@ -5,8 +5,9 @@ import { compositeWallpaper } from '@/lib/grounded-overlay'
 // Node.js runtime for Sharp
 export const maxDuration = 60
 
-const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co'
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
+// Grounded has its own Supabase project (not SignalDesk's).
+const SUPABASE_URL = process.env.GROUNDED_SUPABASE_URL!
+const SUPABASE_SERVICE_KEY = process.env.GROUNDED_SUPABASE_SERVICE_ROLE_KEY!
 const GROUNDED_ART_FN = `${SUPABASE_URL}/functions/v1/grounded-art`
 
 export async function POST(req: NextRequest) {

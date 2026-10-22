@@ -11,8 +11,9 @@ import { compositeWallpaper, loadCaptionFont } from '@/lib/grounded-overlay'
 export const maxDuration = 30
 export const dynamic = 'force-dynamic'
 
-const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co'
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
+// Grounded has its own Supabase project (not SignalDesk's).
+const SUPABASE_URL = process.env.GROUNDED_SUPABASE_URL!
+const SUPABASE_SERVICE_KEY = process.env.GROUNDED_SUPABASE_SERVICE_ROLE_KEY!
 const GROUNDED_API_KEY = 'd677fcd4-7d0f-4e99-b53e-5243e9f99fea'
 
 export async function GET(req: NextRequest) {
