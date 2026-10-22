@@ -1,8 +1,16 @@
 {
   "functions": {
-    "api/wallpaper.ts": { "maxDuration": 30 }
+    "api/wallpaper.ts": {
+      "maxDuration": 30
+    },
+    "api/wallpaper-link.ts": {
+      "maxDuration": 10
+    }
   },
   "rewrites": [
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
+    }
   ]
 }
