@@ -8,12 +8,12 @@ import opentype from 'opentype.js'
 
 const OUTPUT_W = 1080
 const OUTPUT_H = 1920
-const FONT_SIZE = 56
-const PAD_X = 26 // bar padding left/right of the text
+const FONT_SIZE = 44
+const PAD_X = 20 // bar padding left/right of the text
 const BAR_H = Math.round(FONT_SIZE * 1.5)
-const LINE_GAP = 10
+const LINE_GAP = 8
 const MAX_TEXT_W = OUTPUT_W - 2 * 110 - 2 * PAD_X
-const CENTER_Y = Math.round(OUTPUT_H * 0.7) // below the lock-screen clock, above the bottom controls
+const CENTER_Y = Math.round(OUTPUT_H * 0.79) // low on the lock screen, clear of the flashlight/camera buttons
 
 let fontPromise: Promise<opentype.Font> | null = null
 
