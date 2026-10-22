@@ -1,4 +1,4 @@
-import { Home, PlusCircle, MessageCircle, History } from 'lucide-react'
+import { Home, PlusCircle, MessageCircle, Laugh, History } from 'lucide-react'
 
 interface BottomNavProps {
   active: string
@@ -9,7 +9,7 @@ const tabs: { id: string; label: string; icon?: typeof Home; emoji?: string }[] 
   { id: '/', icon: Home, label: 'Home' },
   { id: '/journal', icon: PlusCircle, label: 'Add' },
   { id: '/chat', icon: MessageCircle, label: 'Chat' },
-  { id: '/laugh', emoji: '\u{1F602}', label: 'Laugh' },
+  { id: '/laugh', icon: Laugh, label: 'Laugh' },
   { id: '/history', icon: History, label: 'History' },
 ]
 
