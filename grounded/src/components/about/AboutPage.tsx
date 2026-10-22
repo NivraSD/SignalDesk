@@ -66,7 +66,7 @@ const SECTIONS: { title: string; body: string[] }[] = [
     body: [
       'Sometimes we just need a good laugh.',
       'Fill-in-the-blank poems: Grounded sets up the rhyme, you choose the words. Anything goes — misspellings and stretched rhymes count. Nothing is graded.',
-      'I got jokes: one line per tap — a classic, credited to the comedian, or an original. Keep the ones that land.',
+      'I got jokes: one classic line per tap, credited to the comedian who said it. Keep the ones that land.',
     ],
   },
   {
