@@ -1,0 +1,49 @@
+// Grounded wallpaper for the iOS Shortcut. Each run serves a different piece from the library
+// (unseen first, via grounded_pick_wallpaper); calls within 30s get the same piece so a Shortcut
+// that asks for the title and the image separately stays paired.
+//   GET /api/wallpaper?key=KEY                 -> JSON { title, image_url }
+//   GET /api/wallpaper?key=KEY&get=title       -> plain-text title
+//   GET /api/wallpaper?key=KEY&get=image       -> redirect to the raw image
+//   GET /api/wallpaper?key=KEY&get=captioned   -> 1080x1920 JPEG, title on black bars (one call)
+import { createClient } from '@supabase/supabase-js'
+import { compositeWallpaper, loadCaptionFont } from './_lib/overlay'
+
+const OWNER_ID = 'aa40db0f-ec2f-45cc-840f-e227c830e175' // single-user wallpaper until art is per person
+
+export async function GET(request: Request): Promise<Response> {
+  const url = new URL(request.url)
+  if (url.searchParams.get('key') !== process.env.GROUNDED_WALLPAPER_KEY) {
+    return new Response('Unauthorized', { status: 401 })
+  }
+  const get = url.searchParams.get('get')
+  const noStore = { 'Cache-Control': 'no-store' }
+
+  try {
+    const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+    const { data, error } = await supabase.rpc('grounded_pick_wallpaper', { p_user: OWNER_ID, p_window_seconds: 30 })
+    if (error) throw error
+    const piece = (data as { id: string; title: string; image_url: string }[] | null)?.[0]
+    if (!piece) return new Response('No art found', { status: 404 })
+
+    if (get === 'title') {
+      return new Response(piece.title, { headers: { 'Content-Type': 'text/plain', ...noStore } })
+    }
+    if (get === 'image') {
+      return new Response(null, { status: 307, headers: { Location: piece.image_url, ...noStore } })
+    }
+    if (get === 'captioned') {
+      const [font, img] = await Promise.all([
+        loadCaptionFont(),
+        fetch(piece.image_url).then(async (r) => {
+          if (!r.ok) throw new Error(`image fetch ${r.status}`)
+          return Buffer.from(await r.arrayBuffer())
+        }),
+      ])
+      const jpeg = await compositeWallpaper(img, piece.title, font)
+      return new Response(new Uint8Array(jpeg), { headers: { 'Content-Type': 'image/jpeg', ...noStore } })
+    }
+    return Response.json({ title: piece.title, image_url: piece.image_url }, { headers: noStore })
+  } catch (err) {
+    return new Response(err instanceof Error ? err.message : 'Error', { status: 500 })
+  }
+}

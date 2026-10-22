@@ -3,7 +3,7 @@ import { corsHeaders, handleCors, jsonResponse, errorResponse } from '../_shared
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-const GOOGLE_API_KEY = Deno.env.get('GOOGLE_API_KEY')!
+const GOOGLE_API_KEY = (Deno.env.get('GEMINI_API_KEY') ?? Deno.env.get('GOOGLE_API_KEY'))!
 const GROUNDED_API_KEY = Deno.env.get('GROUNDED_API_KEY')!
 
 const GEMINI_TEXT = 'gemini-3.8-flash'
