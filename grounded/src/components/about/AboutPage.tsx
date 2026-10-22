@@ -58,7 +58,14 @@ const SECTIONS: { title: string; body: string[] }[] = [
   {
     title: 'Activities',
     body: [
-      'The things you do for each area. Grounded suggests from this list when you plan. It starts with a few ideas — remove what doesn’t fit and add what you actually do.',
+      'The things you do for each area (Settings → Your activities). Grounded suggests from this list when you plan. It starts with a few ideas — remove what doesn’t fit and add what you actually do.',
+    ],
+  },
+  {
+    title: 'Laugh',
+    body: [
+      'Fill-in-the-blank poems: Grounded sets up the rhyme, you choose the words. Anything goes — misspellings and stretched rhymes count. Nothing is graded.',
+      'I got jokes: one line per tap — a classic, credited to the comedian, or an original. Keep the ones that land.',
     ],
   },
   {

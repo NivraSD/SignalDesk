@@ -1,15 +1,15 @@
-import { Home, PlusCircle, MessageCircle, Layers, History } from 'lucide-react'
+import { Home, PlusCircle, MessageCircle, History } from 'lucide-react'
 
 interface BottomNavProps {
   active: string
   onNavigate: (path: string) => void
 }
 
-const tabs = [
+const tabs: { id: string; label: string; icon?: typeof Home; emoji?: string }[] = [
   { id: '/', icon: Home, label: 'Home' },
   { id: '/journal', icon: PlusCircle, label: 'Add' },
   { id: '/chat', icon: MessageCircle, label: 'Chat' },
-  { id: '/activities', icon: Layers, label: 'Activities' },
+  { id: '/laugh', emoji: '\u{1F602}', label: 'Laugh' },
   { id: '/history', icon: History, label: 'History' },
 ]
 
@@ -28,7 +28,11 @@ export default function BottomNav({ active, onNavigate }: BottomNavProps) {
                 isActive ? 'text-stone-800' : 'text-stone-400'
               }`}
             >
-              <Icon size={20} strokeWidth={isActive ? 2.5 : 1.5} />
+              {Icon ? (
+                <Icon size={20} strokeWidth={isActive ? 2.5 : 1.5} />
+              ) : (
+                <span className={`text-[19px] leading-5 ${isActive ? '' : 'opacity-60 grayscale'}`} aria-hidden="true">{tab.emoji}</span>
+              )}
               <span className="text-[10px]">{tab.label}</span>
             </button>
           )

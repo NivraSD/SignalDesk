@@ -23,7 +23,7 @@ export default function ActivityBankManager() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <button onClick={() => navigate('/')} className="text-stone-500 text-sm">
+        <button onClick={() => navigate(firstTime ? '/' : '/settings')} className="text-stone-500 text-sm">
           &larr; Back
         </button>
         <h2 className="text-lg font-light text-stone-700">Activity Bank</h2>

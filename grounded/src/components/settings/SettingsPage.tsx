@@ -117,6 +117,13 @@ export default function SettingsPage() {
           </span>
           <span className="text-stone-300">&rsaquo;</span>
         </button>
+        <button onClick={() => navigate('/activities')} className="w-full flex items-center justify-between p-4 text-left">
+          <span>
+            <span className="block text-sm font-medium text-stone-700">Your activities</span>
+            <span className="block text-xs text-stone-400">The things you do for each area — Grounded suggests from these</span>
+          </span>
+          <span className="text-stone-300">&rsaquo;</span>
+        </button>
         <CalendarConnect />
         <div className="w-full flex items-center justify-between p-4">
           <span>

@@ -19,6 +19,7 @@ import ArtPage from '@/components/art/ArtPage'
 import WelcomePage from '@/components/welcome/WelcomePage'
 import AboutYouPage from '@/components/you/AboutYouPage'
 import AboutPage from '@/components/about/AboutPage'
+import LaughPage from '@/components/laugh/LaughPage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { loading, user } = useAuth()
@@ -152,6 +153,14 @@ export default function App() {
           }
         />
 
+        <Route
+          path="/laugh"
+          element={
+            <ProtectedRoute>
+              <AppShell><LaughPage /></AppShell>
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/about"
           element={
