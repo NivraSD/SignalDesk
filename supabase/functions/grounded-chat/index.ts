@@ -65,6 +65,7 @@ Deno.serve(async (req: Request) => {
 
     const userId = user.id
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+    const receivedAt = new Date().toISOString()
     const { action, ...payload } = await req.json()
 
     // ── CHAT ────────────────────────────────────────────────────────────────
@@ -79,6 +80,7 @@ Deno.serve(async (req: Request) => {
           .select('role, content')
           .eq('user_id', userId)
           .order('created_at', { ascending: false })
+        .order('role', { ascending: true }) // tie: 'assistant' before 'user' newest-first
           .limit(20),
       ])
 
@@ -120,9 +122,12 @@ Deno.serve(async (req: Request) => {
       const assistantMessage = rawResponse.replace(/<<<JOURNAL:.*?>>>/gs, '').trim()
 
       // Save messages to history
+      // Distinct timestamps: the question when it arrived, the reply when it was written. A shared
+      // default now() made each pair tie, so history could load reply-before-question.
+      const repliedAt = new Date(Math.max(Date.now(), new Date(receivedAt).getTime() + 1)).toISOString()
       await supabase.from('grounded_chat_messages').insert([
-        { user_id: userId, role: 'user', content: message },
-        { user_id: userId, role: 'assistant', content: assistantMessage },
+        { user_id: userId, role: 'user', content: message, created_at: receivedAt },
+        { user_id: userId, role: 'assistant', content: assistantMessage, created_at: repliedAt },
       ])
 
       // Embed user message in background (fire and forget)
@@ -275,6 +280,7 @@ ${planAreaIds.map((id) => `    "${id}": { "activity": "...", "timeOfDay": "Morni
           .select('role, content, created_at')
           .eq('user_id', userId)
           .order('created_at', { ascending: false })
+        .order('role', { ascending: true }) // tie: 'assistant' before 'user' newest-first
           .limit(30),
       ])
 
@@ -344,6 +350,7 @@ Preserve important existing information. Add new insights. Remove anything no lo
         .select('id, role, content, created_at')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
+        .order('role', { ascending: true }) // tie: 'assistant' before 'user' newest-first
         .limit(pageSize + 1)
       if (typeof payload.before === 'string') query = query.lt('created_at', payload.before)
       // "Clear chat" in Settings hides everything before this point from the screen (not from the companion).
