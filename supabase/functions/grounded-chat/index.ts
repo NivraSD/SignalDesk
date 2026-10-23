@@ -1,6 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders, handleCors, jsonResponse, errorResponse } from '../_shared/cors.ts'
-import { loadContext, callClaude, fetchCalendarEvents, embedAndStore } from '../_shared/context.ts'
+import { loadContext, callClaude, fetchCalendarEvents, embedAndStore, todayISO, shiftISO } from '../_shared/context.ts'
 import { takeQuota } from '../_shared/quota.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
@@ -47,6 +47,8 @@ Creating journal entries:
 When the user asks you to save something as a journal entry (a thought, task, or event), include this marker in your response:
 <<<JOURNAL:{"entry_type":"thought","content":"the content here"}>>>
 Valid entry_types: "thought", "task", "event". The content should capture the essence of what they want saved. You can include multiple entries. After the marker, acknowledge that you've saved it.
+
+Time: the current date and time are under "Right now" below; trust them over anything else. Talk about when things happened relative to today, exactly as labeled (this morning, yesterday, on Tuesday), and never guess or round ("a couple days ago" for something from today is wrong). If you're not sure when something happened, don't put a time on it.
 
 Communication style:
 - Conversational, not formal. Concise — respect the user's time.
@@ -153,7 +155,7 @@ Deno.serve(async (req: Request) => {
       }
 
       // Create journal entries in DB
-      const today = new Date().toISOString().split('T')[0]
+      const today = todayISO()
       for (const entry of journalEntries) {
         await supabase.from('grounded_journal_entries').insert({
           user_id: userId,
@@ -239,9 +241,7 @@ Write in a natural, conversational voice. Keep it under 200 words.`
       if (!checkIn || !activityBank) return errorResponse('Missing checkIn or activityBank', 400)
 
       // Fetch tomorrow's calendar events and context in parallel
-      const tomorrowDate = new Date()
-      tomorrowDate.setDate(tomorrowDate.getDate() + 1)
-      const tomorrowStr = tomorrowDate.toISOString().split('T')[0]
+      const tomorrowStr = shiftISO(todayISO(), 1)
 
       const [context, calendarText, settingsRes] = await Promise.all([
         loadContext(supabase, userId),

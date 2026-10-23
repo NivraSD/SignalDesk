@@ -43,6 +43,42 @@ async function getGoogleAccessToken(): Promise<string | null> {
 }
 
 // The person's own calendar (grounded_user_settings.calendar_id); nothing if they haven't connected one.
+// ── Dates ────────────────────────────────────────────────────────────────────
+// Everything the companion sees about time is in the person's zone (Eastern for now), with today's
+// date stated outright and past dates labeled relative to it, so it never has to guess.
+
+export const TIMEZONE = 'America/New_York'
+
+export const dayISO = (d: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: TIMEZONE }).format(d)
+// Today / tomorrow as YYYY-MM-DD in TIMEZONE (not UTC, which flips at 8pm Eastern).
+export const todayISO = () => dayISO(new Date())
+export const shiftISO = (iso: string, n: number) => new Date(Date.parse(iso + 'T12:00:00Z') + n * 86400000).toISOString().slice(0, 10)
+
+// "Friday, October 23, 2026, 7:55 AM"
+export function nowInWords(): string {
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: TIMEZONE, weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit',
+  }).format(new Date())
+}
+
+// "2026-10-21 (Wednesday, 2 days ago)"
+export function labelDay(iso: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso
+  const diff = Math.round((Date.parse(iso + 'T00:00:00Z') - Date.parse(dayISO(new Date()) + 'T00:00:00Z')) / 86400000)
+  const weekday = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'long' }).format(new Date(iso + 'T00:00:00Z'))
+  const rel = diff === 0 ? 'today' : diff === -1 ? 'yesterday' : diff === 1 ? 'tomorrow' : diff < 0 ? `${-diff} days ago` : `in ${diff} days`
+  return `${iso} (${weekday}, ${rel})`
+}
+
+// Midnight-to-midnight of a YYYY-MM-DD day in TIMEZONE, as ISO instants.
+function dayBounds(date: string): { timeMin: string; timeMax: string } {
+  const offsetAt = (iso: string) =>
+    new Intl.DateTimeFormat('en-US', { timeZone: TIMEZONE, timeZoneName: 'longOffset' })
+      .formatToParts(new Date(iso + 'T12:00:00Z')).find((p) => p.type === 'timeZoneName')?.value.replace('GMT', '') || '-05:00'
+  const start = new Date(`${date}T00:00:00${offsetAt(date)}`)
+  return { timeMin: start.toISOString(), timeMax: new Date(start.getTime() + 24 * 3600 * 1000 - 1000).toISOString() }
+}
+
 export async function fetchCalendarEvents(date: string, userId: string): Promise<string> {
   try {
     const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
@@ -57,8 +93,7 @@ export async function fetchCalendarEvents(date: string, userId: string): Promise
     const accessToken = await getGoogleAccessToken()
     if (!accessToken) return ''
 
-    const timeMin = `${date}T00:00:00Z`
-    const timeMax = `${date}T23:59:59Z`
+    const { timeMin, timeMax } = dayBounds(date)
     const params = new URLSearchParams({ singleEvents: 'true', orderBy: 'startTime', timeMin, timeMax })
     const response = await fetch(
       `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?${params}`,
@@ -69,8 +104,9 @@ export async function fetchCalendarEvents(date: string, userId: string): Promise
     if (events.length === 0) return ''
 
     const lines = events.map((e: any) => {
-      const start = e.start?.dateTime ? new Date(e.start.dateTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : 'All day'
-      const end = e.end?.dateTime ? new Date(e.end.dateTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : ''
+      const fmt = (t: string) => new Date(t).toLocaleTimeString('en-US', { timeZone: TIMEZONE, hour: 'numeric', minute: '2-digit', hour12: true })
+      const start = e.start?.dateTime ? fmt(e.start.dateTime) : 'All day'
+      const end = e.end?.dateTime ? fmt(e.end.dateTime) : ''
       return `- ${start}${end ? ` – ${end}` : ''}: ${e.summary || '(no title)'}`
     })
     return lines.join('\n')
@@ -189,6 +225,7 @@ export async function loadContext(
   ])
 
   const parts: string[] = []
+  parts.push(`## Right now\nIt is ${nowInWords()} (Eastern time). Today is ${dayISO(new Date())}.`)
 
   // Who they are, in their own words (About you). This outranks anything inferred below.
   const STORY_TITLES: Record<string, string> = {
@@ -229,7 +266,7 @@ ${areas.map((a) => `- ${a.id} = "${a.name}"${a.description ? `: ${a.description}
         const areas = Object.entries(c.areas || {})
           .map(([id, d]) => `${id}: ${d.score || '?'}/5`)
           .join(', ')
-        return `${c.checkin_date}: ${areas}${c.journal ? ` | "${c.journal.substring(0, 80)}"` : ''}`
+        return `${labelDay(c.checkin_date)}: ${areas}${c.journal ? ` | "${c.journal.substring(0, 80)}"` : ''}`
       })
       .join('\n')
     parts.push(`## Recent Check-ins (last 7 days)\n${text}`)
@@ -239,7 +276,7 @@ ${areas.map((a) => `- ${a.id} = "${a.name}"${a.description ? `: ${a.description}
     const text = journalRes.data
       .map(
         (j: { entry_type: string; entry_date: string; content: string; notes?: string }) =>
-          `[${j.entry_type}] ${j.entry_date}: ${j.content.substring(0, 100)}${j.notes ? ` (note: ${j.notes.substring(0, 50)})` : ''}`
+          `[${j.entry_type}] ${labelDay(j.entry_date)}: ${j.content.substring(0, 100)}${j.notes ? ` (note: ${j.notes.substring(0, 50)})` : ''}`
       )
       .join('\n')
     parts.push(`## Recent Journal Entries\n${text}`)

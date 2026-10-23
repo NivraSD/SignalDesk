@@ -1,6 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders, handleCors, jsonResponse, errorResponse } from '../_shared/cors.ts'
-import { loadContext, callClaude, fetchCalendarEvents } from '../_shared/context.ts'
+import { loadContext, callClaude, fetchCalendarEvents, todayISO } from '../_shared/context.ts'
 import { takeQuota } from '../_shared/quota.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
@@ -198,7 +198,7 @@ Deno.serve(async (req: Request) => {
     if (action === 'pre-generate') {
       if (!(await takeQuota(supabase, userId, 'orchestrate'))) return errorResponse('Daily limit reached', 429)
       const timeInfo = classifyTime()
-      const todayStr = new Date().toISOString().split('T')[0]
+      const todayStr = todayISO()
 
       // GATHER: context, domain scores, calendar — all in parallel
       const [context, domainScores, calendarText] = await Promise.all([
