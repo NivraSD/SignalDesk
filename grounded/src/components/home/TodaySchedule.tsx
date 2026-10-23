@@ -175,8 +175,14 @@ export default function TodaySchedule({ todaySchedule, tomorrowSchedule }: Today
 
   if (todayItems.length === 0 && tomorrowItems.length === 0) {
     return (
-      <div className="text-center py-4 text-stone-400 text-sm">
-        No plan yet. Complete a check-in to plan tomorrow, or add tasks.
+      <div className="text-center py-4">
+        {/* Daytime: today's plan comes from the morning check-in; evening: tomorrow's from the evening one. */}
+        <button
+          onClick={() => navigate(new Date().getHours() < 17 ? '/morning' : '/checkin')}
+          className="text-sm text-stone-400 underline"
+        >
+          Create a schedule
+        </button>
       </div>
     )
   }
