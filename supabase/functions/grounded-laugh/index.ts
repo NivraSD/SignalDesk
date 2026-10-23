@@ -8,6 +8,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { handleCors, jsonResponse, errorResponse } from '../_shared/cors.ts'
 import { fetchCalendarEvents } from '../_shared/context.ts'
 import { CLASSICS } from './classics.ts'
+import { takeQuota } from '../_shared/quota.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -86,6 +87,9 @@ Deno.serve(async (req) => {
     const { action } = body
 
     if (action === 'poem') {
+      if (!(await takeQuota(admin, user.id, 'poem'))) {
+        return errorResponse("That's all the poems for today. Come back tomorrow.", 429)
+      }
       // Light details only: name, people and life-right-now from About you, activities, today's
       // calendar. Never the journal, check-in scores, or the harder About-you sections.
       const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(new Date())

@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders, handleCors, jsonResponse, errorResponse } from '../_shared/cors.ts'
 import { loadContext, callClaude, fetchCalendarEvents, embedAndStore } from '../_shared/context.ts'
+import { takeQuota } from '../_shared/quota.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -57,16 +58,9 @@ Communication style:
 // ── Limits ───────────────────────────────────────────────────────────────────
 
 const MAX_MESSAGE_CHARS = 2000 // a long paste is almost always a task, not a conversation
-const DAILY_MESSAGE_LIMIT = 100 // messages a person can send per day (Eastern), plenty for real use
-
-// Midnight today in America/New_York, as an ISO timestamp.
-function startOfDayEastern(): string {
-  const now = new Date()
-  const day = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(now)
-  const offset = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', timeZoneName: 'longOffset' })
-    .formatToParts(now).find((p) => p.type === 'timeZoneName')?.value.replace('GMT', '') || '-05:00'
-  return new Date(`${day}T00:00:00${offset}`).toISOString()
-}
+const MAX_PAYLOAD_CHARS = 20000 // check-in data sent for reflections/plans; real ones are a few KB
+const MAX_EMBED_CHARS = 4000
+// Daily per-person caps (messages, reflections, plans, …) are in ../_shared/quota.ts.
 
 // ── Main handler ─────────────────────────────────────────────────────────────
 
@@ -96,6 +90,15 @@ Deno.serve(async (req: Request) => {
     const { action, ...payload } = await req.json()
 
     // ── CHAT ────────────────────────────────────────────────────────────────
+    // Paid actions other than chat: refuse oversized payloads and anything past the daily quota.
+    const QUOTA_KIND: Record<string, 'reflection' | 'suggest-plan' | 'update-profile' | 'embed'> = {
+      reflection: 'reflection', 'suggest-plan': 'suggest-plan', 'update-profile': 'update-profile', 'embed-content': 'embed',
+    }
+    if (QUOTA_KIND[action]) {
+      if (action !== 'embed-content' && JSON.stringify(payload).length > MAX_PAYLOAD_CHARS) return errorResponse('Too much data', 413)
+      if (!(await takeQuota(supabase, userId, QUOTA_KIND[action]))) return errorResponse('Daily limit reached. Try again tomorrow.', 429)
+    }
+
     if (action === 'chat') {
       const { message } = payload
       if (typeof message !== 'string' || !message.trim()) return errorResponse('Empty message', 400)
@@ -108,14 +111,7 @@ Deno.serve(async (req: Request) => {
           limited: 'length',
         })
       }
-      const dayStart = startOfDayEastern()
-      const { count: sentToday } = await supabase
-        .from('grounded_chat_messages')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', userId)
-        .eq('role', 'user')
-        .gte('created_at', dayStart)
-      if ((sentToday ?? 0) >= DAILY_MESSAGE_LIMIT) {
+      if (!(await takeQuota(supabase, userId, 'chat'))) {
         return jsonResponse({
           message: "We've talked a lot today, so let's pick this up tomorrow. If you're struggling right now, please call or text 988 (Suicide & Crisis Lifeline), or 911 in an emergency.",
           limited: 'daily',
@@ -420,7 +416,8 @@ Preserve important existing information. Add new insights. Remove anything no lo
 
     // ── EMBED CONTENT ───────────────────────────────────────────────────────
     if (action === 'embed-content') {
-      const { contentType, contentId, text } = payload
+      const { contentType, contentId } = payload
+      const text = typeof payload.text === 'string' ? payload.text.slice(0, MAX_EMBED_CHARS) : ''
       if (!contentType || !text) return errorResponse('Missing contentType or text', 400)
 
       await embedAndStore(
