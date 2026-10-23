@@ -5,6 +5,7 @@
 // "X is a direct competitor to Org in [industry]. Alert on: leadership changes,
 // market moves, regulatory issues, M&A activity, strategic partnerships..."
 
+import { callGeminiFlash } from '../_shared/gemini-flash.ts';
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
@@ -89,28 +90,13 @@ Example for a competitor:
 Generate context for all ${targets.length} targets:`;
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-3-5-haiku-20241022',
-        max_tokens: 4000,
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Claude API error: ${response.status} - ${errorText}`);
+    let content: string;
+    try {
+      content = (await callGeminiFlash(prompt, { maxOutputTokens: 8000, json: true })).trim();
+    } catch (e) {
+      console.error('Gemini error:', e instanceof Error ? e.message : e);
       return new Map();
     }
-
-    const data = await response.json();
-    const content = data.content[0].text.trim();
 
     // Extract JSON from response
     const jsonMatch = content.match(/\{[\s\S]*\}/);

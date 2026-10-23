@@ -1,5 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import Anthropic from 'https://esm.sh/@anthropic-ai/sdk@0.27.3'
+import { callGeminiFlash } from '../_shared/gemini-flash.ts'
 import { corsHeaders } from '../_shared/cors.ts'
 
 /**
@@ -51,13 +51,6 @@ serve(async (req) => {
       pages_count: scraped_pages.length
     })
 
-    const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY')
-    if (!anthropicApiKey) {
-      throw new Error('ANTHROPIC_API_KEY not configured')
-    }
-
-    const anthropic = new Anthropic({ apiKey: anthropicApiKey })
-
     // Combine all page content
     const combinedContent = scraped_pages
       .map(page => {
@@ -84,12 +77,7 @@ serve(async (req) => {
 
     // Helper function to extract entities from content
     const extractEntitiesFromContent = async (content: string) => {
-      const message = await anthropic.messages.create({
-        model: 'claude-3-5-haiku-20241022', // Fast and cheap
-        max_tokens: 4096,
-        messages: [{
-          role: 'user',
-          content: `You are analyzing website content for ${organization_name}. Extract structured information about the organization.
+      const responseText = await callGeminiFlash(`You are analyzing website content for ${organization_name}. Extract structured information about the organization.
 
 <website_content>
 ${content}
@@ -159,11 +147,7 @@ Guidelines:
 - Be thorough but accurate - don't invent information
 - For team members, prioritize leadership and executives
 - Include as much detail as available for each entity
-- Return valid JSON only, no additional text`
-        }]
-      })
-
-      const responseText = message.content[0].type === 'text' ? message.content[0].text : '{}'
+- Return valid JSON only, no additional text`, { maxOutputTokens: 12000, json: true })
 
       // Extract JSON from response
       let jsonText = responseText

@@ -7,6 +7,7 @@
  * - Trending topics and market dynamics
  */
 
+import { callGeminiFlash } from '../_shared/gemini-flash.ts';
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 import { searchWebForCompetitors, fetchYahooFinanceCompetitors, searchWebForCurrentProducts } from './external-data-fetcher.ts';
@@ -576,13 +577,8 @@ RESPOND WITH ONLY THE INDUSTRY NAME:`;
 
     console.log('🔍 Industry detection prompt:', detectionPrompt.substring(0, 300));
 
-    // Use Claude Haiku for industry detection (follows instructions better, faster, cheaper)
-    const detection = await callAnthropic([{
-      role: 'user',
-      content: detectionPrompt
-    }], 10, 'claude-3-5-haiku-20241022');
-
-    industry = detection.content[0].type === 'text' ? detection.content[0].text.trim() : 'technology';
+    // Gemini Flash for industry detection (fast, cheap; one-word answer)
+    industry = (await callGeminiFlash(detectionPrompt, { maxOutputTokens: 2000 })).trim().split('\n')[0].trim() || 'technology';
     console.log(`✅ Detected industry: ${industry}`);
   }
   
@@ -793,10 +789,9 @@ Return a monitoring configuration in this JSON format:
 }`;
 
   try {
-    const response = await callAnthropic([{
-      role: 'user',
-      content: gapPrompt
-    }], 2000, 'claude-sonnet-4-6');
+    const response = {
+      content: [{ type: 'text' as const, text: await callGeminiFlash(gapPrompt, { maxOutputTokens: 6000, json: true }) }],
+    };
 
     const claudeResponse = response.content[0];
     if (claudeResponse.type !== 'text') {
@@ -1351,10 +1346,11 @@ REMEMBER:
 - Generic categories are USELESS for intelligence monitoring - we need trackable entities
 `;
 
-  const message = await callAnthropic([{
-    role: 'user',
-    content: analysisPrompt
-  }], 8000, 'claude-sonnet-4-6'); // Increased from 4000 - need space for full profile with 10-15 competitors + stakeholders
+  // Gemini Flash (JSON mode): the Sonnet version of this call ran long enough to push discovery past the
+  // 150s edge limit. Wrapped in the old message shape so the parsing below is unchanged.
+  const message = {
+    content: [{ type: 'text' as const, text: await callGeminiFlash(analysisPrompt, { maxOutputTokens: 16000, json: true, timeoutMs: 100000 }) }],
+  };
 
   const claudeResponse = message.content[0];
   if (claudeResponse.type !== 'text') {
