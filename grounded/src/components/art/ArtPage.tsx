@@ -1,151 +1,84 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 
-interface ArtPiece {
-  id: string
-  title: string
-  image_url: string
-  created_at: string
-  overlay_applied?: boolean
-}
+// Art: one captioned piece at a time, like "I got jokes". Tap for another; save the one you want.
+// The point is the small moment of connecting the image to its title, not matching a mood.
+
+interface Card { url: string; blob: Blob; title: string }
 
 export default function ArtPage() {
-  const [generating, setGenerating] = useState(false)
-  const [result, setResult] = useState<ArtPiece | null>(null)
-  const [error, setError] = useState('')
-  const [history, setHistory] = useState<ArtPiece[]>([])
-  const [loadingHistory, setLoadingHistory] = useState(true)
+  const [card, setCard] = useState<Card | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [saved, setSaved] = useState(false)
+  const current = useRef<string | null>(null)
 
-  useEffect(() => {
-    loadHistory()
-  }, [])
-
-  async function loadHistory() {
-    setLoadingHistory(true)
+  const next = async () => {
+    setBusy(true)
+    setError(null)
     try {
-      const { data, error: err } = await supabase.functions.invoke('grounded-art', {
-        body: { action: 'history' }
-      })
-      if (data?.pieces) setHistory(data.pieces)
-      if (err) console.error('History error:', err)
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) throw new Error('Not signed in')
+      const r = await fetch('/api/art-card', { headers: { Authorization: `Bearer ${session.access_token}` } })
+      if (!r.ok) throw new Error(r.status === 404 ? 'No art yet. Check back soon.' : 'Try again.')
+      const blob = await r.blob()
+      const title = decodeURIComponent(r.headers.get('X-Art-Title') || '')
+      const url = URL.createObjectURL(blob)
+      if (current.current) URL.revokeObjectURL(current.current)
+      current.current = url
+      setCard({ url, blob, title })
+      setSaved(false)
     } catch (e) {
-      console.error('Failed to load history:', e)
-    } finally {
-      setLoadingHistory(false)
+      setError(e instanceof Error ? e.message : 'Try again.')
     }
+    setBusy(false)
   }
 
-  async function generateArt() {
-    setGenerating(true)
-    setError('')
-    setResult(null)
+  useEffect(() => () => { if (current.current) URL.revokeObjectURL(current.current) }, [])
 
+  // iPhone: the share sheet's "Save Image" puts it in Photos. Elsewhere: a plain download.
+  const save = async () => {
+    if (!card) return
+    const name = `${(card.title || 'grounded').replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-').toLowerCase() || 'grounded'}.jpg`
+    const file = new File([card.blob], name, { type: 'image/jpeg' })
     try {
-      const { data, error: err } = await supabase.functions.invoke('grounded-art', {
-        body: { action: 'generate' }
-      })
-
-      if (err) {
-        setError(`Error: ${JSON.stringify(err)}`)
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file] })
+        setSaved(true)
         return
       }
-      if (data?.error) {
-        setError(data.error)
-        return
-      }
-
-      setResult(data)
-      loadHistory()
-    } catch (e: any) {
-      setError(e.message || 'Failed to generate')
-    } finally {
-      setGenerating(false)
+    } catch (e) {
+      if (e instanceof DOMException && e.name === 'AbortError') return
     }
+    const a = document.createElement('a')
+    a.href = card.url
+    a.download = name
+    a.click()
+    setSaved(true)
   }
 
   return (
-    <div className="space-y-6">
-      {/* Generate */}
-      <div>
-        <button
-          onClick={generateArt}
-          disabled={generating}
-          className="w-full py-4 bg-stone-100 text-stone-900 font-medium rounded-2xl hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition-all text-base"
-        >
-          {generating ? (
-            <span className="flex items-center justify-center gap-2">
-              <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-              </svg>
-              generating...
-            </span>
-          ) : 'generate new piece'}
+    <div className="space-y-4">
+      {card && (
+        <img
+          src={card.url}
+          alt={card.title}
+          className="w-full max-w-xs mx-auto rounded-2xl shadow-sm aspect-[9/16] object-cover bg-stone-900"
+        />
+      )}
+
+      <div className={`flex gap-2 ${card ? 'max-w-xs mx-auto' : ''}`}>
+        <button onClick={next} disabled={busy} className="flex-1 py-2.5 bg-stone-700 text-white rounded-lg text-sm disabled:opacity-50">
+          {busy ? '…' : card ? 'Another' : 'Show me one'}
         </button>
-      </div>
-
-      {/* Error */}
-      {error && (
-        <div className="p-3 bg-red-950/50 border border-red-900/50 rounded-xl text-red-300 text-sm">
-          {error}
-        </div>
-      )}
-
-      {/* Latest Result */}
-      {result && (
-        <div className="bg-stone-900/50 border border-stone-800 rounded-2xl p-4">
-          <div className="text-xs text-stone-500 uppercase tracking-widest mb-3">just created</div>
-          <img
-            src={result.image_url}
-            alt={result.title}
-            className="w-full rounded-xl"
-            style={{ aspectRatio: '9/16', objectFit: 'cover' }}
-          />
-          <div className="mt-3 text-center">
-            <div className="text-lg font-light tracking-wide text-stone-200">{result.title}</div>
-            <div className="text-xs text-stone-600 mt-1">
-              {result.overlay_applied ? 'title overlay applied' : 'raw image'}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Gallery */}
-      <div>
-        <div className="text-sm text-stone-500 mb-4">
-          gallery {history.length > 0 && `(${history.length})`}
-        </div>
-
-        {loadingHistory ? (
-          <div className="text-stone-600 text-sm">loading...</div>
-        ) : history.length === 0 ? (
-          <div className="text-stone-600 text-sm">no pieces yet</div>
-        ) : (
-          <div className="grid grid-cols-2 gap-3">
-            {history.map((piece) => (
-              <a
-                key={piece.id}
-                href={piece.image_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group"
-              >
-                <div className="aspect-[9/16] rounded-xl overflow-hidden bg-stone-900 border border-stone-800 group-hover:border-stone-600 transition-colors">
-                  <img
-                    src={piece.image_url}
-                    alt={piece.title}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                  />
-                </div>
-                <div className="mt-1.5 text-xs text-stone-500 group-hover:text-stone-300 transition-colors truncate">
-                  {piece.title}
-                </div>
-              </a>
-            ))}
-          </div>
+        {card && (
+          <button onClick={save} className="flex-1 py-2.5 rounded-lg border border-stone-200 text-stone-600 text-sm bg-white">
+            {saved ? 'Saved' : 'Save'}
+          </button>
         )}
       </div>
+
+      {error && <p className="text-xs text-stone-500 text-center">{error}</p>}
     </div>
   )
 }

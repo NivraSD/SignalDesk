@@ -71,7 +71,13 @@ const SECTIONS: { title: string; body: string[] }[] = [
   },
   {
     title: 'History',
-    body: ['Your past check-ins, week by week, so you can see how each area has been going over time.'],
+    body: ['Your past check-ins, week by week, so you can see how each area has been going over time (Settings → History).'],
+  },
+  {
+    title: 'Art',
+    body: [
+      'One piece at a time, each with a short title. Tap Another for a new one, or Save to keep it (on iPhone, choose Save Image).',
+    ],
   },
   {
     title: 'Lock screen art',

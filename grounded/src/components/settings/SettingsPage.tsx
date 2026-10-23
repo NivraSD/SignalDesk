@@ -117,6 +117,13 @@ export default function SettingsPage() {
           </span>
           <span className="text-stone-300">&rsaquo;</span>
         </button>
+        <button onClick={() => navigate('/history')} className="w-full flex items-center justify-between p-4 text-left">
+          <span>
+            <span className="block text-sm font-medium text-stone-700">History</span>
+            <span className="block text-xs text-stone-400">Your past check-ins, week by week</span>
+          </span>
+          <span className="text-stone-300">&rsaquo;</span>
+        </button>
         <button onClick={() => navigate('/activities')} className="w-full flex items-center justify-between p-4 text-left">
           <span>
             <span className="block text-sm font-medium text-stone-700">Your activities</span>
