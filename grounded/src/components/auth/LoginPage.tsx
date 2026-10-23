@@ -35,7 +35,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm space-y-8">
         <div className="text-center">
           <h1 className="text-3xl font-light text-stone-700 tracking-wide">Grounded</h1>
-          <p className="text-stone-500 text-sm mt-2 leading-relaxed">Check-ins, plans, and a companion that remembers,<br />to make life a little easier.</p>
+          <p className="text-stone-500 text-sm mt-2 leading-relaxed">A companion to make everyday life a little better.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-6 shadow-sm space-y-4">
