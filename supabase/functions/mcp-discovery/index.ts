@@ -275,7 +275,8 @@ async function createOrganizationProfile(args: any) {
       business_model,
       gap_filling_mode,
       gap_context,
-      realTimeProductInfo
+      realTimeProductInfo,
+      websiteInfo
     );
 
     // GAP-FILLING MODE: Return simplified profile immediately, skip validation
@@ -382,7 +383,15 @@ async function fetchWebsiteInfo(website: string) {
       description: descriptionMatch ? descriptionMatch[1].trim() : '',
       keywords: keywordsMatch ? keywordsMatch[1].trim() : '',
       h1: h1Match ? h1Match[1].trim() : '',
-      firstParagraph: firstPMatch ? firstPMatch[1].replace(/<[^>]+>/g, '').trim() : ''
+      firstParagraph: firstPMatch ? firstPMatch[1].replace(/<[^>]+>/g, '').trim() : '',
+      // Visible page text, so the analysis knows what the company actually sells (meta tags alone are thin).
+      text: html
+        .replace(/<(script|style|noscript|svg)[^>]*>[\s\S]*?<\/\1>/gi, ' ')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/&nbsp;|&#160;/g, ' ').replace(/&amp;/g, '&').replace(/&#39;|&rsquo;/g, "'").replace(/&quot;/g, '"')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .substring(0, 4000)
     };
 
     console.log(`✅ Extracted website info:`, {
@@ -893,7 +902,8 @@ async function analyzeAndEnhanceProfile(
   business_model?: string,
   gap_filling_mode: boolean = false,
   gap_context: any = null,
-  realTimeProductInfo: { products: string[], services: string[], recentLaunches: string[], rawSnippets: string[] } | null = null
+  realTimeProductInfo: { products: string[], services: string[], recentLaunches: string[], rawSnippets: string[] } | null = null,
+  siteInfo: { title?: string; description?: string; text?: string } | null = null
 ) {
   // GAP-FILLING MODE: Generate targeted profile to fill specific gaps
   if (gap_filling_mode && gap_context) {
@@ -919,7 +929,12 @@ This is NOT about generic news monitoring. Every target you identify must answer
 COMPANY PROFILE:
 - Organization: ${organization_name}
 - Industry: ${industryData.industry} ${industryData.subCategory ? `(${industryData.subCategory})` : ''}
-${product_lines.length > 0 ? `- Key Product Lines: ${product_lines.join(', ')}` : ''}
+${siteInfo && (siteInfo.description || siteInfo.text) ? `
+WHAT ${organization_name.toUpperCase()} SAYS IT DOES (from its own website; trust this over the industry label above):
+${siteInfo.description ? `${siteInfo.description}\n` : ''}${siteInfo.text ? siteInfo.text.substring(0, 3000) : ''}
+
+COMPETITORS must be companies that sell a similar product to the same kind of buyer described above (for a niche or early-stage company, that usually means other specialist startups and established vendors in that niche). Do NOT list large general-purpose platforms (Microsoft, Google, Amazon, Salesforce, etc.) unless they sell a product that directly competes with this one.
+` : ''}${product_lines.length > 0 ? `- Key Product Lines: ${product_lines.join(', ')}` : ''}
 ${key_markets.length > 0 ? `- Key Markets: ${key_markets.join(', ')}` : ''}
 ${business_model ? `- Business Model: ${business_model}` : ''}
 ${industryData.company_size?.employees ? `- Company Size: ${industryData.company_size.employees} employees` : ''}
@@ -1906,8 +1921,9 @@ function mergeAndValidateCompetitors(
       continue;
     }
 
-    // Add registry competitor if not generic and we have room
-    if (merged.length < 15) {
+    // Registry only backfills a short list. It's keyed by broad industry ("technology" = big tech),
+    // so padding a good, specific list with it adds noise.
+    if (merged.length < 5) {
       merged.push(comp);
     }
   }

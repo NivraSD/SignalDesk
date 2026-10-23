@@ -650,7 +650,10 @@ export function getIndustryCompetitors(
   if (!industryData) {
     // Check if any industry key contains our search term
     for (const [key, data] of Object.entries(INDUSTRY_COMPETITORS_DETAILED)) {
-      if (key.includes(industryKey) || industryKey.includes(key)) {
+      // Only when the registry key contains the search term, or the term starts with the key
+      // ("technology_services" -> technology). A plain substring match sent "education_technology"
+      // to the general tech list (Microsoft, Google, …).
+      if (key.includes(industryKey) || industryKey.startsWith(key + '_')) {
         industryData = data;
         industryKey = key;
         break;
