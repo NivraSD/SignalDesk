@@ -450,7 +450,11 @@ Deno.serve(async (req: Request) => {
     }
 
     // ── GENERATE ──────────────────────────────────────────────────────────
+    // Only the hourly schedule (pg_cron, with the API key) makes art. Signed-in people can't trigger
+    // it directly, since each piece costs a Gemini text + image call.
     if (action === 'generate') {
+      const viaKey = (req.headers.get('x-api-key') || url.searchParams.get('key')) === GROUNDED_API_KEY
+      if (!viaKey) return errorResponse('Forbidden', 403)
       // Next title from the Title Bank (unused bank title first, then a remix of bank words)
       const { data: nextTitle, error: titleError } = await supabase.rpc('grounded_next_art_title')
       if (titleError) throw new Error(`Title pick failed: ${titleError.message}`)

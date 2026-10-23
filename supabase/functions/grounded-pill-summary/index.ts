@@ -2,6 +2,7 @@
 // POST { day: 'YYYY-MM-DD' } with the user's JWT. Sends to GROUNDED_PILL_TO_EMAIL if set, else the user's own email.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { handleCors, jsonResponse, errorResponse } from '../_shared/cors.ts'
+import { takeQuota } from '../_shared/quota.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -53,6 +54,7 @@ Deno.serve(async (req) => {
 
     const to = TO_OVERRIDE || user.email
     if (!to) return errorResponse('No recipient email', 400)
+    if (!(await takeQuota(supabase, user.id, 'pill-email'))) return errorResponse('Daily email limit reached. Try again tomorrow.', 429)
 
     const htmlRows = SLOTS.map((s) => `<tr>
       <td style="padding:8px 12px;border-bottom:1px solid #e7e5e4;font-weight:600">${label(s)}</td>
