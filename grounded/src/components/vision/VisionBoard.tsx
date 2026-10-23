@@ -8,10 +8,18 @@ export default function VisionBoard() {
   const [isEditing, setIsEditing] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) await addImage(file)
     e.target.value = ''
+    if (!file) return
+    setUploading(true)
+    setUploadError(null)
+    const result = await addImage(file)
+    setUploading(false)
+    if (result?.error) setUploadError(`Couldn't add that picture: ${result.error.message}`)
   }
 
   return (
@@ -58,6 +66,9 @@ export default function VisionBoard() {
           </button>
         )}
       </div>
+
+      {uploading && <p className="text-xs text-stone-400 text-center">Adding picture…</p>}
+      {uploadError && <p className="text-xs text-red-600 text-center">{uploadError}</p>}
 
       <input
         ref={fileInputRef}

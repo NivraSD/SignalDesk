@@ -27,7 +27,9 @@ export function useVisionBoard() {
 
   const addImage = async (file: File) => {
     if (!userId) return
-    const fileName = `${userId}/${Date.now()}-${file.name}`
+    // Storage keys reject some characters (spaces, accents, emoji in photo names), so keep it plain.
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
+    const fileName = `${userId}/${Date.now()}.${ext}`
     const { error: uploadError } = await supabase.storage
       .from('grounded-images')
       .upload(fileName, file)
