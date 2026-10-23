@@ -34,7 +34,6 @@ export default function LockScreenArt() {
   const [open, setOpen] = useState(false)
   const [links, setLinks] = useState<Links | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [showOwnText, setShowOwnText] = useState(false)
 
   useEffect(() => {
     if (!open || links) return
@@ -91,20 +90,6 @@ export default function LockScreenArt() {
                   automations for more changes a day), choose <b>Run Immediately</b>, then pick <b>Grounded Art</b>.
                 </li>
               </ol>
-
-              <button onClick={() => setShowOwnText((v) => !v)} className="text-xs text-stone-400 underline">
-                {showOwnText ? 'Hide' : 'Prefer to add the title yourself?'}
-              </button>
-              {showOwnText && (
-                <div className="space-y-3 bg-stone-50 rounded-lg p-3">
-                  <p className="text-xs text-stone-500">
-                    Use these two links instead: get the title, get the image, then add <b>Overlay Text</b> before
-                    <b> Set Wallpaper Photo</b>. Run them within 30 seconds of each other so the title matches the image.
-                  </p>
-                  <CopyLink label="Title" url={links.title!} />
-                  <CopyLink label="Image" url={links.image!} />
-                </div>
-              )}
             </>
           )}
         </div>
