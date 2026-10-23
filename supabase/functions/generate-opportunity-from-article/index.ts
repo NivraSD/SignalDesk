@@ -3,6 +3,7 @@
 // Used by the "Generate Opportunity" button in Intelligence Brief
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
+import { callGeminiFlash } from '../_shared/gemini-flash.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -418,33 +419,10 @@ serve(async (req) => {
       competitors
     });
 
-    console.log('🤖 Calling Claude to generate opportunity...');
+    console.log('🤖 Calling Gemini Flash to generate opportunity...');
 
-    // Call Claude
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY!,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 8000,
-        temperature: 0.7,
-        system: SYSTEM_PROMPT,
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Claude API error:', response.status, errorText);
-      throw new Error(`Claude API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const content = data.content?.[0]?.text || '';
+    // Gemini Flash (JSON mode): the Sonnet version of this call (8000 tokens) ran past the 150s edge limit.
+    const content = await callGeminiFlash(prompt, { system: SYSTEM_PROMPT, maxOutputTokens: 16000, json: true, timeoutMs: 110000 });
 
     console.log('✅ Claude response received, length:', content.length);
 
