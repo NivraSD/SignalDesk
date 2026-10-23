@@ -59,10 +59,7 @@ export default function LockScreenArt() {
 
       {open && (
         <div className="space-y-3">
-          <p className="text-xs text-stone-500">
-            One-off: tap <b>Save</b> above, then in Photos tap Share → <b>Use as Wallpaper</b>. To have it change by
-            itself, make this shortcut once (about two minutes):
-          </p>
+          <p className="text-xs text-stone-500">Make this shortcut once (about two minutes):</p>
 
           {error && <p className="text-xs text-red-600">{error}</p>}
           {!links && !error && <p className="text-xs text-stone-400">…</p>}

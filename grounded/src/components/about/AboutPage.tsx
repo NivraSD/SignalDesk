@@ -76,7 +76,7 @@ const SECTIONS: { title: string; body: string[] }[] = [
   {
     title: 'Art',
     body: [
-      'One piece at a time, each with a short title. Tap Another for a new one, or Save to keep it (on iPhone, choose Save Image).',
+      'One piece at a time, each with a short title. Tap Another for a new one.',
     ],
   },
   {
