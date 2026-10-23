@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAreas } from '@/hooks/useAreas'
 import { useJournal } from '@/hooks/useJournal'
 import { useCalendar } from '@/hooks/useCalendar'
@@ -57,6 +58,13 @@ export default function TodaySchedule({ todaySchedule, tomorrowSchedule }: Today
   const AREAS = useAreas()
   const { entries, addEntry, updateEntry, deleteEntry, toggleComplete } = useJournal()
   const { createEvent, isCalendarConnected } = useCalendar()
+  const navigate = useNavigate()
+  // No calendar yet: a quiet link to set one up, on the first section shown.
+  const connectLink = (
+    <button onClick={() => navigate('/settings')} className="text-xs text-stone-400 underline">
+      Connect calendar
+    </button>
+  )
   const today = getToday()
   const tomorrow = getTomorrow()
   const [calendarAdded, setCalendarAdded] = useState<Set<string>>(new Set())
@@ -464,6 +472,7 @@ export default function TodaySchedule({ todaySchedule, tomorrowSchedule }: Today
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <h3 className="font-medium text-stone-700 text-sm">Today</h3>
+{!isCalendarConnected && connectLink}
 {isCalendarConnected && (
             <button
               onClick={async () => {
@@ -489,6 +498,7 @@ export default function TodaySchedule({ todaySchedule, tomorrowSchedule }: Today
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <h3 className="font-medium text-stone-700 text-sm">Tomorrow</h3>
+{!isCalendarConnected && todayItems.length === 0 && connectLink}
 {isCalendarConnected && (
             <button
               onClick={async () => {
