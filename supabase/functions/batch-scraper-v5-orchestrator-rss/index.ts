@@ -44,12 +44,15 @@ serve(async (req) => {
   // Get group parameter from query string or body
   const url = new URL(req.url);
   let group = parseInt(url.searchParams.get('group') || '0');
+  // One-off backfill (e.g. right after adding sources): look further back than the usual 2 days.
+  let backfillDays = 0;
 
   // Also check request body for group
   if (!group && req.method === 'POST') {
     try {
       const body = await req.json();
       group = parseInt(body.group || '0');
+      backfillDays = Math.min(Math.max(parseInt(body.max_age_days || '0') || 0, 0), 14);
     } catch {
       // No body or invalid JSON, continue with group=0
     }
@@ -100,7 +103,7 @@ serve(async (req) => {
     const errors: any[] = [];
 
     // 2-day age filter — tightened from 7 days to keep stale items out of the pipeline.
-    const maxAgeDays = 2;
+    const maxAgeDays = backfillDays || 2;
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - maxAgeDays);
 
@@ -383,6 +386,28 @@ function parseRSSXML(xml: string, feedUrl: string): any[] {
         author: authorMatch ? authorMatch[1].replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1').trim() : undefined,
         published_at: pubDateMatch ? new Date(pubDateMatch[1].trim()).toISOString() : undefined,
         raw_metadata: { rss_feed: feedUrl }
+      });
+    }
+  }
+
+  // Atom feeds (<entry>, <link href>, <published>/<updated>, <summary>/<content>), e.g. Chalkbeat.
+  if (articles.length === 0 && /<feed[\s>]/.test(xml)) {
+    const clean = (t: string) => t.replace(/<!\[CDATA\[(.*?)\]\]>/gs, '$1').trim();
+    for (const match of xml.matchAll(/<entry(?:\s[^>]*)?>(.*?)<\/entry>/gs)) {
+      const entry = match[1];
+      const titleMatch = entry.match(/<title(?:[^>]*)>(.*?)<\/title>/s);
+      const linkMatch = entry.match(/<link[^>]*rel=["']alternate["'][^>]*href=["']([^"']+)["']/s) || entry.match(/<link[^>]*href=["']([^"']+)["']/s);
+      const dateMatch = entry.match(/<published(?:[^>]*)>(.*?)<\/published>/s) || entry.match(/<updated(?:[^>]*)>(.*?)<\/updated>/s);
+      const summaryMatch = entry.match(/<summary(?:[^>]*)>(.*?)<\/summary>/s);
+      const authorMatch = entry.match(/<author>.*?<name>(.*?)<\/name>.*?<\/author>/s);
+      if (!titleMatch || !linkMatch) continue;
+      articles.push({
+        url: linkMatch[1].trim(),
+        title: clean(titleMatch[1]),
+        description: summaryMatch ? clean(summaryMatch[1]) : undefined,
+        author: authorMatch ? clean(authorMatch[1]) : undefined,
+        published_at: dateMatch ? new Date(dateMatch[1].trim()).toISOString() : undefined,
+        raw_metadata: { rss_feed: feedUrl },
       });
     }
   }

@@ -467,6 +467,9 @@ export default function Dashboard() {
     }
   }
 
+  // Per-organization tabs to hide: organizations.settings.hidden_tabs, e.g. ["projects"].
+  const hiddenTabs: string[] = organizations.find((o) => o.id === organization?.id)?.settings?.hidden_tabs || []
+
   // Top nav links matching design mockup.
   // Items with `href` navigate to a standalone route; the rest switch in-page modules.
   const navLinks: { id: ModuleView | 'projects'; label: string; href?: string }[] = [
@@ -479,7 +482,7 @@ export default function Dashboard() {
     { id: 'simulations', label: 'Simulations' },
     { id: 'studio', label: 'Studio' },
     { id: 'vault', label: 'Vault' },
-  ]
+  ].filter((link) => !hiddenTabs.includes(link.id))
 
   // Get summary from synthesis
   const getSynthesisSummary = () => {
