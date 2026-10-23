@@ -24,12 +24,27 @@ export const getGreeting = () => {
   return 'Good evening'
 }
 
+// A new quote each time the app is opened (kept for 30 minutes so moving around doesn't reshuffle it),
+// working through the whole list before any repeat.
+const QUOTE_KEY = 'grounded-quote'
 export const getDailyQuote = () => {
-  const today = new Date()
-  const dayOfYear = Math.floor(
-    (today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24)
-  )
-  return DAILY_QUOTES[dayOfYear % DAILY_QUOTES.length]
+  const now = Date.now()
+  try {
+    const saved = JSON.parse(localStorage.getItem(QUOTE_KEY) || '{}') as { text?: string; at?: number; seen?: string[] }
+    const current = DAILY_QUOTES.find((q) => q.text === saved.text)
+    if (current && saved.at && now - saved.at < 30 * 60 * 1000) return current
+    let seen = (saved.seen || []).filter((t) => DAILY_QUOTES.some((q) => q.text === t))
+    let pool = DAILY_QUOTES.filter((q) => !seen.includes(q.text) && q.text !== saved.text)
+    if (!pool.length) {
+      seen = []
+      pool = DAILY_QUOTES.filter((q) => q.text !== saved.text)
+    }
+    const pick = pool[Math.floor(Math.random() * pool.length)]
+    localStorage.setItem(QUOTE_KEY, JSON.stringify({ text: pick.text, at: now, seen: [...seen, pick.text] }))
+    return pick
+  } catch {
+    return DAILY_QUOTES[Math.floor(Math.random() * DAILY_QUOTES.length)]
+  }
 }
 
 export const getWeekDates = (weekOffset = 0) => {

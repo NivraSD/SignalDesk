@@ -1,7 +1,8 @@
+import { useState } from 'react'
 import { getDailyQuote } from '@/lib/utils'
 
 export default function DailyQuote() {
-  const quote = getDailyQuote()
+  const [quote] = useState(getDailyQuote)
   return (
     <div className="bg-gradient-to-br from-stone-50 to-stone-100 rounded-xl p-4 border border-stone-200">
       <p className="text-stone-700 text-sm italic text-center">&ldquo;{quote.text}&rdquo;</p>
