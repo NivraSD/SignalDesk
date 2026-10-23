@@ -82,7 +82,7 @@ const SECTIONS: { title: string; body: string[] }[] = [
   {
     title: 'Lock screen art',
     body: [
-      'Grounded makes new art through the day, each piece with a short title. Put it on your lock screen with the Shortcuts app (Settings → Lock screen art).',
+      'Grounded makes new art through the day, each piece with a short title. Put it on your lock screen with the Shortcuts app (Art tab → Put new art on your lock screen).',
       'The point is the small moment of connecting the image to its title. That few seconds of noticing is the whole exercise — it doesn’t have to be hard, and it doesn’t try to change how you feel.',
     ],
   },

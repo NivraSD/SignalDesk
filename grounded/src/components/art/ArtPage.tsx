@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import LockScreenArt from '@/components/settings/LockScreenArt'
 
 // Art: one captioned piece at a time, like "I got jokes". Tap for another; save the one you want.
 // The point is the small moment of connecting the image to its title, not matching a mood.
@@ -79,6 +80,8 @@ export default function ArtPage() {
       </div>
 
       {error && <p className="text-xs text-stone-500 text-center">{error}</p>}
+
+      <LockScreenArt />
     </div>
   )
 }

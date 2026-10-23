@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
-import LockScreenArt from './LockScreenArt'
 import CalendarConnect from './CalendarConnect'
 import { CONTRIBUTE_URL } from '@/lib/constants'
 import { useGroundedStore } from '@/stores/groundedStore'
@@ -253,9 +252,6 @@ export default function SettingsPage() {
         {clearState === 'done' && <p className="text-xs text-stone-500">Chat cleared.</p>}
         {clearState === 'error' && <p className="text-xs text-red-600">Couldn&apos;t clear chat. Try again.</p>}
       </div>
-
-      {/* Lock screen art */}
-      <LockScreenArt />
 
       {/* About */}
       <div className="bg-white rounded-xl p-4 shadow-sm">
