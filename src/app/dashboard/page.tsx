@@ -763,7 +763,7 @@ export default function Dashboard() {
 
           {activeModule === 'opportunities' && (
             <div className="flex-1 overflow-y-auto p-8">
-              <OpportunitiesModule />
+              <OpportunitiesModule onOpenInStudio={handleOpenInStudio} />
             </div>
           )}
 

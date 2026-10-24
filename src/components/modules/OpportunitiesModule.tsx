@@ -5,6 +5,7 @@ import { Target, Zap, Clock, TrendingUp, TrendingDown, Minus as MinusIcon, Alert
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase/client'
 import { useAppStore } from '@/stores/useAppStore'
+import AdvisorPanel from '@/components/advisor/AdvisorPanel'
 
 // V2 OPPORTUNITY STRUCTURE
 interface ContentBrief {
@@ -81,8 +82,14 @@ interface Opportunity {
   data?: any
 }
 
-export default function OpportunitiesModule() {
+interface OpportunitiesModuleProps {
+  onOpenInStudio?: (item: any) => void
+}
+
+export default function OpportunitiesModule({ onOpenInStudio }: OpportunitiesModuleProps = {}) {
   const { organization } = useAppStore()
+  // Opportunity NIV (the advisor panel) is open for, if any.
+  const [nivOpp, setNivOpp] = useState<Opportunity | null>(null)
   const [opportunities, setOpportunities] = useState<Opportunity[]>([])
   const [selectedOpp, setSelectedOpp] = useState<Opportunity | null>(null)
   const [loading, setLoading] = useState(true)
@@ -792,6 +799,15 @@ ${opp.execution_plan?.success_metrics?.map((m: any) => `- ${JSON.stringify(m)}`)
                         className="overflow-hidden border-t border-[var(--grey-800)]"
                       >
                         <div className="p-5">
+                          {/* NIV advisor: talk this opportunity through, dig deeper, draft */}
+                          <div className="flex justify-end mb-3">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setNivOpp(opp) }}
+                              className="text-xs px-3 py-1.5 rounded-md border border-[var(--burnt-orange-muted)] text-[var(--burnt-orange)] hover:bg-[var(--burnt-orange-muted)] inline-flex items-center gap-1.5"
+                            >
+                              <Sparkles className="w-3.5 h-3.5" /> Ask NIV
+                            </button>
+                          </div>
                           {/* V2: Strategic Context */}
                           {opp.version === 2 && opp.strategic_context && (
                 <div className="mb-6">
@@ -1295,6 +1311,15 @@ ${opp.execution_plan?.success_metrics?.map((m: any) => `- ${JSON.stringify(m)}`)
           </motion.div>
         )}
       </AnimatePresence>
+
+      {nivOpp && organization?.id && (
+        <AdvisorPanel
+          organizationId={organization.id}
+          opportunity={{ id: nivOpp.id, title: nivOpp.title }}
+          onClose={() => setNivOpp(null)}
+          onOpenInStudio={onOpenInStudio}
+        />
+      )}
     </div>
   )
 }
