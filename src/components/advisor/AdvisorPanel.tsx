@@ -72,12 +72,13 @@ export default function AdvisorPanel({ organizationId, opportunity, onClose, onO
     }
   }, [threadId, supabase])
 
-  // Fallback poll while something is being looked into (Realtime can miss events).
+  // Fallback poll while something is being looked into or a deck is being built (Realtime can miss events).
+  const building = messages.some((m) => m.meta?.deck?.status === 'generating')
   useEffect(() => {
-    if (!jobs.length) return
+    if (!jobs.length && !building) return
     const t = setInterval(load, 5000)
     return () => clearInterval(t)
-  }, [jobs.length, load])
+  }, [jobs.length, building, load])
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -205,6 +206,9 @@ export default function AdvisorPanel({ organizationId, opportunity, onClose, onO
                       </button>
                     )}
                   </div>
+                )}
+                {m.meta?.deck_ready && (
+                  <DeckCard organizationId={organizationId} messageId={m.id} deck={m.meta.deck_ready} onOpenInStudio={openDraft} />
                 )}
                 {m.meta?.drafted_content_id && !m.meta?.proposal && !m.meta?.deck_ready && onOpenInStudio && (
                   <button onClick={() => openDraft(m.meta.drafted_content_id)} className="text-xs px-3 py-1.5 rounded-md bg-[var(--grey-800)] text-[var(--grey-200,#e7e5e4)] inline-flex items-center gap-1.5">

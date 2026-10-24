@@ -45,7 +45,11 @@ export async function POST(req: NextRequest) {
     if (!msg || !thread || thread.user_id !== user.id || thread.organization_id !== organizationId || !proposal) {
       throw new HttpError(404, 'Nothing to draft')
     }
-    if ((msg as any).meta?.drafted_content_id) {
+    // A deck already started (or finished) for this proposal: return it rather than starting another.
+    if ((msg as any).meta?.deck && (msg as any).meta.deck.status !== 'failed') {
+      return NextResponse.json({ deck: (msg as any).meta.deck })
+    }
+    if ((msg as any).meta?.drafted_content_id && !(msg as any).meta?.deck) {
       const { data: existing } = await admin.from('content_library').select('id, title, content_type, content, folder, metadata').eq('id', (msg as any).meta.drafted_content_id).single()
       if (existing) return NextResponse.json({ content: existing })
     }

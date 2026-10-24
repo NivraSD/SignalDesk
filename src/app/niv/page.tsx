@@ -63,12 +63,13 @@ export default function NivPage() {
     else { setMessages([]); setJobs([]) }
   }, [conversationId, loadConversation])
 
-  // While something is being looked into, poll for the follow-up (simple and reliable here).
+  // While something is being looked into or a deck is being built, poll for the follow-up.
+  const building = messages.some((m) => m.meta?.deck?.status === 'generating')
   useEffect(() => {
-    if (!jobs.length || !conversationId) return
+    if ((!jobs.length && !building) || !conversationId) return
     const t = setInterval(() => loadConversation(conversationId), 5000)
     return () => clearInterval(t)
-  }, [jobs.length, conversationId, loadConversation])
+  }, [jobs.length, building, conversationId, loadConversation])
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages.length, jobs.length, sending])
 
@@ -226,6 +227,9 @@ export default function NivPage() {
                           </button>
                         )}
                       </div>
+                    )}
+                    {m.meta?.deck_ready && (
+                      <DeckCard organizationId={orgId} messageId={m.id} deck={m.meta.deck_ready} onOpenInStudio={openInStudio} />
                     )}
                     {m.meta?.drafted_content_id && !m.meta?.proposal && !m.meta?.deck_ready && (
                       <button onClick={() => openInStudio(m.meta.drafted_content_id)} className="text-xs px-3 py-1.5 rounded-md bg-[var(--grey-800)] text-white inline-flex items-center gap-1.5">
