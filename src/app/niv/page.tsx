@@ -11,6 +11,7 @@ import { useAppStore } from '@/stores/useAppStore'
 import { createAuthClient } from '@/lib/supabase/auth-client'
 import Rich from '@/components/advisor/Rich'
 import DeckCard from '@/components/advisor/DeckCard'
+import CopyButton from '@/components/advisor/CopyButton'
 
 type Msg = { id: string; role: 'user' | 'assistant'; content: string; meta?: any; created_at: string }
 type Job = { id: string; status: string; input?: { question?: string } }
@@ -190,6 +191,7 @@ export default function NivPage() {
                 ) : (
                   <div className="space-y-3">
                     <Rich text={m.content} />
+                    <CopyButton text={m.content} />
                     {m.meta?.doc_sources?.length > 0 && (
                       <div className="flex flex-wrap gap-1.5">
                         {m.meta.doc_sources.map((s: any) => (

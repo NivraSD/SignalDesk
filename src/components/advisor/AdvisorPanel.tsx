@@ -9,6 +9,7 @@ import { X, Send, Loader2, Sparkles, FileText, ExternalLink, Search } from 'luci
 import { createAuthClient } from '@/lib/supabase/auth-client'
 import Rich from './Rich'
 import DeckCard from './DeckCard'
+import CopyButton from './CopyButton'
 
 type Msg = { id: string; role: 'user' | 'assistant'; content: string; meta?: any; created_at: string }
 type Job = { id: string; status: string; input?: { question?: string } }
@@ -176,6 +177,7 @@ export default function AdvisorPanel({ organizationId, opportunity, onClose, onO
             ) : (
               <div className="space-y-2">
                 <Rich text={m.content} />
+                <CopyButton text={m.content} />
                 {m.meta?.taste_saved?.length > 0 && (
                   <div className="text-[11px] text-[var(--grey-500)]">Noted: {m.meta.taste_saved.join('; ')}</div>
                 )}
