@@ -6,7 +6,7 @@ import { NextRequest, NextResponse, after } from 'next/server'
 import { followDeck } from '@/lib/advisor/deck'
 import Anthropic from '@anthropic-ai/sdk'
 import { HttpError, addMessage, describeCaseFile, describeOpportunity, loadOpportunity, loadOrg, loadTaste, requireMember } from '@/lib/advisor/data'
-import { anthropic, NIV_MODEL } from '@/lib/advisor/niv'
+import { anthropic, NIV_MODEL, WRITING_RULES } from '@/lib/advisor/niv'
 
 export const maxDuration = 300
 
@@ -22,7 +22,7 @@ async function draftWithNiv(system: string, prompt: string): Promise<string> {
   const response = (await anthropic.messages.create({
     model: NIV_MODEL,
     max_tokens: 8000,
-    system,
+    system: `${system}\n\n${WRITING_RULES}`,
     messages: [{ role: 'user', content: prompt }],
     output_config: { effort: 'medium' },
   } as any)) as Anthropic.Message
