@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { createClient as createServerSupabase } from '@/lib/supabase/server'
 
 const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co'
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -516,6 +517,21 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const organizationId = searchParams.get('organization_id')
+
+    // Signed-in members of the org only (this listed every org's content to anyone before).
+    if (!organizationId) return NextResponse.json({ success: false, error: 'organization_id required' }, { status: 400 })
+    const authed = await createServerSupabase()
+    const { data: { user } } = await authed.auth.getUser()
+    if (!user) return NextResponse.json({ success: false, error: 'Not signed in' }, { status: 401 })
+    const { data: membership } = await supabase
+      .from('org_users')
+      .select('role, teams')
+      .eq('organization_id', organizationId)
+      .eq('user_id', user.id)
+      .maybeSingle()
+    if (!membership) return NextResponse.json({ success: false, error: 'Not a member of this organization' }, { status: 403 })
+    const isAdmin = membership.role === 'owner' || membership.role === 'admin'
+    const myTeams: string[] = membership.teams || []
     const contentType = searchParams.get('type')
     const blueprintId = searchParams.get('blueprint_id')
     const limit = parseInt(searchParams.get('limit') || '50')
@@ -551,14 +567,18 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // Boost salience for accessed items (fire-and-forget, don't block response)
-    if (data && data.length > 0) {
-      boostSalienceForAccess(data.map(item => item.id)).catch(() => {})
-    }
+    // Company documents restricted to teams the person isn't on are left out entirely.
+    // (Listing no longer boosts salience: boosting every listed item made all of them look
+    // freshly used each time the vault opened, which cancelled time decay. Real use boosts.)
+    const visible = (data || []).filter((item: any) => {
+      if (item.content_type !== 'company-document') return true
+      const vis: string[] = item.metadata?.visibility || ['all']
+      return isAdmin || vis.includes('all') || vis.some((t) => myTeams.includes(t))
+    })
 
     return NextResponse.json({
       success: true,
-      data: data || [],
+      data: visible || [],
       location: 'content_library'
     })
 

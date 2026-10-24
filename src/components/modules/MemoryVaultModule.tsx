@@ -159,6 +159,7 @@ interface FolderNode {
 
 // Smart folder templates
 const FOLDER_TEMPLATES = [
+  { name: 'Company', icon: '🏢', color: 'text-stone-300' },
   { name: 'Founder', icon: '🚀', color: 'text-amber-400' },
   { name: 'Opportunities', icon: '🎯', color: 'text-blue-400' },
   { name: 'Campaigns', icon: '📢', color: 'text-purple-400' },
@@ -172,6 +173,27 @@ const FOLDER_TEMPLATES = [
   { name: 'Proposals', icon: '📋', color: 'text-emerald-400' },
   { name: 'Schemas', icon: '🏗️', color: 'text-indigo-400' }
 ]
+
+// Company documents: uploads here go to NIV's knowledge base (PDF, Word, PowerPoint).
+const COMPANY_SUBFOLDERS = ['Policies', 'Precedent', 'Memos', 'Playbooks', 'Research', 'Board & Finance', 'Brand', 'Reference']
+
+// Labels for a company document: type · authority · status · version · effective date.
+function CompanyDocBadges({ meta }: { meta: any }) {
+  if (!meta?.knowledge_document_id) return null
+  const status = meta.status as string
+  const tone = status === 'superseded' ? 'bg-zinc-800 text-zinc-400' : status === 'scheduled' ? 'bg-amber-900/40 text-amber-300' : status === 'draft' ? 'bg-zinc-800 text-zinc-300' : 'bg-emerald-900/40 text-emerald-300'
+  const date = meta.effective_date ? new Date(meta.effective_date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : null
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 mt-2 text-[11px]">
+      <span className={`px-2 py-0.5 rounded-full ${tone}`}>{status}</span>
+      <span className="px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300">{meta.doc_type}</span>
+      <span className="px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300">{meta.authority === 'binding' ? 'binding rule' : meta.authority}</span>
+      {meta.version && <span className="px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300">v{meta.version}</span>}
+      {date && <span className="px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300">{status === 'scheduled' ? 'takes effect' : 'effective'} {date}</span>}
+      {meta.restricted && <span className="px-2 py-0.5 rounded-full bg-red-900/40 text-red-300">restricted: {(meta.visibility || []).join(', ')}</span>}
+    </div>
+  )
+}
 
 interface MemoryVaultModuleProps {
   onOpenInStudio?: (item: ContentItem) => void
@@ -1755,11 +1777,16 @@ export default function MemoryVaultModule({ onOpenInStudio }: MemoryVaultModuleP
                       onChange={(e) => setUploadTargetFolder(e.target.value)}
                       className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)] mb-4"
                     >
-                      {FOLDER_TEMPLATES.map(template => (
+                      {FOLDER_TEMPLATES.filter(t => t.name !== 'Company').map(template => (
                         <option key={template.name} value={template.name}>
                           {template.icon} {template.name}
                         </option>
                       ))}
+                      <optgroup label="🏢 Company documents (read by NIV)">
+                        {COMPANY_SUBFOLDERS.map(sub => (
+                          <option key={sub} value={`Company/${sub}`}>Company / {sub}</option>
+                        ))}
+                      </optgroup>
                     </select>
                     <div className="flex gap-2 justify-end">
                       <button
@@ -2877,6 +2904,7 @@ function ContentLibraryTab({
                             </button>
                           </div>
                         )}
+                        <CompanyDocBadges meta={selectedContent.metadata} />
                         <div className="flex items-center gap-3 mt-1">
                           <span
                             className="px-2 py-0.5 rounded text-xs font-medium capitalize"

@@ -4,6 +4,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { randomUUID } from 'crypto'
+import { createClient as createServerSupabase } from '@/lib/supabase/server'
+
+export const maxDuration = 120
+
+// Company documents (anything dropped into a Company/… folder that's a PDF, Word or PowerPoint
+// file) go into NIV's knowledge base: private storage, full-text passages with citations, type and
+// authority (guessed by the model for a person to confirm), dates and versions read from the text.
+// The vault entry is created by the ingest step, so it appears under Company/<category>.
+const COMPANY_DOC = /\.(pdf|docx|pptx)$/i
+const FOLDER_TYPE: Record<string, string> = {
+  policies: 'policy', precedent: 'precedent', memos: 'memo', playbooks: 'playbook', research: 'research',
+  'board & finance': 'financial', brand: 'brand', reference: 'reference',
+}
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://zskaxjtyuaqazydouifp.supabase.co'
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -35,6 +48,46 @@ export async function POST(request: NextRequest) {
         success: false,
         error: `File too large. Max size: 50MB`
       }, { status: 400 })
+    }
+
+    // Signed-in members of the org only.
+    const authed = await createServerSupabase()
+    const { data: { user } } = await authed.auth.getUser()
+    if (!user) return NextResponse.json({ success: false, error: 'Not signed in' }, { status: 401 })
+    const { data: membership } = await supabase.from('org_users').select('role').eq('organization_id', organizationId).eq('user_id', user.id).maybeSingle()
+    if (!membership) return NextResponse.json({ success: false, error: 'Not a member of this organization' }, { status: 403 })
+
+    if (/^company(\/|$)/i.test(folder) && COMPANY_DOC.test(file.name)) {
+      const sub = folder.split('/')[1]?.toLowerCase() || ''
+      const visibility = String(formData.get('visibility') || 'all').split(',').map((t) => t.trim()).filter(Boolean)
+      const path = `${organizationId}/${Date.now()}-${file.name.replace(/[^\w.\- ]+/g, '_')}`
+      const { error: upErr } = await supabase.storage.from('knowledge').upload(path, Buffer.from(await file.arrayBuffer()), { contentType: file.type, upsert: false })
+      if (upErr) return NextResponse.json({ success: false, error: `Upload failed: ${upErr.message}` }, { status: 500 })
+      const { data: doc, error: docErr } = await supabase.from('knowledge_documents').insert({
+        organization_id: organizationId,
+        title: (title || file.name).replace(/\.(pdf|docx|pptx)$/i, '').replace(/[_]+/g, ' ').trim(),
+        doc_type: FOLDER_TYPE[sub] || 'reference',
+        classified_by: FOLDER_TYPE[sub] ? 'uploader' : 'model',
+        visibility: visibility.length ? visibility : ['all'],
+        file_path: path, mime_type: file.type, file_size: file.size, created_by: user.id,
+      }).select('id').single()
+      if (docErr) return NextResponse.json({ success: false, error: docErr.message }, { status: 500 })
+      const ing = await fetch(`${SUPABASE_URL}/functions/v1/knowledge-ingest`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` },
+        body: JSON.stringify({ document_id: doc.id }),
+      })
+      const result = await ing.json().catch(() => ({}))
+      if (!ing.ok) return NextResponse.json({ success: false, error: result.error || 'Could not read the document' }, { status: 500 })
+      return NextResponse.json({
+        success: true,
+        knowledge_document_id: doc.id,
+        message: result.superseded?.length
+          ? `Added. It replaces ${result.superseded.map((x: any) => `${x.title}${x.version ? ` v${x.version}` : ''}`).join(', ')}.`
+          : 'Added to the company knowledge base.',
+        effective_date: result.effective_date,
+        passages: result.passages,
+      })
     }
 
     console.log(`📤 Uploading to content library: ${file.name} (folder: ${folder})`)

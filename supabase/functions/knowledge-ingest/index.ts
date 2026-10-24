@@ -126,6 +126,47 @@ async function embed(texts: string[]): Promise<number[][]> {
   return out
 }
 
+// ── Memory Vault mirror ──────────────────────────────────────────────────────
+// Each company document appears in the Memory Vault (content_library) under Company/<category>,
+// so the vault stays the one file system. Restricted documents (not visible to everyone) carry
+// title + metadata only: other features read content_library directly, and the full text must stay
+// behind the knowledge base's permission check. The vault list API also hides them from people
+// outside their teams.
+const VAULT_FOLDER: Record<string, string> = {
+  policy: 'Company/Policies', precedent: 'Company/Precedent', memo: 'Company/Memos', playbook: 'Company/Playbooks',
+  research: 'Company/Research', financial: 'Company/Board & Finance', brand: 'Company/Brand', reference: 'Company/Reference',
+}
+async function syncVaultMirror(admin: any, docIds: string[]) {
+  for (const id of docIds) {
+    const { data: d } = await admin.from('knowledge_documents').select('*').eq('id', id).single()
+    if (!d) continue
+    const open = (d.visibility || []).includes('all')
+    let text = ''
+    if (open) {
+      const { data: chunks } = await admin.from('knowledge_chunks').select('content').eq('document_id', id).order('chunk_index')
+      text = (chunks || []).map((c: any) => c.content).join('\n\n')
+    }
+    const row = {
+      organization_id: d.organization_id,
+      content_type: 'company-document',
+      title: d.version && !new RegExp(`v?${String(d.version).replace('.', '\\.')}\\b`, 'i').test(d.title) ? `${d.title} (v${d.version})` : d.title,
+      content: open ? text : `Restricted document (${(d.visibility || []).join(', ')}). Ask NIV, which checks access, or open it if you're on that team.`,
+      folder: VAULT_FOLDER[d.doc_type] || 'Company/Reference',
+      status: d.status === 'superseded' ? 'archived' : 'approved',
+      tags: [d.doc_type, d.authority, d.status],
+      metadata: {
+        knowledge_document_id: d.id, doc_type: d.doc_type, authority: d.authority, status: d.status, version: d.version,
+        effective_date: d.effective_date, date_precision: d.date_precision, owner: d.owner, visibility: d.visibility,
+        superseded_by: d.superseded_by, superseded_at: d.superseded_at, summary: d.summary, restricted: !open,
+      },
+      updated_at: new Date().toISOString(),
+    }
+    const { data: existing } = await admin.from('content_library').select('id').eq('organization_id', d.organization_id).eq('metadata->>knowledge_document_id', d.id).maybeSingle()
+    if (existing) await admin.from('content_library').update(row).eq('id', existing.id)
+    else await admin.from('content_library').insert(row)
+  }
+}
+
 // ── Dates, versions and the version chain ────────────────────────────────────
 // Policies are correct until replaced: within a series, the newest effective date (then highest
 // version) is current, regardless of upload order. Drafts never replace a current document.
@@ -213,6 +254,7 @@ Deno.serve(async (req) => {
     const { data: chunks } = await admin.from('knowledge_chunks').select('content').eq('document_id', doc.id).order('chunk_index')
     const stamped = await stampDates(admin, doc, (chunks || []).map((c: any) => c.content).join('\n'))
     const superseded = await reconcileSeries(admin, doc.organization_id, stamped.series_key)
+    await syncVaultMirror(admin, [doc.id, ...superseded.map((x) => x.id)])
     return new Response(JSON.stringify({ ok: true, effective_date: stamped.effective_date, precision: stamped.date_precision, series: stamped.series_key, superseded }), { headers: { 'Content-Type': 'application/json' } })
   }
   await admin.from('knowledge_documents').update({ ingest_status: 'processing', ingest_error: null }).eq('id', doc.id)
@@ -263,6 +305,7 @@ Deno.serve(async (req) => {
     await admin.from('knowledge_documents').update({ ...patch, ingest_status: 'ready', updated_at: new Date().toISOString() }).eq('id', doc.id)
     const stamped = await stampDates(admin, { ...doc, ...patch }, passages.map((p) => p.text).join('\n'))
     const superseded = await reconcileSeries(admin, doc.organization_id, stamped.series_key)
+    await syncVaultMirror(admin, [doc.id, ...superseded.map((x) => x.id)])
     return new Response(JSON.stringify({ ok: true, passages: rows.length, pages, effective_date: stamped.effective_date, precision: stamped.date_precision, series: stamped.series_key, superseded }), { headers: { 'Content-Type': 'application/json' } })
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
