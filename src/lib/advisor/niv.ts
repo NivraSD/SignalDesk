@@ -23,6 +23,7 @@ export const anthropic = new Anthropic({
 
 // House writing rules for everything NIV writes (replies, drafts, decks).
 export const WRITING_RULES = `Writing rules (always):
+- American English: American spelling (organization, analyze, color, program, center, license, defense, traveling), American punctuation and dates (October 24, 2026), US currency formatting ($1.2M). Keep British spelling only inside direct quotes and official names.
 - Say the thing directly. Don't tell readers what they feel, think or fear: no "what most teams already feel but struggle to articulate", "what nobody wants to say", "afraid to admit", "quietly", "the uncomfortable truth", "let's be honest", "here's the thing".
 - No manufactured contrast ("it's not X, it's Y"), no rhetorical-question hooks, no "imagine a world" openers.
 - No filler or hype: game-changer, unlock, leverage (as a verb), delve, robust, seamless, cutting-edge, revolutionize, landscape, "in today's fast-paced world", "now more than ever".
