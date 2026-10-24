@@ -67,6 +67,7 @@ export async function POST(request: NextRequest) {
         organization_id: organizationId,
         title: (title || file.name).replace(/\.(pdf|docx|pptx)$/i, '').replace(/[_]+/g, ' ').trim(),
         doc_type: FOLDER_TYPE[sub] || 'reference',
+        authority: ({ policy: 'binding', brand: 'binding', precedent: 'guidance', playbook: 'guidance' } as Record<string, string>)[FOLDER_TYPE[sub]] || 'reference',
         classified_by: FOLDER_TYPE[sub] ? 'uploader' : 'model',
         visibility: visibility.length ? visibility : ['all'],
         file_path: path, mime_type: file.type, file_size: file.size, created_by: user.id,
@@ -82,9 +83,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         knowledge_document_id: doc.id,
-        message: result.superseded?.length
-          ? `Added. It replaces ${result.superseded.map((x: any) => `${x.title}${x.version ? ` v${x.version}` : ''}`).join(', ')}.`
-          : 'Added to the company knowledge base.',
+        message: result.status === 'scheduled'
+          ? `Added as a scheduled version: it takes over on ${result.effective_date}.`
+          : result.status === 'superseded'
+            ? 'Added as an older version: a newer one is already in effect.'
+            : result.superseded?.length
+              ? `Added. It replaces ${result.superseded.map((x: any) => `${x.title}${x.version ? ` v${x.version}` : ''}`).join(', ')}.`
+              : 'Added to the company knowledge base.',
+        status: result.status,
         effective_date: result.effective_date,
         passages: result.passages,
       })

@@ -180,10 +180,12 @@ async function stampDates(admin: any, doc: any, fullText: string) {
     .filter((d) => !seen.has(d.date + d.precision) && seen.add(d.date + d.precision))
     .slice(0, 60)
     .map(({ text, date, precision }) => ({ text, date, precision }))
+  const parsedVersion = parseVersion(doc.version) ?? parseVersion(fullText.slice(0, 1500))
   const patch = {
+    version: doc.version || (parsedVersion != null ? String(parsedVersion) : null),
     // Only revisable document types form version series; periodic reports stand alone.
     series_key: VERSIONED_TYPES.has(doc.doc_type) ? seriesKey(doc.title || '') : null,
-    version_number: parseVersion(doc.version) ?? parseVersion(fullText.slice(0, 1500)),
+    version_number: parsedVersion,
     effective_date: own?.date ?? null,
     date_precision: own?.precision ?? null,
     date_source: own?.text ?? null,
@@ -214,10 +216,24 @@ async function reconcileSeries(admin: any, organizationId: string, key: string) 
     }
     return []
   }
-  const ranked = [...live].sort((a: any, b: any) =>
+  // Same effective date and version as an earlier upload = a duplicate: the original stays canonical.
+  const sameAs = (x: any, y: any) => x.effective_date && x.effective_date === y.effective_date && x.version_number != null && Number(x.version_number) === Number(y.version_number)
+  const byAge = [...live].sort((a: any, b: any) => String(a.created_at).localeCompare(String(b.created_at)))
+  const originals: any[] = []
+  for (const d of byAge) {
+    const orig = originals.find((o) => sameAs(o, d))
+    if (orig) {
+      await admin.from('knowledge_documents').update({ status: 'superseded', superseded_by: orig.id, duplicate_of: orig.id, superseded_at: d.superseded_at || new Date().toISOString() }).eq('id', d.id)
+    } else originals.push(d)
+  }
+  const ranked = [...originals].sort((a: any, b: any) =>
     String(b.effective_date || '').localeCompare(String(a.effective_date || '')) ||
     (Number(b.version_number ?? -1) - Number(a.version_number ?? -1)) ||
-    String(b.created_at).localeCompare(String(a.created_at)))
+    String(a.created_at).localeCompare(String(b.created_at)))
+  if (ranked.length < 2) {
+    if (ranked[0] && ranked[0].status !== 'current') await admin.from('knowledge_documents').update({ status: 'current', superseded_at: null, superseded_by: null }).eq('id', ranked[0].id)
+    return []
+  }
   const changes: { id: string; title: string; version: string; superseded_by: string }[] = []
   const now = new Date().toISOString()
   for (let i = 0; i < ranked.length; i++) {
@@ -255,7 +271,7 @@ Deno.serve(async (req) => {
     const stamped = await stampDates(admin, doc, (chunks || []).map((c: any) => c.content).join('\n'))
     const superseded = await reconcileSeries(admin, doc.organization_id, stamped.series_key)
     await syncVaultMirror(admin, [doc.id, ...superseded.map((x) => x.id)])
-    return new Response(JSON.stringify({ ok: true, effective_date: stamped.effective_date, precision: stamped.date_precision, series: stamped.series_key, superseded }), { headers: { 'Content-Type': 'application/json' } })
+    return new Response(JSON.stringify({ ok: true, effective_date: stamped.effective_date, precision: stamped.date_precision, series: stamped.series_key, superseded, status: (await admin.from('knowledge_documents').select('status').eq('id', doc.id).single()).data?.status }), { headers: { 'Content-Type': 'application/json' } })
   }
   await admin.from('knowledge_documents').update({ ingest_status: 'processing', ingest_error: null }).eq('id', doc.id)
 
@@ -306,7 +322,7 @@ Deno.serve(async (req) => {
     const stamped = await stampDates(admin, { ...doc, ...patch }, passages.map((p) => p.text).join('\n'))
     const superseded = await reconcileSeries(admin, doc.organization_id, stamped.series_key)
     await syncVaultMirror(admin, [doc.id, ...superseded.map((x) => x.id)])
-    return new Response(JSON.stringify({ ok: true, passages: rows.length, pages, effective_date: stamped.effective_date, precision: stamped.date_precision, series: stamped.series_key, superseded }), { headers: { 'Content-Type': 'application/json' } })
+    return new Response(JSON.stringify({ ok: true, passages: rows.length, pages, effective_date: stamped.effective_date, precision: stamped.date_precision, series: stamped.series_key, superseded, status: (await admin.from('knowledge_documents').select('status').eq('id', doc.id).single()).data?.status }), { headers: { 'Content-Type': 'application/json' } })
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
     await admin.from('knowledge_documents').update({ ingest_status: 'failed', ingest_error: msg.slice(0, 500) }).eq('id', doc.id)

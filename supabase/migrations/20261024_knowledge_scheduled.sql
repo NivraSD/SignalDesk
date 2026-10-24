@@ -26,3 +26,5 @@ revoke execute on function knowledge_promote_scheduled() from public, anon, auth
 grant execute on function knowledge_promote_scheduled() to service_role;
 select cron.unschedule(jobname) from cron.job where jobname = 'knowledge-promote-scheduled';
 select cron.schedule('knowledge-promote-scheduled', '5 5 * * *', $$select knowledge_promote_scheduled()$$);  -- ~1 AM Eastern
+
+alter table knowledge_documents add column if not exists duplicate_of uuid references knowledge_documents(id) on delete set null;  -- re-upload of an existing version
