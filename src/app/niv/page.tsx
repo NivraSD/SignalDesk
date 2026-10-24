@@ -114,8 +114,8 @@ export default function NivPage() {
       })
       const j = await r.json().catch(() => ({}))
       if (!r.ok) throw new Error(j.error || 'Could not create the draft.')
-      if (j.deck) setMessages((prev) => prev.map((x) => (x.id === messageId ? { ...x, meta: { ...x.meta, deck: j.deck } } : x)))
-      else if (conversationId) await loadConversation(conversationId)
+      // Reload: picks up the result (or, for a deck, NIV's "on it, takes a few minutes" note).
+      if (conversationId) await loadConversation(conversationId)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not create the draft.')
     }

@@ -37,7 +37,10 @@ export default function DeckCard({ organizationId, messageId, deck: initial, onR
         <Presentation className="w-3.5 h-3.5 text-[var(--burnt-orange)]" /> {deck.title}
       </div>
       {deck.status === 'generating' && (
-        <div className="text-xs text-[var(--grey-500)] flex items-center gap-2"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Building your deck in Gamma (usually 1–3 minutes)…</div>
+        // The Draft it button keeps spinning until the deck is back.
+        <button disabled className="text-xs px-3 py-1.5 rounded-md bg-[var(--burnt-orange)] text-white inline-flex items-center gap-1.5 opacity-80 cursor-wait">
+          <Loader2 className="w-3.5 h-3.5 animate-spin" /> Drafting…
+        </button>
       )}
       {deck.status === 'failed' && <div className="text-xs text-red-400">Gamma couldn't finish this deck. Click Draft it again to retry.</div>}
       {deck.status === 'ready' && (

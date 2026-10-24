@@ -2,12 +2,13 @@
 // opportunity's folder, so it can be opened and edited in Studio.
 //   POST /api/advisor/draft { organizationId, messageId } -> { content: {id,title,content_type,content,folder,metadata} }
 // The proposal is read from the stored message (not the request), and only from the caller's own thread.
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
+import { followDeck } from '@/lib/advisor/deck'
 import Anthropic from '@anthropic-ai/sdk'
 import { HttpError, addMessage, describeCaseFile, describeOpportunity, loadOpportunity, loadOrg, loadTaste, requireMember } from '@/lib/advisor/data'
 import { anthropic, NIV_MODEL } from '@/lib/advisor/niv'
 
-export const maxDuration = 180
+export const maxDuration = 300
 
 const LABELS: Record<string, string> = {
   'media-pitch': 'Media pitch', 'press-release': 'Press release', 'thought-leadership': 'Thought leadership',
@@ -95,6 +96,10 @@ Return only the finished ${label.toLowerCase()}, ready to edit. Mark anything th
       if (!g.ok || !gj.generationId) throw new HttpError(502, gj.error || "Gamma couldn't start the deck. Try again.")
       const deck = { generation_id: gj.generationId, status: 'generating', title: deckTitle, folder, outline, started_at: new Date().toISOString() }
       await admin.from('advisor_messages').update({ meta: { ...(msg as any).meta, deck } }).eq('id', msg.id)
+      await addMessage(admin, { id: thread.id, organization_id: organizationId }, 'assistant',
+        `On it. I'm building **${deckTitle}** in Gamma (${slideCount} slides). It takes a few minutes; I'll let you know here when it's ready, so feel free to keep working.`,
+        { deck_started: deck.generation_id })
+      after(() => followDeck(admin, organizationId, msg.id))
       return NextResponse.json({ deck })
     }
 
