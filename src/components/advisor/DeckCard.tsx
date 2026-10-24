@@ -46,7 +46,7 @@ export default function DeckCard({ organizationId, messageId, deck: initial, onR
       {deck.status === 'ready' && (
         <div className="flex flex-wrap gap-2">
           {deck.gamma_url && (
-            <a href={deck.edit_url || deck.gamma_url} target="_blank" rel="noopener noreferrer" className="text-xs px-3 py-1.5 rounded-md bg-[var(--burnt-orange)] text-white inline-flex items-center gap-1.5">
+            <a href={deck.gamma_url} target="_blank" rel="noopener noreferrer" className="text-xs px-3 py-1.5 rounded-md bg-[var(--burnt-orange)] text-white inline-flex items-center gap-1.5">
               <ExternalLink className="w-3.5 h-3.5" /> Open in Gamma
             </a>
           )}

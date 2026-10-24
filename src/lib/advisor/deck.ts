@@ -37,7 +37,8 @@ export async function checkDeck(admin: Admin, organizationId: string, messageId:
       ...deck,
       status: 'ready',
       gamma_url: s.gammaUrl || s.exportUrls?.view || null,
-      edit_url: s.exportUrls?.edit || (s.gammaUrl ? `${s.gammaUrl}/edit` : null),
+      // Gamma's own link opens the deck (editable when signed in to Gamma); "/edit" isn't a Gamma route.
+      edit_url: s.gammaUrl || null,
       pptx_url: (saved as any)?.metadata?.pptx_url || s.exportUrls?.pptx || null,
       content_id: (saved as any)?.id || null,
     }
