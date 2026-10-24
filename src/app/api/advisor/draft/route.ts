@@ -11,7 +11,7 @@ export const maxDuration = 180
 
 const LABELS: Record<string, string> = {
   'media-pitch': 'Media pitch', 'press-release': 'Press release', 'thought-leadership': 'Thought leadership',
-  'social-post': 'Social post', 'blog-post': 'Blog post', email: 'Email', 'talking-points': 'Talking points', 'one-pager': 'One-pager',
+  'social-post': 'Social post', 'blog-post': 'Blog post', email: 'Email', 'talking-points': 'Talking points', 'one-pager': 'One-pager', memo: 'Memo',
 }
 
 // NIV's writer drafts directly: it has the case file (verified findings), the person's taste and the
@@ -50,17 +50,19 @@ export async function POST(req: NextRequest) {
     }
 
     const { data: caseFile } = await admin.from('advisor_case_files').select('*').eq('id', thread.case_file_id).single()
-    const opp = await loadOpportunity(admin, organizationId, caseFile.subject_id)
+    // Opportunity threads draft for the opportunity; workspace conversations draft from the conversation.
+    const opp = caseFile.subject_type === 'opportunity' ? await loadOpportunity(admin, organizationId, caseFile.subject_id) : null
     const org = await loadOrg(admin, organizationId)
-    if (!opp || !org) throw new HttpError(404, 'Opportunity not found')
+    if (!org || (caseFile.subject_type === 'opportunity' && !opp)) throw new HttpError(404, 'Not found')
+    const { data: recent } = await admin.from('advisor_messages').select('role, content').eq('thread_id', thread.id).order('created_at', { ascending: false }).limit(8)
+    const conversation = (recent || []).reverse().map((m: any) => `${m.role === 'user' ? 'Them' : 'NIV'}: ${m.content}`).join('\n\n').slice(0, 8000)
     const taste = await loadTaste(admin, user.id, organizationId)
 
     const label = LABELS[proposal.content_type] || proposal.content_type
     const brief = `Write a ${label.toLowerCase()} for ${org.name}.
 Angle: ${proposal.angle}
 ${proposal.notes ? `Notes: ${proposal.notes}\n` : ''}
-Opportunity:
-${describeOpportunity(opp)}
+${opp ? `Opportunity:\n${describeOpportunity(opp)}` : `The conversation it comes from (use its facts and citations; keep citations to company documents where they support a point):\n${conversation}`}
 
 Verified findings to draw on (use only facts that appear here or in the opportunity; don't invent statistics, quotes, or names):
 ${describeCaseFile(caseFile)}
@@ -72,7 +74,7 @@ Return only the finished ${label.toLowerCase()}, ready to edit. Mark anything th
     const text = (await draftWithNiv(`You are a senior communications writer for ${org.name}. You write tight, specific, human copy with no filler and no clichés.`, brief)).trim()
     if (!text) throw new HttpError(502, "Couldn't write the draft just now. Try again.")
 
-    const folder = `Opportunities/${opp.title}`.slice(0, 200)
+    const folder = opp ? `Opportunities/${opp.title}`.slice(0, 200) : 'NIV/Drafts'
     const shortAngle = proposal.angle.length > 70 ? `${proposal.angle.slice(0, 70).replace(/\s+\S*$/, '')}…` : proposal.angle
     const title = `${label}: ${shortAngle}`
     const { data: saved, error } = await admin
@@ -85,7 +87,7 @@ Return only the finished ${label.toLowerCase()}, ready to edit. Mark anything th
         folder,
         status: 'draft',
         created_by: user.id,
-        metadata: { source: 'niv-advisor', opportunity_id: opp.id, advisor_message_id: msg.id, angle: proposal.angle },
+        metadata: { source: 'niv-advisor', opportunity_id: opp?.id ?? null, advisor_message_id: msg.id, angle: proposal.angle },
       })
       .select('id, title, content_type, content, folder, metadata')
       .single()

@@ -4,6 +4,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { anthropic, nivFollowUp } from './niv'
 import { Admin, addMessage, loadOpportunity, loadOrg, loadTaste, nowInWords, searchOrgIntel } from './data'
+import { workspaceFollowUp } from './workspace'
 
 const RESEARCH_MODEL = 'claude-sonnet-5-5'
 const MAX_ROUNDS = 8
@@ -95,19 +96,21 @@ export async function runResearchJob(admin: Admin, jobId: string) {
   try {
     const { data: caseFile } = await admin.from('advisor_case_files').select('*').eq('id', job.case_file_id).single()
     const org = await loadOrg(admin, job.organization_id)
-    const opp = await loadOpportunity(admin, job.organization_id, caseFile.subject_id)
-    if (!org || !opp) throw new Error('Opportunity no longer available')
+    // Opportunity threads have an opportunity; workspace conversations don't.
+    const opp = caseFile.subject_type === 'opportunity' ? await loadOpportunity(admin, job.organization_id, caseFile.subject_id) : null
+    if (!org || (caseFile.subject_type === 'opportunity' && !opp)) throw new Error('Subject no longer available')
+    const subjectTitle = opp?.title || 'an internal question from a colleague'
     const question = String(job.input?.question || '')
 
     let finding: Finding
     try {
-      finding = await research(admin, org.id, org.name, opp.title, question, true)
+      finding = await research(admin, org.id, org.name, subjectTitle, question, true)
     } catch (e) {
       // Web tools unavailable for this API key/org: fall back to the org's own intel.
       const msg = e instanceof Error ? e.message : String(e)
       if (!/web_search|web_fetch|tool/i.test(msg)) throw e
       console.warn('Researcher: web tools unavailable, using org intel only:', msg.slice(0, 200))
-      finding = await research(admin, org.id, org.name, opp.title, question, false)
+      finding = await research(admin, org.id, org.name, subjectTitle, question, false)
     }
 
     const entry = { at: new Date().toISOString(), by: 'researcher', question, ...finding }
@@ -116,7 +119,10 @@ export async function runResearchJob(admin: Admin, jobId: string) {
     await admin.from('advisor_case_files').update({ findings, open_questions: openQs, updated_at: new Date().toISOString() }).eq('id', caseFile.id)
 
     const taste = await loadTaste(admin, thread.user_id, org.id)
-    const followUp = await nivFollowUp({ org, opp, caseFile: { ...caseFile, findings, open_questions: openQs }, taste, question, finding })
+    const cf = { ...caseFile, findings, open_questions: openQs }
+    const followUp = opp
+      ? await nivFollowUp({ org, opp, caseFile: cf, taste, question, finding })
+      : await workspaceFollowUp({ org, caseFile: cf, taste, question, finding })
     await addMessage(admin, thread, 'assistant', followUp || finding.answer, { from: 'researcher', job_id: jobId, sources: finding.sources })
     await admin.from('advisor_jobs').update({ status: 'done', result: finding, finished_at: new Date().toISOString() }).eq('id', jobId)
   } catch (e) {

@@ -22,7 +22,7 @@ export const anthropic = new Anthropic({
 })
 
 export const CONTENT_TYPES = [
-  'media-pitch', 'press-release', 'thought-leadership', 'social-post', 'blog-post', 'email', 'talking-points', 'one-pager',
+  'media-pitch', 'press-release', 'thought-leadership', 'social-post', 'blog-post', 'email', 'talking-points', 'one-pager', 'memo',
 ] as const
 
 const TOOLS: Anthropic.Tool[] = [

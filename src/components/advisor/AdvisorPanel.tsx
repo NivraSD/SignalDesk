@@ -7,6 +7,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { X, Send, Loader2, Sparkles, FileText, ExternalLink, Search } from 'lucide-react'
 import { createAuthClient } from '@/lib/supabase/auth-client'
+import Rich from './Rich'
 
 type Msg = { id: string; role: 'user' | 'assistant'; content: string; meta?: any; created_at: string }
 type Job = { id: string; status: string; input?: { question?: string } }
@@ -16,49 +17,6 @@ interface Props {
   opportunity: { id: string; title: string }
   onClose: () => void
   onOpenInStudio?: (item: any) => void
-}
-
-// Minimal formatting for NIV's replies: paragraphs, **bold**, bullets, links.
-function Rich({ text }: { text: string }) {
-  const inline = (s: string, key: number) => {
-    const parts: React.ReactNode[] = []
-    const re = /\*\*([^*]+)\*\*|\[([^\]]+)\]\((https?:[^)\s]+)\)|(https?:\/\/[^\s)]+)/g
-    let last = 0
-    let m: RegExpExecArray | null
-    let i = 0
-    while ((m = re.exec(s))) {
-      if (m.index > last) parts.push(s.slice(last, m.index))
-      if (m[1]) parts.push(<strong key={`${key}-${i++}`} className="text-[var(--grey-100,#f5f5f4)]">{m[1]}</strong>)
-      else {
-        const href = m[3] || m[4]
-        parts.push(
-          <a key={`${key}-${i++}`} href={href} target="_blank" rel="noopener noreferrer" className="underline text-[var(--burnt-orange)] break-all">
-            {m[2] || href.replace(/^https?:\/\/(www\.)?/, '').slice(0, 40)}
-          </a>
-        )
-      }
-      last = m.index + m[0].length
-    }
-    if (last < s.length) parts.push(s.slice(last))
-    return parts
-  }
-  const blocks = text.split(/\n{2,}/)
-  return (
-    <div className="space-y-2">
-      {blocks.map((b, bi) => {
-        const lines = b.split('\n')
-        if (lines.every((l) => /^\s*([-*•]|\d+[.)])\s+/.test(l))) {
-          return (
-            <ul key={bi} className="list-disc pl-4 space-y-1">
-              {lines.map((l, li) => <li key={li}>{inline(l.replace(/^\s*([-*•]|\d+[.)])\s+/, ''), bi * 100 + li)}</li>)}
-            </ul>
-          )
-        }
-        if (/^#{1,4}\s/.test(b)) return <p key={bi} className="font-semibold text-[var(--grey-200,#e7e5e4)]">{inline(b.replace(/^#{1,4}\s/, ''), bi)}</p>
-        return <p key={bi} className="whitespace-pre-wrap">{inline(b, bi)}</p>
-      })}
-    </div>
-  )
 }
 
 const STARTERS = ['Is this a good opportunity?', "What's missing or unsupported?", 'What would you do first?']

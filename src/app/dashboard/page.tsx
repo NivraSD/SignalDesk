@@ -472,7 +472,8 @@ export default function Dashboard() {
 
   // Top nav links matching design mockup.
   // Items with `href` navigate to a standalone route; the rest switch in-page modules.
-  const navLinks: { id: ModuleView | 'projects'; label: string; href?: string }[] = [
+  const navLinks: { id: ModuleView | 'projects' | 'niv'; label: string; href?: string }[] = [
+    { id: 'niv', label: 'NIV', href: '/niv' },
     { id: 'hub', label: 'Hub' },
     { id: 'opportunities', label: 'Opportunities' },
     { id: 'projects', label: 'Projects', href: '/dashboard/projects' },
