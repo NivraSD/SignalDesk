@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
+import MarkdownView from './MarkdownView'
 import {
   FileText,
   Save,
@@ -37,6 +38,8 @@ const StudioWorkspace = forwardRef<StudioWorkspaceRef, StudioWorkspaceProps>(({
   const [saving, setSaving] = useState(false)
   const [editableContent, setEditableContent] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  // Formatted view by default; Edit shows the raw text.
+  const [editing, setEditing] = useState(false)
 
   // Expose focus method to parent
   useImperativeHandle(ref, () => ({
@@ -360,11 +363,16 @@ const StudioWorkspace = forwardRef<StudioWorkspaceRef, StudioWorkspaceProps>(({
 
               {/* Content Body - Editable */}
               <div className="p-6">
+                {!editing ? (
+                  <div onDoubleClick={() => setEditing(true)} title="Double-click or press Edit to change the text">
+                    <MarkdownView text={editableContent} />
+                  </div>
+                ) : (
                 <textarea
                   ref={textareaRef}
                   value={editableContent}
                   onChange={(e) => setEditableContent(e.target.value)}
-                  className="w-full min-h-[400px] bg-transparent border-none resize-none focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)] focus:ring-offset-2 focus:ring-offset-[var(--charcoal)] rounded-lg"
+                  className="w-full min-h-[600px] bg-transparent border-none resize-none focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)] focus:ring-offset-2 focus:ring-offset-[var(--charcoal)] rounded-lg"
                   style={{
                     color: 'var(--grey-200)',
                     fontSize: '0.95rem',
@@ -373,6 +381,7 @@ const StudioWorkspace = forwardRef<StudioWorkspaceRef, StudioWorkspaceProps>(({
                   }}
                   placeholder="Content will appear here..."
                 />
+                )}
               </div>
 
               {/* Content Actions */}
@@ -394,7 +403,7 @@ const StudioWorkspace = forwardRef<StudioWorkspaceRef, StudioWorkspaceProps>(({
                   Save to Vault
                 </button>
                 <button
-                  onClick={() => textareaRef.current?.focus()}
+                  onClick={() => { setEditing((v) => !v); setTimeout(() => textareaRef.current?.focus(), 0) }}
                   className="px-4 py-2 text-sm font-medium rounded-md border transition-colors flex items-center gap-1.5"
                   style={{
                     background: 'transparent',
@@ -404,7 +413,7 @@ const StudioWorkspace = forwardRef<StudioWorkspaceRef, StudioWorkspaceProps>(({
                   }}
                 >
                   <FileText className="w-4 h-4" />
-                  Manual Edit
+                  {editing ? 'Done editing' : 'Edit'}
                 </button>
                 <button
                   className="px-4 py-2 text-sm font-medium rounded-md border transition-colors flex items-center gap-1.5"

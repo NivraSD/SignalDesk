@@ -74,7 +74,10 @@ ${describeCaseFile(caseFile)}
 ${taste.length ? `\nThe author's taste (follow it):\n${taste.map((t) => `- ${t}`).join('\n')}` : ''}
 ${org.company_profile?.brand_voice ? `\nBrand voice: ${JSON.stringify(org.company_profile.brand_voice).slice(0, 1000)}` : ''}
 
-Return only the finished ${label.toLowerCase()}, ready to edit. Mark anything that needs a real name, quote, or number as [PLACEHOLDER: …].`
+Return only the finished ${label.toLowerCase()}, ready to edit, in light Markdown (a title line, at most a few ## section headings, normal paragraphs; no ### sub-headings, no decorative italics). Mark anything that needs a real name, quote, or number as [PLACEHOLDER: …].
+${['thought-leadership', 'press-release', 'blog-post', 'media-pitch', 'social-post'].includes(proposal.content_type)
+  ? 'This will be published, so keep internal document citations OUT of the body. End with a short section "## Internal notes (remove before publishing)" listing the internal sources the piece relies on and any sign-offs needed.'
+  : 'This is internal, so cite company documents inline like [Doc vX §section].'}`
 
     // Presentations: NIV writes the storyline as slide-by-slide markdown, then Gamma designs the
     // deck (and exports PowerPoint). The chat polls /api/advisor/deck until it's ready.
