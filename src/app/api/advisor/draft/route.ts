@@ -11,7 +11,7 @@ export const maxDuration = 180
 
 const LABELS: Record<string, string> = {
   'media-pitch': 'Media pitch', 'press-release': 'Press release', 'thought-leadership': 'Thought leadership',
-  'social-post': 'Social post', 'blog-post': 'Blog post', email: 'Email', 'talking-points': 'Talking points', 'one-pager': 'One-pager', memo: 'Memo',
+  'social-post': 'Social post', 'blog-post': 'Blog post', email: 'Email', 'talking-points': 'Talking points', 'one-pager': 'One-pager', memo: 'Memo', presentation: 'Presentation',
 }
 
 // NIV's writer drafts directly: it has the case file (verified findings), the person's taste and the
@@ -70,6 +70,33 @@ ${taste.length ? `\nThe author's taste (follow it):\n${taste.map((t) => `- ${t}`
 ${org.company_profile?.brand_voice ? `\nBrand voice: ${JSON.stringify(org.company_profile.brand_voice).slice(0, 1000)}` : ''}
 
 Return only the finished ${label.toLowerCase()}, ready to edit. Mark anything that needs a real name, quote, or number as [PLACEHOLDER: …].`
+
+    // Presentations: NIV writes the storyline as slide-by-slide markdown, then Gamma designs the
+    // deck (and exports PowerPoint). The chat polls /api/advisor/deck until it's ready.
+    if (proposal.content_type === 'presentation') {
+      const outline = (await draftWithNiv(
+        `You are a senior strategist at ${org.name} who builds clear, persuasive decks.`,
+        `${brief}\n\nWrite the deck as Markdown for a slide generator: start with "# <deck title>", then one slide per section, each starting with "## <slide headline as a full-sentence takeaway>", 3-5 tight bullets, and a line "Speaker notes: ..." Separate slides with a line containing only "---". Usually 6-10 slides. Keep citations to company documents in the speaker notes, not on the slides.`
+      )).trim()
+      if (!outline) throw new HttpError(502, "Couldn't write the deck just now. Try again.")
+      const deckTitle = (outline.match(/^#\s+(.+)$/m)?.[1] || proposal.angle).slice(0, 120)
+      const slideCount = Math.min(Math.max((outline.match(/^##\s/gm) || []).length || 8, 3), 15)
+      const folder = opp ? `Opportunities/${opp.title}`.slice(0, 200) : 'NIV/Decks'
+      const g = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/gamma-presentation`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}` },
+        body: JSON.stringify({
+          title: deckTitle, content: outline, format: 'presentation', slideCount,
+          capture: true, organization_id: organizationId, campaign_folder: folder,
+          options: { imageSource: 'ai', cardSplit: 'inputTextBreaks' },
+        }),
+      })
+      const gj = await g.json().catch(() => ({}))
+      if (!g.ok || !gj.generationId) throw new HttpError(502, gj.error || "Gamma couldn't start the deck. Try again.")
+      const deck = { generation_id: gj.generationId, status: 'generating', title: deckTitle, folder, outline, started_at: new Date().toISOString() }
+      await admin.from('advisor_messages').update({ meta: { ...(msg as any).meta, deck } }).eq('id', msg.id)
+      return NextResponse.json({ deck })
+    }
 
     const text = (await draftWithNiv(`You are a senior communications writer for ${org.name}. You write tight, specific, human copy with no filler and no clichés.`, brief)).trim()
     if (!text) throw new HttpError(502, "Couldn't write the draft just now. Try again.")

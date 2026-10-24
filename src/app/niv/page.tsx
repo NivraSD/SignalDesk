@@ -10,6 +10,7 @@ import { Plus, Send, Loader2, Sparkles, FileText, ExternalLink, Search, ArrowLef
 import { useAppStore } from '@/stores/useAppStore'
 import { createAuthClient } from '@/lib/supabase/auth-client'
 import Rich from '@/components/advisor/Rich'
+import DeckCard from '@/components/advisor/DeckCard'
 
 type Msg = { id: string; role: 'user' | 'assistant'; content: string; meta?: any; created_at: string }
 type Job = { id: string; status: string; input?: { question?: string } }
@@ -113,7 +114,8 @@ export default function NivPage() {
       })
       const j = await r.json().catch(() => ({}))
       if (!r.ok) throw new Error(j.error || 'Could not create the draft.')
-      if (conversationId) await loadConversation(conversationId)
+      if (j.deck) setMessages((prev) => prev.map((x) => (x.id === messageId ? { ...x, meta: { ...x.meta, deck: j.deck } } : x)))
+      else if (conversationId) await loadConversation(conversationId)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not create the draft.')
     }
@@ -211,7 +213,9 @@ export default function NivPage() {
                         <div className="text-xs text-[var(--grey-400)]">
                           <span className="uppercase tracking-wide text-[var(--burnt-orange)]">{m.meta.proposal.content_type.replace(/-/g, ' ')}</span> · {m.meta.proposal.angle}
                         </div>
-                        {m.meta.drafted_content_id ? (
+                        {m.meta.deck ? (
+                          <DeckCard organizationId={orgId} messageId={m.id} deck={m.meta.deck} onReady={() => conversationId && loadConversation(conversationId)} onOpenInStudio={openInStudio} />
+                        ) : m.meta.drafted_content_id ? (
                           <button onClick={() => openInStudio(m.meta.drafted_content_id)} className="text-xs px-3 py-1.5 rounded-md bg-[var(--grey-800)] text-white inline-flex items-center gap-1.5">
                             <ExternalLink className="w-3.5 h-3.5" /> Open in Studio
                           </button>
@@ -223,7 +227,7 @@ export default function NivPage() {
                         )}
                       </div>
                     )}
-                    {m.meta?.drafted_content_id && !m.meta?.proposal && (
+                    {m.meta?.drafted_content_id && !m.meta?.proposal && !m.meta?.deck_ready && (
                       <button onClick={() => openInStudio(m.meta.drafted_content_id)} className="text-xs px-3 py-1.5 rounded-md bg-[var(--grey-800)] text-white inline-flex items-center gap-1.5">
                         <ExternalLink className="w-3.5 h-3.5" /> Open in Studio
                       </button>

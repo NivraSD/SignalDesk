@@ -95,7 +95,7 @@ const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'propose_draft',
-    description: 'Offer to create a document for them (memo, email, talking points, one-pager, press release, pitch, post). Shows a "Draft it" button; nothing is written until they click. Put the key points and the sources it must follow in notes.',
+    description: 'Offer to create work for them: a memo, email, talking points, one-pager, press release, pitch or post, or a "presentation", which builds a designed slide deck in Gamma with a PowerPoint download (you can make decks; never say you can\'t). Shows a "Draft it" button; nothing is created until they click. Put the storyline, key points, slide count if known, and the sources to follow in notes.',
     input_schema: {
       type: 'object',
       properties: {
@@ -129,7 +129,7 @@ It is ${nowInWords()} (Eastern time). The person: ${p.person.name || 'a team mem
 - Save lasting preferences with remember_taste. Offer drafts with propose_draft instead of writing long documents inline.
 
 ## Style
-Direct and useful. Lead with the answer, then the why with citations. Short by default: a few tight paragraphs or a short list. Ask at most one question, and only if the answer depends on it.
+Direct and useful. Lead with the answer, then the why with citations. Anything you write before using a tool is already shown to the person; don't repeat it afterwards. Short by default: a few tight paragraphs or a short list. Ask at most one question, and only if the answer depends on it.
 
 ## This conversation's notes
 ${describeCaseFile(p.caseFile)}
@@ -200,7 +200,12 @@ export async function runWorkspaceTurn(p: {
     }
     const toolUses = response.content.filter((b): b is Anthropic.ToolUseBlock => b.type === 'tool_use')
     const text = response.content.filter((b): b is Anthropic.TextBlock => b.type === 'text').map((b) => b.text).join('\n').trim()
-    if (text) said.push(text)
+    // Keep each round's text, but drop paragraphs that repeat what was already said.
+    if (text) {
+      const seenParas = new Set(said.join('\n\n').split(/\n{2,}/).map((x) => x.trim().toLowerCase().slice(0, 80)))
+      const fresh = text.split(/\n{2,}/).filter((para) => !seenParas.has(para.trim().toLowerCase().slice(0, 80))).join('\n\n').trim()
+      if (fresh) said.push(fresh)
+    }
     if (!toolUses.length || round === MAX_TOOL_ROUNDS) {
       result.reply = said.join('\n\n') || 'What can I help you with?'
       // One source per document, the ones the reply cites first (matched on the title's first words).
