@@ -243,7 +243,7 @@ export default function NivPage() {
               </div>
             ))}
 
-            {sending && <div className="text-[var(--grey-500)] flex items-center gap-2 text-sm"><Loader2 className="w-4 h-4 animate-spin" /> Checking…</div>}
+            {sending && <div className="text-[var(--grey-500)] flex items-center gap-2 text-sm"><Loader2 className="w-4 h-4 animate-spin" /> Working…</div>}
             {jobs.map((j) => (
               <div key={j.id} className="text-xs text-[var(--grey-500)] flex items-center gap-2">
                 <Search className="w-3.5 h-3.5 animate-pulse" /> Looking into: {j.input?.question?.slice(0, 100) || '…'}
