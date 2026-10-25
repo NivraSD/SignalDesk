@@ -10,7 +10,7 @@ const MAX_TOOL_ROUNDS = 6
 
 type Org = { id: string; name: string; industry: string | null; company_profile?: any }
 
-async function knowledgeSearch(orgId: string, userId: string, query: string, limit = 10) {
+export async function knowledgeSearch(orgId: string, userId: string, query: string, limit = 10) {
   const r = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/knowledge-search`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}` },
@@ -23,7 +23,7 @@ async function knowledgeSearch(orgId: string, userId: string, query: string, lim
 }
 
 // Documents the person can see (metadata only), optionally one type.
-async function listDocuments(admin: Admin, orgId: string, userId: string, docType?: string) {
+export async function listDocuments(admin: Admin, orgId: string, userId: string, docType?: string) {
   let q = admin
     .from('knowledge_documents')
     .select('id, title, doc_type, authority, status, version, effective_date, date_precision, owner, visibility, summary, superseded_by')
@@ -38,7 +38,7 @@ async function listDocuments(admin: Admin, orgId: string, userId: string, docTyp
   return (data || []).filter((d: any) => admin_ || d.visibility?.includes('all') || d.visibility?.some((t: string) => teams.includes(t)))
 }
 
-async function readDocument(admin: Admin, orgId: string, userId: string, documentId: string, section?: string) {
+export async function readDocument(admin: Admin, orgId: string, userId: string, documentId: string, section?: string) {
   const visible = await listDocuments(admin, orgId, userId)
   const doc = visible.find((d: any) => d.id === documentId)
   if (!doc) return null

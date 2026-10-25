@@ -6,12 +6,13 @@
 // work. Company documents live in the Memory Vault under Company/.
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Send, Loader2, Sparkles, FileText, ExternalLink, Search, ArrowLeft, BookOpen } from 'lucide-react'
+import { Plus, Send, Loader2, Sparkles, FileText, ExternalLink, Search, ArrowLeft, BookOpen, Plug } from 'lucide-react'
 import { useAppStore } from '@/stores/useAppStore'
 import { createAuthClient } from '@/lib/supabase/auth-client'
 import Rich from '@/components/advisor/Rich'
 import DeckCard from '@/components/advisor/DeckCard'
 import CopyButton from '@/components/advisor/CopyButton'
+import ConnectTools from '@/components/advisor/ConnectTools'
 
 type Msg = { id: string; role: 'user' | 'assistant'; content: string; meta?: any; created_at: string }
 type Job = { id: string; status: string; input?: { question?: string } }
@@ -36,6 +37,7 @@ export default function NivPage() {
   const [sending, setSending] = useState(false)
   const [drafting, setDrafting] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [showConnect, setShowConnect] = useState(false)
   const endRef = useRef<HTMLDivElement>(null)
   const orgId = organization?.id
 
@@ -159,10 +161,15 @@ export default function NivPage() {
             </button>
           ))}
         </div>
+        <button onClick={() => setShowConnect(true)} className="mx-3 mt-3 text-xs text-[var(--grey-500)] hover:text-[var(--grey-300)] inline-flex items-center gap-1.5">
+          <Plug className="w-3.5 h-3.5" /> Connect your AI tools
+        </button>
         <button onClick={() => router.push('/dashboard')} className="m-3 text-xs text-[var(--grey-500)] hover:text-[var(--grey-300)] inline-flex items-center gap-1.5" title="Company documents live in the Memory Vault under Company/">
           <BookOpen className="w-3.5 h-3.5" /> Company documents: Memory Vault › Company
         </button>
       </aside>
+
+      {showConnect && orgId && <ConnectTools organizationId={orgId} onClose={() => setShowConnect(false)} />}
 
       {/* Chat */}
       <main className="flex-1 flex flex-col min-w-0">
