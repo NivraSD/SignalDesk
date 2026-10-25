@@ -11,9 +11,6 @@
     "deploy-memory-vault": "bash scripts/deploy-memory-vault-v2.sh"
   },
   "dependencies": {
-    "@ai-sdk-tools/artifacts": "^0.3.0",
-    "@ai-sdk-tools/devtools": "^0.6.1",
-    "@ai-sdk-tools/store": "^0.1.2",
     "@anthropic-ai/sdk": "^0.63.1",
     "@modelcontextprotocol/server": "^2.4.0",
     "@supabase/ssr": "^0.7.0",
