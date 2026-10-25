@@ -104,7 +104,7 @@ ${['thought-leadership', 'press-release', 'blog-post', 'media-pitch', 'social-po
       const deck = { generation_id: gj.generationId, status: 'generating', title: deckTitle, folder, outline, started_at: new Date().toISOString() }
       await admin.from('advisor_messages').update({ meta: { ...(msg as any).meta, deck } }).eq('id', msg.id)
       await addMessage(admin, { id: thread.id, organization_id: organizationId }, 'assistant',
-        `On it. I'm building **${deckTitle}** in Gamma (${slideCount} slides). It takes a few minutes; I'll let you know here when it's ready, so feel free to keep working.`,
+        `On it. I'm building **${deckTitle}** in Gamma (${slideCount} slides). It takes a few minutes; the card above will switch to the finished deck when it's ready, so feel free to keep working.`,
         { deck_started: deck.generation_id })
       after(() => followDeck(admin, organizationId, msg.id))
       return NextResponse.json({ deck })
@@ -133,7 +133,7 @@ ${['thought-leadership', 'press-release', 'blog-post', 'media-pitch', 'social-po
     if (error) throw error
 
     await admin.from('advisor_messages').update({ meta: { ...(msg as any).meta, drafted_content_id: saved.id } }).eq('id', msg.id)
-    await addMessage(admin, { id: thread.id, organization_id: organizationId }, 'assistant', `Draft's ready: **${title}**. It's saved under ${folder}. Open it in Studio to edit, and tell me what you'd change; I'll remember what matters to you.`, { drafted_content_id: saved.id })
+    // The proposal's card shows the finished draft (Open in Studio); no separate completion message.
     return NextResponse.json({ content: saved })
   } catch (e) {
     if (e instanceof HttpError) return NextResponse.json({ error: e.message }, { status: e.status })

@@ -1,7 +1,7 @@
 // Finishing a Gamma deck NIV started: check Gamma once; if it's done, record the links on the
 // proposal message (exactly once, even if the server loop and an open chat check at the same time)
 // and post NIV's "deck's ready" note into the conversation.
-import { Admin, addMessage } from './data'
+import { Admin } from './data'
 
 export async function checkDeck(admin: Admin, organizationId: string, messageId: string) {
   const { data: msg } = await admin
@@ -53,14 +53,9 @@ export async function checkDeck(admin: Admin, organizationId: string, messageId:
     .eq('id', messageId)
     .eq('meta->deck->>status', 'generating')
     .select('id')
-  if (flipped?.length) {
-    const thread = { id: (msg as any).advisor_threads.id, organization_id: organizationId }
-    if (next.status === 'ready') {
-      await addMessage(admin, thread, 'assistant', `Your deck is ready: **${next.title}**. Open it in Gamma to adjust the design${next.pptx_url ? ', or download the PowerPoint' : ''}. It's also saved in the Memory Vault under ${next.folder}.`, { deck_ready: next })
-    } else {
-      await addMessage(admin, thread, 'assistant', `Gamma couldn't finish **${next.title}**. Click Draft it again and I'll retry.`, { deck_failed: true })
-    }
-  }
+  // The proposal's card shows the result (Open in Gamma / PowerPoint / Studio, or a retry);
+  // no separate completion message.
+  void flipped
   return next
 }
 

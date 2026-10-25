@@ -169,7 +169,7 @@ export default function StudioAdvisor({ organizationId, workspaceContent, worksp
           </div>
         )}
 
-        {messages.map((m) => (
+        {messages.filter((m) => !(m.role === 'assistant' && (m.meta?.deck_ready || m.meta?.deck_failed || (m.meta?.drafted_content_id && !m.meta?.proposal)))).map((m) => (
           <div key={m.id} className={m.role === 'user' ? 'flex justify-end' : ''}>
             {m.role === 'user' ? (
               <div className="max-w-[85%] px-3 py-2 rounded-lg bg-[var(--grey-800)] text-white whitespace-pre-wrap">{m.content}</div>
