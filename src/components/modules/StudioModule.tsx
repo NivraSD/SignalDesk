@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import StudioContentTypeSidebar from '@/components/studio/StudioContentTypeSidebar'
-import StudioWorkspace from '@/components/studio/StudioWorkspace'
-import StudioNIVPanel from '@/components/studio/StudioNIVPanel'
+import StudioWorkspace, { type StudioWorkspaceRef } from '@/components/studio/StudioWorkspace'
+import StudioAdvisor from '@/components/studio/StudioAdvisor'
 import { useAppStore } from '@/stores/useAppStore'
 import type { ContentItem } from '@/components/execute/ExecuteTabProduction'
 
@@ -23,6 +23,7 @@ export default function StudioModule({ initialContent, onClearInitialContent }: 
   const { organization } = useAppStore()
   const [selectedContentType, setSelectedContentType] = useState<string>('')
   const [workspaceContent, setWorkspaceContent] = useState<ContentItem | null>(null)
+  const workspaceRef = useRef<StudioWorkspaceRef>(null)
   const [generatedItems, setGeneratedItems] = useState<ContentItem[]>([])
   const [sourceFolder, setSourceFolder] = useState<string>('')
 
@@ -112,6 +113,7 @@ export default function StudioModule({ initialContent, onClearInitialContent }: 
           {/* Workspace */}
           <div className="overflow-hidden">
             <StudioWorkspace
+              ref={workspaceRef}
               content={workspaceContent}
               contentType={selectedContentType}
               onContentSave={handleContentSaved}
@@ -121,11 +123,11 @@ export default function StudioModule({ initialContent, onClearInitialContent }: 
 
           {/* NIV Panel - floating card in right column */}
           <div className="overflow-hidden">
-            <StudioNIVPanel
-              selectedContentType={selectedContentType}
-              onContentGenerated={handleContentGenerated}
-              onContentSave={handleContentSaved}
+            <StudioAdvisor
+              organizationId={organization?.id}
               workspaceContent={workspaceContent}
+              workspaceRef={workspaceRef}
+              onNewContent={handleContentGenerated}
             />
           </div>
         </div>

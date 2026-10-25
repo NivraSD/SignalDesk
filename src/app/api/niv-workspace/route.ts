@@ -1,7 +1,10 @@
 // NIV workspace (the company's second brain).
 //   GET  /api/niv-workspace?organizationId=                      -> { conversations: [{id, title, updated_at}] }
 //   GET  /api/niv-workspace?organizationId=&conversationId=       -> { messages, jobs }
-//   POST /api/niv-workspace { organizationId, conversationId?, message } -> { conversationId, messages, jobs }
+//   GET  /api/niv-workspace?organizationId=&documentId=           -> { conversationId|null, messages, jobs } (Studio)
+//   POST /api/niv-workspace { organizationId, conversationId?, message, document? } -> { conversationId, messages, jobs, docEdit? }
+// In Studio, `document` is what's open in the editor ({ id?, title, content_type, text }); NIV can edit it
+// and returns the new text as docEdit for the editor to apply. Each saved document keeps its own thread.
 // Signed-in org members only. Each conversation is a case file (subject_type 'conversation') with a
 // thread; history lives server-side. Research NIV hands off runs after the response.
 import { NextRequest, NextResponse, after } from 'next/server'
@@ -28,19 +31,35 @@ function withActions(m: { role: string; content: string; meta?: any }) {
   if (m.meta.proposal) done.push(`offered a "Draft it" button for a ${m.meta.proposal.content_type}: ${m.meta.proposal.angle}${m.meta.drafted_content_id ? ' (they clicked it; the draft was created)' : ''}`)
   if (m.meta.job_ids?.length) done.push('started looking into a question (findings arrive as a later message)')
   if (m.meta.from === 'researcher') done.push('this message reported findings from looking into a question')
+  if (m.meta.doc_edit_summary) done.push(`edited the open document: ${m.meta.doc_edit_summary}`)
   return done.length ? `${m.content}\n\n[What I did in this turn: ${done.join(' | ')}]` : m.content
 }
 
-async function myConversation(admin: any, userId: string, organizationId: string, conversationId: string) {
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+async function myConversation(admin: any, userId: string, organizationId: string, conversationId: string, subjectType: 'conversation' | 'document' = 'conversation') {
   const { data: thread } = await admin
     .from('advisor_threads')
     .select('*, advisor_case_files!inner(*)')
     .eq('user_id', userId)
     .eq('organization_id', organizationId)
-    .eq('advisor_case_files.subject_type', 'conversation')
+    .eq('advisor_case_files.subject_type', subjectType)
     .eq('advisor_case_files.subject_id', conversationId)
     .maybeSingle()
   return thread
+}
+
+// Which thread a request belongs to: a Studio document's own thread, or a workspace conversation.
+async function findThread(admin: any, userId: string, organizationId: string, conversationId: string | null, documentId: string | null) {
+  if (documentId && UUID.test(documentId)) {
+    const t = await myConversation(admin, userId, organizationId, documentId, 'document')
+    if (t) return t
+  }
+  if (conversationId) {
+    return (await myConversation(admin, userId, organizationId, conversationId, 'conversation'))
+      || (await myConversation(admin, userId, organizationId, conversationId, 'document'))
+  }
+  return null
 }
 
 export async function GET(req: NextRequest) {
@@ -49,6 +68,18 @@ export async function GET(req: NextRequest) {
     const organizationId = q.get('organizationId') || ''
     const { user, admin } = await requireMember(organizationId)
     const conversationId = q.get('conversationId')
+    const documentId = q.get('documentId')
+
+    // Studio: the open document's thread, if there is one yet.
+    if (documentId) {
+      const thread = await findThread(admin, user.id, organizationId, null, documentId)
+      if (!thread) return NextResponse.json({ conversationId: null, messages: [], jobs: [] })
+      const [messages, jobsRes] = await Promise.all([
+        loadMessages(admin, thread.id, 80),
+        admin.from('advisor_jobs').select('id, status, input, created_at').eq('thread_id', thread.id).in('status', ['queued', 'running']),
+      ])
+      return NextResponse.json({ conversationId: thread.advisor_case_files.subject_id, messages, jobs: jobsRes.data || [] })
+    }
 
     if (!conversationId) {
       const { data: threads } = await admin
@@ -70,7 +101,7 @@ export async function GET(req: NextRequest) {
       })
     }
 
-    const thread = await myConversation(admin, user.id, organizationId, conversationId)
+    const thread = await findThread(admin, user.id, organizationId, conversationId, null)
     if (!thread) throw new HttpError(404, 'Conversation not found')
     const [messages, jobsRes] = await Promise.all([
       loadMessages(admin, thread.id, 80),
@@ -98,14 +129,20 @@ export async function POST(req: NextRequest) {
       .in('thread_id', (myThreads || []).map((t: { id: string }) => t.id)).eq('role', 'user').gte('created_at', since)
     if ((count ?? 0) >= DAILY_MESSAGES_PER_USER) throw new HttpError(429, "That's the limit for today. Let's pick this up tomorrow.")
 
-    // Existing conversation, or a new one.
+    // The document open in Studio, if any (text capped; NIV sees up to 40k characters).
+    const d = body.document && typeof body.document === 'object' ? body.document : null
+    const doc = d ? { title: String(d.title || '').slice(0, 200), content_type: String(d.content_type || ''), text: String(d.text || '').slice(0, 60000) } : undefined
+    const documentId = d && typeof d.id === 'string' && UUID.test(d.id) ? d.id : null
+
+    // Existing thread (the document's, or the conversation's), or a new one.
     let conversationId = typeof body.conversationId === 'string' && body.conversationId ? body.conversationId : null
-    let thread = conversationId ? await myConversation(admin, user.id, organizationId, conversationId) : null
+    let thread = await findThread(admin, user.id, organizationId, conversationId, documentId)
     if (conversationId && !thread) throw new HttpError(404, 'Conversation not found')
     if (!thread) {
-      conversationId = randomUUID()
+      const subjectType = documentId ? 'document' : 'conversation'
+      conversationId = documentId || randomUUID()
       const { data: cf, error: e1 } = await admin.from('advisor_case_files')
-        .insert({ organization_id: organizationId, subject_type: 'conversation', subject_id: conversationId }).select('*').single()
+        .insert({ organization_id: organizationId, subject_type: subjectType, subject_id: conversationId }).select('*').single()
       if (e1) throw e1
       const { data: th, error: e2 } = await admin.from('advisor_threads')
         .insert({ organization_id: organizationId, user_id: user.id, case_file_id: cf.id }).select('*').single()
@@ -127,6 +164,7 @@ export async function POST(req: NextRequest) {
       admin, user, org, caseFile, taste,
       person: { name: (user.user_metadata as any)?.full_name || user.email?.split('@')[0], role: me.data?.role, teams: me.data?.teams || [] },
       history: history.map((m: any) => ({ role: m.role, content: withActions(m) })),
+      doc,
     })
 
     const jobs: { id: string; status: string; input: any }[] = []
@@ -142,13 +180,19 @@ export async function POST(req: NextRequest) {
       ...(turn.proposal && { proposal: turn.proposal }),
       ...(jobs.length && { job_ids: jobs.map((j) => j.id) }),
       ...(turn.tasteSaved?.length && { taste_saved: turn.tasteSaved }),
+      ...(turn.docEdit && { doc_edit_summary: turn.docEdit.summary }),
     })
 
     // Documents NIV actually cited count as used (salience boost); research runs after responding.
     if (turn.citedDocs.length) await admin.rpc('knowledge_touch', { p_ids: turn.citedDocs })
     if (jobs.length) after(async () => { for (const j of jobs) await runResearchJob(admin, j.id) })
 
-    return NextResponse.json({ conversationId, messages: [userMsg, assistantMsg], jobs })
+    return NextResponse.json({
+      conversationId: thread.advisor_case_files?.subject_id || conversationId,
+      messages: [userMsg, assistantMsg],
+      jobs,
+      ...(turn.docEdit && { docEdit: turn.docEdit }),
+    })
   } catch (e) {
     return fail(e)
   }

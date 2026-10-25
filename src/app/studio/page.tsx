@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import StudioContentTypeSidebar from '@/components/studio/StudioContentTypeSidebar'
-import StudioWorkspace from '@/components/studio/StudioWorkspace'
-import StudioNIVPanel from '@/components/studio/StudioNIVPanel'
+import StudioWorkspace, { type StudioWorkspaceRef } from '@/components/studio/StudioWorkspace'
+import StudioAdvisor from '@/components/studio/StudioAdvisor'
 import { useAppStore } from '@/stores/useAppStore'
 import { supabase } from '@/lib/supabase/client'
 import type { ContentItem } from '@/components/execute/ExecuteTabProduction'
@@ -15,6 +15,7 @@ function StudioContent() {
   const { organization } = useAppStore()
   const [selectedContentType, setSelectedContentType] = useState<string>('')
   const [workspaceContent, setWorkspaceContent] = useState<ContentItem | null>(null)
+  const workspaceRef = useRef<StudioWorkspaceRef>(null)
   const [generatedItems, setGeneratedItems] = useState<ContentItem[]>([])
   const [loadingContent, setLoadingContent] = useState(false)
   const [sourceFolder, setSourceFolder] = useState<string>('')
@@ -144,6 +145,7 @@ function StudioContent() {
         {/* Center - Workspace (Dark) */}
         <div className="overflow-hidden p-6 bg-[var(--charcoal)]">
           <StudioWorkspace
+            ref={workspaceRef}
             content={workspaceContent}
             contentType={selectedContentType}
             onContentSave={handleContentSaved}
@@ -153,10 +155,11 @@ function StudioContent() {
 
         {/* Right - NIV Panel (Dark) */}
         <div className="overflow-hidden p-6 bg-[var(--charcoal)] border-l border-zinc-800">
-          <StudioNIVPanel
-            selectedContentType={selectedContentType}
-            onContentGenerated={handleContentGenerated}
-            onContentSave={handleContentSaved}
+          <StudioAdvisor
+            organizationId={organization?.id}
+            workspaceContent={workspaceContent}
+            workspaceRef={workspaceRef}
+            onNewContent={handleContentGenerated}
           />
         </div>
       </div>

@@ -25,6 +25,9 @@ interface StudioWorkspaceProps {
 
 export interface StudioWorkspaceRef {
   focusEditor: () => void
+  // For NIV: read what's in the editor now (including unsaved changes) and replace it.
+  getText: () => string
+  setText: (text: string) => void
 }
 
 const StudioWorkspace = forwardRef<StudioWorkspaceRef, StudioWorkspaceProps>(({
@@ -43,6 +46,8 @@ const StudioWorkspace = forwardRef<StudioWorkspaceRef, StudioWorkspaceProps>(({
 
   // Expose focus method to parent
   useImperativeHandle(ref, () => ({
+    getText: () => editableContent,
+    setText: (text: string) => setEditableContent(text),
     focusEditor: () => {
       if (textareaRef.current) {
         textareaRef.current.focus()
