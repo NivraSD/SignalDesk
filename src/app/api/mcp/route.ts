@@ -1,7 +1,8 @@
 // NIV MCP server: use NIV from Claude Desktop, Claude Code, Cursor, Copilot and other MCP clients.
 //   URL: https://<host>/api/mcp   (Streamable HTTP)
-//   Auth: Authorization: Bearer niv_…  (personal access token from NIV; acts as that person in their
-//         org, with exactly their permissions; membership re-checked on every request)
+//   Auth: Authorization: Bearer niv_…  (a personal access token from NIV, or an OAuth access token from
+//         "Sign in with Nivria" via /.well-known/oauth-protected-resource; either acts as that person in
+//         their org, with exactly their permissions; membership re-checked on every request)
 // Tools: company documents (search/read/list), intel (search, latest brief), Memory Vault
 // (search/read), and ask_niv (the full advisor; answers are saved to the person's NIV history).
 import { createMcpHandler, withMcpAuth } from 'mcp-handler'
@@ -221,7 +222,7 @@ const handler = createMcpHandler(
   { serverInfo: { name: 'NIV', version: '1.0.0' } }
 )
 
-// Personal access token -> the person and org it acts for.
+// Access token (personal, or from OAuth sign-in) -> the person and org it acts for.
 const authed = withMcpAuth(
   handler,
   async (_req, bearerToken) => {
@@ -234,7 +235,7 @@ const authed = withMcpAuth(
       extra: { userId: p.userId, organizationId: p.organizationId, tokenId: p.tokenId, scopes: p.scopes },
     }
   },
-  { required: true }
+  { required: true, resourceMetadataPath: '/.well-known/oauth-protected-resource/api/mcp' }
 )
 
 export { authed as GET, authed as POST, authed as DELETE }

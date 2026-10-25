@@ -1,5 +1,5 @@
 // Manage your NIV access tokens (for connecting Claude, Cursor, Copilot… via MCP).
-//   GET    /api/niv-tokens?organizationId=            -> { tokens: [{id, name, prefix, created_at, last_used_at}] }
+//   GET    /api/niv-tokens?organizationId=            -> { tokens: [{id, name, prefix, created_at, last_used_at, kind: 'token'|'app'}] }  (apps = OAuth connections)
 //   POST   /api/niv-tokens { organizationId, name }    -> { token (shown once), id }
 //   DELETE /api/niv-tokens { organizationId, id }      -> { ok }
 import { NextRequest, NextResponse } from 'next/server'
@@ -20,12 +20,12 @@ export async function GET(req: NextRequest) {
     const { user, admin } = await requireMember(organizationId)
     const { data } = await admin
       .from('niv_access_tokens')
-      .select('id, name, token_prefix, created_at, last_used_at')
+      .select('id, name, token_prefix, created_at, last_used_at, oauth_client_id')
       .eq('user_id', user.id)
       .eq('organization_id', organizationId)
       .is('revoked_at', null)
       .order('created_at', { ascending: false })
-    return NextResponse.json({ tokens: (data || []).map((t: any) => ({ ...t, prefix: t.token_prefix })) })
+    return NextResponse.json({ tokens: (data || []).map((t: any) => ({ id: t.id, name: t.name, prefix: t.token_prefix, created_at: t.created_at, last_used_at: t.last_used_at, kind: t.oauth_client_id ? 'app' : 'token' })) })
   } catch (e) {
     return fail(e)
   }
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     const name = String(body.name || '').trim().slice(0, 60) || 'My AI tool'
     const { user, admin } = await requireMember(organizationId)
     const { count } = await admin.from('niv_access_tokens').select('id', { count: 'exact', head: true })
-      .eq('user_id', user.id).eq('organization_id', organizationId).is('revoked_at', null)
+      .eq('user_id', user.id).eq('organization_id', organizationId).is('revoked_at', null).is('oauth_client_id', null)
     if ((count ?? 0) >= MAX_ACTIVE_TOKENS) throw new HttpError(400, 'You have the maximum number of tokens. Revoke one first.')
     const t = newToken()
     const { data, error } = await admin.from('niv_access_tokens')

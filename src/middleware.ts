@@ -38,14 +38,16 @@ export async function middleware(request: NextRequest) {
   const publicPaths = ['/auth/login', '/auth/signup', '/auth/reset-password', '/auth/callback', '/auth/error', '/auth/update-password', '/platform', '/contact', '/thoughts', '/demo/palantir', '/founder', '/from-artificial-to-intelligent.html']
   const isPublicPath = publicPaths.some(publicPath => path.startsWith(publicPath))
 
-  // API routes handle their own authentication - don't redirect them
-  const isApiRoute = path.startsWith('/api/')
+  // API routes handle their own authentication - don't redirect them. Same for OAuth discovery
+  // (/.well-known) and the OAuth consent screen (/oauth/*), which sends people to sign in itself.
+  const isApiRoute = path.startsWith('/api/') || path.startsWith('/.well-known/') || path.startsWith('/oauth/')
 
   // If user is not signed in and trying to access protected route, redirect to login
   if (!user && !isPublicPath && !isApiRoute && path !== '/') {
     const redirectUrl = request.nextUrl.clone()
     redirectUrl.pathname = '/auth/login'
-    redirectUrl.searchParams.set('next', path)
+    redirectUrl.search = ''
+    redirectUrl.searchParams.set('next', path + request.nextUrl.search)
     return NextResponse.redirect(redirectUrl)
   }
 

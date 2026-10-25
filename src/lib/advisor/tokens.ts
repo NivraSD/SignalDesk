@@ -1,4 +1,4 @@
-// NIV personal access tokens (for the MCP server). Format: niv_<40 random chars>. Only the SHA-256
+// NIV access tokens for the MCP server: personal tokens (no expiry) and OAuth access tokens (see oauth.ts). Format: niv_<40 random chars>. Only the SHA-256
 // hash is stored. A token acts as one person in one org; membership is re-checked on every use.
 import { createHash, randomBytes } from 'crypto'
 import type { Admin } from './data'
@@ -21,10 +21,11 @@ export async function verifyAccessToken(admin: Admin, token: string | undefined)
   if (!token || !token.startsWith('niv_') || token.length < 30) return null
   const { data: t } = await admin
     .from('niv_access_tokens')
-    .select('id, user_id, organization_id, scopes, name, revoked_at, last_used_at')
+    .select('id, user_id, organization_id, scopes, name, revoked_at, last_used_at, expires_at')
     .eq('token_hash', hashToken(token))
     .maybeSingle()
   if (!t || t.revoked_at) return null
+  if (t.expires_at && new Date(t.expires_at).getTime() < Date.now()) return null   // OAuth access tokens expire hourly
   const { data: member } = await admin
     .from('org_users')
     .select('role')
