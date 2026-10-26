@@ -4,11 +4,12 @@
 //         "Sign in with Nivria" via /.well-known/oauth-protected-resource; either acts as that person in
 //         their org, with exactly their permissions; membership re-checked on every request)
 // Tools: company documents (search/read/list), intel (search, latest brief), Memory Vault
-// (search/read), and ask_niv (the full advisor; answers are saved to the person's NIV history).
+// (search/read/save), and ask_niv (the full advisor; answers are saved to the person's NIV history).
 import { createMcpHandler, withMcpAuth } from 'mcp-handler'
 import { z } from 'zod'
 import { createServiceClient } from '@/lib/supabase/server'
 import { verifyAccessToken } from '@/lib/advisor/tokens'
+import { readVaultItem, saveToVault, searchVault } from '@/lib/advisor/vault'
 import { knowledgeSearch, listDocuments, readDocument, runWorkspaceTurn } from '@/lib/advisor/workspace'
 import { addMessage, latestBrief, loadMessages, loadOrg, loadTaste, searchOrgIntel } from '@/lib/advisor/data'
 import { randomUUID } from 'crypto'
@@ -27,15 +28,6 @@ function who(ctx: any): Who {
 
 const text = (s: string) => ({ content: [{ type: 'text' as const, text: s }] })
 const json = (v: unknown) => text(JSON.stringify(v, null, 2))
-
-// Can this person see this company document's vault entry? (Restricted docs: their teams only.)
-async function canSeeVaultItem(admin: any, w: Who, item: any) {
-  if (item.content_type !== 'company-document') return true
-  const vis: string[] = item.metadata?.visibility || ['all']
-  if (vis.includes('all')) return true
-  const { data: me } = await admin.from('org_users').select('role, teams').eq('organization_id', w.organizationId).eq('user_id', w.userId).maybeSingle()
-  return me?.role === 'owner' || me?.role === 'admin' || vis.some((t) => (me?.teams || []).includes(t))
-}
 
 const handler = createMcpHandler(
   (server) => {
@@ -124,26 +116,8 @@ const handler = createMcpHandler(
       },
       async ({ query, folder, limit }, ctx) => {
         const w = who(ctx)
-        const admin = createServiceClient()
-        const q = query.replace(/[%_,()]/g, ' ').trim()
-        let req = admin
-          .from('content_library')
-          .select('id, title, folder, content_type, content, metadata, updated_at')
-          .eq('organization_id', w.organizationId)
-          .or(`title.ilike.%${q}%,content.ilike.%${q}%`)
-          .order('updated_at', { ascending: false })
-          .limit(50)
-        if (folder) req = req.ilike('folder', `${folder}%`)
-        const { data } = await req
-        const out: any[] = []
-        for (const item of data || []) {
-          if (!(await canSeeVaultItem(admin, w, item))) continue
-          const body = typeof item.content === 'string' ? item.content : JSON.stringify(item.content || '')
-          const i = body.toLowerCase().indexOf(q.toLowerCase())
-          out.push({ id: item.id, title: item.title, folder: item.folder, type: item.content_type, updated_at: item.updated_at, snippet: body.slice(Math.max(0, i - 120), i + 280).replace(/\s+/g, ' ').trim() })
-          if (out.length >= (limit ?? 10)) break
-        }
-        return out.length ? json(out) : text('Nothing in the Memory Vault matches that.')
+        const hits = await searchVault(createServiceClient(), w.organizationId, w.userId, query, { folder, limit })
+        return hits.length ? json(hits) : text('Nothing in the Memory Vault matches that.')
       }
     )
 
@@ -156,11 +130,29 @@ const handler = createMcpHandler(
       },
       async ({ id }, ctx) => {
         const w = who(ctx)
-        const admin = createServiceClient()
-        const { data: item } = await admin.from('content_library').select('id, title, folder, content_type, content, metadata, updated_at').eq('id', id).eq('organization_id', w.organizationId).maybeSingle()
-        if (!item || !(await canSeeVaultItem(admin, w, item))) return text('Not found, or not visible to you.')
-        const body = typeof item.content === 'string' ? item.content : JSON.stringify(item.content, null, 2)
-        return text(`${item.title}\nFolder: ${item.folder || '—'} · Type: ${item.content_type} · Updated: ${(item.updated_at || '').slice(0, 10)}\n\n${body.slice(0, 60000)}`)
+        const item = await readVaultItem(createServiceClient(), w.organizationId, w.userId, id)
+        if (!item) return text('Not found, or not visible to you.')
+        return text(`${item.title}\nFolder: ${item.folder || '—'} · Type: ${item.type} · Updated: ${(item.updated_at || '').slice(0, 10)}\n\n${item.text}`)
+      }
+    )
+
+    server.registerTool(
+      'save_to_memory_vault',
+      {
+        title: 'Save to the Memory Vault',
+        description: "Save a piece of work (a draft, post, memo, talking points…) into NIV's Memory Vault so the team can find it in NIV. Default folder is NIV/Drafts. Use when the person asks to save something to NIV.",
+        inputSchema: z.object({
+          title: z.string().min(1).max(200),
+          content: z.string().min(1).max(100000),
+          folder: z.string().max(200).optional(),
+          content_type: z.string().max(50).optional(),
+        }),
+      },
+      async ({ title, content, folder, content_type }, ctx) => {
+        const w = who(ctx)
+        if (!w.scopes.includes('ask')) return text('This connection is read-only and cannot save to NIV.')
+        const saved = await saveToVault(createServiceClient(), { organizationId: w.organizationId, userId: w.userId, title, content, folder, contentType: content_type, via: 'mcp' })
+        return text(`Saved to the Memory Vault: "${saved.title}" in ${saved.folder} (id ${saved.id}).`)
       }
     )
 
@@ -210,6 +202,7 @@ const handler = createMcpHandler(
           admin, user: { id: w.userId }, org, caseFile: thread.advisor_case_files, taste,
           person: { name: (user?.user_metadata as any)?.full_name || user?.email?.split('@')[0], role: me.data?.role, teams: me.data?.teams || [] },
           history: history.map((m: any) => ({ role: m.role, content: m.content })),
+          channel: 'mcp',
         })
         await addMessage(admin, thread, 'assistant', turn.reply, { via: 'mcp', ...(turn.sources.length && { doc_sources: turn.sources }) })
         if (turn.citedDocs.length) await admin.rpc('knowledge_touch', { p_ids: turn.citedDocs })
