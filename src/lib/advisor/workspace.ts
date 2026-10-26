@@ -5,6 +5,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { Admin, describeCaseFile, latestBrief, nowInWords, searchOrgIntel } from './data'
 import { searchVault, readVaultItem, saveToVault } from './vault'
+import { researchNow } from './researcher'
 import { anthropic, CONTENT_TYPES, CURRENT_FACTS_RULE, NIV_MODEL, WEB_SEARCH_TOOL, WRITING_RULES, createMessage } from './niv'
 
 const MAX_TOOL_ROUNDS = 6
@@ -153,6 +154,11 @@ export type Channel = 'app' | 'mcp'
 const APP_ONLY_TOOLS = new Set(['start_research', 'propose_draft'])
 const MCP_TOOLS: Anthropic.Tool[] = [
   {
+    name: 'research',
+    description: "Have the Researcher dig into a question that needs current outside facts across several sources (events and deadlines, market or competitor facts, people, regulations). Runs now and returns cited findings in a minute or two. Ask one complete question with everything it needs (scope, dates, what to include for each item). Use web_search instead for a single quick fact.",
+    input_schema: { type: 'object', properties: { question: { type: 'string' } }, required: ['question'] },
+  },
+  {
     name: 'save_to_memory_vault',
     description: 'Save a finished piece of work (a draft you wrote) into the Memory Vault so it\'s in NIV. Only when they ask to save it. Default folder is NIV/Drafts.',
     input_schema: { type: 'object', properties: { title: { type: 'string' }, content: { type: 'string' }, folder: { type: 'string' }, content_type: { type: 'string' } }, required: ['title', 'content'] },
@@ -165,7 +171,7 @@ const MCP_BLOCK = `
 The person is reaching you from another AI tool (such as Claude or ChatGPT) through NIV's connector, not the NIV app. That tool passes your answer on. There are no buttons, no Studio and no NIV interface on their side, and nothing you start can arrive later. So:
 - Never mention buttons, clicking, "Draft it", Studio, decks being built, or follow-ups that will arrive.
 - If they ask for a draft (memo, email, post, talking points…), write it in full in your answer, with [PLACEHOLDER: …] for anything you can't support. If they want a designed deck, give the slide-by-slide outline and say they can build it from NIV at nivria.ai.
-- If something needs current outside facts, look it up now with web search and answer with what you found.
+- If something needs current outside facts, look it up now: web_search for a quick fact, research for anything broader (lists of events, deadlines, a landscape). Then answer with what you found, with links.
 - If they ask to save something to NIV (e.g. to Drafts), use save_to_memory_vault and say where it went.
 - Don't write anything before or between tool calls; only your final answer is passed on.`
 
@@ -353,6 +359,15 @@ export async function runWorkspaceTurn(p: {
           case 'read_memory_vault_item': {
             const item = await readVaultItem(p.admin, p.org.id, p.user.id, String(input.id || ''))
             content = item ? `${item.title} (folder: ${item.folder || '—'}, type: ${item.type}, updated ${String(item.updated_at).slice(0, 10)})\n\n${item.text}` : 'Not found or not visible to this person.'
+            break
+          }
+          case 'research': {
+            const question = String(input.question || '').slice(0, 1500)
+            if (!question) throw new Error('question required')
+            if ((result.research?.length || 0) >= 2) { content = 'Research limit for this answer reached; answer with what you have.'; break }
+            result.research = [...(result.research || []), { question }]
+            const f = await researchNow(p.admin, p.org, question)
+            content = JSON.stringify(f)
             break
           }
           case 'save_to_memory_vault': {

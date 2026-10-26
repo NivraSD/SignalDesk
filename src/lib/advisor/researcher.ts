@@ -24,7 +24,7 @@ const CLIENT_TOOLS: Anthropic.Tool[] = [
       type: 'object',
       properties: {
         answer: { type: 'string', description: 'Direct answer to the question in 2-4 sentences. Say plainly if evidence is thin.' },
-        key_points: { type: 'array', items: { type: 'string' }, description: '3-6 specific, sourced facts' },
+        key_points: { type: 'array', items: { type: 'string' }, description: '3-6 specific, sourced facts; for list questions (events, deadlines, people, options) one entry per item, up to 15, each with its specifics (dates, place, link)' },
         sources: { type: 'array', items: { type: 'object', properties: { title: { type: 'string' }, url: { type: 'string' } }, required: ['title', 'url'] } },
         open_questions: { type: 'array', items: { type: 'string' } },
       },
@@ -32,21 +32,21 @@ const CLIENT_TOOLS: Anthropic.Tool[] = [
     },
   },
 ]
-const SERVER_TOOLS = [
-  { type: 'web_search_20260209', name: 'web_search', max_uses: 6 },
-  { type: 'web_fetch_20260209', name: 'web_fetch', max_uses: 4 },
+const serverTools = (deep: boolean) => [
+  { type: 'web_search_20260209', name: 'web_search', max_uses: deep ? 14 : 6 },
+  { type: 'web_fetch_20260209', name: 'web_fetch', max_uses: deep ? 8 : 4 },
 ]
 
-async function research(admin: Admin, organizationId: string, orgName: string, oppTitle: string, question: string, useWeb: boolean): Promise<Finding> {
+async function research(admin: Admin, organizationId: string, orgName: string, oppTitle: string, question: string, useWeb: boolean, deep = false): Promise<Finding> {
   const messages: Anthropic.MessageParam[] = [{
     role: 'user',
     content: `Research question (for ${orgName}, regarding the opportunity "${oppTitle}"):\n${question}\n\nToday is ${nowInWords()}. Check the org's own intel first${useWeb ? ', then search and read the web for current, credible sources' : ''}. Prefer primary reporting and named sources; note dates. Don't speculate beyond the evidence. Finish by calling submit_findings once.`,
   }]
-  for (let round = 0; round < MAX_ROUNDS; round++) {
+  for (let round = 0; round < (deep ? MAX_ROUNDS + 6 : MAX_ROUNDS); round++) {
     const response = (await anthropic.messages.create({
       model: RESEARCH_MODEL,
       max_tokens: 8000,
-      tools: [...CLIENT_TOOLS, ...(useWeb ? SERVER_TOOLS : [])] as any,
+      tools: [...CLIENT_TOOLS, ...(useWeb ? serverTools(deep) : [])] as any,
       messages,
       output_config: { effort: 'medium' },
     } as any)) as Anthropic.Message
@@ -61,8 +61,8 @@ async function research(admin: Admin, organizationId: string, orgName: string, o
       const f = submit.input as Finding
       return {
         answer: String(f.answer || ''),
-        key_points: Array.isArray(f.key_points) ? f.key_points.map(String).slice(0, 8) : [],
-        sources: Array.isArray(f.sources) ? f.sources.filter((s) => s?.url).slice(0, 8) : [],
+        key_points: Array.isArray(f.key_points) ? f.key_points.map(String).slice(0, 15) : [],
+        sources: Array.isArray(f.sources) ? f.sources.filter((s) => s?.url).slice(0, 15) : [],
         open_questions: Array.isArray(f.open_questions) ? f.open_questions.map(String).slice(0, 4) : [],
       }
     }
@@ -84,6 +84,18 @@ async function research(admin: Admin, organizationId: string, orgName: string, o
     messages.push({ role: 'user', content: results })
   }
   throw new Error('Research did not finish')
+}
+
+// Research a question right now and return the findings (for NIV over MCP, where nothing can arrive
+// later). Falls back to the org's own intel if web tools are unavailable.
+export async function researchNow(admin: Admin, org: { id: string; name: string }, question: string): Promise<Finding> {
+  try {
+    return await research(admin, org.id, org.name, 'an internal question from a colleague', question, true, true)
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    if (!/web_search|web_fetch|tool/i.test(msg)) throw e
+    return research(admin, org.id, org.name, 'an internal question from a colleague', question, false)
+  }
 }
 
 // Runs one queued research job end to end. Safe to call from after(): never throws.
