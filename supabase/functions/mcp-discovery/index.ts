@@ -12,6 +12,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 import { searchWebForCompetitors, fetchYahooFinanceCompetitors, searchWebForCurrentProducts } from './external-data-fetcher.ts';
 import { getIndustryCompetitors, discoverSubCategory } from './industry-competitors.ts';
+import { findCompetitors } from './competitor-finder.ts';
 
 // Environment setup
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -247,6 +248,17 @@ async function createOrganizationProfile(args: any) {
     // Get sources from master-source-registry with semantic matching
     const sourcesData = await gatherSourcesData(industryData.industry, organization_name, initialDescription);
 
+    // Competitors from evidence (what they sell + web search), in parallel with the profile analysis.
+    // The industry label is broad, so it's context only; see competitor-finder.ts.
+    industryData.userCompetitors = userTargets?.competitors || [];
+    const competitorFindingPromise = gap_filling_mode ? Promise.resolve(null) : findCompetitors({
+      name: organization_name,
+      website: about_page || website,
+      siteText: websiteInfo ? `${websiteInfo.title || ''}\n${websiteInfo.description || ''}\n${websiteInfo.text || ''}` : undefined,
+      industryHint: industry_hint,
+      namedCompetitors: userTargets?.competitors || [],
+    });
+
     // STEP 1b: Fetch real-time product/service information from web search
     // This helps overcome Claude's knowledge cutoff for recently released products
     console.log('🌐 Step 1b: Fetching real-time product information from web search...');
@@ -306,6 +318,28 @@ async function createOrganizationProfile(args: any) {
     console.log('🌐 Step 3: Filling gaps with web search...');
     
     const completeProfile = await fillGapsWithWebSearch(enhancedProfile, organization_name);
+
+    // STEP 3b: Evidence-based competitors replace the model's guesses when the search found enough.
+    const finding = await competitorFindingPromise;
+    if (finding && finding.direct_competitors.length >= 3) {
+      const named: string[] = userTargets?.competitors || [];
+      const uniq = (xs: string[]) => xs.filter((x, i) => xs.findIndex((y) => y.toLowerCase() === x.toLowerCase()) === i);
+      completeProfile.competition.direct_competitors = uniq([...named, ...finding.direct_competitors.map((c) => c.name)]).slice(0, 12);
+      completeProfile.competition.indirect_competitors = uniq(finding.indirect_competitors.map((c) => c.name)).slice(0, 6);
+      completeProfile.competition.competitor_evidence = finding.direct_competitors;
+      if (finding.ecosystem.length) {
+        completeProfile.stakeholders = completeProfile.stakeholders || {};
+        completeProfile.stakeholders.key_partners = uniq([
+          ...finding.ecosystem.map((e) => e.name),
+          ...(completeProfile.stakeholders.key_partners || []),
+        ]).slice(0, 4);
+      }
+      completeProfile.offering = { what: finding.offering, buyers: finding.buyers, business_model: finding.business_model, size: finding.size };
+      console.log(`   ✅ Evidence-based competitors: ${completeProfile.competition.direct_competitors.join(', ')}`);
+      if (finding.rejected.length) console.log(`   🚫 Rejected (broad-industry only): ${finding.rejected.join(', ')}`);
+    } else {
+      console.log('   ⚠️ Evidence search found too few competitors; keeping the analysis list');
+    }
     
     // STEP 4: Structure the final profile
     console.log('📋 Step 4: Structuring final profile...');
@@ -1247,7 +1281,7 @@ NOW, provide your COMPREHENSIVE profile in this JSON format:
 }
 
 ${industry_hint ? `\nIndustry context: ${industry_hint}` : ''}
-${industryData.competitors.length > 0 ? `\nKnown competitors: ${industryData.competitors.join(', ')}` : ''}
+${industryData.userCompetitors?.length > 0 ? `\nCompetitors the company named itself: ${industryData.userCompetitors.join(', ')}` : ''}
 
 ═══════════════════════════════════════════════════════════
 📚 EXAMPLES OF GOOD PROFILES
@@ -1921,9 +1955,9 @@ function mergeAndValidateCompetitors(
       continue;
     }
 
-    // Registry only backfills a short list. It's keyed by broad industry ("technology" = big tech),
-    // so padding a good, specific list with it adds noise.
-    if (merged.length < 5) {
+    // Registry only backfills a near-empty list. It's keyed by broad industry ("e-commerce" =
+    // Walmart, Target), so it's a last resort, not a source of competitors.
+    if (merged.length < 3) {
       merged.push(comp);
     }
   }
@@ -1980,6 +2014,7 @@ function structureFinalProfile(profileData: any, organization_name: string) {
     industry: profileData.industry,
     sub_industry: profileData.sub_industry,
     description: profileData.description,
+    ...(profileData.offering && { offering: profileData.offering }),
     service_lines: profileData.service_lines || [],
     strategic_context: profileData.strategic_context || {
       target_customers: '',

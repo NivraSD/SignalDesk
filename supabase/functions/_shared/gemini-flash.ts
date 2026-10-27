@@ -3,12 +3,14 @@
 //  - thinkingLevel must nest under thinkingConfig (flat is a 400), and thinking tokens count against
 //    maxOutputTokens, so keep that generous even for one-word answers.
 //  - No temperature/top_p: Gemini 3.x is tuned for the defaults.
+//  - googleSearch: grounds the answer in live Google results (ask for JSON in the prompt; parse it
+//    from the text, since the reply may wrap it in prose or a code fence).
 
 export const GEMINI_FLASH_MODEL = 'gemini-3.5-flash'
 
 export async function callGeminiFlash(
   prompt: string,
-  opts: { maxOutputTokens?: number; json?: boolean; system?: string; timeoutMs?: number } = {}
+  opts: { maxOutputTokens?: number; json?: boolean; system?: string; timeoutMs?: number; googleSearch?: boolean } = {}
 ): Promise<string> {
   const key = Deno.env.get('GOOGLE_API_KEY') || Deno.env.get('GEMINI_API_KEY')
   if (!key) throw new Error('GOOGLE_API_KEY not configured')
@@ -24,6 +26,8 @@ export async function callGeminiFlash(
         body: JSON.stringify({
           ...(opts.system && { systemInstruction: { parts: [{ text: opts.system }] } }),
           contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          // Grounding with Google Search: the model searches the web and answers from what it finds.
+          ...(opts.googleSearch && { tools: [{ google_search: {} }] }),
           generationConfig: {
             maxOutputTokens: opts.maxOutputTokens ?? 8000,
             ...(opts.json && { responseMimeType: 'application/json' }),
