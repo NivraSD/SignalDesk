@@ -104,7 +104,7 @@ interface PresentationRequest {
     numCards?: number
     themeId?: string  // Theme ID from Gamma workspace (use 'stardust' for default)
     themeName?: string  // Deprecated - use themeId instead
-    imageSource?: 'ai' | 'unsplash' | 'web'
+    imageSource?: 'ai' | 'aiGenerated' | 'pictographic' | 'unsplash' | 'web' | 'noImages'
     tone?: string
     audience?: string
     cardSplit?: 'auto' | 'inputTextBreaks'
@@ -678,11 +678,16 @@ async function generatePresentation(request: PresentationRequest) {
     }
 
     // Add image options
+    // AI-generated images draw text as shapes, so any words in them come out misspelled. Default
+    // (and 'ai', which every caller sends) to pictographic: icon-style illustrations with no text.
+    // Gamma's own diagrams, charts and smart layouts render real text and aren't affected.
+    // 'aiGenerated' must be asked for explicitly.
+    const src = request.options?.imageSource
     requestBody.imageOptions = {
-      source: request.options?.imageSource === 'ai' ? 'aiGenerated' :
-               request.options?.imageSource === 'web' ? 'webAllImages' :
-               request.options?.imageSource || 'aiGenerated'
+      source: !src || src === 'ai' ? 'pictographic' :
+              src === 'web' ? 'webAllImages' : src
     }
+    requestBody.additionalInstructions = 'Never put words, letters, numbers or labels inside images; keep all text in the slide text, diagrams and charts.'
 
     console.log('📤 Gamma API request:', {
       url: `${GAMMA_API_URL}/generations`,
