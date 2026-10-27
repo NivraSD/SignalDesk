@@ -69,6 +69,7 @@ const SCOPED_ORG_IDS = [
   '888a79a0-fa6e-4125-8c97-74a0c3ae9fa7', // nivria
   '85a0ec25-9090-43ea-822b-ebcaae69f806', // Humain
   '38199320-02eb-47c0-aa3b-4e403a461c8d', // AIccommodate (added 2026-10-23)
+  '5ad3b250-d0c0-4c79-9080-5dfcf465877c', // Platter (added 2026-10-27)
 ];
 
 // Configuration

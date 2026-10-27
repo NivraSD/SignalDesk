@@ -46,6 +46,8 @@ serve(async (req) => {
   let group = parseInt(url.searchParams.get('group') || '0');
   // One-off backfill (e.g. right after adding sources): look further back than the usual 2 days.
   let backfillDays = 0;
+  // Optional: only these sources (by source_name), e.g. to backfill sources just added for an org.
+  let onlySources: string[] = [];
 
   // Also check request body for group
   if (!group && req.method === 'POST') {
@@ -53,6 +55,7 @@ serve(async (req) => {
       const body = await req.json();
       group = parseInt(body.group || '0');
       backfillDays = Math.min(Math.max(parseInt(body.max_age_days || '0') || 0, 0), 14);
+      if (Array.isArray(body.source_names)) onlySources = body.source_names.map(String).slice(0, 50);
     } catch {
       // No body or invalid JSON, continue with group=0
     }
@@ -86,6 +89,9 @@ serve(async (req) => {
 
     if (group) {
       query = query.eq('rss_group', group);
+    }
+    if (onlySources.length) {
+      query = query.in('source_name', onlySources);
     }
 
     const { data: sources, error: sourcesError } = await query.order('tier', { ascending: true });
