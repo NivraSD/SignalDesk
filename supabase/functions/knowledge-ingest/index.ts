@@ -322,6 +322,12 @@ Deno.serve(async (req) => {
     const stamped = await stampDates(admin, { ...doc, ...patch }, passages.map((p) => p.text).join('\n'))
     const superseded = await reconcileSeries(admin, doc.organization_id, stamped.series_key)
     await syncVaultMirror(admin, [doc.id, ...superseded.map((x) => x.id)])
+    // Check whether this document repeats (or is repeated by) restricted content; runs after responding.
+    const scan = fetch(`${SUPABASE_URL}/functions/v1/knowledge-exposure-scan`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${SERVICE_KEY}` },
+      body: JSON.stringify({ organization_id: doc.organization_id, document_id: doc.id }),
+    }).catch((e) => console.warn('exposure scan not started:', e))
+    ;(globalThis as any).EdgeRuntime?.waitUntil?.(scan)
     return new Response(JSON.stringify({ ok: true, passages: rows.length, pages, effective_date: stamped.effective_date, precision: stamped.date_precision, series: stamped.series_key, superseded, status: (await admin.from('knowledge_documents').select('status').eq('id', doc.id).single()).data?.status }), { headers: { 'Content-Type': 'application/json' } })
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)

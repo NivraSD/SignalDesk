@@ -1,6 +1,7 @@
 // The Memory Vault (content_library) for NIV and the MCP server: keyword search, read, and save.
 // Restricted company documents are visible only to their teams (and owners/admins).
 import type { Admin } from './data'
+import { vaultRedactor } from './exposures'
 
 export type VaultHit = { id: string; title: string; folder: string | null; type: string; updated_at: string; snippet: string }
 
@@ -35,9 +36,11 @@ export async function searchVault(admin: Admin, organizationId: string, userId: 
   if (opts.folder) req = req.ilike('folder', `${opts.folder.replace(/[%_]/g, '')}%`)
   const { data } = await req
   const me = await teamsOf(admin, organizationId, userId)
-  const scored = (data || []).filter((i: any) => visible(i, me)).map((item: any) => {
+  const items = (data || []).filter((i: any) => visible(i, me))
+  const redact = await vaultRedactor(admin, organizationId, userId, items.map((i: any) => i.metadata?.knowledge_document_id))
+  const scored = items.map((item: any) => {
     const title = (item.title || '').toLowerCase()
-    const body = bodyOf(item)
+    const body = redact(item.metadata?.knowledge_document_id, bodyOf(item))
     const lower = body.toLowerCase()
     const score = words.reduce((s, w) => s + (title.includes(w) ? 3 : 0) + (lower.includes(w) ? 1 : 0), 0)
     const first = Math.max(0, Math.min(...words.map((w) => { const i = lower.indexOf(w); return i < 0 ? Infinity : i })))
@@ -51,7 +54,9 @@ export async function searchVault(admin: Admin, organizationId: string, userId: 
 export async function readVaultItem(admin: Admin, organizationId: string, userId: string, id: string) {
   const { data: item } = await admin.from('content_library').select('id, title, folder, content_type, content, metadata, updated_at').eq('id', id).eq('organization_id', organizationId).maybeSingle()
   if (!item || !visible(item, await teamsOf(admin, organizationId, userId))) return null
-  return { id: item.id, title: item.title as string, folder: item.folder as string | null, type: item.content_type as string, updated_at: item.updated_at as string, text: bodyOf(item).slice(0, 60000) }
+  const redact = await vaultRedactor(admin, organizationId, userId, [item.metadata?.knowledge_document_id])
+  const text = redact(item.metadata?.knowledge_document_id, bodyOf(item))
+  return { id: item.id, title: item.title as string, folder: item.folder as string | null, type: item.content_type as string, updated_at: item.updated_at as string, text: text.slice(0, 60000) }
 }
 
 // Save a piece of work into the vault (default folder NIV/Drafts), with an embedding for semantic search.

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { vaultRedactor } from '@/lib/advisor/exposures'
 import { createClient } from '@supabase/supabase-js'
 import { createClient as createServerSupabase } from '@/lib/supabase/server'
 
@@ -575,10 +576,14 @@ export async function GET(request: NextRequest) {
       const vis: string[] = item.metadata?.visibility || ['all']
       return isAdmin || vis.includes('all') || vis.some((t) => myTeams.includes(t))
     })
+    // Passages of open company documents that repeat restricted details by accident are withheld
+    // from people outside those teams (see lib/advisor/exposures.ts).
+    const redact = await vaultRedactor(supabase, organizationId, user.id, visible.filter((i: any) => i.content_type === 'company-document').map((i: any) => i.metadata?.knowledge_document_id))
+    const shown = visible.map((i: any) => (i.content_type === 'company-document' && typeof i.content === 'string' ? { ...i, content: redact(i.metadata?.knowledge_document_id, i.content) } : i))
 
     return NextResponse.json({
       success: true,
-      data: visible || [],
+      data: shown,
       location: 'content_library'
     })
 
