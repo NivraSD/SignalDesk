@@ -98,7 +98,7 @@ IMPORTANT: You MUST generate AT LEAST 3 stakeholder campaigns with 2-3 content i
     "market_dynamics": "What's happening in the market that makes this relevant",
     "why_now": "Why ${organizationName} should act on this immediately",
     "competitive_advantage": "What unique angle or advantage ${organizationName} has",
-    "time_window": "How long this opportunity window is open (e.g., '3-5 days', '1-2 weeks')",
+    "time_window": "How long this window is open, tied to what closes it (e.g. 'until the Nov 12 hearing', 'this week, while coverage peaks'). No stock durations.",
     "expected_impact": "What ${organizationName} can gain from executing on this",
     "risk_if_missed": "What happens if ${organizationName} doesn't act"
   },
@@ -501,7 +501,7 @@ serve(async (req) => {
         // V2 fields
         strategic_context: opportunity.strategic_context,
         execution_plan: opportunity.execution_plan,
-        time_window: opportunity.strategic_context?.time_window || '3-5 days',
+        time_window: opportunity.strategic_context?.time_window || null,
         expected_impact: opportunity.strategic_context?.expected_impact || '',
         auto_executable: opportunity.auto_executable !== false,
         executed: false,

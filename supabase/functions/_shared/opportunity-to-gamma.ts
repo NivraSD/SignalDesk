@@ -12,22 +12,27 @@ export function opportunityToGammaContent(opportunity: any): string {
   let content = `# ${cleanTitle}\n\n`
   content += `${subtitle.substring(0, 150)}${subtitle.length > 150 ? '...' : ''}\n\n`
 
-  // Slide 2: Success Metrics (lead with outcomes)
-  content += `## Success Metrics\n\n`
-  if (execution_plan?.success_metrics?.length > 0) {
-    execution_plan.success_metrics.forEach((metric: any) => {
-      content += `### ${metric.metric}\n`
-      content += `**Target:** ${metric.target}\n`
-      if (metric.timeframe) {
-        content += `**Timeline:** ${metric.timeframe}\n`
-      }
-      if (metric.measurement_method) {
-        content += `**Tracking:** ${metric.measurement_method}\n`
-      }
-      content += `\n`
-    })
-  } else {
-    content += `Define success metrics based on campaign objectives.\n\n`
+  // Slide 2: Targets & Urgency (who to reach, and how fast)
+  content += `## Targets & Urgency\n\n`
+  const urgency = String(opportunity.urgency || '').toLowerCase()
+  if (urgency) {
+    content += `### Urgency: ${urgency.charAt(0).toUpperCase()}${urgency.slice(1)}\n`
+    if (strategic_context?.why_now) content += `${strategic_context.why_now}\n`
+    if (strategic_context?.time_window) content += `**Window:** ${strategic_context.time_window}\n`
+    content += `\n`
+  }
+  const audiences = (execution_plan?.stakeholder_campaigns || []).map((c: any) => c.stakeholder_name).filter(Boolean)
+  if (audiences.length) {
+    content += `### Audiences\n`
+    audiences.slice(0, 4).forEach((a: string) => content += `- ${a}\n`)
+    content += `\n`
+  }
+  const media = strategic_context?.media_targeting
+  if (media?.target_outlets?.length || media?.primary_journalist_types?.length) {
+    content += `### Media\n`
+    if (media.target_outlets?.length) content += `**Outlets:** ${media.target_outlets.slice(0, 6).join(', ')}\n`
+    if (media.primary_journalist_types?.length) content += `**Reporters:** ${media.primary_journalist_types.slice(0, 4).join(', ')}\n`
+    content += `\n`
   }
 
   // Slide 3: Content Deliverables Overview

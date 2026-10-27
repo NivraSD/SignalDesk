@@ -230,9 +230,9 @@ Return ONLY a JSON array with this EXACT structure:
         "Industry analysts questioning competitor's practices"
       ],
       "market_dynamics": "Customer trust in Competitor X is shaken. Market is actively seeking secure alternatives.",
-      "why_now": "Window of 3-5 days before narrative solidifies and competitors move. First mover advantage in security narrative.",
+      "why_now": "Coverage of the breach peaks this week and no competitor has spoken yet; the first credible voice on security sets the narrative.",
       "competitive_advantage": "Our security record is spotless and we can authentically claim leadership.",
-      "time_window": "3-5 days",
+      "time_window": "Until the breach hearing on Nov 12; after that the story moves to remediation",
       "expected_impact": "15-20% increase in demo requests from security-conscious segment. Establish security leadership position.",
       "risk_if_missed": "Competitors will fill the narrative void. Opportunity to differentiate on security lost for months.",
       "media_targeting": {
@@ -494,7 +494,7 @@ Return ONLY a JSON array with this EXACT structure:
     "category": "COMPETITIVE_CRISIS",
     "confidence_factors": [
       "Multiple confirming signals: breach confirmed, media coverage extensive",
-      "Clear time window: 3-5 days before narrative solidifies",
+      "Clear time window: before the Nov 12 hearing reframes the story",
       "Strong organizational advantage: spotless security record",
       "High market relevance: security is top concern in industry",
       "Executable content plan: all briefs actionable immediately"
@@ -524,7 +524,7 @@ CRITICAL REQUIREMENTS (CONCISE OUTPUT)
 5. **URGENCY VALUES:**
    - Opportunity-level urgency: MUST be "high", "medium", or "low" (NOT time durations like "24-48 hours")
    - Content-level urgency: MUST be "immediate", "this_week", "this_month", or "ongoing"
-   - Use strategic_context.time_window for time-based descriptions like "3-5 days"
+   - strategic_context.time_window must be specific to THIS opportunity: tie it to a dated event or the news cycle it rides on (e.g. "until the Nov 12 hearing", "this week, while coverage peaks", "the 3 weeks before Q4 budget planning"). Never use a stock duration like "3-5 days". If nothing dated closes the window, say what ends it.
 6. **MEDIA TARGETING (REQUIRED):**
    - strategic_context.media_targeting MUST be included for every opportunity
    - Must specify primary_journalist_types, target_industries, target_outlets, reasoning, and beat_keywords
@@ -598,6 +598,8 @@ FOCUS ON QUALITY OVER QUANTITY:
 - Look for angles others would miss
 - Connect dots that aren't obvious
 - Turn seemingly negative events into positioning opportunities
+
+NEVER return an empty array. If the events are weak, pick the 2 best angles anyway — commentary, a contrarian take, or a narrative vacuum always exists.
 
 CRITICAL: You are generating for AUTO-EXECUTION
 - Every brief must be SPECIFIC and ACTIONABLE

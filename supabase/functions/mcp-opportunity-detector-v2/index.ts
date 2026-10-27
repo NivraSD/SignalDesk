@@ -376,7 +376,7 @@ Return as valid JSON array with this EXACT structure:
       "when": {
         "start_immediately": true,
         "ideal_launch": "Within 24 hours",
-        "duration": "3-5 days"
+        "duration": "Through the hearing on Nov 12"
       },
       "where": {
         "channels": ["Press", "Social", "Direct outreach"],
@@ -626,54 +626,59 @@ async function detectOpportunitiesV2(
 
   console.log('Prompt length:', prompt.length, 'characters')
 
-  // ── Gemini Flash is primary: Sonnet emits this prompt's ~12k tokens at a
-  //    rate that doesn't reliably fit the gateway window, which is what made
-  //    this endpoint 504. Flash clears it with room to spare. Sonnet stays on
-  //    as fallback for its stronger execution plans, funded by whatever budget
-  //    Gemini leaves. Fallback fires only when the API CALL fails (timeout /
-  //    5xx) — a parse error is a real bug, and retrying it on another model
-  //    would mask it.
-  let content = ''
-  if (!GOOGLE_API_KEY) {
-    console.error('No GOOGLE_API_KEY configured — cannot call Gemini')
-    return []
+  // Leaner second try: fewer events and a smaller requested plan, so a
+  // response that truncated or came back empty the first time has room.
+  const leanPrompt = buildOpportunityDetectionPromptV2({
+    organizationName,
+    events: allEvents.slice(0, 8),
+    topics: extractedData.topics.slice(0, 5),
+    quotes: extractedData.quotes.slice(0, 4),
+    entities: extractedData.entities.slice(0, 8),
+    discoveryTargets: extractedData.discoveryTargets,
+    organizationProfile: extractedData.organizationProfile
+  }) + `
+
+RETRY: the previous attempt produced no usable opportunities. Return EXACTLY 2 opportunities, each with 1 stakeholder campaign of 2 content items. An empty array is not an acceptable answer — the events above always contain at least one angle.`
+
+  // ── With real events in hand, zero opportunities is never an acceptable
+  //    outcome. Every leg that yields nothing usable — API error, timeout,
+  //    empty or blocked response, unparseable JSON, or nothing passing
+  //    validation — falls through to the next. Gemini Flash is primary
+  //    (Sonnet emits ~12k tokens too slowly for the gateway window), then a
+  //    leaner Gemini retry, then Sonnet with whatever budget is left.
+  const legs: Array<{ model: string; run: (budgetMs: number) => Promise<string> }> = []
+  if (GOOGLE_API_KEY) {
+    legs.push({ model: 'gemini-3.5-flash', run: (ms) => callGeminiForOpportunities(prompt, Math.min(GEMINI_MAX_MS, ms)) })
+    legs.push({ model: 'gemini-3.5-flash-retry', run: (ms) => callGeminiForOpportunities(leanPrompt, Math.min(GEMINI_MAX_MS, ms)) })
+  } else {
+    console.error('No GOOGLE_API_KEY configured — skipping Gemini legs')
+  }
+  if (ANTHROPIC_API_KEY) {
+    legs.push({ model: 'claude-sonnet-4-6-fallback', run: (ms) => callSonnetForOpportunities(prompt, ms) })
   }
 
-  try {
-    content = await callGeminiForOpportunities(prompt, Math.min(GEMINI_MAX_MS, msLeft(deadline)))
-    detection.model = 'gemini-3.5-flash'
-    console.log('✅ Gemini response received, length:', content.length)
-  } catch (geminiErr: any) {
-    if (geminiErr.name === 'AbortError') {
-      console.error('❌ Gemini timed out — API may be slow/degraded')
-    } else {
-      console.error('❌ Gemini call failed:', geminiErr.message)
-    }
-
-    // Only worth waking Sonnet if enough of the window survives to finish.
+  for (const leg of legs) {
     const remaining = msLeft(deadline)
     if (remaining < 20000) {
-      console.error(`❌ Only ${Math.round(remaining/1000)}s left — too little for a Sonnet fallback, returning []`)
-      return []
+      console.error(`❌ Only ${Math.round(remaining/1000)}s left — too little for ${leg.model}`)
+      break
     }
-
     try {
-      console.log('🔄 Falling back to Claude Sonnet 4.6...')
-      content = await callSonnetForOpportunities(prompt, remaining)
-      detection.model = 'claude-sonnet-4-6-fallback'
-      console.log('✅ Sonnet fallback succeeded, length:', content.length)
-    } catch (sonnetErr: any) {
-      if (sonnetErr.name === 'AbortError') {
-        console.error('❌ Sonnet fallback also timed out')
-      } else {
-        console.error('❌ Sonnet fallback failed:', sonnetErr.message)
+      const content = await leg.run(remaining)
+      console.log(`✅ ${leg.model} response received, length:`, content.length)
+      const valid = parseAndValidateOpportunitiesV2(content)
+      if (valid.length > 0) {
+        detection.model = leg.model
+        return valid
       }
-      return []
+      console.warn(`⚠️ ${leg.model} produced 0 usable opportunities — trying next leg`)
+    } catch (err: any) {
+      console.error(`❌ ${leg.model} ${err.name === 'AbortError' ? 'timed out' : `failed: ${err.message}`}`)
     }
   }
 
-  // ── Parse + validate. Same logic runs on whichever LLM's content we got.
-  return parseAndValidateOpportunitiesV2(content)
+  console.error(`❌ All ${legs.length} detection legs came back empty for ${allEvents.length} events`)
+  return []
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -760,8 +765,18 @@ async function callGeminiForOpportunities(prompt: string, budgetMs: number): Pro
       throw new Error(`Gemini API error: ${response.status}`)
     }
     const data = await response.json()
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
-    if (!text) throw new Error('Gemini returned empty content')
+    const candidate = data.candidates?.[0]
+    // Join every non-thought part — the answer isn't guaranteed to be parts[0].
+    const text = (candidate?.content?.parts || [])
+      .filter((p: any) => !p.thought && typeof p.text === 'string')
+      .map((p: any) => p.text)
+      .join('')
+    if (!text) {
+      throw new Error(`Gemini returned empty content (finishReason: ${candidate?.finishReason || 'none'}, blockReason: ${data.promptFeedback?.blockReason || 'none'})`)
+    }
+    if (candidate?.finishReason && candidate.finishReason !== 'STOP') {
+      console.warn(`⚠️ Gemini finishReason: ${candidate.finishReason}`)
+    }
     return text
   } finally {
     clearTimeout(timeoutId)
@@ -863,19 +878,32 @@ function parseAndValidateOpportunitiesV2(content: string): OpportunityV2[] {
     }
   }
 
-  // Validate V2 format
+  // Some models wrap the array: { "opportunities": [...] }
+  if (!Array.isArray(opportunities)) {
+    const wrapped = Object.values(opportunities || {}).find(Array.isArray)
+    opportunities = (wrapped as OpportunityV2[]) || []
+  }
+
+  // Validate V2 format. Only a title is truly required — an opportunity with
+  // a thin plan is still worth surfacing, so repair the structure instead of
+  // dropping it (and mark it not auto-executable when it has no campaigns).
   const validOpportunities = opportunities.filter(opp => {
-    const hasRequiredFields =
-      opp.title &&
-      opp.strategic_context &&
-      opp.execution_plan &&
-      opp.execution_plan.stakeholder_campaigns?.length > 0
-
-    if (!hasRequiredFields) {
-      console.warn(`⚠️ Filtering out invalid V2 opportunity: "${opp.title}"`)
+    if (!opp?.title) {
+      console.warn('⚠️ Filtering out V2 opportunity with no title')
+      return false
     }
-
-    return hasRequiredFields
+    opp.description = opp.description || (opp.strategic_context as any)?.why_now || opp.title
+    opp.strategic_context = opp.strategic_context || ({} as any)
+    opp.execution_plan = opp.execution_plan || ({} as any)
+    const campaigns = Array.isArray(opp.execution_plan.stakeholder_campaigns)
+      ? opp.execution_plan.stakeholder_campaigns : []
+    campaigns.forEach((c: any) => { c.content_items = Array.isArray(c.content_items) ? c.content_items : [] })
+    opp.execution_plan.stakeholder_campaigns = campaigns
+    if (campaigns.length === 0) {
+      console.warn(`⚠️ Keeping V2 opportunity with no stakeholder campaigns: "${opp.title}"`)
+      opp.auto_executable = false
+    }
+    return true
   })
 
   console.log(`✅ Validated ${validOpportunities.length}/${opportunities.length} V2 opportunities`)
@@ -1121,22 +1149,27 @@ serve(async (req) => {
     // Store opportunities in database
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
-    // Clear existing opportunities for this organization
-    console.log(`🗑️ Clearing existing opportunities for organization_id: "${organization_id}"`);
-    const { data: existingOpps } = await supabase
-      .from('opportunities')
-      .select('id, organization_id, title, version')
-      .eq('organization_id', organization_id);
+    // Clear existing opportunities for this organization — but only when we
+    // have replacements. An empty run must never wipe the board to zero.
+    if (opportunitiesV2.length + opportunities.length === 0) {
+      console.warn(`⚠️ No new opportunities — keeping existing ones for organization_id: "${organization_id}"`);
+    } else {
+      console.log(`🗑️ Clearing existing opportunities for organization_id: "${organization_id}"`);
+      const { data: existingOpps } = await supabase
+        .from('opportunities')
+        .select('id, organization_id, title, version')
+        .eq('organization_id', organization_id);
 
-    console.log(`Found ${existingOpps?.length || 0} existing opportunities (${existingOpps?.filter(o => o.version === 2).length || 0} V2) to clear`);
+      console.log(`Found ${existingOpps?.length || 0} existing opportunities (${existingOpps?.filter(o => o.version === 2).length || 0} V2) to clear`);
 
-    const { error: deleteError } = await supabase
-      .from('opportunities')
-      .delete()
-      .eq('organization_id', organization_id);
+      const { error: deleteError } = await supabase
+        .from('opportunities')
+        .delete()
+        .eq('organization_id', organization_id);
 
-    if (deleteError) {
-      console.error('Error clearing old opportunities:', deleteError);
+      if (deleteError) {
+        console.error('Error clearing old opportunities:', deleteError);
+      }
     }
 
     // Generate embeddings for all opportunities in parallel
