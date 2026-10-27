@@ -105,6 +105,8 @@ interface PresentationRequest {
     themeId?: string  // Theme ID from Gamma workspace (use 'stardust' for default)
     themeName?: string  // Deprecated - use themeId instead
     imageSource?: 'ai' | 'aiGenerated' | 'pictographic' | 'unsplash' | 'web' | 'noImages'
+    imageStyle?: string   // e.g. 'photographic'; default below
+    imageModel?: string   // Gamma image model string (developers.gamma.app/reference/image-model-accepted-values)
     tone?: string
     audience?: string
     cardSplit?: 'auto' | 'inputTextBreaks'
@@ -678,16 +680,18 @@ async function generatePresentation(request: PresentationRequest) {
     }
 
     // Add image options
-    // AI-generated images draw text as shapes, so any words in them come out misspelled. Default
-    // (and 'ai', which every caller sends) to pictographic: icon-style illustrations with no text.
-    // Gamma's own diagrams, charts and smart layouts render real text and aren't affected.
-    // 'aiGenerated' must be asked for explicitly.
+    // Without a model, Gamma picks one itself, and its cheap defaults draw text as shapes (words come
+    // out misspelled). AI images ('ai', what every caller sends, or the default) use GPT Image 2:
+    // 20 credits/image, reliable text. Other sources (pictographic, unsplash, noImages…) pass through.
+    const DEFAULT_IMAGE_MODEL = 'gpt-image-2'
+    // Realistic and on-topic, not cartoons or abstract illustration.
+    const DEFAULT_IMAGE_STYLE = 'Photorealistic, professional editorial photography that directly depicts the slide topic (real people, products, workplaces, devices or places). Not cartoon, illustration, clip art, 3D render or abstract art.'
     const src = request.options?.imageSource
-    requestBody.imageOptions = {
-      source: !src || src === 'ai' ? 'pictographic' :
-              src === 'web' ? 'webAllImages' : src
-    }
-    requestBody.additionalInstructions = 'Never put words, letters, numbers or labels inside images; keep all text in the slide text, diagrams and charts.'
+    const aiImages = !src || src === 'ai' || src === 'aiGenerated'
+    requestBody.imageOptions = aiImages
+      ? { source: 'aiGenerated', model: request.options?.imageModel || DEFAULT_IMAGE_MODEL, style: request.options?.imageStyle || DEFAULT_IMAGE_STYLE }
+      : { source: src === 'web' ? 'webAllImages' : src }
+    requestBody.additionalInstructions = 'Keep text inside images to a minimum; put headlines, labels and numbers in the slide text, diagrams and charts.'
 
     console.log('📤 Gamma API request:', {
       url: `${GAMMA_API_URL}/generations`,
