@@ -42,7 +42,6 @@ import OrganizationOnboarding from '@/components/onboarding/OrganizationOnboardi
 import OrganizationSettings from '@/components/settings/OrganizationSettings'
 import { IntelligenceService } from '@/lib/services/intelligenceService'
 import IntelligenceBriefDisplay from '@/components/IntelligenceBriefDisplay'
-import NIVFloatingAssistant from '@/components/niv/NIVFloatingAssistant'
 
 // Prediction type for cascades sidebar
 interface SidebarPrediction {
@@ -949,8 +948,6 @@ export default function Dashboard() {
         />
       )}
 
-      {/* Global NIV Floating Assistant */}
-      <NIVFloatingAssistant />
     </div>
   )
 }

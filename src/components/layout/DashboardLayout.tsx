@@ -5,7 +5,6 @@ import { Nav } from './Nav'
 import { Sidebar } from './Sidebar'
 import OrganizationOnboarding from '@/components/onboarding/OrganizationOnboarding'
 import OrganizationSettings from '@/components/settings/OrganizationSettings'
-import NIVFloatingAssistant from '@/components/niv/NIVFloatingAssistant'
 import { useAppStore } from '@/stores/useAppStore'
 
 interface DashboardLayoutProps {
@@ -79,8 +78,6 @@ export function DashboardLayout({
         />
       )}
 
-      {/* Global NIV Floating Assistant */}
-      <NIVFloatingAssistant />
     </div>
   )
 }
