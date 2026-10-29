@@ -48,7 +48,7 @@ export async function loadOrg(admin: Admin, organizationId: string) {
 export async function loadOpportunity(admin: Admin, organizationId: string, opportunityId: string) {
   const { data } = await admin
     .from('opportunities')
-    .select('id, title, description, score, urgency, category, time_window, expected_impact, strategic_context, execution_plan, data, status, executed, created_at')
+    .select('id, title, description, score, urgency, category, time_window, expected_impact, strategic_context, execution_plan, data, status, executed, created_at, presentation_url')
     .eq('id', opportunityId)
     .eq('organization_id', organizationId)
     .maybeSingle()
@@ -176,6 +176,46 @@ export async function latestBrief(admin: Admin, organizationId: string) {
 }
 
 // The opportunity, condensed for a prompt.
+// The org's latest opportunities (Opportunity Engine), newest first. status 'active' (default) or 'all';
+// query matches title, description and category.
+export async function listOpportunities(admin: Admin, organizationId: string, opts: { status?: 'active' | 'all'; limit?: number; query?: string } = {}) {
+  let q = admin
+    .from('opportunities')
+    .select('id, title, description, score, urgency, category, time_window, status, executed, created_at, expires_at, presentation_url, data')
+    .eq('organization_id', organizationId)
+    .order('created_at', { ascending: false })
+    .limit(Math.min(Math.max(opts.limit ?? 10, 1), 30))
+  if ((opts.status ?? 'active') === 'active') q = q.eq('status', 'active')
+  const term = (opts.query || '').replace(/[%_,()]/g, ' ').trim()
+  if (term) q = q.or(`title.ilike.%${term}%,description.ilike.%${term}%,category.ilike.%${term}%`)
+  const { data } = await q
+  return (data || []).map((o: any) => ({
+    id: o.id, title: o.title, score: o.score, urgency: o.urgency, category: o.category, time_window: o.time_window,
+    status: o.status, executed: !!o.executed, created: (o.created_at || '').slice(0, 10), expires: o.expires_at ? String(o.expires_at).slice(0, 10) : null,
+    summary: (o.description || '').slice(0, 280),
+    source_article: o.data?.source_article?.title ? { title: o.data.source_article.title, source: o.data.source_article.source, url: o.data.source_article.url } : null,
+    deck: o.presentation_url || null,
+  }))
+}
+
+// Everything about one opportunity, including the content plan, for NIV and MCP.
+export function describeOpportunityFull(opp: any): string {
+  const plan = opp.execution_plan || {}
+  const items = (plan.stakeholder_campaigns || []).flatMap((c: any) =>
+    (c.content_items || []).map((i: any) => `  - [${c.stakeholder_name || 'audience'}] ${i.type}: ${i.topic}${i.brief?.angle ? ` (angle: ${i.brief.angle})` : ''}`)
+  )
+  const media = opp.strategic_context?.media_targeting
+  return [
+    describeOpportunity(opp),
+    opp.created_at && `Created: ${String(opp.created_at).slice(0, 10)}`,
+    media?.target_outlets?.length && `Target outlets: ${media.target_outlets.join(', ')}`,
+    media?.primary_journalist_types?.length && `Reporters: ${media.primary_journalist_types.join(', ')}`,
+    items.length && `Content plan:\n${items.slice(0, 20).join('\n')}`,
+    plan.execution_timeline?.immediate?.length && `Do now: ${plan.execution_timeline.immediate.join('; ')}`,
+    opp.presentation_url && `Deck: ${opp.presentation_url}`,
+  ].filter(Boolean).join('\n')
+}
+
 export function describeOpportunity(opp: any): string {
   const sc = opp.strategic_context || {}
   const plan = opp.execution_plan || {}

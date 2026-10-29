@@ -3,7 +3,7 @@
 // knowledge-search, which only returns what the asking person is allowed to see, plus the org's
 // live intelligence (Hub) and on-demand research. Every company fact it states is cited.
 import Anthropic from '@anthropic-ai/sdk'
-import { Admin, describeCaseFile, latestBrief, nowInWords, searchOrgIntel } from './data'
+import { Admin, describeCaseFile, describeOpportunityFull, latestBrief, listOpportunities, loadOpportunity, nowInWords, searchOrgIntel } from './data'
 import { searchVault, readVaultItem, saveToVault } from './vault'
 import { dismissExposure, exposureBrief, guardPassages } from './exposures'
 import { createServiceClient } from '@/lib/supabase/server'
@@ -83,6 +83,16 @@ const TOOLS: Anthropic.Tool[] = [
     name: 'search_org_intel',
     description: "Search the organization's monitored outside news (last 30 days): competitors, market, regulators. Use for what's happening outside the company right now.",
     input_schema: { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] },
+  },
+  {
+    name: 'list_opportunities',
+    description: "The organization's latest opportunities from the Opportunity Engine (newest first): title, score, urgency, time window, source article. Use when they ask what's new, what opportunities we have, or about a specific one by topic.",
+    input_schema: { type: 'object', properties: { query: { type: 'string', description: 'Optional topic filter' }, include_inactive: { type: 'boolean' } } },
+  },
+  {
+    name: 'read_opportunity',
+    description: 'Read one opportunity in full by id (from list_opportunities): why now, advantage, risk, time window, audiences, media targets and the content plan.',
+    input_schema: { type: 'object', properties: { id: { type: 'string' } }, required: ['id'] },
   },
   {
     name: 'search_memory_vault',
@@ -210,6 +220,7 @@ It is ${nowInWords()} (Eastern time). The person: ${p.person.name || 'a team mem
 
 ## Beyond the documents
 - Use the org's outside intel and research for what's happening in the market now, and combine it with the company's own rules and history.
+- For the org's current opportunities (what's new, what to act on), use list_opportunities and read_opportunity.
 ${mcp ? `- When something needs current outside facts, search the web now.
 - Save lasting preferences with remember_taste.` : `- When something needs current outside facts, hand it to the Researcher with start_research and keep going.
 - Save lasting preferences with remember_taste. Offer drafts with propose_draft instead of writing long documents inline.`}
@@ -368,6 +379,16 @@ export async function runWorkspaceTurn(p: {
           case 'search_org_intel': {
             const rows = await searchOrgIntel(p.admin, p.org.id, String(input.query || ''))
             content = rows.length ? JSON.stringify(rows) : 'No matching outside news in the last 30 days.'
+            break
+          }
+          case 'list_opportunities': {
+            const opps = await listOpportunities(p.admin, p.org.id, { status: input.include_inactive ? 'all' : 'active', query: input.query ? String(input.query) : undefined, limit: 12 })
+            content = opps.length ? JSON.stringify(opps) : 'No matching opportunities.'
+            break
+          }
+          case 'read_opportunity': {
+            const opp = await loadOpportunity(p.admin, p.org.id, String(input.id || ''))
+            content = opp ? describeOpportunityFull(opp) : 'Opportunity not found.'
             break
           }
           case 'search_memory_vault': {

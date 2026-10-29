@@ -3,7 +3,8 @@
 //   Auth: Authorization: Bearer niv_…  (a personal access token from NIV, or an OAuth access token from
 //         "Sign in with Nivria" via /.well-known/oauth-protected-resource; either acts as that person in
 //         their org, with exactly their permissions; membership re-checked on every request)
-// Tools: company documents (search/read/list), intel (search, latest brief), Memory Vault
+// Tools: company documents (search/read/list), intel (search, latest brief), opportunities
+// (list/get), Memory Vault
 // (search/read/save), and ask_niv (the full advisor; answers are saved to the person's NIV history).
 import { createMcpHandler, withMcpAuth } from 'mcp-handler'
 import { z } from 'zod'
@@ -11,7 +12,7 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { verifyAccessToken } from '@/lib/advisor/tokens'
 import { readVaultItem, saveToVault, searchVault } from '@/lib/advisor/vault'
 import { knowledgeSearch, listDocuments, readDocument, runWorkspaceTurn } from '@/lib/advisor/workspace'
-import { addMessage, latestBrief, loadMessages, loadOrg, loadTaste, searchOrgIntel } from '@/lib/advisor/data'
+import { addMessage, describeOpportunityFull, latestBrief, listOpportunities, loadMessages, loadOpportunity, loadOrg, loadTaste, searchOrgIntel } from '@/lib/advisor/data'
 import { randomUUID } from 'crypto'
 
 export const maxDuration = 300
@@ -104,6 +105,34 @@ const handler = createMcpHandler(
         const w = who(ctx)
         const brief = await latestBrief(createServiceClient(), w.organizationId)
         return text(brief ? `${brief.title} (${brief.date})\n\n${brief.text}` : 'No brief yet.')
+      }
+    )
+
+    server.registerTool(
+      'list_opportunities',
+      {
+        title: 'List opportunities',
+        description: "The organization's latest PR and communications opportunities from the Opportunity Engine, newest first: title, score, urgency, time window, source article and deck link. Active ones by default. Filter by topic with query.",
+        inputSchema: z.object({ query: z.string().optional(), include_inactive: z.boolean().optional(), limit: z.number().int().min(1).max(30).optional() }),
+      },
+      async ({ query, include_inactive, limit }, ctx) => {
+        const w = who(ctx)
+        const opps = await listOpportunities(createServiceClient(), w.organizationId, { query, status: include_inactive ? 'all' : 'active', limit })
+        return opps.length ? json(opps) : text('No matching opportunities.')
+      }
+    )
+
+    server.registerTool(
+      'get_opportunity',
+      {
+        title: 'Get an opportunity',
+        description: 'One opportunity in full by id (from list_opportunities): why now, competitive advantage, risk if missed, time window, audiences, media targets, the content plan and the deck link.',
+        inputSchema: z.object({ id: z.string().uuid() }),
+      },
+      async ({ id }, ctx) => {
+        const w = who(ctx)
+        const opp = await loadOpportunity(createServiceClient(), w.organizationId, id)
+        return opp ? text(describeOpportunityFull(opp)) : text('Opportunity not found.')
       }
     )
 
