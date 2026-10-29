@@ -94,7 +94,7 @@ const RUN: Record<Stage, (org: Org, s: State) => Promise<{ state?: State; note: 
         deep_analyzed: e.statistics?.deep_analyzed || 0,
       },
     }
-    return { state: { enriched, articles: undefined }, note: `${enriched.extracted_data?.events?.length || 0} events extracted` }
+    return { state: { enriched, articles: undefined }, note: `${enriched.enriched_articles.length} articles enriched` }
   },
 
   async synthesize(org, s) {
