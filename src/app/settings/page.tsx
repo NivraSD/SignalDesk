@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Settings } from 'lucide-react'
 import UserProfileSettings from '@/components/settings/UserProfileSettings'
+import SynthesisEmailSettings from '@/components/settings/SynthesisEmailSettings'
 import { Logo } from '@/components/ui/Logo'
 
 export default function SettingsPage() {
@@ -61,7 +62,10 @@ export default function SettingsPage() {
           </p>
         </div>
 
-        <UserProfileSettings />
+        <div className="space-y-6">
+          <SynthesisEmailSettings />
+          <UserProfileSettings />
+        </div>
       </div>
     </div>
   )

@@ -1,4 +1,5 @@
-// Emails each new executive synthesis to the org's recipients (organizations.settings.synthesis_emails).
+// Emails each new executive synthesis (key developments, implications, narratives, watching closely;
+// the summary stays in the app) to the org's recipients (organizations.settings.synthesis_emails).
 //   POST {}                      (service role; run every 15 min by /api/cron/synthesis-emails)
 //   POST { synthesis_id, to? }   send one now (to overrides the recipients; still logged)
 // A synthesis is sent once (synthesis_email_log). Only syntheses from the last 12 hours are picked up,
@@ -18,7 +19,7 @@ const esc = (s: unknown) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g,
 const paras = (s: string) => s.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean).map((p) => `<p style="margin:0 0 14px">${esc(p).replace(/\n/g, '<br>')}</p>`).join('')
 const h2 = (t: string) => `<h2 style="font-size:15px;letter-spacing:.04em;text-transform:uppercase;color:#C75D2C;margin:28px 0 10px">${t}</h2>`
 
-function render(orgName: string, createdAt: string, s: any, summaryText: string) {
+function render(orgName: string, createdAt: string, s: any) {
   const date = new Date(createdAt + (createdAt.endsWith('Z') ? '' : 'Z')).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'America/New_York' })
   const dev = (s.key_developments || []).slice(0, 10).map((d: any) => `
     <li style="margin:0 0 14px">
@@ -31,12 +32,10 @@ function render(orgName: string, createdAt: string, s: any, summaryText: string)
     : `<li style="margin:0 0 10px"><strong>${esc(n.title)}</strong>${n.status ? ` <span style="color:#777">(${esc(n.status)}${n.is_new ? ', new' : ''})</span>` : ''}<br>${esc(n.summary || '')}</li>`).join('')
   const watching = (s.watching_closely || []).slice(0, 6).map((w: any) => `<li style="margin:0 0 8px">${esc(typeof w === 'string' ? w : w.title || w.item || JSON.stringify(w))}</li>`).join('')
   const implications = typeof s.strategic_implications === 'string' ? s.strategic_implications : Array.isArray(s.strategic_implications) ? s.strategic_implications.map((x: any) => typeof x === 'string' ? x : x.implication || x.title || '').join('\n\n') : ''
-  const summary = summaryText || (typeof s.executive_summary === 'string' ? s.executive_summary : '')
   return `<!doctype html><html><body style="margin:0;background:#F5F2EE">
   <div style="max-width:640px;margin:0 auto;padding:32px 24px;font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.55;color:#1F1F1F">
     <div style="font-size:13px;color:#777">${esc(orgName)} · ${esc(date)}</div>
-    <h1 style="font-size:24px;margin:6px 0 22px">Executive synthesis</h1>
-    ${summary ? paras(summary) : ''}
+    <h1 style="font-size:24px;margin:6px 0 4px">Executive synthesis</h1>
     ${dev ? h2('Key developments') + `<ul style="padding-left:18px;margin:0">${dev}</ul>` : ''}
     ${implications ? h2('Strategic implications') + paras(implications) : ''}
     ${narratives ? h2('Narratives') + `<ul style="padding-left:18px;margin:0">${narratives}</ul>` : ''}
@@ -47,14 +46,8 @@ function render(orgName: string, createdAt: string, s: any, summaryText: string)
 
 async function sendOne(admin: any, syn: any, to: string[]) {
   const s = syn.synthesis_data?.synthesis || {}
-  // The readable version saved alongside it (same org, within a minute).
-  const t = new Date(syn.created_at + 'Z').getTime()
-  const { data: doc } = await admin.from('content_library').select('content, created_at').eq('organization_id', syn.organization_id)
-    .eq('content_type', 'executive-summary').gte('created_at', new Date(t - 5 * 60_000).toISOString()).lte('created_at', new Date(t + 5 * 60_000).toISOString())
-    .order('created_at', { ascending: false }).limit(1).maybeSingle()
-  const summaryText = typeof doc?.content === 'string' ? doc.content.split(/\n#{1,3}\s/)[0].trim() : ''
   const orgName = syn.organization_name || 'Your organization'
-  const html = render(orgName, syn.created_at, s, summaryText)
+  const html = render(orgName, syn.created_at, s)
   const dateShort = new Date(syn.created_at + 'Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/New_York' })
   const r = await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -76,15 +69,23 @@ Deno.serve(async (req) => {
     if (body.synthesis_id) {
       const { data: syn } = await admin.from('executive_synthesis').select('*').eq('id', body.synthesis_id).single()
       const { data: org } = await admin.from('organizations').select('settings').eq('id', syn.organization_id).maybeSingle()
-      const to = Array.isArray(body.to) ? body.to : body.to ? [body.to] : org?.settings?.synthesis_emails || []
+      const { data: subs } = await admin.from('synthesis_email_subscriptions').select('email').eq('organization_id', syn.organization_id)
+      const to = Array.isArray(body.to) ? body.to : body.to ? [body.to] : [...new Set([...(org?.settings?.synthesis_emails || []), ...(subs || []).map((x: any) => x.email)])]
       if (!to.length) return new Response(JSON.stringify({ error: 'no recipients' }), { status: 400 })
       return new Response(JSON.stringify({ ok: true, sent: await sendOne(admin, syn, to) }), { headers: { 'Content-Type': 'application/json' } })
     }
 
-    const { data: orgs } = await admin.from('organizations').select('id, settings').not('settings->synthesis_emails', 'is', null)
+    // Recipients: people who turned it on in Settings, plus any org-level list.
+    const { data: subs } = await admin.from('synthesis_email_subscriptions').select('organization_id, email')
+    const { data: listed } = await admin.from('organizations').select('id, settings').not('settings->synthesis_emails', 'is', null)
+    const byOrg = new Map<string, Set<string>>()
+    const add = (org: string, e: unknown) => { if (typeof e === 'string' && e.includes('@')) { const set = byOrg.get(org) || new Set<string>(); set.add(e.toLowerCase()); byOrg.set(org, set) } }
+    for (const s of subs || []) add(s.organization_id, s.email)
+    for (const o of listed || []) for (const e of o.settings?.synthesis_emails || []) add(o.id, e)
     const results: any[] = []
-    for (const org of orgs || []) {
-      const to: string[] = (org.settings?.synthesis_emails || []).filter((e: unknown) => typeof e === 'string' && e.includes('@'))
+    for (const [orgId, set] of byOrg) {
+      const org = { id: orgId }
+      const to = [...set]
       if (!to.length) continue
       const since = new Date(Date.now() - 12 * 3600_000).toISOString().replace('Z', '')
       const { data: syns } = await admin.from('executive_synthesis').select('*').eq('organization_id', org.id).gte('created_at', since).order('created_at', { ascending: true })
