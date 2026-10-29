@@ -2183,6 +2183,7 @@ ${section.visual_suggestion ? `*Visual: ${section.visual_suggestion}*` : ''}
             // Wrap in retry logic for timeout resilience
             const content = await withRetry(()=>generateContentDirectly(ownedReq.type, strategicBrief, {
                 organization: orgProfile.organizationName,
+                requiredTitle: ownedReq.purpose,
                 subject: strategicBrief,
                 topic: strategicBrief,
                 narrative: narrative,
@@ -2320,7 +2321,7 @@ ${journalists.map((j)=>`| ${j.name} | ${j.outlet} | ${j.beat || 'N/A'} | ${j.tie
             const strategicBrief = await craftStrategicContentBrief({
               contentType: mediaReq.type,
               stakeholder: 'Media/Journalists',
-              purpose: mediaReq.story,
+              purpose: mediaReq.story || mediaReq.purpose,
               phase,
               phaseNumber,
               objective,
@@ -2339,6 +2340,7 @@ ${journalists.map((j)=>`| ${j.name} | ${j.outlet} | ${j.beat || 'N/A'} | ${j.tie
             // Wrap in retry logic for timeout resilience
             const content = await withRetry(()=>generateContentDirectly(mediaReq.type, strategicBrief, {
                 organization: orgProfile.organizationName,
+                requiredTitle: mediaReq.story || mediaReq.purpose,
                 subject: strategicBrief,
                 topic: strategicBrief,
                 announcement: strategicBrief,
@@ -2373,7 +2375,7 @@ ${journalists.map((j)=>`| ${j.name} | ${j.outlet} | ${j.beat || 'N/A'} | ${j.tie
               journalists: mediaReq.journalists,
               content: content,
               channel: 'media',
-              story: mediaReq.story
+              story: mediaReq.story || mediaReq.purpose
             };
           } catch (error) {
             console.error(`    ❌ Failed to generate ${mediaReq.type}:`, error);
@@ -2469,7 +2471,11 @@ ${campaignContext.timeline || 'Not specified'}
           }
           // Normalize content type before saving
           const normalizedContentType = normalizeContentTypeForMCP(contentPiece.type);
-          const contentTitle = `${phase} - ${normalizedContentType} - ${contentPiece.stakeholder || contentPiece.journalists?.[0] || 'general'}`;
+          // Name it by its planned title (what the plan and deck show); fall back to the old label.
+          const plannedTitle = contentPiece.purpose || contentPiece.story;
+          const contentTitle = plannedTitle
+            ? `${plannedTitle}`.slice(0, 200)
+            : `${phase} - ${normalizedContentType} - ${contentPiece.stakeholder || contentPiece.journalists?.[0] || 'general'}`;
           const pieceId = crypto.randomUUID();
           // Save content immediately without waiting for embedding
           const { error: contentError } = await supabase.from('content_library').insert({
@@ -7793,7 +7799,12 @@ ${writingStyleRules}
 
 Write ONLY the thought leadership content.`
   };
-  const prompt = contentPrompts[normalizedType] || contentPrompts['blog-post'];
+  // The planned title (from the opportunity/campaign plan) is the piece's title, so the plan, the
+  // deck and the content all match. Pitches use it as the subject line; social posts don't need one.
+  const requiredTitle = parameters.requiredTitle && !['social-post', 'media-list'].includes(normalizedType)
+    ? `\n\nTITLE: Use this exact title${normalizedType === 'media-pitch' ? ' as the email subject line' : ' as the headline'}: "${parameters.requiredTitle}". Don't rename it; only fix an obvious typo.`
+    : '';
+  const prompt = (contentPrompts[normalizedType] || contentPrompts['blog-post']) + requiredTitle;
   // Content-type-specific timeouts (in milliseconds)
   const timeoutDurations = {
     'thought-leadership': 150000,
