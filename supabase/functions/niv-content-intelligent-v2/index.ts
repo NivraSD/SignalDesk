@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
 import { getNivContentSystemPrompt } from './system-prompt.ts';
+import { nivContextFor, NIV_WRITING_RULES } from '../_shared/niv-context.ts';
 import { decomposeQuery, orchestrateResearch } from './self-orchestration.ts';
 import { synthesizeConversationContext, requiresConversationSynthesis } from './conversation-synthesizer.ts';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
@@ -169,7 +170,7 @@ async function summarizeAndSaveConversation(
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-3-5-haiku-20241022',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 300,
         messages: [{
           role: 'user',
@@ -1929,6 +1930,7 @@ serve(async (req)=>{
         // Generate content immediately using MCP service
         const content = await callMCPService(requestedContentType, {
           organization: organizationName,
+          organizationId,
           subject: preloadedStrategy.subject,
           narrative: preloadedStrategy.narrative,
           keyPoints: preloadedStrategy.key_messages,
@@ -1996,6 +1998,13 @@ serve(async (req)=>{
     // Get organization profile
     const orgProfile = await getOrgProfile(organizationId, organizationName);
     console.log('✅ Org:', orgProfile.organizationName);
+    // What NIV knows (company docs visible to everyone, brand rules, past work, intel), shared by
+    // every prompt in this request. See _shared/niv-context.ts.
+    orgProfile.organizationId = organizationId;
+    orgProfile.nivKnowledge = await nivContextFor({
+      organizationId, orgName: orgProfile.organizationName,
+      topic: message || requestBody?.campaignContext?.objective || '',
+    }).catch(() => '');
     // Update conversation state with user message
     updateConversationState(conversationId, message, 'user');
     // ACKNOWLEDGE STAGE - Natural acknowledgment like orchestrator-robust
@@ -2183,6 +2192,7 @@ ${section.visual_suggestion ? `*Visual: ${section.visual_suggestion}*` : ''}
             // Wrap in retry logic for timeout resilience
             const content = await withRetry(()=>generateContentDirectly(ownedReq.type, strategicBrief, {
                 organization: orgProfile.organizationName,
+                organizationId,
                 requiredTitle: ownedReq.purpose,
                 subject: strategicBrief,
                 topic: strategicBrief,
@@ -2340,6 +2350,7 @@ ${journalists.map((j)=>`| ${j.name} | ${j.outlet} | ${j.beat || 'N/A'} | ${j.tie
             // Wrap in retry logic for timeout resilience
             const content = await withRetry(()=>generateContentDirectly(mediaReq.type, strategicBrief, {
                 organization: orgProfile.organizationName,
+                organizationId,
                 requiredTitle: mediaReq.story || mediaReq.purpose,
                 subject: strategicBrief,
                 topic: strategicBrief,
@@ -2913,6 +2924,8 @@ ${campaignContext.timeline || 'Not specified'}
         console.log('📱 Generating social post');
         const content = await callMCPService('social-post', {
           organization: orgProfile.organizationName,
+          organizationId: orgProfile.organizationId,
+          nivKnowledge: orgProfile.nivKnowledge,
           subject: toolUse.input.topic,
           tone: toolUse.input.tone || 'professional',
           platforms: [
@@ -2938,6 +2951,8 @@ ${campaignContext.timeline || 'Not specified'}
         console.log('📰 Generating press release');
         const content = await callMCPService('press-release', {
           organization: orgProfile.organizationName,
+          organizationId: orgProfile.organizationId,
+          nivKnowledge: orgProfile.nivKnowledge,
           subject: toolUse.input.announcement,
           keyPoints: toolUse.input.key_points || []
         });
@@ -3542,6 +3557,8 @@ ${campaignContext.timeline || 'Not specified'}
         console.log('📊 Generating case study');
         const content = await callMCPService('blog-post', {
           organization: orgProfile.organizationName,
+          organizationId: orgProfile.organizationId,
+          nivKnowledge: orgProfile.nivKnowledge,
           topic: `Case Study: ${toolUse.input.customer}`,
           angle: `Customer success story showing how we helped ${toolUse.input.customer} solve ${toolUse.input.challenge} with ${toolUse.input.solution}`
         });
@@ -3564,6 +3581,8 @@ ${campaignContext.timeline || 'Not specified'}
         console.log('📄 Generating white paper');
         const content = await callMCPService('thought-leadership', {
           organization: orgProfile.organizationName,
+          organizationId: orgProfile.organizationId,
+          nivKnowledge: orgProfile.nivKnowledge,
           topic: toolUse.input.topic,
           keyPoints: toolUse.input.key_points || [],
           description: orgProfile.description || '',
@@ -3589,6 +3608,8 @@ ${campaignContext.timeline || 'Not specified'}
         console.log('📧 Generating email campaign');
         const content = await callMCPService('email-campaign', {
           organization: orgProfile.organizationName,
+          organizationId: orgProfile.organizationId,
+          nivKnowledge: orgProfile.nivKnowledge,
           subject: toolUse.input.subject,
           campaignType: toolUse.input.purpose || 'announcement'
         });
@@ -3611,6 +3632,8 @@ ${campaignContext.timeline || 'Not specified'}
         console.log('❓ Generating Q&A document');
         const content = await callMCPService('qa-document', {
           organization: orgProfile.organizationName,
+          organizationId: orgProfile.organizationId,
+          nivKnowledge: orgProfile.nivKnowledge,
           topic: toolUse.input.topic,
           focus: toolUse.input.focus
         });
@@ -3633,6 +3656,8 @@ ${campaignContext.timeline || 'Not specified'}
         console.log('💬 Generating talking points');
         const content = await callMCPService('talking-points', {
           organization: orgProfile.organizationName,
+          organizationId: orgProfile.organizationId,
+          nivKnowledge: orgProfile.nivKnowledge,
           occasion: toolUse.input.occasion,
           topic: toolUse.input.topic
         });
@@ -3655,6 +3680,8 @@ ${campaignContext.timeline || 'Not specified'}
         console.log('👔 Generating executive statement');
         const content = await callMCPService('executive-statement', {
           organization: orgProfile.organizationName,
+          organizationId: orgProfile.organizationId,
+          nivKnowledge: orgProfile.nivKnowledge,
           topic: toolUse.input.topic,
           tone: toolUse.input.tone || 'confident'
         });
@@ -3677,6 +3704,8 @@ ${campaignContext.timeline || 'Not specified'}
         console.log('📣 Generating media pitch');
         const content = await callMCPService('media-pitch', {
           organization: orgProfile.organizationName,
+          organizationId: orgProfile.organizationId,
+          nivKnowledge: orgProfile.nivKnowledge,
           story: toolUse.input.story,
           journalist: toolUse.input.journalist
         });
@@ -3698,6 +3727,8 @@ ${campaignContext.timeline || 'Not specified'}
       if (toolUse && toolUse.name === 'generate_ebook') {
         const content = await callMCPService('thought-leadership', {
           organization: orgProfile.organizationName,
+          organizationId: orgProfile.organizationId,
+          nivKnowledge: orgProfile.nivKnowledge,
           topic: toolUse.input.topic,
           keyPoints: toolUse.input.chapters || [],
           // Pass FULL company profile to prevent hallucinations
@@ -3724,6 +3755,8 @@ ${campaignContext.timeline || 'Not specified'}
       if (toolUse && toolUse.name === 'generate_linkedin_article') {
         const content = await callMCPService('social-post', {
           organization: orgProfile.organizationName,
+          organizationId: orgProfile.organizationId,
+          nivKnowledge: orgProfile.nivKnowledge,
           message: toolUse.input.topic,
           platforms: [
             'linkedin'
@@ -3747,6 +3780,8 @@ ${campaignContext.timeline || 'Not specified'}
       if (toolUse && toolUse.name === 'generate_twitter_thread') {
         const content = await callMCPService('social-post', {
           organization: orgProfile.organizationName,
+          organizationId: orgProfile.organizationId,
+          nivKnowledge: orgProfile.nivKnowledge,
           message: `Create a ${toolUse.input.tweet_count || 5}-tweet thread about: ${toolUse.input.topic}`,
           platforms: [
             'twitter'
@@ -3769,6 +3804,8 @@ ${campaignContext.timeline || 'Not specified'}
       if (toolUse && toolUse.name === 'generate_instagram_caption') {
         const content = await callMCPService('social-post', {
           organization: orgProfile.organizationName,
+          organizationId: orgProfile.organizationId,
+          nivKnowledge: orgProfile.nivKnowledge,
           message: toolUse.input.topic,
           platforms: [
             'instagram'
@@ -3792,6 +3829,8 @@ ${campaignContext.timeline || 'Not specified'}
       if (toolUse && toolUse.name === 'generate_facebook_post') {
         const content = await callMCPService('social-post', {
           organization: orgProfile.organizationName,
+          organizationId: orgProfile.organizationId,
+          nivKnowledge: orgProfile.nivKnowledge,
           message: toolUse.input.topic,
           platforms: [
             'facebook'
@@ -3815,6 +3854,8 @@ ${campaignContext.timeline || 'Not specified'}
       if (toolUse && toolUse.name === 'generate_newsletter') {
         const content = await callMCPService('email-campaign', {
           organization: orgProfile.organizationName,
+          organizationId: orgProfile.organizationId,
+          nivKnowledge: orgProfile.nivKnowledge,
           campaignType: 'newsletter',
           topic: toolUse.input.topic,
           sections: toolUse.input.sections
@@ -3836,6 +3877,8 @@ ${campaignContext.timeline || 'Not specified'}
       if (toolUse && toolUse.name === 'generate_email_sequence') {
         const content = await callMCPService('email-campaign', {
           organization: orgProfile.organizationName,
+          organizationId: orgProfile.organizationId,
+          nivKnowledge: orgProfile.nivKnowledge,
           campaignType: 'sequence',
           goal: toolUse.input.campaign,
           emailCount: toolUse.input.email_count || 5
@@ -3857,6 +3900,8 @@ ${campaignContext.timeline || 'Not specified'}
       if (toolUse && toolUse.name === 'generate_cold_outreach') {
         const content = await callMCPService('email-campaign', {
           organization: orgProfile.organizationName,
+          organizationId: orgProfile.organizationId,
+          nivKnowledge: orgProfile.nivKnowledge,
           campaignType: 'cold_outreach',
           target: toolUse.input.target,
           offer: toolUse.input.offer
@@ -3878,6 +3923,8 @@ ${campaignContext.timeline || 'Not specified'}
       if (toolUse && toolUse.name === 'generate_crisis_response') {
         const content = await callMCPService('executive-statement', {
           organization: orgProfile.organizationName,
+          organizationId: orgProfile.organizationId,
+          nivKnowledge: orgProfile.nivKnowledge,
           topic: `Crisis Response: ${toolUse.input.situation}`,
           tone: toolUse.input.tone || 'empathetic'
         });
@@ -3898,6 +3945,8 @@ ${campaignContext.timeline || 'Not specified'}
       if (toolUse && toolUse.name === 'generate_apology_statement') {
         const content = await callMCPService('executive-statement', {
           organization: orgProfile.organizationName,
+          organizationId: orgProfile.organizationId,
+          nivKnowledge: orgProfile.nivKnowledge,
           topic: `Apology regarding: ${toolUse.input.issue}`,
           keyPoints: [
             `Issue: ${toolUse.input.issue}`,
@@ -3922,6 +3971,8 @@ ${campaignContext.timeline || 'Not specified'}
       if (toolUse && toolUse.name === 'generate_investor_update') {
         const content = await callMCPService('executive-statement', {
           organization: orgProfile.organizationName,
+          organizationId: orgProfile.organizationId,
+          nivKnowledge: orgProfile.nivKnowledge,
           topic: `${toolUse.input.period} Investor Update`,
           keyPoints: toolUse.input.highlights || [],
           tone: 'confident'
@@ -3973,6 +4024,8 @@ ${campaignContext.timeline || 'Not specified'}
       if (toolUse && toolUse.name === 'generate_media_kit') {
         const content = await callMCPService('press-release', {
           organization: orgProfile.organizationName,
+          organizationId: orgProfile.organizationId,
+          nivKnowledge: orgProfile.nivKnowledge,
           announcement: `Media Kit - ${toolUse.input.focus}`,
           keyPoints: [
             'Company overview',
@@ -3998,6 +4051,8 @@ ${campaignContext.timeline || 'Not specified'}
       if (toolUse && toolUse.name === 'generate_podcast_pitch') {
         const content = await callMCPService('media-pitch', {
           organization: orgProfile.organizationName,
+          organizationId: orgProfile.organizationId,
+          nivKnowledge: orgProfile.nivKnowledge,
           story: `Podcast appearance pitch: ${toolUse.input.topic}`,
           journalist: toolUse.input.podcast
         });
@@ -4018,6 +4073,8 @@ ${campaignContext.timeline || 'Not specified'}
       if (toolUse && toolUse.name === 'generate_tv_interview_prep') {
         const content = await callMCPService('talking-points', {
           organization: orgProfile.organizationName,
+          organizationId: orgProfile.organizationId,
+          nivKnowledge: orgProfile.nivKnowledge,
           occasion: `TV interview on ${toolUse.input.show || 'show'}`,
           topic: toolUse.input.topics?.join(', ') || 'interview topics'
         });
@@ -4160,6 +4217,8 @@ ${campaignContext.timeline || 'Not specified'}
       if (toolUse && toolUse.name === 'generate_video_script') {
         const content = await callMCPService('blog-post', {
           organization: orgProfile.organizationName,
+          organizationId: orgProfile.organizationId,
+          nivKnowledge: orgProfile.nivKnowledge,
           topic: `Video Script: ${toolUse.input.topic}`,
           angle: `${toolUse.input.duration || '2-3 minute'} video script with scene descriptions`
         });
@@ -4180,6 +4239,8 @@ ${campaignContext.timeline || 'Not specified'}
       if (toolUse && toolUse.name === 'generate_messaging_framework') {
         const content = await callMCPService('thought-leadership', {
           organization: orgProfile.organizationName,
+          organizationId: orgProfile.organizationId,
+          nivKnowledge: orgProfile.nivKnowledge,
           topic: `Messaging Framework: ${toolUse.input.product}`,
           // Pass FULL company profile to prevent hallucinations
           description: orgProfile.description || '',
@@ -4211,6 +4272,8 @@ ${campaignContext.timeline || 'Not specified'}
       if (toolUse && toolUse.name === 'generate_brand_narrative') {
         const content = await callMCPService('thought-leadership', {
           organization: orgProfile.organizationName,
+          organizationId: orgProfile.organizationId,
+          nivKnowledge: orgProfile.nivKnowledge,
           topic: `Brand Narrative: ${toolUse.input.brand}`,
           keyPoints: toolUse.input.values || [],
           // Pass FULL company profile to prevent hallucinations
@@ -4237,6 +4300,8 @@ ${campaignContext.timeline || 'Not specified'}
       if (toolUse && toolUse.name === 'generate_value_proposition') {
         const content = await callMCPService('thought-leadership', {
           organization: orgProfile.organizationName,
+          organizationId: orgProfile.organizationId,
+          nivKnowledge: orgProfile.nivKnowledge,
           topic: 'Value Proposition',
           // Pass FULL company profile to prevent hallucinations
           description: orgProfile.description || '',
@@ -4266,6 +4331,8 @@ ${campaignContext.timeline || 'Not specified'}
       if (toolUse && toolUse.name === 'generate_competitive_positioning') {
         const content = await callMCPService('thought-leadership', {
           organization: orgProfile.organizationName,
+          organizationId: orgProfile.organizationId,
+          nivKnowledge: orgProfile.nivKnowledge,
           topic: `Competitive Positioning: ${toolUse.input.product}`,
           keyPoints: toolUse.input.competitors || [],
           // Pass FULL company profile to prevent hallucinations
@@ -4373,6 +4440,8 @@ ${toolUse.input.tactical_recommendations.map((r)=>`- ${r}`).join('\n')}
               case 'press-release':
                 const pr = await callMCPService('press-release', {
                   organization: orgProfile.organizationName,
+                  organizationId: orgProfile.organizationId,
+                  nivKnowledge: orgProfile.nivKnowledge,
                   announcement: context.topic,
                   keyPoints: context.key_messages || [],
                   quotes: details.quotes || []
@@ -4387,6 +4456,8 @@ ${toolUse.input.tactical_recommendations.map((r)=>`- ${r}`).join('\n')}
               case 'social-posts':
                 const posts = await callMCPService('social-post', {
                   organization: orgProfile.organizationName,
+                  organizationId: orgProfile.organizationId,
+                  nivKnowledge: orgProfile.nivKnowledge,
                   message: context.topic,
                   platforms: details.platforms || [
                     'linkedin',
@@ -4404,6 +4475,8 @@ ${toolUse.input.tactical_recommendations.map((r)=>`- ${r}`).join('\n')}
               case 'talking-points':
                 const talkingPoints = await callMCPService('talking-points', {
                   organization: orgProfile.organizationName,
+                  organizationId: orgProfile.organizationId,
+                  nivKnowledge: orgProfile.nivKnowledge,
                   subject: context.topic,
                   keyMessages: context.key_messages || [],
                   audience: context.audience
@@ -4418,6 +4491,8 @@ ${toolUse.input.tactical_recommendations.map((r)=>`- ${r}`).join('\n')}
               case 'instagram-caption':
                 const caption = await callMCPService('social-post', {
                   organization: orgProfile.organizationName,
+                  organizationId: orgProfile.organizationId,
+                  nivKnowledge: orgProfile.nivKnowledge,
                   message: context.topic,
                   platforms: [
                     'instagram'
@@ -6335,6 +6410,7 @@ async function buildConversationContext(message, history, orgProfile, conversati
     context += `\n`;
   }
   context += `**CURRENT REQUEST:** ${message}\n`;
+  context += `${orgProfile.nivKnowledge || ''}\n\n${NIV_WRITING_RULES}\n`;
   return context;
 }
 // Helper: Detect if research is needed
@@ -6526,6 +6602,9 @@ If user says "add an award for Best CEO 2024":
 
 **ORGANIZATION CONTEXT:**
 ${orgContext}
+${orgProfile.nivKnowledge || ''}
+
+${NIV_WRITING_RULES}
 ${editingContextInstructions}
 **CONVERSATION STATE:**
 - Current stage: ${conversationState.stage}
@@ -7804,18 +7883,22 @@ Write ONLY the thought leadership content.`
   const requiredTitle = parameters.requiredTitle && !['social-post', 'media-list'].includes(normalizedType)
     ? `\n\nTITLE: Use this exact title${normalizedType === 'media-pitch' ? ' as the email subject line' : ' as the headline'}: "${parameters.requiredTitle}". Don't rename it; only fix an obvious typo.`
     : '';
-  const prompt = (contentPrompts[normalizedType] || contentPrompts['blog-post']) + requiredTitle;
+  // What NIV knows about this specific piece's topic, and NIV's house writing rules.
+  const nivKnowledge = parameters.organizationId
+    ? await nivContextFor({ organizationId: parameters.organizationId, orgName: organization, topic: parameters.requiredTitle || parameters.topic || '' }).catch(() => '')
+    : ''
+  const prompt = (contentPrompts[normalizedType] || contentPrompts['blog-post']) + requiredTitle + nivKnowledge + `\n\n${NIV_WRITING_RULES}`;
   // Content-type-specific timeouts (in milliseconds)
   const timeoutDurations = {
-    'thought-leadership': 150000,
-    'case-study': 150000,
-    'white-paper': 180000,
-    'blog-post': 120000,
-    'media-pitch': 60000,
-    'social-post': 60000,
-    'press-release': 90000 // 90s - structured format
+    'thought-leadership': 200000,
+    'case-study': 200000,
+    'white-paper': 240000,
+    'blog-post': 180000,
+    'media-pitch': 120000,
+    'social-post': 90000,
+    'press-release': 150000
   };
-  const timeoutMs = timeoutDurations[normalizedType] || 90000;
+  const timeoutMs = timeoutDurations[normalizedType] || 150000;
   let timeoutId;
   try {
     // Call Claude directly with content-type-specific timeout
@@ -7830,9 +7913,10 @@ Write ONLY the thought leadership content.`
       },
       signal: controller.signal,
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
+        // NIV's model, the same one that writes in the app.
+        model: 'claude-opus-5-5',
         max_tokens: 16000,
-        temperature: 0.7,
+        output_config: { effort: 'medium' },
         messages: [
           {
             role: 'user',
@@ -7848,7 +7932,7 @@ Write ONLY the thought leadership content.`
       throw new Error(`Content generation failed: ${response.statusText}`);
     }
     const data = await response.json();
-    const content = data.content[0].text;
+    const content = (data.content || []).filter((b)=>b.type === 'text').map((b)=>b.text).join('\n').trim();
     console.log(`✅ Generated ${normalizedType} directly (${content.length} chars)`);
     return content;
   } catch (error) {
@@ -7861,7 +7945,58 @@ Write ONLY the thought leadership content.`
     throw error;
   }
 }
+// Every service-generated piece gets NIV's edit before it goes back: brand rules and company
+// knowledge (what NIV knows, _shared/niv-context.ts), house writing rules, and no unsupported claims.
 async function callMCPService(contentType, parameters) {
+  const draft = await callMCPServiceRaw(contentType, parameters);
+  return await nivEditPass(contentType, draft, parameters);
+}
+const NO_EDIT_TYPES = new Set(['media-list', 'image', 'visual', 'schema', 'presentation', 'video']);
+async function nivEditPass(contentType, draft, parameters) {
+  const type = normalizeContentTypeForMCP(contentType);
+  if (typeof draft !== 'string' || draft.trim().length < 40 || NO_EDIT_TYPES.has(type)) return draft;
+  try {
+    const knowledge = parameters?.nivKnowledge ?? (parameters?.organizationId
+      ? await nivContextFor({ organizationId: parameters.organizationId, orgName: parameters.organization, topic: parameters.subject || parameters.topic || '' }).catch(() => '')
+      : '');
+    const brief = [
+      parameters?.subject && `Subject: ${parameters.subject}`,
+      parameters?.narrative && `Narrative: ${String(parameters.narrative).slice(0, 1500)}`,
+      Array.isArray(parameters?.keyPoints) && parameters.keyPoints.length && `Key points: ${parameters.keyPoints.join('; ').slice(0, 1500)}`,
+      parameters?.research && `Research: ${String(parameters.research).slice(0, 1500)}`,
+    ].filter(Boolean).join('\n');
+    const prompt = `You are NIV, editing a draft ${type} for ${parameters?.organization || 'the organization'} before it goes to the person who asked for it.
+
+Edit it so that it:
+1. Follows the brand rules and uses the company knowledge below (product naming, voice, words not to use).
+2. Follows the writing rules below.
+3. Makes no claim that the brief or the knowledge doesn't support: numbers, results, adoption, customer counts, quotes. Remove them or mark [PLACEHOLDER: ...]. Don't add new facts.
+Keep its format, structure, number of versions and platform labels, and roughly its length. Return only the edited draft (without the draft tags), nothing else.
+
+The brief:
+${brief || '(none)'}${knowledge}
+
+${NIV_WRITING_RULES}
+
+<draft>
+${draft}
+</draft>`;
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
+      signal: AbortSignal.timeout(90000),
+      body: JSON.stringify({ model: 'claude-opus-5-5', max_tokens: 12000, output_config: { effort: 'low' }, messages: [{ role: 'user', content: prompt }] }),
+    });
+    if (!r.ok) { console.warn('NIV edit pass skipped:', r.status); return draft; }
+    const data = await r.json();
+    const edited = (data.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('\n').trim().replace(/^<draft>\s*|\s*<\/draft>$/g, '');
+    return edited.length > draft.length * 0.4 ? edited : draft;
+  } catch (e) {
+    console.warn('NIV edit pass failed, using the draft:', e instanceof Error ? e.message : e);
+    return draft;
+  }
+}
+async function callMCPServiceRaw(contentType, parameters) {
   // Normalize content type first
   const normalizedType = normalizeContentTypeForMCP(contentType);
   // Map content types to MCP services (like niv-content-robust)
