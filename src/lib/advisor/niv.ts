@@ -275,3 +275,16 @@ export async function nivFollowUp(p: {
 }
 
 export { addMessage }
+
+
+// One-shot writing with NIV's model and writing rules (drafts, deck storylines).
+export async function writeWithNiv(system: string, prompt: string, maxTokens = 8000): Promise<string> {
+  const response = (await anthropic.messages.create({
+    model: NIV_MODEL,
+    max_tokens: maxTokens,
+    system: `${system}\n\n${WRITING_RULES}`,
+    messages: [{ role: 'user', content: prompt }],
+    output_config: { effort: 'medium' },
+  } as any)) as Anthropic.Message
+  return response.content.filter((b): b is Anthropic.TextBlock => b.type === 'text').map((b) => b.text).join('\n').trim()
+}

@@ -550,12 +550,14 @@ ${opp.execution_plan?.success_metrics?.map((m: any) => `- ${JSON.stringify(m)}`)
 
       let presentationUrl = null
       try {
-        const { data: gammaData, error: gammaError } = await supabase.functions.invoke('generate-opportunity-presentation', {
-          body: {
-            opportunity_id: opp.id,
-            organization_id: opp.organization_id || '7a2835cb-11ee-4512-acc3-b6caf8eb03ff'
-          }
+        // NIV writes the storyline (opportunity + the content just generated + brand rules), then Gamma designs it.
+        const deckRes = await fetch('/api/opportunities/deck', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ organizationId: opp.organization_id, opportunityId: opp.id, folder: `Opportunities/${folderName}` }),
         })
+        const gammaData = await deckRes.json().catch(() => ({}))
+        const gammaError = deckRes.ok ? null : new Error(gammaData.error || `deck ${deckRes.status}`)
 
         if (!gammaError && gammaData?.generationId) {
           console.log('📊 Gamma started, polling...', gammaData.generationId)

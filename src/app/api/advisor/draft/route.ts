@@ -4,9 +4,8 @@
 // The proposal is read from the stored message (not the request), and only from the caller's own thread.
 import { NextRequest, NextResponse, after } from 'next/server'
 import { followDeck } from '@/lib/advisor/deck'
-import Anthropic from '@anthropic-ai/sdk'
 import { HttpError, addMessage, describeCaseFile, describeOpportunity, loadOpportunity, loadOrg, loadTaste, requireMember } from '@/lib/advisor/data'
-import { anthropic, NIV_MODEL, WRITING_RULES } from '@/lib/advisor/niv'
+import { writeWithNiv as draftWithNiv } from '@/lib/advisor/niv'
 
 export const maxDuration = 300
 
@@ -18,17 +17,6 @@ const LABELS: Record<string, string> = {
 // NIV's writer drafts directly: it has the case file (verified findings), the person's taste and the
 // brand voice. (niv-content-intelligent-v2 stays in Studio for edits; called one-shot from here it
 // ignores the brief and fills its own template.)
-async function draftWithNiv(system: string, prompt: string): Promise<string> {
-  const response = (await anthropic.messages.create({
-    model: NIV_MODEL,
-    max_tokens: 8000,
-    system: `${system}\n\n${WRITING_RULES}`,
-    messages: [{ role: 'user', content: prompt }],
-    output_config: { effort: 'medium' },
-  } as any)) as Anthropic.Message
-  return response.content.filter((b): b is Anthropic.TextBlock => b.type === 'text').map((b) => b.text).join('\n').trim()
-}
-
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}))
