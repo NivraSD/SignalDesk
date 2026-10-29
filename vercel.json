@@ -11,6 +11,10 @@
     {
       "path": "/api/cron/morning-synthesis",
       "schedule": "*/5 12-13 * * *"
+    },
+    {
+      "path": "/api/cron/synthesis-emails",
+      "schedule": "*/15 * * * *"
     }
   ]
 }
