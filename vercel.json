@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/knowledge-exposures",
       "schedule": "40 7 * * *"
+    },
+    {
+      "path": "/api/cron/morning-synthesis",
+      "schedule": "*/5 12-13 * * *"
     }
   ]
 }
